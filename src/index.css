@@ -1,0 +1,46 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400,500,600,700&display=swap");
+@import url("https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,600,700&display=swap");
+
+/* Tailwind CSS v4 imports - only need this line */
+@import "tailwindcss";
+
+/* Define your theme configuration */
+@theme {
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-heading: "Satoshi", "Inter", system-ui, sans-serif;
+
+  /* Define your colors */
+  --color-white: #ffffff;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+}
+
+/* Apply styles using CSS custom properties, not @apply */
+html {
+  font-family: Satoshi, Inter, system-ui, sans-serif;
+}
+
+body {
+  background-color: var(--color-white);
+}
+
+p {
+  font-family: var(--font-sans);
+  color: var(--color-gray-800);
+}
+h1,
+h2,
+h3,
+h4,
+h5 {
+  font-family: var(--font-heading);
+}
+h6 {
+  font-family: var(--font-heading);
+  color: var(--color-white);
+}
+input,
+select,
+textarea {
+  @apply font-sans;
+}
