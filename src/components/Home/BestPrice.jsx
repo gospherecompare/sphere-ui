@@ -1,220 +1,324 @@
-// src/components/BestPriceSection.jsx
-import React from "react";
+// src/components/TrendingSection.jsx
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { generateSlug } from "../../utils/slugGenerator";
 import {
-  FaWallet,
-  FaGem,
-  FaCrown,
-  FaTrophy,
-  FaGamepad,
+  FaFire,
   FaMobileAlt,
-  FaChartLine,
-  FaRocket,
-  FaTags,
+  FaLaptop,
+  FaSnowflake,
+  FaWifi,
   FaArrowRight,
 } from "react-icons/fa";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useDevice } from "../../hooks/useDevice";
 
-const BestPriceSection = () => {
-  const [activeBudget, setActiveBudget] = useState();
+const TrendingSection = () => {
+  const [activeCategory, setActiveCategory] = useState("smartphone");
+  const [currentDevices, setCurrentDevices] = useState([]);
+  const [loadingTrending, setLoadingTrending] = useState(false);
   const navigate = useNavigate();
-  const deviceContext = useDevice();
-  const { setFilters } = deviceContext || {};
 
-  const handleCardClick = (card) => {
-    setActiveBudget(card.id);
-
-    const max =
-      parseInt(String(card.price || "").replace(/[^0-9]/g, ""), 10) || 0;
-
-    // Build filter object; set numeric price max and detect keywords
-    const newFilters = {
-      brand: [],
-      priceRange: { min: 0, max },
-      ram: [],
-      storage: [],
-      battery: [],
-      processor: [],
-      network: [],
-      refreshRate: [],
-      camera: [],
-    };
-
-    const title = (card.title || "").toLowerCase();
-    // 5G keyword
-    if (/5g/.test(title) || /5 g/.test(title)) newFilters.network = ["5G"];
-
-    // RAM keyword like '8GB' or '12GB'
-    const ramMatch = title.match(/(\d+)\s*gb/);
-    if (ramMatch) newFilters.ram = [`${ramMatch[1]}GB`];
-
-    // Gaming -> prefer higher refresh rates and common gaming chips
-    if (/game|gaming/.test(title)) {
-      newFilters.refreshRate = ["90Hz", "120Hz", "144Hz"];
-      // prefer Snapdragon/MediaTek devices for performance
-      newFilters.processor = ["Snapdragon", "MediaTek"];
-    }
-
-    // Flagship / premium -> broaden to high-end processors
-    if (/flagship|premium|high-end/.test(title)) {
-      newFilters.processor = [
-        "Snapdragon",
-        "Apple",
-        "Exynos",
-        "Kirin",
-        "MediaTek",
-      ];
-    }
-
-    try {
-      setFilters?.(newFilters);
-    } catch {
-      // ignore
-    }
-
-    // Build query params so the results are shareable and the list
-    // initializes from URL. Use simple param names: priceMin, priceMax,
-    // ram, network, processor, refreshRate (comma-separated for lists).
-    const params = new URLSearchParams();
-    params.set("priceMin", String(newFilters.priceRange.min || 0));
-    params.set("priceMax", String(newFilters.priceRange.max || 0));
-    if (newFilters.network && newFilters.network.length)
-      params.set("network", newFilters.network.join(","));
-    if (newFilters.ram && newFilters.ram.length)
-      params.set("ram", newFilters.ram.join(","));
-    if (newFilters.processor && newFilters.processor.length)
-      params.set("processor", newFilters.processor.join(","));
-    if (newFilters.refreshRate && newFilters.refreshRate.length)
-      params.set("refreshRate", newFilters.refreshRate.join(","));
-
-    navigate(`/devicelist/smartphones?${params.toString()}`);
-  };
-
-  const budgetCards = [
+  // Trending categories
+  const categories = [
     {
-      id: "10k",
-      title: "Under ₹10,000",
-      price: "₹10,000",
-      icon: <FaWallet />,
-      color: "from-green-500 to-emerald-600",
-      description: "Best budget phones",
-    },
-    {
-      id: "20k",
-      title: "5G Under ₹20,000",
-      price: "₹20,000",
-      icon: <FaGem />,
-      color: "from-purple-500 to-indigo-600",
-      description: "Affordable 5G phones",
-    },
-    {
-      id: "30k",
-      title: "Under ₹30,000",
-      price: "₹30,000",
-      icon: <FaTrophy />,
-      color: "from-yellow-500 to-amber-600",
-      description: "Mid-range performers",
-    },
-    {
-      id: "60k",
-      title: "Flagship Under ₹60,000",
-      price: "₹60,000",
-      icon: <FaCrown />,
-      color: "from-pink-500 to-rose-600",
-      description: "Premium devices",
-    },
-    {
-      id: "gaming30k",
-      title: "Gaming Under ₹30,000",
-      price: "₹30,000",
-      icon: <FaGamepad />,
-      color: "from-red-500 to-orange-600",
-      description: "Gaming smartphones",
-    },
-    {
-      id: "50k",
-      title: "Under ₹50,000",
-      price: "₹50,000",
+      id: "smartphone",
+      name: "Smartphones",
       icon: <FaMobileAlt />,
-      color: "from-blue-500 to-cyan-600",
-      description: "High-end phones",
+      activeGradient: "from-purple-600 to-red-600",
+      inactiveColor: "text-gray-400",
+      count: 156,
     },
     {
-      id: "8gb25k",
-      title: "8GB RAM Under ₹25,000",
-      price: "₹25,000",
-      icon: <FaChartLine />,
-      color: "from-indigo-500 to-purple-600",
-      description: "Performance focused",
+      id: "laptop",
+      name: "Laptops",
+      icon: <FaLaptop />,
+      activeGradient: "from-purple-600 to-red-600",
+      inactiveColor: "text-gray-400",
+      count: 89,
     },
     {
-      id: "12gb40k",
-      title: "12GB RAM Under ₹40,000",
-      price: "₹40,000",
-      icon: <FaRocket />,
-      color: "from-teal-500 to-green-600",
-      description: "Powerful multitasking",
+      id: "appliance",
+      name: "Appliances",
+      icon: <FaSnowflake />,
+      activeGradient: "from-purple-600 to-red-600",
+      inactiveColor: "text-gray-400",
+      count: 124,
+    },
+    {
+      id: "networking",
+      name: "Networking",
+      icon: <FaWifi />,
+      activeGradient: "from-purple-600 to-red-600",
+      inactiveColor: "text-gray-400",
+      count: 67,
     },
   ];
 
+  const apiForCategory = {
+    smartphone: "/api/public/trending/smartphones",
+    laptop: "/api/public/trending/laptops",
+    appliance: "/api/public/trending/appliances",
+    networking: "/api/public/trending/networking",
+  };
+
+  // Fetch trending products for active category
+  useEffect(() => {
+    let cancelled = false;
+    const fetchTrending = async () => {
+      setLoadingTrending(true);
+      setCurrentDevices([]);
+      const endpoint = apiForCategory[activeCategory];
+
+      try {
+        const r = await fetch(`https://api.apisphere.in${endpoint}`);
+        if (!r.ok) throw new Error("Failed to fetch trending");
+        const json = await r.json();
+        if (cancelled) return;
+
+        const rows = json.trending || [];
+        const mapped = rows.slice(0, 15).map((row, idx) => {
+          const basePrice = row.base_price ?? row.price ?? null;
+          const priceStr = basePrice
+            ? `₹${Number(basePrice).toLocaleString()}`
+            : "N/A";
+          const viewsNum = Number(row.views) || 0;
+
+          return {
+            id: row.product_id ?? row.id ?? null,
+            variantId: row.variant_id ?? row.variantId ?? null,
+            name: row.product_name ?? row.name ?? row.model ?? "",
+            brand: row.brand ?? "",
+            model: row.model ?? "",
+            ram: row.ram ?? "",
+            storage: row.storage ?? "",
+            base_price: basePrice !== null ? String(basePrice) : null,
+            price: priceStr,
+            rating: row.rating ?? row.avg_rating ?? 0,
+            reviews: viewsNum,
+            image: row.image ?? row.image_url ?? "",
+            raw: row,
+          };
+        });
+
+        setCurrentDevices(mapped);
+      } catch (err) {
+        console.error("Failed to load trending:", err);
+        setCurrentDevices([]);
+      } finally {
+        if (!cancelled) setLoadingTrending(false);
+      }
+    };
+
+    fetchTrending();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeCategory]);
+
+  const handleDeviceClick = (device) => {
+    const routeMap = {
+      smartphone: "/smartphones",
+      laptop: "/laptops",
+      appliance: "/appliances",
+      networking: "/networking",
+    };
+    const basePath = routeMap[activeCategory] || "/smartphones";
+    const rawName =
+      device.name || device.model || device.product_name || device.brand || "";
+    const slug = generateSlug(rawName || String(device.id || "device"));
+    const params = new URLSearchParams();
+    if (device.id) params.set("id", String(device.id));
+    if (device.variantId) params.set("variantId", String(device.variantId));
+    const qs = params.toString();
+    navigate(`${basePath}/${slug}${qs ? `?${qs}` : ""}`);
+  };
+
+  const handleViewAll = () => {
+    const routeMap = {
+      smartphone: "/smartphones",
+      laptop: "/laptops",
+      appliance: "/appliances",
+      networking: "/networking",
+    };
+    navigate(routeMap[activeCategory] || "/");
+  };
+
   return (
-    <section className="my-8 mx-3 sm:mx-4 lg:mx-auto max-w-7xl">
-      {/* Section Header */}
-      <div className="text-center mb-6">
-        <div className="inline-flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 px-3 py-1 rounded-full mb-3">
-          <FaTags className="text-white text-xs" />
-          <span className="text-white text-xs font-bold">BEST DEALS</span>
+    <div className="px-2 lg:px-4 mx-auto bg-white max-w-6xl rounded-xl mb-5 w-full m-0 overflow-hidden pt-5 sm:pt-10">
+      {/* Header Section */}
+      <div className="mb-6 px-2">
+        <div className="flex items-center gap-2 mb-2">
+          <FaFire className="text-red-500 text-lg" />
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+            Trending{" "}
+            <span className="bg-gradient-to-r from-purple-600 to-red-600 bg-clip-text text-transparent">
+              Products
+            </span>
+          </h2>
         </div>
-        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
-          Find Your Perfect Phone
-        </h2>
-        <p className="text-gray-600 text-sm">Curated picks for every budget</p>
+        <p className="text-sm text-gray-600">
+          Discover the hottest devices trending right now
+        </p>
       </div>
 
-      {/* Budget Cards Grid - Simple 2 columns on mobile */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-        {budgetCards.map((card) => (
-          <button
-            key={card.id}
-            onClick={() => handleCardClick(card)}
-            className={`text-left p-3 rounded-lg border transition-all duration-200 ${
-              activeBudget === card.id
-                ? "border-blue-500 bg-blue-50 shadow-sm"
-                : "border-gray-200 bg-white hover:border-blue-300 hover:shadow-sm"
-            }`}
-          >
-            {/* Icon */}
-            <div
-              className={`w-10 h-10 rounded-lg bg-gradient-to-br ${card.color} flex items-center justify-center mb-2`}
+      {/* Category Tabs - Single Row */}
+      <div className="flex overflow-x-auto gap-2 lg:gap-3 hide-scrollbar no-scrollbar scroll-smooth mb-8">
+        {categories.map((category) => {
+          const isActive = activeCategory === category.id;
+
+          return (
+            <button
+              key={category.id}
+              onClick={() => setActiveCategory(category.id)}
+              className={`flex flex-col items-center p-3 lg:p-4 transition-all duration-300 min-w-[90px] lg:min-w-[110px] shrink-0 group ${
+                isActive
+                  ? "text-gray-900 transform -translate-y-1"
+                  : "text-gray-600 hover:text-gray-900 hover:transform hover:scale-105"
+              }`}
             >
-              <span className="text-white text-sm">{card.icon}</span>
-            </div>
+              {/* Icon Container */}
+              <div
+                className={`w-12 h-12 lg:w-14 lg:h-14 flex items-center justify-center rounded-2xl p-2 lg:p-3 transition-all duration-300 mb-2 lg:mb-2 ${
+                  isActive
+                    ? `bg-gradient-to-br ${category.activeGradient} text-white shadow-lg shadow-red-200/50`
+                    : "bg-gray-100 text-gray-400 group-hover:bg-gray-200 group-hover:shadow-md"
+                }`}
+              >
+                <span
+                  className={`text-lg lg:text-xl transition-colors duration-300 ${
+                    isActive ? "text-white" : category.inactiveColor
+                  }`}
+                >
+                  {category.icon}
+                </span>
+              </div>
 
-            {/* Content */}
-            <h3 className="font-semibold text-gray-900 text-xs sm:text-sm leading-tight mb-1">
-              {card.title}
-            </h3>
-            <p className="text-green-600 font-bold text-sm mb-1">
-              {card.price}
-            </p>
-            <p className="text-gray-500 text-xs">{card.description}</p>
+              {/* Category Name */}
+              <span
+                className={`font-medium text-xs lg:text-sm text-center transition-all duration-300 ${
+                  isActive
+                    ? "text-gray-900 font-semibold"
+                    : "text-gray-600 group-hover:text-gray-900"
+                }`}
+              >
+                {category.name}
+              </span>
+
+              {/* Count Badge */}
+
+              {/* Active Indicator Dot */}
+              <div
+                className={`mt-1 w-1 h-1 rounded-full transition-all duration-300 ${
+                  isActive
+                    ? `bg-gradient-to-r ${category.activeGradient} opacity-100`
+                    : "bg-transparent opacity-0"
+                }`}
+              />
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Trending Products - Single Row */}
+      <div className="mb-4 px-2">
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-semibold text-gray-900">Trending Now</h3>
+          <button
+            onClick={handleViewAll}
+            className="text-sm text-red-600 hover:text-red-800 font-medium flex items-center gap-1"
+          >
+            View all
+            <FaArrowRight className="w-3 h-3" />
           </button>
-        ))}
+        </div>
       </div>
 
-      {/* View All Button */}
-      <div className="flex justify-center mt-6">
-        <button
-          onClick={() => navigate("/devicelist/smartphones")}
-          className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-medium text-sm hover:bg-blue-700 transition-colors"
-        >
-          View All Smartphones
-          <FaArrowRight className="text-xs" />
-        </button>
+      {/* Products Grid - Single Row (Max 5 visible on desktop) */}
+      <div className="flex md:grid md:grid-cols-5 overflow-x-auto md:overflow-visible gap-3 lg:gap-4 hide-scrollbar no-scrollbar scroll-smooth pb-6">
+        {loadingTrending
+          ? // Skeleton Loaders
+            Array.from({ length: 8 }).map((_, i) => (
+              <div
+                key={`skeleton-${i}`}
+                className="min-w-[120px] sm:min-w-[160px] lg:min-w-[200px] shrink-0 animate-pulse"
+              >
+                <div className="rounded-2xl bg-white p-3 shadow-sm">
+                  <div className="bg-gray-200 rounded-xl w-full h-24 sm:h-32 lg:h-40 mb-3"></div>
+                  <div className="h-3 bg-gray-200 rounded mb-2 w-4/5"></div>
+                  <div className="h-4 bg-gray-200 rounded mb-3 w-full"></div>
+                  <div className="h-3 bg-gray-200 rounded mb-2 w-2/3"></div>
+                  <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                </div>
+              </div>
+            ))
+          : // Actual Products
+            currentDevices.slice(0, 5).map((device, i) => (
+              <div
+                key={`${device.id || "noid"}-${i}`}
+                onClick={() => handleDeviceClick(device)}
+                className="group min-w-[220px] sm:min-w-[260px] md:min-w-0 cursor-pointer transition-all duration-200"
+              >
+                <div className="relative rounded-2xl bg-white  p-3 sm:p-4 transition-all duration-200 group-hover:shadow-lg group-hover:shadow-slate-200 group-hover:-translate-y-0.5">
+                  <div className="flex flex-col gap-3">
+                    {/* Image */}
+                    <div className="relative w-full flex-shrink-0">
+                      <div className="h-28 sm:h-32 w-full rounded-2xl overflow-hidden bg-gray-100 flex items-center justify-center">
+                        {device.image ? (
+                          <img
+                            src={device.image}
+                            alt={device.name}
+                            className="max-h-full w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+                            onError={(e) => {
+                              e.target.style.display = "none";
+                            }}
+                          />
+                        ) : (
+                          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-purple-500 to-red-500 flex items-center justify-center">
+                            <span className="text-lg font-bold text-gray-500">
+                              {device.brand?.charAt(0) || "P"}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Trending Badge */}
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0 text-left">
+                      {/* Brand - Top Left */}
+                      <p className="text-[10px] sm:text-xs uppercase text-purple-600 font-semibold tracking-widest">
+                        {device.brand || "Brand"}
+                      </p>
+
+                      {/* Title */}
+                      <h3
+                        className="mt-1 text-sm sm:text-base font-semibold text-gray-900 leading-snug line-clamp-2 
+               min-h-[2.5rem] md:min-h-[3rem] 
+               group-hover:text-red-600 transition-colors duration-200"
+                      >
+                        {device.name}
+                      </h3>
+
+                      {/* Description (RAM | Storage) */}
+                      <p className="mt-0.5 text-[11px] sm:text-xs text-gray-500">
+                        {device.ram || "RAM"}{" "}
+                        {device.storage && `/ ${device.storage}`}
+                      </p>
+
+                      {/* Price */}
+                      <div className="mt-2 flex items-center justify-start">
+                        <p className="text-base sm:text-lg font-bold text-green-600">
+                          {device.price || "N/A"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
       </div>
-    </section>
+    </div>
   );
 };
 
-export default BestPriceSection;
+export default TrendingSection;

@@ -1,46 +1,486 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400,500,600,700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
 @import url("https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,600,700&display=swap");
 
-/* Tailwind CSS v4 imports - only need this line */
+/* Tailwind CSS v4 */
 @import "tailwindcss";
 
-/* Define your theme configuration */
+/* =========================
+   THEME CONFIGURATION
+========================= */
 @theme {
-  --font-sans: "Inter", system-ui, sans-serif;
-  --font-heading: "Satoshi", "Inter", system-ui, sans-serif;
+  --font-sans:
+    "Satoshi", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Arial, sans-serif;
 
-  /* Define your colors */
+  --font-heading:
+    "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Arial, sans-serif;
+
   --color-white: #ffffff;
   --color-gray-800: #1f2937;
   --color-gray-900: #111827;
 }
 
-/* Apply styles using CSS custom properties, not @apply */
+/* =========================
+   BASE STYLESyyy
+========================= */
 html {
-  font-family: Satoshi, Inter, system-ui, sans-serif;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.5;
 }
 
 body {
-  background-color: var(--color-white);
+  margin: 0;
+  color: var(--color-gray-900);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-p {
-  font-family: var(--font-sans);
-  color: var(--color-gray-800);
+/* =========================
+   TEXT ELEMENTS
+========================= */
+
+small {
+  font-size: 12px;
+  color: #6b7280;
 }
-h1,
-h2,
-h3,
-h4,
+
+/* =========================
+   HEADINGS
+========================= */
+
+h1 {
+  font-size: 18px;
+}
+h2 {
+  font-size: 20px;
+}
+h3 {
+  font-size: 18px;
+}
+h4 {
+  font-size: 16px;
+}
 h5 {
-  font-family: var(--font-heading);
+  font-size: 15px;
 }
 h6 {
-  font-family: var(--font-heading);
-  color: var(--color-white);
+  font-size: 14px;
+  font-weight: 500;
 }
-input,
-select,
-textarea {
-  @apply font-sans;
+
+/* =========================
+   DESKTOP-ONLY UTILITY
+========================= */
+@media (min-width: 1024px) {
+  .text-13px {
+    font-size: 13px;
+    line-height: 1.4;
+  }
+}
+
+/* =========================
+   ANIMATIONS
+========================= */
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-in {
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.slide-in-from-top-2 {
+  animation: slideInFromTop 0.2s ease-out;
+}
+
+.fade-in {
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+/* =========================
+   UI ENHANCEMENTS
+========================= */
+.category-button {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.advanced-mega-menu {
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* =========================
+   HEADER ANIMATIONS
+========================= */
+@keyframes headerGlow {
+  0%,
+  100% {
+    box-shadow: 0 4px 12px rgba(88, 86, 214, 0.1);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(88, 86, 214, 0.15);
+  }
+}
+
+@keyframes megaMenuSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes categoryHover {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes searchPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(168, 85, 247, 0);
+  }
+}
+
+.mega-menu-slide {
+  animation: megaMenuSlide 0.25s ease-out;
+}
+
+.category-hover:hover {
+  animation: categoryHover 0.4s ease-in-out;
+}
+
+.search-focus:focus {
+  animation: searchPulse 1.5s ease-out;
+}
+
+/* =========================
+   GRADIENT EFFECTS
+========================= */
+.gradient-header {
+  background: linear-gradient(135deg, #7c3aed 0%, #6366f1 50%, #8b5cf6 100%);
+}
+
+.gradient-button {
+  background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.gradient-button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.gradient-button:hover::before {
+  left: 100%;
+}
+
+/* =========================
+   MEGA MENU STYLES
+========================= */
+.mega-menu-item {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.mega-menu-item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(99, 102, 241, 0.1),
+    transparent
+  );
+  transition: left 0.6s ease;
+  z-index: -1;
+}
+
+.mega-menu-item:hover::before {
+  left: 100%;
+}
+
+/* =========================
+   SEARCH BAR STYLES
+========================= */
+.search-input-wrapper {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.search-input-wrapper:focus-within {
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.2);
+}
+
+.search-input {
+  transition: all 0.2s ease;
+}
+
+.search-input:focus {
+  background-color: #fff;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* =========================
+   BADGE & PILL STYLES
+========================= */
+.badge-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.category-badge {
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25);
+}
+
+/* =========================
+   SMOOTH TRANSITIONS
+========================= */
+.smooth-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.hover-lift {
+  transition: all 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+.logo-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Logo container */
+.smartarena-logo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transform: skewX(-8deg);
+}
+
+/* Custom letters (H & K) */
+.logo-letter {
+  font-size: 32px;
+  font-weight: 900;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  letter-spacing: -2px;
+
+  background: linear-gradient(90deg, #8b5cf6, #6366f1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+
+  border-radius: 6px;
+  position: relative;
+}
+
+/* Make letters more geometric */
+.logo-letter::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: 4px;
+}
+
+/* Eye blocks */
+.logo-eye {
+  width: 32px;
+  height: 26px;
+  border-radius: 7px;
+  background: linear-gradient(to bottom, #8c69ff 0%, #3b82f6 60%, #0a85f8 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: skewX(8deg);
+  box-shadow: 0 4px 4px rgba(99, 102, 241, 0.35);
+}
+
+/* Pupil */
+.logo-eye::after {
+  content: "";
+  width: 9px;
+  height: 9px;
+  background: white;
+  border-radius: 50%;
+}
+
+/* Tagline */
+.logo-tagline {
+  font-size: 7px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: #6b7280;
+  text-transform: uppercase;
+  padding-left: 8px;
+  position: relative;
+}
+
+.logo-tagline::before {
+  content: "";
+  width: 20px;
+  height: 2px;
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* mobile logo styles */
+.smartarena-logo-mobile {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transform: skewX(-8deg);
+}
+
+/* Custom letters (H & K) */
+.logo-letter-mobile {
+  font-size: 32px;
+  font-weight: 900;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  letter-spacing: -2px;
+
+  background: linear-gradient(90deg, #fff, #fff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+
+  border-radius: 6px;
+  position: relative;
+}
+
+/* Make letters more geometric */
+.logo-letter-mobile::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: 4px;
+}
+
+/* Eye blocks */
+.logo-eye-mobile {
+  width: 32px;
+  height: 26px;
+  border-radius: 7px;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: skewX(8deg);
+  box-shadow: 0 4px 4px #93c2ee59;
+}
+
+/* Pupil */
+.logo-eye-mobile::after {
+  content: "";
+  width: 9px;
+  height: 9px;
+  background: linear-gradient(to bottom, #8c69ff 0%, #3b82f6 60%, #0a85f8 100%);
+
+  border-radius: 50%;
+}
+
+/* Tagline */
+.logo-tagline-mobile {
+  font-size: 7px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: #f7f7f7;
+  text-transform: uppercase;
+  padding-left: 8px;
+  position: relative;
+}
+
+.logo-tagline::before {
+  content: "";
+  width: 20px;
+  height: 2px;
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: blueviolet;
+  outline: none;
 }

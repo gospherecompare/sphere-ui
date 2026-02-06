@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import Cookies from "js-cookie";
 
 // Normalization helpers (copied from previous DeviceContext)
 const toNumber = (v) => {
@@ -82,12 +83,28 @@ const normalizeImages = (imgs) => {
 
 const normalizeStorePrices = (sp) => {
   if (!Array.isArray(sp)) return [];
-  return sp.filter(Boolean).map((p) => ({
-    ...p,
-    price: toNumber(p.price) ?? (p.price || null),
-    url: p.url || null,
-    store: p.store || null,
-  }));
+  return sp
+    .filter(Boolean)
+    .map((p) => {
+      const price =
+        toNumber(p.price ?? p.amount ?? p.base_price) ??
+        p.price ??
+        p.amount ??
+        null;
+      const url = p.url ?? p.link ?? p.url_link ?? null;
+      const store = p.store ?? p.store_name ?? p.storeName ?? null;
+      const offer = p.offer_text ?? p.offer ?? null;
+      const delivery = p.delivery_info ?? p.delivery ?? null;
+      return {
+        ...p,
+        price,
+        url,
+        store,
+        offer,
+        delivery,
+      };
+    })
+    .map((p) => ({ ...p }));
 };
 
 // Normalize variants to always be an array of objects
@@ -142,7 +159,7 @@ const normalizeVariants = (d) => {
       vItem.base_price ??
       null;
     const store_prices = normalizeStorePrices(
-      vItem.store_prices ?? vItem.storePrices ?? d.store_prices ?? []
+      vItem.store_prices ?? vItem.storePrices ?? d.store_prices ?? [],
     );
 
     return { ...vItem, id, ram, storage, base_price, store_prices };
@@ -186,79 +203,694 @@ const normalizeDate = (d) => {
 
 export const fetchSmartphones = createAsyncThunk(
   "device/fetchSmartphones",
-  async (_, { rejectWithValue }) => {
+  // Accept an optional options object: { feature }
+  async (opts = {}, { rejectWithValue }) => {
     try {
-      const res = await fetch("http://localhost:5000/api/smartphone");
+      const feature = opts.feature || null;
+      const res = await fetch("https://api.apisphere.in/api/smartphones");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
       const arr = Array.isArray(data)
         ? data
         : Array.isArray(data.smartphones)
-        ? data.smartphones
-        : Array.isArray(data.data)
-        ? data.data
-        : Array.isArray(data.rows)
-        ? data.rows
-        : [];
+          ? data.smartphones
+          : Array.isArray(data.data)
+            ? data.data
+            : Array.isArray(data.rows)
+              ? data.rows
+              : [];
 
       const publishArr = Array.isArray(data.publish) ? data.publish : [];
       const publishMap = {};
-      for (const p of publishArr) publishMap[p.smartphone_id] = p;
+      for (const p of publishArr)
+        publishMap[p.smartphone_id ?? p.product_id ?? p.id] = p;
 
-      const mapped = (arr || []).map((d) => ({
-        ...d,
-        published: publishMap[d.id] ? !!publishMap[d.id].published : false,
-        sensors: normalizeSensors(d.sensors),
-        colors: normalizeColors(d.colors),
-        images: normalizeImages(d.images),
-        price: toNumber(d.price) ?? (d.price || null),
-        store_prices: normalizeStorePrices(d.store_prices),
-        launch_date: normalizeDate(d.launch_date || d.created_at),
-        variants: normalizeVariants(d),
-      }));
+      const mapped = (arr || []).map((d) => {
+        const id = d.product_id ?? d.id ?? null;
+        const variants = normalizeVariants(d);
+
+        // aggregate store prices from variants (variants already normalize their store_prices)
+        const aggregatedStorePrices = (variants || []).flatMap(
+          (v) => v.store_prices || [],
+        );
+
+        // derive a numeric price (lowest variant price if present, else top-level price)
+        const priceFromVariants = (variants || []).reduce((acc, v) => {
+          const p =
+            toNumber(v.base_price ?? v.price) ?? v.base_price ?? v.price;
+          if (p == null) return acc;
+          if (acc == null) return p;
+          return Math.min(acc, p);
+        }, null);
+
+        const price = priceFromVariants ?? toNumber(d.price) ?? d.price ?? null;
+
+        return {
+          ...d,
+          id,
+          product_id: d.product_id ?? d.id ?? null,
+          name: d.name ?? d.model ?? null,
+          product_type: d.product_type ?? null,
+          brand: d.brand_name ?? d.brand ?? null,
+          category: d.category ?? null,
+          model: d.model ?? d.name ?? null,
+          published: publishMap[id] ? !!publishMap[id].published : false,
+          sensors: normalizeSensors(d.sensors),
+          colors: normalizeColors(d.colors),
+          images: normalizeImages(d.images),
+          price,
+          store_prices: aggregatedStorePrices,
+          launch_date: normalizeDate(d.launch_date ?? d.created_at),
+          variants,
+        };
+      });
+
+      // If a feature filter was requested, apply client-side filtering
+      if (feature) {
+        const matches = (device) => {
+          const f = String(feature).toLowerCase();
+          const hasBatteryFastCharge = (d) =>
+            (d.battery && (d.battery.fast_charge || d.battery.fastCharge)) ||
+            (d.battery && d.battery.fast_charge !== undefined);
+
+          const isAmoled = (d) => {
+            const t = (d.display && d.display.type) || d.display || "";
+            return String(t).toLowerCase().includes("amoled");
+          };
+
+          const isGaming = (d) => {
+            const proc =
+              (d.performance && d.performance.processor) || d.processor || "";
+            const cat = (d.category || "").toString().toLowerCase();
+            return (
+              /snapdragon\s*8|dimensity|exynos|apple\s*a|mediatek/i.test(
+                proc,
+              ) ||
+              cat.includes("flagship") ||
+              cat.includes("gaming")
+            );
+          };
+
+          const hasHighRam = (d) => {
+            const r = d.performance && d.performance.ram_options;
+            if (Array.isArray(r)) {
+              return r.some(
+                (x) => parseInt(String(x).replace(/[^0-9]/g, "")) >= 12,
+              );
+            }
+            // try variants
+            if (Array.isArray(d.variants)) {
+              return d.variants.some(
+                (v) => parseInt(String(v.ram).replace(/[^0-9]/g, "")) >= 12,
+              );
+            }
+            return false;
+          };
+
+          const hasLongBattery = (d) => {
+            const b =
+              d.battery &&
+              (d.battery.capacity ||
+                d.battery.capacity_mah ||
+                d.battery_capacity ||
+                d.battery_capacity_mah ||
+                d.battery);
+            if (!b) return false;
+            const n = parseInt(String(b).replace(/[^0-9]/g, "")) || 0;
+            return n >= 6000;
+          };
+
+          const hasHighMpCamera = (d) => {
+            try {
+              const cm =
+                (d.camera &&
+                  d.camera.rear_camera &&
+                  d.camera.rear_camera.main) ||
+                d.camera?.main ||
+                d.camera;
+              const res = cm && (cm.resolution || cm.megapixels || cm.res);
+              if (!res) return false;
+              const n = parseInt(String(res).replace(/[^0-9]/g, "")) || 0;
+              return n >= 50;
+            } catch (e) {
+              return false;
+            }
+          };
+
+          const hasInDisplayFp = (d) => {
+            const s = d.sensors;
+            if (!s) return false;
+            if (Array.isArray(s))
+              return s.some((x) => /fingerprint/i.test(String(x)));
+            return /fingerprint/i.test(String(s));
+          };
+
+          const has5g = (d) => {
+            const n = d.network || d.connectivity || d.networks || d.networks;
+            if (!n) return false;
+            if (Array.isArray(n.five_g || n.fiveG || n["5g"]))
+              return (n.five_g || n.fiveG || n["5g"]).length > 0;
+            if (Array.isArray(d.five_g || d.fiveG || d["5g"]))
+              return (d.five_g || d.fiveG || d["5g"]).length > 0;
+            return Boolean(n.five_g || n.fiveG || n["5g"]);
+          };
+
+          switch (f) {
+            case "fast-charging":
+            case "fast_charge":
+            case "fastcharge":
+            case "fastcharge":
+              return !!hasBatteryFastCharge(device);
+            case "amoled":
+            case "am oled":
+              return isAmoled(device);
+            case "gaming":
+              return isGaming(device);
+            case "high-ram":
+            case "highram":
+              return hasHighRam(device);
+            case "long-battery":
+            case "longbattery":
+              return hasLongBattery(device);
+            case "high-camera":
+            case "highmpcamera":
+              return hasHighMpCamera(device);
+            case "fingerprint":
+            case "in-display-fp":
+            case "in-display":
+              return hasInDisplayFp(device);
+            case "5g":
+            case "5g-ready":
+            case "5gready":
+              return has5g(device);
+            default:
+              return false;
+          }
+        };
+
+        const filtered = mapped.filter((m) => matches(m));
+        return filtered;
+      }
 
       return mapped;
     } catch (err) {
       return rejectWithValue(err.message || String(err));
     }
-  }
+  },
+);
+
+// Trending smartphones (DB-driven)
+export const fetchTrendingSmartphones = createAsyncThunk(
+  "device/fetchTrendingSmartphones",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await fetch(
+        "https://api.apisphere.in/api/public/trending/smartphones",
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const arr = Array.isArray(data)
+        ? data
+        : Array.isArray(data.smartphones)
+          ? data.smartphones
+          : Array.isArray(data.data)
+            ? data.data
+            : Array.isArray(data.rows)
+              ? data.rows
+              : [];
+
+      const publishArr = Array.isArray(data.publish) ? data.publish : [];
+      const publishMap = {};
+      for (const p of publishArr)
+        publishMap[p.smartphone_id ?? p.product_id ?? p.id] = p;
+
+      const mapped = (arr || []).map((d) => {
+        const id = d.product_id ?? d.id ?? null;
+        const variants = normalizeVariants(d);
+
+        let storePrices = (variants || []).flatMap((v) => v.store_prices || []);
+
+        const priceFromVariants = (variants || []).reduce((acc, v) => {
+          const p =
+            toNumber(v.base_price ?? v.price) ?? v.base_price ?? v.price;
+          if (p == null) return acc;
+          if (acc == null) return p;
+          return Math.min(acc, p);
+        }, null);
+
+        const price = priceFromVariants ?? toNumber(d.price) ?? d.price ?? null;
+
+        return {
+          ...d,
+          id,
+          product_id: d.product_id ?? d.id ?? null,
+          name: d.name ?? d.model ?? null,
+          product_type: d.product_type ?? null,
+          brand: d.brand_name ?? d.brand ?? null,
+          category: d.category ?? null,
+          model: d.model ?? d.name ?? null,
+          published: publishMap[id] ? !!publishMap[id].published : false,
+          sensors: normalizeSensors(d.sensors),
+          colors: normalizeColors(d.colors),
+          images: normalizeImages(d.images),
+          price,
+          store_prices: storePrices,
+          launch_date: normalizeDate(d.launch_date ?? d.created_at),
+          variants,
+        };
+      });
+
+      return mapped;
+    } catch (err) {
+      return rejectWithValue(err.message || String(err));
+    }
+  },
+);
+
+// New launches - latest products
+export const fetchNewLaunchSmartphones = createAsyncThunk(
+  "device/fetchNewLaunchSmartphones",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await fetch(
+        "https://api.apisphere.in/api/public/new/smartphones",
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const arr = Array.isArray(data)
+        ? data
+        : Array.isArray(data.smartphones)
+          ? data.smartphones
+          : Array.isArray(data.data)
+            ? data.data
+            : Array.isArray(data.rows)
+              ? data.rows
+              : [];
+
+      const publishArr = Array.isArray(data.publish) ? data.publish : [];
+      const publishMap = {};
+      for (const p of publishArr)
+        publishMap[p.smartphone_id ?? p.product_id ?? p.id] = p;
+
+      const mapped = (arr || []).map((d) => {
+        const id = d.product_id ?? d.id ?? null;
+        const variants = normalizeVariants(d);
+        let storePrices = (variants || []).flatMap((v) => v.store_prices || []);
+
+        const priceFromVariants = (variants || []).reduce((acc, v) => {
+          const p =
+            toNumber(v.base_price ?? v.price) ?? v.base_price ?? v.price;
+          if (p == null) return acc;
+          if (acc == null) return p;
+          return Math.min(acc, p);
+        }, null);
+
+        const price = priceFromVariants ?? toNumber(d.price) ?? d.price ?? null;
+
+        return {
+          ...d,
+          id,
+          product_id: d.product_id ?? d.id ?? null,
+          name: d.name ?? d.model ?? null,
+          product_type: d.product_type ?? null,
+          brand: d.brand_name ?? d.brand ?? null,
+          category: d.category ?? null,
+          model: d.model ?? d.name ?? null,
+          published: publishMap[id] ? !!publishMap[id].published : false,
+          sensors: normalizeSensors(d.sensors),
+          colors: normalizeColors(d.colors),
+          images: normalizeImages(d.images),
+          price,
+          store_prices: storePrices,
+          launch_date: normalizeDate(d.launch_date ?? d.created_at),
+          variants,
+        };
+      });
+
+      return mapped;
+    } catch (err) {
+      return rejectWithValue(err.message || String(err));
+    }
+  },
+);
+
+export const fetchNetworking = createAsyncThunk(
+  "device/fetchNetworking",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await fetch("https://api.apisphere.in/api/networking");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const body = await res.json();
+      const arr = Array.isArray(body)
+        ? body
+        : Array.isArray(body.networking)
+          ? body.networking
+          : Array.isArray(body.data)
+            ? body.data
+            : Array.isArray(body.rows)
+              ? body.rows
+              : [];
+      return arr;
+    } catch (err) {
+      return rejectWithValue(err.message || String(err));
+    }
+  },
+);
+
+// Trending networking
+export const fetchTrendingNetworking = createAsyncThunk(
+  "device/fetchTrendingNetworking",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await fetch(
+        "https://api.apisphere.in/api/public/trending/networking",
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const body = await res.json();
+      const arr = Array.isArray(body)
+        ? body
+        : Array.isArray(body.trending)
+          ? body.trending
+          : Array.isArray(body.data)
+            ? body.data
+            : Array.isArray(body.rows)
+              ? body.rows
+              : [];
+      return arr;
+    } catch (err) {
+      return rejectWithValue(err.message || String(err));
+    }
+  },
+);
+
+// New launch networking
+export const fetchNewLaunchNetworking = createAsyncThunk(
+  "device/fetchNewLaunchNetworking",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await fetch(
+        "https://api.apisphere.in/api/public/new/networking",
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const body = await res.json();
+      const arr = Array.isArray(body)
+        ? body
+        : Array.isArray(body.new)
+          ? body.new
+          : Array.isArray(body.data)
+            ? body.data
+            : Array.isArray(body.rows)
+              ? body.rows
+              : [];
+      return arr;
+    } catch (err) {
+      return rejectWithValue(err.message || String(err));
+    }
+  },
+);
+
+export const fetchLaptops = createAsyncThunk(
+  "device/fetchLaptops",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await fetch("https://api.apisphere.in/api/laptops");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const body = await res.json();
+      const arr = Array.isArray(body)
+        ? body
+        : Array.isArray(body.laptops)
+          ? body.laptops
+          : Array.isArray(body.data)
+            ? body.data
+            : Array.isArray(body.rows)
+              ? body.rows
+              : [];
+      return arr;
+    } catch (err) {
+      return rejectWithValue(err.message || String(err));
+    }
+  },
+);
+
+// Trending laptops
+export const fetchTrendingLaptops = createAsyncThunk(
+  "device/fetchTrendingLaptops",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await fetch(
+        "https://api.apisphere.in/api/public/trending/laptops",
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const body = await res.json();
+      const arr = Array.isArray(body)
+        ? body
+        : Array.isArray(body.laptops)
+          ? body.laptops
+          : Array.isArray(body.data)
+            ? body.data
+            : Array.isArray(body.rows)
+              ? body.rows
+              : [];
+      return arr;
+    } catch (err) {
+      return rejectWithValue(err.message || String(err));
+    }
+  },
+);
+
+// New launch laptops
+export const fetchNewLaunchLaptops = createAsyncThunk(
+  "device/fetchNewLaunchLaptops",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await fetch(
+        "https://api.apisphere.in/api/public/new/laptops",
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const body = await res.json();
+      const arr = Array.isArray(body)
+        ? body
+        : Array.isArray(body.laptops)
+          ? body.laptops
+          : Array.isArray(body.data)
+            ? body.data
+            : Array.isArray(body.rows)
+              ? body.rows
+              : [];
+      return arr;
+    } catch (err) {
+      return rejectWithValue(err.message || String(err));
+    }
+  },
+);
+
+export const fetchHomeAppliances = createAsyncThunk(
+  "device/fetchHomeAppliances",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await fetch("https://api.apisphere.in/api/homeappliances");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const body = await res.json();
+      const arr = Array.isArray(body)
+        ? body
+        : Array.isArray(body.home_appliances)
+          ? body.home_appliances
+          : Array.isArray(body.data)
+            ? body.data
+            : Array.isArray(body.rows)
+              ? body.rows
+              : [];
+      return arr;
+    } catch (err) {
+      return rejectWithValue(err.message || String(err));
+    }
+  },
+);
+
+// Trending home appliances
+export const fetchTrendingHomeAppliances = createAsyncThunk(
+  "device/fetchTrendingHomeAppliances",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await fetch(
+        "https://api.apisphere.in/api/public/trending/appliances",
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const body = await res.json();
+      const arr = Array.isArray(body)
+        ? body
+        : Array.isArray(body.trending)
+          ? body.trending
+          : Array.isArray(body.data)
+            ? body.data
+            : Array.isArray(body.rows)
+              ? body.rows
+              : [];
+      return arr;
+    } catch (err) {
+      return rejectWithValue(err.message || String(err));
+    }
+  },
+);
+
+// New launch home appliances
+export const fetchNewLaunchHomeAppliances = createAsyncThunk(
+  "device/fetchNewLaunchHomeAppliances",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await fetch(
+        "https://api.apisphere.in/api/public/new/appliances",
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const body = await res.json();
+      const arr = Array.isArray(body)
+        ? body
+        : Array.isArray(body.new)
+          ? body.new
+          : Array.isArray(body.data)
+            ? body.data
+            : Array.isArray(body.rows)
+              ? body.rows
+              : [];
+      return arr;
+    } catch (err) {
+      return rejectWithValue(err.message || String(err));
+    }
+  },
 );
 
 export const fetchBrands = createAsyncThunk(
   "device/fetchBrands",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch("http://localhost:5000/api/categories");
+      const res = await fetch("https://api.apisphere.in/api/brand");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const arr = Array.isArray(data)
         ? data
         : Array.isArray(data.data)
-        ? data.data
-        : Array.isArray(data.rows)
-        ? data.rows
-        : [];
-
+          ? data.data
+          : Array.isArray(data.rows)
+            ? data.rows
+            : [];
       const normalizeStatus = (s) => {
         if (typeof s === "boolean") return s;
         if (s === null || typeof s === "undefined") return false;
         const str = String(s).toLowerCase();
-        return str === "true" || str === "1" || str === "visible";
+        return (
+          str === "true" ||
+          str === "1" ||
+          str === "visible" ||
+          str === "active" ||
+          str === "yes"
+        );
       };
 
-      // Rename category info to `brands` for downstream components
-      const normalized = arr.map((c) => ({
-        ...c,
-        status: normalizeStatus(c.status),
-        brands: c.category || c.categoryType || c.name || null,
+      // Normalize brand objects from various possible API shapes
+      const normalizeBrand = (c) => {
+        const id = c?.id ?? c?.brand_id ?? c?._id ?? null;
+        const name = (c?.name ?? c?.brand_name ?? c?.title ?? "") || null;
+        const logo =
+          c?.logo ??
+          c?.image ??
+          c?.logo_url ??
+          c?.thumbnail ??
+          c?.logoUrl ??
+          null;
+        const published_products =
+          toNumber(
+            c?.published_products ??
+              c?.published_products_count ??
+              c?.products_count ??
+              c?.products,
+          ) ??
+          toNumber(c?.published) ??
+          null;
+        const slug =
+          c?.slug ??
+          (name ? String(name).toLowerCase().replace(/\s+/g, "-") : null);
+        const category = c?.category ?? c?.cat ?? c?.type ?? null;
+        const created_at = normalizeDate(
+          c?.created_at ?? c?.createdAt ?? c?.created,
+        );
+
+        return {
+          id,
+          name,
+          logo,
+          category,
+          created_at,
+          published_products,
+          status: normalizeStatus(
+            c?.status ?? c?.is_visible ?? c?.published ?? c?.active ?? true,
+          ),
+          slug,
+          raw: c,
+        };
+      };
+
+      // If API returned categories that contain `brands` arrays, preserve that structure
+      const looksLikeCategory = (item) => item && Array.isArray(item.brands);
+      if (arr.length > 0 && looksLikeCategory(arr[0])) {
+        return arr.map((cat) => ({
+          ...cat,
+          status: normalizeStatus(cat.status),
+          brands: Array.isArray(cat.brands)
+            ? cat.brands.map(normalizeBrand)
+            : [],
+        }));
+      }
+
+      // Otherwise treat the response as a flat list of brand objects
+      const normalized = arr.map((c) => normalizeBrand(c));
+      return normalized;
+    } catch (err) {
+      return rejectWithValue(err.message || String(err));
+    }
+  },
+);
+
+// Fetch categories (public/admin endpoint). Includes auth token if available.
+export const fetchCategories = createAsyncThunk(
+  "device/fetchCategories",
+  async (_, { rejectWithValue }) => {
+    try {
+      // Use the public categories endpoint (no auth) to avoid 401 on public site
+      const res = await fetch("https://api.apisphere.in/api/category", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const body = await res.json();
+
+      let rows = [];
+      if (Array.isArray(body)) rows = body;
+      else if (body && Array.isArray(body.data)) rows = body.data;
+      else if (body && Array.isArray(body.categories)) rows = body.categories;
+      else rows = body || [];
+
+      // Normalize to a simple category shape
+      const normalized = (rows || []).map((c) => ({
+        id: c.id ?? c.category_id ?? c.name ?? null,
+        name:
+          c.name ??
+          c.title ??
+          c.product_type ??
+          String(c.id || "").toLowerCase(),
+        product_type: c.product_type ?? c.type ?? null,
+        description: c.description ?? null,
+        brands: Array.isArray(c.brands) ? c.brands : [],
+        raw: c,
       }));
 
       return normalized;
     } catch (err) {
       return rejectWithValue(err.message || String(err));
     }
-  }
+  },
 );
 
 // Fetch a single smartphone by id (numeric) or by model/name (non-numeric).
@@ -281,52 +913,40 @@ export const fetchSmartphone = createAsyncThunk(
 
       const numericId = Number(identifier);
       if (!Number.isNaN(numericId) && String(identifier).trim() !== "") {
-        // try fetch by id
+        // try fetch by id using public endpoint
         const res = await fetch(
-          `http://localhost:5000/api/smartphone/${encodeURIComponent(
-            identifier
-          )}`
+          `https://api.apisphere.in/api/public/product/${encodeURIComponent(
+            identifier,
+          )}`,
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const body = await res.json();
-        // body may be the object itself or wrapped
-        const obj = body && (body.smartphone || body || null);
-        if (!obj || (Array.isArray(obj) && obj.length === 0))
-          throw new Error("Device not found");
-        const result = Array.isArray(obj) ? obj[0] : obj;
-        return mapSingle(result);
+        console.log("Public product response:", body);
+
+        if (!body || !body.id) {
+          throw new Error("Invalid product data");
+        }
+
+        // Body is already flattened, use it directly
+        return mapSingle(body);
       }
 
-      // fallback: fetch list and find by model/name
-      const res = await fetch("http://localhost:5000/api/smartphone");
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      const arr = Array.isArray(data)
-        ? data
-        : Array.isArray(data.smartphones)
-        ? data.smartphones
-        : Array.isArray(data.data)
-        ? data.data
-        : Array.isArray(data.rows)
-        ? data.rows
-        : [];
-
-      const found = (arr || []).find(
-        (d) =>
-          String(d.model) === String(identifier) ||
-          String(d.name) === String(identifier) ||
-          String(d.id) === String(identifier)
-      );
-      if (!found) throw new Error("Device not found");
-      return mapSingle(found);
+      // fallback: throw error
+      throw new Error("Device not found by identifier");
     } catch (err) {
       return rejectWithValue(err.message || String(err));
     }
-  }
+  },
 );
 
 const initialState = {
+  categories: [],
+  categoriesLoading: false,
   smartphone: [],
+  networking: [],
+  homeAppliances: [],
+  // flat registry for quick lookups by type:id
+  devicesById: {},
   brands: [],
   history: [],
   selectedDevice: null,
@@ -344,7 +964,14 @@ const initialState = {
   loading: false,
   error: null,
   loaded: false,
+  networkingLoading: false,
+  networkingLoaded: false,
+  homeAppliancesLoading: false,
+  homeAppliancesLoaded: false,
   brandsLoading: false,
+  laptops: [],
+  laptopsLoading: false,
+  laptopsLoaded: false,
 };
 
 const deviceSlice = createSlice({
@@ -373,7 +1000,7 @@ const deviceSlice = createSlice({
         return;
       }
       const dev = (state.smartphone || []).find(
-        (s) => String(s.id) === String(id) || String(s.name) === String(id)
+        (s) => String(s.id) === String(id) || String(s.name) === String(id),
       );
       if (dev) {
         state.selectedDevice = dev;
@@ -396,7 +1023,7 @@ const deviceSlice = createSlice({
         return;
       }
       const dev = (state.smartphone || []).find(
-        (s) => String(s.model) === String(model)
+        (s) => String(s.model) === String(model),
       );
       if (dev) {
         state.selectedDevice = dev;
@@ -411,6 +1038,57 @@ const deviceSlice = createSlice({
       } else if (!state.loading) {
         state.selectedDevice = null;
       }
+    },
+    // Allow registering normalized devices into the store for a given category
+    setDevicesForType(state, action) {
+      const payload = action.payload || {};
+      const type = payload.type || null;
+      const devices = Array.isArray(payload.devices) ? payload.devices : [];
+      if (!type) return;
+      // map known types to state keys
+      const keyMap = {
+        smartphone: "smartphone",
+        smartphones: "smartphone",
+        laptop: "laptops",
+        laptops: "laptops",
+        networking: "networking",
+        "home-appliance": "homeAppliances",
+        home_appliance: "homeAppliances",
+        appliances: "homeAppliances",
+        homeappliance: "homeAppliances",
+      };
+      const key = keyMap[type] || type;
+      if (state.hasOwnProperty(key)) {
+        const existing = state[key] || [];
+
+        // If lengths differ, replace. Otherwise compare ids to avoid
+        // replacing with a new array reference when contents are identical.
+        const existingIds = new Set(
+          existing.map((d) => d?.id ?? d?.product_id ?? d?.productId),
+        );
+        const incomingIds = (devices || []).map(
+          (d) => d?.id ?? d?.product_id ?? d?.productId,
+        );
+
+        const isSame =
+          existing.length === incomingIds.length &&
+          incomingIds.every((id) => existingIds.has(id));
+
+        if (!isSame) {
+          state[key] = devices;
+        }
+      }
+    },
+    // set a single device into flat registry by productType and productId
+    setDevice(state, action) {
+      const payload = action.payload || {};
+      const type = payload.productType || payload.type || null;
+      const id = payload.productId ?? payload.id ?? null;
+      const device = payload.device || payload;
+      if (!type || id == null) return;
+      const key = `${type}:${String(id)}`;
+      state.devicesById = state.devicesById || {};
+      state.devicesById[key] = device;
     },
   },
   extraReducers: (builder) => {
@@ -430,6 +1108,32 @@ const deviceSlice = createSlice({
         state.error =
           action.payload || action.error?.message || String(action.error);
       })
+      .addCase(fetchTrendingSmartphones.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchTrendingSmartphones.fulfilled, (state, action) => {
+        state.smartphone = action.payload || [];
+        state.loading = false;
+      })
+      .addCase(fetchTrendingSmartphones.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          action.payload || action.error?.message || String(action.error);
+      })
+      .addCase(fetchNewLaunchSmartphones.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchNewLaunchSmartphones.fulfilled, (state, action) => {
+        state.smartphone = action.payload || [];
+        state.loading = false;
+      })
+      .addCase(fetchNewLaunchSmartphones.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          action.payload || action.error?.message || String(action.error);
+      })
       .addCase(fetchBrands.pending, (state) => {
         state.brandsLoading = true;
         state.error = null;
@@ -443,6 +1147,153 @@ const deviceSlice = createSlice({
         state.error =
           action.payload || action.error?.message || String(action.error);
       });
+    // categories
+    builder
+      .addCase(fetchCategories.pending, (state) => {
+        state.categoriesLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchCategories.fulfilled, (state, action) => {
+        state.categories = action.payload || [];
+        state.categoriesLoading = false;
+      })
+      .addCase(fetchCategories.rejected, (state, action) => {
+        state.categoriesLoading = false;
+        state.error =
+          action.payload || action.error?.message || String(action.error);
+      });
+    // networking list
+    builder
+      .addCase(fetchNetworking.pending, (state) => {
+        state.networkingLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchNetworking.fulfilled, (state, action) => {
+        state.networking = action.payload || [];
+        state.networkingLoading = false;
+        state.networkingLoaded = true;
+      })
+      .addCase(fetchNetworking.rejected, (state, action) => {
+        state.networkingLoading = false;
+        state.error =
+          action.payload || action.error?.message || String(action.error);
+      });
+    // trending/new networking
+    builder
+      .addCase(fetchTrendingNetworking.pending, (state) => {
+        state.networkingLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchTrendingNetworking.fulfilled, (state, action) => {
+        state.networking = action.payload || [];
+        state.networkingLoading = false;
+      })
+      .addCase(fetchTrendingNetworking.rejected, (state, action) => {
+        state.networkingLoading = false;
+        state.error =
+          action.payload || action.error?.message || String(action.error);
+      })
+      .addCase(fetchNewLaunchNetworking.pending, (state) => {
+        state.networkingLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchNewLaunchNetworking.fulfilled, (state, action) => {
+        state.networking = action.payload || [];
+        state.networkingLoading = false;
+      })
+      .addCase(fetchNewLaunchNetworking.rejected, (state, action) => {
+        state.networkingLoading = false;
+        state.error =
+          action.payload || action.error?.message || String(action.error);
+      });
+    // home appliances list
+    builder
+      .addCase(fetchHomeAppliances.pending, (state) => {
+        state.homeAppliancesLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchHomeAppliances.fulfilled, (state, action) => {
+        state.homeAppliances = action.payload || [];
+        state.homeAppliancesLoading = false;
+        state.homeAppliancesLoaded = true;
+      })
+      .addCase(fetchHomeAppliances.rejected, (state, action) => {
+        state.homeAppliancesLoading = false;
+        state.error =
+          action.payload || action.error?.message || String(action.error);
+      });
+    // trending/new home appliances
+    builder
+      .addCase(fetchTrendingHomeAppliances.pending, (state) => {
+        state.homeAppliancesLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchTrendingHomeAppliances.fulfilled, (state, action) => {
+        state.homeAppliances = action.payload || [];
+        state.homeAppliancesLoading = false;
+      })
+      .addCase(fetchTrendingHomeAppliances.rejected, (state, action) => {
+        state.homeAppliancesLoading = false;
+        state.error =
+          action.payload || action.error?.message || String(action.error);
+      })
+      .addCase(fetchNewLaunchHomeAppliances.pending, (state) => {
+        state.homeAppliancesLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchNewLaunchHomeAppliances.fulfilled, (state, action) => {
+        state.homeAppliances = action.payload || [];
+        state.homeAppliancesLoading = false;
+      })
+      .addCase(fetchNewLaunchHomeAppliances.rejected, (state, action) => {
+        state.homeAppliancesLoading = false;
+        state.error =
+          action.payload || action.error?.message || String(action.error);
+      });
+    // laptops list
+    builder
+      .addCase(fetchLaptops.pending, (state) => {
+        state.laptopsLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchLaptops.fulfilled, (state, action) => {
+        state.laptops = action.payload || [];
+        state.laptopsLoading = false;
+        state.laptopsLoaded = true;
+      })
+      .addCase(fetchLaptops.rejected, (state, action) => {
+        state.laptopsLoading = false;
+        state.error =
+          action.payload || action.error?.message || String(action.error);
+      });
+    // trending / new laptops
+    builder
+      .addCase(fetchTrendingLaptops.pending, (state) => {
+        state.laptopsLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchTrendingLaptops.fulfilled, (state, action) => {
+        state.laptops = action.payload || [];
+        state.laptopsLoading = false;
+      })
+      .addCase(fetchTrendingLaptops.rejected, (state, action) => {
+        state.laptopsLoading = false;
+        state.error =
+          action.payload || action.error?.message || String(action.error);
+      })
+      .addCase(fetchNewLaunchLaptops.pending, (state) => {
+        state.laptopsLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchNewLaunchLaptops.fulfilled, (state, action) => {
+        state.laptops = action.payload || [];
+        state.laptopsLoading = false;
+      })
+      .addCase(fetchNewLaunchLaptops.rejected, (state, action) => {
+        state.laptopsLoading = false;
+        state.error =
+          action.payload || action.error?.message || String(action.error);
+      });
     // single smartphone fetch handlers
     builder
       .addCase(fetchSmartphone.pending, (state) => {
@@ -450,7 +1301,12 @@ const deviceSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchSmartphone.fulfilled, (state, action) => {
-        state.selectedDevice = action.payload || null;
+        // Wrap the single device in a structure that matches what Smartphone.jsx expects
+        const device = action.payload;
+        state.selectedDevice = {
+          smartphones: [device],
+          ...device,
+        };
         state.loading = false;
       })
       .addCase(fetchSmartphone.rejected, (state, action) => {
@@ -467,6 +1323,8 @@ export const {
   setFilters,
   selectDeviceById,
   selectDeviceByModel,
+  setDevicesForType,
+  setDevice,
 } = deviceSlice.actions;
 
 export default deviceSlice.reducer;

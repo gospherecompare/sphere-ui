@@ -4,38 +4,131 @@ import Header from "./components/Home/Header";
 import ScrollToTop from "./components/ScrollToTop";
 import Footer from "./components/Home/Footer";
 import Home from "./components/Home/Home";
-import Networking from "./components/Device detail/Networking";
-import Laptop from "./components/Device detail/Laptop";
-import Smartphonelist from "./components/DeviceList/Smartphonelist";
+import Smartphones from "./components/Product/Smartphones";
+import Laptops from "./components/Product/Laptops";
+import Networking from "./components/Product/Networking";
+import HomeAppliances from "./components/Product/Appliances";
 import DeviceComparison from "./components/compare";
-import { Route, Routes, BrowserRouter as Router } from "react-router-dom";
+import Breadcrumbs from "./components/Breadcrumbs";
+import {
+  Route,
+  Routes,
+  BrowserRouter as Router,
+  useParams,
+} from "react-router-dom";
 import MobileDetailCard from "./components/Device detail/Smartphone";
 import MobileCompare from "./components/compare";
-
+import Login from "./components/Auths/Login";
+import Signup from "./components/Auths/Signup";
+import ApplianceDetailCard from "./components/Device detail/Homeappliance";
+import LaptopDetailCard from "./components/Device detail/Laptop";
+import NetworkingDetailCard from "./components/Device detail/Network";
+import Wishlist from "./components/Wishlist";
+import AccountManagement from "./components/AccountManagement";
 function App() {
+  // Router for /products/:category to keep SEO-friendly category paths
+  const CategoryRouter = () => {
+    const { category } = useParams();
+    switch (category) {
+      case "smartphones":
+      case "mobiles":
+        return <Smartphones />;
+      case "laptops":
+        return <Laptops />;
+      case "appliances":
+        return <HomeAppliances />;
+      case "networking":
+        return <Networking />;
+      default:
+        return <div className="p-4">Category not found</div>;
+    }
+  };
   return (
     <Router>
-      <div className="min-h-screen">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100">
         <Header />
         <ScrollToTop />
-        <Router>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/devicelist/networking" element={<Networking />} />
-            <Route path="/devicelist/laptop" element={<Laptop />} />
-            <Route
-              path="/devicelist/smartphones"
-              element={<Smartphonelist />}
-            />
-            <Route
-              path="/devicedetail/smartphone"
-              element={<MobileDetailCard />}
-            />
-            <Route path="/compare" element={<MobileCompare />} />
-          </Routes>
-        </Router>
-        <Footer />
+        <Breadcrumbs />
+        <Routes>
+          {/* Home */}
+          <Route path="/" element={<Home />} />
+
+          {/* Authentication */}
+          <Route path="/login" element={<Login asPage />} />
+          <Route path="/signup" element={<Signup asPage />} />
+
+          {/* User Account */}
+          <Route path="/account" element={<AccountManagement />} />
+          <Route path="/wishlist" element={<Wishlist />} />
+
+          {/* Product Listings - SEO friendly category paths */}
+          <Route path="/smartphones" element={<Smartphones />} />
+          <Route
+            path="/smartphones/filter/:filterSlug"
+            element={<Smartphones />}
+          />
+          <Route path="/laptops" element={<Laptops />} />
+          <Route path="/appliances" element={<HomeAppliances />} />
+          <Route path="/networking" element={<Networking />} />
+
+          {/* Support /products/:category SEO paths */}
+          <Route path="/products" element={<Smartphones />} />
+          <Route path="/products/:category" element={<CategoryRouter />} />
+
+          {/* Category shortcuts */}
+          <Route path="/mobiles" element={<Smartphones />} />
+          <Route path="/devices/smartphones" element={<Smartphones />} />
+          <Route path="/devices/laptops" element={<Laptops />} />
+          <Route path="/devices/appliances" element={<HomeAppliances />} />
+          <Route path="/devices/networking" element={<Networking />} />
+
+          {/* Product Detail Pages - SEO-friendly slug-based routes */}
+          <Route path="/smartphones/:slug" element={<MobileDetailCard />} />
+          <Route path="/laptops/:slug" element={<LaptopDetailCard />} />
+          <Route path="/appliances/:slug" element={<ApplianceDetailCard />} />
+          <Route path="/networking/:slug" element={<NetworkingDetailCard />} />
+
+          {/* Comparison */}
+          <Route path="/compare" element={<DeviceComparison />} />
+
+          {/* Placeholder routes for footer links (can be implemented later) */}
+          <Route
+            path="/about"
+            element={
+              <div className="p-4 text-center">About Us - Coming Soon</div>
+            }
+          />
+          <Route
+            path="/contact"
+            element={
+              <div className="p-4 text-center">Contact - Coming Soon</div>
+            }
+          />
+          <Route
+            path="/privacy-policy"
+            element={
+              <div className="p-4 text-center">
+                Privacy Policy - Coming Soon
+              </div>
+            }
+          />
+          <Route
+            path="/terms"
+            element={
+              <div className="p-4 text-center">
+                Terms & Conditions - Coming Soon
+              </div>
+            }
+          />
+
+          {/* 404 Fallback */}
+          <Route
+            path="*"
+            element={<div className="p-4">404 - Page Not Found</div>}
+          />
+        </Routes>
       </div>
+      <Footer />
     </Router>
   );
 }

@@ -1,38 +1,58 @@
 // src/components/LatestTech.jsx
-import React from 'react';
+import React from "react";
 const LatestTech = () => {
   const products = [
     {
       id: 1,
       name: "Smartphone X Pro",
-      description: "Latest flagship with advanced AI camera and all-day battery life.",
-      image: "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
-      features: ["6.7\" OLED Display", "Triple Camera System", "5G Connectivity"],
-      price: "$899.00"
+      description:
+        "Latest flagship with advanced AI camera and all-day battery life.",
+      image:
+        "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
+      features: [
+        '6.7" OLED Display',
+        "Triple Camera System",
+        "5G Connectivity",
+      ],
+      price: "$899.00",
     },
     {
       id: 2,
       name: "DSLR Pro X",
-      description: "Professional DSLR with 45MP full-frame sensor and 4K video.",
-      image: "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
-      features: ["45MP Full-Frame Sensor", "4K 60fps Video", "5-Axis Stabilization"],
-      price: "$1,599.00"
+      description:
+        "Professional DSLR with 45MP full-frame sensor and 4K video.",
+      image:
+        "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
+      features: [
+        "45MP Full-Frame Sensor",
+        "4K 60fps Video",
+        "5-Axis Stabilization",
+      ],
+      price: "$1,599.00",
     },
     {
       id: 3,
       name: "Router Pro AX",
-      description: "WiFi 6 router with extended range and advanced security features.",
-      image: "https://images.unsplash.com/photo-1587654780291-39c9404d746b?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
+      description:
+        "WiFi 6 router with extended range and advanced security features.",
+      image:
+        "https://images.unsplash.com/photo-1587654780291-39c9404d746b?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
       features: ["WiFi 6 Technology", "5 Gbps Speed", "Advanced Security"],
-      price: "$249.00"
+      price: "$249.00",
     },
     {
       id: 4,
       name: "Wireless Pro Max",
-      description: "Premium wireless headphones with active noise cancellation.",
-      image: "https://images.unsplash.com/photo-1546435770-a3e426bf472b?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
-      features: ["Active Noise Cancellation", "30-hour Battery", "Spatial Audio"],
-      price: "$349.00"
+      description:
+        "Premium wireless headphones with active noise cancellation.",
+      image:
+        "https://images.unsplash.com/photo-1546435770-a3e426bf472b?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
+      features: [
+        "Active Noise Cancellation",
+        "30-hour Battery",
+        "Spatial Audio",
+      ],
+      price: "$349.00",
     },
   ];
 
@@ -43,7 +63,10 @@ const LatestTech = () => {
           <i className="fas fa-bolt text-blue-600 mr-3"></i>
           Latest Tech
         </h2>
-        <a href="#" className="text-blue-600 font-semibold flex items-center hover:underline">
+        <a
+          href="#"
+          className="text-blue-600 font-semibold flex items-center hover:underline"
+        >
           View All
           <i className="fas fa-chevron-right ml-2 transition-transform duration-300 group-hover:translate-x-1"></i>
         </a>
@@ -73,7 +96,9 @@ const LatestTech = () => {
                   </li>
                 ))}
               </ul>
-              <div className="font-bold text-xl text-blue-600 mt-auto">{product.price}</div>
+              <div className="font-bold text-xl text-blue-600 mt-auto">
+                {product.price}
+              </div>
             </div>
           </div>
         ))}

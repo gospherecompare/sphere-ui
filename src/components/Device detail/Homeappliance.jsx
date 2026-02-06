@@ -1,52 +1,135 @@
-// src/components/LaptopDetailCard.jsx
+// src/components/ApplianceDetailCard.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import useDevice from "../../hooks/useDevice";
-import useStoreLogos from "../../hooks/useStoreLogos";
-import {
-  FaStar,
-  FaRegStar,
-  FaStarHalfAlt,
-  FaHeart,
-  FaShareAlt,
-  FaShare,
-  FaLaptop,
-  FaMicrochip,
-  FaMemory,
-  FaExpand,
-  FaBolt,
-  FaBatteryFull,
-  FaShieldAlt,
-  FaUsb,
-  FaWindows,
-  FaApple,
-  FaLinux,
-  FaDesktop,
-  FaStore,
-  FaHdd,
-  FaExternalLinkAlt,
-  FaChevronDown,
-  FaCopy,
-  FaCheck,
-} from "react-icons/fa";
 import Cookies from "js-cookie";
-import Spinner from "../ui/Spinner";
-import RatingReview from "../ui/RatingReview";
-import { laptopMeta } from "../../constants/meta";
-import { Helmet } from "react-helmet-async";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
 
-const LaptopDetailCard = () => {
-  const { getLogo } = useStoreLogos();
-  const normalizeLaptop = (l) => {
-    if (!l) return l;
+// Icons
+import {
+  FaStar,
+  FaHeart,
+  FaShare,
+  FaCopy,
+  FaCheck,
+  FaExternalLinkAlt,
+  FaStore,
+  FaChevronDown,
+  FaTag,
+  FaInfoCircle,
+  FaBolt,
+  FaWater,
+  FaSnowflake,
+  FaTv,
+  FaFan,
+  FaThermometerHalf,
+  FaWeight,
+  FaRuler,
+  FaShieldAlt,
+  FaWrench,
+  FaClock,
+  FaVolumeUp,
+  FaGamepad,
+  FaShoppingCart,
+  FaBalanceScale,
+  FaMicrochip,
+  FaExpand,
+  FaWifi,
+  FaBluetooth,
+  FaFire,
+  FaWind,
+  FaBatteryFull,
+  FaMemory,
+  FaMobile,
+  FaCamera,
+  FaChartBar,
+  FaShareAlt,
+  FaWhatsapp,
+  FaFacebook,
+  FaTwitter,
+  FaEnvelope,
+  FaLink,
+  FaRegStar,
+  FaStarHalfAlt,
+} from "react-icons/fa";
 
-    const rawVariants = Array.isArray(l.variants)
-      ? l.variants
-      : l.variant
-        ? Array.isArray(l.variant)
-          ? l.variant
-          : [l.variant]
+import "../../styles/hideScrollbar.css";
+import Spinner from "../ui/Spinner";
+import { Helmet } from "react-helmet-async";
+import { homeApplianceMeta } from "../../constants/meta";
+import RatingReview from "../ui/RatingReview";
+import useStoreLogos from "../../hooks/useStoreLogos";
+
+// Ratings UI removed: review submission and inline rating input deleted
+
+// Data comes from API via `useDevice()`; embedded mock removed.
+const mockAppliances = [];
+
+// Default ratings data
+const DEFAULT_RATINGS = {
+  averageRating: 4.2,
+  totalRatings: 128,
+  performance: 4.3,
+  features: 4.1,
+  durability: 4.4,
+  energyEfficiency: 4.0,
+  design: 4.2,
+};
+
+const ApplianceDetailCard = () => {
+  const { getLogo } = useStoreLogos();
+  const [activeTab, setActiveTab] = useState("specifications");
+  const [activeImage, setActiveImage] = useState(0);
+  const [showAllSpecs, setShowAllSpecs] = useState(false);
+  const [showAllStores, setShowAllStores] = useState(false);
+  const [selectedVariant, setSelectedVariant] = useState(0);
+  const [copied, setCopied] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [ratingsData, setRatingsData] = useState(DEFAULT_RATINGS);
+  // Review form removed
+
+  const [loading, setLoading] = useState(false);
+  const [applianceData, setApplianceData] = useState(null);
+  const navigate = useNavigate();
+
+  // Get category from URL or default to washing machine
+  const params = useParams();
+  const location = useLocation();
+  const query = new URLSearchParams(location.search);
+  const categoryParam = query.get("category") || "washing_machine";
+  let idParam = query.get("id");
+
+  // Extract slug from route params (SEO-friendly slug-based URL)
+  const routeSlug = params.slug || null;
+
+  // Convert slug to searchable model name
+  const modelFromSlug = routeSlug ? extractNameFromSlug(routeSlug) : null;
+  const searchModel = query.get("model") || modelFromSlug;
+
+  const { homeAppliances, homeAppliancesLoading, refreshHomeAppliances } =
+    useDevice();
+
+  // Helper function to find appliance by slug locally
+  const findApplianceBySlug = (slug) => {
+    if (!slug || !Array.isArray(homeAppliances)) return null;
+    const searchSlug = generateSlug(slug);
+    return homeAppliances.find(
+      (a) =>
+        generateSlug(a.name || a.product_name || a.model || "") ===
+          searchSlug || generateSlug(a.model_number || "") === searchSlug,
+    );
+  };
+
+  const normalizeAppliance = (a) => {
+    if (!a) return null;
+
+    const rawVariants = Array.isArray(a.variants)
+      ? a.variants
+      : a.variant
+        ? Array.isArray(a.variant)
+          ? a.variant
+          : [a.variant]
         : [];
 
     const variants = rawVariants.map((v) => {
@@ -59,308 +142,174 @@ const LaptopDetailCard = () => {
             url: sp.url || sp.link || "",
             delivery_time: sp.delivery_info || sp.delivery_time || null,
           }))
-        : [];
+        : Array.isArray(v.attributes?.stores)
+          ? v.attributes.stores.map((sp) => ({
+              id: sp.id || null,
+              store_name: sp.store_name || sp.store || "",
+              price: sp.price ?? sp.amount ?? null,
+              url: sp.url || sp.link || "",
+              delivery_time: sp.delivery_info || null,
+            }))
+          : [];
 
       return {
         ...v,
         id: v.id || v.variant_id || v.variantId || null,
         variant_id: v.variant_id || v.id || v.variantId || null,
-        ram: v.ram || v.memory || "",
-        storage: v.storage || v.storage_size || "",
-        base_price: v.base_price ?? v.price ?? v.mrp ?? null,
+        base_price: v.base_price ?? v.attributes?.base_price ?? null,
         store_prices: storePrices,
+        specification_summary: v.specification_summary || v.variant_key || "",
       };
     });
 
-    const specifications = {
-      operating_system:
-        l.software?.os ||
-        l.specifications?.operating_system ||
-        l.specs?.operating_system ||
-        "",
-      processor: l.cpu
-        ? `${l.cpu.brand || ""} ${l.cpu.model || ""}`.trim()
-        : l.specifications?.processor || "",
-      screen_size: l.display?.size || l.specifications?.screen_size || "",
-      panel_type: l.display?.type || l.specifications?.panel_type || "",
-      ram_type: l.memory?.type || l.specifications?.ram_type || "",
-      storage_type: l.storage?.type || l.specifications?.storage_type || "",
-      battery_capacity:
-        l.battery?.capacity || l.specifications?.battery_capacity || "",
-      wifi: l.connectivity?.wifi || l.specifications?.wifi || "",
-      bluetooth: l.connectivity?.bluetooth || l.specifications?.bluetooth || "",
-      weight: l.physical?.weight || l.specifications?.weight || "",
-      warranty_years: l.warranty?.years || l.specifications?.warranty || "",
-      features: Array.isArray(l.features)
-        ? l.features
-        : l.specifications?.features || l.features || [],
-      // preserve any existing spec keys, letting explicit mappings above take precedence
-      ...l.specifications,
-      ...l.specs,
-      ...l.spec,
-    };
-
     return {
-      ...l,
-      product_name: l.product_name || l.name || l.model || l.productName || "",
-      model_number: l.model_number || l.model || l.sku || "",
-      brand: l.brand || l.brand_name || l.manufacturer || "",
+      ...a,
+      id: a.product_id || a.id || a.productId || null,
+      product_name: a.name || a.product_name || "",
+      model_number: a.model_number || a.model || "",
+      brand: a.brand_name || a.brand || "",
+      appliance_type: a.appliance_type || a.category || a.type || "",
+      category: a.category || a.appliance_type || a.applianceType || "",
       variants,
-      specifications,
-      images: l.images || l.pictures || [],
+      specifications: { ...(a.specifications || {}), ...(a.specs || {}) },
+      images: a.images || a.pictures || [],
     };
-  };
-
-  // Read URL and route params and select laptop by brand/model/variant details
-  const params = useParams();
-  const location = useLocation();
-  const query = new URLSearchParams(location.search);
-  const categoryParam = query.get("category") || "gaming_laptop";
-
-  // Extract slug from route params (SEO-friendly slug-based URL)
-  const routeSlug = params.slug || null;
-
-  // Convert slug to searchable model name
-  const modelFromSlug = routeSlug ? extractNameFromSlug(routeSlug) : null;
-  const searchModel = query.get("model") || modelFromSlug;
-
-  const { laptops } = useDevice();
-
-  // local state
-  const navigate = useNavigate();
-  const [laptopData, setLaptopData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [selectedVariant, setSelectedVariant] = useState(0);
-  const [ratingsData, setRatingsData] = useState(null);
-  const [showAllSpecs, setShowAllSpecs] = useState(false);
-  const [showAllStores, setShowAllStores] = useState(false);
-  const [showShareMenu, setShowShareMenu] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [activeImage, setActiveImage] = useState(0);
-  const [activeStoreId, setActiveStoreId] = useState(null);
-  const [activeTab, setActiveTab] = useState("specifications");
-
-  // Helper function to find laptop by slug locally
-  const findLaptopBySlug = (slug) => {
-    if (!slug || !Array.isArray(laptops)) return null;
-    const searchSlug = generateSlug(slug);
-    return laptops.find(
-      (l) =>
-        generateSlug(l.product_name || l.name || l.model || "") ===
-          searchSlug || generateSlug(l.model_number || "") === searchSlug,
-    );
   };
 
   useEffect(() => {
     setLoading(true);
 
     const timer = setTimeout(() => {
-      const params = new URLSearchParams(window.location.search);
-      const brandParam = params.get("brand");
-      const modelParam = params.get("model");
-      const ramParam = params.get("ram");
-      const storageParam = params.get("storage");
-      const variantIdParam = params.get("variantId");
-      const cpuParam = params.get("cpu");
-      const osParam = params.get("os");
-
-      let selectedLaptop = null;
+      let selected = null;
       let variantIndex = 0;
 
+      const source = Array.isArray(homeAppliances) ? homeAppliances : [];
+
+      // params we care about
+      const brandParam = query.get("brand");
+      const modelParam = query.get("model") || query.get("modelNumber");
+      const variantIdParam = query.get("variantId") || query.get("variant_id");
+      const storeNameParam = query.get("storeName") || query.get("store");
+
       // 0) Try to find by slug first (for direct slug-based URL access)
-      if (!selectedLaptop && routeSlug && Array.isArray(laptops)) {
-        selectedLaptop = findLaptopBySlug(routeSlug);
+      if (!selected && routeSlug && Array.isArray(source)) {
+        selected = findApplianceBySlug(routeSlug);
       }
 
-      // 1) If a variantId is provided, prefer that
-      if (variantIdParam && Array.isArray(laptops) && laptops.length) {
-        for (const laptop of laptops) {
-          const variants = Array.isArray(laptop.variants)
-            ? laptop.variants
-            : laptop.variant
-              ? Array.isArray(laptop.variant)
-                ? laptop.variant
-                : [laptop.variant]
-              : [];
-          const idx = variants.findIndex(
+      // 1) variantId preferred
+      if (variantIdParam && Array.isArray(source) && source.length) {
+        for (const dev of source) {
+          const vars = Array.isArray(dev.variants) ? dev.variants : [];
+          const idx = vars.findIndex(
             (v) =>
-              String(v.id) === variantIdParam ||
-              String(v.variant_id) === variantIdParam,
+              String(v.variant_id || v.id || v.variantId) ===
+              String(variantIdParam),
           );
           if (idx >= 0) {
-            selectedLaptop = laptop;
+            selected = dev;
             variantIndex = idx;
             break;
           }
         }
       }
 
-      // 2) Match by brand + model (prefer exact brand and product_name/model_number)
-      if (
-        !selectedLaptop &&
-        brandParam &&
-        modelParam &&
-        Array.isArray(laptops)
-      ) {
+      // 2) brand + model
+      if (!selected && brandParam && modelParam && Array.isArray(source)) {
         const b = brandParam.toLowerCase();
         const m = modelParam.toLowerCase();
-        for (const laptop of laptops) {
-          const brandVal = (laptop.brand || laptop.brand_name || "")
+        for (const dev of source) {
+          const brandVal = (dev.brand_name || dev.brand || "")
             .toString()
             .toLowerCase();
           const nameVal = (
-            laptop.product_name ||
-            laptop.name ||
-            laptop.model ||
+            dev.name ||
+            dev.product_name ||
+            dev.model_number ||
             ""
           )
             .toString()
             .toLowerCase();
-          const modelNum = (laptop.model_number || laptop.model || "")
-            .toString()
-            .toLowerCase();
-          const brandMatch = brandVal === b;
-          const nameMatch = nameVal.includes(m);
-          const modelNumMatch = modelNum === m;
-          if (brandMatch && (nameMatch || modelNumMatch)) {
-            selectedLaptop = laptop;
-
-            if (ramParam || storageParam) {
-              const variants = Array.isArray(laptop.variants)
-                ? laptop.variants
-                : laptop.variant
-                  ? Array.isArray(laptop.variant)
-                    ? laptop.variant
-                    : [laptop.variant]
-                  : [];
-              const idx = variants.findIndex((v) => {
-                const ramOk = ramParam
-                  ? String(v.ram).toLowerCase() ===
-                    String(ramParam).toLowerCase()
-                  : true;
-                const storageOk = storageParam
-                  ? String(v.storage).toLowerCase() ===
-                    String(storageParam).toLowerCase()
-                  : true;
-                return ramOk && storageOk;
-              });
-              if (idx >= 0) variantIndex = idx;
-            }
-
+          if (brandVal === b && (nameVal.includes(m) || nameVal === m)) {
+            selected = dev;
             break;
           }
         }
       }
 
-      // 3) Match by brand only
-      if (!selectedLaptop && brandParam && Array.isArray(laptops)) {
+      // 3) brand only
+      if (!selected && brandParam && Array.isArray(source)) {
         const b = brandParam.toLowerCase();
-        for (const laptop of laptops) {
-          const brandVal = (laptop.brand || laptop.brand_name || "")
+        for (const dev of source) {
+          const brandVal = (dev.brand_name || dev.brand || "")
             .toString()
             .toLowerCase();
           if (brandVal === b) {
-            selectedLaptop = laptop;
+            selected = dev;
             break;
           }
         }
       }
 
-      // 4) Fallback to id param or first laptop
-      if (!selectedLaptop && Array.isArray(laptops)) {
-        const idParam = query.get("id");
+      // 4) id fallback or first
+      if (!selected && Array.isArray(source) && source.length) {
         if (idParam) {
-          selectedLaptop = laptops.find(
-            (lp) =>
-              String(lp.id) === String(idParam) ||
-              String(lp.product_id) === String(idParam) ||
-              String(lp.model) === String(idParam),
+          selected = source.find(
+            (d) =>
+              String(d.product_id) === String(idParam) ||
+              String(d.id) === String(idParam),
           );
         }
-        if (!selectedLaptop) selectedLaptop = laptops[0] || null;
+        if (!selected) selected = source[0] || null;
       }
 
-      setLaptopData(normalizeLaptop(selectedLaptop));
+      // try to pick variant by store name
+      if (selected && storeNameParam) {
+        const vars = Array.isArray(selected.variants) ? selected.variants : [];
+        for (let i = 0; i < vars.length; i++) {
+          const v = vars[i];
+          const sp = Array.isArray(v.store_prices) ? v.store_prices : [];
+          if (
+            sp.find(
+              (s) =>
+                (s.store_name || s.store || "").toString().toLowerCase() ===
+                storeNameParam.toLowerCase(),
+            )
+          ) {
+            variantIndex = i;
+            break;
+          }
+        }
+      }
+
+      setApplianceData(normalizeAppliance(selected));
       setSelectedVariant(Math.max(0, variantIndex));
       setLoading(false);
-    }, 300);
+    }, 200);
 
     return () => clearTimeout(timer);
-  }, [location.search, laptops, routeSlug]);
+  }, [window.location.search, homeAppliances]);
 
-  // Redirect to canonical SEO-friendly path when laptopData is available
+  // Redirect to canonical SEO-friendly appliance URL when data available
   useEffect(() => {
-    if (!laptopData) return;
-    const slugify = (str = "") =>
-      String(str)
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "");
+    if (!applianceData || !routeSlug) return;
 
-    const resolvedId =
-      query.get("id") ||
-      laptopData.id ||
-      laptopData.product_id ||
-      laptopData.model_number;
-    if (!resolvedId) return;
     const canonicalSlug = generateSlug(
-      laptopData.product_name ||
-        laptopData.model_number ||
-        laptopData.model ||
-        "",
+      applianceData.name || applianceData.model || applianceData.brand || "",
     );
     if (!canonicalSlug) return;
-    const desiredPath = `/laptops/${canonicalSlug}`;
+    const desiredPath = `/appliances/${canonicalSlug}`;
     const currentPath = window.location.pathname;
     if (currentPath !== desiredPath) {
       navigate(desiredPath + (location.search || ""), { replace: true });
     }
-  }, [laptopData, query, navigate, location.search]);
+  }, [applianceData, routeSlug, navigate, location.search]);
 
-  // Derive ratings data from API-provided `laptopData.rating` when available
-  useEffect(() => {
-    if (!laptopData) {
-      setRatingsData(null);
-      return;
-    }
-
-    const r = laptopData.rating;
-    if (r == null) {
-      setRatingsData(null);
-      return;
-    }
-
-    if (typeof r === "number") {
-      setRatingsData({
-        averageRating: r,
-        totalRatings: 0,
-        performance: r,
-        display: r,
-        battery: r,
-        build: r,
-        features: r,
-      });
-      return;
-    }
-
-    // r is an object shape — map common fields
-    setRatingsData({
-      averageRating: r.averageRating ?? r.avg ?? r.rating ?? 0,
-      totalRatings: r.totalRatings ?? r.count ?? 0,
-      performance: r.performance ?? 0,
-      display: r.display ?? 0,
-      battery: r.battery ?? 0,
-      build: r.build ?? 0,
-      features: r.features ?? 0,
-    });
-  }, [laptopData]);
-
-  // Record a single product view per browser session for laptops.
+  // Record a single product view per browser session for home appliances.
   useEffect(() => {
     const productIdRaw =
-      laptopData?.product_id || laptopData?.productId || laptopData?.id;
+      applianceData?.product_id ||
+      applianceData?.productId ||
+      applianceData?.id;
     const pid = Number(productIdRaw);
     if (!Number.isInteger(pid) || pid <= 0) return;
 
@@ -385,39 +334,71 @@ const LaptopDetailCard = () => {
     } catch (err) {
       console.error("Product view tracking error:", err);
     }
-  }, [laptopData?.product_id, laptopData?.productId, laptopData?.id]);
+  }, [applianceData?.product_id, applianceData?.productId, applianceData?.id]);
 
-  // Get laptop type color
-  const getLaptopColor = () => {
-    switch (laptopData?.product_type?.toLowerCase()) {
-      case "gaming laptop":
-        return "red";
-      case "ultrabook":
+  // Get category-specific icon
+  const getCategoryIcon = () => {
+    switch (applianceData?.category?.toLowerCase()) {
+      case "washing machine":
+        return FaWater;
+      case "air conditioner":
+      case "ac":
+        return FaSnowflake;
+      case "television":
+      case "tv":
+        return FaTv;
+      case "refrigerator":
+        return FaThermometerHalf;
+      case "microwave":
+        return FaFire;
+      case "fan":
+        return FaFan;
+      case "air purifier":
+        return FaWind;
+      default:
+        return FaBolt;
+    }
+  };
+
+  const CategoryIcon = getCategoryIcon();
+
+  // Get category-specific color
+  const getCategoryColor = () => {
+    switch (applianceData?.category?.toLowerCase()) {
+      case "washing machine":
         return "blue";
-      case "business laptop":
+      case "air conditioner":
+      case "ac":
+        return "cyan";
+      case "television":
+      case "tv":
         return "purple";
-      case "2-in-1":
+      case "refrigerator":
         return "green";
-      case "chromebook":
-        return "yellow";
+      case "microwave":
+        return "orange";
+      case "fan":
+        return "blue";
+      case "air purifier":
+        return "teal";
       default:
         return "indigo";
     }
   };
 
-  const laptopColor = getLaptopColor();
+  const categoryColor = getCategoryColor();
   const colorClasses = {
-    red: {
-      bg: "bg-red-500",
-      text: "text-red-500",
-      light: "bg-red-50",
-      border: "border-red-500",
-    },
     blue: {
       bg: "bg-blue-500",
       text: "text-blue-500",
       light: "bg-blue-50",
       border: "border-blue-500",
+    },
+    cyan: {
+      bg: "bg-cyan-500",
+      text: "text-cyan-500",
+      light: "bg-cyan-50",
+      border: "border-cyan-500",
     },
     purple: {
       bg: "bg-purple-500",
@@ -431,11 +412,17 @@ const LaptopDetailCard = () => {
       light: "bg-green-50",
       border: "border-green-500",
     },
-    yellow: {
-      bg: "bg-yellow-500",
-      text: "text-yellow-500",
-      light: "bg-yellow-50",
-      border: "border-yellow-500",
+    orange: {
+      bg: "bg-orange-500",
+      text: "text-orange-500",
+      light: "bg-orange-50",
+      border: "border-orange-500",
+    },
+    teal: {
+      bg: "bg-teal-500",
+      text: "text-teal-500",
+      light: "bg-teal-50",
+      border: "border-teal-500",
     },
     indigo: {
       bg: "bg-indigo-500",
@@ -445,9 +432,9 @@ const LaptopDetailCard = () => {
     },
   };
 
-  const currentColor = colorClasses[laptopColor] || colorClasses.blue;
+  const currentColor = colorClasses[categoryColor] || colorClasses.blue;
 
-  const variants = laptopData?.variants || [];
+  const variants = applianceData?.variants || [];
   const currentVariant = variants?.[selectedVariant];
 
   const allStorePrices =
@@ -455,7 +442,13 @@ const LaptopDetailCard = () => {
       (variant) =>
         variant.store_prices?.map((store) => ({
           ...store,
-          variantName: `${variant.ram}/${variant.storage}`,
+          variantName: `${
+            variant.model ||
+            variant.capacity ||
+            variant.screen_size ||
+            variant.type ||
+            ""
+          }`,
           variantSpec: variant.specification_summary || "",
         })) || [],
     ) || [];
@@ -463,11 +456,19 @@ const LaptopDetailCard = () => {
   const variantStorePrices =
     currentVariant?.store_prices?.map((sp) => ({
       ...sp,
-      variantName: `${currentVariant.ram}/${currentVariant.storage}`,
+      variantName: `${
+        currentVariant.model ||
+        currentVariant.capacity ||
+        currentVariant.screen_size ||
+        currentVariant.type ||
+        ""
+      }`,
       variantSpec: currentVariant.specification_summary || "",
     })) || [];
 
-  const getStoreLogo = (storeName) => getLogo(storeName);
+  const getStoreLogo = (storeName) => {
+    return getLogo(storeName);
+  };
 
   const formatPrice = (price) => {
     if (price == null || price === "") return "N/A";
@@ -477,69 +478,73 @@ const LaptopDetailCard = () => {
   const toNormalCase = (raw) => {
     if (raw == null) return "";
     const ACRONYMS = new Set([
-      "GB",
-      "TB",
-      "SSD",
-      "HDD",
-      "NVMe",
-      "PCIe",
-      "DDR4",
-      "DDR5",
-      "LPDDR5",
+      "MP",
+      "FOV",
+      "ROM",
       "RAM",
-      "CPU",
+      "NFC",
+      "GPS",
+      "USB",
+      "AI",
+      "OS",
       "GPU",
-      "GHz",
-      "MHz",
-      "Wh",
+      "CPU",
+      "Hz",
+      "FPS",
+      "GB",
+      "mah",
+      "Ghz",
+      "cm",
+      "gm",
+      "IP",
+      "5g",
+      "K",
+      "X",
+      "Li-on",
+      "BTU",
       "W",
       "V",
       "Hz",
-      "IPS",
-      "OLED",
-      "LCD",
+      "kg",
+      "lb",
+      "sq",
+      "ft",
       "LED",
-      "QHD",
+      "LCD",
+      "OLED",
+      "QLED",
+      "HD",
       "FHD",
       "UHD",
       "4K",
-      "HD",
-      "FHD",
+      "8K",
       "HDR",
       "Dolby",
       "Atmos",
       "WiFi",
       "Bluetooth",
+      "RFID",
+      "NFC",
+      "GPS",
+      "AC",
+      "DC",
+      "RPM",
+      "PM",
+      "dB",
+      "CE",
+      "ISO",
+      "BEE",
+      "ENERGY",
+      "STAR",
+      "WIFI",
+      "BT",
+      "IR",
+      "RF",
       "USB",
       "HDMI",
-      "Thunderbolt",
-      "USB-C",
-      "USB-A",
-      "PD",
-      "CNC",
-      "TPM",
-      "FHD",
-      "UHD",
-      "RGB",
-      "AI",
-      "TPM",
-      "WPA3",
-      "WPA2",
-      "MP",
-      "K",
-      "X",
-      "GB",
-      "MB",
-      "KB",
-      "mm",
-      "cm",
-      "kg",
-      "lb",
-      "oz",
-      "in",
-      "ft",
-      "m",
-      "km",
+      "ARC",
+      "eARC",
+      "R32",
     ]);
 
     let s = String(raw);
@@ -580,9 +585,9 @@ const LaptopDetailCard = () => {
 
   // Share functionality
   const shareData = {
-    title: `${laptopData?.brand} ${laptopData?.product_name}`,
-    text: `Check out ${laptopData?.brand} ${laptopData?.product_name} - ${
-      laptopData?.product_type
+    title: `${applianceData?.brand} ${applianceData?.product_name}`,
+    text: `Check out ${applianceData?.brand} ${applianceData?.product_name} - ${
+      applianceData?.category
     }. Price starts at ₹${
       currentVariant?.base_price
         ? formatPrice(currentVariant.base_price)
@@ -593,50 +598,45 @@ const LaptopDetailCard = () => {
 
   // Generate detailed share content with product information
   const generateShareContent = () => {
-    const brand = laptopData?.brand || laptopData?.manufacturer || "Laptop";
-    const model = laptopData?.product_name || laptopData?.model || "Unknown";
-    const processor =
-      laptopData?.specifications?.processor ||
-      laptopData?.processor ||
-      laptopData?.cpu ||
-      laptopData?.specs?.processor ||
-      "Processor info not available";
-    const ram =
-      laptopData?.specifications?.ram ||
-      laptopData?.ram ||
-      laptopData?.specs?.ram ||
-      "RAM info not available";
-    const storage =
-      laptopData?.specifications?.storage ||
-      laptopData?.storage ||
-      laptopData?.specs?.storage ||
-      "Storage info not available";
-    const display =
-      laptopData?.specifications?.display ||
-      laptopData?.display ||
-      laptopData?.specs?.display ||
-      "Display info not available";
-    const gpu =
-      laptopData?.specifications?.gpu ||
-      laptopData?.gpu ||
-      laptopData?.specs?.gpu ||
-      "GPU info not available";
+    const brand =
+      applianceData?.brand || applianceData?.manufacturer || "Appliance";
+    const model =
+      applianceData?.product_name || applianceData?.model || "Unknown";
+    const category =
+      applianceData?.category ||
+      applianceData?.type ||
+      applianceData?.product_type ||
+      "Appliance";
+    const capacity =
+      applianceData?.specifications?.capacity ||
+      applianceData?.capacity ||
+      applianceData?.specs?.capacity ||
+      "Capacity info not available";
+    const voltage =
+      applianceData?.specifications?.voltage ||
+      applianceData?.voltage ||
+      applianceData?.specs?.voltage ||
+      "Voltage info not available";
+    const color =
+      applianceData?.specifications?.color ||
+      applianceData?.color ||
+      applianceData?.specs?.color ||
+      "Various";
     const price = currentVariant?.base_price
       ? `₹${formatPrice(currentVariant.base_price)}`
       : "Price not available";
-    const rating = laptopData?.rating || ratingsData?.averageRating || 0;
+    const rating = applianceData?.rating || ratingsData?.averageRating || 0;
 
     return {
       title: `${brand} ${model}`,
-      description: `${processor} | ${ram} RAM | ${storage} Storage | ${display}" Display | ${gpu} GPU | Rating: ${rating}/5 | Price: ${price}`,
-      shortDescription: `${brand} ${model} - ${processor}, ${ram}, ${storage}, Price: ${price}`,
+      description: `${category} | Capacity: ${capacity} | Voltage: ${voltage} | Color: ${color} | Rating: ${rating}/5 | Price: ${price}`,
+      shortDescription: `${brand} ${model} - ${category}, ${capacity}, Price: ${price}`,
       fullDetails: `
-💻 ${brand} ${model}
-🔧 Processor: ${processor}
-📦 RAM: ${ram}
-💾 Storage: ${storage}
-📺 Display: ${display}"
-🎮 GPU: ${gpu}
+🏠 ${brand} ${model}
+📁 Category: ${category}
+📦 Capacity: ${capacity}
+⚡ Voltage: ${voltage}
+🎨 Color: ${color}
 ⭐ Rating: ${rating}/5
 💰 Price: ${price}
       `,
@@ -653,13 +653,10 @@ const LaptopDetailCard = () => {
   const getCanonicalUrl = () => {
     try {
       const slug = generateSlug(
-        laptopData?.product_name ||
-          laptopData?.model_number ||
-          laptopData?.model ||
-          "",
+        applianceData?.name || applianceData?.model || "",
       );
       if (!slug) return window.location.href;
-      const path = `/laptops/${slug}`;
+      const path = `/appliances/${slug}`;
       return window.location.origin + path + (location.search || "");
     } catch (e) {
       return window.location.href;
@@ -716,7 +713,7 @@ const LaptopDetailCard = () => {
       return;
     }
 
-    const productId = laptopData?.id || laptopData?.model_number;
+    const productId = applianceData?.id || applianceData?.model_number;
 
     if (!isFavorite) {
       try {
@@ -728,7 +725,7 @@ const LaptopDetailCard = () => {
           },
           body: JSON.stringify({
             product_id: productId,
-            product_type: "laptop",
+            product_type: "homeappliance",
           }),
         });
 
@@ -769,7 +766,7 @@ const LaptopDetailCard = () => {
     const initFavorite = async () => {
       const token = Cookies.get("arenak");
       if (!token) return;
-      const productId = laptopData?.id || laptopData?.model_number;
+      const productId = applianceData?.id || applianceData?.model_number;
       if (!productId) return;
 
       try {
@@ -791,9 +788,9 @@ const LaptopDetailCard = () => {
     };
 
     initFavorite();
-  }, [laptopData?.id, laptopData?.model_number]);
+  }, [applianceData?.id, applianceData?.model_number]);
 
-  // Ratings UI removed.
+  // Rating submission removed
 
   const renderStars = (rating, size = "sm") => {
     const fullStars = Math.floor(rating);
@@ -836,20 +833,16 @@ const LaptopDetailCard = () => {
 
   // Rating summary removed
 
-  // Tabs configuration for laptops
+  // Tabs configuration
   const mobileTabs = [
-    { id: "specifications", label: "Tech Specs", icon: FaMicrochip },
-    { id: "display", label: "Display", icon: FaExpand },
-    { id: "performance", label: "Performance", icon: FaBolt },
-    { id: "battery", label: "Battery", icon: FaBatteryFull },
-    { id: "build", label: "Build", icon: FaShieldAlt },
+    { id: "specifications", label: "Specs", icon: FaMicrochip },
+    { id: "features", label: "Features", icon: FaBolt },
+    { id: "performance", label: "Performance", icon: FaChartBar },
+    { id: "physical_details", label: "Dimensions", icon: FaRuler },
+    { id: "warranty", label: "Warranty", icon: FaShieldAlt },
   ];
 
-  const desktopTabs = [
-    ...mobileTabs,
-    { id: "connectivity", label: "Ports", icon: FaUsb },
-    { id: "software", label: "Software", icon: FaWindows },
-  ];
+  const desktopTabs = [...mobileTabs];
 
   const tabs = window.innerWidth < 768 ? mobileTabs : desktopTabs;
 
@@ -910,161 +903,31 @@ const LaptopDetailCard = () => {
     );
   };
 
-  // Filter specifications by category
-  const filterSpecsByCategory = (category) => {
-    if (!laptopData?.specifications) return {};
-
-    const specMapping = {
-      specifications: [
-        "processor",
-        "processor_generation",
-        "cpu_cores",
-        "cpu_threads",
-        "base_clock_speed",
-        "max_clock_speed",
-        "cache",
-        "ram",
-        "ram_type",
-        "ram_speed",
-        "ram_slots",
-        "max_ram_support",
-        "ram_upgradable",
-        "storage",
-        "storage_type",
-        "storage_slots",
-        "expandedable_storage",
-        "gpu",
-        "gpu_memory",
-      ],
-      display: [
-        "screen_size",
-        "resolution",
-        "panel_type",
-        "refresh_rate",
-        "brightness",
-        "color_gamut",
-        "touch_screen",
-        "hdr_support",
-      ],
-      battery: [
-        "battery_capacity",
-        "battery_life",
-        "fast_charging",
-        "charger_type",
-      ],
-      build: [
-        "weight",
-        "thickness",
-        "body_material",
-        "color",
-        "keyboard",
-        "fingerprint_scanner",
-        "webcam",
-        "speakers",
-      ],
-      connectivity: [
-        "wifi",
-        "bluetooth",
-        "usb_ports",
-        "hdmi",
-        "audio_jack",
-        "sd_card_reader",
-        "ethernet",
-        "thunderbolt",
-        "magsafe",
-      ],
-      software: [
-        "operating_system",
-        "preinstalled_apps",
-        "security_features",
-        "warranty",
-        "warranty_type",
-        "warranty_terms",
-      ],
-    };
-
-    const filteredSpecs = {};
-    const keys = specMapping[category] || [];
-
-    keys.forEach((key) => {
-      if (laptopData.specifications[key] !== undefined) {
-        filteredSpecs[key] = laptopData.specifications[key];
-      }
-    });
-
-    return filteredSpecs;
-  };
-
   const renderTabContent = () => {
-    if (!laptopData) return null;
+    if (!applianceData) return null;
 
     switch (activeTab) {
       case "specifications":
         return (
           <div className="space-y-6">
-            {/* Processor Section */}
             <div className="bg-white rounded-lg p-6 border border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
                 <FaMicrochip className={currentColor.text} />
-                Processor & Memory
+                Technical Specifications
               </h3>
-              {renderSpecItems(filterSpecsByCategory("specifications"))}
+              {renderSpecItems(applianceData.specifications)}
             </div>
           </div>
         );
 
-      case "display":
+      case "features":
         return (
           <div className="bg-white rounded-lg p-6 border border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <FaExpand className={currentColor.text} />
-              Display Specifications
+              <FaBolt className={currentColor.text} />
+              Key Features
             </h3>
-            {renderSpecItems(filterSpecsByCategory("display"))}
-          </div>
-        );
-
-      case "battery":
-        return (
-          <div className="bg-white rounded-lg p-6 border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <FaBatteryFull className={currentColor.text} />
-              Battery & Power
-            </h3>
-            {renderSpecItems(filterSpecsByCategory("battery"))}
-          </div>
-        );
-
-      case "build":
-        return (
-          <div className="bg-white rounded-lg p-6 border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <FaShieldAlt className={currentColor.text} />
-              Build & Design
-            </h3>
-            {renderSpecItems(filterSpecsByCategory("build"))}
-          </div>
-        );
-
-      case "connectivity":
-        return (
-          <div className="bg-white rounded-lg p-6 border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <FaUsb className={currentColor.text} />
-              Connectivity & Ports
-            </h3>
-            {renderSpecItems(filterSpecsByCategory("connectivity"))}
-          </div>
-        );
-
-      case "software":
-        return (
-          <div className="bg-white rounded-lg p-6 border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <FaWindows className={currentColor.text} />
-              Software & Warranty
-            </h3>
-            {renderSpecItems(filterSpecsByCategory("software"))}
+            {renderSpecItems(applianceData.features)}
           </div>
         );
 
@@ -1072,10 +935,32 @@ const LaptopDetailCard = () => {
         return (
           <div className="bg-white rounded-lg p-6 border border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <FaBolt className={currentColor.text} />
+              <FaChartBar className={currentColor.text} />
               Performance Details
             </h3>
-            {renderSpecItems(laptopData.performance || {})}
+            {renderSpecItems(applianceData.performance)}
+          </div>
+        );
+
+      case "physical_details":
+        return (
+          <div className="bg-white rounded-lg p-6 border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+              <FaRuler className={currentColor.text} />
+              Physical Dimensions & Details
+            </h3>
+            {renderSpecItems(applianceData.physical_details)}
+          </div>
+        );
+
+      case "warranty":
+        return (
+          <div className="bg-white rounded-lg p-6 border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+              <FaShieldAlt className={currentColor.text} />
+              Warranty & Support
+            </h3>
+            {renderSpecItems(applianceData.warranty)}
           </div>
         );
 
@@ -1083,7 +968,7 @@ const LaptopDetailCard = () => {
         return (
           <div className="bg-white rounded-lg p-6 border border-gray-200">
             <div className="text-center py-12 text-gray-500">
-              <FaLaptop className="text-4xl mx-auto mb-4 text-gray-300" />
+              <CategoryIcon className="text-4xl mx-auto mb-4 text-gray-300" />
               <p>No data available for this section</p>
             </div>
           </div>
@@ -1100,71 +985,60 @@ const LaptopDetailCard = () => {
             className="border-4 border-violet-500 border-t-blue-500"
           />
           <p className="text-lg font-bold text-white tracking-wide">
-            Loading Laptop Details...
+            Loading Product Details...
           </p>
         </div>
       </div>
     );
   }
 
-  if (!loading && !laptopData) {
+  if (!loading && !applianceData) {
     return (
       <div className="max-w-8xl mx-auto p-4">
-        <div className="bg-white rounded-xl p-12 text-center border border-gray-200">
-          <div className="text-gray-400 text-6xl mb-4">💻</div>
+        <div className="bg-white  p-12 text-center border border-gray-200">
+          <div className="text-gray-400 text-6xl mb-4">🏠</div>
           <h3 className="text-2xl font-semibold text-gray-900 mb-3">
-            Laptop Not Found
+            Product Not Found
           </h3>
           <p className="text-gray-600">
-            The requested laptop could not be found.
+            The requested appliance could not be found.
           </p>
         </div>
       </div>
     );
   }
 
-  // Get OS icon based on operating system
-  const getOSIcon = () => {
-    const os = laptopData?.specifications?.operating_system || "";
-    if (os.toLowerCase().includes("windows")) return FaWindows;
-    if (os.toLowerCase().includes("mac")) return FaApple;
-    if (os.toLowerCase().includes("linux")) return FaLinux;
-    return FaDesktop;
-  };
-
-  const OSIcon = getOSIcon();
-  // SEO meta
-  const metaName = laptopData?.product_name || laptopData?.model || "";
-  const metaBrand = laptopData?.brand || laptopData?.brand_name || "";
-  const metaCpu =
-    laptopData?.specifications?.processor || laptopData?.cpu || "";
-  const metaRam =
-    (laptopData?.variants && laptopData.variants[0]?.ram) ||
-    laptopData?.specifications?.ram ||
-    "";
-  const metaStorage =
-    (laptopData?.variants && laptopData.variants[0]?.storage) ||
-    laptopData?.specifications?.storage ||
-    "";
-  const metaTitle = laptopMeta.title({
-    name: metaName,
-    cpu: metaCpu,
-    ram: metaRam,
-    storage: metaStorage,
-  });
-  const metaDescription = laptopMeta.description({
-    name: metaName,
-    cpu: metaCpu,
-    ram: metaRam,
-    storage: metaStorage,
-    brand: metaBrand,
-  });
-
   return (
-    <div className="max-w-8xl bg-white mx-auto p-4">
+    <div className="max-w-8xl mx-auto bg-white">
       <Helmet>
-        <title>{metaTitle}</title>
-        <meta name="description" content={metaDescription} />
+        <title>
+          {homeApplianceMeta.title({
+            name: applianceData?.name || applianceData?.model || "",
+            applianceType:
+              applianceData?.appliance_type ||
+              applianceData?.applianceType ||
+              "",
+            capacity:
+              applianceData?.capacity ||
+              applianceData?.specifications?.capacity ||
+              "",
+          })}
+        </title>
+        <meta
+          name="description"
+          content={homeApplianceMeta.description({
+            name: applianceData?.name || applianceData?.model || "",
+            applianceType:
+              applianceData?.appliance_type ||
+              applianceData?.applianceType ||
+              "",
+            capacity:
+              applianceData?.capacity ||
+              applianceData?.specifications?.capacity ||
+              "",
+            brand: applianceData?.brand || applianceData?.brand_name || "",
+          })}
+        />
       </Helmet>
       {/* Share Menu Modal */}
       {showShareMenu && (
@@ -1184,8 +1058,7 @@ const LaptopDetailCard = () => {
             <div className="space-y-3">
               <button
                 onClick={() => {
-                  const urlToShare = getCanonicalUrl();
-                  const message = `${shareData.title}\n${shareData.text}\n\n${urlToShare}`;
+                  const message = `${shareData.title}\n${shareData.text}\n\n${shareData.url}`;
                   const url = `https://wa.me/?text=${encodeURIComponent(
                     message,
                   )}`;
@@ -1199,9 +1072,8 @@ const LaptopDetailCard = () => {
               </button>
               <button
                 onClick={() => {
-                  const urlToShare = getCanonicalUrl();
                   const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-                    urlToShare,
+                    window.location.href,
                   )}`;
                   window.open(url, "_blank");
                   setShowShareMenu(false);
@@ -1210,6 +1082,22 @@ const LaptopDetailCard = () => {
               >
                 <FaFacebook className="text-xl" />
                 <span>Share on Facebook</span>
+              </button>
+              <button
+                onClick={() => {
+                  const tweet = `${
+                    shareData.title
+                  } - ${shareData.text.substring(0, 100)}...`;
+                  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+                    tweet,
+                  )}&url=${encodeURIComponent(window.location.href)}`;
+                  window.open(url, "_blank");
+                  setShowShareMenu(false);
+                }}
+                className="w-full flex items-center gap-3 p-4 bg-blue-50 hover:bg-blue-100 rounded-lg text-blue-400 font-medium transition-colors"
+              >
+                <FaTwitter className="text-xl" />
+                <span>Share on Twitter</span>
               </button>
               <button
                 onClick={handleCopyLink}
@@ -1229,7 +1117,7 @@ const LaptopDetailCard = () => {
         </div>
       )}
 
-      <div className="overflow-hidden">
+      <div className="overflow-hidden  ">
         {/* Mobile Header */}
         <div className="p-5 border-b border-gray-200 lg:hidden">
           <div className="flex justify-between items-start mb-3">
@@ -1238,20 +1126,19 @@ const LaptopDetailCard = () => {
                 <span
                   className={`px-3 py-1 rounded-full text-xs font-semibold ${currentColor.bg} text-white`}
                 >
-                  {laptopData.product_type}
+                  {applianceData.category}
                 </span>
-                {laptopData.release_year && (
+                {applianceData.release_year && (
                   <span className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-600">
-                    {laptopData.release_year}
+                    {applianceData.release_year}
                   </span>
                 )}
               </div>
               <h1 className="text-xl font-bold text-gray-900 mb-1">
-                {laptopData.product_name}
+                {applianceData.product_name}
               </h1>
               <p className="text-gray-600 text-sm">
-                {laptopData.brand} {laptopData.series} •{" "}
-                {laptopData.model_number}
+                {applianceData.brand} • {applianceData.model_number}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -1296,13 +1183,14 @@ const LaptopDetailCard = () => {
             {/* Main Image */}
             <div className="rounded-xl bg-gray-50 p-8 mb-6 relative">
               <div className="absolute top-3 left-3">
-                <FaLaptop className={`text-2xl ${currentColor.text}`} />
+                <CategoryIcon className={`text-2xl ${currentColor.text}`} />
               </div>
               <img
                 src={
-                  laptopData.images?.[activeImage] || "/placeholder-laptop.jpg"
+                  applianceData.images?.[activeImage] ||
+                  "/placeholder-appliance.jpg"
                 }
-                alt={laptopData.product_name}
+                alt={applianceData.product_name}
                 className="w-full h-64 object-contain"
                 onError={(e) => {
                   e.target.src =
@@ -1330,9 +1218,9 @@ const LaptopDetailCard = () => {
             </div>
 
             {/* Thumbnails */}
-            {laptopData.images && laptopData.images.length > 1 && (
+            {applianceData.images && applianceData.images.length > 1 && (
               <div className="flex gap-3 mb-8 overflow-x-auto no-scrollbar">
-                {laptopData.images.slice(0, 4).map((image, index) => (
+                {applianceData.images.slice(0, 4).map((image, index) => (
                   <button
                     key={index}
                     onClick={() => setActiveImage(index)}
@@ -1344,7 +1232,7 @@ const LaptopDetailCard = () => {
                   >
                     <img
                       src={image}
-                      alt={`${laptopData.product_name} view ${index + 1}`}
+                      alt={`${applianceData.product_name} view ${index + 1}`}
                       className="w-full h-full object-contain"
                     />
                   </button>
@@ -1356,7 +1244,7 @@ const LaptopDetailCard = () => {
             {variants && variants.length > 0 && (
               <div className="mb-6">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">
-                  Available Configurations
+                  Available Variants
                 </h4>
                 <div className="grid grid-cols-2 gap-3">
                   {variants.map((variant, index) => (
@@ -1370,10 +1258,14 @@ const LaptopDetailCard = () => {
                       }`}
                     >
                       <div className="font-semibold text-gray-900 text-sm mb-1">
-                        {variant.ram} / {variant.storage}
+                        {variant.model ||
+                          variant.capacity ||
+                          variant.screen_size ||
+                          variant.type ||
+                          "Standard"}
                       </div>
                       <div className="text-xs text-gray-600 mb-2">
-                        {variant.processor}
+                        {variant.specification_summary || ""}
                       </div>
                       <div className="text-sm font-bold text-green-600">
                         ₹{formatPrice(variant.base_price)}
@@ -1386,23 +1278,18 @@ const LaptopDetailCard = () => {
 
             {/* Quick Specs - Mobile Only */}
             <div className="lg:hidden grid grid-cols-3 gap-3 mb-6">
-              {laptopData.specifications &&
+              {applianceData.specifications &&
                 [
+                  { key: "capacity", label: "Capacity", icon: FaWeight },
+                  { key: "power_consumption", label: "Power", icon: FaBolt },
                   {
-                    key: "processor",
-                    label: "Processor",
-                    icon: FaMicrochip,
-                    maxLength: 15,
+                    key: "energy_rating",
+                    label: "Energy",
+                    icon: FaBatteryFull,
                   },
-                  { key: "ram", label: "RAM", icon: FaMemory },
-                  { key: "storage", label: "Storage", icon: FaHdd },
                 ].map((item) => {
-                  const value = laptopData.specifications[item.key];
+                  const value = applianceData.specifications[item.key];
                   if (!value) return null;
-                  let displayValue = value;
-                  if (item.maxLength && value.length > item.maxLength) {
-                    displayValue = value.substring(0, item.maxLength) + "...";
-                  }
                   return (
                     <div
                       key={item.key}
@@ -1411,8 +1298,8 @@ const LaptopDetailCard = () => {
                       <item.icon
                         className={`${currentColor.text} text-lg mx-auto mb-1`}
                       />
-                      <div className={`font-bold ${currentColor.text} text-xs`}>
-                        {displayValue}
+                      <div className={`font-bold ${currentColor.text} text-sm`}>
+                        {value}
                       </div>
                       <div className="text-xs text-gray-600">{item.label}</div>
                     </div>
@@ -1431,25 +1318,24 @@ const LaptopDetailCard = () => {
                     <span
                       className={`px-3 py-1.5 rounded-full text-sm font-semibold ${currentColor.bg} text-white`}
                     >
-                      {laptopData.product_type}
+                      {applianceData.category}
                     </span>
-                    {laptopData.release_year && (
+                    {applianceData.release_year && (
                       <span className="px-3 py-1.5 bg-gray-100 rounded-lg text-sm text-gray-700">
-                        Launch: {laptopData.release_year}
+                        Launch: {applianceData.release_year}
                       </span>
                     )}
-                    {laptopData.country && (
+                    {applianceData.country && (
                       <span className="px-3 py-1.5 bg-gray-100 rounded-lg text-sm text-gray-700">
-                        Made in {laptopData.country}
+                        Made in {applianceData.country}
                       </span>
                     )}
                   </div>
                   <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                    {laptopData.product_name}
+                    {applianceData.product_name}
                   </h1>
                   <p className="text-gray-600 text-lg mb-4">
-                    {laptopData.brand} {laptopData.series} • Model:{" "}
-                    {laptopData.model_number}
+                    {applianceData.brand} • Model: {applianceData.model_number}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -1599,36 +1485,35 @@ const LaptopDetailCard = () => {
 
             {/* Desktop Quick Specs */}
             <div className="hidden lg:grid grid-cols-4 gap-4 mb-8">
-              {laptopData.specifications &&
+              {applianceData.specifications &&
                 [
                   {
-                    key: "processor",
-                    label: "Processor",
-                    icon: FaMicrochip,
-                    format: (v) => v.split(" ")[0] + " " + v.split(" ")[1],
+                    key: "capacity",
+                    label: "Capacity",
+                    icon: FaWeight,
+                    unit: "",
                   },
                   {
-                    key: "ram",
-                    label: "RAM",
-                    icon: FaMemory,
-                    format: (v) => v,
+                    key: "power_rating",
+                    label: "Power",
+                    icon: FaBolt,
+                    unit: "W",
                   },
                   {
-                    key: "storage",
-                    label: "Storage",
-                    icon: FaHdd,
-                    format: (v) => v.split(" ")[0],
+                    key: "energy_rating",
+                    label: "Energy Rating",
+                    icon: FaBatteryFull,
+                    unit: "",
                   },
                   {
-                    key: "screen_size",
-                    label: "Display",
-                    icon: FaExpand,
-                    format: (v) => v,
+                    key: "weight",
+                    label: "Weight",
+                    icon: FaWeight,
+                    unit: "kg",
                   },
                 ].map((item) => {
-                  const value = laptopData.specifications[item.key];
+                  const value = applianceData.specifications[item.key];
                   if (!value) return null;
-                  const displayValue = item.format ? item.format(value) : value;
                   return (
                     <div
                       key={item.key}
@@ -1638,7 +1523,8 @@ const LaptopDetailCard = () => {
                         className={`${currentColor.text} text-xl mx-auto mb-2`}
                       />
                       <div className={`font-bold text-lg ${currentColor.text}`}>
-                        {displayValue}
+                        {value}
+                        {item.unit && ` ${item.unit}`}
                       </div>
                       <div className="text-sm text-gray-600 mt-1">
                         {item.label}
@@ -1647,23 +1533,6 @@ const LaptopDetailCard = () => {
                   );
                 })}
             </div>
-
-            {/* OS Badge */}
-            {laptopData.specifications?.operating_system && (
-              <div
-                className={`hidden lg:flex items-center gap-2 mb-6 px-4 py-3 rounded-lg ${currentColor.light} border ${currentColor.border}`}
-              >
-                <OSIcon className={`${currentColor.text} text-xl`} />
-                <div>
-                  <div className="text-sm font-semibold text-gray-900">
-                    {laptopData.specifications.operating_system}
-                  </div>
-                  <div className="text-xs text-gray-600">
-                    Pre-installed Operating System
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
@@ -1696,9 +1565,9 @@ const LaptopDetailCard = () => {
           {/* Ratings Section - Rendered Directly Under Specs */}
           <div className="border-t border-gray-200 p-5">
             <RatingReview
-              productId={laptopData?.id || laptopData?.product_id}
-              productName={laptopData?.product_name || laptopData?.model}
-              brand={laptopData?.brand}
+              productId={applianceData?.id || applianceData?.product_id}
+              productName={applianceData?.product_name}
+              brand={applianceData?.brand}
               isLoading={loading}
               onReviewSubmitted={() => {
                 // Optionally refresh product data
@@ -1711,4 +1580,4 @@ const LaptopDetailCard = () => {
   );
 };
 
-export default LaptopDetailCard;
+export default ApplianceDetailCard;

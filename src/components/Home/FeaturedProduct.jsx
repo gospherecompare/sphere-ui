@@ -1,98 +1,214 @@
-// src/components/FeaturedProduct.jsx
-import React from 'react';
-const FeaturedProduct = () => {
-  return (
-    <section className="my-10 mx-4 lg:mx-auto max-w-7xl">
-      {/* Section Header */}
-      <div className="flex justify-between items-center mb-8 pb-4 border-b border-gray-200">
-        <h2 className="text-2xl lg:text-3xl font-bold flex items-center">
-          <i className="fas fa-star text-blue-600 mr-3"></i>
-          Featured Product
-        </h2>
-        <a href="#" className="text-blue-600 font-semibold flex items-center hover:underline">
-          View All
-          <i className="fas fa-chevron-right ml-2 transition-transform duration-300 group-hover:translate-x-1"></i>
-        </a>
-      </div>
+// src/components/MobilePriceFinder.jsx
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { FaRupeeSign, FaArrowRight, FaFilter } from "react-icons/fa";
 
-      {/* Featured Product Card */}
-      <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
-        {/* Card Header */}
-        <div className="flex justify-between items-start mb-6">
+const priceRanges = [
+  {
+    label: "Under ₹10,000",
+    value: 10000,
+    slug: "under-10000",
+    gradient: "from-purple-600 to-red-600",
+    color: "bg-gradient-to-r from-purple-600 to-red-600",
+    icon: "💰",
+  },
+  {
+    label: "Under ₹15,000",
+    value: 15000,
+    slug: "under-15000",
+    gradient: "from-purple-600 to-red-600",
+    color: "bg-gradient-to-r from-purple-600 to-red-600",
+    icon: "📱",
+  },
+  {
+    label: "Under ₹20,000",
+    value: 20000,
+    slug: "under-20000",
+    gradient: "from-purple-600 to-red-600",
+    color: "bg-gradient-to-r from-purple-600 to-red-600",
+    icon: "⚡",
+  },
+  {
+    label: "Under ₹25,000",
+    value: 25000,
+    slug: "under-25000",
+    gradient: "from-purple-600 to-red-600",
+    color: "bg-gradient-to-r from-purple-600 to-red-600",
+    icon: "📸",
+  },
+  {
+    label: "Under ₹30,000",
+    value: 30000,
+    slug: "under-30000",
+    gradient: "from-purple-600 to-red-600",
+    color: "bg-gradient-to-r from-purple-600 to-red-600",
+    icon: "🎮",
+  },
+  {
+    label: "Under ₹40,000",
+    value: 40000,
+    slug: "under-40000",
+    gradient: "from-purple-600 to-red-600",
+    color: "bg-gradient-to-r from-purple-600 to-red-600",
+    icon: "🌟",
+  },
+  {
+    label: "Under ₹50,000",
+    value: 50000,
+    slug: "under-50000",
+    gradient: "from-purple-600 to-red-600",
+    color: "bg-gradient-to-r from-purple-600 to-red-600",
+    icon: "💎",
+  },
+  {
+    label: "Above ₹50,000",
+    value: "above",
+    slug: "above-50000",
+    gradient: "from-purple-600 to-red-600",
+    color: "bg-gradient-to-r from-purple-600 to-red-600",
+    icon: "👑",
+  },
+];
+
+const MobilePriceFinder = () => {
+  const navigate = useNavigate();
+  const [activePrice, setActivePrice] = useState();
+  const [hoveredPrice, setHoveredPrice] = useState(null);
+
+  const handleClick = (price, gradient, slug) => {
+    setActivePrice(price);
+    navigate(`/smartphones/filter/${slug}`);
+  };
+
+  return (
+    <div className="px-4 lg:px-6 mx-auto bg-white max-w-6xl mb-8 w-full overflow-hidden py-8 sm:py-10 rounded-lg ">
+      {/* Header Section */}
+      <div className="mb-8 px-2">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="p-2 rounded-xl bg-gradient-to-r from-purple-500 to-red-500 shadow-lg">
+            <FaFilter className="text-white text-lg" />
+          </div>
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">iQOO Neo 10</h2>
-            <p className="text-gray-600 mt-1">
-              Release Date: <span className="font-medium">26 May, 2025</span>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
+              Find Your Perfect Phone by{" "}
+              <span className="bg-gradient-to-r from-purple-600 to-red-600 bg-clip-text text-transparent">
+                Budget
+              </span>
+            </h2>
+            <p className="text-gray-500 text-sm sm:text-base sm:mt-1">
+              Select your price range to discover smartphones that match your
+              budget
             </p>
           </div>
-          <button className="text-orange-500 font-semibold text-sm hover:text-orange-600">
-            + Compare
+        </div>
+
+        {/* Stats Bar */}
+      </div>
+
+      {/* Price Buttons Grid */}
+      <div className="relative">
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 gap-3 px-2">
+          {priceRanges.map((item) => {
+            const isActive = activePrice === item.value;
+            const isHovered = hoveredPrice === item.value;
+
+            return (
+              <button
+                key={item.label}
+                onClick={() =>
+                  handleClick(item.value, item.gradient, item.slug)
+                }
+                onMouseEnter={() => setHoveredPrice(item.value)}
+                onMouseLeave={() => setHoveredPrice(null)}
+                className={`relative overflow-hidden group transition-all duration-300 bg-gray-50 ${
+                  isActive
+                    ? "transform -translate-y-1 "
+                    : " hover:shadow-xl hover:-translate-y-0.5 "
+                } rounded-xl`}
+              >
+                {/* Background Gradient */}
+                <div
+                  className={`absolute inset-0 transition-opacity duration-300 ${
+                    isActive
+                      ? `opacity-20 ${item.color}`
+                      : isHovered
+                        ? `opacity-10 ${item.color}`
+                        : "opacity-0"
+                  }`}
+                />
+
+                {/* Card Content */}
+                <div className="relative z-10 p-4 bg-white/90 backdrop-blur-sm rounded-md">
+                  {/* Icon */}
+
+                  {/* Price Label */}
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <FaRupeeSign
+                        className={`text-xs ${
+                          isActive ? "text-gray-700" : "text-gray-400"
+                        }`}
+                      />
+                      <span
+                        className={`font-semibold text-sm ${
+                          isActive ? "text-gray-900" : "text-gray-700"
+                        }`}
+                      >
+                        {item.label.split(" ")[1]}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Active Indicator */}
+                  <div
+                    className={`absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-16 h-1 rounded-t-full transition-all duration-300 ${
+                      isActive ? `${item.color} opacity-100` : "opacity-0"
+                    }`}
+                  />
+                </div>
+
+                {/* Hover Border */}
+                <div
+                  className={`absolute inset-0 rounded-xl border-2 transition-all duration-300 pointer-events-none ${
+                    isHovered ? "border-gray-200" : "border-transparent"
+                  }`}
+                />
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Decorative Elements */}
+        <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-r from-purple-200 to-red-200 rounded-full blur-2xl opacity-60" />
+        <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-gradient-to-r from-purple-200 to-red-200 rounded-full blur-2xl opacity-50" />
+      </div>
+
+      {/* Footer CTA */}
+      <div className="mt-8 pt-6 border-t border-gray-100">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
+          <div className="text-center sm:text-left">
+            <p className="text-gray-600 text-sm">
+              Can't decide?{" "}
+              <span className="font-semibold text-gray-900">
+                Explore all smartphones
+              </span>
+            </p>
+            <p className="text-gray-400 text-xs mt-1">
+              Filter by brand, features, and more
+            </p>
+          </div>
+
+          <button
+            onClick={() => navigate("/smartphones")}
+            className="group flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-red-600 text-white rounded-full hover:from-purple-600 hover:to-red-600 transition-all duration-300 shadow-lg hover:shadow-xl hover:gap-3"
+          >
+            <span className="font-semibold">View All Phones</span>
+            <FaArrowRight className="transition-transform duration-300 group-hover:translate-x-1" />
           </button>
         </div>
-
-        {/* Card Content */}
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Image Section */}
-          <div className="flex-1 flex flex-col items-center">
-            <img
-              src="https://fdn2.gsmarena.com/vv/pics/iqoo/iqoo-neo10-1.jpg"
-              alt="iQOO Neo 10"
-              className="w-48 rounded-xl border border-gray-200"
-            />
-            <a href="#" className="text-blue-600 text-sm mt-2 hover:underline">
-              View Photos (62)
-            </a>
-          </div>
-
-          {/* Details Section */}
-          <div className="flex-2">
-            <span className="inline-block bg-green-500 text-white text-xs px-2 py-1 rounded font-semibold mb-4">
-              94% Spec Score
-            </span>
-
-            <ul className="space-y-2 text-gray-700 text-sm mb-4">
-              <li>⚙️ Snapdragon 8s Gen 4</li>
-              <li>💾 8 GB RAM</li>
-              <li>📸 50 MP + 8 MP Rear Camera | 32 MP Front Camera</li>
-              <li>🔋 7000 mAh | ⚡ 120W Flash Charging</li>
-              <li>📱 6.78 inches (17.22 cm) | AMOLED</li>
-            </ul>
-
-            <a href="#" className="text-blue-600 text-sm hover:underline mb-4 inline-block">
-              View All Specs
-            </a>
-
-            <div className="bg-gray-50 rounded-lg px-3 py-2 text-gray-700 text-sm mb-4">
-              🏆 Best Phones Under Rs. 40,000
-            </div>
-
-            <div className="flex flex-col sm:flex-row justify-between text-sm text-gray-700 mb-6 space-y-2 sm:space-y-0">
-              <div>
-                <strong>User Rating:</strong> ⭐ 4.4/5 (1,299 Ratings)
-              </div>
-              <div>
-                <strong>Expert Rating:</strong> 8.5/10
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
-              <div className="flex items-center space-x-4">
-                <img
-                  src="https://upload.wikimedia.org/wikipedia/commons/3/3f/Flipkart_logo.png"
-                  alt="Flipkart"
-                  className="h-6"
-                />
-                <p className="text-xl font-bold text-gray-900">₹32,945</p>
-              </div>
-              <button className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-300">
-                Go To Store
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
-    </section>
+    </div>
   );
 };
 
-export default FeaturedProduct;
+export default MobilePriceFinder;

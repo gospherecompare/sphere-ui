@@ -1,5 +1,6 @@
 // src/components/DeviceList.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { Helmet } from "react-helmet-async";
 import {
   FaStar,
   FaCamera,
@@ -22,14 +23,28 @@ import {
   FaInfoCircle,
   FaChevronRight,
   FaExternalLinkAlt,
+  FaExchangeAlt,
 } from "react-icons/fa";
 import { useDevice } from "../../hooks/useDevice";
-import { useNavigate, useLocation } from "react-router-dom";
+import {
+  useNavigate,
+  useLocation,
+  useSearchParams,
+  useParams,
+} from "react-router-dom";
+import { useDispatch } from "react-redux";
+import {
+  fetchSmartphones,
+  fetchTrendingSmartphones,
+  fetchNewLaunchSmartphones,
+} from "../../store/deviceSlice";
 import Brandofmonth from "../Home/Brandofmonth";
-import CategoryNav from "../Home/Category";
-import { STORE_LOGOS } from "../../constants/storeLogos";
+import ProductNav from "../Home/Products";
+import useStoreLogos from "../../hooks/useStoreLogos";
 import Spinner from "../ui/Spinner";
-import useTitle from "../../hooks/useTitle";
+import Breadcrumbs from "../Breadcrumbs";
+import { generateSlug } from "../../utils/slugGenerator";
+import normalizeProduct from "../../utils/normalizeProduct";
 
 // Enhanced Image Carousel - Simplified without counts/indicators
 const ImageCarousel = ({ images = [] }) => {
@@ -52,7 +67,7 @@ const ImageCarousel = ({ images = [] }) => {
   // If no images or single image, show static image
   if (!images || images.length === 0) {
     return (
-      <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg">
+      <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg">
         <div className="text-center">
           <FaMobileAlt className="text-gray-300 text-3xl mx-auto mb-2" />
           <span className="text-gray-400 text-sm">No image</span>
@@ -133,9 +148,43 @@ const ImageCarousel = ({ images = [] }) => {
   );
 };
 
-const Smartphonelist = () => {
+const Smartphones = () => {
+  // Add animation styles
+  const animationStyles = `
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(100%);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .animate-slide-up {
+      animation: slideUp 0.3s ease-out forwards;
+    }
+  `;
+
   const deviceContext = useDevice();
   const { smartphone } = deviceContext || {};
+  const [params] = useSearchParams();
+  const filter = params.get("filter");
+  const feature = params.get("feature");
+  const normalizedFeature = feature
+    ? feature.toString().toLowerCase().replace(/\s+/g, "-")
+    : null;
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    if (feature) {
+      dispatch(fetchSmartphones({ feature }));
+    } else if (filter === "trending") dispatch(fetchTrendingSmartphones());
+    else if (filter === "new") dispatch(fetchNewLaunchSmartphones());
+    else dispatch(fetchSmartphones());
+  }, [filter, feature, dispatch]);
+
+  const { getLogo, getStore, getStoreLogo } = useStoreLogos();
 
   // Helper function to extract numeric price
   const extractNumericPrice = (price) => {
@@ -146,22 +195,43 @@ const Smartphonelist = () => {
 
   // Helper function to format price display
   const formatPriceDisplay = (price) => {
-    if (!price || price === "NaN") return "Price not available";
+    if (!price || price === "NaN") return "";
     if (typeof price === "string" && price.includes(",")) return `₹${price}`;
     const numeric = extractNumericPrice(price);
-    return numeric > 0
-      ? `₹ ${numeric.toLocaleString()}`
-      : "Price not available";
+    return numeric > 0 ? `₹ ${numeric.toLocaleString()}` : "";
   };
 
   // Map API response to device format
   const mapApiToDevice = (apiDevice, idx) => {
+    const asText = (v) => {
+      if (v == null) return "";
+      if (typeof v === "string") return v.trim();
+      if (typeof v === "number" || typeof v === "boolean") return String(v);
+      return "";
+    };
+    // pick: choose first non-null, non-empty value
+    const pick = (...vals) =>
+      vals.find((v) => v != null && String(v).trim() !== "");
+
+    // If this device already looks normalized (from Redux), return as-is to avoid double-normalization
+    if (
+      apiDevice &&
+      apiDevice.productType === "smartphone" &&
+      apiDevice.specs &&
+      typeof apiDevice.specs === "object"
+    ) {
+      return { ...apiDevice };
+    }
     // Images
     const images = apiDevice.images || [];
 
-    // Use `variants` array provided by Redux (already normalized at store level)
+    // Normalize `variants` array: prefer `variant_id` as `id` so downstream
+    // code can rely on `v.id` existing (API sometimes uses `variant_id`).
     const variants = Array.isArray(apiDevice.variants)
-      ? apiDevice.variants
+      ? apiDevice.variants.map((v) => ({
+          ...v,
+          id: v.id ?? v.variant_id ?? v.variantId,
+        }))
       : [];
 
     // Aggregate store prices from variants -> store_prices
@@ -170,14 +240,20 @@ const Smartphonelist = () => {
       storePrices = variants.flatMap((v) => {
         const variantBase = v.base_price || v.basePrice || v.base;
         const prices = Array.isArray(v.store_prices)
-          ? v.store_prices.map((sp) => ({
-              id: sp.id,
-              variant_id: v.id,
-              store: sp.store_name || sp.store || sp.storeName || sp.storeName,
-              price: sp.price,
-              url: sp.url || sp.url_link || sp.link,
-              last_updated: sp.last_updated || sp.lastUpdated,
-            }))
+          ? v.store_prices.map((sp) => {
+              const storeName =
+                sp.store_name || sp.store || sp.storeName || sp.storeName;
+              return {
+                id: sp.id,
+                variant_id: v.id,
+                store: storeName,
+                storeObj: getStore ? getStore(storeName) : null,
+                // do not persist logo here — resolve at render time via getLogo()
+                price: sp.price,
+                url: sp.url || sp.url_link || sp.link,
+                last_updated: sp.last_updated || sp.lastUpdated,
+              };
+            })
           : [];
         // include variant base price if no store prices present for this variant
         if (prices.length === 0 && variantBase) {
@@ -197,12 +273,18 @@ const Smartphonelist = () => {
     // If still empty, try top-level store_prices or variants fallback
     if (storePrices.length === 0) {
       if (Array.isArray(apiDevice.store_prices)) {
-        storePrices = apiDevice.store_prices.map((sp) => ({
-          id: sp.id,
-          store: sp.store_name || sp.store || sp.storeName || "Store",
-          price: sp.price,
-          url: sp.url,
-        }));
+        storePrices = apiDevice.store_prices.map((sp) => {
+          const storeName =
+            sp.store_name || sp.store || sp.storeName || "Store";
+          return {
+            id: sp.id,
+            store: storeName,
+            storeObj: getStore ? getStore(storeName) : null,
+            // resolve logo at render time via getLogo(storeName)
+            price: sp.price,
+            url: sp.url,
+          };
+        });
       }
     }
 
@@ -211,7 +293,7 @@ const Smartphonelist = () => {
     const variantBaseCandidates = variants.length
       ? variants
           .map((v) =>
-            extractNumericPrice(v.base_price || v.basePrice || v.base)
+            extractNumericPrice(v.base_price || v.basePrice || v.base),
           )
           .filter((n) => n > 0)
       : [];
@@ -226,21 +308,61 @@ const Smartphonelist = () => {
       numericPrice = candidatePrices.length ? Math.min(...candidatePrices) : 0;
     }
 
-    // Battery
+    // Battery (support multiple shapes)
     const batteryRaw =
       apiDevice.battery?.battery_capacity_mah ||
       apiDevice.battery?.battery_capacity ||
       apiDevice.battery?.capacity ||
       apiDevice.battery_capacity_mah ||
       apiDevice.battery_capacity ||
+      apiDevice.battery ||
       "";
     const numericBattery = parseInt(
-      String(batteryRaw).replace(/[^0-9]/g, "") || "0"
+      String(batteryRaw).replace(/[^0-9]/g, "") || "0",
     );
 
     // Refresh rate
     const refreshRate =
       apiDevice.display?.refresh_rate || apiDevice.display?.refreshRate || "";
+
+    // Build / design specifics (dimensions, weight, thickness, back material)
+    const build = apiDevice.build_design || apiDevice.build || {};
+    const dimensionWidth = build.width || build.size || apiDevice.width || "";
+    const dimensionHeight = build.height || apiDevice.height || "";
+    // weight may be an object with variants (alpha_black, legend_white, etc.)
+    let weightStr = "";
+    if (build.weight) {
+      if (typeof build.weight === "string") weightStr = build.weight;
+      else if (typeof build.weight === "object") {
+        const vals = Object.values(build.weight).filter(Boolean);
+        weightStr = vals.length ? String(vals[0]) : "";
+      }
+    }
+    const thicknessStr =
+      build.thickness && typeof build.thickness === "string"
+        ? build.thickness
+        : build.thickness && typeof build.thickness === "object"
+          ? Object.values(build.thickness).find(Boolean) || ""
+          : "";
+    const backMaterial =
+      (build.back_material &&
+        (typeof build.back_material === "string"
+          ? build.back_material
+          : Object.values(build.back_material || {}).find(Boolean))) ||
+      apiDevice.back_material ||
+      "";
+
+    // Connectivity details
+    const connectivity =
+      apiDevice.connectivity || apiDevice.connectivity_network || {};
+    const wifiSupport = Array.isArray(connectivity.wifi)
+      ? connectivity.wifi.join(", ")
+      : connectivity.wifi || "";
+    const bluetooth = connectivity.bluetooth || "";
+    const gps = connectivity.gps || "";
+    const nfc = connectivity.nfc || "";
+    const otg = connectivity.otg || "";
+    const usb = connectivity.usb || "";
 
     // Network support (connectivity_network in JSON)
     let networkSupport = "";
@@ -271,19 +393,90 @@ const Smartphonelist = () => {
         apiDevice.performance?.network || apiDevice.network || "";
     }
 
-    // Camera count - infer from available camera fields
-    const cam = apiDevice.camera || {};
-    const cameraFields = [
-      "main_camera_megapixels",
-      "telephoto_camera_megapixels",
-      "ultrawide_camera_megapixels",
-      "front_camera_megapixels",
-    ];
-    const cameraCount = cameraFields.reduce(
-      (acc, k) =>
-        cam[k] || cam[k.replace(/_megapixels$/, "")] ? acc + 1 : acc,
-      0
-    );
+    // Camera count and details - prefer structured `camera.rear_camera` if present
+    const cam = apiDevice.camera || apiDevice.cameras || {};
+    let cameraCount = 0;
+    const cameraDetails = [];
+    if (cam.rear_camera && typeof cam.rear_camera === "object") {
+      const rear = cam.rear_camera;
+      if (rear.main) {
+        cameraCount += 1;
+        cameraDetails.push(
+          `${rear.main?.resolution || rear.main?.megapixels || ""}`.trim(),
+        );
+      }
+      if (rear.ultra_wide) {
+        cameraCount += 1;
+        cameraDetails.push(
+          `${rear.ultra_wide?.resolution || rear.ultra_wide?.megapixels || ""}`.trim(),
+        );
+      }
+      if (rear.periscope_telephoto) {
+        cameraCount += 1;
+        cameraDetails.push(
+          `${rear.periscope_telephoto?.zoom ? `${rear.periscope_telephoto.zoom} ` : ""}${rear.periscope_telephoto?.resolution || rear.periscope_telephoto?.megapixels || ""}`.trim(),
+        );
+      }
+    } else {
+      const cameraFields = [
+        "main_camera_megapixels",
+        "telephoto_camera_megapixels",
+        "ultrawide_camera_megapixels",
+        "front_camera_megapixels",
+        "main_camera",
+        "front_camera",
+      ];
+      cameraCount = cameraFields.reduce(
+        (acc, k) =>
+          cam && (cam[k] || cam[k.replace(/_megapixels$/, "")]) ? acc + 1 : acc,
+        0,
+      );
+    }
+
+    // Rear camera specific resolutions (safe extraction)
+    const rearMainRes =
+      cam?.rear_camera?.main?.resolution ||
+      cam?.rear_camera?.main?.megapixels ||
+      "";
+    const rearUltraRes =
+      cam?.rear_camera?.ultra_wide?.resolution ||
+      cam?.rear_camera?.ultra_wide?.megapixels ||
+      "";
+    const rearPeriscopeRes =
+      cam?.rear_camera?.periscope_telephoto?.resolution ||
+      cam?.rear_camera?.periscope_telephoto?.megapixels ||
+      "";
+    const periscopeZoom =
+      cam?.rear_camera?.periscope_telephoto?.zoom ||
+      cam?.periscope_telephoto?.zoom ||
+      "";
+    // Use only rear main resolution for the concise camera display
+    const rearCameraResolution = [rearMainRes].filter(Boolean).join(" + ");
+    if (!cameraCount) {
+      const topCount =
+        parseInt(
+          apiDevice.camera_count ||
+            apiDevice.cameraCount ||
+            apiDevice.number_of_cameras ||
+            apiDevice.cameras_count ||
+            0,
+          10,
+        ) || 0;
+      cameraCount = topCount;
+    }
+
+    // Performance-provided ram/storage options
+    const perf = apiDevice.performance || {};
+    const perfRamOptions = Array.isArray(perf.ram_options)
+      ? perf.ram_options
+      : perf.ram
+        ? [perf.ram]
+        : [];
+    const perfStorageOptions = Array.isArray(perf.storage_options)
+      ? perf.storage_options
+      : perf.storage
+        ? [perf.storage]
+        : [];
 
     // Storage and RAM options from variants or performance
     const variantStorages = variants.length
@@ -305,15 +498,137 @@ const Smartphonelist = () => {
         ? variantRams.join(" / ")
         : apiDevice.performance?.ram || "";
 
+    // build safe display string
+    const displayStr =
+      typeof apiDevice.display === "string"
+        ? apiDevice.display
+        : `${apiDevice.display?.size || ""} ${apiDevice.display?.type || ""}`.trim();
+
+    // toString: safely convert various shapes to a usable string
+    const toString = (v) => {
+      if (v == null) return "";
+      if (typeof v === "string") return v.trim();
+      if (typeof v === "number" || typeof v === "boolean") return String(v);
+      if (typeof v === "object") {
+        const common = [
+          "name",
+          "title",
+          "model",
+          "label",
+          "value",
+          "processor",
+          "display",
+          "brand",
+        ];
+        for (const k of common) {
+          if (v[k]) return String(v[k]).trim();
+        }
+        try {
+          const s = JSON.stringify(v);
+          return s === "{}" ? "" : s;
+        } catch {
+          return "";
+        }
+      }
+      return "";
+    };
+
+    const processorCandidate = pick(
+      toString(apiDevice.processor),
+      toString(apiDevice.cpu),
+      toString(apiDevice.performance?.processor),
+    );
+
+    const ramCandidate = pick(
+      toString(ramStr),
+      toString(apiDevice.performance?.ram),
+    );
+
+    const storageCandidate = pick(
+      toString(storageStr),
+      toString(apiDevice.performance?.ROM_storage),
+      toString(apiDevice.performance?.rom),
+      toString(apiDevice.performance?.storage),
+    );
+
+    // Prefer structured rear_camera details (keep `resolution` field),
+    // fall back to common flat camera fields or string shapes.
+    let cameraCandidate = "";
+    let frontStr = "";
+    if (Array.isArray(cameraDetails) && cameraDetails.length > 0) {
+      const front = cam.front_camera || cam.front || cam.frontCamera || null;
+      if (front) {
+        const fRes = front?.resolution || front?.megapixels || "";
+        frontStr = `${fRes || ""}`.trim();
+      }
+      cameraCandidate = frontStr
+        ? `${cameraDetails.join(" | ")} | Front: ${frontStr}`
+        : cameraDetails.join(" | ");
+    } else {
+      cameraCandidate = pick(
+        typeof cam === "string"
+          ? toString(cam)
+          : toString(cam.main_camera_megapixels) ||
+              toString(cam.main_camera) ||
+              toString(cam.primary),
+      );
+    }
+
+    // Detect if this device advertises AI capabilities in common fields
+    const detectAiPhone = () => {
+      if (
+        apiDevice.is_ai ||
+        apiDevice.ai_phone ||
+        apiDevice.isAi ||
+        apiDevice.ai
+      )
+        return true;
+      const candidates = [
+        apiDevice.features,
+        apiDevice.tags,
+        apiDevice.keywords,
+        apiDevice.ai_features,
+        apiDevice.performance?.ai_features,
+        apiDevice.camera?.ai,
+        apiDevice.camera?.ai_features,
+        apiDevice.description,
+        apiDevice.summary,
+      ];
+      for (const c of candidates) {
+        if (!c) continue;
+        if (Array.isArray(c) && c.some((x) => /ai/i.test(String(x))))
+          return true;
+        if (typeof c === "string" && /\bai\b/i.test(c)) return true;
+      }
+      try {
+        if (/\bai\b/i.test(JSON.stringify(cam || {}))) return true;
+      } catch {}
+      return false;
+    };
+    const isAiPhone = detectAiPhone();
+
     return {
-      id: apiDevice.id || idx + 1,
-      name: apiDevice.name || apiDevice.model || "",
-      model: apiDevice.model || "",
-      brand: apiDevice.brand || "",
-      price:
-        numericPrice > 0
-          ? `₹${numericPrice.toLocaleString()}`
-          : "Price not available",
+      id: pick(
+        apiDevice.id,
+        apiDevice.product_id,
+        apiDevice.productId,
+        idx + 1,
+      ),
+      productId: pick(
+        apiDevice.id,
+        apiDevice.product_id,
+        apiDevice.productId,
+        idx + 1,
+      ),
+      productType: "smartphone",
+      name: pick(toString(apiDevice.name), toString(apiDevice.model), "") || "",
+      model: toString(apiDevice.model) || "",
+      brand: pick(
+        toString(apiDevice.brand_name),
+        toString(apiDevice.brand),
+        "",
+      ),
+      price: numericPrice > 0 ? `₹${numericPrice.toLocaleString()}` : "",
       numericPrice: numericPrice,
       rating: parseFloat(apiDevice.rating) || 0,
       reviews:
@@ -323,30 +638,57 @@ const Smartphonelist = () => {
       image: images[0] || "",
       images: images,
       specs: {
-        display: `${apiDevice.display?.size || ""} ${
-          apiDevice.display?.type || ""
-        }`.trim(),
-        processor: apiDevice.performance?.processor || "",
-        ram: ramStr,
-        storage: storageStr,
-        camera: cam.main_camera_megapixels || cam.main_camera || "",
-        battery:
-          batteryRaw || (numericBattery > 0 ? `${numericBattery} mAh` : ""),
-        os:
-          apiDevice.performance?.operating_system ||
-          apiDevice.performance?.operatingSystem ||
-          apiDevice.performance?.os ||
+        display: pick(toString(displayStr), toString(apiDevice.display), ""),
+        processor: pick(processorCandidate, toString(apiDevice.processor), ""),
+        ram: pick(ramCandidate, toString(apiDevice.performance?.ram), ""),
+        storage: pick(
+          storageCandidate,
+          toString(apiDevice.performance?.storage),
           "",
-        refreshRate: refreshRate,
-        network: networkSupport,
-        cameraCount: cameraCount,
+        ),
+        camera: pick(cameraCandidate, toString(cameraCandidate), ""),
+        rearCameraResolution: pick(rearCameraResolution, ""),
+        isAiPhone: isAiPhone,
+        periscopeZoom: pick(periscopeZoom, ""),
+        frontCameraResolution: pick(frontStr, ""),
+        battery: pick(
+          toString(batteryRaw),
+          numericBattery > 0 ? `${numericBattery} mAh` : null,
+          "",
+        ),
+        os: pick(
+          toString(apiDevice.performance?.operating_system),
+          toString(apiDevice.performance?.operatingSystem),
+          toString(apiDevice.performance?.os),
+          "",
+        ),
+        refreshRate: pick(toString(refreshRate), ""),
+        network: pick(
+          toString(networkSupport),
+          toString(apiDevice.network),
+          "",
+        ),
+        cameraCount: cameraCount || 0,
       },
       numericBattery: numericBattery,
-      launchDate:
-        apiDevice.launch_date ||
-        apiDevice.created_at ||
-        apiDevice.createdAt ||
+      // preserve raw nested fields so feature-filtering can inspect original shapes
+      battery: apiDevice.battery ?? apiDevice.battery_raw ?? null,
+      camera: apiDevice.camera ?? apiDevice.cameras ?? null,
+      performance: apiDevice.performance ?? apiDevice.perf ?? null,
+      network:
+        apiDevice.network ??
+        apiDevice.connectivity ??
+        apiDevice.connectivity_network ??
+        null,
+      sensors: apiDevice.sensors ?? apiDevice.sensor ?? null,
+      display: apiDevice.display ?? null,
+      category: apiDevice.category ?? apiDevice.product_type ?? null,
+      launchDate: pick(
+        toString(apiDevice.launch_date),
+        toString(apiDevice.created_at),
+        toString(apiDevice.createdAt),
         "",
+      ),
       storePrices: storePrices,
       variants: variants,
     };
@@ -356,8 +698,8 @@ const Smartphonelist = () => {
   const devices = Array.isArray(smartphone)
     ? smartphone.map((device, i) => mapApiToDevice(device, i))
     : smartphone
-    ? [mapApiToDevice(smartphone, 0)]
-    : [];
+      ? [mapApiToDevice(smartphone, 0)]
+      : [];
 
   // Aggregate all variants across smartphones (supports variants array or singular variant)
   const allVariants = (
@@ -381,49 +723,62 @@ const Smartphonelist = () => {
       const rawVariantStorePrices = Array.isArray(v.store_prices)
         ? v.store_prices
         : [];
+      // Map variant-level store prices (keep original price strings)
+      const mappedVariantStores = rawVariantStorePrices.map((sp) => {
+        const storeName = sp.store_name || sp.store || sp.storeName || "Store";
+        return {
+          id: sp.id,
+          store: storeName,
+          storeObj: getStore ? getStore(storeName) : null,
+          // leave logo resolution to render-time via getLogo(store)
+          price: sp.price,
+          url: sp.url,
+        };
+      });
 
-      const mappedVariantStores = rawVariantStorePrices.map((sp) => ({
-        id: sp.id,
-        store: sp.store_name || sp.store || sp.storeName || "Store",
-        price: sp.price,
-        url: sp.url,
-      }));
+      // Variant base numeric price (if provided)
+      const variantBaseNumeric = extractNumericPrice(
+        v.base_price || v.basePrice || v.base,
+      );
 
-      const base = extractNumericPrice(v.base_price || v.basePrice || v.base);
-
-      // prefer variant store prices; if none, expose the variant base price as a single "Variant" store entry;
-      // only fallback to device-level aggregated stores when neither variant stores nor base price are available.
-      const storePrices =
-        mappedVariantStores.length > 0
-          ? mappedVariantStores
-          : base > 0
-          ? [
-              {
-                id: `variant-base-${
-                  v.variant_id ?? v.id ?? Math.random().toString(36).slice(2, 8)
-                }`,
-                store: "Variant",
-                price: base,
-                url: null,
-              },
-            ]
-          : device.storePrices || [];
-
-      // compute numeric price for variant: prefer lowest store price, else base_price, else device.numericPrice
-      const candidatePrices = storePrices
+      // 1) Preferred: lowest numeric price among this variant's store_prices
+      const variantStoreNumericPrices = mappedVariantStores
         .map((p) => extractNumericPrice(p.price))
         .filter((n) => n > 0);
-      const numericPrice = candidatePrices.length
-        ? Math.min(...candidatePrices)
-        : device.numericPrice || 0;
+      const lowestVariantStorePrice =
+        variantStoreNumericPrices.length > 0
+          ? Math.min(...variantStoreNumericPrices)
+          : 0;
 
-      const price =
-        numericPrice > 0
-          ? `₹${numericPrice.toLocaleString()}`
-          : "Price not available";
+      // 2) Price resolution per requirements:
+      // First -> lowestVariantStorePrice, Second -> variantBaseNumeric, Third -> device.numericPrice
+      let resolvedNumericPrice = 0;
+      if (lowestVariantStorePrice > 0)
+        resolvedNumericPrice = lowestVariantStorePrice;
+      else if (variantBaseNumeric > 0)
+        resolvedNumericPrice = variantBaseNumeric;
+      else if (device.numericPrice > 0)
+        resolvedNumericPrice = device.numericPrice;
+
+      const priceDisplay =
+        resolvedNumericPrice > 0
+          ? `₹${resolvedNumericPrice.toLocaleString()}`
+          : "";
+
+      // Store prices to expose on card: prefer mappedVariantStores when available, else an empty list
+      const storePricesToExpose =
+        mappedVariantStores.length > 0 ? mappedVariantStores : [];
+
+      // RAM and Storage must come from variant (per requirement)
+      const variantRam = v.ram || v.RAM || "";
+      const variantStorage =
+        v.storage || v.storage_capacity || v.ROM || v.rom || "";
+
+      // Card title in strict format: {device name} | {variant RAM} / {variant Storage} | {price or N/A}
+      const cardTitle = `${device.name || device.model || "Unnamed"} | ${variantRam || ""} / ${variantStorage || ""} | ${priceDisplay}`;
 
       return {
-        // keep device-level info but override ram/storage/price
+        // keep device-level info but override ram/storage/price and add cardTitle
         ...device,
         id: `${device.id}-${
           v.variant_id ?? v.id ?? Math.random().toString(36).slice(2, 8)
@@ -431,12 +786,13 @@ const Smartphonelist = () => {
         variant: v,
         specs: {
           ...device.specs,
-          ram: v.ram || device.specs.ram,
-          storage: v.storage || device.specs.storage,
+          ram: variantRam || device.specs.ram,
+          storage: variantStorage || device.specs.storage,
         },
-        storePrices: storePrices.length > 0 ? storePrices : device.storePrices,
-        price,
-        numericPrice,
+        storePrices: storePricesToExpose,
+        price: priceDisplay,
+        numericPrice: resolvedNumericPrice,
+        cardTitle,
       };
     });
   });
@@ -452,7 +808,7 @@ const Smartphonelist = () => {
     ...new Set(
       allVariants
         .map((v) => v?.color_name || v?.color_name || v?.color || v?.colorName)
-        .filter(Boolean)
+        .filter(Boolean),
     ),
   ];
 
@@ -460,7 +816,7 @@ const Smartphonelist = () => {
   uniqueRams.sort(
     (a, b) =>
       parseInt(String(a).replace(/[^0-9]/g, "")) -
-      parseInt(String(b).replace(/[^0-9]/g, ""))
+      parseInt(String(b).replace(/[^0-9]/g, "")),
   );
   const parseStorageValue = (s) => {
     if (!s) return 0;
@@ -510,7 +866,7 @@ const Smartphonelist = () => {
       // Split values like "128GB/256GB" into ["128GB", "256GB"]
       const individualStorages = storage.split("/").map((s) => s.trim());
       return individualStorages.filter(
-        (storage) => storage && storage !== "NaN"
+        (storage) => storage && storage !== "NaN",
       );
     });
 
@@ -662,18 +1018,28 @@ const Smartphonelist = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
+  const [compareItems, setCompareItems] = useState([]);
 
-  // Set page title based on active filters or search query
+  // Brand-based SEO helper
   const filterBrand =
     Array.isArray(filters?.brand) && filters.brand[0] ? filters.brand[0] : null;
-  const filterSummary = filterBrand
-    ? filterBrand
-    : searchQuery
-    ? searchQuery
-    : null;
-  useTitle({
-    page: filterSummary ? `Smartphones - ${filterSummary}` : "Smartphones",
-  });
+  const currentBrandObj = (() => {
+    const b = filterBrand;
+    if (!b) return null;
+    const all = deviceContext?.brands || [];
+    const norm = (s) => (s || "").toString().toLowerCase();
+    return (
+      all.find((br) => {
+        const slug =
+          br.slug ||
+          (br.name || "").toString().toLowerCase().replace(/\s+/g, "-");
+        return (
+          slug === b.toString().toLowerCase() ||
+          norm(br.name) === b.toString().toLowerCase()
+        );
+      }) || null
+    );
+  })();
 
   // Extract unique brands from devices
   const brands = [...new Set(devices.map((d) => d.brand).filter(Boolean))];
@@ -686,7 +1052,68 @@ const Smartphonelist = () => {
     filters: contextFilters,
   } = deviceContext || {};
   const navigate = useNavigate();
-  const { search } = useLocation();
+  const location = useLocation();
+  const { filterSlug } = useParams();
+  const { search } = location;
+  const pathname = String(location?.pathname || "").toLowerCase();
+  const isSingleSmartphonePath = pathname === "/smartphone";
+  const isNewFilterPath = pathname === "/smartphones" && filter === "new";
+  const currentYear = new Date().getFullYear();
+  const normalizedFilterSlug = String(filterSlug || "")
+    .trim()
+    .toLowerCase();
+
+  const priceFilterMap = {
+    "under-10000": { min: 0, max: 10000, label: "Under ₹10,000" },
+    "under-15000": { min: 0, max: 15000, label: "Under ₹15,000" },
+    "under-20000": { min: 0, max: 20000, label: "Under ₹20,000" },
+    "under-25000": { min: 0, max: 25000, label: "Under ₹25,000" },
+    "under-30000": { min: 0, max: 30000, label: "Under ₹30,000" },
+    "under-40000": { min: 0, max: 40000, label: "Under ₹40,000" },
+    "under-50000": { min: 0, max: 50000, label: "Under ₹50,000" },
+    "above-50000": { min: 50000, max: MAX_PRICE, label: "Above ₹50,000" },
+  };
+  const priceFilter = priceFilterMap[normalizedFilterSlug] || null;
+
+  let seoTitle = `Smartphones ${currentYear} - Specs, Prices & Reviews | Hook`;
+  let seoDescription =
+    "Browse the latest smartphones with detailed specs, prices, reviews, and comparisons on Hook.";
+
+  if (isSingleSmartphonePath) {
+    seoTitle = `Smartphones ${currentYear} - Compare Specs, Prices & Reviews | Hook`;
+    seoDescription =
+      "Compare the latest smartphones on Hook. Explore detailed specifications, prices, reviews, and side-by-side comparisons before you buy.";
+  } else if (isNewFilterPath) {
+    seoTitle = `Latest Smartphones ${currentYear} - New Launches & Prices | Hook`;
+    seoDescription =
+      "Discover newly launched smartphones with updated prices, full specifications, and reviews. Stay updated with the latest mobile releases on Hook.";
+  } else if (priceFilter) {
+    seoTitle = `Best Smartphones ${priceFilter.label} in ${currentYear} - Reviews, Specs & Deals | Hook`;
+    seoDescription = `Explore the best smartphones ${priceFilter.label.toLowerCase()} with detailed specs, latest prices, reviews, and comparisons to choose the right phone for your budget.`;
+  } else if (currentBrandObj) {
+    seoTitle = `${currentBrandObj.name} Smartphones ${currentYear} - Models, Prices & Specs | Hook`;
+    seoDescription =
+      currentBrandObj.description ||
+      `Explore ${currentBrandObj.name} smartphones on Hook. Compare models, check prices, specifications, reviews, and find the best phone for your needs.`;
+  }
+
+  // Heading label: prefer new launches, then price-filtered collection
+  const isNewLaunchHeading =
+    (location &&
+      String(location.pathname || "")
+        .toLowerCase()
+        .includes("newlaunch")) ||
+    (params && params.get("filter") === "new");
+  const headerLabel = isNewLaunchHeading
+    ? "LATEST COLLECTION"
+    : priceFilter
+      ? `BEST SMARTPHONE ${priceFilter.label.toUpperCase()}`
+      : "SMARTPHONE COLLECTION";
+
+  // Defer render check until after all hooks are declared to keep hook order stable
+  const noDataAndNotLoading =
+    (!smartphone || (Array.isArray(smartphone) && smartphone.length === 0)) &&
+    !loading;
 
   // Apply query param filters
   useEffect(() => {
@@ -698,9 +1125,15 @@ const Smartphonelist = () => {
 
     // Parse price and list params (comma-separated lists supported)
     const rawMin =
-      params.get("priceMin") || params.get("minPrice") || params.get("min");
+      params.get("priceMin") ||
+      params.get("minPrice") ||
+      params.get("min") ||
+      params.get("min_price");
     const rawMax =
-      params.get("priceMax") || params.get("maxPrice") || params.get("max");
+      params.get("priceMax") ||
+      params.get("maxPrice") ||
+      params.get("max") ||
+      params.get("max_price");
     const priceMin = rawMin ? Number(rawMin) : null;
     const priceMax = rawMax ? Number(rawMax) : null;
 
@@ -722,20 +1155,57 @@ const Smartphonelist = () => {
     const processorArr = toArray(processorParam);
     const refreshArr = toArray(refreshParam);
 
+    // Helper to resolve a brand param (slug or name) to the display brand name
+    const resolveBrandName = (bp) => {
+      if (!bp) return null;
+      const paramStr = bp.toString();
+      const candidates = deviceContext?.brands || brands || [];
+      try {
+        // If candidates are objects with `name`/`slug`, try to match
+        for (const c of candidates) {
+          if (!c) continue;
+          const name = c.name || (typeof c === "string" ? c : null);
+          const slug =
+            c.slug ||
+            (name || "").toString().toLowerCase().replace(/\s+/g, "-");
+          if (
+            slug === paramStr.toString().toLowerCase() ||
+            (name || "").toString().toLowerCase() ===
+              paramStr.toString().toLowerCase()
+          ) {
+            return name || paramStr;
+          }
+        }
+      } catch {}
+
+      // Fallback: convert slug-like strings to capitalized words (e.g. "samsung-galaxy" -> "Samsung Galaxy")
+      if (paramStr.includes("-")) {
+        return paramStr
+          .split("-")
+          .map((s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s))
+          .join(" ");
+      }
+
+      return paramStr;
+    };
+
     // Build next filters state using provided params; fall back to current state
     setFilters((prev) => {
+      const resolvedBrand = brandParam ? resolveBrandName(brandParam) : null;
       const next = {
         ...prev,
-        brand: brandParam ? [brandParam] : prev.brand,
+        brand: resolvedBrand ? [resolvedBrand] : prev.brand,
         priceRange: {
           min:
-            priceMin !== null && !Number.isNaN(priceMin)
+            priceFilter?.min ??
+            (priceMin !== null && !Number.isNaN(priceMin)
               ? priceMin
-              : prev.priceRange.min,
+              : prev.priceRange.min),
           max:
-            priceMax !== null && !Number.isNaN(priceMax)
+            priceFilter?.max ??
+            (priceMax !== null && !Number.isNaN(priceMax)
               ? priceMax
-              : prev.priceRange.max,
+              : prev.priceRange.max),
         },
         ram: ramArr.length ? ramArr : prev.ram,
         network: networkArr.length ? networkArr : prev.network,
@@ -761,7 +1231,7 @@ const Smartphonelist = () => {
     } else if (sortParam) {
       setSortBy(sortParam);
     }
-  }, [search]);
+  }, [search, normalizedFilterSlug]);
 
   // Sync filters when DeviceContext provides filters
   // Depend only on `contextFilters` so local changes don't trigger an overwrite.
@@ -826,6 +1296,18 @@ const Smartphonelist = () => {
     const storeId = store?.id ?? null;
     const storeName = store?.store ?? store?.store_name ?? null;
 
+    // record a product view for trending metrics (best-effort)
+    try {
+      const rawPid =
+        device.product_id ?? device.productId ?? device.id ?? identifier;
+      const pid = Number(rawPid);
+      if (Number.isInteger(pid) && pid > 0) {
+        fetch(`https://api.apisphere.in/api/public/product/${pid}/view`, {
+          method: "POST",
+        }).catch(() => {});
+      }
+    } catch {}
+
     if (device.model) {
       selectDeviceByModel?.(device.model);
     } else {
@@ -834,13 +1316,94 @@ const Smartphonelist = () => {
 
     addToHistory?.({ id: device.id, model: device.model, variantId, storeId });
 
+    // Generate SEO-friendly slug-based URL
+    const productSlug = generateSlug(device.model || device.name || device.id);
     const params = new URLSearchParams();
-    if (identifier) params.set("model", identifier);
     if (variantId) params.set("variantId", String(variantId));
     if (storeId) params.set("storeId", String(storeId));
     if (storeName) params.set("storeName", String(storeName));
 
-    navigate(`/devicedetail/smartphone?${params.toString()}`);
+    navigate(
+      `/smartphones/${productSlug}${
+        params.toString() ? "?" + params.toString() : ""
+      }`,
+    );
+  };
+
+  const handleCompareToggle = (device, e) => {
+    if (e) e.stopPropagation();
+    // Prefer variant-level unique id, fall back to variant.id, then product-level ids
+    const variant = device.variant ?? {};
+    const deviceId =
+      variant.variant_id ??
+      variant.id ??
+      device.productId ??
+      device.id ??
+      device.model;
+
+    setCompareItems((prev) => {
+      const isAlreadyAdded = prev.some((item) => {
+        const itemVariant = item.variant ?? {};
+        const itemId =
+          itemVariant.variant_id ??
+          itemVariant.id ??
+          item.productId ??
+          item.id ??
+          item.model;
+        return itemId === deviceId;
+      });
+
+      if (isAlreadyAdded) {
+        return prev.filter((item) => {
+          const itemVariant = item.variant ?? {};
+          const itemId =
+            itemVariant.variant_id ??
+            itemVariant.id ??
+            item.productId ??
+            item.id ??
+            item.model;
+          return itemId !== deviceId;
+        });
+      } else {
+        return [...prev, device];
+      }
+    });
+  };
+
+  const isCompareSelected = (device) => {
+    const variant = device.variant ?? {};
+    const deviceId =
+      variant.variant_id ??
+      variant.id ??
+      device.productId ??
+      device.id ??
+      device.model;
+
+    return compareItems.some((item) => {
+      const itemVariant = item.variant ?? {};
+      const itemId =
+        itemVariant.variant_id ??
+        itemVariant.id ??
+        item.productId ??
+        item.id ??
+        item.model;
+      return itemId === deviceId;
+    });
+  };
+
+  const handleCompareNavigate = (e) => {
+    if (e) e.stopPropagation();
+    if (compareItems.length === 0) return;
+
+    const queryParams = new URLSearchParams();
+    compareItems.forEach((device) => {
+      const idVal = device.productId ?? device.id ?? device.model;
+      queryParams.append("add", String(idVal));
+    });
+
+    navigate(`/compare?${queryParams.toString()}`, {
+      state: { initialProducts: compareItems },
+    });
   };
 
   const handleFilterChange = (filterType, value) => {
@@ -859,7 +1422,7 @@ const Smartphonelist = () => {
         if (sortBy && sortBy !== "featured") params.set("sort", sortBy);
         else params.delete("sort");
         const qs = params.toString();
-        const path = `/devicelist/smartphones${qs ? `?${qs}` : ""}`;
+        const path = `/smartphones${qs ? `?${qs}` : ""}`;
         navigate(path, { replace: true });
       } catch {
         // ignore
@@ -907,114 +1470,310 @@ const Smartphonelist = () => {
       if (value && value !== "featured") params.set("sort", value);
       else params.delete("sort");
       const qs = params.toString();
-      const path = `/devicelist/smartphones${qs ? `?${qs}` : ""}`;
+      const path = `/smartphones${qs ? `?${qs}` : ""}`;
       navigate(path, { replace: true });
     } catch {
       // ignore
     }
   };
 
-  // Filter logic (operates on variant-level cards)
-  const filteredVariants = variantCards.filter((device) => {
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const matchesSearch =
-        device.name.toLowerCase().includes(query) ||
-        device.brand.toLowerCase().includes(query) ||
-        (device.model && device.model.toLowerCase().includes(query));
-      if (!matchesSearch) return false;
+  // Filter logic (operates on variant-level cards) - memoized so it updates
+  // when device data, filters, searchQuery or feature change.
+  const filteredVariants = React.useMemo(() => {
+    // Do not attempt to apply feature filters while data is loading —
+    // wait for server response to avoid empty results on first render.
+    if (loading) return [];
+
+    // When asking for new launches, prefer devices with a parseable
+    // launch date that is not in the future and sort them newest-first.
+    let baseCards = variantCards;
+    if (filter === "new") {
+      const today = new Date();
+      const parseDate = (s) => {
+        if (!s) return null;
+        const d = new Date(s);
+        return Number.isNaN(d.getTime()) ? null : d;
+      };
+
+      baseCards = variantCards
+        .filter((d) => {
+          const ld = parseDate(d.launchDate || d.launch_date || d.launch_date);
+          return ld && ld <= today;
+        })
+        .sort((a, b) => {
+          const da = parseDate(a.launchDate) || new Date(0);
+          const db = parseDate(b.launchDate) || new Date(0);
+          return db - da;
+        });
     }
 
-    // Brand filter
-    if (filters.brand.length > 0 && !filters.brand.includes(device.brand)) {
-      return false;
-    }
+    return baseCards.filter((device) => {
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesSearch =
+          device.name.toLowerCase().includes(query) ||
+          device.brand.toLowerCase().includes(query) ||
+          (device.model && device.model.toLowerCase().includes(query));
+        if (!matchesSearch) return false;
+      }
 
-    // Price range filter
-    if (filters.priceRange) {
-      const devicePrice = device.numericPrice;
-      if (
-        devicePrice < filters.priceRange.min ||
-        devicePrice > filters.priceRange.max
-      )
+      // Brand filter
+      if (filters.brand.length > 0 && !filters.brand.includes(device.brand)) {
         return false;
-    }
+      }
 
-    // RAM filter - check individual values
-    if (filters.ram.length > 0) {
-      const deviceRams = device.specs.ram
-        ? device.specs.ram.split("/").map((r) => r.trim())
-        : [];
-      const hasMatchingRam = filters.ram.some((selectedRam) =>
-        deviceRams.includes(selectedRam)
-      );
-      if (!hasMatchingRam) return false;
-    }
+      // Price range filter
+      if (filters.priceRange) {
+        const devicePrice = device.numericPrice;
+        if (
+          devicePrice < filters.priceRange.min ||
+          devicePrice > filters.priceRange.max
+        )
+          return false;
+      }
 
-    // Storage filter - check individual values
-    if (filters.storage.length > 0) {
-      const deviceStorages = device.specs.storage
-        ? device.specs.storage.split("/").map((s) => s.trim())
-        : [];
-      const hasMatchingStorage = filters.storage.some((selectedStorage) =>
-        deviceStorages.includes(selectedStorage)
-      );
-      if (!hasMatchingStorage) return false;
-    }
-
-    // Battery filter (ranges)
-    if (filters.battery && filters.battery.length > 0) {
-      const b = Number(device.numericBattery || 0);
-      const matchesBattery = filters.battery.some((rangeId) => {
-        const range = BATTERY_RANGES.find((r) => r.id === rangeId);
-        if (!range) return false;
-        return b >= range.min && b <= range.max;
-      });
-      if (!matchesBattery) return false;
-    }
-
-    // Processor filter (brand match)
-    if (filters.processor && filters.processor.length > 0) {
-      const brand = getProcessorBrand(device.specs.processor || "");
-      const hasMatch =
-        filters.processor.includes(brand) ||
-        filters.processor.some((p) =>
-          (device.specs.processor || "").toLowerCase().includes(p.toLowerCase())
+      // RAM filter - check individual values
+      if (filters.ram.length > 0) {
+        const deviceRams = device.specs.ram
+          ? device.specs.ram.split("/").map((r) => r.trim())
+          : [];
+        const hasMatchingRam = filters.ram.some((selectedRam) =>
+          deviceRams.includes(selectedRam),
         );
-      if (!hasMatch) return false;
-    }
+        if (!hasMatchingRam) return false;
+      }
 
-    // Network support filter (5G/4G)
-    if (filters.network && filters.network.length > 0) {
-      const net = String(
-        device.specs.network || device.specs.network || ""
-      ).toLowerCase();
-      const hasNet = filters.network.some((n) => net.includes(n.toLowerCase()));
-      if (!hasNet) return false;
-    }
+      // Storage filter - check individual values
+      if (filters.storage.length > 0) {
+        const deviceStorages = device.specs.storage
+          ? device.specs.storage.split("/").map((s) => s.trim())
+          : [];
+        const hasMatchingStorage = filters.storage.some((selectedStorage) =>
+          deviceStorages.includes(selectedStorage),
+        );
+        if (!hasMatchingStorage) return false;
+      }
 
-    // Refresh rate filter
-    if (filters.refreshRate && filters.refreshRate.length > 0) {
-      const rr = String(device.specs.refreshRate || "").toLowerCase();
-      const hasRR = filters.refreshRate.some((r) =>
-        rr.includes(r.toLowerCase())
-      );
-      if (!hasRR) return false;
-    }
+      // Battery filter (ranges)
+      if (filters.battery && filters.battery.length > 0) {
+        const b = Number(device.numericBattery || 0);
+        const matchesBattery = filters.battery.some((rangeId) => {
+          const range = BATTERY_RANGES.find((r) => r.id === rangeId);
+          if (!range) return false;
+          return b >= range.min && b <= range.max;
+        });
+        if (!matchesBattery) return false;
+      }
 
-    // Camera filter (by count)
-    if (filters.camera && filters.camera.length > 0) {
-      const count = Number(device.specs.cameraCount || 0);
-      const hasCam = filters.camera.some((c) => {
-        if (c === "4+") return count >= 4;
-        return Number(c) === count;
-      });
-      if (!hasCam) return false;
-    }
+      // Processor filter (brand match)
+      if (filters.processor && filters.processor.length > 0) {
+        const brand = getProcessorBrand(device.specs.processor || "");
+        const hasMatch =
+          filters.processor.includes(brand) ||
+          filters.processor.some((p) =>
+            (device.specs.processor || "")
+              .toLowerCase()
+              .includes(p.toLowerCase()),
+          );
+        if (!hasMatch) return false;
+      }
 
-    return true;
-  });
+      // Network support filter (5G/4G)
+      if (filters.network && filters.network.length > 0) {
+        const net = String(
+          device.specs.network || device.specs.network || "",
+        ).toLowerCase();
+        const hasNet = filters.network.some((n) =>
+          net.includes(n.toLowerCase()),
+        );
+        if (!hasNet) return false;
+      }
+
+      // Feature filter from query param (e.g., ?feature=amoled)
+      if (normalizedFeature) {
+        const f = String(normalizedFeature).toLowerCase();
+
+        const hasFastCharge = () => {
+          // prefer explicit fields
+          if (
+            device.battery &&
+            (device.battery.fast_charge || device.battery.fastCharge)
+          )
+            return true;
+          const s = String(device.specs?.battery || device.battery || "");
+          return /\b(\d+\s?w|fast|flash)\b/i.test(s);
+        };
+
+        const isAmoled = () => {
+          const d = String(
+            device.specs?.display || device.display || "",
+          ).toLowerCase();
+          return d.includes("amoled");
+        };
+
+        const isGaming = () => {
+          const proc = String(
+            device.specs?.processor ||
+              device.processor ||
+              device.performance?.processor ||
+              "",
+          ).toLowerCase();
+          const cat = String(device.category || "").toLowerCase();
+          return (
+            /snapdragon\s*8|dimensity|exynos|apple\s*a|mediatek/i.test(proc) ||
+            cat.includes("flagship") ||
+            cat.includes("gaming")
+          );
+        };
+
+        const hasHighRam = () => {
+          // check variant ram first
+          const vram =
+            device.variant?.ram ||
+            device.variant?.RAM ||
+            device.specs?.ram ||
+            "";
+          const val = parseInt(String(vram).replace(/[^0-9]/g, "")) || 0;
+          if (val >= 12) return true;
+          // check performance ram_options array
+          const rOpts =
+            device.performance?.ram_options || device.performance?.ram || null;
+          if (Array.isArray(rOpts))
+            return rOpts.some(
+              (r) => (parseInt(String(r).replace(/[^0-9]/g, "")) || 0) >= 12,
+            );
+          return false;
+        };
+
+        const hasLongBattery = () => {
+          const nb = Number(
+            device.numericBattery ||
+              parseInt(
+                String(device.specs?.battery || device.battery || "").replace(
+                  /[^0-9]/g,
+                  "",
+                ),
+              ) ||
+              0,
+          );
+          return nb >= 6000;
+        };
+
+        const hasHighMpCamera = () => {
+          // prefer specs.rearCameraResolution or camera.rear_camera.main.resolution
+          const cand =
+            device.specs?.rearCameraResolution ||
+            device.rearCameraResolution ||
+            "";
+          const fromSpecs = parseInt(String(cand).replace(/[^0-9]/g, "")) || 0;
+          if (fromSpecs >= 50) return true;
+          try {
+            const cm =
+              device.camera?.rear_camera?.main ||
+              device.camera?.main ||
+              device.camera;
+            const res =
+              cm && (cm.resolution || cm.megapixels || cm.res)
+                ? parseInt(
+                    String(cm.resolution || cm.megapixels || cm.res).replace(
+                      /[^0-9]/g,
+                      "",
+                    ),
+                  )
+                : 0;
+            return res >= 50;
+          } catch {
+            return false;
+          }
+        };
+
+        const hasInDisplayFp = () => {
+          const s =
+            device.sensors || device.specs?.sensors || device.sensor || "";
+          if (Array.isArray(s))
+            return s.some((x) => /fingerprint/i.test(String(x)));
+          return /fingerprint/i.test(String(s));
+        };
+
+        const has5g = () => {
+          const n =
+            device.network ||
+            device.connectivity ||
+            device.specs?.network ||
+            device.networks ||
+            {};
+          if (!n) return false;
+          if (Array.isArray(n.five_g || n.fiveG || n["5g"]))
+            return (n.five_g || n.fiveG || n["5g"]).length > 0;
+          if (Array.isArray(device.five_g || device.fiveG || device["5g"]))
+            return (device.five_g || device.fiveG || device["5g"]).length > 0;
+          return (
+            /5g/i.test(String(n)) || Boolean(n.five_g || n.fiveG || n["5g"])
+          );
+        };
+
+        const featureMatch = (() => {
+          switch (f) {
+            case "fast-charging":
+            case "fast_charge":
+            case "fastcharge":
+              return hasFastCharge();
+            case "amoled":
+              return isAmoled();
+            case "gaming":
+              return isGaming();
+            case "high-ram":
+            case "highram":
+              return hasHighRam();
+            case "long-battery":
+            case "longbattery":
+              return hasLongBattery();
+            case "high-camera":
+            case "high-mp-camera":
+            case "highmpcamera":
+              return hasHighMpCamera();
+            case "fingerprint":
+            case "in-display-fp":
+            case "in-display":
+            case "in-display-fingerprint":
+              return hasInDisplayFp();
+            case "5g":
+            case "5g-ready":
+            case "5gready":
+            case "5g-ready":
+            case "5g-ready":
+              return has5g();
+            default:
+              return true;
+          }
+        })();
+
+        if (!featureMatch) return false;
+      }
+
+      // Refresh rate filter
+      if (filters.refreshRate && filters.refreshRate.length > 0) {
+        const rr = String(device.specs.refreshRate || "").toLowerCase();
+        const hasRR = filters.refreshRate.some((r) =>
+          rr.includes(r.toLowerCase()),
+        );
+        if (!hasRR) return false;
+      }
+
+      // Camera filter (by count)
+      if (filters.camera && filters.camera.length > 0) {
+        const count = Number(device.specs.cameraCount || 0);
+        const hasCam = filters.camera.some((c) => {
+          if (c === "4+") return count >= 4;
+          return Number(c) === count;
+        });
+        if (!hasCam) return false;
+      }
+
+      return true;
+    });
+  }, [variantCards, filters, searchQuery, feature]);
 
   const sortedVariants = [...filteredVariants].sort((a, b) => {
     switch (sortBy) {
@@ -1094,74 +1853,68 @@ const Smartphonelist = () => {
 
   // Expand/collapse removed: details are always shown by default.
 
+  if (noDataAndNotLoading) return null;
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div className="min-h-screen  ">
+      <style>{animationStyles}</style>
+      <Helmet>
+        <title>{seoTitle}</title>
+        <meta name="description" content={seoDescription} />
+      </Helmet>
       {/* Page Header with Descriptive Content */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-700 text-white">
-        <div className="max-w-7xl mx-auto px-4 py-8 lg:py-12">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-            <div className="flex-1">
-              <h1 className="text-3xl lg:text-4xl font-bold mb-3 flex items-center gap-3">
-                <FaMobileAlt className="text-blue-200" />
-                Smartphone Directory
-              </h1>
-              <h6 className="text-blue-100 text-lg mb-4 max-w-3xl">
-                Explore our comprehensive collection of smartphones with
-                detailed specifications, price comparisons, and expert reviews.
-                Find the perfect device that matches your needs and budget.
-              </h6>
-              <div className="flex flex-wrap gap-3 text-sm">
-                <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-full">
-                  <FaInfoCircle className="text-blue-200" />
-                  <span>{devices.length} devices cataloged</span>
-                </div>
-                <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-full">
-                  <FaStore className="text-blue-200" />
-                  <span>Multiple store comparisons</span>
-                </div>
-                <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-full">
-                  <FaStar className="text-yellow-300" />
-                  <span>Verified user ratings</span>
-                </div>
-              </div>
-            </div>
-            <div className="hidden lg:block text-right">
-              <div className="text-blue-200 text-sm mb-2">
-                Updated regularly
-              </div>
-              <div className="text-2xl font-bold">
-                Latest Models {new Date().getFullYear()}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto p-4 lg:p-6">
+      <div className="max-w-6xl mx-auto p-4 sm:p-6 md:p-8 lg:p-10 bg-white">
+        {/* Hero Section - Professional Styling */}
+        <div className="mb-6 sm:mb-8 md:mb-10 lg:mb-12">
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 bg-purple-50 backdrop-blur-sm px-3 py-1.5 rounded-full border border-purple-100 mb-4 sm:mb-6">
+            <FaMobileAlt className="text-purple-600 text-sm" />
+            <span className="text-xs sm:text-sm font-semibold text-purple-800">
+              {headerLabel}
+            </span>
+          </div>
+
+          {/* Main Heading - Gradient Text */}
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl xl:text-5xl font-bold mb-2 sm:mb-3 md:mb-4 lg:mb-6 leading-tight">
+            Explore Premium{" "}
+            <span className="bg-gradient-to-r from-purple-600 to-red-600 bg-clip-text text-transparent">
+              Smartphones
+            </span>
+          </h1>
+
+          {/* Subtitle */}
+          <h4 className="text-base sm:text-lg md:text-lg lg:text-xl mb-4 sm:mb-6 md:mb-8 text-gray-700 leading-relaxed max-w-3xl">
+            Discover detailed specifications, compare models, and find the best
+            deals on the latest smartphones. Use our advanced filters to narrow
+            down your search from our curated collection of premium devices.
+          </h4>
+        </div>
         {/* Quick Stats Bar */}
 
         {/* Control Bar */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-7 md:mb-8">
           {/* Desktop Search and Sort */}
-          <div className="hidden lg:flex items-center justify-between mb-6">
+          <div className="hidden lg:flex items-center justify-between mb-4 md:mb-5 lg:mb-6">
             <div className="flex-1 max-w-2xl">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaSearch className="text-gray-400" />
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <FaSearch className="text-purple-500 group-focus-within:text-purple-600 transition-colors duration-200" />
                 </div>
                 <input
                   type="text"
                   placeholder="Search smartphones by brand, model, or specifications..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm"
+                  className="w-full pl-12 pr-4 py-3 rounded-xl
+            border border-gray-300
+             text-gray-700 placeholder:text-gray-400
+             focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent
+             text-sm sm:text-base
+             disabled:opacity-50 disabled:cursor-not-allowed
+"
                 />
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                  <span className="text-sm text-gray-500">
-                    {filteredVariants.length} results
-                  </span>
-                </div>
               </div>
             </div>
 
@@ -1170,17 +1923,28 @@ const Smartphonelist = () => {
                 <FaFilter className="text-gray-500" />
                 <span className="text-sm text-gray-600">Sort by:</span>
               </div>
-              <select
-                value={sortBy}
-                onChange={(e) => handleSortChange(e.target.value)}
-                className="px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white text-gray-700 min-w-[180px]"
-              >
-                <option value="featured">Featured Devices</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-                <option value="rating">Highest Rated</option>
-                <option value="newest">Newest First</option>
-              </select>
+              <div className="relative min-w-[200px]">
+                <select
+                  value={sortBy}
+                  onChange={(e) => handleSortChange(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 text-gray-700 appearance-none cursor-pointer bg-white pr-10 transition-all duration-200 hover:border-purple-400"
+                >
+                  <option value="featured">Featured Devices</option>
+                  <option value="price-low">Price: Low to High</option>
+                  <option value="price-high">Price: High to Low</option>
+                  <option value="rating">Highest Rated</option>
+                  <option value="newest">Newest First</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-700">
+                  <svg
+                    className="fill-current h-4 w-4"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                  </svg>
+                </div>
+              </div>
 
               {getActiveFiltersCount() > 0 && (
                 <button
@@ -1195,27 +1959,27 @@ const Smartphonelist = () => {
           </div>
 
           {/* Mobile Search and Filter Bar */}
-          <div className="lg:hidden space-y-4 mb-6">
-            <div className="relative">
-              <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <div className="lg:hidden space-y-3 sm:space-y-4 mb-4 sm:mb-5 md:mb-6">
+            <div className="relative group">
+              <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-purple-500 group-focus-within:text-purple-600 transition-colors duration-200" />
               <input
                 type="text"
                 placeholder="Search smartphones..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-12 pl-12 pr-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                className="w-full h-12 pl-12 pr-4 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-100 focus:border-purple-500 text-gray-700 transition-all duration-200 placeholder:text-gray-400"
               />
             </div>
 
             <div className="flex gap-3">
               <button
                 onClick={() => setShowFilters(true)}
-                className="flex items-center justify-center gap-2 flex-1 h-12 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-semibold"
+                className="flex items-center justify-center gap-2 flex-1 h-12 bg-gradient-to-r from-purple-600 to-red-600 text-white px-4 rounded-xl   transition-all duration-300 font-semibold"
               >
                 <FaFilter />
                 Filters
                 {getActiveFiltersCount() > 0 && (
-                  <span className="bg-white text-blue-600 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  <span className="  text-purple-200 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                     {getActiveFiltersCount()}
                   </span>
                 )}
@@ -1223,7 +1987,7 @@ const Smartphonelist = () => {
 
               <button
                 onClick={() => setShowSort(true)}
-                className="flex items-center justify-center gap-2 flex-1 h-12 bg-white text-gray-700 px-4 rounded-xl border border-gray-300 hover:bg-gray-50 transition-all duration-300 font-semibold"
+                className="flex items-center justify-center gap-2 flex-1 h-12   text-gray-700 px-4 rounded-xl border border-gray-900 hover:bg-gray-50 transition-all duration-300 font-semibold"
               >
                 <FaSort />
                 Sort
@@ -1232,15 +1996,15 @@ const Smartphonelist = () => {
 
             {/* Active Filters Badge - Mobile */}
             {getActiveFiltersCount() > 0 && (
-              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-200">
+              <div className="flex items-center justify-between p-4 bg-purple-50 rounded-xl border border-purple-200">
                 <div className="flex items-center gap-3">
-                  <FaInfoCircle className="text-blue-600" />
+                  <FaInfoCircle className="text-purple-600" />
                   <div>
-                    <span className="text-sm font-medium text-blue-800">
+                    <span className="text-sm font-medium text-purple-800">
                       {getActiveFiltersCount()} filter
                       {getActiveFiltersCount() > 1 ? "s" : ""} applied
                     </span>
-                    <p className="text-xs text-blue-600 mt-0.5">
+                    <p className="text-xs text-purple-600 mt-0.5">
                       Showing {filteredVariants.length} of {variantCards.length}{" "}
                       options
                     </p>
@@ -1248,7 +2012,7 @@ const Smartphonelist = () => {
                 </div>
                 <button
                   onClick={clearFilters}
-                  className="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors duration-200"
+                  className="text-purple-600 hover:text-purple-800 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-purple-100 transition-colors duration-200"
                 >
                   Clear all
                 </button>
@@ -1257,7 +2021,7 @@ const Smartphonelist = () => {
           </div>
 
           {/* Results Count */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4 sm:mb-5 md:mb-6">
             <div>
               <h2 className="text-lg font-semibold text-gray-900">
                 Available Smartphones
@@ -1273,15 +2037,17 @@ const Smartphonelist = () => {
           </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-6">
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-5 md:gap-6">
           {/* Desktop Filter Sidebar */}
           <div className="hidden lg:block lg:w-80 flex-shrink-0">
-            <div className="p-6 sticky top-6">
+            <div className="p-4 md:p-5 lg:p-6 sticky top-6">
               {/* Filters Header */}
-              <div className="flex justify-between items-center mb-8 pb-4 border-b border-gray-300">
+              <div
+                className="flex justify-between items-center mb-6 sm:mb-7 md:mb-8 pb-3 sm:pb-4
+           border-b border-indigo-100 px-2 sm:px-3 md:px-4"
+              >
                 <div>
                   <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                    <FaFilter className="text-blue-500" />
                     Refine Search
                   </h3>
                   <p className="text-sm text-gray-500 mt-1">
@@ -1291,7 +2057,7 @@ const Smartphonelist = () => {
                 {getActiveFiltersCount() > 0 && (
                   <button
                     onClick={clearFilters}
-                    className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-semibold transition-colors duration-200 px-3 py-1 rounded-lg hover:bg-blue-50"
+                    className="flex items-center gap-2 text-sm text-purple-600 hover:text-purple-700 font-semibold transition-colors duration-200 px-3 py-1 rounded-lg hover:bg-purple-50"
                   >
                     <FaTimes />
                     Clear all
@@ -1301,35 +2067,36 @@ const Smartphonelist = () => {
 
               {/* Active Filters Badge */}
               {getActiveFiltersCount() > 0 && (
-                <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+                <div className="mb-4 sm:mb-5 md:mb-6 p-3 sm:p-4 bg-gradient-to-r from-purple-100 to-red-50 rounded-xl border border-purple-200">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-semibold text-blue-800">
+                    <span className="text-sm font-semibold text-purple-800">
                       Active Filters
                     </span>
-                    <span className="text-xs font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                    <span className="text-xs font-bold text-purple-600 bg-purple-100 px-2 py-1 rounded-full">
                       {getActiveFiltersCount()}
                     </span>
                   </div>
-                  <p className="text-xs text-blue-600">
+                  <p className="text-xs text-purple-600">
                     Refine further or clear to see all devices
                   </p>
                 </div>
               )}
 
               {/* Brand Filter */}
-              <div className="mb-8">
+              <div className="mb-6 sm:mb-7 md:mb-8">
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
-                    <FaStore className="text-blue-500" />
-                    Manufacturer Brands
-                  </h4>
-                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                    {filters.brand.length} selected
+                  <div>
+                    <h4 className="font-bold text-gray-900 text-base">
+                      Brands
+                    </h4>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Select devices by manufacturer
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-purple-600 bg-purple-100 px-2.5 py-1.5 rounded-full">
+                    {filters.brand.length}
                   </span>
                 </div>
-                <p className="text-sm text-gray-600 mb-3">
-                  Select smartphone brands to compare
-                </p>
                 <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
                   {brands.map((brand) => (
                     <label
@@ -1341,7 +2108,7 @@ const Smartphonelist = () => {
                           type="checkbox"
                           checked={filters.brand.includes(brand)}
                           onChange={() => handleFilterChange("brand", brand)}
-                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-all duration-200"
+                          className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-2 focus:ring-purple-500 focus:ring-offset-1 transition-all duration-200"
                         />
                       </div>
                       <span className="text-gray-700 group-hover:text-gray-900 font-medium flex-1">
@@ -1356,22 +2123,22 @@ const Smartphonelist = () => {
               </div>
 
               {/* Price Range Filter */}
-              <div className="mb-8">
+              <div className="mb-6 sm:mb-7 md:mb-8">
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
-                    <FaMoneyBill className="text-green-500" />
-                    Price Range
-                  </h4>
-                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                    ₹{filters.priceRange.min?.toLocaleString()} - ₹
-                    {filters.priceRange.max?.toLocaleString()}
+                  <div>
+                    <h4 className="font-bold text-gray-900 text-base">
+                      Price Range
+                    </h4>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Budget for your purchase
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-purple-600 bg-purple-100 px-2.5 py-1.5 rounded-full">
+                    ₹{filters.priceRange.min?.toLocaleString()}
                   </span>
                 </div>
-                <p className="text-sm text-gray-600 mb-4">
-                  Set your budget range for smartphone purchase
-                </p>
 
-                <div className="bg-gradient-to-b from-gray-50 to-white rounded-xl p-4 border border-gray-200">
+                <div className="bg-gradient-to-br from-purple-50 to-red-50 border border-indigo-100 rounded-xl p-4">
                   <div className="flex justify-between text-sm font-medium text-gray-700 mb-4">
                     <div className="text-center">
                       <div className="text-xs text-gray-500">Minimum</div>
@@ -1391,15 +2158,15 @@ const Smartphonelist = () => {
                   <div className="relative mb-8">
                     <div className="absolute h-2 bg-gray-200 rounded-full w-full top-1/2 transform -translate-y-1/2"></div>
                     <div
-                      className="absolute h-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full top-1/2 transform -translate-y-1/2"
+                      className="absolute h-2 bg-gradient-to-r from-purple-600 to-red-600 rounded-full top-1/2 transform -translate-y-1/2"
                       style={{
                         left: `${Math.max(
                           0,
                           Math.min(
                             100,
                             ((filters.priceRange.min || 0) / (MAX_PRICE || 1)) *
-                              100
-                          )
+                              100,
+                          ),
                         )}%`,
                         width: `${Math.max(
                           0,
@@ -1407,8 +2174,8 @@ const Smartphonelist = () => {
                             100,
                             ((filters.priceRange.max - filters.priceRange.min) /
                               (MAX_PRICE || 1)) *
-                              100
-                          )
+                              100,
+                          ),
                         )}%`,
                       }}
                     ></div>
@@ -1421,10 +2188,10 @@ const Smartphonelist = () => {
                       onChange={(e) =>
                         updatePriceRange(
                           Number(e.target.value),
-                          filters.priceRange.max
+                          filters.priceRange.max,
                         )
                       }
-                      className="absolute w-full top-1/2 transform -translate-y-1/2 appearance-none h-4 bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer"
+                      className="absolute w-full top-1/2 transform -translate-y-1/2 appearance-none h-4 bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-purple-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer"
                     />
 
                     <input
@@ -1435,10 +2202,10 @@ const Smartphonelist = () => {
                       onChange={(e) =>
                         updatePriceRange(
                           filters.priceRange.min,
-                          Number(e.target.value)
+                          Number(e.target.value),
                         )
                       }
-                      className="absolute w-full top-1/2 transform -translate-y-1/2 appearance-none h-4 bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer"
+                      className="absolute w-full top-1/2 transform -translate-y-1/2 appearance-none h-4 bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-purple-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer"
                     />
                   </div>
 
@@ -1453,7 +2220,7 @@ const Smartphonelist = () => {
                   <div className="flex justify-center">
                     <button
                       onClick={() => updatePriceRange(MIN_PRICE, MAX_PRICE)}
-                      className="text-blue-600 hover:text-blue-700 font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors duration-200"
+                      className="text-purple-600 hover:text-purple-700 font-medium px-3 py-1.5 rounded-lg hover:bg-purple-50 transition-colors duration-200"
                     >
                       Reset Range
                     </button>
@@ -1462,27 +2229,28 @@ const Smartphonelist = () => {
               </div>
 
               {/* RAM Filter */}
-              <div className="mb-8">
+              <div className="mb-6 sm:mb-7 md:mb-8">
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
-                    <FaMemory className="text-purple-500" />
-                    Memory (RAM)
-                  </h4>
-                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                    {filters.ram.length} selected
+                  <div>
+                    <h4 className="font-bold text-gray-900 text-base">
+                      Memory (RAM)
+                    </h4>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Multitasking performance
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-purple-600 bg-purple-50 px-2.5 py-1.5 rounded-full">
+                    {filters.ram.length}
                   </span>
                 </div>
-                <p className="text-sm text-gray-600 mb-3">
-                  Choose RAM capacity for multitasking performance
-                </p>
                 <div className="grid grid-cols-2 gap-2">
                   {ramOptions.map((ram) => (
                     <label
                       key={ram}
                       className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium ${
                         filters.ram.includes(ram)
-                          ? "bg-gradient-to-b from-blue-500 to-purple-600 text-white shadow-lg"
-                          : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300 hover:shadow-sm"
+                          ? "bg-gradient-to-b from-purple-200 to-red-200 text-red-500  "
+                          : "text-gray-700 hover:border-gray-300 bg-gradient-to-br from-purple-50 to-red-50 border  border-indigo-100"
                       }`}
                     >
                       <input
@@ -1491,7 +2259,6 @@ const Smartphonelist = () => {
                         onChange={() => handleFilterChange("ram", ram)}
                         className="sr-only"
                       />
-                      <FaMemory className="text-sm" />
                       <span>{ram}</span>
                     </label>
                   ))}
@@ -1499,27 +2266,28 @@ const Smartphonelist = () => {
               </div>
 
               {/* Storage Filter */}
-              <div className="mb-8">
+              <div className="mb-6 sm:mb-7 md:mb-8">
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
-                    <FaMemory className="text-green-500" />
-                    Storage Capacity
-                  </h4>
-                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                    {filters.storage.length} selected
+                  <div>
+                    <h4 className="font-bold text-gray-900 text-base">
+                      Storage Capacity
+                    </h4>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Apps and media space
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-purple-600 bg-purple-100 px-2.5 py-1.5 rounded-full">
+                    {filters.storage.length}
                   </span>
                 </div>
-                <p className="text-sm text-gray-600 mb-3">
-                  Select internal storage options for apps and media
-                </p>
                 <div className="grid grid-cols-2 gap-2">
                   {storageOptions.map((storage) => (
                     <label
                       key={storage}
                       className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium ${
                         filters.storage.includes(storage)
-                          ? "bg-gradient-to-b from-green-500 to-blue-500 text-white shadow-lg"
-                          : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300 hover:shadow-sm"
+                          ? "bg-gradient-to-b from-purple-200 to-red-200 text-red-500  "
+                          : "bg-gradient-to-br from-purple-50 to-red-50 border border-indigo-100 text-gray-700 hover:border-gray-300 hover: "
                       }`}
                     >
                       <input
@@ -1528,7 +2296,6 @@ const Smartphonelist = () => {
                         onChange={() => handleFilterChange("storage", storage)}
                         className="sr-only"
                       />
-                      <FaShoppingBag className="text-sm" />
                       <span>{storage}</span>
                     </label>
                   ))}
@@ -1536,29 +2303,29 @@ const Smartphonelist = () => {
               </div>
 
               {/* Battery Filter */}
-              <div className="mb-8">
+              <div className="mb-6 sm:mb-7 md:mb-8">
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
-                    <FaBatteryFull className="text-orange-500" />
-                    Battery Capacity
-                  </h4>
-                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                    {filters.battery.length} selected
+                  <div>
+                    <h4 className="font-bold text-gray-900 text-base">
+                      Battery Capacity
+                    </h4>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Usage time and endurance
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-purple-600 bg-purple-100 px-2.5 py-1.5 rounded-full">
+                    {filters.battery.length}
                   </span>
                 </div>
-                <p className="text-sm text-gray-600 mb-3">
-                  Filter by battery capacity for longer usage time
-                </p>
                 <div className="grid grid-cols-1 gap-2">
                   {BATTERY_RANGES.map((r) => {
-                    const Icon = r.icon;
                     return (
                       <label
                         key={r.id}
-                        className={`flex items-center justify-between gap-2 cursor-pointer px-4 py-3 rounded-xl transition-all duration-200 font-medium ${
+                        className={`flex items-center justify-between gap-2 cursor-pointer px-4 py-3 rounded-xl transition-all duration-300 font-medium ${
                           filters.battery.includes(r.id)
-                            ? "bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg"
-                            : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300"
+                            ? "bg-gradient-to-r from-purple-200 to-red-200 text-red-500 "
+                            : "bg-gradient-to-br from-purple-50 to-red-50 border border-b border-indigo-100 text-gray-700 hover:border-gray-300"
                         }`}
                       >
                         <input
@@ -1567,15 +2334,10 @@ const Smartphonelist = () => {
                           onChange={() => handleFilterChange("battery", r.id)}
                           className="sr-only"
                         />
-                        <div className="flex items-center gap-3">
-                          <Icon className="text-sm" />
-                          <span>{r.label}</span>
-                        </div>
+                        <span>{r.label}</span>
                         <div
                           className={`w-2 h-2 rounded-full ${
-                            filters.battery.includes(r.id)
-                              ? "bg-white"
-                              : "bg-gray-300"
+                            filters.battery.includes(r.id) ? " " : "bg-gray-300"
                           }`}
                         ></div>
                       </label>
@@ -1587,7 +2349,7 @@ const Smartphonelist = () => {
               {/* Additional filters button */}
               <button
                 onClick={() => setShowFilters(true)}
-                className="w-full lg:hidden mt-6 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg"
+                className="w-full lg:hidden mt-6 bg-gradient-to-r from-purple-600 to-red-600 text-white py-3 rounded-xl font-semibold hover:from-purple-600 hover:to-red-600 transition-all duration-300 hover:shadow-lg"
               >
                 Show More Filters
               </button>
@@ -1597,81 +2359,136 @@ const Smartphonelist = () => {
           {/* Products List - Right */}
           <div className="flex-1">
             {/* Results Summary */}
-            <div className="mb-6 p-4 bg-gradient-to-r from-white to-blue-50 rounded-xl border border-blue-100">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                  <h3 className="font-semibold text-gray-900 text-lg">
-                    Smartphone Results
-                  </h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Found {sortedVariants.length} option
-                    {sortedVariants.length !== 1 ? "s" : ""} matching your
-                    criteria
-                    {sortedVariants.length > 0 &&
-                      " - sorted by " +
-                        (sortBy === "price-low"
-                          ? "lowest price"
-                          : sortBy === "price-high"
-                          ? "highest price"
-                          : sortBy === "rating"
-                          ? "user rating"
-                          : sortBy === "newest"
-                          ? "release date"
-                          : "featured devices")}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="hidden sm:block text-sm text-gray-500">
-                    {sortedVariants.length} options
-                  </div>
-                  <button
-                    onClick={() =>
-                      window.scrollTo({ top: 0, behavior: "smooth" })
-                    }
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors duration-200"
-                  >
-                    Back to top
-                  </button>
-                </div>
-              </div>
-            </div>
 
             {/* Products Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6 auto-rows-fr md:[&>*:nth-child(2n)]:border-l md:[&>*:nth-child(2n)]:border-gray-200 md:[&>*:nth-child(2n)]:pl-6 md:[&>*:nth-child(2n+1)]:pr-6">
               {sortedVariants.map((device, _idx) => (
                 <div
                   key={`${device.id ?? device.model ?? ""}-${_idx}`}
-                  className={`bg-white  shadow-sm rounded-sm border border-gray-100 hover:border-blue-50 transition-all duration-300 overflow-hidden`}
+                  onClick={(e) => handleView(device, e)}
+                  className={`h-full smooth-transition fade-in-up overflow-hidden rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-purple-200 cursor-pointer transition-all duration-200 md:rounded-none md:border-0 md:shadow-none md:hover:shadow-none md:hover:border-transparent md:bg-white ${
+                    isCompareSelected(device)
+                      ? "ring-2 ring-purple-300 bg-purple-50"
+                      : ""
+                  }`}
                 >
                   {/* Mobile Optimized Card Layout */}
-                  <div className="p-4 pt-6">
+                  <div className="p-3 sm:p-4 md:p-5 lg:p-4 pt-4 sm:pt-5 md:pt-6 transition-all duration-300">
                     {/* Top Row: Image and Basic Info */}
-                    <div className="flex gap-4">
-                      {/* Product Image - Fixed container */}
-                      <div className="flex-shrink-0 w-32 h-32 bg-gray-50 rounded-lg overflow-hidden">
-                        <div className="w-full h-full flex items-center justify-center">
+                    <div className="flex gap-3 sm:gap-4 h-50">
+                      {/* Product Image - Fixed container with checkbox overlay */}
+                      <div className="relative flex-shrink-0 w-42 h-52 rounded-2xl overflow-hidden group">
+                        <div className="w-full h-full flex items-center justify-center p-2">
                           <ImageCarousel images={device.images} />
+                        </div>
+                        {/* Compare Checkbox Overlay - Top Right */}
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCompareToggle(device, e);
+                          }}
+                          className="absolute top-2 right-2 z-10 rounded-md  transition-all duration-200 cursor-pointer hover:bg-gray-50 hover:border-purple-500"
+                          title="Add to compare"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isCompareSelected(device)}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              handleCompareToggle(device, e);
+                            }}
+                            className="w-3 h-3 m-1 cursor-pointer accent-purple-600"
+                          />
                         </div>
                       </div>
 
                       {/* Basic Info */}
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 w-42">
                         {/* Brand and Model */}
                         <div className="flex items-start justify-between mb-2">
                           <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                            <div className="flex items-center gap-2 mb-1 md:flex-nowrap">
+                              <span className="text-xs font-semibold text-purple-700">
                                 {device.brand}
                               </span>
-                              {device.specs.network && (
-                                <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-0.5 rounded">
-                                  {device.specs.network}
+                              {device.specs?.isAiPhone ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-purple-50 to-red-100 px-2 py-0.5 text-[10px] font-semibold text-purple-700 ring-1 ring-purple-200 whitespace-nowrap">
+                                  <span
+                                    className="inline-flex items-center justify-center w-3 h-3"
+                                    aria-hidden="true"
+                                  >
+                                    <svg
+                                      viewBox="0 0 64 64"
+                                      className="w-3 h-3"
+                                    >
+                                      <path
+                                        d="M32 2C34.5 14.5 40 20 52 22C40 24 34.5 29.5 32 42C29.5 29.5 24 24 12 22C24 20 29.5 14.5 32 2Z"
+                                        fill="red"
+                                      />
+                                      <path
+                                        d="M50 34C51.5 41.5 55 45 62 46C55 47 51.5 50.5 50 58C48.5 50.5 45 47 38 46C45 45 48.5 41.5 50 34Z"
+                                        fill="#7E57C2"
+                                      />
+                                    </svg>
+                                  </span>
+                                  <span>AI Phone</span>
                                 </span>
-                              )}
+                              ) : null}
                             </div>
-                            <h3 className="font-bold text-gray-900 text-sm line-clamp-2">
-                              {device.name}
-                            </h3>
+                            <p className="font-bold text-gray-900 text-[13px] leading-snug">
+                              {(() => {
+                                const name = device.name || device.model || "";
+                                const ram = (device.specs?.ram || "").trim();
+                                const storage = (
+                                  device.specs?.storage || ""
+                                ).trim();
+
+                                const refresh = (
+                                  device.specs?.refreshRate || ""
+                                ).trim();
+
+                                const parts = [name];
+
+                                // push RAM and Storage as separate parts
+                                if (ram) {
+                                  const ramLabel =
+                                    ram.toLowerCase().includes("gb") ||
+                                    ram.toLowerCase().includes("tb")
+                                      ? ram
+                                      : `${ram} RAM`;
+                                  parts.push(ramLabel);
+                                }
+                                if (storage) {
+                                  const storageLabel =
+                                    storage.toLowerCase().includes("gb") ||
+                                    storage.toLowerCase().includes("tb")
+                                      ? storage
+                                      : `${storage} Storage`;
+                                  parts.push(storageLabel);
+                                }
+
+                                // Prefer an explicit "AI Camera" label when camera mentions AI, otherwise show camera spec
+
+                                // append refresh rate if available
+                                if (refresh) parts.push(refresh);
+
+                                // append periscope zoom (variant/device-level) if present
+                                try {
+                                  const zoomVal =
+                                    device?.specs?.periscopeZoom ||
+                                    (device?.variant &&
+                                      (device.variant.periscope_zoom ||
+                                        device.variant.zoom)) ||
+                                    "";
+                                  if (zoomVal) {
+                                    const zoomText = String(zoomVal).trim();
+                                    parts.push(`${zoomText} Zoom`);
+                                  }
+                                } catch {}
+
+                                return parts.filter(Boolean).join(" | ");
+                              })()}
+                            </p>
                           </div>
                           {/* Details always expanded - removed toggle button */}
                         </div>
@@ -1682,115 +2499,124 @@ const Smartphonelist = () => {
                             <div className="text-lg font-bold text-green-600">
                               {device.price}
                             </div>
-                            <div className="flex items-center gap-1">
-                              <FaStar className="text-yellow-500 text-sm" />
-                              <span className="font-bold text-gray-900 text-sm">
-                                {device.rating}
-                              </span>
-                            </div>
                           </div>
                         </div>
 
                         {/* Key Specs Badges */}
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          {device.specs.processor && (
-                            <div className="flex items-center gap-1 text-xs bg-gray-50 px-2 py-1 rounded">
-                              <FaMicrochip className="text-gray-500" />
-                              <span className="font-medium text-gray-700">
-                                {device.specs.processor.split(" ")[0]}
-                              </span>
+                        {(() => {
+                          const chips = [
+                            device.specs.processor
+                              ? {
+                                  key: "chip-processor",
+                                  icon: (
+                                    <FaMicrochip className="text-gray-500" />
+                                  ),
+                                  label: device.specs.processor.split(" ")[0],
+                                }
+                              : null,
+                            device.specs.camera
+                              ? {
+                                  key: "chip-camera",
+                                  icon: <FaCamera className="text-gray-500" />,
+                                  label:
+                                    device.specs.rearCameraResolution ||
+                                    device.specs.frontCameraResolution
+                                      ? [
+                                          device.specs.rearCameraResolution,
+                                          device.specs.frontCameraResolution,
+                                        ]
+                                          .filter(Boolean)
+                                          .join(" + ")
+                                      : (device.specs.camera || "").split(
+                                          "+",
+                                        )[0],
+                                }
+                              : null,
+                            device.specs.battery
+                              ? {
+                                  key: "chip-battery",
+                                  icon: (
+                                    <FaBatteryFull className="text-gray-500" />
+                                  ),
+                                  label: device.specs.battery,
+                                }
+                              : null,
+                          ].filter(Boolean);
+
+                          if (chips.length === 0) return null;
+
+                          return (
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              {chips.map((chip) => (
+                                <div
+                                  key={chip.key}
+                                  className="flex items-center gap-1 text-[11px] bg-purple-50 px-2 py-1 rounded-full border border-purple-100 max-w-full"
+                                  title={chip.label}
+                                >
+                                  {chip.icon}
+                                  <span className="font-medium text-gray-700 whitespace-nowrap leading-tight">
+                                    {chip.label}
+                                  </span>
+                                </div>
+                              ))}
                             </div>
-                          )}
-                          {device.specs.ram && (
-                            <div className="flex items-center gap-1 text-xs bg-gray-50 px-2 py-1 rounded">
-                              <FaMemory className="text-gray-500" />
-                              <span className="font-medium text-gray-700">
-                                {device.specs.ram.split("/")[0]}
-                              </span>
-                            </div>
-                          )}
-                          {device.specs.camera && (
-                            <div className="flex items-center gap-1 text-xs bg-gray-50 px-2 py-1 rounded">
-                              <FaCamera className="text-gray-500" />
-                              <span className="font-medium text-gray-700">
-                                {device.specs.camera.split("+")[0]}
-                              </span>
-                            </div>
-                          )}
-                          {device.specs.battery && (
-                            <div className="flex items-center gap-1 text-xs bg-gray-50 px-2 py-1 rounded">
-                              <FaBatteryFull className="text-gray-500" />
-                              <span className="font-medium text-gray-700">
-                                {device.specs.battery}
-                              </span>
-                            </div>
-                          )}
-                        </div>
+                          );
+                        })()}
                       </div>
                     </div>
                     {/* Expanded Details */}
-                    <div className="mt-4 pt-4 border-t border-gray-100">
+                    <div className="mt-3 sm:mt-4 md:mt-5 pt-3 sm:pt-4 md:pt-5 border-t border-indigo-100">
                       {/* Detailed Specifications */}
-                      <div className="mb-4">
-                        <h4 className="font-semibold text-gray-900 text-sm mb-3 flex items-center gap-2">
-                          <FaInfoCircle className="text-blue-500" />
-                          Device Specifications
-                        </h4>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="text-xs">
-                            <div className="text-gray-500">Display</div>
-                            <div className="font-medium text-gray-900">
-                              {device.specs.display || "N/A"}
-                            </div>
-                          </div>
-                          <div className="text-xs">
-                            <div className="text-gray-500">Storage</div>
-                            <div className="font-medium text-gray-900">
-                              {device.specs.storage || "N/A"}
-                            </div>
-                          </div>
-                          <div className="text-xs">
-                            <div className="text-gray-500">OS Version</div>
-                            <div className="font-medium text-gray-900">
-                              {device.specs.os || "N/A"}
-                            </div>
-                          </div>
-                          <div className="text-xs">
-                            <div className="text-gray-500">Refresh Rate</div>
-                            <div className="font-medium text-gray-900">
-                              {device.specs.refreshRate || "N/A"}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
 
                       {/* Store Availability */}
                       {device.storePrices && device.storePrices.length > 0 && (
                         <div className="mb-4">
-                          <h4 className="font-semibold text-gray-900 text-sm mb-3 flex items-center gap-2">
-                            <FaStore className="text-green-500" />
-                            Available At
-                          </h4>
+                          <div className="flex items-center justify-between gap-2 mb-3">
+                            <h4 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
+                              <FaStore className="text-green-500" />
+                              Available At
+                            </h4>
+                          </div>
                           <div className="space-y-2">
                             {device.storePrices
                               .slice(0, 3)
                               .map((storePrice, i) => {
+                                const storeObj =
+                                  storePrice.storeObj ||
+                                  (getStore
+                                    ? getStore(
+                                        storePrice.store ||
+                                          storePrice.store_name ||
+                                          storePrice.storeName ||
+                                          "",
+                                      )
+                                    : null);
+                                const storeNameCandidate =
+                                  storePrice.store ||
+                                  storePrice.store_name ||
+                                  storePrice.storeName ||
+                                  storeObj?.name ||
+                                  "";
                                 const logoSrc =
-                                  STORE_LOGOS[
-                                    (storePrice.store || "").toLowerCase()
-                                  ];
+                                  storePrice.logo ||
+                                  (getStoreLogo
+                                    ? getStoreLogo(storeNameCandidate)
+                                    : getLogo(storeNameCandidate));
+
                                 return (
                                   <div
                                     key={`${
                                       device.id ?? device.model ?? ""
                                     }-store-${i}`}
-                                    className="flex items-center justify-between text-sm bg-gray-50 px-3 py-2 rounded-lg"
+                                    className="flex items-center justify-between text-sm bg-gradient-to-br from-purple-50 to-red-50 px-3 py-2 rounded-lg"
                                   >
                                     <div className="flex items-center gap-2">
                                       {logoSrc ? (
                                         <img
                                           src={logoSrc}
-                                          alt={storePrice.store}
+                                          alt={
+                                            storeObj?.name || storePrice.store
+                                          }
                                           className="w-6 h-6 object-contain"
                                         />
                                       ) : (
@@ -1809,7 +2635,7 @@ const Smartphonelist = () => {
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         onClick={(e) => e.stopPropagation()}
-                                        className="text-blue-600 hover:text-blue-800 text-xs font-medium flex items-center gap-1"
+                                        className="text-purple-600 hover:text-red-800 text-xs font-medium flex items-center gap-1"
                                       >
                                         Buy Now
                                         <FaExternalLinkAlt className="text-xs opacity-80" />
@@ -1839,7 +2665,7 @@ const Smartphonelist = () => {
                                 year: "numeric",
                                 month: "long",
                                 day: "numeric",
-                              }
+                              },
                             )}
                           </span>
                         </div>
@@ -1847,41 +2673,39 @@ const Smartphonelist = () => {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex gap-2 mt-4">
-                      <button
-                        onClick={(e) => handleView(device, e)}
-                        className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2.5 rounded-lg text-sm font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-sm"
-                      >
-                        <FaEye className="text-sm" />
-                        View Details
-                        <FaExternalLinkAlt className="text-xs opacity-80" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          try {
-                            const idOrModel = encodeURIComponent(
-                              device.id ?? device.model
-                            );
-                            navigate(`/compare?add=${idOrModel}`);
-                          } catch (err) {
-                            console.error("Navigation error:", err);
-                          }
-                        }}
-                        className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white py-2.5 rounded-lg text-sm font-semibold hover:from-purple-700 hover:to-purple-800 transition-all duration-200 shadow-sm"
-                      >
-                        <FaFilter className="text-sm" />
-                        Compare
-                      </button>
+                    <div className="flex gap-2 mt-4 items-center">
+                      <div className="flex-1"></div>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
 
+            {/* Floating Compare Bar - Appears when 2+ items selected */}
+            {compareItems.length >= 2 && (
+              <div className="fixed bottom-6 left-4 right-4 md:bottom-8 md:left-auto md:right-8 z-40 max-w-sm bg-white rounded-xl shadow-2xl border-2 border-purple-500 p-4 animate-slide-up">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {compareItems.length} devices selected
+                    </p>
+                    <p className="text-xs text-gray-600 mt-0.5">
+                      Ready to compare specifications
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleCompareNavigate}
+                    className="flex-shrink-0 bg-gradient-to-r from-purple-600 to-red-600 text-white px-4 py-2 rounded-lg font-semibold hover:from-purple-600 hover:to-red-600 transition-all duration-200 whitespace-nowrap text-sm"
+                  >
+                    Compare Now
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* No Results State */}
             {sortedVariants.length === 0 && (
-              <div className="text-center py-16 bg-gradient-to-b from-white to-gray-50 border border-gray-200 rounded-xl shadow-sm">
+              <div className="text-center py-16 bg-gradient-to-b from-white to-red-50 border border-purple-100 rounded-xl transition-all duration-300 ">
                 <div className="max-w-md mx-auto">
                   <FaSearch className="text-gray-300 text-5xl mx-auto mb-4" />
                   <h3 className="text-2xl font-semibold text-gray-900 mb-3">
@@ -1895,13 +2719,13 @@ const Smartphonelist = () => {
                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
                     <button
                       onClick={clearFilters}
-                      className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg"
+                      className="bg-gradient-to-r from-purple-600 to-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-purple-600 hover:to-red-600 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 "
                     >
                       Clear All Filters
                     </button>
                     <button
                       onClick={() => setShowFilters(true)}
-                      className="bg-white text-gray-700 px-6 py-3 rounded-lg font-semibold border border-gray-300 hover:bg-gray-50 transition-colors duration-200"
+                      className="text-gray-700 px-6 py-3 rounded-lg font-semibold border border-gray-300 hover:bg-gray-50 transition-all duration-300 hover:shadow-md hover:border-gray-400 "
                     >
                       Adjust Filters
                     </button>
@@ -1923,7 +2747,7 @@ const Smartphonelist = () => {
                       onClick={() =>
                         window.scrollTo({ top: 0, behavior: "smooth" })
                       }
-                      className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                      className="flex items-center gap-2 text-red-600 hover:text-red-700 text-sm font-medium"
                     >
                       <svg
                         className="w-4 h-4"
@@ -1960,14 +2784,14 @@ const Smartphonelist = () => {
         {showSort && (
           <div className="lg:hidden fixed inset-0 z-50">
             <div
-              className="absolute inset-0 bg-black bg-opacity-50 transition-opacity duration-300"
+              className="absolute inset-0 bg-black bg-opacity-50 transition-all duration-300"
               onClick={() => setShowSort(false)}
             ></div>
 
-            <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl transform transition-transform duration-300 max-h-[70vh] overflow-hidden">
-              <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-white">
+            <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl transform transition-all duration-300 max-h-[70vh] overflow-hidden shadow-2xl">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200  ">
                 <div className="flex items-center gap-3">
-                  <FaSort className="text-blue-600 text-xl" />
+                  <FaSort className="text-purple-600 text-xl" />
                   <div>
                     <h3 className="text-xl font-bold text-gray-900">
                       Sort Options
@@ -2018,7 +2842,7 @@ const Smartphonelist = () => {
                     onClick={() => handleSortChange(option.value)}
                     className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 ${
                       sortBy === option.value
-                        ? "bg-blue-50 border-blue-500 text-blue-700"
+                        ? "bg-purple-50 border-purple-500 text-purple-700"
                         : "bg-gray-50 border-gray-200 text-gray-700 hover:border-gray-300"
                     }`}
                   >
@@ -2041,10 +2865,9 @@ const Smartphonelist = () => {
               onClick={() => setShowFilters(false)}
             ></div>
 
-            <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl transform transition-transform duration-300 max-h-[90vh] overflow-hidden">
-              <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-white">
+            <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl transform transition-transform duration-300 max-h-[90vh] overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200  ">
                 <div className="flex items-center gap-3">
-                  <FaFilter className="text-blue-600 text-xl" />
                   <div>
                     <h3 className="text-xl font-bold text-gray-900">
                       Refine Search
@@ -2062,12 +2885,11 @@ const Smartphonelist = () => {
                 </button>
               </div>
 
-              <div className="p-6 overflow-y-auto max-h-[70vh] pb-40 space-y-6">
+              <div className="flex-1 p-6 overflow-y-auto space-y-6">
                 {/* Brand Filter (mobile) */}
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
-                      <FaStore className="text-blue-500" />
                       Manufacturer Brands
                     </h4>
                     <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
@@ -2087,7 +2909,7 @@ const Smartphonelist = () => {
                           type="checkbox"
                           checked={filters.brand.includes(brand)}
                           onChange={() => handleFilterChange("brand", brand)}
-                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                          className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
                         />
                         <span className="text-gray-700 font-medium">
                           {brand}
@@ -2102,9 +2924,8 @@ const Smartphonelist = () => {
 
                 {/* Price Range (mobile) */}
                 <div>
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-3 ">
                     <h4 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
-                      <FaMoneyBill className="text-green-500" />
                       Price Range
                     </h4>
                     <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
@@ -2115,7 +2936,7 @@ const Smartphonelist = () => {
                   <div className="text-sm text-gray-600 mb-3">
                     Set your budget range for smartphone purchase
                   </div>
-                  <div className="bg-gradient-to-b from-gray-50 to-white rounded-xl p-4 border border-gray-200">
+                  <div className="bg-gradient-to-b from-purple-600 to-white rounded-xl p-4 border border-gray-200">
                     <div className="flex justify-between text-sm font-medium text-gray-700 mb-4">
                       <div className="text-center">
                         <div className="text-xs text-gray-500">Minimum</div>
@@ -2134,7 +2955,7 @@ const Smartphonelist = () => {
                     <div className="relative mb-4">
                       <div className="absolute h-2 bg-gray-200 rounded-full w-full top-1/2 transform -translate-y-1/2"></div>
                       <div
-                        className="absolute h-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full top-1/2 transform -translate-y-1/2"
+                        className="absolute h-2 bg-gradient-to-r from-purple-600 to-red-600 rounded-full top-1/2 transform -translate-y-1/2"
                         style={{
                           left: `${Math.max(
                             0,
@@ -2142,8 +2963,8 @@ const Smartphonelist = () => {
                               100,
                               ((filters.priceRange.min || 0) /
                                 (MAX_PRICE || 1)) *
-                                100
-                            )
+                                100,
+                            ),
                           )}%`,
                           width: `${Math.max(
                             0,
@@ -2152,8 +2973,8 @@ const Smartphonelist = () => {
                               ((filters.priceRange.max -
                                 filters.priceRange.min) /
                                 (MAX_PRICE || 1)) *
-                                100
-                            )
+                                100,
+                            ),
                           )}%`,
                         }}
                       />
@@ -2166,10 +2987,10 @@ const Smartphonelist = () => {
                         onChange={(e) =>
                           updatePriceRange(
                             Number(e.target.value),
-                            filters.priceRange.max
+                            filters.priceRange.max,
                           )
                         }
-                        className="absolute w-full top-1/2 transform -translate-y-1/2 appearance-none h-4 bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer"
+                        className="absolute w-full top-1/2 transform -translate-y-1/2 appearance-none h-4 bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-indigo-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer"
                       />
 
                       <input
@@ -2180,10 +3001,10 @@ const Smartphonelist = () => {
                         onChange={(e) =>
                           updatePriceRange(
                             filters.priceRange.min,
-                            Number(e.target.value)
+                            Number(e.target.value),
                           )
                         }
-                        className="absolute w-full top-1/2 transform -translate-y-1/2 appearance-none h-4 bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer"
+                        className="absolute w-full top-1/2 transform -translate-y-1/2 appearance-none h-4 bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:  [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-red-500 [&::-webkit-slider-thumb]:  [&::-webkit-slider-thumb]:cursor-pointer"
                       />
 
                       <div className="flex justify-between items-center text-xs mb-2">
@@ -2197,7 +3018,7 @@ const Smartphonelist = () => {
                       <div className="flex justify-center">
                         <button
                           onClick={() => updatePriceRange(MIN_PRICE, MAX_PRICE)}
-                          className="text-blue-600 hover:text-blue-700 font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors duration-200"
+                          className="text-red-600 hover:text-red-700 font-medium px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors duration-200"
                         >
                           Reset Range
                         </button>
@@ -2208,7 +3029,7 @@ const Smartphonelist = () => {
 
                 {/* RAM */}
                 <div>
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-3 ">
                     <h4 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
                       <FaMemory className="text-purple-500" /> Memory (RAM)
                     </h4>
@@ -2225,8 +3046,8 @@ const Smartphonelist = () => {
                         key={ram}
                         className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium ${
                           filters.ram.includes(ram)
-                            ? "bg-gradient-to-b from-blue-500 to-purple-600 text-white shadow-lg"
-                            : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300 hover:shadow-sm"
+                            ? "bg-gradient-to-b from-purple-600 to-red-600 text-white  "
+                            : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300 hover: "
                         }`}
                       >
                         <input
@@ -2262,8 +3083,8 @@ const Smartphonelist = () => {
                         key={storage}
                         className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium ${
                           filters.storage.includes(storage)
-                            ? "bg-gradient-to-b from-green-500 to-blue-500 text-white shadow-lg"
-                            : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300 hover:shadow-sm"
+                            ? "bg-gradient-to-b from-purple-600 to-red-600 text-white  "
+                            : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300 hover: "
                         }`}
                       >
                         <input
@@ -2302,7 +3123,7 @@ const Smartphonelist = () => {
                           key={r.id}
                           className={`flex items-center justify-between gap-2 cursor-pointer px-4 py-3 rounded-xl transition-all duration-200 font-medium ${
                             filters.battery.includes(r.id)
-                              ? "bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg"
+                              ? "bg-gradient-to-r from-purple-600 to-red-600 text-white  "
                               : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300"
                           }`}
                         >
@@ -2319,7 +3140,7 @@ const Smartphonelist = () => {
                           <div
                             className={`${
                               filters.battery.includes(r.id)
-                                ? "bg-white"
+                                ? " "
                                 : "bg-gray-300"
                             } w-2 h-2 rounded-full`}
                           />
@@ -2423,7 +3244,7 @@ const Smartphonelist = () => {
               {/* ... [Filter content from original] ... */}
 
               {/* Apply Button */}
-              <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-6">
+              <div className="border-t border-gray-200 p-6 bg-white mt-auto shrink-0">
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowFilters(false)}
@@ -2433,7 +3254,7 @@ const Smartphonelist = () => {
                   </button>
                   <button
                     onClick={() => setShowFilters(false)}
-                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg"
+                    className="flex-1 bg-gradient-to-r from-purple-600 to-red-600 text-white py-4 rounded-xl font-semibold hover:from-purple-600 hover:to-red-600 transition-all duration-200  "
                   >
                     Apply Filters
                   </button>
@@ -2445,8 +3266,9 @@ const Smartphonelist = () => {
       </div>
 
       {/* Help Section */}
+
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 lg:p-8">
+        <div className="bg-gradient-to-r from-purple-200 to-red-100 rounded-2xl p-6 lg:p-8">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
             <div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">
@@ -2460,7 +3282,7 @@ const Smartphonelist = () => {
             </div>
             <button
               onClick={() => navigate("/compare")}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg whitespace-nowrap"
+              className="bg-gradient-to-r from-purple-500 to-red-500 text-white px-6 py-3 rounded-xl font-semibold hover:from-purple-600 hover:to-red-600 transition-all duration-200   whitespace-nowrap"
             >
               Open Comparison Tool
             </button>
@@ -2471,4 +3293,4 @@ const Smartphonelist = () => {
   );
 };
 
-export default Smartphonelist;
+export default Smartphones;

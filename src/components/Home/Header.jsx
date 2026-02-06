@@ -1,217 +1,214 @@
-// src/components/Header.jsx
-import React, { useEffect, useRef, useState } from "react";
+// src/components/Header/Header.jsx
+/**
+ * SmartArena Header Component
+ *
+ * RESPONSIVE DESIGN:
+ * ─────────────────
+ * MOBILE (≤ 768px):
+ *   - Top Row: Hamburger Menu | SmartArena Logo | Search + Compare Icons
+ *   - No inline search input (uses full-screen modal)
+ *   - Hamburger opens vertical drawer/sidebar
+ *   - Compare icon navigates to /compare page
+ *   - Clean, minimal Flipkart-style UX
+ *
+ * DESKTOP (> 768px):
+ *   - Full-width horizontal layout
+ *   - Logo | Inline Search Bar | Spacer | Utility Icons + Auth
+ *   - Full mega menu support for categories (CategoryNavBar)
+ *   - All wishlist, auth, and other features visible
+ *
+ * ARCHITECTURE:
+ * ─────────────
+ * - MainHeader: Conditional rendering based on breakpoint (md:)
+ *   └─ Mobile section: md:hidden (visible on mobile only)
+ *   └─ Desktop section: hidden md:block (visible on desktop+)
+ * - SearchModal: Full-screen overlay search with discover section
+ * - MobileMenuDrawer: Vertical sidebar for categories (hamburger)
+ * - QuickNavTabs: Optional mobile navigation tabs below header
+ * - CategoryNavBar: Desktop mega menus (hidden on mobile)
+ *
+ * WHY PREVIOUS INPUT RENDERING BROKE:
+ * ────────────────────────────────────
+ * Earlier implementation had overlapping z-index layers and mixed
+ * responsive utilities (lg:hidden, sm:flex, etc.) causing:
+ * 1. Input visibility issues on small screens (hidden by header)
+ * 2. Keyboard overlap on mobile without proper viewport handling
+ * 3. Confusing layout logic with multiple conditional renders
+ *
+ * CURRENT FIX:
+ * ───────────
+ * - Clear mobile/desktop separation using md: breakpoint
+ * - Mobile: Uses 100dvh SearchModal (full viewport height)
+ * - No inline input on mobile (cleaner UI, no overflow)
+ * - Desktop: Inline search with proper spacing and suggestions
+ * - Single logo component (updated to "SmartArena")
+ */
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import Cookies from "js-cookie";
+import { useDevice } from "../../hooks/useDevice";
+import { Scale } from "lucide-react";
+import { createProductPath, generateSlug } from "../../utils/slugGenerator";
+
+// Icons - matching Vijay Sales style
 import {
   FaSearch,
   FaBars,
-  FaTimes,
-  FaMobileAlt,
-  FaTag,
-  FaHeart,
-  FaBalanceScale,
-  FaLaptop,
-  FaSignal,
-  FaFire,
-  FaStar,
-  FaGamepad,
-  FaBolt,
-  FaCamera,
-  FaShieldAlt,
   FaArrowLeft,
-  FaTv,
-  FaWifi,
-  FaTabletAlt,
-  FaChartLine,
-  FaChevronDown,
+  FaHeart,
+  FaUser,
+  FaShoppingCart,
   FaChevronRight,
-  FaHistory,
-  FaCaretDown,
-  FaPercent,
-  FaRocket,
-  FaCrown,
-  FaBatteryFull,
-  FaMemory,
-  FaMicrochip,
-  FaCameraRetro,
-  FaDesktop,
+  FaChevronDown,
+  FaMapMarkerAlt,
+  FaPhoneAlt,
+  FaTag,
+  FaBolt,
+  FaGift,
+  FaStar,
+  FaMobileAlt,
+  FaApple,
+  FaTv,
+  FaLaptop,
   FaPlug,
-  FaServer,
-  FaVideo,
+  FaSnowflake,
+  FaCamera,
+  FaGamepad,
+  FaHeadphones,
   FaVolumeUp,
-  FaSitemap,
-  FaEthernet,
-  FaNetworkWired,
-  FaFilter,
-  FaChevronLeft,
+  FaBluetooth,
+  FaGlasses,
+  FaTabletAlt,
+  FaCarBattery,
+  FaChair,
+  FaShieldAlt,
+  FaSignInAlt,
+  FaUserPlus,
+  FaStore,
   FaHome,
+  FaCreditCard,
+  FaShippingFast,
+  FaTruck,
+  FaPercentage,
+  FaCalendarAlt,
+  FaWeight,
+  FaWeightHanging,
+  FaHandsHelping,
+  FaAlignJustify,
+  FaStream,
+  FaTimes,
 } from "react-icons/fa";
-import useDevice from "../../hooks/useDevice";
-import { useNavigate, useLocation } from "react-router-dom";
-import { STORE_LOGOS } from "../../constants/storeLogos";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState(null);
+  const [pinnedCategory, setPinnedCategory] = useState(null);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showAuthDropdown, setShowAuthDropdown] = useState(false);
+  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
+  const [searchSuggestions, setSearchSuggestions] = useState([]);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [activeMegaMenu, setActiveMegaMenu] = useState(null);
-  const [mobileActiveCategory, setMobileActiveCategory] = useState(null);
-  const headerRef = React.useRef(null);
-  const megaMenuRef = useRef(null);
-  const [spacerHeight, setSpacerHeight] = useState(0);
-  const {
-    smartphone = [],
-    selectDeviceByModel,
-    setFilters,
-    brands = [],
-  } = useDevice() || {};
+  const [userName, setUserName] = useState("");
+  const [userEmail, setUserEmail] = useState("");
   const navigate = useNavigate();
-  const location = useLocation();
-
-  // Reset mobile states when route changes
-  useEffect(() => {
-    setIsMenuOpen(false);
-    setIsSearchOpen(false);
-    setMobileActiveCategory(null);
-    setActiveMegaMenu(null);
-  }, [location.pathname]);
-
-  // Compute popular brands dynamically from `smartphone` data
-  const BRAND_COLOR_MAP = {
-    Apple: "text-gray-800",
-    Samsung: "text-blue-500",
-    OnePlus: "text-red-500",
-    Xiaomi: "text-orange-500",
-    Google: "text-green-500",
-    Nothing: "text-gray-700",
-  };
-
-  const getBrandColor = (brandName) => {
-    if (!brandName) return "text-gray-700";
-    const key = String(brandName).trim();
-    return BRAND_COLOR_MAP[key] || "text-gray-700";
-  };
-
-  // Prefer brands fetched from the store; fall back to inferring from `smartphone` data
-  const popularBrandsFromData = (() => {
-    try {
-      if (Array.isArray(brands) && brands.length > 0) {
-        return brands
-          .filter((b) => b && b.status)
-          .slice(0, 6)
-          .map((b) => {
-            const name =
-              b.name ||
-              b.brands ||
-              b.category ||
-              b.categoryType ||
-              (typeof b === "string" ? b : "");
-            return { name, color: getBrandColor(name) };
-          });
-      }
-
-      // fallback: infer from smartphone list
-      const list = Array.isArray(smartphone) ? smartphone : [];
-      const counts = list.reduce((acc, item) => {
-        const b = (item.brand || item.manufacturer || "").trim();
-        if (!b) return acc;
-        acc[b] = (acc[b] || 0) + 1;
-        return acc;
-      }, {});
-
-      return Object.entries(counts)
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 6)
-        .map(([name]) => ({ name, color: getBrandColor(name) }));
-    } catch {
-      return [];
-    }
-  })();
-
-  // Search state
-  const [searchText, setSearchText] = useState("");
-  const [suggestions, setSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [highlightIndex, setHighlightIndex] = useState(-1);
-  const suggestionsRef = useRef(null);
+  const megaMenuRef = useRef(null);
+  const authDropdownRef = useRef(null);
+  const searchRef = useRef(null);
   const searchInputRef = useRef(null);
+  const inputWasFocusedRef = useRef(false);
+  const suppressRestoreRef = useRef(false);
+  const deviceCtx = useDevice();
+  const brands = (deviceCtx && deviceCtx.brands) || [];
 
-  // Close mega menu when clicking outside
+  // Check if user is logged in and get user data from cookies
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (megaMenuRef.current && !megaMenuRef.current.contains(event.target)) {
-        const isCategoryClick = event.target.closest(".category-item");
-        if (!isCategoryClick) {
-          setActiveMegaMenu(null);
+    const token = Cookies.get("arenak");
+
+    if (token) {
+      try {
+        const userData = JSON.parse(Cookies.get("user_data") || "{}");
+        const fullName =
+          `${userData.f_name || ""} ${userData.l_name || ""}`.trim() ||
+          userData.username ||
+          "User";
+        const email = userData.email || "user@example.com";
+
+        setIsLoggedIn(true);
+        setUserName(fullName);
+        setUserEmail(email);
+      } catch (err) {
+        console.error("Error parsing user data:", err);
+        setIsLoggedIn(false);
+        setUserName("");
+        setUserEmail("");
+      }
+    } else {
+      setIsLoggedIn(false);
+      setUserName("");
+      setUserEmail("");
+    }
+  }, []);
+
+  // Check scroll for header effects
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Close mega menu on outside click
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (megaMenuRef.current) {
+        const clickedInsideMega =
+          megaMenuRef.current.contains(event.target) ||
+          Boolean(event.target.closest(".advanced-mega-menu"));
+        if (!clickedInsideMega) {
+          const isCategoryButton = event.target.closest(".category-button");
+          if (!isCategoryButton) {
+            setActiveCategory(null);
+            setPinnedCategory(null);
+          }
         }
       }
-    }
+
+      if (
+        authDropdownRef.current &&
+        !authDropdownRef.current.contains(event.target)
+      ) {
+        const isAuthButton = event.target.closest(".auth-button");
+        if (!isAuthButton) {
+          setShowAuthDropdown(false);
+        }
+      }
+
+      // Close search suggestions on outside click
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowSearchSuggestions(false);
+        setIsSearchOpen(false);
+      }
+    };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Update suggestions when searchText changes
-  useEffect(() => {
-    const q = String(searchText || "")
-      .trim()
-      .toLowerCase();
-    if (!q) {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      setHighlightIndex(-1);
-      return;
-    }
-
-    const results = (smartphone || [])
-      .filter((s) => {
-        const name = (s.name || "").toLowerCase();
-        const brand = (s.brand || "").toLowerCase();
-        const model = (s.model || "").toLowerCase();
-        return name.includes(q) || brand.includes(q) || model.includes(q);
-      })
-      .slice(0, 8);
-
-    setSuggestions(results);
-    setShowSuggestions(results.length > 0);
-    setHighlightIndex(-1);
-  }, [searchText, smartphone]);
-
-  // Click outside to close suggestions and search
-  useEffect(() => {
-    function onDocClick(e) {
-      if (
-        suggestionsRef.current &&
-        !suggestionsRef.current.contains(e.target) &&
-        searchInputRef.current &&
-        !searchInputRef.current.contains(e.target)
-      ) {
-        setShowSuggestions(false);
-      }
-    }
-    document.addEventListener("click", onDocClick);
-    return () => document.removeEventListener("click", onDocClick);
-  }, []);
-
-  // Focus search input when search is opened
+  // Auto-focus search input when opened
   useEffect(() => {
     if (isSearchOpen && searchInputRef.current) {
-      searchInputRef.current.focus();
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 50);
     }
   }, [isSearchOpen]);
 
-  // Measure header height and update spacer
+  // Lock body scroll when search modal is open
   useEffect(() => {
-    function measure() {
-      const h = headerRef.current
-        ? headerRef.current.getBoundingClientRect().height
-        : 0;
-      setSpacerHeight(Math.ceil(h));
-    }
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, [isSearchOpen, isMenuOpen, activeMegaMenu, mobileActiveCategory]);
-
-  // Prevent body scroll when mobile menu is open
-  useEffect(() => {
-    if (isMenuOpen || mobileActiveCategory) {
+    if (isSearchOpen) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -219,1133 +216,1464 @@ const Header = () => {
     return () => {
       document.body.style.overflow = "";
     };
-  }, [isMenuOpen, mobileActiveCategory]);
+  }, [isSearchOpen]);
 
-  const selectSuggestion = (device) => {
-    if (!device) return;
-    setSearchText(device.name || "");
-    setShowSuggestions(false);
-    setSuggestions([]);
-    setHighlightIndex(-1);
-    setIsSearchOpen(false);
-    try {
-      if (selectDeviceByModel && device.model)
-        selectDeviceByModel(device.model);
-      if (device.model) {
-        const url = `/devicedetail/smartphone?identifier=${encodeURIComponent(
-          String(device.model)
-        )}`;
-        navigate(url);
-      }
-    } catch {
-      // ignore
-    }
+  // Debounce / abort helpers for live suggestions
+  const debounceRef = useRef(null);
+  const abortRef = useRef(null);
+
+  const mapProductTypeToRoute = (ptype) => {
+    if (!ptype) return "smartphones"; // default
+    const t = String(ptype).toLowerCase().trim();
+    if (t.includes("phone") || t.includes("smart") || t === "smartphone")
+      return "smartphones";
+    if (t.includes("laptop") || t === "laptop") return "laptops";
+    if (t.includes("appliance") || t.includes("home") || t === "appliance")
+      return "appliances";
+    if (t.includes("network") || t === "networking") return "networking";
+    // Default to smartphones if can't determine
+    return "smartphones";
   };
 
-  const onInputKeyDown = (e) => {
-    if (!showSuggestions) return;
-    const len = suggestions.length;
+  // Fetch suggestions from server (debounced)
+  const handleSearchInputChange = (value) => {
+    // remember whether input was focused before updating state
+    try {
+      inputWasFocusedRef.current = !!(
+        searchInputRef.current &&
+        document.activeElement === searchInputRef.current
+      );
+    } catch (e) {
+      inputWasFocusedRef.current = false;
+    }
+    setSearchQuery(value);
+    setSelectedSuggestionIndex(-1);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (abortRef.current) {
+      try {
+        abortRef.current.abort();
+      } catch {}
+    }
+
+    if (!value || !value.trim()) {
+      setSearchSuggestions([]);
+      setShowSearchSuggestions(false);
+      return;
+    }
+
+    debounceRef.current = setTimeout(async () => {
+      const q = value.trim();
+      const controller = new AbortController();
+      abortRef.current = controller;
+      try {
+        const url = `https://api.apisphere.in/api/search?q=${encodeURIComponent(
+          q,
+        )}`;
+        console.log("Fetching suggestions from:", url);
+        const r = await fetch(url, {
+          signal: controller.signal,
+        });
+        if (!r.ok) throw new Error(`Search failed: ${r.status}`);
+        const json = await r.json();
+        console.log("Suggestions response:", json);
+        const results = (json.results || []).map((it) => ({
+          ...it,
+        }));
+        console.log("Mapped suggestions:", results);
+        setSearchSuggestions(results);
+        setShowSearchSuggestions(results.length > 0);
+      } catch (err) {
+        if (err.name === "AbortError") return;
+        console.error("Search suggestions error:", err);
+        setSearchSuggestions([]);
+        setShowSearchSuggestions(false);
+      }
+    }, 220);
+  };
+
+  const handleSuggestionClick = (item) => {
+    if (!item) return;
+    // prevent focus restoration while we're intentionally navigating
+    suppressRestoreRef.current = true;
+
+    // Navigate FIRST before closing anything
+    if (item.type === "product") {
+      // Prefer navigating using the product `model` (or name fallback)
+      const category = mapProductTypeToRoute(item.product_type);
+      const productKey = item.model || item.name || "";
+      const path = createProductPath(category, productKey);
+      console.log("Product suggestion clicked:", {
+        item,
+        product_type: item.product_type,
+        category,
+        path,
+      });
+      // Navigate to canonical slug path. Keep `id` as optional query param for
+      // servers that prefer numeric lookup, but rely on model-based routing.
+      const finalPath = item.id
+        ? `${path}?id=${encodeURIComponent(item.id)}`
+        : path;
+      navigate(finalPath);
+    } else if (item.type === "brand") {
+      // Navigate to brand search / results
+      navigate(`/search?brand=${encodeURIComponent(item.name)}`);
+    } else {
+      // Fallback: perform a general search
+      navigate(`/search?q=${encodeURIComponent(item.name || item)}`);
+    }
+    // Cleanup state AFTER navigation is triggered (do not blur input before navigation)
+    // Use microtask to let navigation begin; suppression flag prevents accidental restore
+    Promise.resolve().then(() => {
+      setShowSearchSuggestions(false);
+      setIsSearchOpen(false);
+      setSearchQuery("");
+      suppressRestoreRef.current = false;
+    });
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (!showSearchSuggestions || !searchSuggestions.length) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setHighlightIndex((prev) => (prev + 1 + len) % len);
+      setSelectedSuggestionIndex((i) =>
+        Math.min(i + 1, searchSuggestions.length - 1),
+      );
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setHighlightIndex((prev) => (prev - 1 + len) % len);
+      setSelectedSuggestionIndex((i) => Math.max(i - 1, 0));
     } else if (e.key === "Enter") {
-      e.preventDefault();
-      if (highlightIndex >= 0 && suggestions[highlightIndex]) {
-        selectSuggestion(suggestions[highlightIndex]);
-      } else if (suggestions[0]) {
-        selectSuggestion(suggestions[0]);
+      if (selectedSuggestionIndex >= 0) {
+        e.preventDefault();
+        handleSuggestionClick(searchSuggestions[selectedSuggestionIndex]);
       }
     } else if (e.key === "Escape") {
-      setShowSuggestions(false);
-      setIsSearchOpen(false);
+      setShowSearchSuggestions(false);
     }
   };
 
-  // Navigate to devicelist with query when user presses Enter
-  const onSearchEnter = (e) => {
-    if (e.key !== "Enter") return;
-    const q = String(searchText || "").trim();
-    if (!q) return;
-    setShowSuggestions(false);
-    setIsSearchOpen(false);
-    navigate(`/devicelist/smartphones?q=${encodeURIComponent(q)}`);
-  };
-
-  const handleSearchToggle = () => {
-    setIsSearchOpen(!isSearchOpen);
-    setSearchText("");
-    setShowSuggestions(false);
-    if (!isSearchOpen) {
-      setTimeout(() => {
-        if (searchInputRef.current) {
-          searchInputRef.current.focus();
+  // Restore focus synchronously after controlled updates when the input was
+  // focused before the update. This avoids losing focus on desktop when
+  // suggestions appear. We use useLayoutEffect to run before the browser paints.
+  React.useLayoutEffect(() => {
+    if (
+      inputWasFocusedRef.current &&
+      searchInputRef.current &&
+      document.activeElement !== searchInputRef.current &&
+      !suppressRestoreRef.current
+    ) {
+      try {
+        searchInputRef.current.focus({ preventScroll: true });
+        const len = searchInputRef.current.value?.length || 0;
+        if (typeof searchInputRef.current.setSelectionRange === "function") {
+          searchInputRef.current.setSelectionRange(len, len);
         }
-      }, 100);
-    }
-  };
-
-  const handleCloseSearch = () => {
-    setIsSearchOpen(false);
-    setSearchText("");
-    setShowSuggestions(false);
-    setSuggestions([]);
-  };
-
-  // Format price function
-  const formatPrice = (price) => {
-    if (!price) return "Price not available";
-    if (typeof price === "number") {
-      return new Intl.NumberFormat("en-IN", {
-        style: "currency",
-        currency: "INR",
-        maximumFractionDigits: 0,
-      }).format(price);
-    }
-    return price;
-  };
-
-  // Suggestion helpers
-  const getSuggestionBasePrice = (item) => {
-    try {
-      if (item == null) return null;
-      const variants = Array.isArray(item.variants)
-        ? item.variants
-        : item.variant
-        ? [item.variant]
-        : [];
-
-      if (variants.length > 0) {
-        const vals = variants
-          .map((v) => v?.base_price ?? v?.basePrice ?? v?.base ?? null)
-          .map((val) => {
-            if (val == null) return null;
-            const n = Number(String(val).replace(/[^0-9.-]/g, ""));
-            return Number.isFinite(n) && n > 0 ? n : null;
-          })
-          .filter(Boolean);
-        if (vals.length > 0) return Math.min(...vals);
+      } catch (e) {
+        // defensive - don't crash if focus fails
       }
-
-      if (Array.isArray(item.store_prices) && item.store_prices.length > 0) {
-        const vals = item.store_prices
-          .map((p) => p.price || p.price_inr || null)
-          .map((val) => {
-            if (val == null) return null;
-            const n = Number(String(val).replace(/[^0-9.-]/g, ""));
-            return Number.isFinite(n) && n > 0 ? n : null;
-          })
-          .filter(Boolean);
-        if (vals.length > 0) return Math.min(...vals);
-      }
-
-      const top = item.price ?? item.base_price ?? null;
-      if (top != null) {
-        const n = Number(String(top).replace(/[^0-9.-]/g, ""));
-        if (Number.isFinite(n) && n > 0) return n;
-      }
-    } catch {
-      // ignore
     }
-    return null;
-  };
+  }, [searchQuery, showSearchSuggestions, searchSuggestions]);
 
-  const getSuggestionRam = (item) => {
-    try {
-      if (item == null) return null;
-      const variants = Array.isArray(item.variants)
-        ? item.variants
-        : item.variant
-        ? [item.variant]
-        : [];
-      if (variants.length > 0) {
-        const v = variants[0];
-        const r = v?.ram ?? v?.RAM ?? v?.memory ?? null;
-        if (r) return String(r).toUpperCase();
-      }
-      const pr =
-        item.performance && (item.performance.ram || item.performance.RAM);
-      if (pr) return String(pr).toUpperCase();
-    } catch {
-      // ignore
-    }
-    return null;
-  };
-
-  // Mega Menu Categories
-  const megaMenuCategories = [
+  // Top announcement bar data (like Vijay Sales)
+  const announcements = [
     {
-      id: "home",
-      name: "Home",
-      icon: FaHome,
-      color: "text-gray-700",
-      bgColor: "bg-gray-50",
-      action: () => navigate("/"),
+      text: "Diwali Dhamaka! Upto 60% OFF + Extra ₹5000 Instant Discount",
+      icon: <FaGift />,
     },
+
+    {
+      text: "EMI Starting from ₹0 Interest | No Cost EMI Available",
+      icon: <FaCreditCard />,
+    },
+    {
+      text: "Same Day Delivery in 3 Hours* | Free Shipping",
+      icon: <FaTruck />,
+    },
+  ];
+
+  const categories = [
     {
       id: "smartphones",
       name: "Smartphones",
-      icon: FaMobileAlt,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
+      icon: <FaMobileAlt />,
+      // Column 1 – Browse
+      subcategories: [
+        { name: "All Smartphones" },
+        { name: "New Launches" },
+        { name: "Trending Phones" },
+        { name: "Compare Phones" },
+      ],
+      // Column 2 – By Price (mapped into popularProducts column)
+      popularProducts: [
+        { name: "Under ₹10,000" },
+        { name: "Under ₹20,000" },
+        { name: "Under ₹30,000" },
+        { name: "Under ₹50,000" },
+        { name: "Flagship Phones" },
+      ],
+      // Column 3 – By Features (mapped into featured column)
       featured: [
-        {
-          name: "5G Phones",
-          icon: FaSignal,
-          count: "120+",
-          color: "text-blue-500",
-        },
-        {
-          name: "Gaming Phones",
-          icon: FaGamepad,
-          count: "45+",
-          color: "text-green-500",
-        },
-        {
-          name: "Camera Phones",
-          icon: FaCameraRetro,
-          count: "85+",
-          color: "text-purple-500",
-        },
-        {
-          name: "Budget Phones",
-          icon: FaShieldAlt,
-          count: "200+",
-          color: "text-orange-500",
-        },
-        {
-          name: "Flagship Phones",
-          icon: FaCrown,
-          count: "60+",
-          color: "text-yellow-500",
-        },
+        { name: "5G Phones", discount: "", icon: <FaBolt /> },
+        { name: "Gaming Phones", discount: "", icon: <FaGamepad /> },
+        { name: "Camera Phones", discount: "", icon: <FaCamera /> },
+        { name: "Long Battery Phones", discount: "", icon: <FaCarBattery /> },
       ],
-      brands: popularBrandsFromData,
-      priceRanges: [
-        {
-          range: "Under ₹10,000",
-          count: 150,
-          color: "bg-green-100 text-green-800",
-        },
-        {
-          range: "₹10,000 - ₹20,000",
-          count: 200,
-          color: "bg-blue-100 text-blue-800",
-        },
-        {
-          range: "₹20,000 - ₹40,000",
-          count: 180,
-          color: "bg-purple-100 text-purple-800",
-        },
-        {
-          range: "Above ₹40,000",
-          count: 120,
-          color: "bg-yellow-100 text-yellow-800",
-        },
-      ],
+      // Column 4 – By Brand
     },
     {
-      id: "deals",
-      name: "Hot Deals",
-      icon: FaFire,
-      color: "text-red-600",
-      bgColor: "bg-red-50",
-      // route: when present, use this as the devicelist base route instead of the category id
-      route: "smartphones",
+      id: "laptops",
+      name: "Laptops",
+      icon: <FaLaptop />,
+      // Column 1 – Browse
+      subcategories: [
+        { name: "All Laptops" },
+        { name: "New Launches" },
+        { name: "Trending Laptops" },
+        { name: "Compare Laptops" },
+      ],
+      // Column 2 – By Use Case (mapped into popularProducts column)
+      popularProducts: [
+        { name: "Gaming Laptops", price: "", discount: "" },
+        { name: "Student Laptops", price: "", discount: "" },
+        { name: "Business Laptops", price: "", discount: "" },
+        { name: "Creator Laptops", price: "", discount: "" },
+      ],
+      // Column 3 – By Price (mapped into featured column)
       featured: [
-        {
-          name: "Flash Sales",
-          icon: FaBolt,
-          count: "Today Only",
-          color: "text-yellow-500",
-        },
-        {
-          name: "Clearance Sale",
-          icon: FaPercent,
-          count: "Up to 70% off",
-          color: "text-red-500",
-        },
-        {
-          name: "New Arrivals",
-          icon: FaRocket,
-          count: "Just Launched",
-          color: "text-blue-500",
-        },
-        {
-          name: "Best Sellers",
-          icon: FaCrown,
-          count: "Top Rated",
-          color: "text-purple-500",
-        },
-        {
-          name: "Price Drop Alerts",
-          icon: FaChartLine,
-          count: "Track Prices",
-          color: "text-green-500",
-        },
+        { name: "Under ₹40,000", discount: "", icon: <FaTag /> },
+        { name: "Under ₹60,000", discount: "", icon: <FaTag /> },
+        { name: "Under ₹80,000", discount: "", icon: <FaTag /> },
+        { name: "Premium Laptops", discount: "", icon: <FaStar /> },
       ],
-      deals: [
-        { name: "Festive Offers", discount: "Up to 50% off" },
-        { name: "Exchange Offers", discount: "Extra ₹5,000 off" },
-        { name: "Bank Offers", discount: "10% Cashback" },
-        { name: "Bundle Deals", discount: "Save ₹8,000" },
+      // Column 4 – By Brand
+    },
+    {
+      id: "Home Appliances",
+      name: "Home Appliances",
+      icon: <FaSnowflake />,
+      // Column 1 – Categories
+      subcategories: [
+        { name: "Refrigerators" },
+        { name: "Washing Machines" },
+        { name: "Air Conditioners" },
+        { name: "Televisions" },
       ],
+      // Column 2 – By Type (mapped into popularProducts column)
+      popularProducts: [
+        { name: "Front Load", price: "", discount: "" },
+        { name: "Top Load", price: "", discount: "" },
+        { name: "Inverter AC", price: "", discount: "" },
+        { name: "Smart TV", price: "", discount: "" },
+      ],
+      // Column 3 – Energy & Size (mapped into featured column)
+      featured: [
+        { name: "5 Star Rated", discount: "", icon: <FaStar /> },
+        { name: "Large Capacity", discount: "", icon: <FaWeightHanging /> },
+        { name: "Compact Appliances", discount: "", icon: <FaHome /> },
+      ],
+      // Column 4 – Popular Brands
+    },
+    {
+      id: "networking",
+      name: "Networking",
+      icon: <FaPlug />,
+      // Column 1 – Devices
+      subcategories: [
+        { name: "Wi-Fi Routers" },
+        { name: "Mesh Systems" },
+        { name: "Modems" },
+        { name: "Range Extenders" },
+      ],
+      // Column 2 – By Usage (mapped into popularProducts column)
+      popularProducts: [
+        { name: "Home Networking", price: "", discount: "" },
+        { name: "Gaming Routers", price: "", discount: "" },
+        { name: "Office Routers", price: "", discount: "" },
+      ],
+      // Column 3 – Technology (mapped into featured column)
+      featured: [
+        { name: "Wi-Fi 6", discount: "", icon: <FaBluetooth /> },
+        { name: "Wi-Fi 6E", discount: "", icon: <FaBluetooth /> },
+        { name: "Dual Band", discount: "", icon: <FaBolt /> },
+        { name: "Tri-Band", discount: "", icon: <FaBolt /> },
+      ],
+      // Column 4 – Brands
     },
   ];
 
-  // User actions
-  const userActions = [
-    {
-      name: "Compare",
-      icon: FaBalanceScale,
-      count: 3,
-      color: "text-blue-600",
-      action: () => navigate("/compare"),
-    },
+  // Merge dynamic brands from store into category `topBrands` (fallback to static)
+  const categoriesWithBrands = (categories || []).map((cat) => {
+    try {
+      const matched = (brands || []).filter((b) => {
+        const catField = String(
+          b.category || b.product_type || b.type || "",
+        ).toLowerCase();
+        const nameField = String(b.name || "").toLowerCase();
+        return (
+          catField.includes(String(cat.id).toLowerCase()) ||
+          nameField.includes(String(cat.name || "").toLowerCase())
+        );
+      });
+
+      const topBrands =
+        matched && matched.length > 0
+          ? matched.slice(0, 6)
+          : Array.isArray(cat.topBrands)
+            ? cat.topBrands.map((n, i) => ({ id: `fallback-${i}`, name: n }))
+            : [];
+      return { ...cat, topBrands };
+    } catch (e) {
+      return cat;
+    }
+  });
+
+  // Top navigation links
+  const directLinks = [
+    { name: "Trending", link: "/trending" },
+    { name: "New Launches", link: "/smartphones?filter=new" },
+    { name: "Compare", link: "/compare" },
   ];
 
-  // Quick actions for mobile
-  const mobileQuickActions = [
-    {
-      name: "Home",
-      icon: FaHome,
-      color: "text-gray-700",
-      action: () => navigate("/"),
-    },
-    {
-      name: "Compare",
-      icon: FaBalanceScale,
-      color: "text-blue-500",
-      action: () => navigate("/compare"),
-    },
-    {
-      name: "Categories",
-      icon: FaBars,
-      color: "text-green-500",
-      action: () => setIsMenuOpen(true),
-    },
+  // Utility items with counts
+  const utilityItems = [
+    { name: "Wishlist", icon: <FaHeart />, count: 1, link: "/wishlist" },
   ];
 
-  // Handle mega menu navigation
-  const handleMegaMenuNavigate = (categoryId, filter) => {
-    setActiveMegaMenu(null);
-    setMobileActiveCategory(null);
-    const category = megaMenuCategories.find((c) => c.id === categoryId);
-    const base = (category && category.route) || categoryId;
-    navigate(`/devicelist/${base}${filter ? `?${filter}` : ""}`);
+  // Handle search
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+      setSearchQuery("");
+    }
   };
 
-  // Render Mega Menu Content for Desktop
-  const renderMegaMenu = () => {
-    if (!activeMegaMenu) return null;
+  // Handle auth
+  const handleLogin = () => {
+    setIsLoggedIn(true);
+    setShowAuthDropdown(false);
+    navigate("/login");
+  };
 
-    const category = megaMenuCategories.find((c) => c.id === activeMegaMenu);
-    if (!category) return null;
+  const handleLogout = () => {
+    // Clear all authentication cookies
+    Cookies.remove("arenak");
+    Cookies.remove("user_data");
+    Cookies.remove("remembered_email");
 
-    return (
-      <div
-        ref={megaMenuRef}
-        className="absolute left-0 right-0 top-full bg-white border-t border-gray-200 shadow-2xl z-40"
-      >
-        <div className="container mx-auto px-6 py-8">
-          <div className="grid grid-cols-4 gap-8">
-            {/* Featured Section */}
-            <div className="col-span-1">
-              <div className="flex items-center mb-4">
-                <category.icon className={`text-2xl mr-3 ${category.color}`} />
-                <h3 className="text-xl font-bold text-gray-900">
-                  Featured {category.name}
-                </h3>
-              </div>
-              <div className="space-y-3">
-                {category.featured?.slice(0, 5).map((item, idx) => (
-                  <button
+    // Clear any legacy individual user cookies if they exist
+    Cookies.remove("userEmail");
+    Cookies.remove("username");
+    Cookies.remove("userId");
+    Cookies.remove("userName");
+    Cookies.remove("authToken");
+    Cookies.remove("user");
+
+    setIsLoggedIn(false);
+    setUserName("");
+    setUserEmail("");
+    setShowAuthDropdown(false);
+    navigate("/");
+  };
+
+  // Announcement Bar Component
+  const AnnouncementBar = () => (
+    <div className="bg-gradient-to-r from-purple-600 via-purple-400 to-red-600 text-white py-2 overflow-hidden">
+      <div className="container max-w-7xl mx-auto px-4">
+        <div className="flex items-center justify-between">
+          <div className="flex-1 overflow-hidden">
+            <div className="animate-marquee whitespace-nowrap flex items-center space-x-8">
+              {announcements.map((announcement, index) => (
+                <div key={index} className="inline-flex items-center space-x-3">
+                  <span>{announcement.icon}</span>
+                  <span className="text-sm font-medium">
+                    {announcement.text}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <button className="ml-4 px-3 py-1 bg-white text-purple-600 text-sm font-bold rounded-full hover:bg-purple-50 transition">
+            SHOP NOW
+          </button>
+        </div>
+      </div>
+      <style>{`
+        @keyframes marquee {
+          0% {
+            transform: translateX(100%);
+          }
+          100% {
+            transform: translateX(-100%);
+          }
+        }
+        .animate-marquee {
+          animation: marquee 30s linear infinite;
+        }
+      `}</style>
+    </div>
+  );
+
+  // Top Navigation Bar
+
+  // Advanced Category Mega Menu Component
+  const AdvancedMegaMenu = ({ category }) => (
+    <div className="absolute top-full left-0 w-[900px] bg-white text-gray-800 z-50 advanced-mega-menu rounded-b-lg shadow-2xl border border-gray-200 border-t-0 animate-in fade-in slide-in-from-top-2 duration-200">
+      <div className="p-8">
+        <div className="grid grid-cols-4 gap-8">
+          {/* Column 1: Subcategories */}
+          <div>
+            <h4 className="font-bold text-base mb-5 text-gray-900 border-b-2 border-red-600 pb-3">
+              Browse
+            </h4>
+            <div className="space-y-2">
+              {category.subcategories.map((sub, idx) => {
+                const name = String(sub.name || "").toLowerCase();
+                let href = `/${category.id}`;
+                if (name.includes("new")) href = `/${category.id}?filter=new`;
+                else if (name.includes("trending"))
+                  href = `/${category.id}?filter=trending`;
+                else if (name.includes("compare"))
+                  href = `/compare?type=${category.id}`;
+
+                return (
+                  <Link
                     key={idx}
-                    onClick={() =>
-                      handleMegaMenuNavigate(
-                        category.id,
-                        `type=${item.name.toLowerCase().replace(/\s+/g, "-")}`
-                      )
-                    }
-                    className="flex items-center justify-between w-full p-3 rounded-lg hover:bg-gray-50 transition-all group"
+                    to={href}
+                    onClick={() => setPinnedCategory(null)}
+                    className="flex items-center justify-between p-3 rounded-lg hover:bg-purple-50 group transition-all duration-150 hover:pl-4"
                   >
                     <div className="flex items-center">
-                      <item.icon className={`text-lg mr-3 ${item.color}`} />
-                      <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600">
-                        {item.name}
+                      <div>
+                        <div className="font-medium group-hover:text-purple-700 text-sm">
+                          {sub.name}
+                        </div>
+                        <div className="text-xs text-gray-500">{sub.count}</div>
+                      </div>
+                    </div>
+                    <FaChevronRight className="w-3 h-3 text-gray-400 group-hover:text-red-600 group-hover:translate-x-1 transition-all duration-150" />
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Column 2: Popular Products */}
+          <div>
+            <h4 className="font-bold text-base mb-5 text-gray-900 border-b-2 border-purple-600 pb-3">
+              By Price
+            </h4>
+            <div className="space-y-3">
+              {category.popularProducts.map((product, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-50 group transition-all duration-150"
+                >
+                  <div className="flex-1">
+                    <div className="font-medium text-sm group-hover:text-purple-700 transition-colors">
+                      {product.name}
+                    </div>
+                    <div className="flex items-center space-x-2 mt-1">
+                      <span className="font-bold text-gray-800 text-sm">
+                        {product.price}
                       </span>
                     </div>
-                    <span className="text-xs font-semibold px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
-                      {item.count}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Brands Section */}
-            <div className="col-span-1">
-              <h4 className="text-lg font-semibold text-gray-900 mb-4">
-                Popular Brands
-              </h4>
-              <div className="grid grid-cols-2 gap-2">
-                {category.brands?.slice(0, 6).map((brand, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() =>
-                      handleMegaMenuNavigate(
-                        category.id,
-                        `brand=${encodeURIComponent(brand.name)}`
-                      )
-                    }
-                    className="flex items-center p-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all group"
-                  >
-                    <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600">
-                      {brand.name}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Price Ranges */}
-            <div className="col-span-1">
-              <h4 className="text-lg font-semibold text-gray-900 mb-4">
-                Price Range
-              </h4>
-              <div className="space-y-3">
-                {category.priceRanges?.map((range, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      const priceRange = range.range
-                        .replace(/[^\d,-]/g, "")
-                        .split("-");
-                      handleMegaMenuNavigate(
-                        category.id,
-                        `min=${priceRange[0]?.replace(/[^\d]/g, "") || 0}&max=${
-                          priceRange[1]?.replace(/[^\d]/g, "") || 999999
-                        }`
-                      );
-                    }}
-                    className="flex items-center justify-between w-full p-3 rounded-lg hover:bg-gray-50 transition-all group"
-                  >
-                    <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600">
-                      {range.range}
-                    </span>
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full ${range.color}`}
-                    >
-                      {range.count}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Special Deals or Additional Info */}
-            <div className="col-span-1">
-              {category.deals ? (
-                <>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4">
-                    Special Offers
-                  </h4>
-                  <div className="space-y-3">
-                    {category.deals.map((deal, idx) => (
-                      <div
-                        key={idx}
-                        className="p-3 rounded-lg bg-gradient-to-r from-red-50 to-orange-50 border border-red-100"
-                      >
-                        <div className="font-semibold text-gray-900">
-                          {deal.name}
-                        </div>
-                        <div className="text-sm text-red-600 font-bold">
-                          {deal.discount}
-                        </div>
-                      </div>
-                    ))}
                   </div>
-                </>
-              ) : (
-                <div className="p-6 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl border border-blue-100">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">
-                    Need Help Choosing?
-                  </h4>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Our experts can help you find the perfect{" "}
-                    {category.name.toLowerCase()} for your needs.
-                  </p>
-                  <button className="w-full py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all">
-                    Get Expert Advice
-                  </button>
                 </div>
-              )}
+              ))}
             </div>
           </div>
 
-          {/* Bottom Banner */}
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <FaFilter className="text-blue-500" />
-                <span className="text-sm font-medium text-gray-700">
-                  Advanced filters available for precise matching
-                </span>
-              </div>
-              <button
-                onClick={() => {
-                  setActiveMegaMenu(null);
-                  const base = category.route || category.id;
-                  navigate(`/devicelist/${base}`);
-                }}
-                className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all"
-              >
-                View All {category.name}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Render Mobile Category Menu
-  const renderMobileCategoryMenu = () => {
-    const category = megaMenuCategories.find(
-      (c) => c.id === mobileActiveCategory
-    );
-    if (!category) return null;
-
-    return (
-      <div className="lg:hidden absolute inset-0 bg-white z-50 overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-4 flex items-center">
-          <button
-            onClick={() => setMobileActiveCategory(null)}
-            className="p-2 mr-3 hover:bg-gray-100 rounded-lg"
-          >
-            <FaArrowLeft className="text-gray-600" />
-          </button>
-          <div className="flex items-center">
-            <category.icon className={`text-xl mr-3 ${category.color}`} />
-            <h2 className="text-lg font-bold text-gray-900">{category.name}</h2>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-4">
-          {/* Featured */}
-          <div className="mb-6">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">
-              Featured
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
-              {category.featured?.slice(0, 4).map((item, idx) => (
-                <button
+          {/* Column 3: Featured Offers */}
+          <div>
+            <h4 className="font-bold text-base mb-5 text-gray-900 border-b-2 border-red-600 pb-3">
+              By Features
+            </h4>
+            <div className="space-y-3">
+              {category.featured.map((offer, idx) => (
+                <div
                   key={idx}
-                  onClick={() =>
-                    handleMegaMenuNavigate(
-                      category.id,
-                      `type=${item.name.toLowerCase().replace(/\s+/g, "-")}`
-                    )
-                  }
-                  className="p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-all"
+                  className="block p-4 rounded-lg border border-red-200 hover:border-red-400 bg-gradient-to-br from-purple-600 to-red-600 group transition-all duration-200 hover:shadow-md"
                 >
-                  <div className="flex items-center mb-2">
-                    <item.icon className={`text-lg mr-2 ${item.color}`} />
-                    <span className="text-xs font-medium text-gray-700">
-                      {item.name}
-                    </span>
+                  <div className="flex items-center space-x-3">
+                    <div className="text-red-600 group-hover:text-red-700 text-lg">
+                      {offer.icon}
+                    </div>
+                    <div>
+                      <div className="font-bold text-gray-900 group-hover:text-red-800 text-sm">
+                        {offer.name}
+                      </div>
+                      <div className="text-sm text-red-600 font-medium">
+                        {offer.discount}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Limited time offer
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-xs text-gray-500">{item.count}</div>
-                </button>
+                </div>
               ))}
             </div>
           </div>
 
-          {/* Brands */}
-          <div className="mb-6">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">
-              Popular Brands
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {category.brands?.slice(0, 6).map((brand, idx) => (
-                <button
-                  key={idx}
-                  onClick={() =>
-                    handleMegaMenuNavigate(
-                      category.id,
-                      `brand=${encodeURIComponent(brand.name)}`
-                    )
-                  }
-                  className="px-3 py-2 bg-gray-100 hover:bg-blue-100 text-gray-700 hover:text-blue-700 rounded-full text-xs transition-colors"
-                >
-                  {brand.name}
-                </button>
-              ))}
+          {/* Column 4: Top Brands */}
+          <div>
+            <h4 className="font-bold text-base mb-5 text-gray-900 border-b-2 border-red-600 pb-3">
+              By Brand
+            </h4>
+            <div className="grid grid-cols-2 gap-2">
+              {(category.topBrands || []).slice(0, 6).map((b, idx) => {
+                // `b` may be a brand object from the store or a fallback object {id, name}
+                const name = b && (b.name || b);
+                const id = b && (b.id || b.name || `brand-${idx}`);
+                const slug =
+                  (b &&
+                    (b.slug ||
+                      (b.name && b.name.toLowerCase().replace(/\s+/g, "-")))) ||
+                  String(name || "")
+                    .toLowerCase()
+                    .replace(/\s+/g, "-");
+                const logo = b && (b.logo || b.image_url || null);
+
+                // If the item looks like a 'View All' label, route to /brands
+                if (
+                  typeof name === "string" &&
+                  name.toLowerCase().includes("view all")
+                ) {
+                  return (
+                    <Link
+                      key={id}
+                      to="/brands"
+                      onClick={() => setPinnedCategory(null)}
+                      className="flex items-center justify-center p-3 border border-gray-200 rounded-lg hover:border-red-400 hover:bg-red-50 group transition-all duration-200"
+                    >
+                      <span className="font-medium text-gray-700 group-hover:text-red-700 text-sm">
+                        {name}
+                      </span>
+                    </Link>
+                  );
+                }
+
+                return (
+                  <Link
+                    key={id}
+                    to={`/brand/${slug}`}
+                    onClick={() => setPinnedCategory(null)}
+                    className="flex items-center justify-center p-3 border border-gray-200 rounded-lg hover:border-red-400 hover:bg-red-50 group transition-all duration-200"
+                  >
+                    <div className="flex items-center space-x-2">
+                      {logo ? (
+                        <img
+                          src={logo}
+                          alt={name}
+                          className="w-5 h-5 object-contain"
+                        />
+                      ) : (
+                        <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-xs text-gray-700 font-bold">
+                          {String(name || "")
+                            .slice(0, 2)
+                            .toUpperCase()}
+                        </div>
+                      )}
+                      <span className="font-medium text-gray-700 group-hover:text-red-700 truncate text-sm">
+                        {name}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </div>
+        </div>
 
-          {/* View All Button */}
-          <button
-            onClick={() => {
-              setMobileActiveCategory(null);
-              const base = category.route || category.id;
-              navigate(`/devicelist/${base}`);
-            }}
-            className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg mt-4"
-          >
-            View All {category.name}
-          </button>
+        {/* Bottom Section */}
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <div className="flex items-center justify-between">
+            <Link
+              to={`/${category.id}`}
+              onClick={() => setPinnedCategory(null)}
+              className="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-purple-600 to-red-600 text-white rounded-lg hover:from-purple-600 hover:to-red-600 transition-all duration-200 font-semibold text-sm shadow-md hover:shadow-lg"
+            >
+              View All in {category.name}
+              <FaChevronRight className="ml-2 w-3 h-3" />
+            </Link>
+          </div>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
 
-  // Main mobile header component
-  const MobileHeader = () => (
-    <div className="lg:hidden">
-      {!mobileActiveCategory ? (
-        <div className="container mx-auto px-4 py-3">
-          {/* Top row with menu, logo, and search */}
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="w-10 h-10 flex items-center justify-center p-2 hover:bg-blue-50 rounded-lg transition-all duration-200 group"
-              aria-label="Toggle menu"
+  // Auth Dropdown Component
+  const AuthDropdown = () => (
+    <div
+      ref={authDropdownRef}
+      className="absolute top-full right-0 mt-2 w-72 bg-white rounded-lg shadow-xl z-50 border border-gray-200"
+    >
+      {isLoggedIn ? (
+        <div className="p-4">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center">
+              <FaUser className="w-6 h-6 text-purple-600" />
+            </div>
+            <div>
+              <h4 className="font-bold text-gray-800">Welcome, {userName}!</h4>
+              <p className="text-sm text-gray-600">{userEmail}</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <a
+              href="/account"
+              className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100"
             >
-              <FaBars className="w-5 h-5 text-gray-700 group-hover:text-blue-600" />
-            </button>
-
-            <a href="/" className="text-xl font-bold flex-1 text-center">
-              <img
-                src={STORE_LOGOS.smartarena}
-                alt="SmartArena logo"
-                className="h-8 inline-block object-contain mx-auto"
-                loading="lazy"
-              />
-              <span className="bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent font-orbitron text-sm tracking-widest uppercase">
-                Smart Arena
-              </span>
+              <FaUser className="text-purple-600" />
+              <span>My Account</span>
             </a>
 
-            <button
-              onClick={handleSearchToggle}
-              className="w-10 h-10 flex items-center justify-center p-2 hover:bg-blue-50 rounded-lg transition-all duration-200 group"
-              aria-label="Toggle search"
+            <a
+              href="/wishlist"
+              className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100"
             >
-              <FaSearch className="w-4 h-4 text-gray-700 group-hover:text-blue-600" />
+              <FaHeart className="text-red-600" />
+              <span>My Wishlist</span>
+            </a>
+          </div>
+          <div className="mt-4 pt-4 border-t">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center space-x-2 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+            >
+              <span>Logout</span>
             </button>
           </div>
-
-          {/* Quick Actions */}
-          <div className="flex justify-around items-center mt-3 pt-3 border-t border-gray-100">
-            {mobileQuickActions.map((action, idx) => (
-              <button
-                key={idx}
-                onClick={action.action}
-                className="flex flex-col items-center p-2 hover:bg-gray-50 rounded-lg transition-all"
-              >
-                <action.icon className={`text-lg mb-1 ${action.color}`} />
-                <span className="text-xs text-gray-600">{action.name}</span>
-              </button>
-            ))}
-          </div>
         </div>
-      ) : null}
+      ) : (
+        <div className="p-4">
+          <h4 className="font-bold text-lg mb-4 text-gray-800">
+            Login / Sign Up
+          </h4>
+          <p className="text-sm text-gray-600 mb-4">
+            Access your wishlist, and recommendations by logging in.
+          </p>
+
+          <button
+            onClick={handleLogin}
+            className="w-full flex items-center justify-center space-x-2 py-3 bg-gradient-to-r from-purple-600 to-red-600 text-white rounded-lg hover:from-purple-600 hover:to-red-600 transition mb-3"
+          >
+            <FaSignInAlt />
+            <span>Continue with Email</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 
-  // Search overlay for mobile
-  const MobileSearchOverlay = () => (
-    <div
-      className={`lg:hidden fixed inset-0 bg-white z-50 ${
-        isSearchOpen ? "block" : "hidden"
-      }`}
-    >
-      <div className="container mx-auto px-4 py-3">
-        <div className="flex items-center w-full space-x-3">
-          <button
-            onClick={handleCloseSearch}
-            className="w-10 h-10 flex items-center justify-center p-2 hover:bg-gray-100 rounded-lg transition-all duration-200"
-            aria-label="Close search"
-          >
-            <FaChevronLeft className="w-5 h-5 text-gray-600" />
-          </button>
-
-          <div className="flex-1 relative">
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              onKeyDown={(e) => {
-                onInputKeyDown(e);
-                onSearchEnter(e);
-              }}
-              placeholder="Search smartphones, brands, models..."
-              className="w-full h-10 rounded-full pl-4 pr-10 border-2 border-blue-500 bg-white text-sm focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all duration-200"
-              aria-autocomplete="list"
-              aria-expanded={showSuggestions}
-            />
-
-            {showSuggestions && (
-              <div
-                ref={suggestionsRef}
-                className="absolute left-0 right-0 mt-2 bg-white shadow-2xl rounded-xl border border-gray-200 z-50 overflow-hidden"
-              >
-                <div className="p-3 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-gray-50">
-                  <h3 className="text-sm font-semibold text-gray-700 flex items-center">
-                    <FaMobileAlt className="mr-2 text-blue-500" />
-                    Search Results ({suggestions.length})
-                  </h3>
-                </div>
-                <ul className="max-h-64 overflow-auto">
-                  {suggestions.map((s, idx) => (
-                    <li
-                      key={s.model || s.name || idx}
-                      onMouseEnter={() => setHighlightIndex(idx)}
-                      onClick={() => selectSuggestion(s)}
-                      className={`px-4 py-3 cursor-pointer transition-all duration-150 border-l-2 ${
-                        highlightIndex === idx
-                          ? "bg-blue-50 border-blue-500"
-                          : "border-transparent hover:bg-gray-50"
-                      }`}
-                    >
-                      <div className="flex items-start space-x-3">
-                        <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-100 to-purple-100 rounded flex items-center justify-center mt-1 shadow-sm">
-                          <FaMobileAlt className="text-blue-600 text-xs" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-sm font-semibold text-gray-900 truncate">
-                            {s.name}
-                          </h4>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <span className="text-xs text-blue-600 font-medium">
-                              {s.brand}
-                            </span>
-                            <span className="text-xs text-gray-500 flex items-center">
-                              <FaTag className="mr-1 text-xs" />
-                              {s.model}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        </div>
+  // Skeleton Loader Component
+  const SkeletonSuggestion = () => (
+    <div className="w-full flex items-center gap-3 px-4 sm:px-5 py-4 border-b border-gray-100 animate-pulse">
+      <div className="w-10 h-10 rounded-md bg-gray-200 flex-shrink-0" />
+      <div className="flex-1 min-w-0 space-y-2">
+        <div className="h-4 bg-gray-200 rounded w-3/4" />
+        <div className="h-3 bg-gray-200 rounded w-1/2" />
       </div>
     </div>
   );
 
-  return (
-    <>
-      <header
-        ref={headerRef}
-        className="fixed top-0 left-0 z-50 w-full bg-white border-b border-gray-100"
-      >
-        {/* Mobile Header */}
-        <MobileHeader />
+  // Text Highlight Component
+  const HighlightText = ({ text, query }) => {
+    if (!query || !text) return text;
+    const parts = String(text).split(new RegExp(`(${query})`, "gi"));
+    return (
+      <>
+        {parts.map((part, idx) =>
+          part.toLowerCase() === query.toLowerCase() ? (
+            <span key={idx} className="font-bold text-purple-600 bg-purple-50">
+              {part}
+            </span>
+          ) : (
+            <span key={idx}>{part}</span>
+          ),
+        )}
+      </>
+    );
+  };
 
-        {/* Mobile Search Overlay */}
-        <MobileSearchOverlay />
+  // Flipkart-Style Search Modal - Mobile Optimized
+  const SearchModal = () => {
+    const discoverItems = [
+      { label: "All Products", link: "/all-products", icon: <FaTag /> },
+      { label: "Best Deals", link: "/deals", icon: <FaBolt /> },
+      { label: "New Launches", link: "/new-launches", icon: <FaStar /> },
+      { label: "Top Brands", link: "/brands", icon: <FaStore /> },
+    ];
 
-        {/* Desktop Navigation */}
-        <div className="hidden lg:block">
-          {/* Top Bar with Logo, Search, and User Actions */}
-          <div className="shadow-sm bg-white">
-            <div className="container mx-auto px-6 py-3">
-              <div className="flex items-center justify-between">
-                {/* Logo */}
-                <a
-                  href="/"
-                  className="text-2xl font-bold text-gray-900 flex items-center hover:scale-105 transition-transform duration-200"
-                >
-                  <img
-                    src={STORE_LOGOS.smartarena}
-                    alt="SmartArena logo"
-                    className="h-10 w-auto object-contain mr-3"
-                    loading="lazy"
-                  />
-                  <span className="bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent font-orbitron text-xl tracking-widest uppercase">
-                    Smart Arena
-                  </span>
-                </a>
+    return (
+      <>
+        {isSearchOpen && (
+          <>
+            {/* Backdrop - Lower z-index */}
+            <div
+              className="fixed inset-0 bg-black bg-opacity-50 z-40"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                  setIsSearchOpen(false);
+                  setSearchQuery("");
+                  setShowSearchSuggestions(false);
+                }
+              }}
+            />
 
-                {/* Search Bar */}
-                <div className="flex-1 max-w-md mx-8 relative">
-                  <div className="flex w-full h-12 overflow-hidden rounded-full border-2 border-gray-200 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-100 transition-all duration-300">
-                    <div className="flex items-center pl-4 pr-2 bg-gray-50 border-r border-gray-200">
-                      <FaSearch className="text-gray-400" />
-                    </div>
+            {/* Search Modal - Full screen on mobile using 100dvh */}
+            <div
+              className="fixed inset-0 lg:inset-auto lg:top-16 lg:left-0 lg:right-0 z-50 bg-gradient-to-br from-purple-600 to-white lg:shadow-lg overflow-hidden flex flex-col"
+              style={{
+                height: "100dvh",
+                maxHeight: "100dvh",
+                WebkitOverflowScrolling: "touch",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Search Input Section - Sticky */}
+              <div className="w-full px-2 sm:px-4 py-3 sm:py-4 bg-white sticky top-0 z-10 border-b border-gray-100 flex-shrink-0 shadow-sm">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  {/* Back Button */}
+                  <button
+                    onClick={() => {
+                      setIsSearchOpen(false);
+                      setSearchQuery("");
+                      setShowSearchSuggestions(false);
+                    }}
+                    className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+                    aria-label="Go back"
+                  >
+                    <FaArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700" />
+                  </button>
+
+                  {/* Search Input */}
+                  <div className="flex-1 relative ">
                     <input
-                      type="text"
-                      value={searchText}
-                      onChange={(e) => setSearchText(e.target.value)}
-                      onKeyDown={onInputKeyDown}
-                      placeholder="Search devices, brands, specs..."
-                      className="flex-1 border-none px-4 bg-white text-sm placeholder-gray-400 font-medium focus:outline-none"
-                      aria-autocomplete="list"
-                      aria-expanded={showSuggestions}
                       ref={searchInputRef}
+                      autoFocus
+                      type="text"
+                      placeholder="Search products, brands..."
+                      value={searchQuery}
+                      onChange={(e) => handleSearchInputChange(e.target.value)}
+                      onKeyDown={(e) => {
+                        handleSearchKeyDown(e);
+                        if (
+                          e.key === "Enter" &&
+                          searchQuery.trim() &&
+                          selectedSuggestionIndex < 0
+                        ) {
+                          navigate(
+                            `/search?q=${encodeURIComponent(searchQuery)}`,
+                          );
+                          setSearchQuery("");
+                          setShowSearchSuggestions(false);
+                          setIsSearchOpen(false);
+                        }
+                      }}
+                      className="w-full lg:hi px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base bg-purple-50 border-0 rounded-full focus:outline-none transition-all placeholder-gray-400 font-medium"
                     />
-                  </div>
 
-                  {/* Search Suggestions */}
-                  {showSuggestions && (
-                    <div
-                      ref={suggestionsRef}
-                      className="absolute left-0 right-0 mt-2 bg-white shadow-2xl rounded-xl border border-gray-200 z-50 overflow-hidden"
-                    >
-                      <div className="p-3 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-gray-50">
-                        <h3 className="text-sm font-semibold text-gray-700 flex items-center">
-                          <FaSearch className="mr-2 text-blue-500" />
-                          Search Results ({suggestions.length})
-                        </h3>
+                    {/* Suggestions Dropdown - Flipkart Style with Images & Highlighting */}
+                    {(showSearchSuggestions || searchQuery.trim()) && (
+                      <div className="hidden md:block absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto">
+                        {/* Loading State */}
+                        {!searchSuggestions ||
+                        searchSuggestions.length === 0 ? (
+                          searchQuery.trim() ? (
+                            <>
+                              {/* Show skeleton loaders while fetching */}
+                              {[...Array(3)].map((_, i) => (
+                                <SkeletonSuggestion key={`skeleton-${i}`} />
+                              ))}
+                              {/* No Results - only show after loaded */}
+                              {searchSuggestions &&
+                                searchSuggestions.length === 0 && (
+                                  <div className="w-full text-center py-8 px-4">
+                                    <div className="text-gray-400 text-4xl mb-2">
+                                      🔍
+                                    </div>
+                                    <p className="text-sm text-gray-500">
+                                      No products found for "{searchQuery}"
+                                    </p>
+                                    <p className="text-xs text-gray-400 mt-2">
+                                      Try searching for brands or other devices
+                                    </p>
+                                  </div>
+                                )}
+                            </>
+                          ) : null
+                        ) : (
+                          /* Suggestions List */
+                          <>
+                            {searchSuggestions
+                              .slice(0, 7)
+                              .map((sugg, index) => (
+                                <button
+                                  key={index}
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleSuggestionClick(sugg);
+                                  }}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleSuggestionClick(sugg);
+                                  }}
+                                  onMouseEnter={() =>
+                                    setSelectedSuggestionIndex(index)
+                                  }
+                                  className={`w-full flex items-center gap-3 px-4 sm:px-5 py-4 border-b border-gray-100 last:border-b-0 text-left transition-all duration-150 min-h-[56px] sm:min-h-[60px] hover:bg-purple-50 active:bg-purple-100 ${
+                                    selectedSuggestionIndex === index
+                                      ? "bg-purple-50"
+                                      : ""
+                                  }`}
+                                >
+                                  {/* Product Thumbnail */}
+                                  <div className="w-12 h-12 rounded-md bg-gray-100 flex-shrink-0 overflow-hidden flex items-center justify-center shadow-sm">
+                                    {sugg.image_url ? (
+                                      <img
+                                        src={sugg.image_url}
+                                        alt={sugg.name}
+                                        className="w-full h-full object-cover"
+                                        loading="lazy"
+                                      />
+                                    ) : (
+                                      <span className="font-bold text-lg text-purple-600">
+                                        {(sugg.brand_name || sugg.name || "")
+                                          .charAt(0)
+                                          .toUpperCase()}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Text Content */}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-sm sm:text-base font-medium text-gray-900 truncate leading-snug">
+                                      <HighlightText
+                                        text={sugg.name}
+                                        query={searchQuery}
+                                      />
+                                    </div>
+                                    <div className="text-xs sm:text-sm text-gray-500 truncate mt-0.5">
+                                      {sugg.type === "product"
+                                        ? sugg.brand_name ||
+                                          sugg.model ||
+                                          "Smartphone"
+                                        : sugg.type || ""}
+                                    </div>
+                                  </div>
+
+                                  {/* Chevron Icon */}
+                                </button>
+                              ))}
+                          </>
+                        )}
                       </div>
-                      <ul className="max-h-80 overflow-auto">
-                        {suggestions.map((s, idx) => (
-                          <li
-                            key={s.model || s.name || idx}
-                            onMouseEnter={() => setHighlightIndex(idx)}
-                            onClick={() => selectSuggestion(s)}
-                            className={`px-4 py-3 cursor-pointer transition-all duration-200 border-l-2 ${
-                              highlightIndex === idx
-                                ? "bg-blue-50 border-blue-500 shadow-sm"
-                                : "border-transparent hover:bg-gray-50"
-                            }`}
-                          >
-                            <div className="flex items-start space-x-3">
-                              <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg flex items-center justify-center mt-1 shadow-sm">
-                                <FaMobileAlt className="text-blue-600 text-sm" />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Scrollable Content Area */}
+              <div className="flex-1 overflow-y-auto">
+                {/* Mobile Search Suggestions - Display in Scrollable Area */}
+                {searchQuery.trim() && (
+                  <div className="px-4 sm:px-6 py-4 sm:py-6">
+                    {/* Loading State */}
+                    {!searchSuggestions || searchSuggestions.length === 0 ? (
+                      <>
+                        {/* Show skeleton loaders while fetching */}
+                        {[...Array(3)].map((_, i) => (
+                          <SkeletonSuggestion key={`skeleton-${i}`} />
+                        ))}
+                        {/* No Results - only show after loaded */}
+                        {searchSuggestions &&
+                          searchSuggestions.length === 0 && (
+                            <div className="w-full text-center py-12 px-4">
+                              <div className="text-gray-400 text-5xl mb-3">
+                                🔍
                               </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between">
-                                  <div>
-                                    <h4 className="text-sm font-semibold text-gray-900 truncate">
-                                      {s.name}
-                                    </h4>
-                                    <div className="flex items-center space-x-2 mt-1">
-                                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                                        {s.brand}
-                                      </span>
-                                      <span className="text-xs text-gray-500 flex items-center">
-                                        <FaTag className="mr-1 text-xs" />
-                                        {s.model}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <div className="text-right ml-2">
-                                    <div className="text-sm font-bold text-gray-900">
-                                      {(() => {
-                                        const p = getSuggestionBasePrice(s);
-                                        return p
-                                          ? formatPrice(p)
-                                          : formatPrice(s.price);
-                                      })()}
-                                    </div>
-                                    {(() => {
-                                      const r = getSuggestionRam(s);
-                                      return r ? (
-                                        <div className="text-xs text-gray-500 mt-1">
-                                          {r}
-                                        </div>
-                                      ) : null;
-                                    })()}
-                                  </div>
-                                </div>
+                              <p className="text-sm font-medium text-gray-900 mb-1">
+                                No products found
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                No results for "{searchQuery}"
+                              </p>
+                              <p className="text-xs text-gray-400 mt-2">
+                                Try searching for brands or other devices
+                              </p>
+                            </div>
+                          )}
+                      </>
+                    ) : (
+                      /* Suggestions List for Mobile */
+                      <div className="space-y-2">
+                        {searchSuggestions.slice(0, 7).map((sugg, index) => (
+                          <button
+                            key={index}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleSuggestionClick(sugg);
+                            }}
+                            // Fallback for touch/mobile
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleSuggestionClick(sugg);
+                            }}
+                            className="w-full flex items-center gap-3 p-4 bg-white rounded-lg border border-gray-200 hover:border-purple-300 active:bg-purple-50 transition-all duration-150 min-h-[64px] text-left"
+                          >
+                            {/* Product Thumbnail */}
+
+                            {/* Text Content */}
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-gray-900 truncate leading-snug">
+                                <HighlightText
+                                  text={sugg.name}
+                                  query={searchQuery}
+                                />
+                              </div>
+                              <div className="text-xs text-gray-500 truncate mt-1">
+                                {sugg.type === "product"
+                                  ? sugg.brand_name ||
+                                    sugg.model ||
+                                    "Smartphone"
+                                  : sugg.type || ""}
                               </div>
                             </div>
-                          </li>
+
+                            {/* Chevron Icon */}
+                          </button>
                         ))}
-                      </ul>
-                      <div className="p-3 bg-gray-50 border-t border-gray-200">
-                        <div className="flex items-center justify-between text-xs text-gray-500">
-                          <div className="flex items-center">
-                            <kbd className="px-2 py-1 mx-1 bg-white border border-gray-300 rounded shadow-sm">
-                              ↑↓
-                            </kbd>
-                            Navigate
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+      </>
+    );
+  };
+
+  // Main Header Component - Desktop + Mobile
+  const MainHeader = () => (
+    <>
+      {/* MOBILE HEADER (≤ 768px) */}
+      <div className="md:hidden border-b bg-purple-400 border-purple-50 z-40">
+        {/* Mobile Top Row: Logo (left) | Icons (right) */}
+        <div className="flex items-center justify-between px-4 py-3 gap-3">
+          {/* Logo (mobile) */}
+          <Link to="/" className="flex-shrink-0 flex items-center">
+            <div className="logo-wrapper flex items-center gap-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 200 200"
+                className="w-12 h-12"
+                aria-hidden="true"
+              >
+                <defs>
+                  <linearGradient
+                    id="hook-grad-1"
+                    x1="0%"
+                    y1="0%"
+                    x2="0%"
+                    y2="100%"
+                  >
+                    <stop offset="0%" stopColor="#7c3aed" />
+                    <stop offset="100%" stopColor="#ef4444" />
+                  </linearGradient>
+                  <linearGradient
+                    id="hook-grad-2"
+                    x1="0%"
+                    y1="0%"
+                    x2="0%"
+                    y2="100%"
+                  >
+                    <stop offset="0%" stopColor="#a855f7" />
+                    <stop offset="100%" stopColor="#f87171" />
+                  </linearGradient>
+                </defs>
+                <rect
+                  x="48"
+                  y="30"
+                  width="52"
+                  height="140"
+                  rx="24"
+                  fill="url(#hook-grad-1)"
+                />
+                <rect
+                  x="106"
+                  y="24"
+                  width="52"
+                  height="152"
+                  rx="24"
+                  fill="url(#hook-grad-2)"
+                />
+                <circle cx="100" cy="100" r="10" fill="#ffffff" />
+                <circle cx="80" cy="70" r="7" fill="#ffffff" />
+                <circle cx="80" cy="130" r="7" fill="#ffffff" />
+              </svg>
+              <h4 className="logo-tagline-mobile text-white">
+                Smart Tech. Smart Choice.
+              </h4>
+            </div>
+          </Link>
+
+          {/* Right Icons: Compare + Menu */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Link
+              to="/compare"
+              className="p-2.5 rounded-lg hover:bg-gray-100 transition-all duration-200 text-white hover:text-gray-900"
+              aria-label="Compare"
+            >
+              <Scale className="w-5 h-5" />
+            </Link>
+
+            <button
+              className="p-2.5 rounded-lg hover:bg-gray-100 transition-all duration-200 flex-shrink-0 text-white hover:text-gray-900"
+              onClick={() => setIsMenuOpen(true)}
+              aria-label="Open menu"
+            >
+              <FaStream className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Search Input Row */}
+        <div className="px-4 py-3">
+          <div className="relative">
+            {/* Search Icon */}
+
+            <FaSearch className="fa fa-search absolute left-3 top-1/2 -translate-y-1/2 text-purple-400 pointer-events-none" />
+
+            <input
+              type="text"
+              placeholder="Search products, brands and more..."
+              value={searchQuery}
+              onChange={(e) => {
+                handleSearchInputChange(e.target.value);
+                setIsSearchOpen(true);
+              }}
+              onFocus={() => setIsSearchOpen(true)}
+              onKeyDown={(e) => {
+                handleSearchKeyDown(e);
+                if (
+                  e.key === "Enter" &&
+                  searchQuery.trim() &&
+                  selectedSuggestionIndex < 0
+                ) {
+                  navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+                  setSearchQuery("");
+                  setShowSearchSuggestions(false);
+                  setIsSearchOpen(false);
+                }
+              }}
+              className="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-gray-300 font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all placeholder-gray-500"
+              aria-label="Search"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* DESKTOP HEADER (> 768px) */}
+      <div className="hidden md:block bg-white  z-40 py-2 sm:py-2.5 px-2">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6">
+          <div className="flex items-center justify-between gap-2 sm:gap-8">
+            {/* Logo */}
+            <Link
+              to="/"
+              className="flex items-center flex-shrink-0 logo-wrapper"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 200 200"
+                className="w-14 h-14"
+                aria-hidden="true"
+              >
+                <defs>
+                  <linearGradient
+                    id="hook-grad-1-desktop"
+                    x1="0%"
+                    y1="0%"
+                    x2="0%"
+                    y2="100%"
+                  >
+                    <stop offset="0%" stopColor="#7c3aed" />
+                    <stop offset="100%" stopColor="#ef4444" />
+                  </linearGradient>
+                  <linearGradient
+                    id="hook-grad-2-desktop"
+                    x1="0%"
+                    y1="0%"
+                    x2="0%"
+                    y2="100%"
+                  >
+                    <stop offset="0%" stopColor="#a855f7" />
+                    <stop offset="100%" stopColor="#f87171" />
+                  </linearGradient>
+                </defs>
+                <rect
+                  x="48"
+                  y="30"
+                  width="52"
+                  height="140"
+                  rx="24"
+                  fill="url(#hook-grad-1-desktop)"
+                />
+                <rect
+                  x="106"
+                  y="24"
+                  width="52"
+                  height="152"
+                  rx="24"
+                  fill="url(#hook-grad-2-desktop)"
+                />
+                <circle cx="100" cy="100" r="10" fill="#ffffff" />
+                <circle cx="80" cy="70" r="7" fill="#ffffff" />
+                <circle cx="80" cy="130" r="7" fill="#ffffff" />
+              </svg>
+            </Link>
+
+            {/* Desktop Search Bar - Professional Style */}
+            <div
+              ref={searchRef}
+              className="flex-1 max-w-2xl mx-6 relative search-input-wrapper"
+            >
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search for products, brands and more..."
+                value={searchQuery}
+                onChange={(e) => handleSearchInputChange(e.target.value)}
+                onKeyDown={(e) => {
+                  handleSearchKeyDown(e);
+                  if (
+                    e.key === "Enter" &&
+                    searchQuery.trim() &&
+                    selectedSuggestionIndex < 0
+                  ) {
+                    navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+                    setSearchQuery("");
+                    setShowSearchSuggestions(false);
+                  }
+                }}
+                className="w-full px-4 py-3 text-sm bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent search-input rounded-lg transition-all placeholder-gray-500 font-medium"
+              />
+
+              {/* Desktop Suggestions Dropdown - Enhanced with Images & Highlighting */}
+              {showSearchSuggestions &&
+                searchSuggestions &&
+                searchSuggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-2xl z-50 max-h-96 overflow-y-auto mega-menu-slide">
+                    {searchSuggestions.slice(0, 7).map((sugg, index) => (
+                      <button
+                        key={index}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleSuggestionClick(sugg);
+                        }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleSuggestionClick(sugg);
+                        }}
+                        onMouseEnter={() => setSelectedSuggestionIndex(index)}
+                        className={`w-full flex items-center gap-4 px-5 py-4 border-b border-gray-100 last:border-b-0 text-left transition-all duration-150 min-h-[64px] mega-menu-item ${
+                          selectedSuggestionIndex === index
+                            ? "bg-gradient-to-r from-purple-600 to-red-600"
+                            : "hover:bg-gray-50"
+                        }`}
+                      >
+                        {/* Product Image */}
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="text-base font-semibold text-gray-900">
+                            <HighlightText
+                              text={sugg.name}
+                              query={searchQuery}
+                            />
                           </div>
-                          <div className="flex items-center">
-                            <kbd className="px-2 py-1 mx-1 bg-white border border-gray-300 rounded shadow-sm">
-                              Enter
-                            </kbd>
-                            Select
+                          <div className="text-sm text-gray-600 mt-1">
+                            {sugg.type === "product"
+                              ? sugg.brand_name || sugg.model || "Smartphone"
+                              : sugg.type || ""}
                           </div>
-                          <div className="flex items-center">
-                            <kbd className="px-2 py-1 mx-1 bg-white border border-gray-300 rounded shadow-sm">
-                              ESC
-                            </kbd>
-                            Close
-                          </div>
+                        </div>
+
+                        {/* Chevron */}
+                      </button>
+                    ))}
+                  </div>
+                )}
+            </div>
+
+            {/* Spacer */}
+            <div className="flex-1" />
+
+            {/* Utility Icons - Desktop */}
+            <div className="flex items-center space-x-8">
+              {directLinks.map((linkItem, index) => (
+                <a
+                  key={index}
+                  href={linkItem.link}
+                  className="text-gray-600 hover:text-red-600 font-medium text-sm transition-all duration-200 relative group"
+                >
+                  {linkItem.name}
+                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-red-600 group-hover:w-full transition-all duration-300" />
+                </a>
+              ))}
+              {utilityItems.map((item, index) => (
+                <a
+                  key={index}
+                  href={item.link}
+                  className="relative group flex items-center justify-center transition-all duration-200"
+                >
+                  <div className="relative">
+                    <div className="p-2.5 rounded-lg hover:bg-gray-100 transition-all duration-200 text-gray-600 hover:text-gray-900">
+                      <span className="text-lg">{item.icon}</span>
+                    </div>
+                    {item.count && (
+                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-md">
+                        {item.count}
+                      </span>
+                    )}
+                  </div>
+
+                  {item.name === "Cart" && (
+                    <div className="absolute -bottom-10 hidden group-hover:block bg-gray-900 text-white text-xs px-3 py-1.5 rounded-md whitespace-nowrap shadow-lg z-50 font-medium">
+                      ₹24,599
+                    </div>
+                  )}
+                </a>
+              ))}
+
+              {/* Auth Dropdown Trigger */}
+              <div className="relative auth-button">
+                <button
+                  className="flex items-center justify-center transition-all duration-200"
+                  onClick={() => setShowAuthDropdown(!showAuthDropdown)}
+                >
+                  <div className="p-2.5 rounded-lg hover:bg-gray-100 transition-all duration-200 text-gray-600 hover:text-gray-900">
+                    <FaUser className="w-5 h-5" />
+                  </div>
+                </button>
+                {showAuthDropdown && <AuthDropdown />}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+
+  // Category Navigation Bar with Mega Menus
+  // NOTE: Desktop category navigation logic is commented out for responsive/debugging purposes.
+  // The original implementation rendered a complex mega-menu for lg+ viewports.
+  // To temporarily disable that behavior (while preserving the codebase),
+  // the component now returns null. Restore the original JSX to re-enable.
+  const CategoryNavBar = () => {
+    return null;
+  };
+
+  // Mobile Menu Drawer
+  const MobileMenuDrawer = () => (
+    <>
+      {isMenuOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            onClick={() => setIsMenuOpen(false)}
+          />
+
+          {/* Drawer */}
+          <div
+            className={`fixed top-0 left-0 bottom-0 w-80 bg-white border-r border-purple-300 z-50 transform transition-transform duration-300 lg:hidden ${
+              isMenuOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
+          >
+            <div className="flex flex-col h-full">
+              {/* Drawer Header */}
+              <div className="p-5 bg-gradient-to-r from-purple-400 to-red-600 text-white border-b border-purple-300">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    {isLoggedIn ? (
+                      <></>
+                    ) : (
+                      <>
+                        <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0"></div>
+                        <h3 className="text-lg font-bold text-white">Hook</h3>
+                      </>
+                    )}
+                  </div>
+                  <button
+                    className="p-2 hover:bg-red-500 rounded-lg transition-colors duration-200"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <FaTimes className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="mt-4">
+                  <div className="text-sm text-red-100">
+                    {isLoggedIn ? "Welcome back!" : "Welcome to Hook"}
+                  </div>
+                  {isLoggedIn && (
+                    <div className="flex items-center space-x-3 mt-2">
+                      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                        <FaUser className="w-4 h-4 text-red-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-gray-800 truncate">
+                          {userName}
+                        </div>
+                        <div className="text-xs text-gray-600 truncate">
+                          {userEmail}
                         </div>
                       </div>
                     </div>
                   )}
                 </div>
-
-                {/* User Actions */}
-                <div className="flex items-center space-x-3">
-                  {userActions.map((action, idx) => (
-                    <button
-                      key={idx}
-                      onClick={action.action}
-                      className="relative p-2 hover:bg-gray-100 rounded-lg transition-all group flex flex-col items-center"
-                      title={action.name}
-                    >
-                      <action.icon
-                        className={`w-5 h-5 ${action.color} group-hover:scale-110 transition-transform`}
-                      />
-                      {action.count && (
-                        <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                          {action.count}
-                        </span>
-                      )}
-                      <span className="text-xs text-gray-600 mt-1">
-                        {action.name}
-                      </span>
-                    </button>
-                  ))}
-                </div>
               </div>
-            </div>
-          </div>
 
-          {/* Category Bar with Mega Menu */}
-          <div className="relative border-t border-gray-50 shadow-sm bg-white ">
-            <div className="container mx-auto px-6">
-              <div className="flex items-center">
-                {/* Category Navigation */}
-                <div className="flex items-center space-x-1">
-                  {megaMenuCategories.map((category) => (
-                    <div key={category.id} className="relative category-item">
+              {/* Drawer Content */}
+              <div className="flex-1 overflow-y-auto">
+                <div className="p-4">
+                  <h4 className="font-bold text-gray-700 mb-3 text-lg">
+                    Categories
+                  </h4>
+                  {categoriesWithBrands.map((category) => (
+                    <div key={category.id} className="mb-2">
                       <button
+                        className="flex items-center justify-between w-full p-3 bg-gray-50 rounded-lg hover:bg-purple-50 transition-all duration-200 mega-menu-item group"
                         onClick={() => {
-                          if (typeof category.action === "function") {
-                            category.action();
-                            setActiveMegaMenu(null);
-                          } else {
-                            setActiveMegaMenu((prev) =>
-                              prev === category.id ? null : category.id
-                            );
-                          }
+                          const route = `/${mapProductTypeToRoute(
+                            category.id,
+                          )}`;
+                          navigate(route || "/");
+                          setIsMenuOpen(false);
                         }}
-                        className={`flex items-center px-5 py-3 text-sm font-medium transition-all ${
-                          activeMegaMenu === category.id
-                            ? `${category.color}`
-                            : "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
-                        }`}
                       >
-                        <category.icon className={`mr-2 ${category.color}`} />
-                        {category.name}
+                        <div className="flex items-center">
+                          <span className="text-red-600 mr-3 group-hover:text-purple-600 transition-colors">
+                            {category.icon}
+                          </span>
+                          <div className="text-left">
+                            <span className="font-medium group-hover:text-purple-700">
+                              {category.name}
+                            </span>
+                            {category.badge && (
+                              <span className="ml-2 px-2 py-1 bg-red-600 text-white text-xs rounded category-badge">
+                                {category.badge}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <FaChevronRight className="w-4 h-4 text-gray-400 group-hover:text-purple-600 group-hover:translate-x-1 transition-all" />
                       </button>
-
-                      {/* Active indicator */}
-                      {!category.action && activeMegaMenu === category.id && (
-                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500"></div>
-                      )}
                     </div>
                   ))}
                 </div>
 
                 {/* Quick Links */}
-                <div className="ml-auto flex items-center space-x-4">
-                  <button
-                    onClick={() => navigate("/devicelist/smartphones")}
-                    className="flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 px-3 py-2 hover:bg-blue-50 rounded-lg"
-                  >
-                    <FaFire className="mr-2 text-orange-500" />
-                    Today's Deals
-                  </button>
-                  <button
-                    onClick={() => navigate("/compare")}
-                    className="flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 px-3 py-2 hover:bg-blue-50 rounded-lg"
-                  >
-                    <FaBalanceScale className="mr-2 text-blue-500" />
-                    Compare
-                  </button>
+
+                {/* Logout / Today's Deals */}
+                <div className="p-4 border-t border-gray-200 space-y-3">
+                  {isLoggedIn ? (
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        setIsMenuOpen(false);
+                      }}
+                      className="w-full flex items-center justify-center space-x-2 py-3 bg-gradient-to-r from-purple-600 to-red-600 text-white rounded-lg hover:from-purple-600 hover:to-red-600 transition font-semibold hover-lift shadow-md"
+                    >
+                      <FaTimes className="text-lg" />
+                      <span>Logout</span>
+                    </button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleLogin}
+                        className="flex-1 flex items-center justify-center space-x-2 py-3 bg-gradient-to-r from-purple-600 to-red-600 text-white rounded-lg hover:from-purple-600 hover:to-red-600 transition font-semibold hover-lift shadow-md"
+                      >
+                        <FaSignInAlt className="text-lg" />
+                        <span>Login</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          navigate("/signup");
+                        }}
+                        className="flex-1 flex items-center justify-center space-x-2 py-3 bg-gradient-to-r from-purple-600 to-red-600 text-white rounded-lg hover:from-purple-600 hover:to-red-600 transition font-semibold hover-lift shadow-md"
+                      >
+                        <FaUserPlus className="text-lg" />
+                        <span>Sign Up</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-
-            {/* Mega Menu Dropdown */}
-            {renderMegaMenu()}
           </div>
-        </div>
-      </header>
-
-      {/* Enhanced Mobile Menu Drawer */}
-      {isMenuOpen && !mobileActiveCategory && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black bg-opacity-40 z-40 backdrop-blur-sm lg:hidden"
-            onClick={() => setIsMenuOpen(false)}
-            aria-hidden
-          />
-
-          {/* Enhanced Drawer */}
-          <aside className="fixed inset-y-0 left-0 z-50 w-80 bg-white shadow-2xl overflow-y-auto transform transition-transform duration-300 ease-in-out lg:hidden">
-            <div className="flex flex-col h-full">
-              {/* Header */}
-              <div className="px-6 py-6 border-b border-gray-100">
-                <div className="flex items-center justify-between mb-2">
-                  <a
-                    href="/"
-                    className="flex items-center hover:scale-105 transition-transform duration-200"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <img
-                      src={STORE_LOGOS.smartarena}
-                      alt="SmartArena logo"
-                      className="h-10 w-auto object-contain mr-3"
-                      loading="lazy"
-                    />
-                    <span className="bg-gradient-to-r from-purple-600 font-semibold font-sm  to-blue-500 bg-clip-text text-transparent font-orbitron text-xl tracking-widest uppercase">
-                      Smart Arena
-                    </span>
-                  </a>
-                  <button
-                    onClick={() => setIsMenuOpen(false)}
-                    className="p-2 hover:bg-red-50 rounded-lg transition-all duration-200 group"
-                    aria-label="Close menu"
-                  >
-                    <FaTimes className="w-5 h-5 text-gray-600 group-hover:text-red-600" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Main Categories Section */}
-              <div className="px-6 py-4 border-b border-gray-100">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                  <FaBars className="mr-2 text-blue-500" />
-                  All Categories
-                </h3>
-                <div className="space-y-2">
-                  {megaMenuCategories.map((category, index) => (
-                    <button
-                      key={index}
-                      onClick={() => {
-                        setIsMenuOpen(false);
-                        setMobileActiveCategory(category.id);
-                      }}
-                      className="flex items-center justify-between w-full p-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all duration-200 group"
-                    >
-                      <div className="flex items-center">
-                        <category.icon
-                          className={`text-lg mr-3 ${category.color} group-hover:scale-110 transition-transform`}
-                        />
-                        <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600">
-                          {category.name}
-                        </span>
-                      </div>
-                      <FaChevronRight className="text-gray-400 group-hover:text-blue-500" />
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Quick Actions */}
-              <div className="px-6 py-4 border-b border-gray-100">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                  <FaBolt className="mr-2 text-yellow-500" />
-                  Quick Actions
-                </h3>
-                <div className="grid grid-cols-2 gap-2">
-                  {userActions.map((action, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => {
-                        action.action();
-                        setIsMenuOpen(false);
-                      }}
-                      className="flex flex-col items-center p-3 bg-gray-50 rounded-lg hover:bg-blue-50 transition-all"
-                    >
-                      <action.icon className={`text-xl mb-2 ${action.color}`} />
-                      <span className="text-xs font-medium text-gray-700">
-                        {action.name}
-                      </span>
-                      {action.count && (
-                        <span className="text-xs text-gray-500 mt-1">
-                          {action.count} items
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Top Deals Section */}
-              <div className="px-6 py-4 border-b border-gray-100">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-700 flex items-center">
-                    <FaFire className="mr-2 text-orange-500" />
-                    Hot Deals
-                  </h3>
-                </div>
-
-                <div className="space-y-2">
-                  {[
-                    "Best smartphone Under ₹10,000",
-                    "5G smartphone Under ₹20,000",
-                    "Gaming Laptops Under ₹60,000",
-                    "Smart TV Under ₹30,000",
-                  ].map((deal, index) => (
-                    <button
-                      key={index}
-                      onClick={() => {
-                        setIsMenuOpen(false);
-                        navigate(`/devicelist/smartphones`);
-                      }}
-                      className="w-full p-3 text-left rounded-lg border border-gray-100 hover:border-blue-200 hover:shadow-sm transition-all duration-200 group bg-gradient-to-r from-gray-50 to-white"
-                    >
-                      <div className="flex items-center">
-                        <FaFire className="mr-3 text-orange-500 group-hover:scale-110 transition-transform" />
-                        <span className="text-sm font-medium text-gray-800 leading-tight">
-                          {deal}
-                        </span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="px-6 py-4 mt-auto border-t border-gray-100 bg-gray-50">
-                <div className="text-center">
-                  <p className="text-xs text-gray-500 mb-2">
-                    Find your perfect device
-                  </p>
-                  <div className="flex justify-center space-x-3">
-                    <button
-                      onClick={() => {
-                        setIsMenuOpen(false);
-                        navigate("/devicelist/smartphones");
-                      }}
-                      className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-semibold rounded-full hover:shadow-lg transition-all duration-200"
-                    >
-                      Browse All
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </aside>
         </>
       )}
+    </>
+  );
 
-      {/* Mobile Category Menu */}
-      {mobileActiveCategory && renderMobileCategoryMenu()}
+  // Quick Navigation Tabs - Mobile Only
+  const QuickNavTabs = () => {
+    const navTabs = [
+      { label: "Mobiles", link: "/smartphones", icon: <FaMobileAlt /> },
+      { label: "Laptops", link: "/laptops", icon: <FaLaptop /> },
+      { label: "Appliances", link: "/appliances", icon: <FaSnowflake /> },
+      { label: "Networking", link: "/networking", icon: <FaPlug /> },
+    ];
 
-      {/* spacer to prevent content jump when header is fixed */}
-      <div style={{ height: `${spacerHeight}px` }} />
+    return (
+      <div className="bg-white border-b border-gray-200 lg:hidden">
+        <div className="max-w-6xl mx-auto px-2 sm:px-4">
+          <div className="overflow-x-auto no-scrollbar">
+            <nav className="flex gap-1 sm:gap-3 py-1.5 sm:py-2 min-w-max">
+              {navTabs.map((tab, index) => (
+                <a
+                  key={index}
+                  href={tab.link}
+                  className="flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-50 hover:bg-gradient-to-r hover:from-purple-600 hover:to-red-600 text-gray-700 hover:text-red-600 rounded-lg transition-all duration-200 font-medium text-sm sm:text-base whitespace-nowrap flex-shrink-0 border border-gray-200 hover:border-red-300 smooth-transition hover-lift"
+                >
+                  <span className="text-gray-600 hover:text-red-600 transition-colors">
+                    {tab.icon}
+                  </span>
+                  <span>{tab.label}</span>
+                </a>
+              ))}
+            </nav>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <SearchModal />
+
+      <header className="fixed top-0 left-0 right-0 z-40 bg-white lg:sticky lg:z-40">
+        <MainHeader />
+        <CategoryNavBar />
+      </header>
+
+      <QuickNavTabs />
+
+      <MobileMenuDrawer />
+
+      {/* Spacer for fixed header - Mobile: header(3.5rem) + search(3.5rem) + quick nav(3.5rem) */}
+      <div className="h-12 md:hidden" />
     </>
   );
 };

@@ -1,9 +1,10 @@
 // src/components/MobileDetailCard.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useDevice } from "../../hooks/useDevice";
+import Cookies from "js-cookie";
+
 import useTitle from "../../hooks/useTitle";
 import {
-  FaStar,
   FaHeart,
   FaShare,
   FaCamera,
@@ -13,7 +14,6 @@ import {
   FaMobile,
   FaExpand,
   FaWifi,
-  FaBluetooth,
   FaShieldAlt,
   FaWater,
   FaBolt,
@@ -38,82 +38,16 @@ import {
   FaTwitter,
   FaLink,
   FaEnvelope,
-  FaRegStar,
-  FaStarHalfAlt,
-  FaPlus,
-  FaChartBar,
 } from "react-icons/fa";
-import { STORE_LOGOS } from "../../constants/storeLogos";
+import useStoreLogos from "../../hooks/useStoreLogos";
 import "../../styles/hideScrollbar.css";
 import Spinner from "../ui/Spinner";
-import RatingInput from "../ui/RatingInput";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
+import { smartphoneMeta } from "../../constants/meta";
+import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
 
-// Simple inline RatingInput component if the imported one isn't working
-const InlineRatingInput = ({
-  value,
-  onChange,
-  size = "md",
-  readOnly = false,
-}) => {
-  const sizes = {
-    sm: "text-lg",
-    md: "text-xl",
-    lg: "text-2xl",
-  };
-
-  const handleClick = (rating) => {
-    if (!readOnly && onChange) {
-      onChange(rating);
-    }
-  };
-
-  const renderStar = (position) => {
-    const fullStar = value >= position;
-    const halfStar = value >= position - 0.5 && value < position;
-
-    if (fullStar) {
-      return (
-        <FaStar
-          className={`${sizes[size]} cursor-pointer text-yellow-400 ${
-            readOnly ? "" : "hover:text-yellow-500"
-          }`}
-          onClick={() => handleClick(position)}
-        />
-      );
-    } else if (halfStar) {
-      return (
-        <FaStarHalfAlt
-          className={`${sizes[size]} cursor-pointer text-yellow-400 ${
-            readOnly ? "" : "hover:text-yellow-500"
-          }`}
-          onClick={() => handleClick(position)}
-        />
-      );
-    } else {
-      return (
-        <FaRegStar
-          className={`${sizes[size]} cursor-pointer text-gray-300 ${
-            readOnly ? "" : "hover:text-yellow-300"
-          }`}
-          onClick={() => handleClick(position)}
-        />
-      );
-    }
-  };
-
-  return (
-    <div className="flex items-center gap-1">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <span key={star} className="cursor-pointer">
-          {renderStar(star)}
-        </span>
-      ))}
-      {!readOnly && (
-        <span className="ml-2 text-sm text-gray-600">{value.toFixed(1)}/5</span>
-      )}
-    </div>
-  );
-};
+const token = Cookies.get("arenak");
 
 const MobileDetailCard = () => {
   const [activeTab, setActiveTab] = useState("specifications");
@@ -122,34 +56,382 @@ const MobileDetailCard = () => {
   const [showAllStores, setShowAllStores] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState(0);
   const [activeStoreId, setActiveStoreId] = useState(null);
-  const [copied, setCopied] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [ratingsData, setRatingsData] = useState(null);
-  const [showReviewForm, setShowReviewForm] = useState(false);
-  const [newReview, setNewReview] = useState({
-    rating: 0,
-    display: 0,
-    performance: 0,
-    camera: 0,
-    battery: 0,
-    design: 0,
-  });
-  const [editingReview, setEditingReview] = useState(null);
-  const { selectedDevice, fetchDevice, loading, error } = useDevice();
+  const {
+    selectedDevice,
+    fetchDevice,
+    loading,
+    error,
+    smartphone,
+    refreshDevices,
+  } = useDevice();
+  const navigate = useNavigate();
 
-  const query = new URLSearchParams(window.location.search);
+  const params = useParams();
+  const location = useLocation();
+  const query = new URLSearchParams(location.search);
   const model = query.get("model");
-  const id = query.get("id");
+  let id = query.get("id");
   const variantQuery = query.get("variantId") || query.get("variant_id");
   const storeQuery = query.get("storeId") || query.get("store_id");
+  const ramParam = query.get("ram");
+  const storageParam = query.get("storage");
+  const storeNameParam = query.get("storeName") || query.get("store");
 
+  // Extract slug from route params (SEO-friendly slug-based URL)
+  const routeSlug = params.slug || null;
+
+  // Convert slug to searchable model name
+  const modelFromSlug = routeSlug ? extractNameFromSlug(routeSlug) : null;
+  const searchModel = model || modelFromSlug;
+
+  // Try to find device locally by slug match first
+  const findDeviceBySlug = useCallback(
+    (slug) => {
+      if (!slug || !smartphone) return null;
+      const searchSlug = generateSlug(slug);
+      return (Array.isArray(smartphone) ? smartphone : [smartphone]).find(
+        (d) => generateSlug(d.name || d.model || "") === searchSlug,
+      );
+    },
+    [smartphone],
+  );
   useEffect(() => {
-    if (id) fetchDevice(id);
-    else if (model) fetchDevice(model);
-  }, [id, model, fetchDevice]);
+    // If an explicit numeric id is present, fetch that exact device.
+    if (id) {
+      fetchDevice(id);
+      return;
+    }
 
-  const mobileData = selectedDevice?.smartphones?.[0] || selectedDevice;
+    // If we have a slug/model route, try to resolve locally first. If not
+    // present, refresh the smartphone list (API fallback) so the device can be
+    // resolved after the list loads.
+    if (routeSlug) {
+      const localDevice = findDeviceBySlug(routeSlug);
+      if (localDevice) return; // already available locally
+
+      // If devices not loaded or currently empty, trigger a refresh
+      if (!Array.isArray(smartphone) || smartphone.length === 0) {
+        // Refresh the full smartphone list so the slug can be resolved locally
+        try {
+          refreshDevices();
+        } catch (e) {
+          // ignore
+        }
+      }
+    }
+    // If nothing else, no-op; the global loader will fetch lists on mount.
+  }, [id, routeSlug, searchModel, fetchDevice, findDeviceBySlug, smartphone]);
+
+  // Update URL to match canonical slug-based path if needed
+  useEffect(() => {
+    const mobileDataLocal = selectedDevice?.smartphones?.[0] || selectedDevice;
+    if (!mobileDataLocal || !routeSlug) return;
+
+    const canonicalSlug = generateSlug(
+      mobileDataLocal.name ||
+        mobileDataLocal.model ||
+        mobileDataLocal.brand ||
+        "",
+    );
+
+    // If current slug doesn't match canonical slug, replace URL with canonical one
+    if (canonicalSlug && routeSlug !== canonicalSlug) {
+      const desiredPath = `/smartphones/${canonicalSlug}`;
+      const currentPath = window.location.pathname;
+      if (currentPath !== desiredPath) {
+        navigate(desiredPath + (location.search || ""), { replace: true });
+      }
+    }
+  }, [selectedDevice, routeSlug, navigate, location.search]);
+
+  // Prefer a locally-resolved device (by slug) before falling back to
+  // `selectedDevice` which may have been set via other flows.
+  const localResolved = routeSlug ? findDeviceBySlug(routeSlug) : null;
+  // Normalize incoming device object into a shape the UI expects.
+  const detectAiPhone = (d) => {
+    if (!d) return false;
+    if (d.is_ai || d.ai_phone || d.isAi || d.ai) return true;
+    const candidates = [
+      d.features,
+      d.tags,
+      d.keywords,
+      d.ai_features,
+      d.performance?.ai_features,
+      d.camera?.ai,
+      d.camera?.ai_features,
+      d.description,
+      d.summary,
+    ];
+    for (const c of candidates) {
+      if (!c) continue;
+      if (Array.isArray(c) && c.some((x) => /ai/i.test(String(x)))) return true;
+      if (typeof c === "string" && /\bai\b/i.test(c)) return true;
+    }
+    try {
+      if (/\bai\b/i.test(JSON.stringify(d.camera || {}))) return true;
+    } catch (e) {}
+    return false;
+  };
+
+  const normalizeSmartphone = (d) => {
+    if (!d) return null;
+    const out = { ...d };
+
+    out.id = d.product_id ?? d.id ?? d._id ?? null;
+    out.brand = d.brand_name ?? d.brand ?? d.manufacturer ?? "";
+    out.name = d.name ?? d.model ?? d.title ?? "";
+    out.model = d.model ?? d.name ?? out.name;
+    out.images = d.images ?? d.photos ?? d.images_urls ?? [];
+
+    // Normalize performance (clone to avoid mutating possibly read-only objects)
+    const perfSrc = d.performance || out.performance || {};
+    const perf = { ...perfSrc };
+    perf.processor = perf.processor || d.processor || d.cpu || "";
+    if (!perf.ram) {
+      perf.ram = d.performance?.ram || d.ram || "";
+      if (!perf.ram && Array.isArray(d.performance?.ram_options)) {
+        perf.ram = d.performance.ram_options.join(" / ");
+      }
+    }
+    perf.operating_system =
+      perf.operating_system ||
+      d.performance?.operating_system ||
+      d.performance?.os ||
+      "";
+
+    // Normalize storage
+    perf.storage =
+      perf.storage ||
+      d.performance?.storage ||
+      d.performance?.ROM_storage ||
+      "";
+    if (!perf.storage && Array.isArray(d.performance?.storage_options)) {
+      perf.storage = d.performance.storage_options.join(" / ");
+    }
+    out.performance = perf;
+
+    // Normalize variants
+    out.variants = (d.variants || d.variant || []).map((v) => ({
+      id: v.variant_id ?? v.id ?? v.variantId ?? null,
+      variant_id: v.variant_id ?? v.id ?? v.variantId ?? null,
+      ram: v.ram ?? v.memory ?? v.RAM ?? "",
+      storage: v.storage ?? v.ROM_storage ?? v.storage_options ?? "",
+      base_price: v.base_price ?? v.price ?? v.basePrice ?? null,
+      store_prices: v.store_prices ?? v.storePrices ?? v.stores ?? [],
+      color_name: v.color_name ?? v.color ?? v.colour ?? "",
+      color_code: v.color_code ?? v.colorCode ?? v.hex ?? null,
+      ...v,
+    }));
+
+    // Pick sensible defaults for performance.ram/storage from variants if missing
+    if (
+      (!out.performance.ram || out.performance.ram === "") &&
+      out.variants.length
+    ) {
+      out.performance.ram = out.variants[0].ram || out.performance.ram;
+    }
+    if (
+      (!out.performance.storage || out.performance.storage === "") &&
+      out.variants.length
+    ) {
+      out.performance.storage =
+        out.variants[0].storage || out.performance.storage;
+    }
+
+    // Camera main megapixels heuristic
+    out.camera = out.camera || {};
+    const tryParseMP = (val) => {
+      if (!val) return null;
+      const m =
+        String(val).match(/(\d{1,4})(?=\s*MP|MP| megapixel|MP\b)/i) ||
+        String(val).match(/(\d{1,4})\s*MP/i) ||
+        String(val).match(/(\d{1,4})/);
+      return m ? parseInt(m[1], 10) : null;
+    };
+
+    // Try common camera locations (clone camera object before mutating)
+    const camSrc = d.camera || out.camera || {};
+    const cam = { ...camSrc };
+    const rearMain =
+      d.camera?.rear_camera?.main ||
+      d.camera?.rear_camera ||
+      d.camera?.main ||
+      d.camera;
+    cam.main_camera_megapixels =
+      cam.main_camera_megapixels ||
+      tryParseMP(
+        rearMain?.resolution ||
+          rearMain?.resolution_mp ||
+          rearMain?.megapixels ||
+          rearMain?.sensor ||
+          rearMain,
+      );
+    out.camera = cam;
+
+    // Normalize battery capacity in mAh (clone to avoid mutating originals)
+    const battSrc = d.battery || out.battery || {};
+    const batt = { ...battSrc };
+    const capRaw =
+      d.battery?.capacity ||
+      d.battery?.battery_capacity ||
+      d.battery?.capacity_mAh ||
+      d.battery;
+    if (capRaw && !batt.battery_capacity_mah) {
+      const m = String(capRaw).match(/(\d{3,5})/);
+      batt.battery_capacity_mah = m ? parseInt(m[1], 10) : null;
+      batt.capacity = d.battery?.capacity ?? d.battery;
+    }
+    out.battery = batt;
+
+    // Keep other friendly aliases (connectivity/network/ports/audio/sensors)
+    out.connectivity = out.connectivity || d.connectivity || {};
+    out.network = out.network || d.network || {};
+    out.ports = out.ports || d.ports || {};
+    out.audio = out.audio || d.audio || {};
+    out.multimedia = out.multimedia || d.multimedia || {};
+    out.build_design = out.build_design || d.build_design || d.design || {};
+    out.sensors = Array.isArray(d.sensors)
+      ? d.sensors
+      : typeof d.sensors === "string"
+        ? [d.sensors]
+        : out.sensors || [];
+
+    // Provide UI-friendly JSON shapes for components (follow the provided UI type rules)
+    out.display_json =
+      d.display_json ||
+      d.display ||
+      (d.screen || d.screen_size
+        ? {
+            size: d.display?.size || d.screen_size || d.screen || "",
+            resolution: d.display?.resolution || d.resolution || "",
+            refresh_rate: d.display?.refresh_rate || d.refresh_rate || "",
+            touch_sampling_rate:
+              d.display?.touch_sampling_rate || d.touch_sampling_rate || "",
+            screen_to_body_ratio:
+              d.display?.screen_to_body_ratio || d.screen_to_body_ratio || "",
+            panel: d.display?.panel || d.panel || "",
+            pixel_density: d.display?.pixel_density || d.pixel_density || "",
+            brightness: d.display?.brightness || d.brightness || {},
+            color_gamut: d.display?.color_gamut || {},
+            color_depth: d.display?.color_depth || "",
+            protection: d.display?.protection || "",
+            ai_features: d.display?.ai_features || [],
+          }
+        : d.display_json || {});
+
+    out.performance_json =
+      d.performance_json ||
+      d.performance ||
+      (perf
+        ? {
+            operating_system: perf.operating_system || perf.os || "",
+            processor: perf.processor || perf.cpu || "",
+            cpu: perf.cpu || perf.processor || "",
+            gpu: perf.gpu || "",
+            ram_type: d.ram_type || perf.ram_type || "",
+            storage_type: d.storage_type || perf.storage_type || "",
+            ram: perf.ram || "",
+            storage: perf.storage || "",
+            ai_features: d.performance?.ai_features || [],
+          }
+        : {});
+
+    out.battery_json =
+      d.battery_json ||
+      d.battery ||
+      (batt
+        ? {
+            capacity: batt.battery_capacity_mah
+              ? `${batt.battery_capacity_mah} mAh`
+              : batt.capacity || "",
+            rated_capacity: batt.rated_capacity || "",
+            fast_charging: batt.fast_charging || d.fast_charging || "",
+            ai_features: batt.ai_features || [],
+          }
+        : {});
+
+    out.camera_json =
+      d.camera_json ||
+      d.camera ||
+      (d.camera || cam
+        ? {
+            rear_camera:
+              d.camera?.rear_camera ||
+              camSrc?.rear_camera ||
+              cam?.rear_camera ||
+              d.camera?.rear ||
+              cam?.rear ||
+              cam,
+            front_camera:
+              d.camera?.front_camera || d.front_camera || cam?.front || {},
+            shooting_modes: d.camera?.shooting_modes || d.shooting_modes || {},
+            ai_features: d.camera?.ai_features || d.ai_features || [],
+          }
+        : {});
+
+    out.multimedia_json = d.multimedia_json || d.multimedia || d.media || {};
+
+    out.connectivity_json =
+      d.connectivity_json || out.connectivity || d.connectivity || {};
+
+    out.network_json = d.network_json || out.network || d.network || {};
+
+    out.positioning_json =
+      d.positioning_json || d.positioning || out.positioning || {};
+
+    out.variants_json =
+      d.variants_json ||
+      (Array.isArray(d.variants) && d.variants.length
+        ? d.variants.map((v) => ({
+            ram: v.ram || v.memory || "",
+            storage: v.storage || v.ROM_storage || "",
+            base_price: v.base_price ?? v.price ?? null,
+            variant_id: v.variant_id ?? v.id ?? v.variantId ?? null,
+            store_prices: v.store_prices || v.storePrices || v.stores || [],
+            color_name: v.color_name || v.color || v.colour || "",
+            color_code: v.color_code || v.colorCode || v.hex || null,
+          }))
+        : out.variants || []);
+
+    const mergeAi = new Set([
+      ...(d.ai_features_json || d.ai_features || []),
+      ...(d.performance?.ai_features || []),
+      ...(d.camera?.ai_features || []),
+      ...(d.multimedia?.ai_features || []),
+    ]);
+    out.ai_features_json = Array.from(mergeAi).filter(Boolean);
+
+    out.isAiPhone = detectAiPhone(d);
+
+    out.images_json = d.images_json || d.images || out.images || [];
+
+    out.build_design_json = d.build_design_json ||
+      d.design ||
+      out.build_design || {
+        height: d.height || d.dimensions?.height || "",
+        width: d.width || d.dimensions?.width || "",
+        thickness: d.thickness || d.dimensions?.thickness || [],
+        weight: d.weight || "",
+        colors: d.colors || out.colors || [],
+        water_dust_resistance: d.water_dust_resistance || d.ip_rating || "",
+      };
+
+    out.sensors = Array.isArray(d.sensors)
+      ? d.sensors
+      : typeof d.sensors === "string"
+        ? [d.sensors]
+        : out.sensors || [];
+
+    out.biometrics = d.biometrics || out.biometrics || {};
+
+    return out;
+  };
+
+  const mobileData = normalizeSmartphone(
+    localResolved || selectedDevice?.smartphones?.[0] || selectedDevice,
+  );
 
   useTitle({
     brand: mobileData?.brand,
@@ -160,68 +442,8 @@ const MobileDetailCard = () => {
     if (error) console.error("Device fetch error:", error);
   }, [error]);
 
-  // Fetch ratings and reviews when device data is loaded
-  useEffect(() => {
-    if (mobileData?.id || mobileData?.smartphoneId) {
-      fetchRatingsAndReviews();
-    }
-  }, [mobileData]);
-
-  const fetchRatingsAndReviews = async () => {
-    try {
-      // Only fetch ratings summary. Reviews UI remains, but review data
-      // is not populated from server (reviews functionality disabled).
-      const deviceId = mobileData.id || mobileData.smartphoneId;
-      const ratingsResponse = await fetch(
-        `http://localhost:5000/api/public/smartphone/${deviceId}/rating`
-      );
-      let ratings = null;
-      if (ratingsResponse.ok) ratings = await ratingsResponse.json();
-
-      if (
-        (!ratings || Object.keys(ratings).length === 0) &&
-        mobileData.averageRating
-      ) {
-        setRatingsData({
-          averageRating: parseFloat(mobileData.averageRating),
-          totalRatings: parseInt(mobileData.totalRatings) || 0,
-          display: parseFloat(mobileData.display) || 0,
-          performance: parseFloat(mobileData.performance) || 0,
-          camera: parseFloat(mobileData.camera) || 0,
-          battery: parseFloat(mobileData.battery) || 0,
-          design: parseFloat(mobileData.design) || 0,
-        });
-      } else if (ratings) {
-        setRatingsData({
-          averageRating:
-            ratings.averageRating != null
-              ? parseFloat(ratings.averageRating)
-              : 0,
-          totalRatings: parseInt(ratings.totalRatings) || 0,
-          display: parseFloat(ratings.display) || 0,
-          performance: parseFloat(ratings.performance) || 0,
-          camera: parseFloat(ratings.camera) || 0,
-          battery: parseFloat(ratings.battery) || 0,
-          design: parseFloat(ratings.design) || 0,
-        });
-      }
-
-      // Reviews are disabled; do not populate review list from server.
-    } catch (error) {
-      console.error("Error fetching ratings:", error);
-      if (mobileData.averageRating) {
-        setRatingsData({
-          averageRating: parseFloat(mobileData.averageRating),
-          totalRatings: parseInt(mobileData.totalRatings) || 1,
-          display: parseFloat(mobileData.display) || 5.0,
-          performance: parseFloat(mobileData.performance) || 5.0,
-          camera: parseFloat(mobileData.camera) || 2.0,
-          battery: parseFloat(mobileData.battery) || 2.0,
-          design: parseFloat(mobileData.design) || 2.0,
-        });
-      }
-    }
-  };
+  // While fetching, show spinner to avoid null access to `mobileData`
+  const showInitialLoading = loading && !mobileData;
 
   const variants =
     mobileData?.variants ?? (mobileData?.variant ? [mobileData.variant] : []);
@@ -235,12 +457,44 @@ const MobileDetailCard = () => {
     if (variantQuery) {
       const idx = variants.findIndex(
         (v) =>
-          String(v.variant_id ?? v.id ?? v.variantId) === String(variantQuery)
+          String(v.variant_id ?? v.id ?? v.variantId) === String(variantQuery),
       );
       if (idx >= 0) setSelectedVariant(idx);
     }
+    // If ram/storage params provided, prefer matching variant
+    if ((ramParam || storageParam) && variants.length > 0) {
+      const idx = variants.findIndex((v) => {
+        const ramOk = ramParam
+          ? String(v.ram).toLowerCase() === String(ramParam).toLowerCase()
+          : true;
+        const storageOk = storageParam
+          ? String(v.storage).toLowerCase() ===
+            String(storageParam).toLowerCase()
+          : true;
+        return ramOk && storageOk;
+      });
+      if (idx >= 0) setSelectedVariant(idx);
+    }
+
     if (storeQuery) {
       setActiveStoreId(String(storeQuery));
+    }
+
+    // If store name provided, try to find store id from variant stores
+    if (storeNameParam && variants.length > 0 && !storeQuery) {
+      for (let i = 0; i < variants.length; i++) {
+        const v = variants[i];
+        const sp = (v.store_prices || []).find(
+          (s) =>
+            String(s.store_name || s.store).toLowerCase() ===
+            String(storeNameParam).toLowerCase(),
+        );
+        if (sp) {
+          setSelectedVariant(i);
+          setActiveStoreId(String(sp.id || sp.store_id || sp.storeId));
+          break;
+        }
+      }
     }
   }, [variants, variantQuery, storeQuery]);
 
@@ -255,7 +509,7 @@ const MobileDetailCard = () => {
           variantRam: variant.ram,
           variantStorage: variant.storage,
           variantColor: variant.color_name,
-        })) || []
+        })) || [],
     ) || [];
 
   const variantStorePrices =
@@ -267,10 +521,7 @@ const MobileDetailCard = () => {
       variantColor: currentVariant.color_name,
     })) || [];
 
-  const getStoreLogo = (storeName) => {
-    const storeKey = storeName?.toLowerCase().replace(/[^a-z0-9]/g, "");
-    return STORE_LOGOS[storeKey] || STORE_LOGOS.default;
-  };
+  const { getLogo } = useStoreLogos();
 
   const formatPrice = (price) => {
     if (price == null || price === "") return "N/A";
@@ -327,7 +578,185 @@ const MobileDetailCard = () => {
     return normalized;
   };
 
-  const sortedStores = allStorePrices.slice().sort((a, b) => {
+  const formatSpecValue = (value, key) => {
+    if (value == null || value === "") return "Not specified";
+    if (Array.isArray(value)) return value.join(", ");
+    if (typeof value === "object") {
+      const parts = Object.entries(value)
+        .map(([k, v]) => {
+          if (v == null || v === "") return null;
+          if (Array.isArray(v)) return `${toNormalCase(k)}: ${v.join(", ")}`;
+          if (typeof v === "object")
+            return `${toNormalCase(k)}: ${JSON.stringify(v)}`;
+          return `${toNormalCase(k)}: ${String(v)}`;
+        })
+        .filter(Boolean);
+      return parts.length ? parts.join(" | ") : JSON.stringify(value);
+    }
+    if (value === true) return "✓ Yes";
+    if (value === false) return "✗ No";
+    return String(value);
+  };
+
+  const isPrimitive = (v) =>
+    v == null || (typeof v !== "object" && typeof v !== "function");
+
+  // Build descriptive title for visible heading and meta title (exclude brand)
+  const buildDescriptiveTitle = (data, variant) => {
+    if (!data) return "";
+
+    const model = data.name || data.model || "";
+
+    const processorRaw =
+      variant?.processor || data.performance?.processor || data.processor || "";
+    const processor =
+      !isPrimitive(processorRaw) || processorRaw === ""
+        ? ""
+        : formatSpecValue(processorRaw, "processor")
+            .replace(/\s+/g, " ")
+            .trim();
+
+    // 👉 Format RAM properly (ignore non-primitive inputs)
+    const ramRaw = variant?.ram || data.performance?.ram || "";
+    const ram =
+      !isPrimitive(ramRaw) || ramRaw === ""
+        ? ""
+        : String(ramRaw).toUpperCase().includes("GB")
+          ? `${ramRaw} RAM`
+          : `${ramRaw}GB RAM`;
+
+    // 👉 Format Storage properly (ignore non-primitive inputs)
+    const storageRaw =
+      variant?.storage ||
+      data.performance?.storage ||
+      data.performance?.ROM_storage ||
+      "";
+    const storage =
+      !isPrimitive(storageRaw) || storageRaw === ""
+        ? ""
+        : String(storageRaw).toUpperCase().includes("GB")
+          ? `${storageRaw} Storage`
+          : `${storageRaw}GB Storage`;
+
+    // 👉 Camera formatting — treat structured/object camera specs as empty
+    const cameraMPValue = data.camera?.main_camera_megapixels;
+    const cameraRaw = data.camera?.main_camera || data.camera || "";
+    const camera = cameraMPValue
+      ? `${cameraMPValue}MP Camera`
+      : !isPrimitive(cameraRaw) || cameraRaw === ""
+        ? ""
+        : formatSpecValue(cameraRaw, "camera");
+
+    // 👉 Battery formatting (ignore non-primitive inputs)
+    const batteryValue = data.battery?.battery_capacity_mah;
+    const batteryRaw = data.battery?.capacity || "";
+    const battery = batteryValue
+      ? `${batteryValue}mAh Battery`
+      : !isPrimitive(batteryRaw) || batteryRaw === ""
+        ? ""
+        : formatSpecValue(batteryRaw, "battery");
+
+    const primary = model || data.name || "";
+
+    const specs = [];
+
+    if (processor) specs.push(processor);
+
+    if (ram || storage) {
+      specs.push([ram, storage].filter(Boolean).join(" / "));
+    }
+
+    if (camera) specs.push(camera);
+
+    if (battery) specs.push(battery);
+
+    return specs.length ? `${primary} - ${specs.join(" ")}` : primary;
+  };
+
+  const buildMetaDescription = (data, variant) => {
+    if (!data) return "";
+
+    const brand = data.brand || data.brand_name || data.manufacturer || "";
+    const name = data.name || data.model || "";
+
+    const processorRaw =
+      variant?.processor || data.performance?.processor || data.processor || "";
+    const processor =
+      !isPrimitive(processorRaw) || processorRaw === ""
+        ? ""
+        : formatSpecValue(processorRaw, "processor")
+            .replace(/\s+/g, " ")
+            .trim();
+
+    const ramRaw = variant?.ram || data.performance?.ram || "";
+    const ram =
+      !isPrimitive(ramRaw) || ramRaw === ""
+        ? ""
+        : String(ramRaw).toUpperCase().includes("GB")
+          ? ramRaw
+          : `${ramRaw}GB`;
+
+    const storageRaw =
+      variant?.storage ||
+      data.performance?.storage ||
+      data.performance?.ROM_storage ||
+      "";
+    const storage =
+      !isPrimitive(storageRaw) || storageRaw === ""
+        ? ""
+        : String(storageRaw).toUpperCase().includes("GB")
+          ? storageRaw
+          : `${storageRaw}GB`;
+
+    const cameraValue = data.camera?.main_camera_megapixels;
+    const cameraRaw = data.camera?.main_camera || data.camera || "";
+    const camera =
+      cameraValue != null
+        ? `${cameraValue}MP`
+        : !isPrimitive(cameraRaw) || cameraRaw === ""
+          ? ""
+          : formatSpecValue(cameraRaw, "camera").trim();
+
+    const batteryValue = data.battery?.battery_capacity_mah;
+    const batteryRaw = data.battery?.capacity || "";
+    const battery =
+      batteryValue != null
+        ? `${batteryValue}mAh`
+        : !isPrimitive(batteryRaw) || batteryRaw === ""
+          ? ""
+          : formatSpecValue(batteryRaw, "battery").trim();
+
+    const displayRaw = data.display?.size || data.display || "";
+    const display =
+      !isPrimitive(displayRaw) || displayRaw === ""
+        ? ""
+        : String(displayRaw).replace(/"/g, "").trim();
+
+    const priceText =
+      variant?.base_price != null
+        ? `Price starts at ₹${formatPrice(variant.base_price)}`
+        : "";
+
+    const highlights = [
+      processor && `Processor: ${processor}`,
+      camera && `${camera} Camera`,
+      battery && `${battery} Battery`,
+      display && `${display}" Display`,
+      ram && `${ram} RAM`,
+      storage && `${storage} Storage`,
+    ].filter(Boolean);
+
+    const identity = [brand, name].filter(Boolean).join(" ").trim();
+    if (!identity) return "";
+    const highlightText = highlights.length
+      ? ` — ${highlights.slice(0, 4).join(" · ")}`
+      : "";
+    const priceSuffix = priceText ? `. ${priceText}.` : ".";
+
+    return `${identity}${highlightText}${priceSuffix} Compare prices, variants, and detailed specs on Hook.`;
+  };
+
+  const sortedVariantStores = variantStorePrices.slice().sort((a, b) => {
     const priceA =
       parseInt(String(a?.price ?? "").replace(/[^0-9]/g, "")) || Infinity;
     const priceB =
@@ -335,7 +764,8 @@ const MobileDetailCard = () => {
     return priceA - priceB;
   });
 
-  const sortedVariantStores = variantStorePrices.slice().sort((a, b) => {
+  // All stores across variants, sorted by numeric price (ascending)
+  const sortedStores = allStorePrices.slice().sort((a, b) => {
     const priceA =
       parseInt(String(a?.price ?? "").replace(/[^0-9]/g, "")) || Infinity;
     const priceB =
@@ -362,487 +792,291 @@ const MobileDetailCard = () => {
     url: window.location.href,
   };
 
-  const handleShare = async () => {
-    if (navigator.share) {
+  // Generate detailed share content with product information
+  const generateShareContent = () => {
+    const brand = mobileData?.brand || mobileData?.manufacturer || "Device";
+    const model = mobileData?.model || mobileData?.name || "Unknown";
+    const processor =
+      mobileData?.performance?.processor ||
+      mobileData?.processor ||
+      mobileData?.cpu ||
+      mobileData?.specs?.processor ||
+      "Processor info not available";
+    const camera =
+      mobileData?.camera?.main_camera_megapixels ||
+      mobileData?.camera?.main ||
+      mobileData?.mainCamera ||
+      mobileData?.specs?.camera ||
+      "Camera info not available";
+    const battery =
+      mobileData?.battery?.battery_capacity_mah ||
+      mobileData?.battery?.capacity ||
+      mobileData?.batteryCapacity ||
+      mobileData?.specs?.battery ||
+      "Battery info not available";
+    const price = currentVariant?.base_price
+      ? `₹${formatPrice(currentVariant.base_price)}`
+      : "Price not available";
+    const display =
+      mobileData?.display?.size ||
+      mobileData?.display ||
+      mobileData?.specs?.display ||
+      "Display info not available";
+
+    return {
+      title: `${brand} ${model}`,
+      description: `${processor}  ${camera}MP Camera | ${battery}mAh Battery | ${display}" Display | Price: ${price}`,
+      shortDescription: `${brand} ${model} - ${processor}, ${camera}MP, ${battery}mAh, Price: ${price}`,
+      fullDetails: `
+${brand} ${model}
+processor: ${processor}
+Camera: ${camera}MP
+Battery: ${battery}mAh
+Display: ${display}"
+Price: ${price}
+      `,
+    };
+  };
+
+  // compute canonical product URL for sharing/copying
+  const slugify = (str = "") =>
+    String(str)
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+  const getCanonicalUrl = () => {
+    try {
+      const slug = generateSlug(mobileData?.name || mobileData?.model || "");
+      if (!slug) return window.location.href;
+      const path = `/smartphones/${slug}`;
+      return window.location.origin + path + (location.search || "");
+    } catch (e) {
+      return window.location.href;
+    }
+  };
+  const isSharedLink =
+    query.get("shared") === "1" || query.get("shared") === "true";
+
+  const copyTextToClipboard = async (text) => {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise((resolve, reject) => {
       try {
-        await navigator.share(shareData);
-      } catch (err) {
-        console.log("Error sharing:", err);
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+        if (ok) resolve();
+        else reject(new Error("copy failed"));
+      } catch (e) {
+        reject(e);
       }
-    } else {
+    });
+  };
+
+  const handleShare = async () => {
+    // Build a shareable URL that includes product id so the receiving page
+    // can fetch/display the product. We keep the canonical slug path and
+    // append the `id` and `shared=1` params.
+    try {
+      const base = getCanonicalUrl();
+      const shareUrl = new URL(base);
+      const productId = mobileData?.id || mobileData?.model || "";
+      if (productId) shareUrl.searchParams.set("id", String(productId));
+      shareUrl.searchParams.set("shared", "1");
+
+      const urlStr = shareUrl.toString();
+      const content = generateShareContent();
+      const payload = {
+        title: content.title,
+        text: content.description,
+        url: urlStr,
+      };
+
+      if (navigator.share) {
+        // Native share (works on HTTPS / localhost when supported)
+        try {
+          await navigator.share(payload);
+          return;
+        } catch (err) {
+          console.warn("Native share failed:", err);
+        }
+      }
+
+      // Fallback: copy the share URL to clipboard and open share modal so
+      // user has explicit platform choices.
+      try {
+        await copyTextToClipboard(urlStr);
+        alert("Link copied to clipboard — paste to share");
+        setShowShareMenu(true);
+      } catch (err) {
+        console.error("Clipboard fallback failed:", err);
+        // Last resort: open share modal
+        setShowShareMenu(true);
+      }
+    } catch (e) {
+      console.error("Share failed:", e);
       setShowShareMenu(true);
     }
   };
 
-  const handleCopyLink = () => {
-    navigator.clipboard
-      .writeText(window.location.href)
-      .then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      })
-      .catch((err) => {
-        console.error("Failed to copy:", err);
-        const textArea = document.createElement("textarea");
-        textArea.value = window.location.href;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand("copy");
-        document.body.removeChild(textArea);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      });
-  };
+  // copy link functionality removed — share-only flow
 
   const shareToWhatsApp = () => {
-    const message = `${shareData.title}\n${shareData.text}\n\n${shareData.url}`;
+    const base = getCanonicalUrl();
+    const shareUrl = new URL(base);
+    const productId = mobileData?.id || mobileData?.model || "";
+    if (productId) shareUrl.searchParams.set("id", String(productId));
+    shareUrl.searchParams.set("shared", "1");
+    const urlToShare = shareUrl.toString();
+    const content = generateShareContent();
+    const message = `${content.fullDetails}\n\n🔗 Check it out: ${urlToShare}`;
     const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(url, "_blank");
   };
 
   const shareToFacebook = () => {
+    const base = getCanonicalUrl();
+    const shareUrl = new URL(base);
+    const productId = mobileData?.id || mobileData?.model || "";
+    if (productId) shareUrl.searchParams.set("id", String(productId));
+    shareUrl.searchParams.set("shared", "1");
+    const urlToShare = shareUrl.toString();
+    // Facebook uses Open Graph tags, so just share the URL with description
     const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-      window.location.href
+      urlToShare,
     )}`;
     window.open(url, "_blank");
   };
 
   const shareToTwitter = () => {
-    const tweet = `${shareData.title} - ${shareData.text.substring(0, 100)}...`;
+    const base = getCanonicalUrl();
+    const shareUrl = new URL(base);
+    const productId = mobileData?.id || mobileData?.model || "";
+    if (productId) shareUrl.searchParams.set("id", String(productId));
+    shareUrl.searchParams.set("shared", "1");
+    const urlToShare = shareUrl.toString();
+    const content = generateShareContent();
+    const tweet = `Check out: ${content.title}\n${content.shortDescription}\n\n#Smartphones #Tech`;
     const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-      tweet
-    )}&url=${encodeURIComponent(window.location.href)}`;
+      tweet,
+    )}&url=${encodeURIComponent(urlToShare)}`;
     window.open(url, "_blank");
   };
 
   const shareViaEmail = () => {
-    const subject = `Check out ${shareData.title}`;
-    const body = `${shareData.text}\n\n${shareData.url}`;
+    const base = getCanonicalUrl();
+    const shareUrl = new URL(base);
+    const productId = mobileData?.id || mobileData?.model || "";
+    if (productId) shareUrl.searchParams.set("id", String(productId));
+    shareUrl.searchParams.set("shared", "1");
+    const urlToShare = shareUrl.toString();
+    const content = generateShareContent();
+    const subject = `Check out: ${content.title}`;
+    const body = `${content.fullDetails}\n\nView details: ${urlToShare}`;
     const url = `mailto:?subject=${encodeURIComponent(
-      subject
+      subject,
     )}&body=${encodeURIComponent(body)}`;
     window.location.href = url;
   };
 
-  const toggleFavorite = () => {
-    setIsFavorite(!isFavorite);
-    const favorites = JSON.parse(
-      localStorage.getItem("favoriteDevices") || "[]"
-    );
+  const toggleFavorite = async () => {
+    const token = Cookies.get("arenak");
+    if (!token) {
+      navigate("/login", { state: { returnTo: location.pathname } });
+      return;
+    }
+
+    const productId = mobileData?.id || mobileData?.model;
+
     if (!isFavorite) {
-      favorites.push(mobileData?.id || mobileData?.model);
-      localStorage.setItem("favoriteDevices", JSON.stringify(favorites));
-    } else {
-      const updated = favorites.filter(
-        (id) => id !== (mobileData?.id || mobileData?.model)
-      );
-      localStorage.setItem("favoriteDevices", JSON.stringify(updated));
-    }
-  };
-
-  // FIXED: Rating and Review Functions
-  const handleRatingChange = (category, value) => {
-    if (editingReview) {
-      const updatedReview = { ...editingReview, [category]: value };
-
-      // Recalculate overall rating if it's a category change
-      if (category !== "rating") {
-        const categories = [
-          "display",
-          "performance",
-          "camera",
-          "battery",
-          "design",
-        ];
-        const sum = categories.reduce(
-          (total, cat) => total + (updatedReview[cat] || 0),
-          0
-        );
-        updatedReview.rating = parseFloat((sum / categories.length).toFixed(1));
-      }
-
-      setEditingReview(updatedReview);
-    } else {
-      const updatedReview = { ...newReview, [category]: value };
-
-      // Recalculate overall rating if it's a category change
-      if (category !== "rating") {
-        const categories = [
-          "display",
-          "performance",
-          "camera",
-          "battery",
-          "design",
-        ];
-        const sum = categories.reduce(
-          (total, cat) => total + (updatedReview[cat] || 0),
-          0
-        );
-        updatedReview.rating = parseFloat((sum / categories.length).toFixed(1));
-      }
-
-      setNewReview(updatedReview);
-    }
-  };
-
-  const submitReview = async () => {
-    try {
-      const reviewToSubmit = editingReview || newReview;
-
-      // Ensure numeric category ratings
-      const display = Number(reviewToSubmit.display) || 0;
-      const performance = Number(reviewToSubmit.performance) || 0;
-      const camera = Number(reviewToSubmit.camera) || 0;
-      const battery = Number(reviewToSubmit.battery) || 0;
-      const design = Number(reviewToSubmit.design) || 0;
-      const overallRating = Number(reviewToSubmit.rating) || 0;
-
-      const reviewData = {
-        ...reviewToSubmit,
-        rating: overallRating,
-        display,
-        performance,
-        camera,
-        battery,
-        design,
-        deviceId: mobileData.id || mobileData.smartphoneId,
-        userId: "current-user-id",
-        userName: "Current User",
-        date: new Date().toISOString(),
-      };
-
-      // Update local ratings data for immediate UI feedback
-      if (ratingsData) {
-        const prev = ratingsData;
-        const oldTotal = Number(prev.totalRatings) || 0;
-        const newTotal = oldTotal + 1;
-
-        const newDisplay =
-          oldTotal > 0
-            ? parseFloat(
-                (
-                  (Number(prev.display || 0) * oldTotal + display) /
-                  newTotal
-                ).toFixed(1)
-              )
-            : display;
-        const newPerformance =
-          oldTotal > 0
-            ? parseFloat(
-                (
-                  (Number(prev.performance || 0) * oldTotal + performance) /
-                  newTotal
-                ).toFixed(1)
-              )
-            : performance;
-        const newCamera =
-          oldTotal > 0
-            ? parseFloat(
-                (
-                  (Number(prev.camera || 0) * oldTotal + camera) /
-                  newTotal
-                ).toFixed(1)
-              )
-            : camera;
-        const newBattery =
-          oldTotal > 0
-            ? parseFloat(
-                (
-                  (Number(prev.battery || 0) * oldTotal + battery) /
-                  newTotal
-                ).toFixed(1)
-              )
-            : battery;
-        const newDesign =
-          oldTotal > 0
-            ? parseFloat(
-                (
-                  (Number(prev.design || 0) * oldTotal + design) /
-                  newTotal
-                ).toFixed(1)
-              )
-            : design;
-
-        const newAverage = parseFloat(
-          (
-            (newDisplay + newPerformance + newCamera + newBattery + newDesign) /
-            5
-          ).toFixed(1)
-        );
-
-        setRatingsData({
-          averageRating: newAverage,
-          totalRatings: newTotal,
-          display: newDisplay,
-          performance: newPerformance,
-          camera: newCamera,
-          battery: newBattery,
-          design: newDesign,
-        });
-      }
-
-      // Submit to server (fire-and-forget)
       try {
-        const deviceId = mobileData.id || mobileData.smartphoneId;
-        await fetch(
-          `http://localhost:5000/api/public/smartphone/${deviceId}/rating`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              display,
-              performance,
-              camera,
-              battery,
-              design,
-            }),
-          }
-        );
+        const res = await fetch("https://api.apisphere.in/api/wishlist", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            product_id: productId,
+            product_type: "smartphone",
+          }),
+        });
+
+        if (res.status === 401) {
+          navigate("/login");
+          return;
+        }
+
+        if (!res.ok) throw new Error(`Add favorite failed: ${res.status}`);
+        setIsFavorite(true);
       } catch (err) {
-        console.error("Network error when submitting rating:", err);
+        console.error("Failed to add favorite via API:", err);
       }
+    } else {
+      try {
+        const res = await fetch(
+          `https://api.apisphere.in/api/wishlist/${encodeURIComponent(productId)}`,
+          {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
 
-      // Reset form
-      setNewReview({
-        rating: 0,
-        display: 0,
-        performance: 0,
-        camera: 0,
-        battery: 0,
-        design: 0,
-      });
-      setEditingReview(null);
-      setShowReviewForm(false);
+        if (res.status === 401) {
+          navigate("/login");
+          return;
+        }
 
-      // Show success message
-      alert("Thank you for your rating! Your feedback has been recorded.");
-    } catch (error) {
-      console.error("Error submitting review:", error);
-      alert("There was an error submitting your rating. Please try again.");
+        if (!res.ok) throw new Error(`Remove favorite failed: ${res.status}`);
+        setIsFavorite(false);
+      } catch (err) {
+        console.error("Failed to remove favorite via API:", err);
+      }
     }
   };
 
-  const handleReplySubmit = async (reviewId) => {
-    // Replies are disabled in this build.
-    console.log("Replies disabled for review id:", reviewId);
-  };
+  useEffect(() => {
+    const initFavorite = async () => {
+      const token = Cookies.get("arenak");
+      if (!token) return;
+      const productId = mobileData?.id || mobileData?.model;
+      if (!productId) return;
 
-  const deleteReview = async (reviewId) => {
-    // Review deletion is disabled. No-op.
-    console.log("Delete review disabled for id:", reviewId);
-  };
-
-  const likeReview = async (reviewId) => {
-    // Likes are disabled.
-    console.log("Like disabled for review id:", reviewId);
-  };
-
-  const dislikeReview = async (reviewId) => {
-    // Dislikes are disabled.
-    console.log("Dislike disabled for review id:", reviewId);
-  };
-
-  // Render stars for rating display
-  const renderStars = (rating, size = "sm") => {
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 >= 0.5;
-    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-
-    const sizeClasses = {
-      xs: "text-xs",
-      sm: "text-sm",
-      md: "text-base",
-      lg: "text-lg",
-      xl: "text-xl",
+      try {
+        const res = await fetch("https://api.apisphere.in/api/wishlist", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const json = await res.json();
+        const items = json.rows || json.wishlist || json.items || json || [];
+        const found = (Array.isArray(items) ? items : []).some(
+          (it) =>
+            String(it.product_id || it.id || it.favoriteId) ===
+            String(productId),
+        );
+        if (found) setIsFavorite(true);
+      } catch (err) {
+        console.error("Failed to initialize favorite status:", err);
+      }
     };
 
-    return (
-      <div className="flex items-center gap-1">
-        {[...Array(fullStars)].map((_, i) => (
-          <FaStar
-            key={`full-${i}`}
-            className={`text-yellow-400 ${sizeClasses[size] || sizeClasses.sm}`}
-          />
-        ))}
-        {hasHalfStar && (
-          <FaStarHalfAlt
-            className={`text-yellow-400 ${sizeClasses[size] || sizeClasses.sm}`}
-          />
-        )}
-        {[...Array(emptyStars)].map((_, i) => (
-          <FaRegStar
-            key={`empty-${i}`}
-            className={`text-gray-300 ${sizeClasses[size] || sizeClasses.sm}`}
-          />
-        ))}
-        <span className="ml-2 text-gray-600 font-medium">
-          {rating.toFixed(1)}
-        </span>
-      </div>
-    );
-  };
-
-  // Render rating progress bar
-  const renderRatingBar = (label, value, color = "blue") => {
-    const percentage = (value / 5) * 100;
-    const colorClasses = {
-      blue: "bg-blue-500",
-      green: "bg-green-500",
-      yellow: "bg-yellow-500",
-      red: "bg-red-500",
-      purple: "bg-purple-500",
-    };
-
-    return (
-      <div className="mb-3">
-        <div className="flex justify-between items-center mb-1">
-          <span className="text-sm font-medium text-gray-700">{label}</span>
-          <span className="text-sm font-bold text-gray-900">
-            {value.toFixed(1)}
-          </span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div
-            className={`${colorClasses[color]} h-2 rounded-full transition-all duration-500`}
-            style={{ width: `${percentage}%` }}
-          />
-        </div>
-      </div>
-    );
-  };
-
-  // Render mini rating card for display in details section
-  const renderRatingCard = () => {
-    if (!ratingsData) return null;
-
-    return (
-      <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-sm p-4 border border-blue-100">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-            <FaChartBar className="text-blue-600" />
-            Ratings Summary
-          </h3>
-          <button
-            onClick={() => {
-              setActiveTab("ratings");
-              setShowReviewForm(true);
-            }}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors"
-          >
-            <FaPlus className="text-xs" />
-            Add Rating
-          </button>
-        </div>
-
-        {/* Overall Rating */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <div className="text-4xl font-bold text-gray-900">
-              {ratingsData.averageRating.toFixed(1)}
-              <span className="text-xl text-gray-500">/5</span>
-            </div>
-            <div className="flex items-center mt-1">
-              {renderStars(ratingsData.averageRating, "md")}
-            </div>
-            <p className="text-sm text-gray-600 mt-1">
-              {ratingsData.totalRatings} total ratings
-            </p>
-          </div>
-          <div className="text-right">
-            <div className="text-sm text-gray-600">Overall Score</div>
-            <div className="text-2xl font-bold text-blue-600">
-              {((ratingsData.averageRating / 5) * 100).toFixed(0)}%
-            </div>
-          </div>
-        </div>
-
-        {/* Individual Ratings */}
-        <div className="space-y-3">
-          {[
-            {
-              label: "Display",
-              value: ratingsData.display,
-              icon: FaExpand,
-              color: "text-blue-500",
-            },
-            {
-              label: "Performance",
-              value: ratingsData.performance,
-              icon: FaBolt,
-              color: "text-green-500",
-            },
-            {
-              label: "Camera",
-              value: ratingsData.camera,
-              icon: FaCamera,
-              color: "text-yellow-500",
-            },
-            {
-              label: "Battery",
-              value: ratingsData.battery,
-              icon: FaBatteryFull,
-              color: "text-red-500",
-            },
-            {
-              label: "Design",
-              value: ratingsData.design,
-              icon: FaMobile,
-              color: "text-purple-500",
-            },
-          ].map((item) => (
-            <div key={item.label} className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <item.icon className={`${item.color} text-sm`} />
-                <span className="text-sm font-medium text-gray-700">
-                  {item.label}
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-24 bg-gray-200 rounded-full h-2">
-                  <div
-                    className={`${item.color.replace(
-                      "text-",
-                      "bg-"
-                    )} h-2 rounded-full`}
-                    style={{ width: `${(item.value / 5) * 100}%` }}
-                  />
-                </div>
-                <span className="text-sm font-bold text-gray-900 w-8">
-                  {item.value.toFixed(1)}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Quick Stats */}
-        <div className="mt-4 pt-4 border-t border-blue-100">
-          <div className="flex justify-around text-center">
-            <div>
-              <div className="text-lg font-bold text-gray-900">
-                {ratingsData.totalRatings}
-              </div>
-              <div className="text-xs text-gray-600">Total Ratings</div>
-            </div>
-            <div>
-              <div className="text-lg font-bold text-green-600">
-                {Math.round((ratingsData.averageRating / 5) * 100)}%
-              </div>
-              <div className="text-xs text-gray-600">Satisfaction</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
+    initFavorite();
+  }, [mobileData?.id, mobileData?.model]);
 
   const mobileTabs = [
-    { id: "specifications", label: "Specs", icon: FaMicrochip },
+    { id: "specifications", label: "Basic", icon: FaMicrochip },
     { id: "display", label: "Display", icon: FaExpand },
     { id: "performance", label: "Performance", icon: FaBolt },
     { id: "camera", label: "Camera", icon: FaCamera },
     { id: "battery", label: "Battery", icon: FaBatteryFull },
-    { id: "ratings", label: "Ratings", icon: FaStar },
   ];
 
   const desktopTabs = [
@@ -854,15 +1088,106 @@ const MobileDetailCard = () => {
 
   const tabs = window.innerWidth < 768 ? mobileTabs : desktopTabs;
 
+  // Determine whether a piece of spec data actually contains useful content
+  const hasContent = (data) => {
+    if (data == null) return false;
+    if (typeof data === "object") {
+      const entries = Object.entries(data).filter(
+        ([_, value]) => value !== "" && value != null && value !== false,
+      );
+      return entries.length > 0;
+    }
+    return String(data).trim() !== "";
+  };
+
+  // Map tab ids to the fields we consider for presence checks
+  const filterTabByData = (tabId) => {
+    switch (tabId) {
+      case "specifications":
+        return [
+          mobileData?.brand,
+          mobileData?.model,
+          mobileData?.category,
+          mobileData?.performance,
+          mobileData?.display,
+          mobileData?.camera,
+          mobileData?.battery,
+        ].some((v) => hasContent(v));
+      case "display":
+        return hasContent(mobileData?.display);
+      case "performance":
+        return hasContent(mobileData?.performance);
+      case "camera":
+        return hasContent(mobileData?.camera);
+      case "battery":
+        return hasContent(mobileData?.battery);
+      case "build_design":
+        return hasContent(mobileData?.build_design);
+      case "connectivity":
+        return (
+          hasContent(mobileData?.connectivity_network) ||
+          hasContent(mobileData?.ports)
+        );
+      case "multimedia":
+        return (
+          hasContent(mobileData?.audio) || hasContent(mobileData?.multimedia)
+        );
+      default:
+        return true;
+    }
+  };
+
+  const availableTabs = tabs.filter((t) => filterTabByData(t.id));
+
+  // Keep activeTab in sync: if current activeTab no longer available, pick first available
+  useEffect(() => {
+    if (!availableTabs || availableTabs.length === 0) return;
+    if (!availableTabs.some((t) => t.id === activeTab)) {
+      setActiveTab(availableTabs[0].id);
+    }
+  }, [availableTabs, activeTab]);
+
+  // When a tab is clicked we prefer to navigate/scroll to the corresponding
+  // section inside the main "specifications" view instead of rendering
+  // a separate tab modal. If the target section is not present we fall back
+  // to activating the tab normally so its standalone content renders.
+  const handleTabClick = (tabId) => {
+    // If the clicked tab is already active and is the specifications tab,
+    // just scroll to top of the specs container.
+    if (tabId === "specifications") {
+      setActiveTab("specifications");
+      const topEl = document.getElementById("spec-specifications");
+      if (topEl) topEl.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
+    // Ensure the specifications view is rendered, then try to scroll to the
+    // specific subsection (e.g. spec-display, spec-camera). If the subsection
+    // doesn't exist, fall back to activating the tab so its own content shows.
+    setActiveTab("specifications");
+    window.requestAnimationFrame(() => {
+      const el = document.getElementById(`spec-${tabId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else {
+        // subsection not present — activate the tab normally
+        setActiveTab(tabId);
+      }
+    });
+  };
+
   const renderSpecItems = (data, limit = 5) => {
     if (!data || typeof data !== "object") {
       return (
         <div className="text-center py-4 text-gray-500">No data available</div>
       );
     }
-
     const entries = Object.entries(data).filter(
-      ([_, value]) => value !== "" && value != null && value !== false
+      ([key, value]) =>
+        value !== "" &&
+        value != null &&
+        value !== false &&
+        key !== "sphere_rating",
     );
 
     if (entries.length === 0) {
@@ -871,25 +1196,104 @@ const MobileDetailCard = () => {
       );
     }
 
+    // Detect grouped specs (e.g., foldable screens: { fold: {...}, flip: {...} })
+    const hasGroups = entries.some(
+      ([_, value]) =>
+        value && typeof value === "object" && !Array.isArray(value),
+    );
+
+    if (hasGroups) {
+      // Separate primitive entries and grouped entries
+      const primitiveEntries = entries.filter(
+        ([_, value]) =>
+          !(value && typeof value === "object" && !Array.isArray(value)),
+      );
+      const groupedEntries = entries.filter(
+        ([_, value]) =>
+          value && typeof value === "object" && !Array.isArray(value),
+      );
+
+      // Order common fold states first
+      const groupOrder = ["fold", "flip"];
+      groupedEntries.sort(([a], [b]) => {
+        const ai = groupOrder.indexOf(a.toLowerCase());
+        const bi = groupOrder.indexOf(b.toLowerCase());
+        if (ai === -1 && bi === -1) return a.localeCompare(b);
+        if (ai === -1) return 1;
+        if (bi === -1) return -1;
+        return ai - bi;
+      });
+
+      return (
+        <div className="space-y-4">
+          {primitiveEntries.length > 0 && (
+            <div className="space-y-2">
+              {primitiveEntries.map(([key, value]) => (
+                <div
+                  key={key}
+                  className="flex justify-between items-center py-3 px-4 bg-gradient-to-r from-purple-600 to-transparent rounded-lg border border-slate-100 hover:border-purple-200 hover:shadow-sm transition-all duration-200"
+                >
+                  <span className="text-gray-700 font-semibold text-sm flex-1">
+                    {toNormalCase(key)}
+                  </span>
+                  <span className="text-gray-900 font-bold text-sm text-right flex-1 break-words text-purple-600">
+                    {formatSpecValue(value, key)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {groupedEntries.map(([gkey, group]) => {
+            const subEntries = Object.entries(group).filter(
+              ([_, v]) => v !== "" && v != null && v !== false,
+            );
+            if (subEntries.length === 0) return null;
+            return (
+              <div
+                key={gkey}
+                className="bg-gradient-to-br from-purple-600 to-red-600 rounded-xl p-4 border border-purple-100 shadow-sm"
+              >
+                <h4 className="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wide text-purple-900">
+                  {toNormalCase(gkey)}
+                </h4>
+                <div className="space-y-2">
+                  {subEntries.map(([skey, sval]) => (
+                    <div
+                      key={skey}
+                      className="flex justify-between items-center py-2 px-3 bg-white/60 rounded-lg hover:bg-white/80 transition-all"
+                    >
+                      <span className="text-gray-700 text-sm flex-1 font-medium">
+                        {toNormalCase(skey)}
+                      </span>
+                      <span className="text-gray-900 font-semibold text-sm text-right flex-1 break-words text-purple-600">
+                        {formatSpecValue(sval, skey)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
     const displayEntries = showAllSpecs ? entries : entries.slice(0, limit);
 
     return (
       <>
-        <div className="space-y-3">
+        <div className="space-y-2">
           {displayEntries.map(([key, value]) => (
             <div
               key={key}
-              className="flex justify-between items-start py-2 border-b border-gray-100 last:border-b-0"
+              className="flex justify-between items-center py-3 px-4 bg-gradient-to-r from-purple-600 to-transparent rounded-lg border border-slate-100 hover:border-purple-300 hover:shadow-md hover:bg-purple-50/30 transition-all duration-200"
             >
-              <span className="text-gray-700 font-medium text-sm flex-1 pr-2">
+              <span className="text-gray-700 font-semibold text-sm flex-1">
                 {toNormalCase(key)}
               </span>
-              <span className="text-gray-900 font-semibold text-sm text-right flex-1 break-words">
-                {value === true
-                  ? "Yes"
-                  : value === false
-                  ? "No"
-                  : value || "Not specified"}
+              <span className="text-gray-900 font-bold text-sm text-right flex-1 break-words text-purple-600">
+                {formatSpecValue(value, key)}
               </span>
             </div>
           ))}
@@ -897,9 +1301,11 @@ const MobileDetailCard = () => {
         {entries.length > limit && (
           <button
             onClick={() => setShowAllSpecs(!showAllSpecs)}
-            className="w-full mt-4 py-2 text-blue-600 font-medium text-sm flex items-center justify-center gap-1"
+            className="w-full mt-4 py-3 px-4 bg-gradient-to-r from-purple-600 to-red-600 hover:from-purple-600 hover:to-red-600 text-white font-bold text-sm rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg"
           >
-            {showAllSpecs ? "Show Less" : `Show ${entries.length - limit} More`}
+            {showAllSpecs
+              ? "Show Less"
+              : `Show ${entries.length - limit} More Specs`}
             <FaChevronDown
               className={`text-xs transition-transform ${
                 showAllSpecs ? "rotate-180" : ""
@@ -911,80 +1317,443 @@ const MobileDetailCard = () => {
     );
   };
 
+  const renderCameraTable = (camera) => {
+    if (!camera)
+      return (
+        <div className="text-center py-4 text-gray-500">
+          No camera data available
+        </div>
+      );
+
+    const rows = [];
+
+    if (camera.main_camera_megapixels) {
+      rows.push(["Main Camera", `${camera.main_camera_megapixels} MP`]);
+    }
+
+    // Rear camera can be an object with lenses or a string
+    if (camera.rear_camera) {
+      if (
+        typeof camera.rear_camera === "object" &&
+        !Array.isArray(camera.rear_camera)
+      ) {
+        Object.entries(camera.rear_camera).forEach(([lens, spec]) => {
+          rows.push([toNormalCase(lens), formatSpecValue(spec, lens)]);
+        });
+      } else {
+        rows.push([
+          "Rear Camera",
+          formatSpecValue(camera.rear_camera, "rear_camera"),
+        ]);
+      }
+    }
+
+    // Front camera
+    if (camera.front_camera) {
+      const frontVal =
+        typeof camera.front_camera === "object"
+          ? Object.entries(camera.front_camera)
+              .map(([k, v]) => `${toNormalCase(k)}: ${formatSpecValue(v, k)}`)
+              .join(" | ")
+          : String(camera.front_camera);
+      rows.push(["Front Camera", frontVal]);
+    }
+
+    // Shooting modes / features
+    if (camera.shooting_modes) {
+      rows.push([
+        "Shooting Modes",
+        formatSpecValue(camera.shooting_modes, "shooting_modes"),
+      ]);
+    }
+
+    if (Array.isArray(camera.features) && camera.features.length) {
+      rows.push(["Features", camera.features.join(", ")]);
+    }
+
+    if (Array.isArray(camera.ai_features) && camera.ai_features.length) {
+      rows.push(["AI Features", camera.ai_features.join(", ")]);
+    }
+
+    return (
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <tbody className="bg-white">
+            {rows.map(([label, value], idx) => (
+              <tr
+                key={idx}
+                className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+              >
+                <td className="px-6 py-3 text-sm font-medium text-gray-600 w-1/3 align-top">
+                  {label}
+                </td>
+                <td className="px-6 py-3 text-sm text-gray-900 w-2/3">
+                  {value || "Not specified"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  const renderSpecTable = (data) => {
+    if (!data || (typeof data === "object" && Object.keys(data).length === 0))
+      return (
+        <div className="text-center py-4 text-gray-500">No data available</div>
+      );
+
+    const entries = Object.entries(data).filter(
+      ([k]) => k !== "sphere_rating" && !/ai[_-]?features?/i.test(k),
+    );
+
+    return (
+      <div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <tbody className="bg-white">
+              {entries.map(([key, value], idx) => (
+                <tr
+                  key={key}
+                  className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                >
+                  <td className="px-6 py-3 text-sm font-medium text-gray-600 w-1/3 align-top">
+                    {toNormalCase(key)}
+                  </td>
+                  <td className="px-6 py-3 text-sm text-gray-900 w-2/3">
+                    {formatSpecValue(value, key)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  // Display-specific renderer — fallback to generic spec table when possible
+  const renderDisplayTable = (display) => {
+    if (
+      !display ||
+      (typeof display === "object" && Object.keys(display).length === 0)
+    ) {
+      return (
+        <div className="text-center py-4 text-gray-500">
+          No display data available
+        </div>
+      );
+    }
+
+    // If a display JSON shape is nested under display_json, prefer that
+    const d = display.display_json || display;
+
+    // If it's a simple string or primitive, show directly
+    if (typeof d === "string" || typeof d === "number") {
+      return <div className="text-sm text-gray-900">{String(d)}</div>;
+    }
+
+    // Reuse generic table renderer for object-like display data
+    return renderSpecTable(d);
+  };
+
   const renderTabContent = () => {
     if (!mobileData) return null;
 
     switch (activeTab) {
       case "specifications":
         return (
-          <div className="space-y-4">
-            <div className="bg-white rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <FaMicrochip className="text-blue-500" />
-                Key Specifications
-              </h3>
-              <div className="grid grid-cols-1 gap-3">
-                {[
-                  { label: "Brand", value: mobileData.brand },
-                  { label: "Model", value: mobileData.model },
-                  { label: "Category", value: mobileData.category },
-                  {
-                    label: "Launch Date",
-                    value: mobileData.launch_date
-                      ? new Date(mobileData.launch_date).toLocaleDateString(
-                          "en-IN",
+          <div id="spec-specifications" className="space-y-6">
+            {/* Key Specs Highlight Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              {[
+                {
+                  label: "Processor",
+                  value: mobileData.performance?.processor || "N/A",
+                  icon: FaMicrochip,
+                  color: "bg-purple-50 text-purple-700 border-purple-100",
+                },
+                {
+                  label: "RAM",
+                  value: mobileData.performance?.ram || "N/A",
+                  icon: FaMemory,
+                  color: "bg-purple-50 text-purple-700 border-purple-100",
+                },
+                {
+                  label: "Storage",
+                  value:
+                    mobileData.performance?.storage ||
+                    mobileData.performance?.ROM_storage ||
+                    "N/A",
+                  icon: FaMobile,
+                  color: "bg-green-50 text-green-700 border-green-100",
+                },
+                {
+                  label: "Battery",
+                  value: mobileData.battery?.battery_capacity_mah
+                    ? `${mobileData.battery.battery_capacity_mah} mAh`
+                    : mobileData.battery?.capacity || "N/A",
+                  icon: FaBatteryFull,
+                  color: "bg-red-50 text-red-700 border-red-100",
+                },
+              ].map((spec, idx) => (
+                <div
+                  key={idx}
+                  className={`${spec.color} rounded-xl p-4 border`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <spec.icon className="text-lg" />
+                    <span className="text-xs font-semibold uppercase tracking-wide">
+                      {spec.label}
+                    </span>
+                  </div>
+                  <div className="text-sm font-bold truncate">{spec.value}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Main Specs Table - Professional Layout */}
+            <div className="bg-white rounded-xl  overflow-hidden">
+              {/* Brand & Model Header */}
+              <div className="border-b border-gray-200"></div>
+
+              {/* Specs Sections */}
+              <div className="divide-y divide-gray-100">
+                {/* General Section */}
+                <div
+                  id="spec-general"
+                  className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
+                >
+                  <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide">
+                    General
+                  </h4>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-100">
+                      <tbody className="bg-white">
+                        {[
+                          { label: "Brand", value: mobileData.brand },
+                          { label: "Model", value: mobileData.model },
+                          { label: "Category", value: mobileData.category },
                           {
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                          }
-                        )
-                      : null,
-                  },
-                  {
-                    label: "Rating",
-                    value: ratingsData?.averageRating
-                      ? `${ratingsData.averageRating.toFixed(1)}/5`
-                      : null,
-                    icon: FaStar,
-                  },
-                  {
-                    label: "Processor",
-                    value: mobileData.performance?.processor,
-                  },
-                  { label: "RAM", value: mobileData.performance?.ram },
-                  {
-                    label: "Storage",
-                    value: mobileData.performance?.ROM_storage,
-                  },
-                  { label: "Display Size", value: mobileData.display?.size },
-                  {
-                    label: "Battery",
-                    value: mobileData.battery?.battery_capacity_mah,
-                  },
-                  {
-                    label: "OS",
-                    value: mobileData.performance?.operating_system,
-                  },
-                ].map(
-                  (item, index) =>
-                    item.value && (
-                      <div
-                        key={index}
-                        className="flex justify-between items-center py-2 border-b border-gray-100"
-                      >
-                        <span className="text-gray-700 font-medium text-sm flex items-center gap-2">
-                          {item.icon && (
-                            <item.icon className="text-yellow-400 text-xs" />
-                          )}
-                          {item.label}
-                        </span>
-                        <span className="text-gray-900 font-semibold text-sm text-right">
-                          {item.value}
-                        </span>
-                      </div>
-                    )
+                            label: "Release Date",
+                            value: mobileData.launch_date
+                              ? new Date(
+                                  mobileData.launch_date,
+                                ).toLocaleDateString("en-IN", {
+                                  day: "numeric",
+                                  month: "long",
+                                  year: "numeric",
+                                })
+                              : "N/A",
+                          },
+                          {
+                            label: "Operating System",
+                            value:
+                              mobileData.performance?.operating_system ||
+                              mobileData.performance?.os ||
+                              "N/A",
+                          },
+                          {
+                            label: "Custom UI",
+                            value: mobileData.ui || "Stock",
+                          },
+                          {
+                            label: "Colors",
+                            value: Array.isArray(mobileData.colors)
+                              ? mobileData.colors.join(", ")
+                              : mobileData.build_design?.colors || "N/A",
+                          },
+                          {
+                            label: "Sim Type",
+                            value:
+                              mobileData.network?.sim_type ||
+                              mobileData.sim ||
+                              "Dual Sim",
+                          },
+                          {
+                            label: "Weight",
+                            value: mobileData.build_design?.weight
+                              ? `${mobileData.build_design.weight} g`
+                              : "N/A",
+                          },
+                        ]
+                          .filter(
+                            (it) =>
+                              it.value !== undefined &&
+                              it.value !== null &&
+                              it.value !== "",
+                          )
+                          .map((item, idx) => (
+                            <tr
+                              key={idx}
+                              className={
+                                idx % 2 === 0 ? "bg-white" : "bg-gray-50"
+                              }
+                            >
+                              <td className="px-6 py-2 text-sm font-medium text-gray-600 w-1/3 align-top">
+                                {item.label}
+                              </td>
+                              <td className="px-6 py-2 text-sm text-gray-900 w-2/3">
+                                {formatSpecValue(item.value, item.label)}
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Display Section */}
+                {hasContent(mobileData.display) && (
+                  <div
+                    id="spec-display"
+                    className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
+                  >
+                    <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
+                      <FaExpand className="text-purple-500" />
+                      Display
+                    </h4>
+
+                    {renderDisplayTable(mobileData.display)}
+                  </div>
                 )}
+
+                {/* Performance Section */}
+                {hasContent(mobileData.performance) && (
+                  <div
+                    id="spec-performance"
+                    className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
+                  >
+                    <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
+                      <FaBolt className="text-yellow-500" />
+                      Performance
+                    </h4>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-100">
+                        <tbody className="bg-white">
+                          {Object.entries(mobileData.performance || {})
+                            .filter(
+                              ([k, v]) =>
+                                v &&
+                                !["sphere_rating", "ai_features"].includes(k),
+                            )
+                            .map(([key, value], idx) => (
+                              <tr
+                                key={key}
+                                className={
+                                  idx % 2 === 0 ? "bg-white" : "bg-gray-50"
+                                }
+                              >
+                                <td className="px-6 py-2 text-sm font-medium text-gray-600 w-1/3 align-top">
+                                  {toNormalCase(key)}
+                                </td>
+                                <td className="px-6 py-2 text-sm text-gray-900 w-2/3">
+                                  {formatSpecValue(value, key)}
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Camera Section - Using nested object structure */}
+                {hasContent(mobileData.camera) && (
+                  <div
+                    id="spec-camera"
+                    className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
+                  >
+                    <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
+                      <FaCamera className="text-purple-500" />
+                      Camera
+                    </h4>
+
+                    {renderCameraTable(mobileData.camera)}
+                  </div>
+                )}
+
+                {/* Battery Section */}
+                {hasContent(mobileData.battery) && (
+                  <div
+                    id="spec-battery"
+                    className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
+                  >
+                    <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
+                      <FaBatteryFull className="text-green-500" />
+                      Battery
+                    </h4>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-100">
+                        <tbody className="bg-white">
+                          {Object.entries(mobileData.battery || {})
+                            .filter(
+                              ([k, v]) => v && !/ai[_-]?features?/i.test(k),
+                            )
+                            .map(([key, value], idx) => (
+                              <tr
+                                key={key}
+                                className={
+                                  idx % 2 === 0 ? "bg-white" : "bg-gray-50"
+                                }
+                              >
+                                <td className="px-6 py-2 text-sm font-medium text-gray-600 w-1/3 align-top">
+                                  {toNormalCase(key)}
+                                </td>
+                                <td className="px-6 py-2 text-sm text-gray-900 w-2/3">
+                                  {key === "battery_capacity_mah"
+                                    ? `${value} mAh`
+                                    : formatSpecValue(value, key)}
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Connectivity Section */}
+                {hasContent(mobileData.connectivity) && (
+                  <div
+                    id="spec-connectivity"
+                    className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
+                  >
+                    <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
+                      <FaWifi className="text-purple-500" />
+                      Connectivity
+                    </h4>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-100">
+                        <tbody className="bg-white">
+                          {Object.entries(mobileData.connectivity || {})
+                            .filter(
+                              ([k, v]) => v && !/ai[_-]?features?/i.test(k),
+                            )
+                            .map(([key, value], idx) => (
+                              <tr
+                                key={key}
+                                className={
+                                  idx % 2 === 0 ? "bg-white" : "bg-gray-50"
+                                }
+                              >
+                                <td className="px-6 py-2 text-sm font-medium text-gray-600 w-1/3 align-top">
+                                  {toNormalCase(key)}
+                                </td>
+                                <td className="px-6 py-2 text-sm text-gray-900 w-2/3">
+                                  {formatSpecValue(value, key)}
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Available colors removed */}
+                {/* Price Comparison Call to Action */}
               </div>
             </div>
           </div>
@@ -997,7 +1766,7 @@ const MobileDetailCard = () => {
               <FaExpand className="text-green-500" />
               Display
             </h3>
-            {renderSpecItems(mobileData.display)}
+            {renderSpecTable(mobileData.display)}
           </div>
         );
 
@@ -1008,7 +1777,7 @@ const MobileDetailCard = () => {
               <FaBolt className="text-yellow-500" />
               Performance
             </h3>
-            {renderSpecItems(mobileData.performance)}
+            {renderSpecTable(mobileData.performance)}
           </div>
         );
 
@@ -1019,7 +1788,7 @@ const MobileDetailCard = () => {
               <FaCamera className="text-purple-500" />
               Camera
             </h3>
-            {renderSpecItems(mobileData.camera)}
+            {renderCameraTable(mobileData.camera)}
           </div>
         );
 
@@ -1030,7 +1799,33 @@ const MobileDetailCard = () => {
               <FaBatteryFull className="text-red-500" />
               Battery
             </h3>
-            {renderSpecItems(mobileData.battery)}
+            {renderSpecTable(mobileData.battery)}
+          </div>
+        );
+
+      case "connectivity":
+        return (
+          <div className="bg-white rounded-lg p-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <FaWifi className="text-purple-500" />
+              Connectivity
+            </h3>
+            {renderSpecTable(
+              mobileData.connectivity || mobileData.connectivity_json,
+            )}
+          </div>
+        );
+
+      case "multimedia":
+        return (
+          <div className="bg-white rounded-lg p-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <FaFilm className="text-indigo-500" />
+              Multimedia
+            </h3>
+            {renderSpecTable(
+              mobileData.multimedia || mobileData.multimedia_json,
+            )}
           </div>
         );
 
@@ -1041,236 +1836,7 @@ const MobileDetailCard = () => {
               <FaMobile className="text-indigo-500" />
               Build & Design
             </h3>
-            {renderSpecItems(mobileData.build_design)}
-          </div>
-        );
-
-      case "connectivity":
-        return (
-          <div className="bg-white rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <FaWifi className="text-blue-500" />
-              Connectivity
-            </h3>
-            {renderSpecItems(mobileData.connectivity_network)}
-            {mobileData.ports && (
-              <>
-                <h4 className="text-md font-semibold text-gray-900 mt-6 mb-3">
-                  Ports
-                </h4>
-                {renderSpecItems(mobileData.ports)}
-              </>
-            )}
-          </div>
-        );
-
-      case "multimedia":
-        return (
-          <div className="bg-white rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <FaFilm className="text-purple-500" />
-              Multimedia
-            </h3>
-            {renderSpecItems(mobileData.audio)}
-            {mobileData.multimedia && (
-              <>
-                <h4 className="text-md font-semibold text-gray-900 mt-6 mb-3">
-                  Media Formats
-                </h4>
-                {renderSpecItems(mobileData.multimedia)}
-              </>
-            )}
-          </div>
-        );
-
-      case "ratings":
-        return (
-          <div className="space-y-6">
-            {/* Ratings Summary Card */}
-            <div className="bg-white rounded-lg p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                  <FaStar className="text-yellow-500" />
-                  User Ratings & Reviews
-                </h3>
-                <button
-                  onClick={() => setShowReviewForm(true)}
-                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
-                >
-                  <FaPlus />
-                  Add Your Review
-                </button>
-              </div>
-
-              {/* Overall Rating Expanded */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
-                  <div className="text-6xl font-bold text-gray-900 mb-2">
-                    {ratingsData?.averageRating?.toFixed(1) || "0.0"}
-                    <span className="text-2xl text-gray-500">/5</span>
-                  </div>
-                  <div className="flex justify-center mb-4">
-                    {renderStars(ratingsData?.averageRating || 0, "xl")}
-                  </div>
-                  <div className="text-gray-600">
-                    Based on {ratingsData?.totalRatings || 0} ratings
-                  </div>
-                  <div className="mt-4 text-sm text-gray-700">
-                    {ratingsData?.averageRating >= 4
-                      ? "Excellent"
-                      : ratingsData?.averageRating >= 3
-                      ? "Good"
-                      : ratingsData?.averageRating >= 2
-                      ? "Average"
-                      : "Below Average"}
-                  </div>
-                </div>
-
-                {/* Rating Breakdown */}
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-6 text-lg">
-                    Rating Breakdown
-                  </h4>
-                  {[
-                    {
-                      label: "Display",
-                      value: ratingsData?.display || 0,
-                      color: "blue",
-                    },
-                    {
-                      label: "Performance",
-                      value: ratingsData?.performance || 0,
-                      color: "green",
-                    },
-                    {
-                      label: "Camera",
-                      value: ratingsData?.camera || 0,
-                      color: "yellow",
-                    },
-                    {
-                      label: "Battery",
-                      value: ratingsData?.battery || 0,
-                      color: "red",
-                    },
-                    {
-                      label: "Design",
-                      value: ratingsData?.design || 0,
-                      color: "purple",
-                    },
-                  ].map((item) => (
-                    <div key={item.label} className="mb-5">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm font-medium text-gray-700">
-                          {item.label}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-gray-900">
-                            {item.value.toFixed(1)}
-                          </span>
-                          <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-                          <span className="text-sm text-gray-500">/5</span>
-                        </div>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2.5">
-                        <div
-                          className={`bg-${item.color}-500 h-2.5 rounded-full`}
-                          style={{ width: `${(item.value / 5) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Review Form */}
-              {showReviewForm && (
-                <div className="bg-gray-50 rounded-lg p-6 mb-8 border border-gray-300">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4">
-                    {editingReview ? "Edit Your Review" : "Write a Review"}
-                  </h4>
-                  <div className="space-y-4">
-                    {/* Overall Rating */}
-
-                    {/* Category Ratings */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {[
-                        { label: "Display", category: "display" },
-                        { label: "Performance", category: "performance" },
-                        { label: "Camera", category: "camera" },
-                        { label: "Battery", category: "battery" },
-                        { label: "Design", category: "design" },
-                      ].map((item) => (
-                        <div key={item.category}>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {item.label}
-                          </label>
-                          <InlineRatingInput
-                            value={
-                              editingReview?.[item.category] ||
-                              newReview[item.category]
-                            }
-                            onChange={(value) =>
-                              handleRatingChange(item.category, value)
-                            }
-                            size="md"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Overall Rating
-                      </label>
-                      <div className="flex items-center gap-4">
-                        <InlineRatingInput
-                          value={editingReview?.rating || newReview.rating}
-                          onChange={(value) =>
-                            handleRatingChange("rating", value)
-                          }
-                          size="lg"
-                        />
-                        <span className="text-lg font-semibold text-gray-700">
-                          {(editingReview?.rating || newReview.rating).toFixed(
-                            1
-                          )}
-                          /5
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Title and detailed review removed — only numeric ratings are captured */}
-
-                    <div className="flex gap-3">
-                      <button
-                        onClick={submitReview}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors"
-                      >
-                        {editingReview ? "Update Rating" : "Submit Rating"}
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowReviewForm(false);
-                          setEditingReview(null);
-                          setNewReview({
-                            rating: 0,
-                            display: 0,
-                            performance: 0,
-                            camera: 0,
-                            battery: 0,
-                            design: 0,
-                          });
-                        }}
-                        className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded-lg transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Reviews list removed — ratings-only UI */}
-            </div>
+            {renderSpecTable(mobileData.build_design)}
           </div>
         );
 
@@ -1285,21 +1851,12 @@ const MobileDetailCard = () => {
     }
   };
 
-  if (loading || selectedDevice === null) {
+  if (loading && !mobileData) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-        <div className="flex flex-col items-center gap-4 rounded-2xl  px-8 py-6 shadow-xl">
-          <Spinner
-            size={40}
-            className="border-4 border-violet-500 border-t-blue-500"
-          />
-
-          <p
-            className="text-lg font-medium font-bold text-white
-           tracking-wide"
-          >
-            Please Wait.....
-          </p>
+      <div className="max-w-6xl mx-auto p-8">
+        <div className="bg-white rounded-lg p-8 text-center">
+          <Spinner />
+          <div className="text-sm text-gray-500 mt-3">Please wait…</div>
         </div>
       </div>
     );
@@ -1307,7 +1864,7 @@ const MobileDetailCard = () => {
 
   if (!loading && !mobileData) {
     return (
-      <div className="max-w-7xl mx-auto p-4">
+      <div className="max-w-6xl mx-auto p-4">
         <div className="bg-white rounded-lg p-8 text-center">
           <div className="text-gray-400 text-6xl mb-4">📱</div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -1321,8 +1878,96 @@ const MobileDetailCard = () => {
     );
   }
 
+  // compute SEO meta values
+  const metaName = mobileData?.name || mobileData?.model || "";
+  const metaBrand = mobileData?.brand || mobileData?.brand_name || "";
+  const metaRam = currentVariant?.ram || mobileData?.performance?.ram || "";
+  const metaStorage =
+    currentVariant?.storage ||
+    mobileData?.performance?.ROM_storage ||
+    mobileData?.performance?.storage ||
+    "";
+  const descriptiveTitle = buildDescriptiveTitle(mobileData, currentVariant);
+  const titleWithBrand =
+    metaBrand && descriptiveTitle
+      ? descriptiveTitle.toLowerCase().includes(metaBrand.toLowerCase())
+        ? descriptiveTitle
+        : `${metaBrand} ${descriptiveTitle}`
+      : descriptiveTitle;
+  const currentDateLabel = new Date().toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  const metaTitle =
+    titleWithBrand ||
+    smartphoneMeta.title({
+      name: metaName,
+      ram: metaRam,
+      storage: metaStorage,
+    });
+  const metaTitleWithDate = `${metaTitle} [${currentDateLabel}]`;
+
+  const metaDescription =
+    buildMetaDescription(mobileData, currentVariant) ||
+    smartphoneMeta.description({
+      name: metaName,
+      ram: metaRam,
+      storage: metaStorage,
+      brand: metaBrand,
+    });
+
+  const toAbsoluteUrl = (url) => {
+    if (!url) return "";
+    if (/^https?:\/\//i.test(url)) return url;
+    if (typeof window === "undefined") return url;
+    const origin = window.location.origin;
+    if (!origin) return url;
+    return url.startsWith("/") ? `${origin}${url}` : `${origin}/${url}`;
+  };
+
+  const canonicalUrl =
+    typeof window !== "undefined" ? window.location.href : "";
+  const primaryImage = Array.isArray(mobileData?.images)
+    ? mobileData.images[0]
+    : null;
+  const ogImage = toAbsoluteUrl(primaryImage);
+
+  // If initial loading state (no mobileData yet), render spinner now
+  if (showInitialLoading) {
+    return (
+      <div className="max-w-6xl mx-auto p-8">
+        <div className="bg-white rounded-lg p-8 text-center">
+          <Spinner />
+          <div className="text-sm text-gray-500 mt-3">Please wait…</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-7xl mx-auto p-4">
+    <div className="max-w-6xl mx-auto mb-8">
+      <Helmet>
+        <title>{metaTitleWithDate}</title>
+        <meta name="description" content={metaDescription} />
+        <meta property="og:type" content="product" />
+        <meta property="og:title" content={metaTitle} />
+        <meta property="og:description" content={metaDescription} />
+        {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
+        {ogImage && <meta property="og:image" content={ogImage} />}
+        {ogImage && <meta property="og:image:secure_url" content={ogImage} />}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={metaTitle} />
+        <meta name="twitter:description" content={metaDescription} />
+        {ogImage && <meta name="twitter:image" content={ogImage} />}
+      </Helmet>
+      {isSharedLink && (
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded">
+            Shared link detected — showing the shared product details.
+          </div>
+        </div>
+      )}
       {/* Share Menu Modal */}
       {showShareMenu && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -1348,14 +1993,14 @@ const MobileDetailCard = () => {
               </button>
               <button
                 onClick={shareToFacebook}
-                className="w-full flex items-center gap-3 p-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-blue-700 font-medium"
+                className="w-full flex items-center gap-3 p-3 bg-purple-50 hover:bg-purple-100 rounded-lg text-purple-700 font-medium"
               >
                 <FaFacebook className="text-xl" />
                 Share on Facebook
               </button>
               <button
                 onClick={shareToTwitter}
-                className="w-full flex items-center gap-3 p-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-blue-400 font-medium"
+                className="w-full flex items-center gap-3 p-3 bg-purple-50 hover:bg-purple-100 rounded-lg text-purple-400 font-medium"
               >
                 <FaTwitter className="text-xl" />
                 Share on Twitter
@@ -1367,13 +2012,7 @@ const MobileDetailCard = () => {
                 <FaEnvelope className="text-xl" />
                 Share via Email
               </button>
-              <button
-                onClick={handleCopyLink}
-                className="w-full flex items-center gap-3 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg text-gray-700 font-medium"
-              >
-                <FaLink className="text-xl" />
-                Copy Link
-              </button>
+              {/* Copy link removed — share-only option provided above */}
             </div>
             <button
               onClick={() => setShowShareMenu(false)}
@@ -1387,14 +2026,34 @@ const MobileDetailCard = () => {
 
       <div className="bg-white overflow-hidden">
         {/* Mobile Header */}
-        <div className="p-4 border-b border-gray-200 lg:hidden">
+        <div className="p-4 border-b border-indigo-200 lg:hidden">
           <div className="flex justify-between items-start mb-2">
             <div>
-              <h1 className="text-xl font-bold text-gray-900 mb-1">
-                {mobileData.name}
+              <h1 className="text-xl font-extrabold tracking-tight mb-1 bg-gradient-to-r from-purple-100 via-purple-100 to-red-100 text-transparent bg-clip-text leading-tight">
+                {buildDescriptiveTitle(mobileData, currentVariant)}
               </h1>
-              <p className="text-gray-600 text-sm">
-                {mobileData.brand} • {mobileData.model}
+              <p className="text-purple-700 text-sm font-medium flex items-center gap-2">
+                <span>{mobileData?.model}</span>
+                {mobileData?.isAiPhone ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-purple-600 to-red-600 px-2 py-0.5 text-[10px] font-semibold text-purple-700 ring-1 ring-purple-200">
+                    <span
+                      className="inline-flex items-center justify-center w-3 h-3"
+                      aria-hidden="true"
+                    >
+                      <svg viewBox="0 0 64 64" className="w-3 h-3">
+                        <path
+                          d="M32 2C34.5 14.5 40 20 52 22C40 24 34.5 29.5 32 42C29.5 29.5 24 24 12 22C24 20 29.5 14.5 32 2Z"
+                          fill="#2196F3"
+                        />
+                        <path
+                          d="M50 34C51.5 41.5 55 45 62 46C55 47 51.5 50.5 50 58C48.5 50.5 45 47 38 46C45 45 48.5 41.5 50 34Z"
+                          fill="#7E57C2"
+                        />
+                      </svg>
+                    </span>
+                    <span>AI Phone</span>
+                  </span>
+                ) : null}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -1416,24 +2075,16 @@ const MobileDetailCard = () => {
               </button>
             </div>
           </div>
-          <div className="flex items-center justify-between mt-3">
-            <div className="flex items-center gap-2 bg-blue-50 px-3 py-1 rounded-lg">
-              <FaStar className="text-yellow-400 text-sm" />
-              <span className="font-bold text-blue-900 text-sm">
-                {ratingsData?.averageRating?.toFixed(1) || "N/A"}
-              </span>
-            </div>
-            {currentVariant && (
-              <span className="text-2xl font-bold text-green-600">
-                ₹{formatPrice(currentVariant.base_price)}
-              </span>
-            )}
-          </div>
+          {currentVariant && (
+            <span className="text-2xl font-bold text-green-600 mt-3">
+              ₹{formatPrice(currentVariant.base_price)}
+            </span>
+          )}
         </div>
 
         <div className="flex flex-col lg:flex-row">
           {/* Images Section */}
-          <div className="lg:w-2/5 p-4 border-b lg:border-b-0 lg:border-r border-gray-200">
+          <div className="lg:w-2/5 p-4 border-b lg:border-b-0 lg:border-r border-indigo-200">
             {/* Main Image */}
             <div className="rounded-lg p-6 mb-4 relative">
               <img
@@ -1475,10 +2126,10 @@ const MobileDetailCard = () => {
                   <button
                     key={index}
                     onClick={() => setActiveImage(index)}
-                    className={`flex-shrink-0 w-16 h-16 rounded-lg p-1 border-2 transition-all duration-200 ${
+                    className={`flex-shrink-0 w-16 h-16 rounded-lg p-1 border-1 transition-all duration-200 ${
                       activeImage === index
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-200 hover:border-gray-300"
+                        ? "border-purple-500 bg-purple-50"
+                        : "border-indigo-100 hover:border-purple-100"
                     }`}
                   >
                     <img
@@ -1492,37 +2143,44 @@ const MobileDetailCard = () => {
             )}
 
             {/* color section */}
-            {(mobileData?.colors?.length > 0 ||
-              (variants && variants.length > 0)) && (
-              <div className="mb-6">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
-                  Available Colors
-                </h4>
-                <div className="flex gap-2 items-center">
-                  {(mobileData?.colors?.length > 0
-                    ? mobileData.colors
-                    : variants.map((v) => ({
-                        name: v.color_name || v.color || "",
-                        code: v.color_code || v.colorCode || "#ccc",
-                      }))
-                  ).map((color, idx) => (
-                    <button
-                      key={`${color.code}-${color.name}-${idx}`}
-                      type="button"
-                      title={color.name || color.code}
-                      className={`w-10 h-10 rounded-full border-2 transition-all duration-150 flex items-center justify-center ${"border-gray-200 hover:border-gray-300"}`}
-                    >
-                      <div
-                        className="w-6 h-6 rounded-full"
-                        style={{ backgroundColor: color.code || "#ccc" }}
-                      />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Variant selection */}
+
+            {/* Share and Copy Link Buttons - Mobile */}
+            <div className="lg:hidden flex gap-2 mb-4">
+              <button
+                onClick={handleShare}
+                className="flex-1 flex items-center justify-center gap-2 py-3 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg font-medium"
+              >
+                <FaShareAlt />
+                <span>Share</span>
+              </button>
+            </div>
+
+            {/* Quick Specs - Mobile Only */}
+            <div className="lg:hidden grid grid-cols-3 gap-3 mb-4">
+              <div className="text-center p-3 bg-purple-50 rounded-lg">
+                <FaMicrochip className="text-purple-600 text-lg mx-auto mb-1" />
+                <div className="font-bold text-purple-900 text-sm">
+                  {mobileData.performance?.processor?.split(" ")[0] || "-"}
+                </div>
+                <div className="text-xs text-purple-700">Processor</div>
+              </div>
+              <div className="text-center p-3 bg-green-50 rounded-lg">
+                <FaCamera className="text-green-600 text-lg mx-auto mb-1" />
+                <div className="font-bold text-green-900 text-sm">
+                  {mobileData.camera?.main_camera_megapixels || "-"} MP
+                </div>
+                <div className="text-xs text-green-700">Main Camera</div>
+              </div>
+              <div className="text-center p-3 bg-purple-50 rounded-lg">
+                <FaBatteryFull className="text-purple-600 text-lg mx-auto mb-1" />
+                <div className="font-bold text-purple-900 text-sm">
+                  {mobileData.battery?.battery_capacity_mah || "-"} mAh
+                </div>
+                <div className="text-xs text-purple-700">Battery</div>
+              </div>
+            </div>
             {variants && variants.length > 0 && (
               <div className="mb-6">
                 <h4 className="text-sm font-medium text-gray-700 mb-2">
@@ -1535,8 +2193,8 @@ const MobileDetailCard = () => {
                       onClick={() => setSelectedVariant(index)}
                       className={`p-3 rounded-lg border-2 transition-all duration-150 ${
                         selectedVariant === index
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 hover:border-gray-300"
+                          ? "border-purple-500 bg-purple-50"
+                          : "border-purple-200 hover:border-indigo-300"
                       }`}
                     >
                       <div className="text-sm font-semibold text-gray-900">
@@ -1551,58 +2209,6 @@ const MobileDetailCard = () => {
                 </div>
               </div>
             )}
-
-            {/* Share and Copy Link Buttons - Mobile */}
-            <div className="lg:hidden flex gap-2 mb-4">
-              <button
-                onClick={handleCopyLink}
-                className="flex-1 flex items-center justify-center gap-2 py-3 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium"
-              >
-                {copied ? (
-                  <>
-                    <FaCheck className="text-green-600" />
-                    <span className="text-green-600">Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <FaCopy className="text-gray-600" />
-                    <span className="text-gray-700">Copy Link</span>
-                  </>
-                )}
-              </button>
-              <button
-                onClick={handleShare}
-                className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg font-medium"
-              >
-                <FaShareAlt />
-                <span>Share</span>
-              </button>
-            </div>
-
-            {/* Quick Specs - Mobile Only */}
-            <div className="lg:hidden grid grid-cols-3 gap-3 mb-4">
-              <div className="text-center p-3 bg-blue-50 rounded-lg">
-                <FaMicrochip className="text-blue-600 text-lg mx-auto mb-1" />
-                <div className="font-bold text-blue-900 text-sm">
-                  {mobileData.performance?.processor?.split(" ")[0] || "-"}
-                </div>
-                <div className="text-xs text-blue-700">Processor</div>
-              </div>
-              <div className="text-center p-3 bg-green-50 rounded-lg">
-                <FaCamera className="text-green-600 text-lg mx-auto mb-1" />
-                <div className="font-bold text-green-900 text-sm">
-                  {mobileData.camera?.main_camera_megapixels || "-"}
-                </div>
-                <div className="text-xs text-green-700">Main Camera</div>
-              </div>
-              <div className="text-center p-3 bg-purple-50 rounded-lg">
-                <FaBatteryFull className="text-purple-600 text-lg mx-auto mb-1" />
-                <div className="font-bold text-purple-900 text-sm">
-                  {mobileData.battery?.battery_capacity_mah || "-"}
-                </div>
-                <div className="text-xs text-purple-700">Battery</div>
-              </div>
-            </div>
           </div>
 
           {/* Details Section - Right Side */}
@@ -1611,12 +2217,32 @@ const MobileDetailCard = () => {
             <div className="hidden lg:block mb-6">
               <div className="flex justify-between items-start mb-2">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                    {mobileData.name}
+                  <h1 className="text-2xl font-extrabold tracking-tight mb-2">
+                    {buildDescriptiveTitle(mobileData, currentVariant)}
                   </h1>
-                  <p className="text-gray-600 mb-3">
-                    {mobileData.brand} • {mobileData.model}
-                  </p>
+                  <h4 className="text-purple-700 mb-3 font-medium text-sm flex items-center gap-2">
+                    <span>{mobileData?.model}</span>
+                    {mobileData?.isAiPhone ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-purple-50 to-red-100 px-2 py-0.5 text-[10px] font-semibold text-purple-700 ring-1 ring-purple-200">
+                        <span
+                          className="inline-flex items-center justify-center w-3 h-3"
+                          aria-hidden="true"
+                        >
+                          <svg viewBox="0 0 64 64" className="w-3 h-3">
+                            <path
+                              d="M32 2C34.5 14.5 40 20 52 22C40 24 34.5 29.5 32 42C29.5 29.5 24 24 12 22C24 20 29.5 14.5 32 2Z"
+                              fill="red"
+                            />
+                            <path
+                              d="M50 34C51.5 41.5 55 45 62 46C55 47 51.5 50.5 50 58C48.5 50.5 45 47 38 46C45 45 48.5 41.5 50 34Z"
+                              fill="#7E57C2"
+                            />
+                          </svg>
+                        </span>
+                        <span>AI Phone</span>
+                      </span>
+                    ) : null}
+                  </h4>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -1639,33 +2265,8 @@ const MobileDetailCard = () => {
                   >
                     <FaShareAlt className="text-xl text-gray-600" />
                   </button>
-                  <button
-                    onClick={handleCopyLink}
-                    className="p-2 rounded-full hover:bg-gray-100 relative"
-                    title="Copy link"
-                  >
-                    {copied && (
-                      <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-2 py-1 rounded text-xs whitespace-nowrap">
-                        Link copied!
-                      </div>
-                    )}
-                    {copied ? (
-                      <FaCheck className="text-xl text-green-600" />
-                    ) : (
-                      <FaCopy className="text-xl text-gray-600" />
-                    )}
-                  </button>
+                  {/* Copy link removed — share-only */}
                 </div>
-              </div>
-              <div className="flex items-center gap-4 mb-4">
-                {ratingsData?.averageRating && (
-                  <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg">
-                    {renderStars(ratingsData.averageRating)}
-                    <span className="text-blue-700 text-sm">
-                      ({ratingsData.totalRatings || 0} ratings)
-                    </span>
-                  </div>
-                )}
               </div>
               <div className="flex items-center gap-3 mb-6">
                 {currentVariant && (
@@ -1688,13 +2289,13 @@ const MobileDetailCard = () => {
               <div className="mb-6 mt-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                    <FaStore className="text-blue-500" />
+                    <FaStore className="text-purple-500" />
                     Available at
                   </h3>
                   {sortedStores.length > 3 && (
                     <button
                       onClick={() => setShowAllStores(!showAllStores)}
-                      className="text-blue-600 text-sm font-medium flex items-center gap-1"
+                      className="text-purple-600 text-sm font-medium flex items-center gap-1"
                     >
                       {showAllStores ? "Show Less" : "View All"}
                       <FaChevronDown
@@ -1714,8 +2315,8 @@ const MobileDetailCard = () => {
                         key={store.id || index}
                         className={`bg-white border rounded-xl p-3 transition-all duration-200 ${
                           isActive
-                            ? "border-blue-400 shadow-md bg-blue-50"
-                            : "border-gray-200 hover:border-blue-300 hover:shadow-md"
+                            ? "border-purple-400 shadow-md bg-purple-50"
+                            : "border-indigo-200 hover:border-purple-300 hover:shadow-md"
                         }`}
                       >
                         <div className="flex items-center justify-between">
@@ -1723,11 +2324,11 @@ const MobileDetailCard = () => {
                           <div className="flex items-center gap-3 flex-1">
                             <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center p-2 shadow-sm">
                               <img
-                                src={getStoreLogo(store.store_name)}
+                                src={getLogo(store.store_name)}
                                 alt={store.store_name}
                                 className="w-full h-full object-contain"
                                 onError={(e) => {
-                                  e.target.src = STORE_LOGOS.default;
+                                  e.target.src = getLogo("");
                                 }}
                               />
                             </div>
@@ -1752,7 +2353,7 @@ const MobileDetailCard = () => {
                               href={store.url}
                               target="_blank"
                               rel="noopener noreferrer nofollow"
-                              className="bg-gradient-to-r from-blue-600 to-purple-700 hover:from-blue-700 hover:to-purple-800 text-white px-4 py-2 rounded-lg font-semibold text-sm flex items-center gap-2 transition-all duration-200 hover:shadow-lg"
+                              className="bg-gradient-to-r from-purple-100 to-red-100 hover:from-purple-600 hover:to-red-600 text-purple-500 px-4 py-2 rounded-full hover:text-white font-semibold text-sm flex items-center gap-2 transition-all duration-200 hover:shadow-lg"
                             >
                               <FaExternalLinkAlt className="text-xs" />
                               Buy Now
@@ -1768,24 +2369,24 @@ const MobileDetailCard = () => {
 
             {/* Desktop Quick Specs */}
             <div className="hidden lg:grid grid-cols-3 gap-4 mb-6">
-              <div className="text-center p-4 bg-blue-50 rounded-xl">
-                <FaMicrochip className="text-blue-600 text-xl mx-auto mb-2" />
-                <div className="font-bold text-blue-900">
+              <div className="text-center p-4 bg-purple-50 rounded-xl">
+                <FaMicrochip className="text-purple-600 text-xl mx-auto mb-2" />
+                <div className="font-bold text-purple-900">
                   {mobileData.performance?.processor || "-"}
                 </div>
-                <div className="text-sm text-blue-700">Processor</div>
+                <div className="text-sm text-purple-700">Processor</div>
               </div>
               <div className="text-center p-4 bg-green-50 rounded-xl">
                 <FaCamera className="text-green-600 text-xl mx-auto mb-2" />
                 <div className="font-bold text-green-900">
-                  {mobileData.camera?.main_camera_megapixels || "-"}
+                  {mobileData.camera?.main_camera_megapixels || "-"} MP
                 </div>
                 <div className="text-sm text-green-700">Main Camera</div>
               </div>
               <div className="text-center p-4 bg-purple-50 rounded-xl">
                 <FaBatteryFull className="text-purple-600 text-xl mx-auto mb-2" />
                 <div className="font-bold text-purple-900">
-                  {mobileData.battery?.battery_capacity_mah || "-"}
+                  {mobileData.battery?.battery_capacity_mah || "-"} mAh
                 </div>
                 <div className="text-sm text-purple-700">Battery</div>
               </div>
@@ -1794,19 +2395,20 @@ const MobileDetailCard = () => {
         </div>
 
         {/* Tabs Section */}
-        <div className="border-t border-gray-200">
-          <div className="flex overflow-x-auto no-scrollbar border-b border-gray-200">
-            {tabs.map((tab) => {
+        <div className="border-t border-indigo-200">
+          <div className="flex overflow-x-auto no-scrollbar border-b border-indigo-200">
+            {availableTabs.map((tab) => {
               const IconComponent = tab.icon;
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-3 font-medium text-sm whitespace-nowrap border-b-2 transition-colors duration-200 flex-shrink-0 ${
-                    activeTab === tab.id
-                      ? "border-blue-500 text-blue-600 bg-blue-50"
-                      : "border-transparent text-gray-500 hover:text-gray-700"
-                  }`}
+                  onClick={() => handleTabClick(tab.id)}
+                  className={`flex items-center gap-2 px-4 py-3 font-medium text-sm whitespace-nowrap border-b-2 transition-colors duration-200 flex-shrink-0 
+                    ${
+                      activeTab === tab.id
+                        ? "border-purple-500 text-purple-600 bg-purple-50"
+                        : "border-transparent text-gray-500 hover:text-gray-700"
+                    }`}
                 >
                   <IconComponent className="text-sm" />
                   {tab.label}
@@ -1816,10 +2418,6 @@ const MobileDetailCard = () => {
           </div>
 
           <div className="p-4">{renderTabContent()}</div>
-        </div>
-        {/* Render Ratings Summary below tabbed details */}
-        <div className="max-w-7xl mx-auto p-4">
-          {ratingsData && <div className="mb-6">{renderRatingCard()}</div>}
         </div>
       </div>
     </div>

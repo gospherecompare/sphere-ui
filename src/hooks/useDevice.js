@@ -3,6 +3,11 @@ import { useSelector, useDispatch } from "react-redux";
 import {
   fetchSmartphones,
   fetchBrands,
+  fetchCategories,
+  fetchNetworking,
+  fetchLaptops,
+  fetchHomeAppliances,
+  setDevicesForType,
   addToHistory,
   clearHistory,
   setFilters,
@@ -15,19 +20,58 @@ export function useDevice() {
   const dispatch = useDispatch();
   const state = useSelector((s) => s.device || {});
 
-  // load data once when first used
+  // load data when relevant flags show data is missing. Include explicit
+  // dependencies so the effect won't be re-run unexpectedly and will only
+  // dispatch actions when a resource is actually missing.
   useEffect(() => {
     if (!state.loaded && !state.loading) dispatch(fetchSmartphones());
+    if (!state.networkingLoaded && !state.networkingLoading)
+      dispatch(fetchNetworking());
+    if (!state.laptopsLoaded && !state.laptopsLoading) dispatch(fetchLaptops());
+    if (!state.homeAppliancesLoaded && !state.homeAppliancesLoading)
+      dispatch(fetchHomeAppliances());
     if ((state.brands || []).length === 0 && !state.brandsLoading)
       dispatch(fetchBrands());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if ((state.categories || []).length === 0 && !state.categoriesLoading)
+      dispatch(fetchCategories());
+  }, [
+    dispatch,
+    state.loaded,
+    state.loading,
+    state.networkingLoaded,
+    state.networkingLoading,
+    state.laptopsLoaded,
+    state.laptopsLoading,
+    state.homeAppliancesLoaded,
+    state.homeAppliancesLoading,
+    (state.brands || []).length,
+    state.brandsLoading,
+    (state.categories || []).length,
+    state.categoriesLoading,
+  ]);
+
+  // Combined list of all device types for generic components
+  const devices = [
+    ...(state.smartphone || []).map((d) => ({
+      ...d,
+      deviceType: "smartphone",
+    })),
+    ...(state.laptops || []).map((d) => ({ ...d, deviceType: "laptop" })),
+    ...(state.networking || []).map((d) => ({
+      ...d,
+      deviceType: "networking",
+    })),
+    ...(state.homeAppliances || []).map((d) => ({
+      ...d,
+      deviceType: "homeAppliance",
+    })),
+  ];
 
   const getDeviceById = useCallback(
     (id) => {
       if (id == null) return null;
-      const found = (state.smartphone || []).find(
-        (s) => String(s.id) === String(id) || String(s.name) === String(id)
+      const found = devices.find(
+        (s) => String(s.id) === String(id) || String(s.name) === String(id),
       );
       if (!found) return null;
       return {
@@ -35,54 +79,111 @@ export function useDevice() {
         variants: Array.isArray(found.variants) ? found.variants : [],
       };
     },
-    [state.smartphone]
+    [devices],
   );
 
   const getDeviceByModel = useCallback(
     (model) => {
       if (!model) return null;
-      const found = (state.smartphone || []).find(
-        (s) => String(s.model) === String(model)
-      );
+      const found = devices.find((s) => String(s.model) === String(model));
       if (!found) return null;
       return {
         ...found,
         variants: Array.isArray(found.variants) ? found.variants : [],
       };
     },
-    [state.smartphone]
+    [devices],
   );
 
   const addHistory = useCallback(
     (payload) => dispatch(addToHistory(payload)),
-    [dispatch]
+    [dispatch],
   );
   const clearHistoryFn = useCallback(
     () => dispatch(clearHistory()),
-    [dispatch]
+    [dispatch],
   );
   const setFiltersFn = useCallback((f) => dispatch(setFilters(f)), [dispatch]);
+  const setDevices = useCallback(
+    (type, devices) =>
+      dispatch({ type: setDevicesForType.type, payload: { type, devices } }),
+    [dispatch],
+  );
   const selectDeviceById = useCallback(
     (id) => dispatch(selectByIdAction(id)),
-    [dispatch]
+    [dispatch],
   );
   const selectDeviceByModel = useCallback(
     (m) => dispatch(selectByModelAction(m)),
-    [dispatch]
+    [dispatch],
   );
   const refreshDevices = useCallback(
     () => dispatch(fetchSmartphones()),
-    [dispatch]
+    [dispatch],
+  );
+
+  const refreshNetworking = useCallback(
+    () => dispatch(fetchNetworking()),
+    [dispatch],
+  );
+
+  const refreshHomeAppliances = useCallback(
+    () => dispatch(fetchHomeAppliances()),
+    [dispatch],
+  );
+
+  const refreshLaptops = useCallback(
+    () => dispatch(fetchLaptops()),
+    [dispatch],
   );
 
   const fetchDevice = useCallback(
     (idOrModel) => dispatch(fetchSmartphone(idOrModel)),
-    [dispatch]
+    [dispatch],
   );
+
+  // Get device by productType and productId from flat registry or by searching lists
+  const getDevice = useCallback(
+    (productType, productId) => {
+      if (!productType || productId == null) return null;
+      const key = `${productType}:${String(productId)}`;
+      // try registry first
+      if (state.devicesById && state.devicesById[key]) {
+        const found = state.devicesById[key];
+        return {
+          ...found,
+          variants: Array.isArray(found.variants) ? found.variants : [],
+        };
+      }
+      // fallback: search combined lists by product_id / id / productId
+      const pidStr = String(productId);
+      const found = devices.find((d) => {
+        const idCandidates = [d.productId, d.product_id, d.id, d.model, d.name];
+        return idCandidates.some((c) => c != null && String(c) === pidStr);
+      });
+      if (!found) return null;
+      return {
+        ...found,
+        variants: Array.isArray(found.variants) ? found.variants : [],
+      };
+    },
+    [devices, state.devicesById],
+  );
+  const setDevice = useCallback(
+    (productType, productId, device) =>
+      dispatch({
+        type: setDevice.type,
+        payload: { productType, productId, device },
+      }),
+    [dispatch],
+  );
+
+  // (devices already declared above)
 
   return {
     smartphone: state.smartphone,
-    categories: state.brands,
+    devices,
+    categories: state.categories,
     brands: (state.brands || []).filter((c) => Boolean(c.status)),
     history: state.history,
     selectedDevice: state.selectedDevice,
@@ -93,7 +194,19 @@ export function useDevice() {
     selectDeviceByModel,
     getDeviceById,
     getDeviceByModel,
+    getDevice,
     fetchDevice,
+    setDevices,
+    setDevice,
+    networking: state.networking,
+    networkingLoading: state.networkingLoading,
+    refreshNetworking,
+    laptops: state.laptops,
+    laptopsLoading: state.laptopsLoading,
+    refreshLaptops,
+    homeAppliances: state.homeAppliances,
+    homeAppliancesLoading: state.homeAppliancesLoading,
+    refreshHomeAppliances,
     clearHistory: clearHistoryFn,
     loading: state.loading,
     error: state.error,

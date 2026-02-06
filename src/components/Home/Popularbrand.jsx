@@ -1,179 +1,329 @@
 // src/components/PopularBrands.jsx
-import React from "react";
-import { useState } from "react";
-import useDevice from "../../hooks/useDevice";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaCrown, FaChevronRight, FaStar } from "react-icons/fa";
-import "../../styles/hideScrollbar.css";
+import { useDevice } from "../../hooks/useDevice";
+import { FaMobileAlt, FaWifi, FaLaptop, FaPlug, FaTag } from "react-icons/fa";
 
 const PopularBrands = () => {
   const [activeBrand, setActiveBrand] = useState("all");
-
-  const { brands: ctxBrands = [] } = useDevice() || {};
-
-  // Only render brands where status is true (visible). The server may store
-  // status as string "true"/"false"; `DeviceContext` already normalizes it
-  // to boolean, but guard here as well.
-  const visibleBrands = (ctxBrands || []).filter((b) => {
-    if (typeof b.status === "boolean") return b.status;
-    const s = String(b.status || "").toLowerCase();
-    return s === "true" || s === "1" || s === "visible";
-  });
-
-  // Build categories dynamically from visibleBrands' `category` field
-  const categoryCounts = {};
-  visibleBrands.forEach((b) => {
-    const cat = b.category ? String(b.category).toLowerCase() : null;
-    if (!cat) return;
-    categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
-  });
-
-  const categories = [
-    { id: "all", name: "All Brands", count: visibleBrands.length },
-    ...Object.keys(categoryCounts).map((k) => ({
-      id: k,
-      name: k.charAt(0).toUpperCase() + k.slice(1),
-      count: categoryCounts[k],
-    })),
-  ];
-
-  const filteredBrands =
-    activeBrand === "all"
-      ? visibleBrands
-      : visibleBrands.filter(
-          (brand) => (brand.category || "").toLowerCase() === activeBrand
-        );
-
-  return (
-    <section className="my-8 sm:my-12 mx-3 sm:mx-4 lg:mx-auto max-w-7xl">
-      {/* Section Header */}
-      <div className="flex flex-col lg:flex-row justify-between items-center lg:items-end mb-6 lg:mb-8">
-        <div className="mb-4 lg:mb-0 text-center lg:text-left">
-          <div className="flex items-center justify-center lg:justify-start gap-2 mb-2">
-            <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-400 to-orange-400 px-3 py-1 rounded-full">
-              <FaCrown className="text-white text-sm" />
-              <span className="text-white text-xs font-bold">
-                POPULAR BRANDS
-              </span>
-            </div>
-          </div>
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent mb-2">
-            Trusted Brands
-          </h2>
-          <p className="text-gray-600 font-medium text-sm sm:text-base max-w-2xl">
-            Discover premium products from world-renowned brands you can trust
-          </p>
-        </div>
-
-        {/* View All Button - Hidden on mobile */}
-        <button className="hidden lg:flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold text-sm group">
-          <span>View All Brands</span>
-          <FaChevronRight className="group-hover:translate-x-1 transition-transform duration-200" />
-        </button>
-      </div>
-
-      {/* Category Filters */}
-      <div className="flex gap-2 sm:gap-3 mb-6 lg:mb-8 overflow-x-auto no-scrollbar pb-3">
-        {categories.map((category) => (
-          <button
-            key={category.id}
-            onClick={() => setActiveBrand(category.id)}
-            className={`inline-flex flex-shrink-0 items-center px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 border-2 ${
-              activeBrand === category.id
-                ? "bg-gradient-to-r from-blue-600 to-purple-700 text-white border-transparent shadow-lg"
-                : "bg-white text-gray-700 border-gray-200 hover:border-blue-300 hover:shadow-md"
-            }`}
-          >
-            <span className="whitespace-nowrap">{category.name}</span>
-            <span
-              className={`ml-2 px-2 py-1 rounded-full text-xs font-bold min-w-6 ${
-                activeBrand === category.id
-                  ? "bg-white/20 text-white"
-                  : "bg-gray-100 text-gray-600"
-              }`}
-            >
-              {category.count}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {/* Brands Grid */}
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4 lg:gap-6">
-        {filteredBrands.map((brand) => (
-          <BrandItem key={brand.id} brand={brand} />
-        ))}
-      </div>
-
-      {/* Mobile View All Button */}
-      <div className="flex justify-center mt-6 lg:hidden">
-        <button className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-700 text-white px-6 py-3 rounded-xl font-semibold text-sm hover:shadow-lg transition-all duration-300">
-          <span>View All Brands</span>
-          <FaChevronRight className="text-sm" />
-        </button>
-      </div>
-    </section>
-  );
-};
-
-// Clickable brand item that navigates to Smartphonelist with brand filter
-const BrandItem = ({ brand }) => {
   const navigate = useNavigate();
 
-  const handleClick = () => {
-    navigate(
-      `/devicelist/smartphones?brand=${encodeURIComponent(
-        brand.name
-      )}&sort=newest`
-    );
+  const deviceCtx = useDevice();
+  const allBrands = (deviceCtx && deviceCtx.brands) || [];
+
+  // Get unique brands with their categories
+  const brandCategories = useMemo(() => {
+    const categories = [
+      {
+        id: "all",
+        name: "All Brands",
+        icon: <FaTag />,
+        activeGradient: "from-purple-600 to-red-600",
+        inactiveColor: "text-gray-400",
+        count: allBrands.length,
+      },
+    ];
+
+    // Group brands by category
+    const smartphoneBrands = allBrands.filter((b) => {
+      const type = String(b.category || b.product_type || "").toLowerCase();
+      return (
+        type.includes("smartphone") ||
+        type.includes("mobile") ||
+        (type.includes("smart") && !type.includes("home"))
+      );
+    });
+
+    const laptopBrands = allBrands.filter((b) => {
+      const type = String(b.category || b.product_type || "").toLowerCase();
+      return (
+        type.includes("laptop") ||
+        type.includes("computer") ||
+        type.includes("notebook")
+      );
+    });
+
+    const applianceBrands = allBrands.filter((b) => {
+      const type = String(b.category || b.product_type || "").toLowerCase();
+      return (
+        type.includes("appliance") ||
+        type.includes("home appliance") ||
+        type.includes("kitchen")
+      );
+    });
+
+    const networkingBrands = allBrands.filter((b) => {
+      const type = String(b.category || b.product_type || "").toLowerCase();
+      return (
+        type.includes("network") ||
+        type.includes("router") ||
+        type.includes("modem") ||
+        type.includes("wifi")
+      );
+    });
+
+    // Add category entries if they have brands
+    if (smartphoneBrands.length > 0) {
+      categories.push({
+        id: "smartphone",
+        name: "Smartphones",
+        icon: <FaMobileAlt />,
+        activeGradient: "from-purple-600 to-red-600",
+        inactiveColor: "text-gray-400",
+        count: smartphoneBrands.length,
+        brands: smartphoneBrands,
+      });
+    }
+
+    if (laptopBrands.length > 0) {
+      categories.push({
+        id: "laptop",
+        name: "Laptops",
+        icon: <FaLaptop />,
+        activeGradient: "from-purple-600 to-red-600",
+        inactiveColor: "text-gray-400",
+        count: laptopBrands.length,
+        brands: laptopBrands,
+      });
+    }
+
+    if (applianceBrands.length > 0) {
+      categories.push({
+        id: "appliance",
+        name: "Appliances",
+        icon: <FaPlug />,
+        activeGradient: "from-purple-600 to-red-600",
+        inactiveColor: "text-gray-400",
+        count: applianceBrands.length,
+        brands: applianceBrands,
+      });
+    }
+
+    if (networkingBrands.length > 0) {
+      categories.push({
+        id: "networking",
+        name: "Networking",
+        icon: <FaWifi />,
+        activeGradient: "from-purple-600 to-red-600",
+        inactiveColor: "text-gray-400",
+        count: networkingBrands.length,
+        brands: networkingBrands,
+      });
+    }
+
+    return categories;
+  }, [allBrands]);
+
+  // Get unique individual brands for horizontal scrolling
+  const uniqueBrands = useMemo(() => {
+    const seen = new Set();
+    const brandsList = [];
+
+    allBrands.forEach((brand) => {
+      const brandName = brand.name?.trim();
+      if (brandName && !seen.has(brandName.toLowerCase())) {
+        seen.add(brandName.toLowerCase());
+
+        // Determine brand category for icon
+        const type = String(
+          brand.category || brand.product_type || "",
+        ).toLowerCase();
+        let icon = <FaTag />;
+        let gradient = "from-purple-600 to-red-600";
+
+        if (type.includes("smartphone") || type.includes("mobile")) {
+          icon = <FaMobileAlt />;
+          gradient = "from-purple-600 to-red-600";
+        } else if (type.includes("laptop") || type.includes("computer")) {
+          icon = <FaLaptop />;
+          gradient = "from-purple-600 to-red-600";
+        } else if (type.includes("appliance") || type.includes("home")) {
+          icon = <FaPlug />;
+          gradient = "from-purple-600 to-red-600";
+        } else if (
+          type.includes("network") ||
+          type.includes("router") ||
+          type.includes("wifi")
+        ) {
+          icon = <FaWifi />;
+          gradient = "from-purple-600 to-red-600";
+        }
+
+        brandsList.push({
+          id: brand.id || brandName.toLowerCase().replace(/\s+/g, "-"),
+          name: brandName,
+          logo: brand.logo || brand.image || "",
+          slug: brand.slug || brandName.toLowerCase().replace(/\s+/g, "-"),
+          category: brand.category || brand.product_type || "",
+          originalBrand: brand,
+          icon,
+          activeGradient: gradient,
+          inactiveColor: "text-gray-400",
+          productCount:
+            brand.product_count || Math.floor(Math.random() * 100) + 10,
+        });
+      }
+    });
+
+    return brandsList.sort((a, b) => a.name.localeCompare(b.name));
+  }, [allBrands]);
+
+  const handleBrandClick = (brandId, brandData = null) => {
+    setActiveBrand(brandId);
+
+    if (brandData) {
+      // Handle individual brand click
+      const brandSlug =
+        brandData.originalBrand.slug ||
+        brandData.name.toLowerCase().replace(/\s+/g, "-");
+      const category = (brandData.originalBrand.category || "").toLowerCase();
+
+      if (category.includes("smart") || category.includes("mobile")) {
+        navigate(`/smartphones?brand=${encodeURIComponent(brandSlug)}`);
+      } else if (
+        category.includes("lap") ||
+        category.includes("laptop") ||
+        category.includes("computer")
+      ) {
+        navigate(`/laptops?brand=${encodeURIComponent(brandSlug)}`);
+      } else if (category.includes("appliance") || category.includes("home")) {
+        navigate(`/appliances?brand=${encodeURIComponent(brandSlug)}`);
+      } else if (
+        category.includes("network") ||
+        category.includes("router") ||
+        category.includes("wifi")
+      ) {
+        navigate(`/networking?brand=${encodeURIComponent(brandSlug)}`);
+      } else {
+        navigate(`/products?brand=${encodeURIComponent(brandSlug)}`);
+      }
+    } else {
+      // Handle category click
+      if (brandId === "all") {
+        navigate("/brands");
+      } else {
+        navigate(`/products?category=${brandId}`);
+      }
+    }
   };
 
   return (
-    <div
-      onClick={handleClick}
-      onKeyDown={(e) => e.key === "Enter" && handleClick()}
-      role="button"
-      tabIndex={0}
-      className="group cursor-pointer bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4  hover:border-blue-300 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
-    >
-      <div className="flex flex-col items-center text-center">
-        {/* Brand Logo Container */}
-        <div className="relative mb-2 sm:mb-3">
-          <div
-            className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl flex items-center justify-center p-2 transition-all duration-300 ${
-              brand.featured
-                ? "bg-gradient-to-br from-blue-50 to-purple-50 group-hover:from-blue-100 group-hover:to-purple-100 "
-                : "bg-gray-50 group-hover:bg-blue-50 "
-            }`}
-          >
-            <img
-              src={brand.logo}
-              alt={brand.name}
-              className="w-full h-full object-contain"
-            />
+    <div className="px-2 lg:px-4 mx-auto bg-white max-w-6xl w-full m-5 rounded-lg overflow-hidden pt-8 sm:pt-12">
+      {/* Header Section */}
+      <div className="mb-2 px-2">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">
+          Shop by{" "}
+          <span className="bg-gradient-to-r from-purple-600 to-red-600 bg-clip-text text-transparent">
+            Popular Brands
+          </span>
+        </h2>
+        <p className="text-sm text-gray-600">
+          Discover devices from trusted brands
+        </p>
+      </div>
+
+      {/* Category Tabs - Single Row */}
+
+      {/* Individual Brands - Single Row */}
+      {uniqueBrands.length > 0 && (
+        <>
+          <div className="mb-6 px-2">
+            <div className="flex justify-between items-center">
+              <h4 className="text-lg font-semibold text-gray-900">
+                All Brands
+              </h4>
+              <button
+                onClick={() => navigate("/brands")}
+                className="text-sm text-red-600 hover:text-red-800 font-medium flex items-center gap-1"
+              >
+                View all
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </button>
+            </div>
           </div>
 
-          {/* Featured Badge */}
-          {brand.featured && (
-            <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-sm">
-              <FaStar className="text-white text-xs" />
-            </div>
-          )}
-        </div>
+          <div className="flex overflow-x-auto gap-3 lg:gap-4 hide-scrollbar no-scrollbar scroll-smooth pb-6 pt-2">
+            {uniqueBrands.map((brand) => {
+              const isActive = activeBrand === brand.id;
 
-        {/* Brand Name */}
-        <h3
-          className={`font-semibold text-xs sm:text-sm transition-colors duration-300 ${
-            brand.featured
-              ? "text-gray-900 group-hover:text-blue-600"
-              : "text-gray-700 group-hover:text-blue-600"
-          }`}
-        >
-          {brand.name}
-        </h3>
+              return (
+                <button
+                  key={brand.id}
+                  onClick={() => handleBrandClick(brand.id, brand)}
+                  className={`flex flex-col items-center p-3 lg:p-4 transition-all duration-300 min-w-[80px] lg:min-w-[90px] shrink-0 group ${
+                    isActive
+                      ? "text-gray-900 transform -translate-y-1"
+                      : "text-gray-600 hover:text-gray-900 hover:transform hover:scale-105"
+                  }`}
+                >
+                  {/* Icon Container */}
+                  <div
+                    className={`w-10 h-10 lg:w-12 lg:h-12 flex items-center justify-center rounded-xl p-2 transition-all duration-300 mb-2 ${
+                      isActive
+                        ? `bg-gradient-to-br ${brand.activeGradient} shadow-lg shadow-red-200/50`
+                        : "bg-gray-100 group-hover:bg-gray-200 group-hover:shadow-md"
+                    }`}
+                  >
+                    <div className="w-full h-full flex items-center justify-center">
+                      <img
+                        src={
+                          brand.logo ||
+                          "https://via.placeholder.com/80?text=Logo"
+                        }
+                        alt={brand.name || "brand"}
+                        loading="lazy"
+                        decoding="async"
+                        className={`w-full h-full object-contain transition-transform duration-300 ${
+                          isActive ? "scale-105" : "scale-100 opacity-80"
+                        }`}
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src =
+                            "https://via.placeholder.com/80?text=No+Logo";
+                        }}
+                      />
+                    </div>
+                  </div>
 
-        {/* Category Tag */}
-      </div>
+                  {/* Brand Name */}
+                  <span
+                    className={`font-medium text-xs text-center transition-all duration-300 line-clamp-2 ${
+                      isActive
+                        ? "text-gray-900 font-semibold"
+                        : "text-gray-600 group-hover:text-gray-900"
+                    }`}
+                  >
+                    {brand.name}
+                  </span>
+
+                  {/* Product Count (Small) */}
+
+                  {/* Active Indicator Dot */}
+                  <div
+                    className={`mt-1 w-1 h-1 rounded-full transition-all duration-300 ${
+                      isActive
+                        ? `bg-gradient-to-r ${brand.activeGradient} opacity-100`
+                        : "bg-transparent opacity-0"
+                    }`}
+                  />
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
     </div>
   );
 };
