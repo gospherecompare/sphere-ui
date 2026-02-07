@@ -21,7 +21,7 @@ const MobileFeaturesFinder = () => {
       id: "high-camera",
       name: "High MP Camera",
       icon: <FaCamera />,
-      activeGradient: "from-purple-600 to-red-600",
+      activeGradient: "from-blue-600 via-purple-500 to-blue-600",
       inactiveColor: "text-gray-400",
       description: "50MP+ cameras",
       count: 124,
@@ -30,7 +30,7 @@ const MobileFeaturesFinder = () => {
       id: "long-battery",
       name: "Long Battery",
       icon: <FaBatteryFull />,
-      activeGradient: "from-purple-600 to-red-600",
+      activeGradient: "from-blue-600 via-purple-500 to-blue-600",
       inactiveColor: "text-gray-400",
       description: "5000mAh+",
       count: 89,
@@ -39,7 +39,7 @@ const MobileFeaturesFinder = () => {
       id: "high-ram",
       name: "High RAM",
       icon: <FaMemory />,
-      activeGradient: "from-purple-600 to-red-600",
+      activeGradient: "from-blue-600 via-purple-500 to-blue-600",
       inactiveColor: "text-gray-400",
       description: "8GB+ RAM",
       count: 156,
@@ -48,7 +48,7 @@ const MobileFeaturesFinder = () => {
       id: "gaming",
       name: "Gaming",
       icon: <FaGamepad />,
-      activeGradient: "from-purple-600 to-red-600",
+      activeGradient: "from-blue-600 via-purple-500 to-blue-600",
       inactiveColor: "text-gray-400",
       description: "Gaming phones",
       count: 45,
@@ -57,7 +57,7 @@ const MobileFeaturesFinder = () => {
       id: "fast-charging",
       name: "Fast Charge",
       icon: <FaBolt />,
-      activeGradient: "from-purple-600 to-red-600",
+      activeGradient: "from-blue-600 via-purple-500 to-blue-600",
       inactiveColor: "text-gray-400",
       description: "65W+ charging",
       count: 67,
@@ -66,7 +66,7 @@ const MobileFeaturesFinder = () => {
       id: "amoled",
       name: "AMOLED",
       icon: <FaMobileAlt />,
-      activeGradient: "from-purple-600 to-red-600",
+      activeGradient: "from-blue-600 via-purple-500 to-blue-600",
       inactiveColor: "text-gray-400",
       description: "AMOLED displays",
       count: 98,
@@ -75,7 +75,7 @@ const MobileFeaturesFinder = () => {
       id: "fingerprint",
       name: "In-display FP",
       icon: <FaFingerprint />,
-      activeGradient: "from-purple-600 to-red-600",
+      activeGradient: "from-blue-600 via-purple-500 to-blue-600",
       inactiveColor: "text-gray-400",
       description: "In-display sensor",
       count: 112,
@@ -84,7 +84,7 @@ const MobileFeaturesFinder = () => {
       id: "5g",
       name: "5G Ready",
       icon: <FaCheckCircle />,
-      activeGradient: "from-purple-600 to-red-600",
+      activeGradient: "from-blue-600 via-purple-500 to-blue-600",
       inactiveColor: "text-gray-400",
       description: "5G connectivity",
       count: 178,
@@ -114,10 +114,10 @@ const MobileFeaturesFinder = () => {
       {/* Header Section */}
       <div className="mb-6 px-2">
         <div className="flex items-center gap-2 mb-2">
-          <FaMobileAlt className="text-red-500 text-lg" />
+          <FaMobileAlt className="text-purple-500 text-lg" />
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
             Mobiles by{" "}
-            <span className="bg-gradient-to-r from-purple-600 to-red-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent">
               Popular Features
             </span>
           </h2>

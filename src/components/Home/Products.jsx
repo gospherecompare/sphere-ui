@@ -46,14 +46,14 @@ const ProductsNav = () => {
       id: "home",
       name: "Home",
       icon: <FaHome />,
-      activeGradient: "from-purple-600 to-red-600",
+      activeGradient: "from-blue-600 via-purple-500 to-blue-600",
       inactiveColor: "text-gray-400",
     },
     {
       id: "smartphones",
       name: "Smartphones",
       icon: <FaMobileAlt />,
-      activeGradient: "from-purple-600 to-red-600",
+      activeGradient: "from-blue-600 via-purple-500 to-blue-600",
       inactiveColor: "text-gray-400",
     },
     {

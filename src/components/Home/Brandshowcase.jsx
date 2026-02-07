@@ -40,10 +40,10 @@ const PopularComparisons = ({ data: initialData = [] }) => {
       {/* Header Section */}
       <div className="mb-6 px-2">
         <div className="flex items-center gap-2 mb-2">
-          <FaExchangeAlt className="text-red-500 text-lg" />
+          <FaExchangeAlt className="text-purple-500 text-lg" />
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
             Popular{" "}
-            <span className="bg-gradient-to-r from-purple-600 to-red-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent">
               Comparisons
             </span>
           </h2>
@@ -62,7 +62,7 @@ const PopularComparisons = ({ data: initialData = [] }) => {
             className="group transition-all duration-300 hover:transform hover:-translate-y-1"
           >
             {/* Comparison Card */}
-            <div className="relative bg-gray-100 rounded-xl p-1 sm:p-3 transition-all duration-300 group-hover:shadow-lg group-hover:border-red-300 h-12 sm:h-14">
+            <div className="relative bg-gray-100 rounded-xl p-1 sm:p-3 transition-all duration-300 group-hover:shadow-lg group-hover:border-blue-300 h-12 sm:h-14">
               {/* Devices Row */}
               <div className="flex items-center justify-between">
                 {/* Left Device */}
@@ -85,7 +85,7 @@ const PopularComparisons = ({ data: initialData = [] }) => {
                         </div>
                       )}
                     </div>
-                    <h6 className="text-[11px] sm:text-sm font-semibold text-gray-900 truncate group-hover:text-red-600 transition-colors">
+                    <h6 className="text-[11px] sm:text-sm font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors">
                       {item.left_name}
                     </h6>
                   </div>
@@ -118,7 +118,7 @@ const PopularComparisons = ({ data: initialData = [] }) => {
                         </div>
                       )}
                     </div>
-                    <h6 className="text-[11px] sm:text-sm font-semibold text-gray-900 truncate text-right group-hover:text-green-600 transition-colors">
+                    <h6 className="text-[11px] sm:text-sm font-semibold text-gray-900 truncate text-right group-hover:text-purple-600 transition-colors">
                       {item.right_name}
                     </h6>
                   </div>
@@ -136,8 +136,8 @@ const PopularComparisons = ({ data: initialData = [] }) => {
       {/* Empty State */}
       {data.length === 0 && (
         <div className="text-center py-8 px-2">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-50 mb-3">
-            <FaExchangeAlt className="text-red-500 text-lg" />
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-50 mb-3">
+            <FaExchangeAlt className="text-blue-500 text-lg" />
           </div>
           <p className="text-gray-600 font-medium text-sm">
             No comparisons available yet

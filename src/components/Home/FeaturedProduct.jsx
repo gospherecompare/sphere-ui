@@ -8,64 +8,64 @@ const priceRanges = [
     label: "Under ₹10,000",
     value: 10000,
     slug: "under-10000",
-    gradient: "from-purple-600 to-red-600",
-    color: "bg-gradient-to-r from-purple-600 to-red-600",
+    gradient: "from-blue-600 via-purple-500 to-blue-600",
+    color: "bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600",
     icon: "💰",
   },
   {
     label: "Under ₹15,000",
     value: 15000,
     slug: "under-15000",
-    gradient: "from-purple-600 to-red-600",
-    color: "bg-gradient-to-r from-purple-600 to-red-600",
+    gradient: "from-blue-600 via-purple-500 to-blue-600",
+    color: "bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600",
     icon: "📱",
   },
   {
     label: "Under ₹20,000",
     value: 20000,
     slug: "under-20000",
-    gradient: "from-purple-600 to-red-600",
-    color: "bg-gradient-to-r from-purple-600 to-red-600",
+    gradient: "from-blue-600 via-purple-500 to-blue-600",
+    color: "bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600",
     icon: "⚡",
   },
   {
     label: "Under ₹25,000",
     value: 25000,
     slug: "under-25000",
-    gradient: "from-purple-600 to-red-600",
-    color: "bg-gradient-to-r from-purple-600 to-red-600",
+    gradient: "from-blue-600 via-purple-500 to-blue-600",
+    color: "bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600",
     icon: "📸",
   },
   {
     label: "Under ₹30,000",
     value: 30000,
     slug: "under-30000",
-    gradient: "from-purple-600 to-red-600",
-    color: "bg-gradient-to-r from-purple-600 to-red-600",
+    gradient: "from-blue-600 via-purple-500 to-blue-600",
+    color: "bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600",
     icon: "🎮",
   },
   {
     label: "Under ₹40,000",
     value: 40000,
     slug: "under-40000",
-    gradient: "from-purple-600 to-red-600",
-    color: "bg-gradient-to-r from-purple-600 to-red-600",
+    gradient: "from-blue-600 via-purple-500 to-blue-600",
+    color: "bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600",
     icon: "🌟",
   },
   {
     label: "Under ₹50,000",
     value: 50000,
     slug: "under-50000",
-    gradient: "from-purple-600 to-red-600",
-    color: "bg-gradient-to-r from-purple-600 to-red-600",
+    gradient: "from-blue-600 via-purple-500 to-blue-600",
+    color: "bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600",
     icon: "💎",
   },
   {
     label: "Above ₹50,000",
     value: "above",
     slug: "above-50000",
-    gradient: "from-purple-600 to-red-600",
-    color: "bg-gradient-to-r from-purple-600 to-red-600",
+    gradient: "from-blue-600 via-purple-500 to-blue-600",
+    color: "bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600",
     icon: "👑",
   },
 ];
@@ -85,13 +85,13 @@ const MobilePriceFinder = () => {
       {/* Header Section */}
       <div className="mb-8 px-2">
         <div className="flex items-center gap-3 mb-3">
-          <div className="p-2 rounded-xl bg-gradient-to-r from-purple-500 to-red-500 shadow-lg">
+          <div className="p-2 rounded-xl bg-gradient from-blue-600 via-purple-500 to-blue-600 shadow-lg">
             <FaFilter className="text-white text-lg" />
           </div>
           <div>
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
               Find Your Perfect Phone by{" "}
-              <span className="bg-gradient-to-r from-purple-600 to-red-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent">
                 Budget
               </span>
             </h2>
@@ -200,7 +200,7 @@ const MobilePriceFinder = () => {
 
           <button
             onClick={() => navigate("/smartphones")}
-            className="group flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-red-600 text-white rounded-full hover:from-purple-600 hover:to-red-600 transition-all duration-300 shadow-lg hover:shadow-xl hover:gap-3"
+            className="group flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 text-white rounded-full hover:from-purple-600 hover:to-red-600 transition-all duration-300 shadow-lg hover:shadow-xl hover:gap-3"
           >
             <span className="font-semibold">View All Phones</span>
             <FaArrowRight className="transition-transform duration-300 group-hover:translate-x-1" />

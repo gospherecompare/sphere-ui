@@ -23,7 +23,7 @@ const TrendingSection = () => {
       id: "smartphone",
       name: "Smartphones",
       icon: <FaMobileAlt />,
-      activeGradient: "from-purple-600 to-red-600",
+      activeGradient: "from-blue-600 via-purple-500 to-blue-600",
       inactiveColor: "text-gray-400",
       count: 156,
     },
@@ -31,7 +31,7 @@ const TrendingSection = () => {
       id: "laptop",
       name: "Laptops",
       icon: <FaLaptop />,
-      activeGradient: "from-purple-600 to-red-600",
+      activeGradient: "from-blue-600 via-purple-500 to-blue-600",
       inactiveColor: "text-gray-400",
       count: 89,
     },
@@ -39,7 +39,7 @@ const TrendingSection = () => {
       id: "appliance",
       name: "Appliances",
       icon: <FaSnowflake />,
-      activeGradient: "from-purple-600 to-red-600",
+      activeGradient: "from-blue-600 via-purple-500 to-blue-600",
       inactiveColor: "text-gray-400",
       count: 124,
     },
@@ -47,7 +47,7 @@ const TrendingSection = () => {
       id: "networking",
       name: "Networking",
       icon: <FaWifi />,
-      activeGradient: "from-purple-600 to-red-600",
+      activeGradient: "from-blue-600 via-purple-500 to-blue-600",
       inactiveColor: "text-gray-400",
       count: 67,
     },
@@ -150,7 +150,7 @@ const TrendingSection = () => {
           <FaFire className="text-red-500 text-lg" />
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
             Trending{" "}
-            <span className="bg-gradient-to-r from-purple-600 to-red-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent">
               Products
             </span>
           </h2>
@@ -272,7 +272,7 @@ const TrendingSection = () => {
                             }}
                           />
                         ) : (
-                          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-purple-500 to-red-500 flex items-center justify-center">
+                          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full  flex items-center justify-center">
                             <span className="text-lg font-bold text-gray-500">
                               {device.brand?.charAt(0) || "P"}
                             </span>

@@ -49,6 +49,7 @@ import Cookies from "js-cookie";
 import { useDevice } from "../../hooks/useDevice";
 import { Scale } from "lucide-react";
 import { createProductPath, generateSlug } from "../../utils/slugGenerator";
+import HookLogo from "../ui/HookLogo";
 
 // Icons - matching Vijay Sales style
 import {
@@ -1164,78 +1165,26 @@ const Header = () => {
   const MainHeader = () => (
     <>
       {/* MOBILE HEADER (≤ 768px) */}
-      <div className="md:hidden border-b bg-purple-400 border-purple-50 z-40">
+      <div className="md:hidden border-b bg-white border-purple-50 z-40">
         {/* Mobile Top Row: Logo (left) | Icons (right) */}
         <div className="flex items-center justify-between px-4 py-3 gap-3">
           {/* Logo (mobile) */}
-          <Link to="/" className="flex-shrink-0 flex items-center">
-            <div className="logo-wrapper flex items-center gap-2">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 200 200"
-                className="w-12 h-12"
-                aria-hidden="true"
-              >
-                <defs>
-                  <linearGradient
-                    id="hook-grad-1"
-                    x1="0%"
-                    y1="0%"
-                    x2="0%"
-                    y2="100%"
-                  >
-                    <stop offset="0%" stopColor="#7c3aed" />
-                    <stop offset="100%" stopColor="#ef4444" />
-                  </linearGradient>
-                  <linearGradient
-                    id="hook-grad-2"
-                    x1="0%"
-                    y1="0%"
-                    x2="0%"
-                    y2="100%"
-                  >
-                    <stop offset="0%" stopColor="#a855f7" />
-                    <stop offset="100%" stopColor="#f87171" />
-                  </linearGradient>
-                </defs>
-                <rect
-                  x="48"
-                  y="30"
-                  width="52"
-                  height="140"
-                  rx="24"
-                  fill="url(#hook-grad-1)"
-                />
-                <rect
-                  x="106"
-                  y="24"
-                  width="52"
-                  height="152"
-                  rx="24"
-                  fill="url(#hook-grad-2)"
-                />
-                <circle cx="100" cy="100" r="10" fill="#ffffff" />
-                <circle cx="80" cy="70" r="7" fill="#ffffff" />
-                <circle cx="80" cy="130" r="7" fill="#ffffff" />
-              </svg>
-              <h4 className="logo-tagline-mobile text-white">
-                Smart Tech. Smart Choice.
-              </h4>
-            </div>
+          <Link to="/" className="flex items-center min-w-0">
+            <HookLogo className="block h-8 w-auto max-w-[180px] text-white sm:h-9 sm:max-w-[220px]" />
           </Link>
 
           {/* Right Icons: Compare + Menu */}
           <div className="flex items-center gap-2 flex-shrink-0">
             <Link
               to="/compare"
-              className="p-2.5 rounded-lg hover:bg-gray-100 transition-all duration-200 text-white hover:text-gray-900"
+              className="p-2.5 rounded-lg hover:bg-gray-100 transition-all duration-200 text-gray-600 hover:text-gray-900"
               aria-label="Compare"
             >
               <Scale className="w-5 h-5" />
             </Link>
 
             <button
-              className="p-2.5 rounded-lg hover:bg-gray-100 transition-all duration-200 flex-shrink-0 text-white hover:text-gray-900"
+              className="p-2.5 rounded-lg hover:bg-gray-100 transition-all duration-200 flex-shrink-0 text-gray-600 hover:text-gray-900"
               onClick={() => setIsMenuOpen(true)}
               aria-label="Open menu"
             >
@@ -1285,58 +1234,8 @@ const Header = () => {
         <div className="max-w-7xl mx-auto px-3 sm:px-6">
           <div className="flex items-center justify-between gap-2 sm:gap-8">
             {/* Logo */}
-            <Link
-              to="/"
-              className="flex items-center flex-shrink-0 logo-wrapper"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 200 200"
-                className="w-14 h-14"
-                aria-hidden="true"
-              >
-                <defs>
-                  <linearGradient
-                    id="hook-grad-1-desktop"
-                    x1="0%"
-                    y1="0%"
-                    x2="0%"
-                    y2="100%"
-                  >
-                    <stop offset="0%" stopColor="#7c3aed" />
-                    <stop offset="100%" stopColor="#ef4444" />
-                  </linearGradient>
-                  <linearGradient
-                    id="hook-grad-2-desktop"
-                    x1="0%"
-                    y1="0%"
-                    x2="0%"
-                    y2="100%"
-                  >
-                    <stop offset="0%" stopColor="#a855f7" />
-                    <stop offset="100%" stopColor="#f87171" />
-                  </linearGradient>
-                </defs>
-                <rect
-                  x="48"
-                  y="30"
-                  width="52"
-                  height="140"
-                  rx="24"
-                  fill="url(#hook-grad-1-desktop)"
-                />
-                <rect
-                  x="106"
-                  y="24"
-                  width="52"
-                  height="152"
-                  rx="24"
-                  fill="url(#hook-grad-2-desktop)"
-                />
-                <circle cx="100" cy="100" r="10" fill="#ffffff" />
-                <circle cx="80" cy="70" r="7" fill="#ffffff" />
-                <circle cx="80" cy="130" r="7" fill="#ffffff" />
-              </svg>
+            <Link to="/" className="flex items-center flex-shrink-0">
+              <HookLogo className="block h-9 w-auto text-gray-900 lg:h-10" />
             </Link>
 
             {/* Desktop Search Bar - Professional Style */}

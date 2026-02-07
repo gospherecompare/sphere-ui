@@ -18,7 +18,7 @@ const PopularBrands = () => {
         id: "all",
         name: "All Brands",
         icon: <FaTag />,
-        activeGradient: "from-purple-600 to-red-600",
+        activeGradient: "from-blue-600 via-purple-500 to-blue-600",
         inactiveColor: "text-gray-400",
         count: allBrands.length,
       },
@@ -68,7 +68,7 @@ const PopularBrands = () => {
         id: "smartphone",
         name: "Smartphones",
         icon: <FaMobileAlt />,
-        activeGradient: "from-purple-600 to-red-600",
+        activeGradient: "from-blue-600 via-purple-500 to-blue-600",
         inactiveColor: "text-gray-400",
         count: smartphoneBrands.length,
         brands: smartphoneBrands,
@@ -80,7 +80,7 @@ const PopularBrands = () => {
         id: "laptop",
         name: "Laptops",
         icon: <FaLaptop />,
-        activeGradient: "from-purple-600 to-red-600",
+        activeGradient: "from-blue-600 via-purple-500 to-blue-600",
         inactiveColor: "text-gray-400",
         count: laptopBrands.length,
         brands: laptopBrands,
@@ -92,7 +92,7 @@ const PopularBrands = () => {
         id: "appliance",
         name: "Appliances",
         icon: <FaPlug />,
-        activeGradient: "from-purple-600 to-red-600",
+        activeGradient: "from-blue-600 via-purple-500 to-blue-600",
         inactiveColor: "text-gray-400",
         count: applianceBrands.length,
         brands: applianceBrands,
@@ -104,7 +104,7 @@ const PopularBrands = () => {
         id: "networking",
         name: "Networking",
         icon: <FaWifi />,
-        activeGradient: "from-purple-600 to-red-600",
+        activeGradient: "from-blue-600 via-purple-500 to-blue-600",
         inactiveColor: "text-gray-400",
         count: networkingBrands.length,
         brands: networkingBrands,
@@ -129,24 +129,24 @@ const PopularBrands = () => {
           brand.category || brand.product_type || "",
         ).toLowerCase();
         let icon = <FaTag />;
-        let gradient = "from-purple-600 to-red-600";
+        let gradient = "from-blue-600 via-purple-500 to-blue-600";
 
         if (type.includes("smartphone") || type.includes("mobile")) {
           icon = <FaMobileAlt />;
-          gradient = "from-purple-600 to-red-600";
+          gradient = "from-blue-600 via-purple-500 to-blue-600";
         } else if (type.includes("laptop") || type.includes("computer")) {
           icon = <FaLaptop />;
-          gradient = "from-purple-600 to-red-600";
+          gradient = "from-blue-600 via-purple-500 to-blue-600";
         } else if (type.includes("appliance") || type.includes("home")) {
           icon = <FaPlug />;
-          gradient = "from-purple-600 to-red-600";
+          gradient = "from-blue-600 via-purple-500 to-blue-600";
         } else if (
           type.includes("network") ||
           type.includes("router") ||
           type.includes("wifi")
         ) {
           icon = <FaWifi />;
-          gradient = "from-purple-600 to-red-600";
+          gradient = "from-blue-600 via-purple-500 to-blue-600";
         }
 
         brandsList.push({
@@ -213,7 +213,7 @@ const PopularBrands = () => {
       <div className="mb-2 px-2">
         <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">
           Shop by{" "}
-          <span className="bg-gradient-to-r from-purple-600 to-red-600 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent">
             Popular Brands
           </span>
         </h2>
@@ -234,7 +234,7 @@ const PopularBrands = () => {
               </h4>
               <button
                 onClick={() => navigate("/brands")}
-                className="text-sm text-red-600 hover:text-red-800 font-medium flex items-center gap-1"
+                className="text-sm text-purple-600 hover:text-red-800 font-medium flex items-center gap-1"
               >
                 View all
                 <svg
