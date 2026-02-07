@@ -44,7 +44,7 @@
  * - Single logo component (updated to "SmartArena")
  */
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import Cookies from "js-cookie";
 import { useDevice } from "../../hooks/useDevice";
 import { Scale } from "lucide-react";
@@ -115,6 +115,7 @@ const Header = () => {
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
   const megaMenuRef = useRef(null);
   const authDropdownRef = useRef(null);
   const searchRef = useRef(null);
@@ -1388,69 +1389,125 @@ const Header = () => {
         <>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            className="fixed inset-0 bg-black/40 z-40 lg:hidden"
             onClick={() => setIsMenuOpen(false)}
           />
 
           {/* Drawer */}
           <div
-            className={`fixed top-0 left-0 bottom-0 w-80 bg-white border-r border-purple-300 z-50 transform transition-transform duration-300 lg:hidden ${
+            className={`fixed top-0 left-0 bottom-0 w-80 bg-white z-50 transform transition-transform duration-300 lg:hidden shadow-2xl ring-1 ring-black/5 ${
               isMenuOpen ? "translate-x-0" : "-translate-x-full"
             }`}
           >
             <div className="flex flex-col h-full">
               {/* Drawer Header */}
-              <div className="p-5 bg-gradient-to-r from-purple-400 to-red-600 text-white border-b border-purple-300">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    {isLoggedIn ? (
-                      <></>
-                    ) : (
-                      <>
-                        <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0"></div>
-                        <h3 className="text-lg font-bold text-white">Hook</h3>
-                      </>
-                    )}
+              <div className="bg-white border-b border-gray-200">
+                <div className="p-4">
+                  <div className="flex items-center justify-between">
+                    <HookLogo className="h-9 w-auto text-gray-900" />
+                    <button
+                      type="button"
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                      onClick={() => setIsMenuOpen(false)}
+                      aria-label="Close menu"
+                    >
+                      <FaTimes className="w-5 h-5 text-gray-600" />
+                    </button>
                   </div>
-                  <button
-                    className="p-2 hover:bg-red-500 rounded-lg transition-colors duration-200"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <FaTimes className="w-5 h-5" />
-                  </button>
-                </div>
-                <div className="mt-4">
-                  <div className="text-sm text-red-100">
-                    {isLoggedIn ? "Welcome back!" : "Welcome to Hook"}
-                  </div>
-                  {isLoggedIn && (
-                    <div className="flex items-center space-x-3 mt-2">
-                      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                        <FaUser className="w-4 h-4 text-red-600" />
+
+                  {isLoggedIn ? (
+                    <div className="mt-4 flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
+                        <FaUser className="w-4 h-4 text-gray-700" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-bold text-gray-800 truncate">
+                        <div className="text-sm font-semibold text-gray-900 truncate">
                           {userName}
                         </div>
-                        <div className="text-xs text-gray-600 truncate">
+                        <div className="text-xs text-gray-500 truncate">
                           {userEmail}
                         </div>
                       </div>
                     </div>
+                  ) : (
+                    <p className="mt-4 text-sm text-gray-600">
+                      <Link
+                        to="/login"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="font-semibold text-gray-900 hover:text-purple-700 transition-colors"
+                      >
+                        Login
+                      </Link>
+                      <span className="mx-1 text-gray-400">/</span>
+                      <Link
+                        to="/signup"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="font-semibold text-gray-900 hover:text-purple-700 transition-colors"
+                      >
+                        Signup
+                      </Link>
+                    </p>
                   )}
                 </div>
               </div>
 
               {/* Drawer Content */}
               <div className="flex-1 overflow-y-auto">
+                {/* Quick Links */}
                 <div className="p-4">
-                  <h4 className="font-bold text-gray-700 mb-3 text-lg">
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                    Quick Links
+                  </h4>
+                  <div className="space-y-1">
+                    <button
+                      type="button"
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors text-gray-900"
+                      onClick={() => {
+                        navigate("/");
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      <FaHome className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm font-medium">Home</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors text-gray-900"
+                      onClick={() => {
+                        navigate("/compare");
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      <Scale className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm font-medium">Compare</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors text-gray-900"
+                      onClick={() => {
+                        navigate("/wishlist");
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      <FaHeart className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm font-medium">Wishlist</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Categories */}
+                <div className="px-4 pb-4">
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                     Categories
                   </h4>
-                  {categoriesWithBrands.map((category) => (
-                    <div key={category.id} className="mb-2">
+                  <div className="divide-y divide-gray-200 rounded-lg border border-gray-200 overflow-hidden">
+                    {categoriesWithBrands.map((category) => (
                       <button
-                        className="flex items-center justify-between w-full p-3 bg-gray-50 rounded-lg hover:bg-purple-50 transition-all duration-200 mega-menu-item group"
+                        key={category.id}
+                        type="button"
+                        className="w-full flex items-center justify-between px-3 py-2.5 bg-white hover:bg-gray-50 transition-colors group"
                         onClick={() => {
                           const route = `/${mapProductTypeToRoute(
                             category.id,
@@ -1459,28 +1516,19 @@ const Header = () => {
                           setIsMenuOpen(false);
                         }}
                       >
-                        <div className="flex items-center">
-                          <span className="text-red-600 mr-3 group-hover:text-purple-600 transition-colors">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className="text-gray-500 group-hover:text-purple-600 transition-colors">
                             {category.icon}
                           </span>
-                          <div className="text-left">
-                            <span className="font-medium group-hover:text-purple-700">
-                              {category.name}
-                            </span>
-                            {category.badge && (
-                              <span className="ml-2 px-2 py-1 bg-red-600 text-white text-xs rounded category-badge">
-                                {category.badge}
-                              </span>
-                            )}
-                          </div>
+                          <span className="text-sm font-medium text-gray-900 truncate">
+                            {category.name}
+                          </span>
                         </div>
-                        <FaChevronRight className="w-4 h-4 text-gray-400 group-hover:text-purple-600 group-hover:translate-x-1 transition-all" />
+                        <FaChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-700 transition-colors" />
                       </button>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-
-                {/* Quick Links */}
 
                 {/* Logout / Today's Deals */}
                 <div className="p-4 border-t border-gray-200 space-y-3">
@@ -1490,32 +1538,13 @@ const Header = () => {
                         handleLogout();
                         setIsMenuOpen(false);
                       }}
-                      className="w-full flex items-center justify-center space-x-2 py-3 bg-gradient-to-r from-purple-600 to-red-600 text-white rounded-lg hover:from-purple-600 hover:to-red-600 transition font-semibold hover-lift shadow-md"
+                      type="button"
+                      className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-semibold text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
                     >
                       <FaTimes className="text-lg" />
                       <span>Logout</span>
                     </button>
-                  ) : (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleLogin}
-                        className="flex-1 flex items-center justify-center space-x-2 py-3 bg-gradient-to-r from-purple-600 to-red-600 text-white rounded-lg hover:from-purple-600 hover:to-red-600 transition font-semibold hover-lift shadow-md"
-                      >
-                        <FaSignInAlt className="text-lg" />
-                        <span>Login</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          setIsMenuOpen(false);
-                          navigate("/signup");
-                        }}
-                        className="flex-1 flex items-center justify-center space-x-2 py-3 bg-gradient-to-r from-purple-600 to-red-600 text-white rounded-lg hover:from-purple-600 hover:to-red-600 transition font-semibold hover-lift shadow-md"
-                      >
-                        <FaUserPlus className="text-lg" />
-                        <span>Sign Up</span>
-                      </button>
-                    </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -1538,19 +1567,33 @@ const Header = () => {
       <div className="bg-white border-b border-gray-200 lg:hidden">
         <div className="max-w-6xl mx-auto px-2 sm:px-4">
           <div className="overflow-x-auto no-scrollbar">
-            <nav className="flex gap-1 sm:gap-3 py-1.5 sm:py-2 min-w-max">
-              {navTabs.map((tab, index) => (
-                <a
-                  key={index}
-                  href={tab.link}
-                  className="flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-50 hover:bg-gradient-to-r hover:from-purple-600 hover:to-red-600 text-gray-700 hover:text-red-600 rounded-lg transition-all duration-200 font-medium text-sm sm:text-base whitespace-nowrap flex-shrink-0 border border-gray-200 hover:border-red-300 smooth-transition hover-lift"
-                >
-                  <span className="text-gray-600 hover:text-red-600 transition-colors">
-                    {tab.icon}
-                  </span>
-                  <span>{tab.label}</span>
-                </a>
-              ))}
+            <nav className="flex gap-6 py-2 min-w-max">
+              {navTabs.map((tab, index) => {
+                const isActive =
+                  location.pathname === tab.link ||
+                  location.pathname.startsWith(`${tab.link}/`);
+
+                return (
+                  <Link
+                    key={index}
+                    to={tab.link}
+                    className={`flex items-center gap-2 px-1 pb-2 border-b-2 transition-colors duration-200 font-medium text-sm sm:text-base whitespace-nowrap flex-shrink-0 ${
+                      isActive
+                        ? "text-purple-700 border-purple-600"
+                        : "text-gray-600 border-transparent hover:text-gray-900"
+                    }`}
+                  >
+                    <span
+                      className={`transition-colors ${
+                        isActive ? "text-purple-700" : "text-gray-500"
+                      }`}
+                    >
+                      {tab.icon}
+                    </span>
+                    <span>{tab.label}</span>
+                  </Link>
+                );
+              })}
             </nav>
           </div>
         </div>
@@ -1567,12 +1610,12 @@ const Header = () => {
         <CategoryNavBar />
       </header>
 
-      <QuickNavTabs />
-
       <MobileMenuDrawer />
 
-      {/* Spacer for fixed header - Mobile: header(3.5rem) + search(3.5rem) + quick nav(3.5rem) */}
-      <div className="h-12 md:hidden" />
+      {/* Spacer for fixed header (mobile only) */}
+      <div className="h-32 md:hidden" />
+
+      <QuickNavTabs />
     </>
   );
 };

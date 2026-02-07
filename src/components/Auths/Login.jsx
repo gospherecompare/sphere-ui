@@ -203,7 +203,7 @@ const Login = ({
       if (rememberMe) {
         Cookies.set("remembered_email", formData.email.trim().toLowerCase(), {
           expires: 30, // Store for 30 days
-          secure: process.env.NODE_ENV === "production",
+          secure: import.meta.env.PROD,
           sameSite: "strict",
         });
       } else {
@@ -272,12 +272,12 @@ const Login = ({
             onChange={handleInputChange}
             onBlur={handleBlur}
             autoComplete={autoComplete}
-            className={`pl-10 pr-10 w-full px-4 py-3 border rounded-full transition-all duration-200 focus:ring-2 focus:outline-none ${
+            className={`w-full pl-10 pr-10 px-3.5 py-2.5 border rounded-lg bg-white transition-colors duration-200 focus:ring-2 focus:outline-none ${
               hasError
                 ? "border-red-300 bg-red-50 focus:ring-red-500 focus:border-red-500"
                 : showSuccess
                   ? "border-green-300 bg-green-50 focus:ring-green-500 focus:border-green-500"
-                  : "border-gray-200 bg-gray-50 focus:ring-blue-500 focus:border-blue-500"
+                  : "border-gray-300 focus:ring-purple-500 focus:border-purple-500"
             }`}
             placeholder={placeholder}
             required={required}
@@ -325,9 +325,9 @@ const Login = ({
   if (!asPage && !isOpen) return null;
 
   const content = (
-    <div className="relative bg-white  overflow-hidden shadow-xl">
-      {/* Header with gradient */}
-      <div className=" border-b border-gray-100 px-8 py-6">
+    <div className="bg-white border border-purple-100 shadow-sm ">
+      {/* Header */}
+      <div className="border-b border-gray-100 px-6 py-5">
         <div className="flex items-center justify-between mb-4">
           {onClose && (
             <button
@@ -340,15 +340,13 @@ const Login = ({
         </div>
 
         <div>
-          <h3 className="text-2xl font-bold text-gray-900">Welcome Back</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Sign in to continue to SmartArena
-          </p>
+          <h3 className="text-xl font-semibold text-gray-900">Welcome back</h3>
+          <p className="mt-1 text-sm text-gray-500">Sign in to Hook</p>
         </div>
       </div>
 
       {/* Content */}
-      <div className="px-8 py-6">
+      <div className="px-6 py-6">
         {/* Social Login (Optional) */}
         {false && (
           <>
@@ -388,10 +386,10 @@ const Login = ({
 
         {/* API Error Message */}
         {apiError && (
-          <div className="mb-6 p-4 bg-gradient-to-r from-purple-600 to-blue-600 border border-red-100 rounded-xl">
+          <div className="mb-6 p-3.5 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center">
-              <FaExclamationCircle className="text-red-500 mr-3" />
-              <p className="text-sm text-red-600 font-medium">{apiError}</p>
+              <FaExclamationCircle className="text-red-600 mr-2" />
+              <p className="text-sm text-red-700 font-medium">{apiError}</p>
             </div>
           </div>
         )}
@@ -441,7 +439,7 @@ const Login = ({
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full flex items-center justify-center py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-full hover:shadow-lg hover:from-purple-600 hover:to-blue-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center py-2.5 px-4 bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600  text-white font-semibold rounded-full hover:bg-gray-800 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (
               <>
@@ -476,19 +474,18 @@ const Login = ({
           </p>
         </div>
       </div>
-
-      {/* Bottom Gradient Border */}
-      <div className="h-1 bg-gradient-to-r from-purple-600 via-purple-500 to-blue-600"></div>
     </div>
   );
 
   if (asPage) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-600">
+      <div className="min-h-screen bg-white max-w-6xl mx-auto">
         {/* Header Back Button */}
 
-        <div className="flex items-center justify-center p-4 md:p-6">
-          <div className="relative w-full max-w-md mx-auto mt-8">{content}</div>
+        <div className="max-w-6xl mx-auto px-4 py-10">
+          <div className="flex items-center justify-center">
+            <div className="w-full max-w-md">{content}</div>
+          </div>
         </div>
       </div>
     );
@@ -508,5 +505,3 @@ const Login = ({
 };
 
 export default Login;
-
-

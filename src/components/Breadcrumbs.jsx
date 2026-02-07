@@ -42,7 +42,7 @@ export default function Breadcrumbs() {
   if (!breadcrumbs || breadcrumbs.length <= 1) return null;
 
   return (
-    <div className="px-2 pt-15 md:pt-0 lg:px-4 mx-auto bg-white max-w-6xl w-full m-0 overflow-hidden pb-1">
+    <div className="px-2 lg:px-4 mx-auto bg-white max-w-6xl w-full m-0 overflow-hidden pb-1">
       <nav
         aria-label="breadcrumb"
         className="flex items-center overflow-x-auto gap-1 hide-scrollbar no-scrollbar scroll-smooth py-2"

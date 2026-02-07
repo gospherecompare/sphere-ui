@@ -1252,7 +1252,7 @@ Price: ${price}
             return (
               <div
                 key={gkey}
-                className="bg-gradient-to-br from-purple-600 to-red-600 rounded-xl p-4 border border-purple-100 shadow-sm"
+                className="bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl p-4 border border-purple-100 shadow-sm"
               >
                 <h4 className="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wide text-purple-900">
                   {toNormalCase(gkey)}
@@ -1301,7 +1301,7 @@ Price: ${price}
         {entries.length > limit && (
           <button
             onClick={() => setShowAllSpecs(!showAllSpecs)}
-            className="w-full mt-4 py-3 px-4 bg-gradient-to-r from-purple-600 to-red-600 hover:from-purple-600 hover:to-red-600 text-white font-bold text-sm rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg"
+            className="w-full mt-4 py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-600 hover:to-blue-600 text-white font-bold text-sm rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg"
           >
             {showAllSpecs
               ? "Show Less"
@@ -1495,7 +1495,7 @@ Price: ${price}
                     ? `${mobileData.battery.battery_capacity_mah} mAh`
                     : mobileData.battery?.capacity || "N/A",
                   icon: FaBatteryFull,
-                  color: "bg-red-50 text-red-700 border-red-100",
+                  color: "bg-blue-50 text-blue-700 border-blue-100",
                 },
               ].map((spec, idx) => (
                 <div
@@ -1796,7 +1796,7 @@ Price: ${price}
         return (
           <div className="bg-white rounded-lg p-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <FaBatteryFull className="text-red-500" />
+              <FaBatteryFull className="text-blue-500" />
               Battery
             </h3>
             {renderSpecTable(mobileData.battery)}
@@ -2024,18 +2024,18 @@ Price: ${price}
         </div>
       )}
 
-      <div className="bg-white overflow-hidden">
+      <div className="bg-gray-50 overflow-hidden">
         {/* Mobile Header */}
-        <div className="p-4 border-b border-indigo-200 lg:hidden">
+        <div className="p-4 bg-white border-b border-gray-200 lg:hidden">
           <div className="flex justify-between items-start mb-2">
             <div>
-              <h1 className="text-xl font-extrabold tracking-tight mb-1 bg-gradient-to-r from-purple-100 via-purple-100 to-red-100 text-transparent bg-clip-text leading-tight">
+              <h1 className="text-xl font-extrabold tracking-tight mb-1 text-gray-900 leading-tight">
                 {buildDescriptiveTitle(mobileData, currentVariant)}
               </h1>
               <p className="text-purple-700 text-sm font-medium flex items-center gap-2">
                 <span>{mobileData?.model}</span>
                 {mobileData?.isAiPhone ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-purple-600 to-red-600 px-2 py-0.5 text-[10px] font-semibold text-purple-700 ring-1 ring-purple-200">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 px-2 py-0.5 text-[10px] font-semibold text-white ring-1 ring-white/30">
                     <span
                       className="inline-flex items-center justify-center w-3 h-3"
                       aria-hidden="true"
@@ -2063,7 +2063,7 @@ Price: ${price}
               >
                 <FaHeart
                   className={`text-lg ${
-                    isFavorite ? "text-red-500 fill-current" : "text-gray-400"
+                    isFavorite ? "text-blue-500 fill-current" : "text-gray-400"
                   }`}
                 />
               </button>
@@ -2106,7 +2106,9 @@ Price: ${price}
                 >
                   <FaHeart
                     className={`${
-                      isFavorite ? "text-red-500 fill-current" : "text-gray-600"
+                      isFavorite
+                        ? "text-blue-500 fill-current"
+                        : "text-gray-600"
                     }`}
                   />
                 </button>
@@ -2223,7 +2225,7 @@ Price: ${price}
                   <h4 className="text-purple-700 mb-3 font-medium text-sm flex items-center gap-2">
                     <span>{mobileData?.model}</span>
                     {mobileData?.isAiPhone ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-purple-50 to-red-100 px-2 py-0.5 text-[10px] font-semibold text-purple-700 ring-1 ring-purple-200">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-purple-50 to-blue-100 px-2 py-0.5 text-[10px] font-semibold text-purple-700 ring-1 ring-purple-200">
                         <span
                           className="inline-flex items-center justify-center w-3 h-3"
                           aria-hidden="true"
@@ -2253,7 +2255,7 @@ Price: ${price}
                     <FaHeart
                       className={`text-xl ${
                         isFavorite
-                          ? "text-red-500 fill-current"
+                          ? "text-blue-500 fill-current"
                           : "text-gray-400"
                       }`}
                     />
@@ -2353,7 +2355,7 @@ Price: ${price}
                               href={store.url}
                               target="_blank"
                               rel="noopener noreferrer nofollow"
-                              className="bg-gradient-to-r from-purple-100 to-red-100 hover:from-purple-600 hover:to-red-600 text-purple-500 px-4 py-2 rounded-full hover:text-white font-semibold text-sm flex items-center gap-2 transition-all duration-200 hover:shadow-lg"
+                              className="bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 hover:from-purple-600 hover:to-blue-600 text-purple-500 px-4 py-2 rounded-full hover:text-white font-semibold text-sm flex items-center gap-2 transition-all duration-200 hover:shadow-lg"
                             >
                               <FaExternalLinkAlt className="text-xs" />
                               Buy Now

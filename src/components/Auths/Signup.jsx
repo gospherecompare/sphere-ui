@@ -27,11 +27,13 @@ import Cookies from "js-cookie";
 // Stable Wrapper component moved to top-level to avoid remounting children
 const Wrapper = ({ children, asPage, onClose }) =>
   asPage ? (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-600">
+    <div className="min-h-screen bg-white max-w-6xl mx-auto">
       {/* Header Back Button */}
 
-      <div className="flex items-center justify-center p-4 md:p-6">
-        <div className="relative w-full max-w-2xl mx-auto mt-8">{children}</div>
+      <div className="max-w-6xl mx-auto px-4 py-10">
+        <div className="flex items-center justify-center">
+          <div className="w-full max-w-xl">{children}</div>
+        </div>
       </div>
     </div>
   ) : (
@@ -41,7 +43,7 @@ const Wrapper = ({ children, asPage, onClose }) =>
         onClick={onClose}
       ></div>
       <div className="flex items-center justify-center min-h-screen p-4">
-        <div className="relative w-full max-w-2xl mx-auto">{children}</div>
+        <div className="relative w-full max-w-xl mx-auto">{children}</div>
       </div>
     </div>
   );
@@ -565,7 +567,7 @@ const Signup = ({
 
   return (
     <Wrapper asPage={asPage} onClose={onClose}>
-      <div className="relative bg-white  overflow-hidden shadow-xl">
+      <div className="relative bg-white   overflow-hidden  border border-purple-100 shadow-sm">
         {/* Header */}
         <div className=" border-b border-gray-100 px-6 md:px-8 py-6">
           <div className="flex items-center justify-between mb-4">
@@ -811,7 +813,7 @@ const Signup = ({
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex items-center justify-center py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-full hover:shadow-lg hover:from-purple-600 hover:to-blue-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center py-3 px-4 bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 text-white font-semibold rounded-full hover:shadow-lg hover:from-purple-600 hover:to-blue-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <>
@@ -850,12 +852,9 @@ const Signup = ({
         </div>
 
         {/* Bottom Gradient Border */}
-        <div className="h-1 bg-gradient-to-r from-purple-600 via-purple-500 to-blue-600"></div>
       </div>
     </Wrapper>
   );
 };
 
 export default Signup;
-
-
