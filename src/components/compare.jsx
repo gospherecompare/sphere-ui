@@ -744,7 +744,25 @@ const MobileCompare = () => {
           const pid = String(getProductId(d) ?? "");
           return pid && String(pid) === String(idValue);
         });
-        if (foundAny) addNormalizedToSelection(foundAny, variantIndex);
+        if (foundAny) {
+          addNormalizedToSelection(foundAny, variantIndex);
+          return;
+        }
+
+        // Fallback: fetch public product by id (type not required)
+        try {
+          const res = await fetch(
+            `https://api.apisphere.in/api/public/product/${encodeURIComponent(
+              idValue,
+            )}`,
+          );
+          if (res && res.ok) {
+            const body = await res.json();
+            const normalized = normalizeProduct(body, "");
+            const deviceObj = { ...body, ...normalized };
+            addNormalizedToSelection(deviceObj, variantIndex);
+          }
+        } catch (err) {}
       };
 
       if (toAdd) {

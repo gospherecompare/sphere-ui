@@ -1,5 +1,6 @@
 // src/components/MobileDetailCard.jsx
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import PopularComparisons from "../Home/Brandshowcase";
 import { useDevice } from "../../hooks/useDevice";
 import Cookies from "js-cookie";
 
@@ -499,6 +500,58 @@ const MobileDetailCard = () => {
   }, [variants, variantQuery, storeQuery]);
 
   const currentVariant = variants?.[selectedVariant];
+  const currentProductId =
+    mobileData?.id ?? mobileData?.product_id ?? mobileData?.productId ?? null;
+
+  const popularComparisonTargets = useMemo(() => {
+    const list = Array.isArray(smartphone) ? smartphone : [];
+    if (!currentProductId || list.length === 0) return [];
+
+    const normalizePrice = (d) => {
+      const vars = Array.isArray(d?.variants) ? d.variants : [];
+      const raw = vars?.[0]?.base_price ?? d?.base_price ?? d?.price ?? null;
+      const n = Number(raw);
+      return Number.isFinite(n) ? n : null;
+    };
+
+    const normalized = list
+      .map((d) => normalizeSmartphone(d))
+      .filter(Boolean)
+      .filter((d) => String(d.id ?? "") !== String(currentProductId));
+
+    const currentBrand = String(mobileData?.brand || "").toLowerCase();
+
+    return normalized
+      .map((d) => {
+        const brand = String(d.brand || "").toLowerCase();
+        const sameBrand = Boolean(currentBrand && brand === currentBrand);
+        const rating = Number(d.rating ?? d.avg_rating ?? 0) || 0;
+        const price = normalizePrice(d);
+        return { d, sameBrand, rating, price };
+      })
+      .sort((a, b) => {
+        if (a.sameBrand !== b.sameBrand) return a.sameBrand ? -1 : 1;
+        if (b.rating !== a.rating) return b.rating - a.rating;
+        if (a.price == null && b.price != null) return 1;
+        if (a.price != null && b.price == null) return -1;
+        if (a.price != null && b.price != null) return a.price - b.price;
+        return 0;
+      })
+      .slice(0, 6)
+      .map((x) => x.d);
+  }, [smartphone, currentProductId, mobileData?.brand]);
+
+  const handlePopularCompare = useCallback(
+    (other) => {
+      const otherId =
+        other?.id ?? other?.product_id ?? other?.productId ?? null;
+      if (!currentProductId || !otherId) return;
+      navigate(`/compare?devices=${currentProductId}:0,${otherId}:0`, {
+        state: { initialProduct: mobileData },
+      });
+    },
+    [navigate, currentProductId, mobileData],
+  );
 
   const allStorePrices =
     variants.flatMap(
@@ -2082,6 +2135,70 @@ Price: ${price}
           )}
         </div>
 
+        {/* Popular Comparisons */}
+        {popularComparisonTargets.length > 0 && (
+          <div className="px-4 pt-4 pb-1">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-sm font-semibold text-gray-900">
+                Popular comparisons
+              </h2>
+              <button
+                type="button"
+                onClick={() =>
+                  navigate("/compare", {
+                    state: { initialProduct: mobileData },
+                  })
+                }
+                className="text-xs font-semibold text-purple-700 hover:text-purple-800"
+              >
+                Open compare
+              </button>
+            </div>
+            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-3">
+              {popularComparisonTargets.map((d) => {
+                const otherId = d?.id ?? d?.product_id ?? d?.productId ?? null;
+                const otherName = d?.name || d?.model || "Device";
+                const otherImg = d?.images?.[0] || d?.image || "";
+
+                return (
+                  <button
+                    key={String(otherId || otherName)}
+                    type="button"
+                    onClick={() => handlePopularCompare(d)}
+                    className="min-w-[240px] max-w-[280px] flex-shrink-0 rounded-xl border border-gray-200 bg-white p-3 hover:border-purple-200 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
+                        {otherImg ? (
+                          <img
+                            src={otherImg}
+                            alt={otherName}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                            }}
+                          />
+                        ) : null}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[11px] text-gray-500 truncate">
+                          Compare with
+                        </div>
+                        <div className="text-sm font-semibold text-gray-900 truncate">
+                          {otherName}
+                        </div>
+                      </div>
+                      <span className="text-xs font-semibold text-purple-700">
+                        Compare
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-col lg:flex-row">
           {/* Images Section */}
           <div className="lg:w-2/5 p-4 border-b lg:border-b-0 lg:border-r border-indigo-200">
@@ -2422,6 +2539,7 @@ Price: ${price}
           <div className="p-4">{renderTabContent()}</div>
         </div>
       </div>
+      <PopularComparisons variant="flat" className="mt-6" />
     </div>
   );
 };

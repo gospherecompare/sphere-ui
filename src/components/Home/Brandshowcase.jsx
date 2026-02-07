@@ -2,8 +2,13 @@ import { Link } from "react-router-dom";
 import React, { useEffect, useState } from "react";
 import { FaExchangeAlt, FaArrowRight, FaMobileAlt } from "react-icons/fa";
 
-const PopularComparisons = ({ data: initialData = [] }) => {
+const PopularComparisons = ({
+  data: initialData = [],
+  variant = "default",
+  className = "",
+}) => {
   const [data, setData] = useState(initialData || []);
+  const isFlat = variant === "flat";
 
   useEffect(() => {
     let cancelled = false;
@@ -36,9 +41,13 @@ const PopularComparisons = ({ data: initialData = [] }) => {
   }, []);
 
   return (
-    <div className="px-2 lg:px-4 mx-auto bg-white max-w-6xl rounded-lg w-full m-0 overflow-hidden pt-5 sm:pt-10">
+    <div
+      className={`px-4 lg:px-4 mx-auto bg-white max-w-6xl w-full m-0 overflow-hidden pt-5 sm:pt-10 ${
+        isFlat ? "" : "rounded-lg"
+      } ${className}`}
+    >
       {/* Header Section */}
-      <div className="mb-6 px-2">
+      <div className="mb-5">
         <div className="flex items-center gap-2 mb-2">
           <FaExchangeAlt className="text-purple-500 text-lg" />
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
@@ -54,7 +63,7 @@ const PopularComparisons = ({ data: initialData = [] }) => {
       </div>
 
       {/* Comparisons Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 lg:gap-4 pb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-3 lg:gap-4 pb-6">
         {data.slice(0, 24).map((item, index) => (
           <Link
             key={`${item.left_id}-${item.right_id}-${index}`}
@@ -62,13 +71,21 @@ const PopularComparisons = ({ data: initialData = [] }) => {
             className="group transition-all duration-300 hover:transform hover:-translate-y-1"
           >
             {/* Comparison Card */}
-            <div className="relative bg-gray-100 rounded-xl p-1 sm:p-3 transition-all duration-300 group-hover:shadow-lg group-hover:border-blue-300 h-12 sm:h-14">
+            <div
+              className={`relative bg-gray-100 p-2 sm:p-3 transition-all duration-300 group-hover:shadow-lg group-hover:border-blue-300 ${
+                isFlat ? "" : "rounded-xl"
+              }`}
+            >
               {/* Devices Row */}
               <div className="flex items-center justify-between">
                 {/* Left Device */}
                 <div className="flex-1 pr-2 sm:pr-4">
                   <div className="flex items-center gap-1.5 sm:gap-2">
-                    <div className="h-7 w-7 sm:h-9 sm:w-9 shrink-0 overflow-hidden rounded-full    p-0.5 sm:p-1">
+                    <div
+                      className={`h-7 w-7 sm:h-9 sm:w-9 shrink-0 overflow-hidden p-0.5 sm:p-1 ${
+                        isFlat ? "" : "rounded-full"
+                      }`}
+                    >
                       {item.left_image ? (
                         <img
                           src={item.left_image}
@@ -93,7 +110,11 @@ const PopularComparisons = ({ data: initialData = [] }) => {
 
                 {/* VS Badge */}
                 <div className="relative">
-                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-[10px] font-bold bg-gray-100 text-purple-600 px-2 py-0.5 rounded-full">
+                  <div
+                    className={`absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-[10px] font-bold bg-gray-100 text-purple-600 px-2 py-0.5 ${
+                      isFlat ? "" : "rounded-full"
+                    }`}
+                  >
                     VS
                   </div>
                 </div>
@@ -101,7 +122,11 @@ const PopularComparisons = ({ data: initialData = [] }) => {
                 {/* Right Device */}
                 <div className="flex-1 pl-2 sm:pl-4">
                   <div className="flex items-center gap-1.5 sm:gap-2 flex-row-reverse">
-                    <div className="h-7 w-7 sm:h-9 sm:w-9 shrink-0 overflow-hidden rounded-full p-0.5 sm:p-1">
+                    <div
+                      className={`h-7 w-7 sm:h-9 sm:w-9 shrink-0 overflow-hidden p-0.5 sm:p-1 ${
+                        isFlat ? "" : "rounded-full"
+                      }`}
+                    >
                       {item.right_image ? (
                         <img
                           src={item.right_image}

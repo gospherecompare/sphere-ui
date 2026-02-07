@@ -110,6 +110,7 @@ const Header = () => {
   const [showAuthDropdown, setShowAuthDropdown] = useState(false);
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const [searchSuggestions, setSearchSuggestions] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [userName, setUserName] = useState("");
@@ -258,6 +259,7 @@ const Header = () => {
     }
 
     if (!value || !value.trim()) {
+      setIsSearching(false);
       setSearchSuggestions([]);
       setShowSearchSuggestions(false);
       return;
@@ -267,28 +269,27 @@ const Header = () => {
       const q = value.trim();
       const controller = new AbortController();
       abortRef.current = controller;
+      setIsSearching(true);
+      setShowSearchSuggestions(true);
       try {
         const url = `https://api.apisphere.in/api/search?q=${encodeURIComponent(
           q,
         )}`;
-        console.log("Fetching suggestions from:", url);
         const r = await fetch(url, {
           signal: controller.signal,
         });
         if (!r.ok) throw new Error(`Search failed: ${r.status}`);
         const json = await r.json();
-        console.log("Suggestions response:", json);
         const results = (json.results || []).map((it) => ({
           ...it,
         }));
-        console.log("Mapped suggestions:", results);
         setSearchSuggestions(results);
-        setShowSearchSuggestions(results.length > 0);
       } catch (err) {
         if (err.name === "AbortError") return;
         console.error("Search suggestions error:", err);
         setSearchSuggestions([]);
-        setShowSearchSuggestions(false);
+      } finally {
+        setIsSearching(false);
       }
     }, 220);
   };
@@ -978,18 +979,18 @@ const Header = () => {
 
                     {/* Suggestions Dropdown - Flipkart Style with Images & Highlighting */}
                     {(showSearchSuggestions || searchQuery.trim()) && (
-                      <div className="hidden md:block absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto">
-                        {/* Loading State */}
+                      <div className="hidden md:block absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                        {/* Loading / Empty State */}
                         {!searchSuggestions ||
                         searchSuggestions.length === 0 ? (
                           searchQuery.trim() ? (
                             <>
                               {/* Show skeleton loaders while fetching */}
-                              {[...Array(3)].map((_, i) => (
+                              {isSearching && [...Array(3)].map((_, i) => (
                                 <SkeletonSuggestion key={`skeleton-${i}`} />
                               ))}
                               {/* No Results - only show after loaded */}
-                              {searchSuggestions &&
+                              {!isSearching && searchSuggestions &&
                                 searchSuggestions.length === 0 && (
                                   <div className="w-full text-center py-8 px-4">
                                     <div className="text-gray-400 text-4xl mb-2">
@@ -1033,13 +1034,16 @@ const Header = () => {
                                   }`}
                                 >
                                   {/* Product Thumbnail */}
-                                  <div className="w-12 h-12 rounded-md bg-gray-100 flex-shrink-0 overflow-hidden flex items-center justify-center shadow-sm">
+                                  <div className="w-12 h-12 flex-shrink-0 overflow-hidden flex items-center justify-center">
                                     {sugg.image_url ? (
                                       <img
                                         src={sugg.image_url}
                                         alt={sugg.name}
-                                        className="w-full h-full object-cover"
+                                        className="w-full h-full object-contain"
                                         loading="lazy"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = "none";
+                                        }}
                                       />
                                     ) : (
                                       <span className="font-bold text-lg text-purple-600">
@@ -1087,11 +1091,11 @@ const Header = () => {
                     {!searchSuggestions || searchSuggestions.length === 0 ? (
                       <>
                         {/* Show skeleton loaders while fetching */}
-                        {[...Array(3)].map((_, i) => (
+                        {isSearching && [...Array(3)].map((_, i) => (
                           <SkeletonSuggestion key={`skeleton-${i}`} />
                         ))}
                         {/* No Results - only show after loaded */}
-                        {searchSuggestions &&
+                        {!isSearching && searchSuggestions &&
                           searchSuggestions.length === 0 && (
                             <div className="w-full text-center py-12 px-4">
                               <div className="text-gray-400 text-5xl mb-3">
@@ -1171,7 +1175,7 @@ const Header = () => {
         <div className="flex items-center justify-between px-4 py-3 gap-3">
           {/* Logo (mobile) */}
           <Link to="/" className="flex items-center min-w-0">
-            <HookLogo className="block h-8 w-auto max-w-[180px] text-white sm:h-9 sm:max-w-[220px]" />
+            <HookLogo className="block h-8 w-auto max-w-[180px] text-gray-900 sm:h-9 sm:max-w-[220px]" />
           </Link>
 
           {/* Right Icons: Compare + Menu */}
@@ -1195,7 +1199,7 @@ const Header = () => {
         </div>
 
         {/* Mobile Search Input Row */}
-        <div className="px-4 py-3">
+        <div className="px-4 py-3 max-w-6xl mx-auto">
           <div className="relative">
             {/* Search Icon */}
 
@@ -1223,7 +1227,7 @@ const Header = () => {
                   setIsSearchOpen(false);
                 }
               }}
-              className="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-gray-300 font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all placeholder-gray-500"
+              className="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-gray-300 font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all placeholder-gray-500"
               aria-label="Search"
             />
           </div>
@@ -1242,8 +1246,9 @@ const Header = () => {
             {/* Desktop Search Bar - Professional Style */}
             <div
               ref={searchRef}
-              className="flex-1 max-w-2xl mx-6 relative search-input-wrapper"
+              className="flex-1 min-w-[240px] max-w-2xl lg:max-w-3xl xl:max-w-[900px] mx-2 sm:mx-6 relative search-input-wrapper"
             >
+              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-400 pointer-events-none" />
               <input
                 ref={searchInputRef}
                 type="text"
@@ -1262,15 +1267,29 @@ const Header = () => {
                     setShowSearchSuggestions(false);
                   }
                 }}
-                className="w-full px-4 py-3 text-sm bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent search-input rounded-lg transition-all placeholder-gray-500 font-medium"
+                className="w-full pl-10 pr-4 py-3 text-sm bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 search-input rounded-lg transition-all placeholder-gray-500 font-medium"
               />
 
               {/* Desktop Suggestions Dropdown - Enhanced with Images & Highlighting */}
-              {showSearchSuggestions &&
-                searchSuggestions &&
-                searchSuggestions.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-2xl z-50 max-h-96 overflow-y-auto mega-menu-slide">
-                    {searchSuggestions.slice(0, 7).map((sugg, index) => (
+              {showSearchSuggestions && searchQuery.trim() && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-96 overflow-y-auto mega-menu-slide [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    {isSearching ? (
+                      <div className="p-4 space-y-2">
+                        {[...Array(3)].map((_, i) => (
+                          <SkeletonSuggestion key={`desktop-skel-${i}`} />
+                        ))}
+                      </div>
+                    ) : searchSuggestions.length === 0 ? (
+                      <div className="w-full text-center py-10 px-4">
+                        <p className="text-sm font-medium text-gray-900 mb-1">
+                          No products found
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          No results for "{searchQuery}"
+                        </p>
+                      </div>
+                    ) : (
+                      searchSuggestions.slice(0, 7).map((sugg, index) => (
                       <button
                         key={index}
                         onMouseDown={(e) => {
@@ -1286,15 +1305,42 @@ const Header = () => {
                         onMouseEnter={() => setSelectedSuggestionIndex(index)}
                         className={`w-full flex items-center gap-4 px-5 py-4 border-b border-gray-100 last:border-b-0 text-left transition-all duration-150 min-h-[64px] mega-menu-item ${
                           selectedSuggestionIndex === index
-                            ? "bg-gradient-to-r from-purple-600 to-red-600"
+                            ? "bg-purple-50"
                             : "hover:bg-gray-50"
                         }`}
                       >
                         {/* Product Image */}
+                        <div className="w-12 h-12 overflow-hidden flex items-center justify-center flex-shrink-0">
+                          {sugg.image ||
+                          sugg.image_url ||
+                          sugg.product_image ||
+                          sugg.imageUrl ? (
+                            <img
+                              src={
+                                sugg.image ||
+                                sugg.image_url ||
+                                sugg.product_image ||
+                                sugg.imageUrl
+                              }
+                              alt={sugg.name}
+                              className="w-full h-full object-contain"
+                              loading="lazy"
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                              }}
+                            />
+                          ) : (
+                            <span className="font-bold text-sm text-purple-600">
+                              {(sugg.brand_name || sugg.model || sugg.name || "")
+                                .charAt(0)
+                                .toUpperCase()}
+                            </span>
+                          )}
+                        </div>
 
                         {/* Content */}
                         <div className="flex-1 min-w-0">
-                          <div className="text-base font-semibold text-gray-900">
+                          <div className="text-base font-semibold text-gray-900 truncate">
                             <HighlightText
                               text={sugg.name}
                               query={searchQuery}
@@ -1309,16 +1355,14 @@ const Header = () => {
 
                         {/* Chevron */}
                       </button>
-                    ))}
+                      ))
+                    )}
                   </div>
                 )}
             </div>
 
-            {/* Spacer */}
-            <div className="flex-1" />
-
             {/* Utility Icons - Desktop */}
-            <div className="flex items-center space-x-8">
+            <div className="flex items-center space-x-8 ml-auto">
               {directLinks.map((linkItem, index) => (
                 <a
                   key={index}
