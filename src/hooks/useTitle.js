@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-const SITE_NAME = "Smart Arena";
+const SITE_NAME = "Hook";
 const BRAND_TAGLINE = "Gadget Destination";
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -50,9 +50,9 @@ function formatTitle({
  * Accepts page, brand, name and optional siteName.
  *
  * Usage:
- * - useTitle({ page: "Home" }) → "Compare & Buy Latest Gadgets | Smart Arena"
- * - useTitle({ page: "Smartphones" }) → "Best Smartphones 2025 | Compare Prices | Smart Arena"
- * - useTitle({ page: "Product", brand: "Apple", name: "iPhone 15" }) → "Product | iPhone 15 | Smart Arena"
+ * - useTitle({ page: "Home" }) → "Compare & Buy Latest Gadgets | Hook"
+ * - useTitle({ page: "Smartphones" }) → "Best Smartphones 2025 | Compare Prices | Hook"
+ * - useTitle({ page: "Product", brand: "Apple", name: "iPhone 15" }) → "Product | iPhone 15 | Hook"
  */
 export default function useTitle({ page, brand, name, siteName } = {}) {
   useEffect(() => {

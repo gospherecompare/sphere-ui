@@ -206,10 +206,10 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* Smart Arena - Separate Row with Border Divider + Newsletter */}
+        {/* Hook - Separate Row with Border Divider + Newsletter */}
         <div className="border-t border-gray-700 py-8 sm:py-10 px-0">
           <h4 className="text-sm font-bold mb-6 text-white uppercase tracking-wide">
-            Smart Arena
+            Hook
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 items-center">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -295,7 +295,7 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8">
           {/* Copyright */}
           <div className="text-gray-400 text-xs sm:text-sm text-center md:text-left">
-            © {new Date().getFullYear()} Smart Arena. All rights reserved.
+            © {new Date().getFullYear()} Hook. All rights reserved.
           </div>
 
           {/* Social Media */}

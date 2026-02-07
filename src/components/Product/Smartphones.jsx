@@ -1879,7 +1879,7 @@ const Smartphones = () => {
           {/* Main Heading - Gradient Text */}
           <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl xl:text-5xl font-bold mb-2 sm:mb-3 md:mb-4 lg:mb-6 leading-tight">
             Explore Premium{" "}
-            <span className="bg-gradient-to-r from-purple-600 to-red-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent">
               Smartphones
             </span>
           </h1>
@@ -1974,7 +1974,7 @@ const Smartphones = () => {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowFilters(true)}
-                className="flex items-center justify-center gap-2 flex-1 h-12 bg-gradient-to-r from-purple-600 to-red-600 text-white px-4 rounded-xl   transition-all duration-300 font-semibold"
+                className="flex items-center justify-center gap-2 flex-1 h-12 bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 text-white px-4 rounded-xl   transition-all duration-300 font-semibold"
               >
                 <FaFilter />
                 Filters
@@ -2158,7 +2158,7 @@ const Smartphones = () => {
                   <div className="relative mb-8">
                     <div className="absolute h-2 bg-gray-200 rounded-full w-full top-1/2 transform -translate-y-1/2"></div>
                     <div
-                      className="absolute h-2 bg-gradient-to-r from-purple-600 to-red-600 rounded-full top-1/2 transform -translate-y-1/2"
+                      className="absolute h-2 bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 rounded-full top-1/2 transform -translate-y-1/2"
                       style={{
                         left: `${Math.max(
                           0,
@@ -2349,7 +2349,7 @@ const Smartphones = () => {
               {/* Additional filters button */}
               <button
                 onClick={() => setShowFilters(true)}
-                className="w-full lg:hidden mt-6 bg-gradient-to-r from-purple-600 to-red-600 text-white py-3 rounded-xl font-semibold hover:from-purple-600 hover:to-red-600 transition-all duration-300 hover:shadow-lg"
+                className="w-full lg:hidden mt-6 bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 text-white py-3 rounded-xl font-semibold hover:from-purple-600 hover:to-red-600 transition-all duration-300 hover:shadow-lg"
               >
                 Show More Filters
               </button>
@@ -2366,7 +2366,7 @@ const Smartphones = () => {
                 <div
                   key={`${device.id ?? device.model ?? ""}-${_idx}`}
                   onClick={(e) => handleView(device, e)}
-                  className={`h-full smooth-transition fade-in-up overflow-hidden rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-purple-200 cursor-pointer transition-all duration-200 md:rounded-none md:border-0 md:shadow-none md:hover:shadow-none md:hover:border-transparent md:bg-white ${
+                  className={`h-full smooth-transition fade-in-up overflow-hidden rounded-2xl bg-white cursor-pointer transition-all duration-200 md:rounded-none md:bg-white ${
                     isCompareSelected(device)
                       ? "ring-2 ring-purple-300 bg-purple-50"
                       : ""
@@ -2683,7 +2683,7 @@ const Smartphones = () => {
 
             {/* Floating Compare Bar - Appears when 2+ items selected */}
             {compareItems.length >= 2 && (
-              <div className="fixed bottom-6 left-4 right-4 md:bottom-8 md:left-auto md:right-8 z-40 max-w-sm bg-white rounded-xl shadow-2xl border-2 border-purple-500 p-4 animate-slide-up">
+              <div className="fixed bottom-6 left-4 right-4 md:bottom-8 md:left-auto md:right-8 z-40 max-w-sm bg-white rounded-xl p-4 animate-slide-up md:shadow-2xl md:border-2 md:border-purple-500">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold text-gray-900">
@@ -2695,7 +2695,7 @@ const Smartphones = () => {
                   </div>
                   <button
                     onClick={handleCompareNavigate}
-                    className="flex-shrink-0 bg-gradient-to-r from-purple-600 to-red-600 text-white px-4 py-2 rounded-lg font-semibold hover:from-purple-600 hover:to-red-600 transition-all duration-200 whitespace-nowrap text-sm"
+                    className="flex-shrink-0 bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:from-purple-600 hover:to-red-600 transition-all duration-200 whitespace-nowrap text-sm"
                   >
                     Compare Now
                   </button>
@@ -2719,7 +2719,7 @@ const Smartphones = () => {
                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
                     <button
                       onClick={clearFilters}
-                      className="bg-gradient-to-r from-purple-600 to-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-purple-600 hover:to-red-600 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 "
+                      className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-purple-600 hover:to-red-600 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 "
                     >
                       Clear All Filters
                     </button>
@@ -2788,7 +2788,7 @@ const Smartphones = () => {
               onClick={() => setShowSort(false)}
             ></div>
 
-            <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl transform transition-all duration-300 max-h-[70vh] overflow-hidden shadow-2xl">
+            <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl transform transition-all duration-300 max-h-[70vh] overflow-hidden">
               <div className="flex items-center justify-between p-6 border-b border-gray-200  ">
                 <div className="flex items-center gap-3">
                   <FaSort className="text-purple-600 text-xl" />
@@ -2955,7 +2955,7 @@ const Smartphones = () => {
                     <div className="relative mb-4">
                       <div className="absolute h-2 bg-gray-200 rounded-full w-full top-1/2 transform -translate-y-1/2"></div>
                       <div
-                        className="absolute h-2 bg-gradient-to-r from-purple-600 to-red-600 rounded-full top-1/2 transform -translate-y-1/2"
+                        className="absolute h-2 bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 rounded-full top-1/2 transform -translate-y-1/2"
                         style={{
                           left: `${Math.max(
                             0,
@@ -3046,7 +3046,7 @@ const Smartphones = () => {
                         key={ram}
                         className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium ${
                           filters.ram.includes(ram)
-                            ? "bg-gradient-to-b from-purple-600 to-red-600 text-white  "
+                            ? "bg-gradient-to-b from-blue-600 via-purple-500 to-blue-600 text-white  "
                             : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300 hover: "
                         }`}
                       >
@@ -3083,7 +3083,7 @@ const Smartphones = () => {
                         key={storage}
                         className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium ${
                           filters.storage.includes(storage)
-                            ? "bg-gradient-to-b from-purple-600 to-red-600 text-white  "
+                            ? "bg-gradient-to-b from-blue-600 via-purple-500 to-blue-600 text-white  "
                             : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300 hover: "
                         }`}
                       >
@@ -3123,7 +3123,7 @@ const Smartphones = () => {
                           key={r.id}
                           className={`flex items-center justify-between gap-2 cursor-pointer px-4 py-3 rounded-xl transition-all duration-200 font-medium ${
                             filters.battery.includes(r.id)
-                              ? "bg-gradient-to-r from-purple-600 to-red-600 text-white  "
+                              ? "bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 text-white  "
                               : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300"
                           }`}
                         >
@@ -3254,7 +3254,7 @@ const Smartphones = () => {
                   </button>
                   <button
                     onClick={() => setShowFilters(false)}
-                    className="flex-1 bg-gradient-to-r from-purple-600 to-red-600 text-white py-4 rounded-xl font-semibold hover:from-purple-600 hover:to-red-600 transition-all duration-200  "
+                    className="flex-1 bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 text-white py-4 rounded-xl font-semibold hover:from-purple-600 hover:to-red-600 transition-all duration-200  "
                   >
                     Apply Filters
                   </button>
