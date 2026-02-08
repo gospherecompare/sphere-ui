@@ -3,21 +3,63 @@ import { Link, useLocation } from "react-router-dom";
 import useBreadcrumbs from "use-react-router-breadcrumbs";
 import { FaChevronRight, FaHome } from "react-icons/fa";
 
+const slugToTitle = (slug) => {
+  if (!slug) return "Details";
+  return slug
+    .toString()
+    .split(/[-_]/g)
+    .filter(Boolean)
+    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+    .join(" ");
+};
+
 const routes = [
   { path: "/", breadcrumb: "Home" },
   { path: "/smartphones", breadcrumb: "Smartphones" },
   { path: "/laptops", breadcrumb: "Laptops" },
   { path: "/networking", breadcrumb: "Networking" },
   { path: "/appliances", breadcrumb: "Appliances" },
-  { path: "/smartphones/:id", breadcrumb: (match) => "Details" },
-  { path: "/laptops/:id", breadcrumb: (match) => "Details" },
-  { path: "/appliances/:id", breadcrumb: (match) => "Details" },
-  { path: "/networking/:id", breadcrumb: (match) => "Details" },
+  {
+    path: "/smartphones/:slug",
+    breadcrumb: (match) =>
+      slugToTitle(
+        (match && match.params && (match.params.slug || match.params.id)) ||
+          "Details",
+      ),
+  },
+  {
+    path: "/laptops/:slug",
+    breadcrumb: (match) =>
+      slugToTitle(
+        (match && match.params && (match.params.slug || match.params.id)) ||
+          "Details",
+      ),
+  },
+  {
+    path: "/appliances/:slug",
+    breadcrumb: (match) =>
+      slugToTitle(
+        (match && match.params && (match.params.slug || match.params.id)) ||
+          "Details",
+      ),
+  },
+  {
+    path: "/networking/:slug",
+    breadcrumb: (match) =>
+      slugToTitle(
+        (match && match.params && (match.params.slug || match.params.id)) ||
+          "Details",
+      ),
+  },
   { path: "/compare", breadcrumb: "Compare" },
   { path: "/login", breadcrumb: "Login" },
   { path: "/signup", breadcrumb: "Signup" },
   { path: "/brands", breadcrumb: "Brands" },
   { path: "/product/:id", breadcrumb: (match) => "Product Details" },
+  { path: "/about", breadcrumb: "About" },
+  { path: "/contact", breadcrumb: "Contact" },
+  { path: "/privacy-policy", breadcrumb: "Privacy Policy" },
+  { path: "/terms", breadcrumb: "Terms" },
 ];
 
 export default function Breadcrumbs() {

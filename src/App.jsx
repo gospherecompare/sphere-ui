@@ -10,6 +10,10 @@ import Networking from "./components/Product/Networking";
 import HomeAppliances from "./components/Product/Appliances";
 import DeviceComparison from "./components/compare";
 import Breadcrumbs from "./components/Breadcrumbs";
+import About from "./components/Static/About";
+import Contact from "./components/Static/Contact";
+import PrivacyPolicy from "./components/Static/PrivacyPolicy";
+import Terms from "./components/Static/Terms";
 import {
   Route,
   Routes,
@@ -94,31 +98,19 @@ function App() {
           {/* Placeholder routes for footer links (can be implemented later) */}
           <Route
             path="/about"
-            element={
-              <div className="p-4 text-center">About Us - Coming Soon</div>
-            }
+            element={<About />}
           />
           <Route
             path="/contact"
-            element={
-              <div className="p-4 text-center">Contact - Coming Soon</div>
-            }
+            element={<Contact />}
           />
           <Route
             path="/privacy-policy"
-            element={
-              <div className="p-4 text-center">
-                Privacy Policy - Coming Soon
-              </div>
-            }
+            element={<PrivacyPolicy />}
           />
           <Route
             path="/terms"
-            element={
-              <div className="p-4 text-center">
-                Terms & Conditions - Coming Soon
-              </div>
-            }
+            element={<Terms />}
           />
 
           {/* 404 Fallback */}

@@ -126,8 +126,7 @@ const Header = () => {
   const deviceCtx = useDevice();
   const brands = (deviceCtx && deviceCtx.brands) || [];
 
-  // Check if user is logged in and get user data from cookies
-  useEffect(() => {
+  const readAuthFromCookies = () => {
     const token = Cookies.get("arenak");
 
     if (token) {
@@ -153,7 +152,17 @@ const Header = () => {
       setUserName("");
       setUserEmail("");
     }
+  };
+
+  // Check if user is logged in and get user data from cookies
+  useEffect(() => {
+    readAuthFromCookies();
   }, []);
+
+  // Re-read auth after navigation (e.g., after login redirect)
+  useEffect(() => {
+    readAuthFromCookies();
+  }, [location.pathname]);
 
   // Check scroll for header effects
   useEffect(() => {
@@ -926,7 +935,7 @@ const Header = () => {
 
             {/* Search Modal - Full screen on mobile using 100dvh */}
             <div
-              className="fixed inset-0 lg:inset-auto lg:top-16 lg:left-0 lg:right-0 z-50 bg-gradient-to-br from-purple-600 to-white lg:shadow-lg overflow-hidden flex flex-col"
+              className="fixed inset-0 lg:inset-auto lg:top-16 lg:left-0 lg:right-0 z-50 bg-white lg:shadow-lg overflow-hidden flex flex-col"
               style={{
                 height: "100dvh",
                 maxHeight: "100dvh",
@@ -986,11 +995,13 @@ const Header = () => {
                           searchQuery.trim() ? (
                             <>
                               {/* Show skeleton loaders while fetching */}
-                              {isSearching && [...Array(3)].map((_, i) => (
-                                <SkeletonSuggestion key={`skeleton-${i}`} />
-                              ))}
+                              {isSearching &&
+                                [...Array(3)].map((_, i) => (
+                                  <SkeletonSuggestion key={`skeleton-${i}`} />
+                                ))}
                               {/* No Results - only show after loaded */}
-                              {!isSearching && searchSuggestions &&
+                              {!isSearching &&
+                                searchSuggestions &&
                                 searchSuggestions.length === 0 && (
                                   <div className="w-full text-center py-8 px-4">
                                     <div className="text-gray-400 text-4xl mb-2">
@@ -1042,7 +1053,8 @@ const Header = () => {
                                         className="w-full h-full object-contain"
                                         loading="lazy"
                                         onError={(e) => {
-                                          e.currentTarget.style.display = "none";
+                                          e.currentTarget.style.display =
+                                            "none";
                                         }}
                                       />
                                     ) : (
@@ -1091,11 +1103,13 @@ const Header = () => {
                     {!searchSuggestions || searchSuggestions.length === 0 ? (
                       <>
                         {/* Show skeleton loaders while fetching */}
-                        {isSearching && [...Array(3)].map((_, i) => (
-                          <SkeletonSuggestion key={`skeleton-${i}`} />
-                        ))}
+                        {isSearching &&
+                          [...Array(3)].map((_, i) => (
+                            <SkeletonSuggestion key={`skeleton-${i}`} />
+                          ))}
                         {/* No Results - only show after loaded */}
-                        {!isSearching && searchSuggestions &&
+                        {!isSearching &&
+                          searchSuggestions &&
                           searchSuggestions.length === 0 && (
                             <div className="w-full text-center py-12 px-4">
                               <div className="text-gray-400 text-5xl mb-3">
@@ -1272,24 +1286,24 @@ const Header = () => {
 
               {/* Desktop Suggestions Dropdown - Enhanced with Images & Highlighting */}
               {showSearchSuggestions && searchQuery.trim() && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-96 overflow-y-auto mega-menu-slide [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                    {isSearching ? (
-                      <div className="p-4 space-y-2">
-                        {[...Array(3)].map((_, i) => (
-                          <SkeletonSuggestion key={`desktop-skel-${i}`} />
-                        ))}
-                      </div>
-                    ) : searchSuggestions.length === 0 ? (
-                      <div className="w-full text-center py-10 px-4">
-                        <p className="text-sm font-medium text-gray-900 mb-1">
-                          No products found
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          No results for "{searchQuery}"
-                        </p>
-                      </div>
-                    ) : (
-                      searchSuggestions.slice(0, 7).map((sugg, index) => (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-96 overflow-y-auto mega-menu-slide [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {isSearching ? (
+                    <div className="p-4 space-y-2">
+                      {[...Array(3)].map((_, i) => (
+                        <SkeletonSuggestion key={`desktop-skel-${i}`} />
+                      ))}
+                    </div>
+                  ) : searchSuggestions.length === 0 ? (
+                    <div className="w-full text-center py-10 px-4">
+                      <p className="text-sm font-medium text-gray-900 mb-1">
+                        No products found
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        No results for "{searchQuery}"
+                      </p>
+                    </div>
+                  ) : (
+                    searchSuggestions.slice(0, 7).map((sugg, index) => (
                       <button
                         key={index}
                         onMouseDown={(e) => {
@@ -1331,7 +1345,12 @@ const Header = () => {
                             />
                           ) : (
                             <span className="font-bold text-sm text-purple-600">
-                              {(sugg.brand_name || sugg.model || sugg.name || "")
+                              {(
+                                sugg.brand_name ||
+                                sugg.model ||
+                                sugg.name ||
+                                ""
+                              )
                                 .charAt(0)
                                 .toUpperCase()}
                             </span>
@@ -1355,10 +1374,10 @@ const Header = () => {
 
                         {/* Chevron */}
                       </button>
-                      ))
-                    )}
-                  </div>
-                )}
+                    ))
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Utility Icons - Desktop */}

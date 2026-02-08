@@ -90,7 +90,7 @@ const ProductsNav = () => {
   };
 
   return (
-    <div className=" mx-auto  max-w-6xl mb-5 w-full pt-18 overflow-hidden  sm:pt-10">
+    <div className="mx-auto max-w-6xl mb-5 w-full overflow-hidden pt-0 lg:mt-3 mt-4 sm:mt-0">
       <div
         className="
     grid grid-cols-5 gap-2 bg-white rounded-lg p-2

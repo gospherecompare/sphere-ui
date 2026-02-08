@@ -1525,13 +1525,13 @@ Price: ${price}
                   label: "Processor",
                   value: mobileData.performance?.processor || "N/A",
                   icon: FaMicrochip,
-                  color: "bg-purple-50 text-purple-700 border-purple-100",
+                  color: "bg-purple-50 text-purple-700",
                 },
                 {
                   label: "RAM",
                   value: mobileData.performance?.ram || "N/A",
                   icon: FaMemory,
-                  color: "bg-purple-50 text-purple-700 border-purple-100",
+                  color: "bg-purple-50 text-purple-700",
                 },
                 {
                   label: "Storage",
@@ -1540,7 +1540,7 @@ Price: ${price}
                     mobileData.performance?.ROM_storage ||
                     "N/A",
                   icon: FaMobile,
-                  color: "bg-green-50 text-green-700 border-green-100",
+                  color: "bg-green-50 text-green-700",
                 },
                 {
                   label: "Battery",
@@ -1548,12 +1548,12 @@ Price: ${price}
                     ? `${mobileData.battery.battery_capacity_mah} mAh`
                     : mobileData.battery?.capacity || "N/A",
                   icon: FaBatteryFull,
-                  color: "bg-blue-50 text-blue-700 border-blue-100",
+                  color: "bg-blue-50 text-blue-700",
                 },
               ].map((spec, idx) => (
                 <div
                   key={idx}
-                  className={`${spec.color} rounded-xl p-4 border`}
+                  className={`${spec.color} p-4`}
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <spec.icon className="text-lg" />
@@ -1567,7 +1567,7 @@ Price: ${price}
             </div>
 
             {/* Main Specs Table - Professional Layout */}
-            <div className="bg-white rounded-xl  overflow-hidden">
+            <div className="bg-white overflow-hidden">
               {/* Brand & Model Header */}
               <div className="border-b border-gray-200"></div>
 
@@ -1587,7 +1587,7 @@ Price: ${price}
                         {[
                           { label: "Brand", value: mobileData.brand },
                           { label: "Model", value: mobileData.model },
-                          { label: "Category", value: mobileData.category },
+                          { label: "Segment", value: mobileData.category },
                           {
                             label: "Release Date",
                             value: mobileData.launch_date
@@ -2241,7 +2241,7 @@ Price: ${price}
             {/* Thumbnails */}
             {mobileData.images && mobileData.images.length > 1 && (
               <div className="flex gap-2 mb-6 overflow-x-auto no-scrollbar">
-                {mobileData.images.slice(0, 4).map((image, index) => (
+                {mobileData.images.map((image, index) => (
                   <button
                     key={index}
                     onClick={() => setActiveImage(index)}
@@ -2539,7 +2539,9 @@ Price: ${price}
           <div className="p-4">{renderTabContent()}</div>
         </div>
       </div>
-      <PopularComparisons variant="flat" className="mt-6" />
+      <div className="px-3 sm:px-4 lg:px-0">
+        <PopularComparisons variant="flat" className="mt-6 rounded-md" />
+      </div>
     </div>
   );
 };

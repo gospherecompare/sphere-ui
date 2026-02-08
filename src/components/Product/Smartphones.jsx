@@ -1028,14 +1028,23 @@ const Smartphones = () => {
     if (!b) return null;
     const all = deviceContext?.brands || [];
     const norm = (s) => (s || "").toString().toLowerCase();
+    const asNumber = Number.isNaN(Number(b)) ? null : Number(b);
     return (
       all.find((br) => {
+        if (!br) return false;
+        const name = br.name || "";
         const slug =
-          br.slug ||
-          (br.name || "").toString().toLowerCase().replace(/\s+/g, "-");
+          br.slug || name.toString().toLowerCase().replace(/\s+/g, "-");
+        const idMatches =
+          typeof br.id === "number"
+            ? asNumber !== null && br.id === asNumber
+            : typeof br.id === "string"
+              ? br.id === b || norm(br.id) === norm(b)
+              : false;
         return (
-          slug === b.toString().toLowerCase() ||
-          norm(br.name) === b.toString().toLowerCase()
+          idMatches ||
+          slug === norm(b) ||
+          norm(name) === norm(b)
         );
       }) || null
     );
@@ -1075,9 +1084,18 @@ const Smartphones = () => {
   };
   const priceFilter = priceFilterMap[normalizedFilterSlug] || null;
 
+  const sanitizeDescription = (desc = "") => {
+    const text = String(desc || "")
+      .replace(/<[^>]*>/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    return text.length > 180 ? `${text.slice(0, 177)}...` : text;
+  };
+
   let seoTitle = `Smartphones ${currentYear} - Specs, Prices & Reviews | Hook`;
-  let seoDescription =
-    "Browse the latest smartphones with detailed specs, prices, reviews, and comparisons on Hook.";
+  let seoDescription = sanitizeDescription(
+    "Browse the latest smartphones with detailed specs, prices, reviews, and comparisons on Hook.",
+  );
 
   if (isSingleSmartphonePath) {
     seoTitle = `Smartphones ${currentYear} - Compare Specs, Prices & Reviews | Hook`;
@@ -1092,9 +1110,10 @@ const Smartphones = () => {
     seoDescription = `Explore the best smartphones ${priceFilter.label.toLowerCase()} with detailed specs, latest prices, reviews, and comparisons to choose the right phone for your budget.`;
   } else if (currentBrandObj) {
     seoTitle = `${currentBrandObj.name} Smartphones ${currentYear} - Models, Prices & Specs | Hook`;
-    seoDescription =
+    seoDescription = sanitizeDescription(
       currentBrandObj.description ||
-      `Explore ${currentBrandObj.name} smartphones on Hook. Compare models, check prices, specifications, reviews, and find the best phone for your needs.`;
+        `Explore ${currentBrandObj.name} smartphones on Hook. Compare models, check prices, specifications, reviews, and find the best phone for your needs.`,
+    );
   }
 
   // Heading label: prefer new launches, then price-filtered collection
@@ -1861,6 +1880,10 @@ const Smartphones = () => {
       <Helmet>
         <title>{seoTitle}</title>
         <meta name="description" content={seoDescription} />
+        <meta property="og:title" content={seoTitle} />
+        <meta property="og:description" content={seoDescription} />
+        <meta name="twitter:title" content={seoTitle} />
+        <meta name="twitter:description" content={seoDescription} />
       </Helmet>
       {/* Page Header with Descriptive Content */}
 

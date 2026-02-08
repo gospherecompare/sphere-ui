@@ -165,45 +165,6 @@ const Footer = () => {
           </div>
 
           {/* Support */}
-          <div>
-            <h4 className="text-sm font-bold mb-4 text-white uppercase tracking-wide">
-              Support
-            </h4>
-            <ul className="space-y-2.5 text-gray-400 text-xs sm:text-sm">
-              <li>
-                <Link
-                  to="/faq"
-                  className="hover:text-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500 rounded transition-colors duration-200"
-                >
-                  FAQ
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/shipping"
-                  className="hover:text-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500 rounded transition-colors duration-200"
-                >
-                  Shipping & Returns
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/warranty"
-                  className="hover:text-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500 rounded transition-colors duration-200"
-                >
-                  Warranty
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/support"
-                  className="hover:text-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500 rounded transition-colors duration-200"
-                >
-                  Help Center
-                </Link>
-              </li>
-            </ul>
-          </div>
         </div>
 
         {/* Hook - Separate Row with Border Divider + Newsletter */}

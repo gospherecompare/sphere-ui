@@ -49,15 +49,15 @@ export default function HookLogo({
       <circle cx="34" cy="78" r="5" fill="#fff" />
 
       <text
-        font-size="72"
-        font-weight="700"
+        fontSize="72"
+        fontWeight="700"
         fill="#111827"
         x="110"
         y="82"
         stroke="#111827"
-        stroke-width="1.2"
-        paint-order="stroke fill"
-        font-family="Snell Roundhand, Apple Chancery, cursive"
+        strokeWidth="1.2"
+        paintOrder="stroke fill"
+        fontFamily="Snell Roundhand, Apple Chancery, cursive"
       >
         ook
       </text>
