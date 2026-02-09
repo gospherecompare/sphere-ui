@@ -247,6 +247,47 @@ const Header = () => {
     return "smartphones";
   };
 
+  const formatINR = (value) => {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return null;
+    try {
+      return `₹${new Intl.NumberFormat("en-IN", {
+        maximumFractionDigits: 0,
+      }).format(n)}`;
+    } catch (e) {
+      return `₹${Math.round(n)}`;
+    }
+  };
+
+  const getSuggestionImage = (sugg) =>
+    sugg?.image ||
+    sugg?.image_url ||
+    sugg?.product_image ||
+    sugg?.imageUrl ||
+    null;
+
+  const getSuggestionVariantTypes = (sugg) => {
+    const raw = sugg?.variant_types || sugg?.variantTypes;
+    if (Array.isArray(raw)) {
+      return raw
+        .map((x) => String(x || "").trim())
+        .filter(Boolean)
+        .slice(0, 3);
+    }
+    return [];
+  };
+
+  const getSuggestionFeatures = (sugg) => {
+    const raw = sugg?.key_features || sugg?.keyFeatures;
+    if (Array.isArray(raw)) {
+      return raw
+        .map((x) => String(x || "").trim())
+        .filter(Boolean)
+        .slice(0, 3);
+    }
+    return [];
+  };
+
   // Fetch suggestions from server (debounced)
   const handleSearchInputChange = (value) => {
     // remember whether input was focused before updating state
@@ -1074,12 +1115,49 @@ const Header = () => {
                                         query={searchQuery}
                                       />
                                     </div>
-                                    <div className="text-xs sm:text-sm text-gray-500 truncate mt-0.5">
-                                      {sugg.type === "product"
-                                        ? sugg.brand_name ||
-                                          sugg.model ||
-                                          "Smartphone"
-                                        : sugg.type || ""}
+                                    <div className="text-xs sm:text-sm text-gray-500 mt-0.5">
+                                      {sugg.type === "product" ? (
+                                        <div className="min-w-0">
+                                          <div className="truncate">
+                                            {sugg.brand_name ||
+                                              sugg.model ||
+                                              sugg.product_type ||
+                                              "Product"}
+                                          </div>
+                                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                            {getSuggestionVariantTypes(sugg).map(
+                                              (v) => (
+                                                <span
+                                                  key={v}
+                                                  className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700"
+                                                >
+                                                  {v}
+                                                </span>
+                                              ),
+                                            )}
+                                            {formatINR(
+                                              sugg.min_price ?? sugg.minPrice,
+                                            ) && (
+                                              <span className="text-[11px] px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-100">
+                                                From{" "}
+                                                {formatINR(
+                                                  sugg.min_price ?? sugg.minPrice,
+                                                )}
+                                              </span>
+                                            )}
+                                          </div>
+                                          {getSuggestionFeatures(sugg).length >
+                                            0 && (
+                                            <div className="mt-1 text-[11px] text-gray-500 truncate">
+                                              {getSuggestionFeatures(sugg).join(
+                                                " • ",
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        sugg.type || ""
+                                      )}
                                     </div>
                                   </div>
 
@@ -1147,6 +1225,30 @@ const Header = () => {
                             className="w-full flex items-center gap-3 p-4 bg-white rounded-lg border border-gray-200 hover:border-purple-300 active:bg-purple-50 transition-all duration-150 min-h-[64px] text-left"
                           >
                             {/* Product Thumbnail */}
+                            <div className="w-12 h-12 overflow-hidden flex items-center justify-center flex-shrink-0">
+                              {getSuggestionImage(sugg) ? (
+                                <img
+                                  src={getSuggestionImage(sugg)}
+                                  alt={sugg.name}
+                                  className="w-full h-full object-contain"
+                                  loading="lazy"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = "none";
+                                  }}
+                                />
+                              ) : (
+                                <span className="font-bold text-sm text-purple-600">
+                                  {(
+                                    sugg.brand_name ||
+                                    sugg.model ||
+                                    sugg.name ||
+                                    ""
+                                  )
+                                    .charAt(0)
+                                    .toUpperCase()}
+                                </span>
+                              )}
+                            </div>
 
                             {/* Text Content */}
                             <div className="flex-1 min-w-0">
@@ -1156,12 +1258,48 @@ const Header = () => {
                                   query={searchQuery}
                                 />
                               </div>
-                              <div className="text-xs text-gray-500 truncate mt-1">
-                                {sugg.type === "product"
-                                  ? sugg.brand_name ||
-                                    sugg.model ||
-                                    "Smartphone"
-                                  : sugg.type || ""}
+                              <div className="text-xs text-gray-500 mt-1">
+                                {sugg.type === "product" ? (
+                                  <div className="min-w-0">
+                                    <div className="truncate">
+                                      {sugg.brand_name ||
+                                        sugg.model ||
+                                        sugg.product_type ||
+                                        "Product"}
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                      {getSuggestionVariantTypes(sugg).map(
+                                        (v) => (
+                                          <span
+                                            key={v}
+                                            className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700"
+                                          >
+                                            {v}
+                                          </span>
+                                        ),
+                                      )}
+                                      {formatINR(
+                                        sugg.min_price ?? sugg.minPrice,
+                                      ) && (
+                                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-100">
+                                          From{" "}
+                                          {formatINR(
+                                            sugg.min_price ?? sugg.minPrice,
+                                          )}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {getSuggestionFeatures(sugg).length > 0 && (
+                                      <div className="mt-1 text-[11px] text-gray-500 truncate">
+                                        {getSuggestionFeatures(sugg).join(
+                                          " • ",
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  sugg.type || ""
+                                )}
                               </div>
                             </div>
 
@@ -1366,9 +1504,43 @@ const Header = () => {
                             />
                           </div>
                           <div className="text-sm text-gray-600 mt-1">
-                            {sugg.type === "product"
-                              ? sugg.brand_name || sugg.model || "Smartphone"
-                              : sugg.type || ""}
+                            {sugg.type === "product" ? (
+                              <div className="min-w-0">
+                                <div className="truncate">
+                                  {sugg.brand_name ||
+                                    sugg.model ||
+                                    sugg.product_type ||
+                                    "Product"}
+                                </div>
+                                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                  {getSuggestionVariantTypes(sugg).map((v) => (
+                                    <span
+                                      key={v}
+                                      className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700"
+                                    >
+                                      {v}
+                                    </span>
+                                  ))}
+                                  {formatINR(
+                                    sugg.min_price ?? sugg.minPrice,
+                                  ) && (
+                                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-100">
+                                      From{" "}
+                                      {formatINR(
+                                        sugg.min_price ?? sugg.minPrice,
+                                      )}
+                                    </span>
+                                  )}
+                                </div>
+                                {getSuggestionFeatures(sugg).length > 0 && (
+                                  <div className="mt-2 text-xs text-gray-500 truncate">
+                                    {getSuggestionFeatures(sugg).join(" • ")}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              sugg.type || ""
+                            )}
                           </div>
                         </div>
 
