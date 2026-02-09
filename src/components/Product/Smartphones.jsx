@@ -189,7 +189,8 @@ const Smartphones = () => {
     useState(false);
 
   const phonesForFeatureList = useMemo(() => {
-    if (Array.isArray(smartphoneAll) && smartphoneAll.length) return smartphoneAll;
+    if (Array.isArray(smartphoneAll) && smartphoneAll.length)
+      return smartphoneAll;
     return Array.isArray(smartphone) ? smartphone : [];
   }, [smartphoneAll, smartphone]);
 
@@ -270,7 +271,8 @@ const Smartphones = () => {
   useEffect(() => {
     if (filter === "trending") dispatch(fetchTrendingSmartphones());
     else if (filter === "new") dispatch(fetchNewLaunchSmartphones());
-    else if (!smartphoneAll || smartphoneAll.length === 0) dispatch(fetchSmartphones());
+    else if (!smartphoneAll || smartphoneAll.length === 0)
+      dispatch(fetchSmartphones());
   }, [filter, dispatch, smartphoneAll ? smartphoneAll.length : 0]);
 
   // When query filters change (feature / list filters), scroll back to top so the
@@ -463,34 +465,82 @@ const Smartphones = () => {
     const otg = connectivity.otg || "";
     const usb = connectivity.usb || "";
 
-    // Network support (connectivity_network in JSON)
-    let networkSupport = "";
-    try {
-      const conn =
-        apiDevice.connectivity_network || apiDevice.connectivity || {};
-      const fiveFlag =
-        conn._5g_support ?? conn["5g_support"] ?? conn["5G_support"];
-      if (typeof fiveFlag === "string") {
-        if (fiveFlag.toLowerCase().startsWith("y")) networkSupport = "5G";
-        else networkSupport = "4G";
-      } else if (typeof fiveFlag === "boolean") {
-        networkSupport = fiveFlag ? "5G" : "4G";
+    // Network support (5G / 4G) — keep this human-readable for filters/UI
+    const supports5g = () => {
+      const sources = [
+        apiDevice.connectivity_network,
+        apiDevice.connectivity,
+        apiDevice.network,
+      ].filter(Boolean);
+
+      const parseSupportFlag = (obj) => {
+        if (!obj || typeof obj !== "object") return null;
+        const raw =
+          obj._5g_support ?? obj["5g_support"] ?? obj["5G_support"] ?? null;
+        if (raw === null || raw === undefined) return null;
+        if (typeof raw === "boolean") return raw;
+        const s = String(raw).trim().toLowerCase();
+        if (!s) return null;
+        if (s.startsWith("y") || s === "true" || s.includes("supported"))
+          return true;
+        if (s.startsWith("n") || s === "false" || s.includes("not"))
+          return false;
+        return null;
+      };
+
+      const get5gBands = (obj) => {
+        if (!obj || typeof obj !== "object") return null;
+        return (
+          obj["5g_bands"] ||
+          obj["5G_bands"] ||
+          obj.five_g_bands ||
+          obj.fiveGBands ||
+          obj.five_g ||
+          obj.fiveG ||
+          obj["5g"] ||
+          obj.bands?.["5g"] ||
+          obj.bands?.five_g ||
+          obj.bands?.fiveG ||
+          null
+        );
+      };
+
+      // Prefer any "true" flag; keep "false" only as a fallback
+      let flagged = null;
+      for (const src of sources) {
+        const flag = parseSupportFlag(src);
+        if (flag === true) return true;
+        if (flag === false) flagged = false;
       }
-      if (!networkSupport) {
-        const tech = (
-          conn.network_technology ||
-          conn.network ||
-          apiDevice.performance?.network ||
-          apiDevice.network ||
-          ""
-        ).toString();
-        if (/5g/i.test(tech)) networkSupport = "5G";
-        else if (/4g/i.test(tech)) networkSupport = "4G";
+
+      for (const src of sources) {
+        const bands = get5gBands(src);
+        if (Array.isArray(bands)) {
+          if (bands.length > 0) return true;
+          continue;
+        }
+        if (typeof bands === "string") {
+          if (bands.trim()) return true;
+          continue;
+        }
       }
-    } catch {
-      networkSupport =
-        apiDevice.performance?.network || apiDevice.network || "";
-    }
+
+      const techCandidates = [
+        apiDevice.connectivity_network?.network_technology,
+        apiDevice.connectivity?.network_technology,
+        apiDevice.connectivity_network?.network,
+        apiDevice.connectivity?.network,
+        apiDevice.performance?.network,
+      ];
+      for (const t of techCandidates) {
+        if (!t) continue;
+        if (/5g/i.test(String(t))) return true;
+      }
+
+      return flagged === true ? true : false;
+    };
+
+    const networkSupport = supports5g() ? "5G" : "4G";
 
     // Camera count and details - prefer structured `camera.rear_camera` if present
     const cam = apiDevice.camera || apiDevice.cameras || {};
@@ -762,11 +812,7 @@ const Smartphones = () => {
           "",
         ),
         refreshRate: pick(toString(refreshRate), ""),
-        network: pick(
-          toString(networkSupport),
-          toString(apiDevice.network),
-          "",
-        ),
+        network: pick(toString(networkSupport), ""),
         cameraCount: cameraCount || 0,
       },
       numericBattery: numericBattery,
@@ -1098,10 +1144,22 @@ const Smartphones = () => {
   const refreshRateOptions = getRefreshRateOptions(devices);
   const cameraOptions = getCameraOptions(devices);
   const networkOptions = (() => {
-    const opts = [
-      ...new Set(devices.map((d) => d.specs.network || "").filter(Boolean)),
-    ];
-    return opts.length > 0 ? opts : ["5G", "4G"];
+    const raw = devices
+      .map((d) => String(d?.specs?.network || "").trim())
+      .filter(Boolean)
+      .map((s) => {
+        const upper = s.toUpperCase();
+        if (upper.includes("5G")) return "5G";
+        if (upper.includes("4G")) return "4G";
+        return "";
+      })
+      .filter(Boolean);
+
+    const set = new Set(raw);
+    const out = [];
+    if (set.has("5G")) out.push("5G");
+    if (set.has("4G")) out.push("4G");
+    return out.length > 0 ? out : ["5G", "4G"];
   })();
 
   const [filters, setFilters] = useState({
@@ -1144,11 +1202,7 @@ const Smartphones = () => {
             : typeof br.id === "string"
               ? br.id === b || norm(br.id) === norm(b)
               : false;
-        return (
-          idMatches ||
-          slug === norm(b) ||
-          norm(name) === norm(b)
-        );
+        return idMatches || slug === norm(b) || norm(name) === norm(b);
       }) || null
     );
   })();
@@ -1810,7 +1864,8 @@ const Smartphones = () => {
           }
           // check single selected variant (fallback)
           const vram = device.variant?.ram || device.variant?.RAM || null;
-          const val = parseFirstInt(vram) || parseFirstInt(device.specs?.ram) || 0;
+          const val =
+            parseFirstInt(vram) || parseFirstInt(device.specs?.ram) || 0;
           if (val >= 12) return true;
           // check performance ram_options array
           const rOpts =
@@ -1826,7 +1881,8 @@ const Smartphones = () => {
           const nb =
             Number(device.numericBattery) ||
             parseBatteryMah() ||
-            (parseFirstInt(device.specs?.battery) || 0);
+            parseFirstInt(device.specs?.battery) ||
+            0;
           return Number(nb || 0) >= 6000;
         };
 
@@ -1900,9 +1956,7 @@ const Smartphones = () => {
             {};
           if (!n) return false;
           if (Array.isArray(n["5g_bands"] || n.five_g_bands || n.fiveGBands))
-            return (
-              (n["5g_bands"] || n.five_g_bands || n.fiveGBands).length > 0
-            );
+            return (n["5g_bands"] || n.five_g_bands || n.fiveGBands).length > 0;
           if (Array.isArray(n.five_g || n.fiveG || n["5g"]))
             return (n.five_g || n.fiveG || n["5g"]).length > 0;
           if (Array.isArray(device.five_g || device.fiveG || device["5g"]))
@@ -1933,7 +1987,8 @@ const Smartphones = () => {
 
         const hasWirelessCharging = () => {
           const raw =
-            device?.battery?.wireless_charging ?? device?.battery?.wirelessCharging;
+            device?.battery?.wireless_charging ??
+            device?.battery?.wirelessCharging;
           return raw != null && String(raw).trim() !== "";
         };
 
@@ -1986,14 +2041,17 @@ const Smartphones = () => {
           if (!s) return false;
           if (s.includes("not supported") || s.includes("unsupported"))
             return false;
-          return s.includes("supported") || s.includes("yes") || s.includes("true");
+          return (
+            s.includes("supported") || s.includes("yes") || s.includes("true")
+          );
         };
 
         const hasOis = () => {
           const cam = device?.camera || {};
           const rear = cam?.rear_camera;
           const lenses = [];
-          if (rear && typeof rear === "object") lenses.push(...Object.values(rear));
+          if (rear && typeof rear === "object")
+            lenses.push(...Object.values(rear));
           lenses.push(
             cam.main,
             cam.wide,
@@ -2009,7 +2067,11 @@ const Smartphones = () => {
             const s = String(raw).toLowerCase();
             if (!s) continue;
             if (s.includes("not")) continue;
-            if (s.includes("supported") || s.includes("yes") || s.includes("true"))
+            if (
+              s.includes("supported") ||
+              s.includes("yes") ||
+              s.includes("true")
+            )
               return true;
           }
           return false;
@@ -2018,13 +2080,15 @@ const Smartphones = () => {
         const hasPeriscope = () => {
           return Boolean(
             device?.camera?.rear_camera?.periscope_telephoto ||
-              device?.camera?.periscope_telephoto,
+            device?.camera?.periscope_telephoto,
           );
         };
 
         const hasUfs4 = () => {
           const raw =
-            device?.performance?.storage_type ?? device?.performance?.storageType ?? "";
+            device?.performance?.storage_type ??
+            device?.performance?.storageType ??
+            "";
           return /ufs\s*4/i.test(String(raw));
         };
 
@@ -2158,7 +2222,11 @@ const Smartphones = () => {
     if (!b) return null;
     if (typeof b === "object") {
       const raw =
-        b.fast_charging ?? b.fastCharging ?? b.fast_charge ?? b.fastCharge ?? "";
+        b.fast_charging ??
+        b.fastCharging ??
+        b.fast_charge ??
+        b.fastCharge ??
+        "";
       return parseFirstInt(raw);
     }
     const s = String(b);
@@ -2168,7 +2236,9 @@ const Smartphones = () => {
 
   const getWirelessChargeWatt = (card) => {
     const raw =
-      card?.battery?.wireless_charging ?? card?.battery?.wirelessCharging ?? null;
+      card?.battery?.wireless_charging ??
+      card?.battery?.wirelessCharging ??
+      null;
     return raw ? parseFirstInt(raw) : null;
   };
 
@@ -2247,7 +2317,8 @@ const Smartphones = () => {
   };
 
   const getRefreshRateHz = (card) => {
-    const disp = card?.display || card?.display_json || card?.specs?.display || {};
+    const disp =
+      card?.display || card?.display_json || card?.specs?.display || {};
     const raw =
       (disp && typeof disp === "object" && disp.refresh_rate) ||
       card?.specs?.refreshRate ||
@@ -2319,7 +2390,8 @@ const Smartphones = () => {
       if (bv == null) return -1;
       if (bv !== av) return bv - av;
       // Tie-breaker: cheaper first, then name
-      if (a.numericPrice !== b.numericPrice) return a.numericPrice - b.numericPrice;
+      if (a.numericPrice !== b.numericPrice)
+        return a.numericPrice - b.numericPrice;
       return String(a.name || "").localeCompare(String(b.name || ""));
     }
     switch (sortBy) {
@@ -2778,7 +2850,7 @@ const Smartphones = () => {
                   </span>
                 </div>
 
-                <div className="bg-gradient-to-br from-purple-50 to-blue-50 border border-indigo-100 rounded-xl p-4">
+                <div className="bg-gradient-to-br from-blue-50 via-purple-50 to-blue-50 border border-indigo-100 rounded-xl p-4">
                   <div className="flex justify-between text-sm font-medium text-gray-700 mb-4">
                     <div className="text-center">
                       <div className="text-xs text-gray-500">Minimum</div>
@@ -3576,7 +3648,7 @@ const Smartphones = () => {
                   <div className="text-sm text-gray-600 mb-3">
                     Set your budget range for smartphone purchase
                   </div>
-                  <div className="bg-gradient-to-b from-purple-600 to-white rounded-xl p-4 border border-gray-200">
+                  <div className="bg-gradient-to-r from-purple-50 via-blue-50 purple-50 to-white rounded-xl p-4 border border-gray-200">
                     <div className="flex justify-between text-sm font-medium text-gray-700 mb-4">
                       <div className="text-center">
                         <div className="text-xs text-gray-500">Minimum</div>
@@ -3855,26 +3927,6 @@ const Smartphones = () => {
                             className="w-4 h-4"
                           />
                           <span className="text-sm">{r}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h5 className="font-semibold text-gray-800 mb-2">Camera</h5>
-                    <div className="space-y-2">
-                      {cameraOptions.map((c) => (
-                        <label
-                          key={c}
-                          className="flex items-center gap-3 cursor-pointer"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={filters.camera.includes(c)}
-                            onChange={() => handleFilterChange("camera", c)}
-                            className="w-4 h-4"
-                          />
-                          <span className="text-sm">{c}</span>
                         </label>
                       ))}
                     </div>

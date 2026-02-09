@@ -469,8 +469,8 @@ const Wishlist = () => {
         />
       </Helmet>
 
-      <div className="min-h-screen bg-white py-6 sm:py-8 lg:py-12 px-3 sm:px-4 lg:px-8">
-        <div className="max-w-6xl mx-auto">
+      <div className="max-w-6xl mx-auto min-h-screen bg-white py-6 sm:py-8 lg:py-12 px-3 sm:px-4 lg:px-8">
+        <div className="">
           {/* Error Message */}
           {error && (
             <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
@@ -517,7 +517,7 @@ const Wishlist = () => {
 
           {/* Empty State */}
           {wishlistItems.length === 0 ? (
-            <div className="bg-gradient-to-br from-purple-600 to-blue-600 border border-gray-200 rounded-xl p-8 sm:p-12 text-center">
+            <div className="bg-gradient-to-br from-blue-100 via-purple-100 to-blue-100 border border-gray-200 rounded-xl p-8 sm:p-12 text-center">
               <div className="flex justify-center mb-4">
                 <div className="p-4 bg-white rounded-full border-2 border-gray-200">
                   <FaBox className="text-gray-300 text-5xl sm:text-6xl" />
@@ -543,7 +543,7 @@ const Wishlist = () => {
             <>
               {/* Summary Stats Card */}
               <div className="mb-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-gradient-to-br from-purple-600 to-blue-600 border border-blue-200 rounded-lg p-4 sm:p-6">
+                <div className="bg-white border border-blue-200 rounded-lg p-4 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs text-blue-600 font-semibold uppercase tracking-wider">
@@ -692,5 +692,3 @@ const Wishlist = () => {
 };
 
 export default Wishlist;
-
-
