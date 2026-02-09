@@ -1,107 +1,139 @@
 // src/components/MobileFeaturesFinder.jsx
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { FaMobileAlt } from "react-icons/fa";
+import { useDevice } from "../../hooks/useDevice";
 import {
-  FaCamera,
-  FaBatteryFull,
-  FaMemory,
-  FaMobileAlt,
-  FaGamepad,
-  FaFingerprint,
-  FaBolt,
-  FaCheckCircle,
-  FaArrowRight,
-} from "react-icons/fa";
+  computePopularSmartphoneFeatures,
+  SMARTPHONE_FEATURE_CATALOG,
+} from "../../utils/smartphonePopularFeatures";
 
 const MobileFeaturesFinder = () => {
   const navigate = useNavigate();
-
-  const popularFeatures = [
-    {
-      id: "high-camera",
-      name: "High MP Camera",
-      icon: <FaCamera />,
-      activeGradient: "from-blue-600 via-purple-500 to-blue-600",
-      inactiveColor: "text-gray-400",
-      description: "50MP+ cameras",
-      count: 124,
-    },
-    {
-      id: "long-battery",
-      name: "Long Battery",
-      icon: <FaBatteryFull />,
-      activeGradient: "from-blue-600 via-purple-500 to-blue-600",
-      inactiveColor: "text-gray-400",
-      description: "5000mAh+",
-      count: 89,
-    },
-    {
-      id: "high-ram",
-      name: "High RAM",
-      icon: <FaMemory />,
-      activeGradient: "from-blue-600 via-purple-500 to-blue-600",
-      inactiveColor: "text-gray-400",
-      description: "8GB+ RAM",
-      count: 156,
-    },
-    {
-      id: "gaming",
-      name: "Gaming",
-      icon: <FaGamepad />,
-      activeGradient: "from-blue-600 via-purple-500 to-blue-600",
-      inactiveColor: "text-gray-400",
-      description: "Gaming phones",
-      count: 45,
-    },
-    {
-      id: "fast-charging",
-      name: "Fast Charge",
-      icon: <FaBolt />,
-      activeGradient: "from-blue-600 via-purple-500 to-blue-600",
-      inactiveColor: "text-gray-400",
-      description: "65W+ charging",
-      count: 67,
-    },
-    {
-      id: "amoled",
-      name: "AMOLED",
-      icon: <FaMobileAlt />,
-      activeGradient: "from-blue-600 via-purple-500 to-blue-600",
-      inactiveColor: "text-gray-400",
-      description: "AMOLED displays",
-      count: 98,
-    },
-    {
-      id: "fingerprint",
-      name: "In-display FP",
-      icon: <FaFingerprint />,
-      activeGradient: "from-blue-600 via-purple-500 to-blue-600",
-      inactiveColor: "text-gray-400",
-      description: "In-display sensor",
-      count: 112,
-    },
-    {
-      id: "5g",
-      name: "5G Ready",
-      icon: <FaCheckCircle />,
-      activeGradient: "from-blue-600 via-purple-500 to-blue-600",
-      inactiveColor: "text-gray-400",
-      description: "5G connectivity",
-      count: 178,
-    },
-  ];
+  const deviceCtx = useDevice();
+  const smartphones =
+    (deviceCtx.smartphoneAll && deviceCtx.smartphoneAll.length
+      ? deviceCtx.smartphoneAll
+      : deviceCtx.smartphone) || [];
 
   const [activeFeature, setActiveFeature] = useState();
 
   const [params] = useSearchParams();
+
+  const [popularFeatureOrder, setPopularFeatureOrder] = useState([]);
+  const [popularFeatureOrderLoaded, setPopularFeatureOrderLoaded] =
+    useState(false);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const controller =
+      typeof AbortController !== "undefined" ? new AbortController() : null;
+
+    (async () => {
+      try {
+        const res = await fetch(
+          "https://api.apisphere.in/api/public/popular-features?deviceType=smartphone&days=7&limit=16",
+          controller ? { signal: controller.signal } : undefined,
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        const order = Array.isArray(data?.results)
+          ? data.results
+              .map((r) => r.feature_id || r.featureId || r.id)
+              .filter(Boolean)
+          : [];
+        if (!cancelled) {
+          setPopularFeatureOrder(order);
+          setPopularFeatureOrderLoaded(true);
+        }
+      } catch {
+        // ignore popularity fetch errors
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      try {
+        controller?.abort?.();
+      } catch {
+        // ignore
+      }
+    };
+  }, []);
 
   React.useEffect(() => {
     const f = params.get("feature");
     setActiveFeature(f || undefined);
   }, [params]);
 
+  const popularFeatures = useMemo(() => {
+    const base = computePopularSmartphoneFeatures(smartphones, { limit: 0 });
+
+    const normalizedActive = activeFeature
+      ? activeFeature.toString().toLowerCase().replace(/\s+/g, "-")
+      : null;
+
+    let features = base;
+    if (
+      normalizedActive &&
+      !features.some((f) => f.id === normalizedActive)
+    ) {
+      const def = SMARTPHONE_FEATURE_CATALOG.find(
+        (f) => f.id === normalizedActive,
+      );
+      if (def) features = [{ ...def, count: 0 }, ...features];
+    }
+
+    if (popularFeatureOrder && popularFeatureOrder.length) {
+      const byId = new Map(features.map((f) => [f.id, f]));
+      const ordered = [];
+      for (const id of popularFeatureOrder) {
+        if (!byId.has(id)) continue;
+        ordered.push(byId.get(id));
+        byId.delete(id);
+      }
+      ordered.push(...byId.values());
+      features = ordered;
+    }
+
+    return features.slice(0, 16);
+  }, [smartphones, activeFeature, popularFeatureOrder]);
+
+  const trackFeatureClick = (featureId) => {
+    try {
+      const url = "https://api.apisphere.in/api/public/feature-click";
+      const body = new URLSearchParams({
+        device_type: "smartphone",
+        feature_id: featureId,
+      });
+      if (navigator && typeof navigator.sendBeacon === "function") {
+        navigator.sendBeacon(url, body);
+        return;
+      }
+    } catch {
+      // fall back to fetch
+    }
+
+    try {
+      fetch("https://api.apisphere.in/api/public/feature-click", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+        },
+        body: new URLSearchParams({
+          device_type: "smartphone",
+          feature_id: featureId,
+        }),
+        keepalive: true,
+      }).catch(() => {});
+    } catch {
+      // ignore
+    }
+  };
+
   const handleFeatureClick = (featureId) => {
     setActiveFeature(featureId);
+    trackFeatureClick(featureId);
     navigate(`/smartphones?feature=${featureId}`);
   };
 
@@ -123,7 +155,9 @@ const MobileFeaturesFinder = () => {
           </h2>
         </div>
         <p className="text-sm text-gray-600">
-          Find smartphones based on your preferred features
+          {popularFeatureOrderLoaded
+            ? "Popular choices from other users (last 7 days)"
+            : "Find smartphones based on your preferred features"}
         </p>
       </div>
 
@@ -137,6 +171,7 @@ const MobileFeaturesFinder = () => {
       >
         {popularFeatures.map((feature) => {
           const isActive = activeFeature === feature.id;
+          const Icon = feature.icon;
 
           return (
             <button
@@ -152,16 +187,16 @@ const MobileFeaturesFinder = () => {
               <div
                 className={`w-14 h-14 lg:w-16 lg:h-16 flex items-center justify-center rounded-2xl p-3 transition-all duration-300 mb-3 ${
                   isActive
-                    ? `bg-gradient-to-br ${feature.activeGradient} text-white shadow-lg shadow-red-200/50`
+                    ? "bg-gradient-to-br from-blue-600 via-purple-500 to-blue-600 text-white shadow-lg shadow-red-200/50"
                     : "bg-gray-100 text-gray-400 group-hover:bg-gray-200 group-hover:shadow-md"
                 }`}
               >
                 <span
                   className={`text-xl lg:text-2xl transition-colors duration-300 ${
-                    isActive ? "text-white" : feature.inactiveColor
+                    isActive ? "text-white" : "text-gray-400"
                   }`}
                 >
-                  {feature.icon}
+                  {Icon ? <Icon /> : null}
                 </span>
               </div>
 
@@ -187,7 +222,7 @@ const MobileFeaturesFinder = () => {
               <div
                 className={`mt-2 w-1.5 h-1.5 rounded-full transition-all duration-300 ${
                   isActive
-                    ? `bg-gradient-to-r ${feature.activeGradient} opacity-100`
+                    ? "bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 opacity-100"
                     : "bg-transparent opacity-0"
                 }`}
               />

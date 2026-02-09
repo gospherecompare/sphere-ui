@@ -9,6 +9,11 @@ import {
   FaMicrochip,
   FaSignal,
   FaSyncAlt,
+  FaFingerprint,
+  FaWifi,
+  FaShieldAlt,
+  FaRobot,
+  FaTachometerAlt,
   FaFilter,
   FaTimes,
   FaSearch,
@@ -45,6 +50,10 @@ import Spinner from "../ui/Spinner";
 import Breadcrumbs from "../Breadcrumbs";
 import { generateSlug } from "../../utils/slugGenerator";
 import normalizeProduct from "../../utils/normalizeProduct";
+import {
+  computePopularSmartphoneFeatures,
+  SMARTPHONE_FEATURE_CATALOG,
+} from "../../utils/smartphonePopularFeatures";
 
 // Enhanced Image Carousel - Simplified without counts/indicators
 const ImageCarousel = ({ images = [] }) => {
@@ -167,22 +176,112 @@ const Smartphones = () => {
   `;
 
   const deviceContext = useDevice();
-  const { smartphone } = deviceContext || {};
+  const { smartphone, smartphoneAll } = deviceContext || {};
   const [params] = useSearchParams();
   const filter = params.get("filter");
   const feature = params.get("feature");
   const normalizedFeature = feature
     ? feature.toString().toLowerCase().replace(/\s+/g, "-")
     : null;
+
+  const [popularFeatureOrder, setPopularFeatureOrder] = useState([]);
+  const [popularFeatureOrderLoaded, setPopularFeatureOrderLoaded] =
+    useState(false);
+
+  const phonesForFeatureList = useMemo(() => {
+    if (Array.isArray(smartphoneAll) && smartphoneAll.length) return smartphoneAll;
+    return Array.isArray(smartphone) ? smartphone : [];
+  }, [smartphoneAll, smartphone]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const controller =
+      typeof AbortController !== "undefined" ? new AbortController() : null;
+
+    (async () => {
+      try {
+        const res = await fetch(
+          "https://api.apisphere.in/api/public/popular-features?deviceType=smartphone&days=7&limit=16",
+          controller ? { signal: controller.signal } : undefined,
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        const order = Array.isArray(data?.results)
+          ? data.results
+              .map((r) => r.feature_id || r.featureId || r.id)
+              .filter(Boolean)
+          : [];
+        if (!cancelled) {
+          setPopularFeatureOrder(order);
+          setPopularFeatureOrderLoaded(true);
+        }
+      } catch {
+        // ignore popularity fetch errors
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      try {
+        controller?.abort?.();
+      } catch {
+        // ignore
+      }
+    };
+  }, []);
+
+  const popularFeatures = useMemo(() => {
+    let base = computePopularSmartphoneFeatures(phonesForFeatureList, {
+      limit: 0,
+    });
+
+    // Reorder by real user clicks (last 7 days) when available
+    if (popularFeatureOrder && popularFeatureOrder.length) {
+      const byId = new Map(base.map((f) => [f.id, f]));
+      const ordered = [];
+      for (const id of popularFeatureOrder) {
+        if (!byId.has(id)) continue;
+        ordered.push(byId.get(id));
+        byId.delete(id);
+      }
+      ordered.push(...byId.values());
+      base = ordered;
+    }
+
+    // Ensure current selection is visible even if it has 0 matching devices
+    if (normalizedFeature && !base.some((f) => f.id === normalizedFeature)) {
+      const def = SMARTPHONE_FEATURE_CATALOG.find(
+        (f) => f.id === normalizedFeature,
+      );
+      if (def) base = [{ ...def, count: 0 }, ...base];
+    }
+
+    return base.slice(0, 16);
+  }, [phonesForFeatureList, normalizedFeature, popularFeatureOrder]);
+
+  const smartphonesForList = useMemo(() => {
+    if (filter === "trending" || filter === "new") {
+      return Array.isArray(smartphone) ? smartphone : [];
+    }
+    return phonesForFeatureList;
+  }, [filter, smartphone, phonesForFeatureList]);
   const dispatch = useDispatch();
 
   useEffect(() => {
-    if (feature) {
-      dispatch(fetchSmartphones({ feature }));
-    } else if (filter === "trending") dispatch(fetchTrendingSmartphones());
+    if (filter === "trending") dispatch(fetchTrendingSmartphones());
     else if (filter === "new") dispatch(fetchNewLaunchSmartphones());
-    else dispatch(fetchSmartphones());
-  }, [filter, feature, dispatch]);
+    else if (!smartphoneAll || smartphoneAll.length === 0) dispatch(fetchSmartphones());
+  }, [filter, dispatch, smartphoneAll ? smartphoneAll.length : 0]);
+
+  // When query filters change (feature / list filters), scroll back to top so the
+  // user immediately sees the updated cards.
+  useEffect(() => {
+    try {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (e) {
+      // ignore scroll errors (SSR / old browsers)
+    }
+  }, [feature, filter]);
 
   const { getLogo, getStore, getStoreLogo } = useStoreLogos();
 
@@ -675,11 +774,17 @@ const Smartphones = () => {
       battery: apiDevice.battery ?? apiDevice.battery_raw ?? null,
       camera: apiDevice.camera ?? apiDevice.cameras ?? null,
       performance: apiDevice.performance ?? apiDevice.perf ?? null,
+      connectivity:
+        apiDevice.connectivity ??
+        apiDevice.connectivity_network ??
+        apiDevice.connectivityNetwork ??
+        null,
       network:
         apiDevice.network ??
         apiDevice.connectivity ??
         apiDevice.connectivity_network ??
         null,
+      build_design: apiDevice.build_design ?? apiDevice.design ?? null,
       sensors: apiDevice.sensors ?? apiDevice.sensor ?? null,
       display: apiDevice.display ?? null,
       category: apiDevice.category ?? apiDevice.product_type ?? null,
@@ -695,16 +800,14 @@ const Smartphones = () => {
   };
 
   // Transform API data to devices array
-  const devices = Array.isArray(smartphone)
-    ? smartphone.map((device, i) => mapApiToDevice(device, i))
-    : smartphone
-      ? [mapApiToDevice(smartphone, 0)]
-      : [];
+  const devices = (smartphonesForList || []).map((device, i) =>
+    mapApiToDevice(device, i),
+  );
 
   // Aggregate all variants across smartphones (supports variants array or singular variant)
-  const allVariants = (
-    Array.isArray(smartphone) ? smartphone : smartphone ? [smartphone] : []
-  ).flatMap((s) => (Array.isArray(s.variants) ? s.variants : []));
+  const allVariants = (smartphonesForList || []).flatMap((s) =>
+    Array.isArray(s?.variants) ? s.variants : [],
+  );
 
   // Build variant-level cards so each variant (ram/storage) gets its own card
   const variantCards = devices.flatMap((device) => {
@@ -1131,7 +1234,8 @@ const Smartphones = () => {
 
   // Defer render check until after all hooks are declared to keep hook order stable
   const noDataAndNotLoading =
-    (!smartphone || (Array.isArray(smartphone) && smartphone.length === 0)) &&
+    (!smartphonesForList ||
+      (Array.isArray(smartphonesForList) && smartphonesForList.length === 0)) &&
     !loading;
 
   // Apply query param filters
@@ -1613,22 +1717,72 @@ const Smartphones = () => {
       if (normalizedFeature) {
         const f = String(normalizedFeature).toLowerCase();
 
+        const parseFirstInt = (val) => {
+          if (val === null || val === undefined) return null;
+          const m = String(val).match(/(\d{1,6})/);
+          return m ? parseInt(m[1], 10) : null;
+        };
+
+        const parseBatteryMah = () => {
+          const b = device?.battery;
+          if (!b) return null;
+          if (typeof b === "number") return Number.isFinite(b) ? b : null;
+          if (typeof b === "string") return parseFirstInt(b);
+          return (
+            parseFirstInt(b.battery_capacity_mah) ??
+            parseFirstInt(b.capacity_mAh) ??
+            parseFirstInt(b.capacity_mah) ??
+            parseFirstInt(b.battery_capacity) ??
+            parseFirstInt(b.capacity) ??
+            null
+          );
+        };
+
+        const parseFastChargeWatt = () => {
+          const b = device?.battery;
+          if (!b) return null;
+          if (typeof b === "object") {
+            const raw =
+              b.fast_charging ??
+              b.fastCharging ??
+              b.fast_charge ??
+              b.fastCharge ??
+              null;
+            return raw ? parseFirstInt(raw) : null;
+          }
+          const s = String(b);
+          if (!/w/i.test(s)) return null;
+          return parseFirstInt(s);
+        };
+
         const hasFastCharge = () => {
-          // prefer explicit fields
+          const w = parseFastChargeWatt();
+          if (w !== null) return w >= 65;
+
+          // If a fast-charging field exists but we can't parse a wattage, still treat as supported
           if (
             device.battery &&
-            (device.battery.fast_charge || device.battery.fastCharge)
+            (device.battery.fast_charging ||
+              device.battery.fastCharging ||
+              device.battery.fast_charge ||
+              device.battery.fastCharge)
           )
             return true;
+
           const s = String(device.specs?.battery || device.battery || "");
-          return /\b(\d+\s?w|fast|flash)\b/i.test(s);
+          if (/\bw\b/i.test(s)) {
+            const sw = parseFirstInt(s);
+            if (sw !== null) return sw >= 65;
+          }
+          return /\b(fast|flash|supervooc|ultra\s*charge)\b/i.test(s);
         };
 
         const isAmoled = () => {
-          const d = String(
-            device.specs?.display || device.display || "",
-          ).toLowerCase();
-          return d.includes("amoled");
+          const disp = device.display || device.specs?.display || "";
+          const t =
+            (disp && typeof disp === "object" && (disp.panel || disp.type)) ||
+            disp;
+          return String(t).toLowerCase().includes("amoled");
         };
 
         const isGaming = () => {
@@ -1647,13 +1801,16 @@ const Smartphones = () => {
         };
 
         const hasHighRam = () => {
-          // check variant ram first
-          const vram =
-            device.variant?.ram ||
-            device.variant?.RAM ||
-            device.specs?.ram ||
-            "";
-          const val = parseInt(String(vram).replace(/[^0-9]/g, "")) || 0;
+          // check variants first (API shape uses `variants[]`)
+          if (Array.isArray(device.variants) && device.variants.length) {
+            const has = device.variants.some(
+              (v) => (parseFirstInt(v?.ram) || 0) >= 12,
+            );
+            if (has) return true;
+          }
+          // check single selected variant (fallback)
+          const vram = device.variant?.ram || device.variant?.RAM || null;
+          const val = parseFirstInt(vram) || parseFirstInt(device.specs?.ram) || 0;
           if (val >= 12) return true;
           // check performance ram_options array
           const rOpts =
@@ -1666,45 +1823,64 @@ const Smartphones = () => {
         };
 
         const hasLongBattery = () => {
-          const nb = Number(
-            device.numericBattery ||
-              parseInt(
-                String(device.specs?.battery || device.battery || "").replace(
-                  /[^0-9]/g,
-                  "",
-                ),
-              ) ||
-              0,
-          );
-          return nb >= 6000;
+          const nb =
+            Number(device.numericBattery) ||
+            parseBatteryMah() ||
+            (parseFirstInt(device.specs?.battery) || 0);
+          return Number(nb || 0) >= 6000;
         };
 
         const hasHighMpCamera = () => {
-          // prefer specs.rearCameraResolution or camera.rear_camera.main.resolution
-          const cand =
-            device.specs?.rearCameraResolution ||
-            device.rearCameraResolution ||
-            "";
-          const fromSpecs = parseInt(String(cand).replace(/[^0-9]/g, "")) || 0;
-          if (fromSpecs >= 50) return true;
-          try {
-            const cm =
-              device.camera?.rear_camera?.main ||
-              device.camera?.main ||
-              device.camera;
-            const res =
-              cm && (cm.resolution || cm.megapixels || cm.res)
-                ? parseInt(
-                    String(cm.resolution || cm.megapixels || cm.res).replace(
-                      /[^0-9]/g,
-                      "",
-                    ),
-                  )
-                : 0;
-            return res >= 50;
-          } catch {
-            return false;
+          const cam = device.camera || {};
+          const candidates = [];
+          const add = (val) => {
+            const n = parseFirstInt(val);
+            if (n && Number.isFinite(n)) candidates.push(n);
+          };
+
+          add(device.specs?.rearCameraResolution);
+          add(cam.main_camera_megapixels);
+          add(cam.telephoto_camera_megapixels);
+          add(cam.ultrawide_camera_megapixels);
+
+          const addFromLens = (lens) => {
+            if (!lens) return;
+            if (typeof lens === "number" || typeof lens === "string") {
+              const s = String(lens);
+              if (/mp/i.test(s)) add(s);
+              return;
+            }
+            if (typeof lens !== "object") return;
+            add(lens.resolution);
+            add(lens.resolution_mp);
+            add(lens.megapixels);
+            add(lens.mp);
+            add(lens.res);
+
+            for (const v of Object.values(lens)) {
+              if (v && typeof v === "object" && !Array.isArray(v)) {
+                add(v.resolution);
+                add(v.resolution_mp);
+                add(v.megapixels);
+                add(v.mp);
+                add(v.res);
+              }
+            }
+          };
+
+          const rear = cam.rear_camera;
+          if (rear && typeof rear === "object") {
+            for (const lens of Object.values(rear)) addFromLens(lens);
           }
+
+          addFromLens(cam.main);
+          addFromLens(cam.wide);
+          addFromLens(cam.telephoto);
+          addFromLens(cam.ultra_wide);
+          addFromLens(cam.periscope_telephoto);
+
+          const max = candidates.length ? Math.max(...candidates) : 0;
+          return max >= 50;
         };
 
         const hasInDisplayFp = () => {
@@ -1723,6 +1899,10 @@ const Smartphones = () => {
             device.networks ||
             {};
           if (!n) return false;
+          if (Array.isArray(n["5g_bands"] || n.five_g_bands || n.fiveGBands))
+            return (
+              (n["5g_bands"] || n.five_g_bands || n.fiveGBands).length > 0
+            );
           if (Array.isArray(n.five_g || n.fiveG || n["5g"]))
             return (n.five_g || n.fiveG || n["5g"]).length > 0;
           if (Array.isArray(device.five_g || device.fiveG || device["5g"]))
@@ -1730,6 +1910,128 @@ const Smartphones = () => {
           return (
             /5g/i.test(String(n)) || Boolean(n.five_g || n.fiveG || n["5g"])
           );
+        };
+
+        const hasHighRefreshRate = () => {
+          const disp = device.display || device.display_json || {};
+          const raw =
+            (disp && typeof disp === "object" && disp.refresh_rate) ||
+            device.specs?.refreshRate ||
+            device.specs?.refresh_rate ||
+            device.refresh_rate ||
+            "";
+          const rr = parseFirstInt(raw) || 0;
+          return rr >= 120;
+        };
+
+        const hasWifi7 = () => {
+          const w = device?.connectivity?.wifi;
+          if (Array.isArray(w))
+            return w.some((x) => /wi-?fi\s*7|802\.11be/i.test(String(x)));
+          return /wi-?fi\s*7|802\.11be/i.test(String(w || ""));
+        };
+
+        const hasWirelessCharging = () => {
+          const raw =
+            device?.battery?.wireless_charging ?? device?.battery?.wirelessCharging;
+          return raw != null && String(raw).trim() !== "";
+        };
+
+        const hasIpRating = () => {
+          const bd = device?.build_design || device?.design || {};
+          const raw =
+            (bd && typeof bd === "object" && bd.water_dust_resistance) ||
+            device?.water_dust_resistance ||
+            "";
+          return /\bip\d{2}\b/i.test(String(raw));
+        };
+
+        const hasAiFeatures = () => {
+          const buckets = [
+            device?.ai_features,
+            device?.features,
+            device?.performance?.ai_features,
+            device?.camera?.ai_features,
+            device?.connectivity?.ai_features,
+            device?.multimedia?.ai_features,
+          ];
+          for (const b of buckets) {
+            if (!b) continue;
+            if (Array.isArray(b) && b.length) return true;
+            if (typeof b === "string" && /\bai\b/i.test(b)) return true;
+          }
+          return false;
+        };
+
+        const hasEsim = () => {
+          const raw =
+            device?.connectivity?.esim ??
+            device?.connectivity?.eSIM ??
+            device?.network?.sim ??
+            device?.network?.sim_type ??
+            device?.network?.simType ??
+            null;
+          if (raw === null || raw === undefined) return false;
+          if (typeof raw === "boolean") return raw;
+          if (Array.isArray(raw))
+            return raw.some((x) => /esim/i.test(String(x)));
+          return /esim/i.test(String(raw));
+        };
+
+        const hasNfc = () => {
+          const raw = device?.connectivity?.nfc ?? device?.nfc ?? null;
+          if (raw === null || raw === undefined) return false;
+          if (typeof raw === "boolean") return raw;
+          const s = String(raw).toLowerCase();
+          if (!s) return false;
+          if (s.includes("not supported") || s.includes("unsupported"))
+            return false;
+          return s.includes("supported") || s.includes("yes") || s.includes("true");
+        };
+
+        const hasOis = () => {
+          const cam = device?.camera || {};
+          const rear = cam?.rear_camera;
+          const lenses = [];
+          if (rear && typeof rear === "object") lenses.push(...Object.values(rear));
+          lenses.push(
+            cam.main,
+            cam.wide,
+            cam.telephoto,
+            cam.ultra_wide,
+            cam.periscope_telephoto,
+          );
+          for (const lens of lenses) {
+            if (!lens) continue;
+            const raw = lens?.ois ?? lens?.OIS ?? null;
+            if (raw == null) continue;
+            if (typeof raw === "boolean") return raw;
+            const s = String(raw).toLowerCase();
+            if (!s) continue;
+            if (s.includes("not")) continue;
+            if (s.includes("supported") || s.includes("yes") || s.includes("true"))
+              return true;
+          }
+          return false;
+        };
+
+        const hasPeriscope = () => {
+          return Boolean(
+            device?.camera?.rear_camera?.periscope_telephoto ||
+              device?.camera?.periscope_telephoto,
+          );
+        };
+
+        const hasUfs4 = () => {
+          const raw =
+            device?.performance?.storage_type ?? device?.performance?.storageType ?? "";
+          return /ufs\s*4/i.test(String(raw));
+        };
+
+        const hasLpddr5x = () => {
+          const raw =
+            device?.performance?.ram_type ?? device?.performance?.ramType ?? "";
+          return /lpddr\s*5x/i.test(String(raw));
         };
 
         const featureMatch = (() => {
@@ -1740,6 +2042,42 @@ const Smartphones = () => {
               return hasFastCharge();
             case "amoled":
               return isAmoled();
+            case "high-refresh-rate":
+            case "120hz":
+            case "120-hz":
+            case "144hz":
+            case "144-hz":
+              return hasHighRefreshRate();
+            case "wifi-7":
+            case "wifi7":
+              return hasWifi7();
+            case "wireless-charging":
+            case "wirelesscharging":
+              return hasWirelessCharging();
+            case "ip-rating":
+            case "ip":
+            case "ip68":
+            case "ip69":
+              return hasIpRating();
+            case "ai-features":
+            case "ai":
+              return hasAiFeatures();
+            case "esim":
+            case "e-sim":
+            case "e_sim":
+              return hasEsim();
+            case "nfc":
+              return hasNfc();
+            case "ois":
+              return hasOis();
+            case "periscope":
+              return hasPeriscope();
+            case "ufs-4":
+            case "ufs4":
+              return hasUfs4();
+            case "lpddr5x":
+            case "lpddr-5x":
+              return hasLpddr5x();
             case "gaming":
               return isGaming();
             case "high-ram":
@@ -1794,7 +2132,196 @@ const Smartphones = () => {
     });
   }, [variantCards, filters, searchQuery, feature]);
 
+  const parseFirstInt = (val) => {
+    if (val === null || val === undefined) return null;
+    const m = String(val).match(/(\d{1,6})/);
+    return m ? parseInt(m[1], 10) : null;
+  };
+
+  const getBatteryMah = (card) => {
+    const b = card?.battery;
+    if (!b) return null;
+    if (typeof b === "number") return Number.isFinite(b) ? b : null;
+    if (typeof b === "string") return parseFirstInt(b);
+    return (
+      parseFirstInt(b.battery_capacity_mah) ??
+      parseFirstInt(b.capacity_mAh) ??
+      parseFirstInt(b.capacity_mah) ??
+      parseFirstInt(b.battery_capacity) ??
+      parseFirstInt(b.capacity) ??
+      null
+    );
+  };
+
+  const getFastChargeWatt = (card) => {
+    const b = card?.battery;
+    if (!b) return null;
+    if (typeof b === "object") {
+      const raw =
+        b.fast_charging ?? b.fastCharging ?? b.fast_charge ?? b.fastCharge ?? "";
+      return parseFirstInt(raw);
+    }
+    const s = String(b);
+    if (!/w/i.test(s)) return null;
+    return parseFirstInt(s);
+  };
+
+  const getWirelessChargeWatt = (card) => {
+    const raw =
+      card?.battery?.wireless_charging ?? card?.battery?.wirelessCharging ?? null;
+    return raw ? parseFirstInt(raw) : null;
+  };
+
+  const getRearCameraMp = (card) => {
+    const candidates = [];
+
+    const add = (val) => {
+      const n = parseFirstInt(val);
+      if (n && Number.isFinite(n)) candidates.push(n);
+    };
+
+    // Keep backward-compatible value (often rear main MP)
+    add(card?.specs?.rearCameraResolution);
+
+    const cam = card?.camera;
+    if (!cam) return candidates.length ? Math.max(...candidates) : null;
+
+    // Common flattened fields
+    add(cam.main_camera_megapixels);
+    add(cam.telephoto_camera_megapixels);
+    add(cam.ultrawide_camera_megapixels);
+
+    const addFromLens = (lens) => {
+      if (!lens) return;
+      if (typeof lens === "number" || typeof lens === "string") {
+        // Only parse raw values that explicitly mention MP to avoid picking up zoom values (e.g. "2X")
+        const s = String(lens);
+        if (/mp/i.test(s)) add(s);
+        return;
+      }
+      if (typeof lens !== "object") return;
+      add(lens.resolution);
+      add(lens.resolution_mp);
+      add(lens.megapixels);
+      add(lens.mp);
+      add(lens.res);
+
+      // Some datasets nest lens info (e.g., { main: {...} })
+      for (const v of Object.values(lens)) {
+        if (v && typeof v === "object" && !Array.isArray(v)) {
+          add(v.resolution);
+          add(v.resolution_mp);
+          add(v.megapixels);
+          add(v.mp);
+          add(v.res);
+        }
+      }
+    };
+
+    // Structured rear camera object (pick the MAX MP across all lenses)
+    const rear = cam.rear_camera;
+    if (rear && typeof rear === "object") {
+      for (const lens of Object.values(rear)) addFromLens(lens);
+    }
+
+    // Fallback to top-level camera object
+    addFromLens(cam.main);
+    addFromLens(cam.wide);
+    addFromLens(cam.telephoto);
+    addFromLens(cam.ultra_wide);
+    addFromLens(cam.periscope_telephoto);
+
+    return candidates.length ? Math.max(...candidates) : null;
+  };
+
+  const getMaxRamGb = (card) => {
+    // for variant cards, prefer the specific variant RAM
+    const vram = parseFirstInt(card?.variant?.ram ?? card?.ram ?? null);
+    if (vram) return vram;
+    const arr = Array.isArray(card?.variants) ? card.variants : [];
+    const maxFromVariants = arr.reduce((acc, v) => {
+      const n = parseFirstInt(v?.ram) || 0;
+      return Math.max(acc, n);
+    }, 0);
+    return maxFromVariants || parseFirstInt(card?.specs?.ram) || null;
+  };
+
+  const getRefreshRateHz = (card) => {
+    const disp = card?.display || card?.display_json || card?.specs?.display || {};
+    const raw =
+      (disp && typeof disp === "object" && disp.refresh_rate) ||
+      card?.specs?.refreshRate ||
+      card?.refresh_rate ||
+      "";
+    return parseFirstInt(raw);
+  };
+
+  const getIpRatingScore = (card) => {
+    const bd = card?.build_design || card?.design || {};
+    const raw =
+      (bd && typeof bd === "object" && bd.water_dust_resistance) ||
+      card?.water_dust_resistance ||
+      "";
+    const m = String(raw).match(/\bip(\d{2})\b/i);
+    return m ? parseInt(m[1], 10) : null;
+  };
+
+  const getAiFeatureCount = (card) => {
+    const buckets = [
+      card?.ai_features,
+      card?.features,
+      card?.performance?.ai_features,
+      card?.camera?.ai_features,
+      card?.connectivity?.ai_features,
+      card?.multimedia?.ai_features,
+    ];
+    let count = 0;
+    for (const b of buckets) {
+      if (!b) continue;
+      if (Array.isArray(b)) count += b.length;
+      else if (typeof b === "string" && b.trim()) count += 1;
+    }
+    return count || null;
+  };
+
+  const getFeatureSortValue = (card, featureId) => {
+    switch (featureId) {
+      case "long-battery":
+        return getBatteryMah(card);
+      case "fast-charging":
+        return getFastChargeWatt(card);
+      case "wireless-charging":
+        return getWirelessChargeWatt(card);
+      case "high-camera":
+      case "high-mp-camera":
+        return getRearCameraMp(card);
+      case "high-ram":
+        return getMaxRamGb(card);
+      case "high-refresh-rate":
+        return getRefreshRateHz(card);
+      case "ip-rating":
+        return getIpRatingScore(card);
+      case "ai-features":
+        return getAiFeatureCount(card);
+      default:
+        return null;
+    }
+  };
+
   const sortedVariants = [...filteredVariants].sort((a, b) => {
+    // If user is browsing by a popular feature and hasn't chosen an explicit sort,
+    // auto-rank by the feature value (high -> low) so higher-capability devices come first.
+    if (sortBy === "featured" && normalizedFeature) {
+      const av = getFeatureSortValue(a, normalizedFeature);
+      const bv = getFeatureSortValue(b, normalizedFeature);
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      if (bv !== av) return bv - av;
+      // Tie-breaker: cheaper first, then name
+      if (a.numericPrice !== b.numericPrice) return a.numericPrice - b.numericPrice;
+      return String(a.name || "").localeCompare(String(b.name || ""));
+    }
     switch (sortBy) {
       case "price-low":
         return a.numericPrice - b.numericPrice;
@@ -1874,6 +2401,49 @@ const Smartphones = () => {
 
   if (noDataAndNotLoading) return null;
 
+  const trackFeatureClick = (featureId) => {
+    try {
+      const url = "https://api.apisphere.in/api/public/feature-click";
+      const body = new URLSearchParams({
+        device_type: "smartphone",
+        feature_id: featureId,
+      });
+      if (navigator && typeof navigator.sendBeacon === "function") {
+        navigator.sendBeacon(url, body);
+        return;
+      }
+    } catch {
+      // fall back to fetch
+    }
+
+    try {
+      fetch("https://api.apisphere.in/api/public/feature-click", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+        },
+        body: new URLSearchParams({
+          device_type: "smartphone",
+          feature_id: featureId,
+        }),
+        keepalive: true,
+      }).catch(() => {});
+    } catch {
+      // ignore
+    }
+  };
+
+  const setFeatureParam = (featureId) => {
+    const sp = new URLSearchParams(location.search || "");
+    if (featureId) trackFeatureClick(featureId);
+    if (featureId) sp.set("feature", featureId);
+    else sp.delete("feature");
+    // Feature selection should win over "trending/new" list filters
+    sp.delete("filter");
+    const next = sp.toString();
+    navigate(`/smartphones${next ? `?${next}` : ""}`);
+  };
+
   return (
     <div className="min-h-screen  ">
       <style>{animationStyles}</style>
@@ -1913,6 +2483,53 @@ const Smartphones = () => {
             deals on the latest smartphones. Use our advanced filters to narrow
             down your search from our curated collection of premium devices.
           </h4>
+        </div>
+
+        {/* Feature Quick Filters */}
+        <div className="mb-6 sm:mb-7 md:mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <FaFilter className="text-purple-600" />
+              <h3 className="text-sm sm:text-base font-semibold text-gray-900">
+                Popular Features
+              </h3>
+            </div>
+            {normalizedFeature && (
+              <button
+                onClick={() => setFeatureParam(null)}
+                className="text-xs sm:text-sm text-purple-700 hover:text-purple-900 font-semibold"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          {popularFeatureOrderLoaded && (
+            <p className="text-xs text-gray-600 mb-3">
+              Popular choices from other users (last 7 days)
+            </p>
+          )}
+          <div className="flex gap-2.5 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {popularFeatures.map((pf) => {
+              const isActive = normalizedFeature === pf.id;
+              const Icon = pf.icon;
+              return (
+                <button
+                  key={pf.id}
+                  onClick={() => setFeatureParam(pf.id)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-full border text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors ${
+                    isActive
+                      ? "bg-purple-600 text-white border-purple-600"
+                      : "bg-white text-gray-700 border-gray-200 hover:border-purple-300 hover:text-purple-700"
+                  }`}
+                >
+                  <span className={isActive ? "text-white" : "text-purple-600"}>
+                    {Icon ? <Icon className="text-base" /> : null}
+                  </span>
+                  <span>{pf.name}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
         {/* Quick Stats Bar */}
 

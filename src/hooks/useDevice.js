@@ -52,7 +52,9 @@ export function useDevice() {
 
   // Combined list of all device types for generic components
   const devices = [
-    ...(state.smartphone || []).map((d) => ({
+    ...((state.smartphoneAll && state.smartphoneAll.length
+      ? state.smartphoneAll
+      : state.smartphone) || []).map((d) => ({
       ...d,
       deviceType: "smartphone",
     })),
@@ -182,6 +184,7 @@ export function useDevice() {
 
   return {
     smartphone: state.smartphone,
+    smartphoneAll: state.smartphoneAll,
     devices,
     categories: state.categories,
     brands: (state.brands || []).filter((c) => Boolean(c.status)),

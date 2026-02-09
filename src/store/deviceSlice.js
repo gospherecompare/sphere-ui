@@ -206,7 +206,6 @@ export const fetchSmartphones = createAsyncThunk(
   // Accept an optional options object: { feature }
   async (opts = {}, { rejectWithValue }) => {
     try {
-      const feature = opts.feature || null;
       const res = await fetch("https://api.apisphere.in/api/smartphones");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
@@ -265,133 +264,6 @@ export const fetchSmartphones = createAsyncThunk(
           variants,
         };
       });
-
-      // If a feature filter was requested, apply client-side filtering
-      if (feature) {
-        const matches = (device) => {
-          const f = String(feature).toLowerCase();
-          const hasBatteryFastCharge = (d) =>
-            (d.battery && (d.battery.fast_charge || d.battery.fastCharge)) ||
-            (d.battery && d.battery.fast_charge !== undefined);
-
-          const isAmoled = (d) => {
-            const t = (d.display && d.display.type) || d.display || "";
-            return String(t).toLowerCase().includes("amoled");
-          };
-
-          const isGaming = (d) => {
-            const proc =
-              (d.performance && d.performance.processor) || d.processor || "";
-            const cat = (d.category || "").toString().toLowerCase();
-            return (
-              /snapdragon\s*8|dimensity|exynos|apple\s*a|mediatek/i.test(
-                proc,
-              ) ||
-              cat.includes("flagship") ||
-              cat.includes("gaming")
-            );
-          };
-
-          const hasHighRam = (d) => {
-            const r = d.performance && d.performance.ram_options;
-            if (Array.isArray(r)) {
-              return r.some(
-                (x) => parseInt(String(x).replace(/[^0-9]/g, "")) >= 12,
-              );
-            }
-            // try variants
-            if (Array.isArray(d.variants)) {
-              return d.variants.some(
-                (v) => parseInt(String(v.ram).replace(/[^0-9]/g, "")) >= 12,
-              );
-            }
-            return false;
-          };
-
-          const hasLongBattery = (d) => {
-            const b =
-              d.battery &&
-              (d.battery.capacity ||
-                d.battery.capacity_mah ||
-                d.battery_capacity ||
-                d.battery_capacity_mah ||
-                d.battery);
-            if (!b) return false;
-            const n = parseInt(String(b).replace(/[^0-9]/g, "")) || 0;
-            return n >= 6000;
-          };
-
-          const hasHighMpCamera = (d) => {
-            try {
-              const cm =
-                (d.camera &&
-                  d.camera.rear_camera &&
-                  d.camera.rear_camera.main) ||
-                d.camera?.main ||
-                d.camera;
-              const res = cm && (cm.resolution || cm.megapixels || cm.res);
-              if (!res) return false;
-              const n = parseInt(String(res).replace(/[^0-9]/g, "")) || 0;
-              return n >= 50;
-            } catch (e) {
-              return false;
-            }
-          };
-
-          const hasInDisplayFp = (d) => {
-            const s = d.sensors;
-            if (!s) return false;
-            if (Array.isArray(s))
-              return s.some((x) => /fingerprint/i.test(String(x)));
-            return /fingerprint/i.test(String(s));
-          };
-
-          const has5g = (d) => {
-            const n = d.network || d.connectivity || d.networks || d.networks;
-            if (!n) return false;
-            if (Array.isArray(n.five_g || n.fiveG || n["5g"]))
-              return (n.five_g || n.fiveG || n["5g"]).length > 0;
-            if (Array.isArray(d.five_g || d.fiveG || d["5g"]))
-              return (d.five_g || d.fiveG || d["5g"]).length > 0;
-            return Boolean(n.five_g || n.fiveG || n["5g"]);
-          };
-
-          switch (f) {
-            case "fast-charging":
-            case "fast_charge":
-            case "fastcharge":
-            case "fastcharge":
-              return !!hasBatteryFastCharge(device);
-            case "amoled":
-            case "am oled":
-              return isAmoled(device);
-            case "gaming":
-              return isGaming(device);
-            case "high-ram":
-            case "highram":
-              return hasHighRam(device);
-            case "long-battery":
-            case "longbattery":
-              return hasLongBattery(device);
-            case "high-camera":
-            case "highmpcamera":
-              return hasHighMpCamera(device);
-            case "fingerprint":
-            case "in-display-fp":
-            case "in-display":
-              return hasInDisplayFp(device);
-            case "5g":
-            case "5g-ready":
-            case "5gready":
-              return has5g(device);
-            default:
-              return false;
-          }
-        };
-
-        const filtered = mapped.filter((m) => matches(m));
-        return filtered;
-      }
 
       return mapped;
     } catch (err) {
@@ -943,6 +815,8 @@ const initialState = {
   categories: [],
   categoriesLoading: false,
   smartphone: [],
+  // always keep the full list available (feature/trending/new pages can set `smartphone`)
+  smartphoneAll: [],
   networking: [],
   homeAppliances: [],
   // flat registry for quick lookups by type:id
@@ -999,7 +873,11 @@ const deviceSlice = createSlice({
         state.selectedDevice = null;
         return;
       }
-      const dev = (state.smartphone || []).find(
+      const list =
+        (state.smartphoneAll && state.smartphoneAll.length
+          ? state.smartphoneAll
+          : state.smartphone) || [];
+      const dev = list.find(
         (s) => String(s.id) === String(id) || String(s.name) === String(id),
       );
       if (dev) {
@@ -1022,7 +900,11 @@ const deviceSlice = createSlice({
         state.selectedDevice = null;
         return;
       }
-      const dev = (state.smartphone || []).find(
+      const list =
+        (state.smartphoneAll && state.smartphoneAll.length
+          ? state.smartphoneAll
+          : state.smartphone) || [];
+      const dev = list.find(
         (s) => String(s.model) === String(model),
       );
       if (dev) {
@@ -1099,6 +981,7 @@ const deviceSlice = createSlice({
       })
       .addCase(fetchSmartphones.fulfilled, (state, action) => {
         state.smartphone = action.payload || [];
+        state.smartphoneAll = action.payload || [];
         state.loading = false;
         state.loaded = true;
         state.error = null;
