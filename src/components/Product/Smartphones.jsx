@@ -50,6 +50,7 @@ import Spinner from "../ui/Spinner";
 import Breadcrumbs from "../Breadcrumbs";
 import { generateSlug } from "../../utils/slugGenerator";
 import normalizeProduct from "../../utils/normalizeProduct";
+import { getHookBadge } from "../../utils/hookScore";
 import {
   computePopularSmartphoneFeatures,
   SMARTPHONE_FEATURE_CATALOG,
@@ -309,6 +310,11 @@ const Smartphones = () => {
       if (typeof v === "string") return v.trim();
       if (typeof v === "number" || typeof v === "boolean") return String(v);
       return "";
+    };
+    const toNumber = (v) => {
+      if (v == null || v === "") return null;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
     };
     // pick: choose first non-null, non-empty value
     const pick = (...vals) =>
@@ -777,6 +783,14 @@ const Smartphones = () => {
         toString(apiDevice.brand),
         "",
       ),
+      hook_score: toNumber(apiDevice.hook_score ?? apiDevice.hookScore),
+      buyer_intent: toNumber(apiDevice.buyer_intent ?? apiDevice.buyerIntent),
+      trend_velocity: toNumber(
+        apiDevice.trend_velocity ?? apiDevice.trendVelocity,
+      ),
+      freshness: toNumber(apiDevice.freshness),
+      hook_calculated_at:
+        apiDevice.hook_calculated_at ?? apiDevice.hookCalculatedAt ?? null,
       price: numericPrice > 0 ? `₹${numericPrice.toLocaleString()}` : "",
       numericPrice: numericPrice,
       rating: parseFloat(apiDevice.rating) || 0,
@@ -3146,6 +3160,18 @@ const Smartphones = () => {
                                   <span>AI Phone</span>
                                 </span>
                               ) : null}
+                              {(() => {
+                                const badge = getHookBadge(device);
+                                if (!badge) return null;
+                                return (
+                                  <span
+                                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 whitespace-nowrap ${badge.className}`}
+                                    title={badge.title}
+                                  >
+                                    {badge.label}
+                                  </span>
+                                );
+                              })()}
                             </div>
                             <p className="font-bold text-gray-900 text-[13px] leading-snug">
                               {(() => {

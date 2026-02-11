@@ -47,6 +47,7 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { smartphoneMeta } from "../../constants/meta";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
+import { getHookBadge } from "../../utils/hookScore";
 
 const token = Cookies.get("arenak");
 
@@ -433,6 +434,7 @@ const MobileDetailCard = () => {
   const mobileData = normalizeSmartphone(
     localResolved || selectedDevice?.smartphones?.[0] || selectedDevice,
   );
+  const hookBadge = useMemo(() => getHookBadge(mobileData), [mobileData]);
 
   useTitle({
     brand: mobileData?.brand,
@@ -2107,6 +2109,14 @@ Price: ${price}
                     <span>AI Phone</span>
                   </span>
                 ) : null}
+                {hookBadge ? (
+                  <span
+                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 whitespace-nowrap ${hookBadge.className}`}
+                    title={hookBadge.title}
+                  >
+                    {hookBadge.label}
+                  </span>
+                ) : null}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -2359,6 +2369,14 @@ Price: ${price}
                           </svg>
                         </span>
                         <span>AI Phone</span>
+                      </span>
+                    ) : null}
+                    {hookBadge ? (
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 whitespace-nowrap ${hookBadge.className}`}
+                        title={hookBadge.title}
+                      >
+                        {hookBadge.label}
                       </span>
                     ) : null}
                   </h4>

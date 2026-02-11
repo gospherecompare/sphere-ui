@@ -261,6 +261,11 @@ export const fetchSmartphones = createAsyncThunk(
           price,
           store_prices: aggregatedStorePrices,
           launch_date: normalizeDate(d.launch_date ?? d.created_at),
+          hook_score: toNumber(d.hook_score) ?? null,
+          buyer_intent: toNumber(d.buyer_intent) ?? null,
+          trend_velocity: toNumber(d.trend_velocity) ?? null,
+          freshness: toNumber(d.freshness) ?? null,
+          hook_calculated_at: normalizeDate(d.hook_calculated_at),
           variants,
         };
       });
@@ -795,6 +800,12 @@ export const fetchSmartphone = createAsyncThunk(
         price: toNumber(d.price) ?? (d.price || null),
         store_prices: normalizeStorePrices(d.store_prices),
         launch_date: normalizeDate(d.launch_date || d.created_at),
+        hook_score: toNumber(d.hook_score ?? d.hookScore) ?? null,
+        buyer_intent: toNumber(d.buyer_intent ?? d.buyerIntent) ?? null,
+        trend_velocity:
+          toNumber(d.trend_velocity ?? d.trendVelocity) ?? null,
+        freshness: toNumber(d.freshness) ?? null,
+        hook_calculated_at: normalizeDate(d.hook_calculated_at),
         variants: normalizeVariants(d),
       });
 
