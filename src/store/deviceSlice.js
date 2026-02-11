@@ -721,6 +721,12 @@ export const fetchBrands = createAsyncThunk(
       return rejectWithValue(err.message || String(err));
     }
   },
+  {
+    condition: (_, { getState }) => {
+      const state = getState();
+      return !state?.device?.brandsLoading && !state?.device?.brandsLoaded;
+    },
+  },
 );
 
 // Fetch categories (public/admin endpoint). Includes auth token if available.
@@ -740,9 +746,10 @@ export const fetchCategories = createAsyncThunk(
 
       let rows = [];
       if (Array.isArray(body)) rows = body;
-      else if (body && Array.isArray(body.data)) rows = body.data;
-      else if (body && Array.isArray(body.categories)) rows = body.categories;
-      else rows = body || [];
+      else if (Array.isArray(body?.data)) rows = body.data;
+      else if (Array.isArray(body?.categories)) rows = body.categories;
+      else if (Array.isArray(body?.rows)) rows = body.rows;
+      else rows = [];
 
       // Normalize to a simple category shape
       const normalized = (rows || []).map((c) => ({
@@ -762,6 +769,14 @@ export const fetchCategories = createAsyncThunk(
     } catch (err) {
       return rejectWithValue(err.message || String(err));
     }
+  },
+  {
+    condition: (_, { getState }) => {
+      const state = getState();
+      return (
+        !state?.device?.categoriesLoading && !state?.device?.categoriesLoaded
+      );
+    },
   },
 );
 
@@ -814,6 +829,7 @@ export const fetchSmartphone = createAsyncThunk(
 const initialState = {
   categories: [],
   categoriesLoading: false,
+  categoriesLoaded: false,
   smartphone: [],
   // always keep the full list available (feature/trending/new pages can set `smartphone`)
   smartphoneAll: [],
@@ -843,6 +859,7 @@ const initialState = {
   homeAppliancesLoading: false,
   homeAppliancesLoaded: false,
   brandsLoading: false,
+  brandsLoaded: false,
   laptops: [],
   laptopsLoading: false,
   laptopsLoaded: false,
@@ -1024,9 +1041,11 @@ const deviceSlice = createSlice({
       .addCase(fetchBrands.fulfilled, (state, action) => {
         state.brands = action.payload || [];
         state.brandsLoading = false;
+        state.brandsLoaded = true;
       })
       .addCase(fetchBrands.rejected, (state, action) => {
         state.brandsLoading = false;
+        state.brandsLoaded = true;
         state.error =
           action.payload || action.error?.message || String(action.error);
       });
@@ -1039,9 +1058,11 @@ const deviceSlice = createSlice({
       .addCase(fetchCategories.fulfilled, (state, action) => {
         state.categories = action.payload || [];
         state.categoriesLoading = false;
+        state.categoriesLoaded = true;
       })
       .addCase(fetchCategories.rejected, (state, action) => {
         state.categoriesLoading = false;
+        state.categoriesLoaded = true;
         state.error =
           action.payload || action.error?.message || String(action.error);
       });

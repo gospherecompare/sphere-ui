@@ -30,9 +30,8 @@ export function useDevice() {
     if (!state.laptopsLoaded && !state.laptopsLoading) dispatch(fetchLaptops());
     if (!state.homeAppliancesLoaded && !state.homeAppliancesLoading)
       dispatch(fetchHomeAppliances());
-    if ((state.brands || []).length === 0 && !state.brandsLoading)
-      dispatch(fetchBrands());
-    if ((state.categories || []).length === 0 && !state.categoriesLoading)
+    if (!state.brandsLoaded && !state.brandsLoading) dispatch(fetchBrands());
+    if (!state.categoriesLoaded && !state.categoriesLoading)
       dispatch(fetchCategories());
   }, [
     dispatch,
@@ -44,9 +43,9 @@ export function useDevice() {
     state.laptopsLoading,
     state.homeAppliancesLoaded,
     state.homeAppliancesLoading,
-    (state.brands || []).length,
+    state.brandsLoaded,
     state.brandsLoading,
-    (state.categories || []).length,
+    state.categoriesLoaded,
     state.categoriesLoading,
   ]);
 
