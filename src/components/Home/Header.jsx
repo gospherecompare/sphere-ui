@@ -1125,23 +1125,24 @@ const Header = () => {
                                               "Product"}
                                           </div>
                                           <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                            {getSuggestionVariantTypes(sugg).map(
-                                              (v) => (
-                                                <span
-                                                  key={v}
-                                                  className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700"
-                                                >
-                                                  {v}
-                                                </span>
-                                              ),
-                                            )}
+                                            {getSuggestionVariantTypes(
+                                              sugg,
+                                            ).map((v) => (
+                                              <span
+                                                key={v}
+                                                className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700"
+                                              >
+                                                {v}
+                                              </span>
+                                            ))}
                                             {formatINR(
                                               sugg.min_price ?? sugg.minPrice,
                                             ) && (
                                               <span className="text-[11px] px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-100">
                                                 From{" "}
                                                 {formatINR(
-                                                  sugg.min_price ?? sugg.minPrice,
+                                                  sugg.min_price ??
+                                                    sugg.minPrice,
                                                 )}
                                               </span>
                                             )}

@@ -802,8 +802,7 @@ export const fetchSmartphone = createAsyncThunk(
         launch_date: normalizeDate(d.launch_date || d.created_at),
         hook_score: toNumber(d.hook_score ?? d.hookScore) ?? null,
         buyer_intent: toNumber(d.buyer_intent ?? d.buyerIntent) ?? null,
-        trend_velocity:
-          toNumber(d.trend_velocity ?? d.trendVelocity) ?? null,
+        trend_velocity: toNumber(d.trend_velocity ?? d.trendVelocity) ?? null,
         freshness: toNumber(d.freshness) ?? null,
         hook_calculated_at: normalizeDate(d.hook_calculated_at),
         variants: normalizeVariants(d),
@@ -932,9 +931,7 @@ const deviceSlice = createSlice({
         (state.smartphoneAll && state.smartphoneAll.length
           ? state.smartphoneAll
           : state.smartphone) || [];
-      const dev = list.find(
-        (s) => String(s.model) === String(model),
-      );
+      const dev = list.find((s) => String(s.model) === String(model));
       if (dev) {
         state.selectedDevice = dev;
         state.history = [

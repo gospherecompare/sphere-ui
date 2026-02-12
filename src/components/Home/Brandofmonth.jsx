@@ -74,10 +74,7 @@ const MobileFeaturesFinder = () => {
       : null;
 
     let features = base;
-    if (
-      normalizedActive &&
-      !features.some((f) => f.id === normalizedActive)
-    ) {
+    if (normalizedActive && !features.some((f) => f.id === normalizedActive)) {
       const def = SMARTPHONE_FEATURE_CATALOG.find(
         (f) => f.id === normalizedActive,
       );

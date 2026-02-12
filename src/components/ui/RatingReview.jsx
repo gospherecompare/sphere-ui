@@ -46,12 +46,12 @@ const RatingReview = ({
       }
 
       const response = await fetch(
-        `http://localhost:5000/api/public/products/${prodId}/ratings`,
+        `https://api.apisphere.in/api/public/products/${prodId}/ratings`,
         {
           headers: {
             Authorization: token ? `Bearer ${token}` : "",
           },
-        }
+        },
       );
 
       if (response.ok) {
@@ -119,7 +119,7 @@ const RatingReview = ({
       }
 
       const response = await fetch(
-        `http://localhost:5000/api/public/products/${prodId}/ratings`,
+        `https://api.apisphere.in/api/public/products/${prodId}/ratings`,
         {
           method: "POST",
           headers: {
@@ -130,14 +130,14 @@ const RatingReview = ({
             overall: newReview.overall_rating,
             review: newReview.review,
           }),
-        }
+        },
       );
 
       if (response.ok) {
         alert(
           editingReviewId
             ? "Review updated successfully!"
-            : "Review submitted successfully!"
+            : "Review submitted successfully!",
         );
         setEditingReviewId(null);
         setNewReview({ overall_rating: 0, review: "" });
@@ -169,13 +169,13 @@ const RatingReview = ({
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/reviews/${reviewId}`,
+        `https://api.apisphere.in/api/reviews/${reviewId}`,
         {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       if (response.ok) {
@@ -298,12 +298,12 @@ const RatingReview = ({
               {ratingsData.averageRating >= 4
                 ? "⭐ Excellent Product"
                 : ratingsData.averageRating >= 3
-                ? "👍 Good Product"
-                : ratingsData.averageRating >= 2
-                ? "⚠️ Average Product"
-                : ratingsData.averageRating > 0
-                ? "❌ Poor Product"
-                : "No ratings yet"}
+                  ? "👍 Good Product"
+                  : ratingsData.averageRating >= 2
+                    ? "⚠️ Average Product"
+                    : ratingsData.averageRating > 0
+                      ? "❌ Poor Product"
+                      : "No ratings yet"}
             </div>
           </div>
 
@@ -341,7 +341,7 @@ const RatingReview = ({
               </label>
               <div className="flex items-center gap-4">
                 {renderStars(newReview.overall_rating, true, (rating) =>
-                  setNewReview({ ...newReview, overall_rating: rating })
+                  setNewReview({ ...newReview, overall_rating: rating }),
                 )}
                 <span className="text-lg font-semibold text-gray-700">
                   {newReview.overall_rating > 0
@@ -378,8 +378,8 @@ const RatingReview = ({
                 {submitLoading
                   ? "Submitting..."
                   : editingReviewId
-                  ? "Update Review"
-                  : "Submit Review"}
+                    ? "Update Review"
+                    : "Submit Review"}
               </button>
               <button
                 onClick={() => {
@@ -427,7 +427,7 @@ const RatingReview = ({
                                 day: "numeric",
                                 month: "short",
                                 year: "numeric",
-                              }
+                              },
                             )
                           : ""}
                       </p>
@@ -511,5 +511,3 @@ const RatingReview = ({
 };
 
 export default RatingReview;
-
-

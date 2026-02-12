@@ -54,7 +54,11 @@ export const getFastChargeWatt = (d) => {
   if (!b) return null;
   if (typeof b === "object") {
     const raw =
-      b.fast_charging ?? b.fastCharging ?? b.fast_charge ?? b.fastCharge ?? null;
+      b.fast_charging ??
+      b.fastCharging ??
+      b.fast_charge ??
+      b.fastCharge ??
+      null;
     return raw ? parseFirstInt(raw) : null;
   }
   const s = String(b);
@@ -63,14 +67,17 @@ export const getFastChargeWatt = (d) => {
 };
 
 export const getWirelessChargeWatt = (d) => {
-  const raw = d?.battery?.wireless_charging ?? d?.battery?.wirelessCharging ?? null;
+  const raw =
+    d?.battery?.wireless_charging ?? d?.battery?.wirelessCharging ?? null;
   return raw ? parseFirstInt(raw) : null;
 };
 
 export const getRefreshRateHz = (d) => {
   const disp = d?.display || d?.display_json || {};
   const raw =
-    (disp && typeof disp === "object" && (disp.refresh_rate || disp.refreshRate)) ||
+    (disp &&
+      typeof disp === "object" &&
+      (disp.refresh_rate || disp.refreshRate)) ||
     d?.refresh_rate ||
     d?.specs?.refreshRate ||
     "";
@@ -95,9 +102,7 @@ export const getMaxRamGb = (d) => {
   }
 
   return (
-    parseFirstInt(d?.performance?.ram) ??
-    parseFirstInt(d?.specs?.ram) ??
-    null
+    parseFirstInt(d?.performance?.ram) ?? parseFirstInt(d?.specs?.ram) ?? null
   );
 };
 
@@ -163,7 +168,13 @@ export const hasWifi7 = (d) => {
 export const has5g = (d) => {
   const n = d?.network || d?.connectivity || d?.connectivity_network || {};
   if (!n) return false;
-  const bands = n["5g_bands"] || n.five_g_bands || n.fiveGBands || n.five_g || n.fiveG || n["5g"];
+  const bands =
+    n["5g_bands"] ||
+    n.five_g_bands ||
+    n.fiveGBands ||
+    n.five_g ||
+    n.fiveG ||
+    n["5g"];
   if (Array.isArray(bands)) return bands.length > 0;
   return /5g/i.test(String(n));
 };
@@ -171,7 +182,9 @@ export const has5g = (d) => {
 export const hasIpRating = (d) => {
   const bd = d?.build_design || d?.design || {};
   const raw =
-    (bd && typeof bd === "object" && (bd.water_dust_resistance || bd.waterDustResistance)) ||
+    (bd &&
+      typeof bd === "object" &&
+      (bd.water_dust_resistance || bd.waterDustResistance)) ||
     d?.water_dust_resistance ||
     "";
   return /\bip\d{2}\b/i.test(String(raw));
@@ -219,7 +232,13 @@ export const hasOis = (d) => {
   const rear = cam?.rear_camera;
   const lenses = [];
   if (rear && typeof rear === "object") lenses.push(...Object.values(rear));
-  lenses.push(cam.main, cam.wide, cam.telephoto, cam.ultra_wide, cam.periscope_telephoto);
+  lenses.push(
+    cam.main,
+    cam.wide,
+    cam.telephoto,
+    cam.ultra_wide,
+    cam.periscope_telephoto,
+  );
   for (const lens of lenses) {
     if (!lens) continue;
     const raw = lens?.ois ?? lens?.OIS ?? null;
@@ -235,7 +254,8 @@ export const hasOis = (d) => {
 
 export const hasPeriscope = (d) => {
   return Boolean(
-    d?.camera?.rear_camera?.periscope_telephoto || d?.camera?.periscope_telephoto,
+    d?.camera?.rear_camera?.periscope_telephoto ||
+    d?.camera?.periscope_telephoto,
   );
 };
 
@@ -320,7 +340,10 @@ export const SMARTPHONE_FEATURE_CATALOG = [
     description: "AMOLED displays",
     icon: FaMobileAlt,
     priority: 92,
-    match: (d) => asLower(d?.display?.panel || d?.display?.type || d?.display || "").includes("amoled"),
+    match: (d) =>
+      asLower(
+        d?.display?.panel || d?.display?.type || d?.display || "",
+      ).includes("amoled"),
   },
   {
     id: "high-refresh-rate",
@@ -448,7 +471,9 @@ export const computePopularSmartphoneFeatures = (
     return { ...def, count };
   });
 
-  const filtered = arr.length ? withCounts.filter((f) => f.count > 0) : withCounts;
+  const filtered = arr.length
+    ? withCounts.filter((f) => f.count > 0)
+    : withCounts;
 
   const sorted = [...filtered].sort((a, b) => {
     const pd = (b.priority || 0) - (a.priority || 0);

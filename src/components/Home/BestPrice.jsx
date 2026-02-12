@@ -54,10 +54,10 @@ const TrendingSection = () => {
   ];
 
   const apiForCategory = {
-    smartphone: "/api/public/trending/smartphones",
-    laptop: "/api/public/trending/laptops",
-    appliance: "/api/public/trending/appliances",
-    networking: "/api/public/trending/networking",
+    smartphone: "smartphone",
+    laptop: "laptop",
+    appliance: "home_appliance",
+    networking: "networking",
   };
 
   // Fetch trending products for active category
@@ -66,7 +66,9 @@ const TrendingSection = () => {
     const fetchTrending = async () => {
       setLoadingTrending(true);
       setCurrentDevices([]);
-      const endpoint = apiForCategory[activeCategory];
+      const type = apiForCategory[activeCategory] || "smartphone";
+      const qs = new URLSearchParams({ type, limit: "15" }).toString();
+      const endpoint = `/api/public/trending-products?${qs}`;
 
       try {
         const r = await fetch(`https://api.apisphere.in${endpoint}`);
@@ -74,26 +76,22 @@ const TrendingSection = () => {
         const json = await r.json();
         if (cancelled) return;
 
-        const rows = json.trending || [];
-        const mapped = rows.slice(0, 15).map((row, idx) => {
-          const basePrice = row.base_price ?? row.price ?? null;
-          const priceStr = basePrice
-            ? `₹${Number(basePrice).toLocaleString()}`
-            : "N/A";
-          const viewsNum = Number(row.views) || 0;
+        const rows = Array.isArray(json.trending) ? json.trending : [];
+        const mapped = rows.slice(0, 15).map((row) => {
+          const basePrice = row.price ?? null;
+          const priceStr =
+            basePrice !== null && basePrice !== undefined && basePrice !== ""
+              ? `₹${Number(basePrice).toLocaleString()}`
+              : "N/A";
 
           return {
-            id: row.product_id ?? row.id ?? null,
+            id: row.id ?? row.product_id ?? null,
             variantId: row.variant_id ?? row.variantId ?? null,
-            name: row.product_name ?? row.name ?? row.model ?? "",
-            brand: row.brand ?? "",
-            model: row.model ?? "",
-            ram: row.ram ?? "",
-            storage: row.storage ?? "",
+            name: row.name ?? row.product_name ?? row.model ?? "",
+            brand: row.brand ?? row.brand_name ?? "",
+            badge: row.badge ?? row.trend_label ?? "Trending",
             base_price: basePrice !== null ? String(basePrice) : null,
             price: priceStr,
-            rating: row.rating ?? row.avg_rating ?? 0,
-            reviews: viewsNum,
             image: row.image ?? row.image_url ?? "",
             raw: row,
           };
@@ -289,7 +287,6 @@ const TrendingSection = () => {
                       <p className="text-[10px] sm:text-xs uppercase text-purple-600 font-semibold tracking-widest">
                         {device.brand || "Brand"}
                       </p>
-
                       {/* Title */}
                       <h3
                         className="mt-1 text-sm sm:text-base font-semibold text-gray-900 leading-snug line-clamp-2 
@@ -298,13 +295,7 @@ const TrendingSection = () => {
                       >
                         {device.name}
                       </h3>
-
-                      {/* Description (RAM | Storage) */}
-                      <p className="mt-0.5 text-[11px] sm:text-xs text-gray-500">
-                        {device.ram || "RAM"}{" "}
-                        {device.storage && `/ ${device.storage}`}
-                      </p>
-
+                      {/* Description */}
                       {/* Price */}
                       <div className="mt-2 flex items-center justify-start">
                         <p className="text-base sm:text-lg font-bold text-green-600">
