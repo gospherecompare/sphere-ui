@@ -1562,7 +1562,8 @@ const Smartphones = () => {
   const getCompareDeviceKey = (device) => {
     if (!device) return null;
     const variant = device.variant ?? {};
-    const variantId = variant.variant_id ?? variant.id ?? variant.variantId ?? null;
+    const variantId =
+      variant.variant_id ?? variant.id ?? variant.variantId ?? null;
     if (variantId != null) return `variant:${variantId}`;
 
     const productId = getCompareProductId(device);
@@ -1596,7 +1597,9 @@ const Smartphones = () => {
     const compareKey = getCompareDeviceKey(device);
     if (compareKey == null) return false;
 
-    return compareItems.some((item) => getCompareDeviceKey(item) === compareKey);
+    return compareItems.some(
+      (item) => getCompareDeviceKey(item) === compareKey,
+    );
   };
 
   const handleCompareNavigate = (e) => {
@@ -2202,8 +2205,6 @@ const Smartphones = () => {
             case "5g":
             case "5g-ready":
             case "5gready":
-            case "5g-ready":
-            case "5g-ready":
               return has5g();
             default:
               return true;
