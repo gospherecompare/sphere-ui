@@ -881,7 +881,7 @@ const Smartphones = () => {
       return [{ ...device, id: `${device.id}-default` }];
     }
 
-    return vars.map((v) => {
+    return vars.map((v, variantIndex) => {
       // map store prices for this variant (if any)
       const rawVariantStorePrices = Array.isArray(v.store_prices)
         ? v.store_prices
@@ -944,8 +944,9 @@ const Smartphones = () => {
         // keep device-level info but override ram/storage/price and add cardTitle
         ...device,
         id: `${device.id}-${
-          v.variant_id ?? v.id ?? Math.random().toString(36).slice(2, 8)
+          v.variant_id ?? v.id ?? v.variantId ?? `v${variantIndex}`
         }`,
+        variantIndex,
         variant: v,
         specs: {
           ...device.specs,
@@ -1194,6 +1195,7 @@ const Smartphones = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
   const [compareItems, setCompareItems] = useState([]);
+  const MAX_COMPARE_ITEMS = 4;
 
   // Brand-based SEO helper
   const filterBrand =
@@ -1521,65 +1523,80 @@ const Smartphones = () => {
     );
   };
 
+  const getCompareProductId = (device) => {
+    if (!device) return null;
+    return (
+      device.productId ??
+      device.product_id ??
+      device.baseId ??
+      device.model ??
+      null
+    );
+  };
+
+  const getCompareVariantIndex = (device) => {
+    if (!device) return 0;
+
+    const direct = Number(device.variantIndex ?? device.selectedVariantIndex);
+    if (Number.isInteger(direct) && direct >= 0) return direct;
+
+    const vars = Array.isArray(device.variants) ? device.variants : [];
+    const selectedVariant = device.variant ?? null;
+    if (!selectedVariant || vars.length === 0) return 0;
+
+    const selectedVariantId =
+      selectedVariant.variant_id ??
+      selectedVariant.id ??
+      selectedVariant.variantId ??
+      null;
+    if (selectedVariantId == null) return 0;
+
+    const idx = vars.findIndex(
+      (v) =>
+        String(v?.id ?? v?.variant_id ?? v?.variantId) ===
+        String(selectedVariantId),
+    );
+    return idx >= 0 ? idx : 0;
+  };
+
+  const getCompareDeviceKey = (device) => {
+    if (!device) return null;
+    const variant = device.variant ?? {};
+    const variantId = variant.variant_id ?? variant.id ?? variant.variantId ?? null;
+    if (variantId != null) return `variant:${variantId}`;
+
+    const productId = getCompareProductId(device);
+    if (productId != null)
+      return `product:${productId}:variant:${getCompareVariantIndex(device)}`;
+
+    const fallback = device.id ?? device.model ?? null;
+    return fallback != null ? `fallback:${fallback}` : null;
+  };
+
   const handleCompareToggle = (device, e) => {
     if (e) e.stopPropagation();
-    // Prefer variant-level unique id, fall back to variant.id, then product-level ids
-    const variant = device.variant ?? {};
-    const deviceId =
-      variant.variant_id ??
-      variant.id ??
-      device.productId ??
-      device.id ??
-      device.model;
+    const compareKey = getCompareDeviceKey(device);
+    if (compareKey == null) return;
 
     setCompareItems((prev) => {
-      const isAlreadyAdded = prev.some((item) => {
-        const itemVariant = item.variant ?? {};
-        const itemId =
-          itemVariant.variant_id ??
-          itemVariant.id ??
-          item.productId ??
-          item.id ??
-          item.model;
-        return itemId === deviceId;
-      });
+      const isAlreadyAdded = prev.some(
+        (item) => getCompareDeviceKey(item) === compareKey,
+      );
 
       if (isAlreadyAdded) {
-        return prev.filter((item) => {
-          const itemVariant = item.variant ?? {};
-          const itemId =
-            itemVariant.variant_id ??
-            itemVariant.id ??
-            item.productId ??
-            item.id ??
-            item.model;
-          return itemId !== deviceId;
-        });
+        return prev.filter((item) => getCompareDeviceKey(item) !== compareKey);
       } else {
+        if (prev.length >= MAX_COMPARE_ITEMS) return prev;
         return [...prev, device];
       }
     });
   };
 
   const isCompareSelected = (device) => {
-    const variant = device.variant ?? {};
-    const deviceId =
-      variant.variant_id ??
-      variant.id ??
-      device.productId ??
-      device.id ??
-      device.model;
+    const compareKey = getCompareDeviceKey(device);
+    if (compareKey == null) return false;
 
-    return compareItems.some((item) => {
-      const itemVariant = item.variant ?? {};
-      const itemId =
-        itemVariant.variant_id ??
-        itemVariant.id ??
-        item.productId ??
-        item.id ??
-        item.model;
-      return itemId === deviceId;
-    });
+    return compareItems.some((item) => getCompareDeviceKey(item) === compareKey);
   };
 
   const handleCompareNavigate = (e) => {
@@ -1587,10 +1604,19 @@ const Smartphones = () => {
     if (compareItems.length === 0) return;
 
     const queryParams = new URLSearchParams();
-    compareItems.forEach((device) => {
-      const idVal = device.productId ?? device.id ?? device.model;
-      queryParams.append("add", String(idVal));
-    });
+    const deviceEntries = compareItems
+      .map((device) => {
+        const productId = getCompareProductId(device);
+        if (productId == null) return null;
+        const variantIndex = getCompareVariantIndex(device);
+        return `${productId}:${variantIndex}`;
+      })
+      .filter(Boolean);
+
+    if (deviceEntries.length === 0) return;
+
+    queryParams.set("devices", deviceEntries.join(","));
+    queryParams.set("type", "smartphone");
 
     navigate(`/compare?${queryParams.toString()}`, {
       state: { initialProducts: compareItems },
@@ -3109,21 +3135,33 @@ const Smartphones = () => {
                         </div>
                         {/* Compare Checkbox Overlay - Top Right */}
                         <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleCompareToggle(device, e);
-                          }}
+                          onClick={(e) => e.stopPropagation()}
                           className="absolute top-2 right-2 z-10 rounded-md  transition-all duration-200 cursor-pointer hover:bg-gray-50 hover:border-purple-500"
-                          title="Add to compare"
+                          title={
+                            !isCompareSelected(device) &&
+                            compareItems.length >= MAX_COMPARE_ITEMS
+                              ? `You can compare up to ${MAX_COMPARE_ITEMS} devices`
+                              : "Add to compare"
+                          }
                         >
                           <input
                             type="checkbox"
                             checked={isCompareSelected(device)}
+                            disabled={
+                              !isCompareSelected(device) &&
+                              compareItems.length >= MAX_COMPARE_ITEMS
+                            }
+                            onClick={(e) => e.stopPropagation()}
                             onChange={(e) => {
                               e.stopPropagation();
                               handleCompareToggle(device, e);
                             }}
-                            className="w-3 h-3 m-1 cursor-pointer accent-purple-600"
+                            className={`w-3 h-3 m-1 accent-purple-600 ${
+                              !isCompareSelected(device) &&
+                              compareItems.length >= MAX_COMPARE_ITEMS
+                                ? "cursor-not-allowed opacity-60"
+                                : "cursor-pointer"
+                            }`}
                           />
                         </div>
                       </div>

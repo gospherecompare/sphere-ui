@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import {
   fetchSmartphones,
@@ -8,6 +8,7 @@ import {
   fetchLaptops,
   fetchHomeAppliances,
   setDevicesForType,
+  setDevice as setDeviceAction,
   addToHistory,
   clearHistory,
   setFilters,
@@ -49,24 +50,33 @@ export function useDevice() {
     state.categoriesLoading,
   ]);
 
-  // Combined list of all device types for generic components
-  const devices = [
-    ...((state.smartphoneAll && state.smartphoneAll.length
-      ? state.smartphoneAll
-      : state.smartphone) || []).map((d) => ({
-      ...d,
-      deviceType: "smartphone",
-    })),
-    ...(state.laptops || []).map((d) => ({ ...d, deviceType: "laptop" })),
-    ...(state.networking || []).map((d) => ({
-      ...d,
-      deviceType: "networking",
-    })),
-    ...(state.homeAppliances || []).map((d) => ({
-      ...d,
-      deviceType: "homeAppliance",
-    })),
-  ];
+  // Combined list of all device types for generic components.
+  // Memoized to avoid re-creating the array on every render.
+  const devices = useMemo(() => {
+    return [
+      ...((state.smartphoneAll && state.smartphoneAll.length
+        ? state.smartphoneAll
+        : state.smartphone) || []).map((d) => ({
+        ...d,
+        deviceType: "smartphone",
+      })),
+      ...(state.laptops || []).map((d) => ({ ...d, deviceType: "laptop" })),
+      ...(state.networking || []).map((d) => ({
+        ...d,
+        deviceType: "networking",
+      })),
+      ...(state.homeAppliances || []).map((d) => ({
+        ...d,
+        deviceType: "homeAppliance",
+      })),
+    ];
+  }, [
+    state.smartphoneAll,
+    state.smartphone,
+    state.laptops,
+    state.networking,
+    state.homeAppliances,
+  ]);
 
   const getDeviceById = useCallback(
     (id) => {
@@ -173,7 +183,7 @@ export function useDevice() {
   const setDevice = useCallback(
     (productType, productId, device) =>
       dispatch({
-        type: setDevice.type,
+        type: setDeviceAction.type,
         payload: { productType, productId, device },
       }),
     [dispatch],

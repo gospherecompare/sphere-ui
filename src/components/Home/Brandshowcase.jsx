@@ -51,14 +51,14 @@ const PopularComparisons = ({
         <div className="flex items-center gap-2 mb-2">
           <FaExchangeAlt className="text-purple-500 text-lg" />
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-            Popular{" "}
+            Top{" "}
             <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent">
-              Comparisons
+              Gadget Comparisons
             </span>
           </h2>
         </div>
         <p className="text-sm text-gray-600">
-          See what devices users are comparing the most
+          Compare top smartphones, laptops, appliances, and networking devices side by side
         </p>
       </div>
 
@@ -177,3 +177,4 @@ const PopularComparisons = ({
 };
 
 export default PopularComparisons;
+

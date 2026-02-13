@@ -245,13 +245,13 @@ const PopularBrands = () => {
       {/* Header Section */}
       <div className="mb-2 px-2">
         <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">
-          Shop by{" "}
+          Explore by{" "}
           <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent">
-            Popular Brands
+            Brand
           </span>
         </h2>
         <p className="text-sm text-gray-600">
-          Discover devices from trusted brands
+          Explore Phones by Key Features
         </p>
       </div>
 
@@ -261,10 +261,21 @@ const PopularBrands = () => {
       {uniqueBrands.length > 0 && (
         <>
           <div className="mb-6 px-2">
-            <div className="flex justify-between items-center">
-              <h4 className="text-lg font-semibold text-gray-900">
-                All Brands
-              </h4>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="text-left">
+                <h4 className="text-lg font-semibold text-gray-900">
+                  All Brands
+                </h4>
+                <p className="text-gray-600 text-sm">
+                  Can't decide?{" "}
+                  <span className="font-semibold text-gray-900">
+                    Explore all brands
+                  </span>
+                </p>
+                <p className="text-gray-400 text-xs mt-1">
+                  Filter by category, features, and more
+                </p>
+              </div>
               <button
                 onClick={() => navigate("/brands")}
                 className="text-sm text-purple-600 hover:text-red-800 font-medium flex items-center gap-1"

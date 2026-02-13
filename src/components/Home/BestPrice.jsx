@@ -11,6 +11,141 @@ import {
   FaArrowRight,
 } from "react-icons/fa";
 
+const toText = (value) => {
+  if (value === null || value === undefined) return null;
+  const text = String(value).trim();
+  if (!text) return null;
+  const lower = text.toLowerCase();
+  if (
+    lower === "null" ||
+    lower === "undefined" ||
+    lower === "n/a" ||
+    lower === "na"
+  ) {
+    return null;
+  }
+  return text.replace(/\s+/g, " ");
+};
+
+const parseObjectIfNeeded = (value) => {
+  if (!value) return null;
+  if (typeof value === "object") return value;
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) return null;
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return null;
+  }
+};
+
+const firstText = (...values) => {
+  for (const value of values) {
+    const normalized = toText(value);
+    if (normalized) return normalized;
+  }
+  return null;
+};
+
+const normalizeRamLabel = (value) => {
+  const ram = toText(value);
+  if (!ram) return null;
+  return /\bram\b/i.test(ram) ? ram : `${ram} RAM`;
+};
+
+const normalizeRomLabel = (value) => {
+  const storage = toText(value);
+  if (!storage) return null;
+  return /\brom\b/i.test(storage) ? storage : `${storage} ROM`;
+};
+
+const parseVariantRamStorage = (label) => {
+  const text = toText(label);
+  if (!text) return { ram: null, storage: null };
+
+  const pair = text.match(
+    /(\d+(?:\.\d+)?)\s*(GB|MB)\s*(?:RAM)?\s*(?:\/|\+|\|)\s*(\d+(?:\.\d+)?)\s*(GB|TB)/i,
+  );
+  if (pair) {
+    return {
+      ram: `${pair[1]} ${pair[2]}`.toUpperCase(),
+      storage: `${pair[3]} ${pair[4]}`.toUpperCase(),
+    };
+  }
+
+  const ram = text.match(/(\d+(?:\.\d+)?)\s*(GB|MB)\s*RAM/i);
+  const storage = text.match(/(\d+(?:\.\d+)?)\s*(GB|TB)\s*(?:ROM|STORAGE)?/i);
+
+  return {
+    ram: ram ? `${ram[1]} ${ram[2]}`.toUpperCase() : null,
+    storage: storage ? `${storage[1]} ${storage[2]}`.toUpperCase() : null,
+  };
+};
+
+const getRamStorageFromTrendingRow = (row) => {
+  const attrs = parseObjectIfNeeded(
+    row?.attributes ?? row?.variant_attributes ?? row?.variantAttributes,
+  );
+  const specs = parseObjectIfNeeded(row?.specs);
+  const perf = parseObjectIfNeeded(row?.performance);
+  const variant = parseObjectIfNeeded(row?.variant);
+
+  let ram = firstText(
+    row?.ram,
+    row?.RAM,
+    row?.memory,
+    row?.variant_ram,
+    row?.variantRam,
+    attrs?.ram,
+    attrs?.RAM,
+    attrs?.memory,
+    specs?.ram,
+    specs?.RAM,
+    perf?.ram,
+    perf?.RAM,
+    variant?.ram,
+    variant?.RAM,
+  );
+
+  let storage = firstText(
+    row?.storage,
+    row?.internal_storage,
+    row?.storage_capacity,
+    row?.rom,
+    row?.ROM,
+    row?.variant_storage,
+    row?.variantStorage,
+    attrs?.storage,
+    attrs?.internal_storage,
+    attrs?.rom,
+    attrs?.ROM,
+    specs?.storage,
+    specs?.rom,
+    specs?.ROM,
+    perf?.storage,
+    perf?.rom,
+    perf?.ROM_storage,
+    variant?.storage,
+    variant?.rom,
+  );
+
+  if (!ram || !storage) {
+    const fromLabel = parseVariantRamStorage(
+      firstText(
+        row?.variant_name,
+        row?.variant_title,
+        row?.variant_label,
+        row?.title,
+      ),
+    );
+    if (!ram) ram = fromLabel.ram;
+    if (!storage) storage = fromLabel.storage;
+  }
+
+  return { ram, storage };
+};
+
 const TrendingSection = () => {
   const [activeCategory, setActiveCategory] = useState("smartphone");
   const [currentDevices, setCurrentDevices] = useState([]);
@@ -68,7 +203,10 @@ const TrendingSection = () => {
       setCurrentDevices([]);
       const type = apiForCategory[activeCategory] || "smartphone";
       const qs = new URLSearchParams({ type, limit: "15" }).toString();
-      const endpoint = `/api/public/trending-products?${qs}`;
+      const endpoint =
+        activeCategory === "smartphone"
+          ? "/api/public/trending/smartphones"
+          : `/api/public/trending-products?${qs}`;
 
       try {
         const r = await fetch(`https://api.apisphere.in${endpoint}`);
@@ -76,9 +214,15 @@ const TrendingSection = () => {
         const json = await r.json();
         if (cancelled) return;
 
-        const rows = Array.isArray(json.trending) ? json.trending : [];
+        const rows = Array.isArray(json?.trending)
+          ? json.trending
+          : Array.isArray(json)
+            ? json
+            : [];
         const mapped = rows.slice(0, 15).map((row) => {
-          const basePrice = row.price ?? null;
+          const basePrice =
+            row.price ?? row.base_price ?? row.starting_price ?? null;
+          const specs = getRamStorageFromTrendingRow(row);
           const priceStr =
             basePrice !== null && basePrice !== undefined && basePrice !== ""
               ? `₹${Number(basePrice).toLocaleString()}`
@@ -92,6 +236,8 @@ const TrendingSection = () => {
             badge: row.badge ?? row.trend_label ?? "Trending",
             base_price: basePrice !== null ? String(basePrice) : null,
             price: priceStr,
+            ram: specs.ram,
+            storage: specs.storage,
             image: row.image ?? row.image_url ?? "",
             raw: row,
           };
@@ -147,14 +293,14 @@ const TrendingSection = () => {
         <div className="flex items-center gap-2 mb-2">
           <FaFire className="text-red-500 text-lg" />
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-            Trending{" "}
+            Top Trending{" "}
             <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent">
-              Products
+              Smartphones & Gadgets
             </span>
           </h2>
         </div>
         <p className="text-sm text-gray-600">
-          Discover the hottest devices trending right now
+          Explore trending smartphones, laptops, appliances, and networking devices
         </p>
       </div>
 
@@ -218,8 +364,19 @@ const TrendingSection = () => {
 
       {/* Trending Products - Single Row */}
       <div className="mb-4 px-2">
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-gray-900">Trending Now</h3>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="text-left">
+            <h3 className="text-lg font-semibold text-gray-900">Trending Now</h3>
+            <p className="text-gray-600 text-sm">
+              Can't decide?{" "}
+              <span className="font-semibold text-gray-900">
+                Explore all smartphones
+              </span>
+            </p>
+            <p className="text-gray-400 text-xs mt-1">
+              Filter by brand, features, and more
+            </p>
+          </div>
           <button
             onClick={handleViewAll}
             className="text-sm text-red-600 hover:text-red-800 font-medium flex items-center gap-1"
@@ -289,13 +446,21 @@ const TrendingSection = () => {
                       </p>
                       {/* Title */}
                       <h3
-                        className="mt-1 text-sm sm:text-base font-semibold text-gray-900 leading-snug line-clamp-2 
-               min-h-[2.5rem] md:min-h-[3rem] 
-               group-hover:text-red-600 transition-colors duration-200"
+                        className={`mt-1 text-sm sm:text-base font-semibold text-gray-900 leading-snug line-clamp-2 group-hover:text-red-600 transition-colors duration-200 ${
+                          device.ram || device.storage
+                            ? "min-h-[2rem] md:min-h-[2.5rem]"
+                            : "min-h-[2.5rem] md:min-h-[3rem]"
+                        }`}
                       >
                         {device.name}
                       </h3>
-                      {/* Description */}
+                      {(device.ram || device.storage) && (
+                        <p className="mt-0.5 text-xs sm:text-sm text-gray-500 line-clamp-1">
+                          {[normalizeRamLabel(device.ram), normalizeRomLabel(device.storage)]
+                            .filter(Boolean)
+                            .join(" | ")}
+                        </p>
+                      )}
                       {/* Price */}
                       <div className="mt-2 flex items-center justify-start">
                         <p className="text-base sm:text-lg font-bold text-green-600">
@@ -313,3 +478,4 @@ const TrendingSection = () => {
 };
 
 export default TrendingSection;
+

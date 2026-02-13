@@ -90,7 +90,7 @@ const MobilePriceFinder = () => {
           </div>
           <div>
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
-              Find Your Perfect Phone by{" "}
+              Best Smartphones by{" "}
               <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent">
                 Budget
               </span>

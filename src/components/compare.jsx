@@ -43,56 +43,48 @@ const SECTIONS = [
     label: "Overview",
     icon: Smartphone,
     color: "blue",
-    gradient: "from-purple-600 to-blue-600",
   },
   {
     id: "display",
     label: "Display",
     icon: Monitor,
     color: "purple",
-    gradient: "from-purple-600 to-blue-600",
   },
   {
     id: "camera",
     label: "Camera",
     icon: Camera,
     color: "pink",
-    gradient: "from-purple-600 to-blue-600",
   },
   {
     id: "performance",
     label: "Performance",
     icon: Cpu,
     color: "green",
-    gradient: "from-purple-600 to-blue-600",
   },
   {
     id: "battery",
     label: "Battery",
     icon: Battery,
     color: "amber",
-    gradient: "from-purple-600 to-blue-600",
   },
   {
     id: "network",
     label: "Network",
     icon: Wifi,
     color: "indigo",
-    gradient: "from-purple-600 to-blue-600",
   },
   {
     id: "audio",
     label: "Audio",
     icon: Headphones,
     color: "cyan",
-    gradient: "from-purple-600 to-blue-600",
   },
   {
     id: "features",
     label: "Features",
     icon: Zap,
     color: "orange",
-    gradient: "from-purple-600 to-blue-600",
   },
 ];
 
@@ -123,7 +115,13 @@ const MobileCompare = () => {
   const [modalDevice, setModalDevice] = useState(null);
   const [modalSection, setModalSection] = useState("specifications");
 
-  const { devices: availableDevices = [], loading, fetchDevice } = useDevice();
+  const {
+    devices: availableDevices = [],
+    loading,
+    fetchDevice,
+    getDevice,
+    setDevice,
+  } = useDevice();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -332,24 +330,82 @@ const MobileCompare = () => {
       .join(" ");
   };
 
-  const formatSpecValue = (value, key) => {
+  const formatSpecValue = (value, key, depth = 0) => {
     if (value == null || value === "") return "N/A";
-    if (Array.isArray(value)) return value.join(", ");
+    if (Array.isArray(value)) {
+      const items = value
+        .map((item) => formatSpecValue(item, key, depth + 1))
+        .filter((item) => item && item !== "N/A");
+      return items.length ? items.join(", ") : "N/A";
+    }
     if (typeof value === "object") {
       const parts = Object.entries(value)
         .map(([k, v]) => {
           if (v == null || v === "") return null;
-          if (Array.isArray(v)) return `${toNormalCase(k)}: ${v.join(", ")}`;
-          if (typeof v === "object")
-            return `${toNormalCase(k)}: ${JSON.stringify(v)}`;
-          return `${toNormalCase(k)}: ${String(v)}`;
+          const nested = formatSpecValue(v, k, depth + 1);
+          if (!nested || nested === "N/A") return null;
+          if (typeof v === "object") {
+            if (Array.isArray(v)) return `${toNormalCase(k)}: ${nested}`;
+            return `${toNormalCase(k)} (${nested})`;
+          }
+          return `${toNormalCase(k)}: ${nested}`;
         })
         .filter(Boolean);
-      return parts.length ? parts.join(" | ") : JSON.stringify(value);
+      return parts.length ? parts.join(depth === 0 ? " | " : ", ") : "N/A";
     }
     if (value === true) return "Yes";
     if (value === false) return "No";
     return String(value);
+  };
+
+  const renderStructuredSpecValue = (value, specKey) => {
+    if (value == null || value === "" || value === "N/A") {
+      return "N/A";
+    }
+
+    if (Array.isArray(value)) {
+      const entries = value.filter((entry) => entry != null && entry !== "");
+      if (entries.length === 0) return "N/A";
+
+      return (
+        <div className="space-y-1">
+          {entries.map((entry, index) => (
+            <div
+              key={`${specKey}-array-${index}`}
+              className="leading-5 break-words"
+            >
+              {formatSpecValue(entry, specKey, 1)}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (typeof value === "object") {
+      const entries = Object.entries(value).filter(
+        ([, nestedValue]) => nestedValue != null && nestedValue !== "",
+      );
+
+      if (entries.length === 0) return "N/A";
+
+      return (
+        <div className="space-y-1">
+          {entries.map(([nestedKey, nestedValue]) => (
+            <div
+              key={`${specKey}-${nestedKey}`}
+              className="leading-5 break-words"
+            >
+              <span className="font-semibold text-gray-700">
+                {toNormalCase(nestedKey)}:
+              </span>{" "}
+              <span>{formatSpecValue(nestedValue, nestedKey, 1)}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    return formatSpecValue(value, specKey);
   };
 
   const cleanSpecs = (specs) => {
@@ -401,7 +457,7 @@ const MobileCompare = () => {
         {entries.map(([key, value]) => (
           <div
             key={key}
-            className="flex justify-between items-center py-3 px-4 bg-gradient-to-r from-purple-600 to-transparent rounded-lg border border-slate-100 hover:border-purple-300 hover:shadow-md hover:bg-purple-50/30 transition-all duration-200"
+            className="flex justify-between items-center py-3 px-4 bg-white rounded-lg border border-slate-100 hover:border-gray-200 hover:shadow-sm hover:bg-gray-50 transition-all duration-200"
           >
             <span className="text-gray-700 font-semibold text-sm flex-1">
               {toNormalCase(key)}
@@ -524,6 +580,80 @@ const MobileCompare = () => {
     return null;
   };
 
+  const parseMegapixelValue = (value) => {
+    if (value == null || value === "") return null;
+    if (typeof value === "number") return `${value} MP`;
+    const match = String(value).match(/(\d+(?:\.\d+)?)\s*mp/i);
+    return match ? `${match[1]} MP` : null;
+  };
+
+  const getQuickProcessorText = (device) =>
+    device?.performance?.processor ||
+    device?.performance?.chipset ||
+    device?.processor ||
+    "N/A";
+
+  const getQuickDisplayText = (device) => {
+    const display = device?.display || {};
+    const size = display.size_inches || display.screen_size || display.size;
+    const resolution = display.resolution || display.screen_resolution;
+
+    if (size && resolution) {
+      const sizeText = String(size);
+      return `${sizeText.includes('"') ? sizeText : `${sizeText}"`} | ${resolution}`;
+    }
+    if (size) {
+      const sizeText = String(size);
+      return sizeText.includes('"') ? sizeText : `${sizeText}"`;
+    }
+    return resolution || "N/A";
+  };
+
+  const getQuickBatteryText = (device) => {
+    const battery = device?.battery || {};
+    const capacity =
+      battery.battery_capacity_mah ||
+      battery.capacity_mah ||
+      battery.capacity ||
+      null;
+    if (!capacity) return battery.type || "N/A";
+    const capacityText = String(capacity);
+    return /mah/i.test(capacityText) ? capacityText : `${capacityText} mAh`;
+  };
+
+  const getQuickCameraText = (device) => {
+    const camera = device?.camera || {};
+
+    const directMain = parseMegapixelValue(camera.main_camera_megapixels);
+    if (directMain) return directMain;
+
+    const rear = camera.rear_camera;
+    if (rear && typeof rear === "object" && !Array.isArray(rear)) {
+      const rearValues = Object.values(rear);
+      for (const lensSpec of rearValues) {
+        if (!lensSpec) continue;
+        if (typeof lensSpec === "object" && !Array.isArray(lensSpec)) {
+          const nestedValue =
+            lensSpec.resolution ||
+            lensSpec.megapixels ||
+            lensSpec.main_camera_megapixels;
+          const parsedNested = parseMegapixelValue(nestedValue);
+          if (parsedNested) return parsedNested;
+        }
+        const parsedLens = parseMegapixelValue(lensSpec);
+        if (parsedLens) return parsedLens;
+      }
+    }
+
+    const parsedRear = parseMegapixelValue(rear);
+    if (parsedRear) return parsedRear;
+
+    const parsedFront = parseMegapixelValue(camera.front_camera);
+    if (parsedFront) return `Front ${parsedFront}`;
+
+    return "N/A";
+  };
+
   const sectionSpecKeys = useMemo(() => {
     const out = {};
     for (const s of SECTIONS) out[s.id] = [];
@@ -598,7 +728,7 @@ const MobileCompare = () => {
     const main = [ram, storage].filter(Boolean).join(" / ");
     const priceText =
       price != null && !Number.isNaN(Number(price))
-        ? ` • ${formatPrice(Number(price))}`
+        ? ` | ${formatPrice(Number(price))}`
         : "";
 
     return `${main || `Variant ${index + 1}`}${priceText}`;
@@ -667,136 +797,146 @@ const MobileCompare = () => {
 
   // Auto-add device from URL
   useEffect(() => {
-    try {
-      const params = new URLSearchParams(location.search);
-      // Support single `add` param OR a comma-separated `devices` param.
-      const toAdd = params.get("add");
-      const devicesParam = params.get("devices");
-      const forcedType = params.get("type");
-      const descParam = params.get("desc");
+    (async () => {
+      try {
+        const params = new URLSearchParams(location.search);
+        // Support single `add` param OR a comma-separated `devices` param.
+        const toAdd = params.get("add");
+        const devicesParam = params.get("devices");
+        const forcedType = params.get("type");
+        const descParam = params.get("desc");
 
-      const getProductType = (d) =>
-        d?.productType || d?.deviceType || d?.product_type || null;
-      const getProductId = (d) =>
-        d?.productId ?? d?.id ?? d?.product_id ?? null;
+        const getProductType = (d) =>
+          d?.productType || d?.deviceType || d?.product_type || null;
+        const getProductId = (d) =>
+          d?.productId ?? d?.id ?? d?.product_id ?? null;
 
-      const addNormalizedToSelection = (base, variantIndex = 0) => {
-        if (!base) return;
-        const normalizedType =
-          base.productType || base.deviceType || base.product_type || null;
-        if (selectedDevices.length > 0) {
-          const existingType =
-            selectedDevices[0].productType ||
-            selectedDevices[0].deviceType ||
-            selectedDevices[0].product_type ||
-            null;
-          if (
-            existingType &&
-            normalizedType &&
-            String(existingType) !== String(normalizedType)
-          )
-            return;
-        }
-        const entry = makeSelectedEntry(base, variantIndex);
-        setSelectedDevices((prev) => {
-          if (prev.some((p) => String(p.id) === String(entry.id))) return prev;
-          return [...prev, entry];
-        });
-        setVariantSelection((vs) => ({ ...vs, [entry.id]: variantIndex }));
-      };
-
-      const resolveAndAdd = async (idValue, typeValue, variantIndex = 0) => {
-        if (!idValue) return;
-        // If type provided, prefer registry/list for that type then API
-        if (typeValue) {
-          let found = null;
-          try {
-            found = getDevice ? getDevice(typeValue, idValue) : null;
-          } catch (e) {
-            found = null;
+        const addNormalizedToSelection = (base, variantIndex = 0) => {
+          if (!base) return;
+          const normalizedType =
+            base.productType || base.deviceType || base.product_type || null;
+          if (selectedDevices.length > 0) {
+            const existingType =
+              selectedDevices[0].productType ||
+              selectedDevices[0].deviceType ||
+              selectedDevices[0].product_type ||
+              null;
+            if (
+              existingType &&
+              normalizedType &&
+              String(existingType) !== String(normalizedType)
+            )
+              return;
           }
-          if (found) {
-            addNormalizedToSelection(found, variantIndex);
-            return;
+          const entry = makeSelectedEntry(base, variantIndex);
+          setSelectedDevices((prev) => {
+            if (prev.some((p) => String(p.id) === String(entry.id))) return prev;
+            return [...prev, entry];
+          });
+          setVariantSelection((vs) => {
+            if (vs[entry.id] === variantIndex) return vs;
+            return { ...vs, [entry.id]: variantIndex };
+          });
+          return true;
+        };
+
+        const resolveAndAdd = async (idValue, typeValue, variantIndex = 0) => {
+          if (!idValue) return false;
+          // If type provided, prefer registry/list for that type then API
+          if (typeValue) {
+            let found = null;
+            try {
+              found = getDevice ? getDevice(typeValue, idValue) : null;
+            } catch (e) {
+              found = null;
+            }
+            if (found) {
+              return addNormalizedToSelection(found, variantIndex);
+            }
+
+            // fetch from API: GET /api/public/product/:type/:id
+            try {
+              const res = await fetch(
+                `https://api.apisphere.in/api/public/product/${encodeURIComponent(
+                  typeValue,
+                )}/${encodeURIComponent(idValue)}`,
+              );
+              if (res && res.ok) {
+                const body = await res.json();
+                const normalized = normalizeProduct(body, typeValue);
+                const deviceObj = { ...body, ...normalized };
+                try {
+                  if (setDevice)
+                    setDevice(typeValue, normalized.productId, deviceObj);
+                } catch (e) {}
+                return addNormalizedToSelection(deviceObj, variantIndex);
+              }
+            } catch (err) {}
+            return false;
           }
 
-          // fetch from API: GET /api/public/product/:type/:id
+          // No type provided: try to find in combined availableDevices
+          const foundAny = (availableDevices || []).find((d) => {
+            const pid = String(getProductId(d) ?? "");
+            return pid && String(pid) === String(idValue);
+          });
+          if (foundAny) {
+            return addNormalizedToSelection(foundAny, variantIndex);
+          }
+
+          // Fallback: fetch public product by id (type not required)
           try {
             const res = await fetch(
-              `/api/public/product/${encodeURIComponent(typeValue)}/${encodeURIComponent(idValue)}`,
+              `https://api.apisphere.in/api/public/product/${encodeURIComponent(
+                idValue,
+              )}`,
             );
             if (res && res.ok) {
               const body = await res.json();
-              const normalized = normalizeProduct(body, typeValue);
+              const normalized = normalizeProduct(body, "");
               const deviceObj = { ...body, ...normalized };
-              try {
-                if (setDevice)
-                  setDevice(typeValue, normalized.productId, deviceObj);
-              } catch (e) {}
-              addNormalizedToSelection(deviceObj, variantIndex);
+              return addNormalizedToSelection(deviceObj, variantIndex);
             }
           } catch (err) {}
-          return;
+          return false;
+        };
+
+        let addedAny = false;
+        if (toAdd) {
+          addedAny = (await resolveAndAdd(toAdd, forcedType, 0)) || addedAny;
         }
 
-        // No type provided: try to find in combined availableDevices
-        const foundAny = (availableDevices || []).find((d) => {
-          const pid = String(getProductId(d) ?? "");
-          return pid && String(pid) === String(idValue);
-        });
-        if (foundAny) {
-          addNormalizedToSelection(foundAny, variantIndex);
-          return;
-        }
-
-        // Fallback: fetch public product by id (type not required)
-        try {
-          const res = await fetch(
-            `https://api.apisphere.in/api/public/product/${encodeURIComponent(
-              idValue,
-            )}`,
-          );
-          if (res && res.ok) {
-            const body = await res.json();
-            const normalized = normalizeProduct(body, "");
-            const deviceObj = { ...body, ...normalized };
-            addNormalizedToSelection(deviceObj, variantIndex);
+        if (devicesParam) {
+          const parts = devicesParam
+            .split(",")
+            .map((p) => p.trim())
+            .filter(Boolean);
+          for (const part of parts) {
+            const [idOrModel, variantIdxRaw] = part.split(":");
+            const variantIdx = variantIdxRaw ? parseInt(variantIdxRaw, 10) : 0;
+            addedAny =
+              (await resolveAndAdd(idOrModel, forcedType, variantIdx || 0)) ||
+              addedAny;
           }
-        } catch (err) {}
-      };
+        }
 
-      if (toAdd) {
-        (async () => {
-          await resolveAndAdd(toAdd, forcedType, 0);
-        })();
+        if (descParam) setSharedDescription(String(descParam));
+
+        if ((toAdd || devicesParam) && addedAny) {
+          navigate(location.pathname, { replace: true });
+        }
+      } catch (err) {
+        // ignore
       }
-
-      if (devicesParam) {
-        const parts = devicesParam
-          .split(",")
-          .map((p) => p.trim())
-          .filter(Boolean);
-        parts.forEach((part, idx) => {
-          const [idOrModel, variantIdxRaw] = part.split(":");
-          const variantIdx = variantIdxRaw ? parseInt(variantIdxRaw, 10) : 0;
-          (async () => {
-            await resolveAndAdd(idOrModel, forcedType, variantIdx || 0);
-          })();
-        });
-      }
-
-      if (descParam) setSharedDescription(String(descParam));
-
-      if (toAdd || devicesParam) navigate(location.pathname, { replace: true });
-    } catch (err) {
-      // ignore
-    }
+    })();
   }, [
     location.search,
     availableDevices,
     navigate,
     location.pathname,
     fetchDevice,
+    getDevice,
+    setDevice,
   ]);
   // Sync variant selection
   useEffect(() => {
@@ -1028,7 +1168,7 @@ const MobileCompare = () => {
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="p-2 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg">
+              <div className="p-2 bg-purple-600 rounded-lg">
                 <BarChart3 className="h-5 w-5 text-white" />
               </div>
               <div>
@@ -1171,6 +1311,31 @@ const MobileCompare = () => {
                 variants.length > 0 && variants[rawVariantIndex]
                   ? rawVariantIndex
                   : 0;
+              const ratingValue = Number(device.rating);
+              const hasRating =
+                Number.isFinite(ratingValue) && Number(ratingValue) > 0;
+              const quickSpecs = [
+                {
+                  key: "Processor",
+                  value: getQuickProcessorText(device),
+                  icon: Cpu,
+                },
+                {
+                  key: "Display",
+                  value: getQuickDisplayText(device),
+                  icon: Monitor,
+                },
+                {
+                  key: "Battery",
+                  value: getQuickBatteryText(device),
+                  icon: Battery,
+                },
+                {
+                  key: "Camera",
+                  value: getQuickCameraText(device),
+                  icon: Camera,
+                },
+              ];
               return (
                 <div
                   key={device.id}
@@ -1195,7 +1360,7 @@ const MobileCompare = () => {
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
 
-                    <div className="aspect-[16/9] w-full overflow-hidden rounded-xl bg-gradient-to-br from-purple-50 to-blue-50 ring-1 ring-purple-100 flex items-center justify-center">
+                    <div className="aspect-[16/9] w-full overflow-hidden rounded-xl bg-gray-50 ring-1 ring-gray-200 flex items-center justify-center">
                       <img
                         src={getPrimaryImage(device) || null}
                         alt={device.name}
@@ -1217,6 +1382,12 @@ const MobileCompare = () => {
                           <span className="text-xs font-semibold text-purple-700 truncate">
                             {device.brand || "Brand"}
                           </span>
+                          {hasRating ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-yellow-50 px-2 py-0.5 text-[10px] font-semibold text-yellow-700 ring-1 ring-yellow-200 shrink-0">
+                              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                              {ratingValue.toFixed(1)}
+                            </span>
+                          ) : null}
                           {showAiTag ? (
                             <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-semibold text-purple-700 ring-1 ring-purple-200 shrink-0">
                               <Sparkles className="h-3 w-3" />
@@ -1268,11 +1439,37 @@ const MobileCompare = () => {
                         <div className="flex items-center gap-2 text-[11px] text-gray-600">
                           <Package className="h-4 w-4 flex-shrink-0 text-purple-500" />
                           <span className="font-medium truncate text-gray-700">
-                            {selectedVariant.ram} / {selectedVariant.storage}
+                            RAM {selectedVariant.ram || "N/A"} | ROM{" "}
+                            {selectedVariant.storage || "N/A"}
                           </span>
                         </div>
                       </div>
                     ) : null}
+
+                    <div className="mt-2 grid grid-cols-2 gap-1.5">
+                      {quickSpecs.map((item) => {
+                        const SpecIcon = item.icon;
+                        const value =
+                          item.value == null || item.value === ""
+                            ? "N/A"
+                            : String(item.value);
+                        return (
+                          <div
+                            key={`${device.id}-${item.key}`}
+                            className="rounded-lg border border-gray-100 bg-gray-50 px-2 py-1.5"
+                            title={`${item.key}: ${value}`}
+                          >
+                            <div className="flex items-center gap-1 text-[10px] font-semibold text-gray-500">
+                              <SpecIcon className="h-3 w-3 text-purple-500" />
+                              <span>{item.key}</span>
+                            </div>
+                            <div className="mt-0.5 text-[11px] font-semibold text-gray-800 truncate">
+                              {value}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
 
                     {/* Price + Details */}
                     <div className="mt-2 flex items-center justify-between gap-2">
@@ -1297,7 +1494,7 @@ const MobileCompare = () => {
                         onClick={() =>
                           openDetailsModal(device, "specifications")
                         }
-                        className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-purple-600 to-blue-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:from-purple-600 hover:to-blue-600 transition-all duration-200"
+                        className="inline-flex items-center justify-center rounded-full bg-purple-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-purple-700 transition-all duration-200"
                       >
                         Details
                       </button>
@@ -1311,9 +1508,9 @@ const MobileCompare = () => {
             {remainingSlots > 0 && (
               <button
                 onClick={() => setShowSearch(true)}
-                className="group relative flex h-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-gradient-to-br from-white to-gray-50 p-4 text-center transition-all duration-200 hover:border-purple-300 hover:from-purple-50 hover:to-blue-50"
+                className="group relative flex h-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-white p-4 text-center transition-all duration-200 hover:border-purple-300 hover:bg-gray-50"
               >
-                <div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-purple-600 to-blue-600 shadow-sm transition-transform duration-200 group-hover:scale-105">
+                <div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-purple-600 shadow-sm transition-transform duration-200 group-hover:scale-105">
                   <Plus className="h-5 w-5 text-white" />
                 </div>
                 <div className="text-[13px] font-semibold text-gray-900">
@@ -1331,7 +1528,7 @@ const MobileCompare = () => {
             <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
               <button
                 onClick={startComparison}
-                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-xl hover:from-purple-600 hover:to-blue-600 transition-all duration-300 flex items-center gap-2"
+                className="px-6 py-3 bg-purple-600 text-white font-semibold rounded-xl hover:bg-purple-700 transition-all duration-300 flex items-center gap-2"
               >
                 <BarChart3 className="h-4 w-4" />
                 Start Comparing
@@ -1412,7 +1609,7 @@ const MobileCompare = () => {
                         <button
                           key={key}
                           onClick={() => addDevice(base, vi)}
-                          className="text-left bg-white border border-gray-200 rounded-xl p-4 hover:bg-gradient-to-r hover:from-purple-600 hover:to-blue-600 hover:border-blue-300 transition-all duration-200 group"
+                          className="text-left bg-white border border-gray-200 rounded-xl p-4 hover:bg-gray-50 hover:border-purple-200 transition-all duration-200 group"
                         >
                           <div className="flex items-start gap-3">
                             <div className="w-24 h-24 bg-gray-100 rounded-xl  flex-shrink-0 group-hover:scale-105 transition-transform duration-200">
@@ -1708,7 +1905,10 @@ const MobileCompare = () => {
                                           >
                                             {isEmpty
                                               ? "N/A"
-                                              : formatSpecValue(value, specKey)}
+                                              : renderStructuredSpecValue(
+                                                  value,
+                                                  specKey,
+                                                )}
                                           </div>
                                         )}
                                       </td>
@@ -1729,7 +1929,7 @@ const MobileCompare = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 onClick={shareComparison}
-                className="p-3 bg-white border border-gray-200 rounded-xl hover:bg-gradient-to-r hover:from-purple-600 hover:to-blue-600 transition-all duration-200 flex items-center justify-center gap-2"
+                className="p-3 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all duration-200 flex items-center justify-center gap-2"
               >
                 <Share2 className="h-4 w-4 text-gray-700" />
                 <span className="font-medium text-gray-700 text-sm">
@@ -1738,7 +1938,7 @@ const MobileCompare = () => {
               </button>
               <button
                 onClick={() => navigate("/smartphones")}
-                className="p-3 bg-gradient-to-r from-purple-600 to-blue-600 border border-purple-400 rounded-xl hover:from-purple-600 hover:to-blue-600 transition-all duration-200 flex items-center justify-center gap-2 text-white"
+                className="p-3 bg-purple-600 border border-purple-600 rounded-xl hover:bg-purple-700 transition-all duration-200 flex items-center justify-center gap-2 text-white"
               >
                 <Plus className="h-4 w-4" />
                 <span className="font-medium text-sm">Browse More</span>
@@ -1749,8 +1949,8 @@ const MobileCompare = () => {
         {/* Empty State */}
         {usedSlots === 0 && !showSearch && (
           <div className="text-center py-8">
-            <div className="w-20 h-20 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <BarChart3 className="h-10 w-10 text-gray-400" />
+            <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <BarChart3 className="h-10 w-10 text-purple-600" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               Start Comparing
@@ -1760,7 +1960,7 @@ const MobileCompare = () => {
             </p>
             <button
               onClick={() => setShowSearch(true)}
-              className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-xl hover:from-purple-600 hover:to-blue-600 transition-all duration-300 inline-flex items-center gap-2"
+              className="px-6 py-2.5 bg-purple-600 text-white font-semibold rounded-xl hover:bg-purple-700 transition-all duration-300 inline-flex items-center gap-2"
             >
               <Plus className="h-4 w-4" />
               Add Your First Device
@@ -1775,7 +1975,7 @@ const MobileCompare = () => {
               <div className="sticky top-0 z-20 bg-white px-6 py-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg p-1 flex-shrink-0 overflow-hidden">
+                    <div className="w-12 h-12 bg-purple-50 border border-purple-100 rounded-lg p-1 flex-shrink-0 overflow-hidden">
                       <img
                         src={getPrimaryImage(modalDevice)}
                         alt={modalDevice.name}
@@ -1836,7 +2036,7 @@ const MobileCompare = () => {
                     ].map((item, idx) => (
                       <div
                         key={idx}
-                        className="p-4 bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg border border-purple-100"
+                        className="p-4 bg-gray-50 rounded-lg border border-gray-200"
                       >
                         <div className="text-2xl mb-2">{item.icon}</div>
                         <div className="text-xs text-gray-600 font-medium mb-1">
@@ -1913,7 +2113,7 @@ const MobileCompare = () => {
               {/* Performance Section */}
               <div className="space-y-3">
                 <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-4">
-                  <div className="p-2 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg">
+                  <div className="p-2 bg-yellow-500 rounded-lg">
                     <Cpu className="h-5 w-5 text-white" />
                   </div>
                   Performance
@@ -1951,7 +2151,7 @@ const MobileCompare = () => {
               {/* Display Section */}
               <div className="space-y-3">
                 <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-4">
-                  <div className="p-2 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg">
+                  <div className="p-2 bg-purple-500 rounded-lg">
                     <Monitor className="h-5 w-5 text-white" />
                   </div>
                   Display
@@ -1985,7 +2185,7 @@ const MobileCompare = () => {
               {/* Camera Section */}
               <div className="space-y-3">
                 <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-4">
-                  <div className="p-2 bg-gradient-to-br from-pink-500 to-red-500 rounded-lg">
+                  <div className="p-2 bg-pink-500 rounded-lg">
                     <Camera className="h-5 w-5 text-white" />
                   </div>
                   Camera
@@ -2037,7 +2237,7 @@ const MobileCompare = () => {
               {/* Battery Section */}
               <div className="space-y-3">
                 <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-4">
-                  <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg">
+                  <div className="p-2 bg-green-500 rounded-lg">
                     <Battery className="h-5 w-5 text-white" />
                   </div>
                   Battery
@@ -2084,7 +2284,7 @@ const MobileCompare = () => {
               {/* Network Section */}
               <div className="space-y-3">
                 <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-4">
-                  <div className="p-2 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-lg">
+                  <div className="p-2 bg-cyan-500 rounded-lg">
                     <Wifi className="h-5 w-5 text-white" />
                   </div>
                   Network
