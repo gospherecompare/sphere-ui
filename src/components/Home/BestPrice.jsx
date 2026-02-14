@@ -48,16 +48,34 @@ const firstText = (...values) => {
   return null;
 };
 
-const normalizeRamLabel = (value) => {
-  const ram = toText(value);
-  if (!ram) return null;
-  return /\bram\b/i.test(ram) ? ram : `${ram} RAM`;
-};
+const compactMemoryLabel = (value, suffix) => {
+  const text = toText(value);
+  if (!text) return null;
+  if (suffix && new RegExp(`\\b${suffix}\\b`, "i").test(text)) return text;
 
-const normalizeRomLabel = (value) => {
-  const storage = toText(value);
-  if (!storage) return null;
-  return /\brom\b/i.test(storage) ? storage : `${storage} ROM`;
+  const matches = Array.from(text.matchAll(/(\d+(?:\.\d+)?)\s*(TB|GB|MB)/gi));
+  if (matches.length === 0) {
+    return suffix ? `${text} ${suffix}` : text;
+  }
+
+  const units = Array.from(
+    new Set(matches.map((match) => match[2].toUpperCase())),
+  );
+
+  if (units.length === 1) {
+    const unit = units[0];
+    const amounts = matches
+      .map((match) => match[1])
+      .map((amount) => amount.replace(/\.0+$/, ""))
+      .filter(Boolean);
+    const uniqueAmounts = Array.from(new Set(amounts));
+    return `${uniqueAmounts.join("/")} ${unit}${suffix ? ` ${suffix}` : ""}`;
+  }
+
+  const joined = matches
+    .map((match) => `${match[1]} ${match[2].toUpperCase()}`)
+    .join(" / ");
+  return suffix ? `${joined} ${suffix}` : joined;
 };
 
 const parseVariantRamStorage = (label) => {
@@ -146,6 +164,81 @@ const getRamStorageFromTrendingRow = (row) => {
   return { ram, storage };
 };
 
+const normalizeMemoryValue = (value) => {
+  const text = toText(value);
+  if (!text) return null;
+
+  const matches = Array.from(
+    text.matchAll(/(\d+(?:\.\d+)?)\s*(TB|GB|MB)/gi),
+  );
+  if (matches.length > 1) {
+    const parts = matches.map((match) => {
+      const amount = Number(match[1]);
+      const unit = match[2].toUpperCase();
+      return `${Number.isFinite(amount) ? amount : match[1]} ${unit}`;
+    });
+    const unique = Array.from(new Set(parts));
+    unique.sort((a, b) => {
+      const diff = memoryToMb(a) - memoryToMb(b);
+      if (diff !== 0) return diff;
+      return String(a).localeCompare(String(b));
+    });
+    return unique.join(" / ");
+  }
+
+  const parsed = text.match(/(\d+(?:\.\d+)?)\s*(TB|GB|MB)/i);
+  if (parsed) {
+    const amount = Number(parsed[1]);
+    const unit = parsed[2].toUpperCase();
+    return `${Number.isFinite(amount) ? amount : parsed[1]} ${unit}`;
+  }
+
+  const cleaned = text
+    .replace(/\b(ram|rom|storage|internal|memory)\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return cleaned || text;
+};
+
+const memoryToMb = (value) => {
+  const text = toText(value);
+  if (!text) return Number.MAX_SAFE_INTEGER;
+  const parsed = text.match(/(\d+(?:\.\d+)?)\s*(TB|GB|MB)/i);
+  if (!parsed) return Number.MAX_SAFE_INTEGER;
+
+  const amount = Number(parsed[1]);
+  if (!Number.isFinite(amount)) return Number.MAX_SAFE_INTEGER;
+  const unit = parsed[2].toUpperCase();
+
+  if (unit === "TB") return amount * 1024 * 1024;
+  if (unit === "GB") return amount * 1024;
+  return amount;
+};
+
+const combineMemoryValues = (values) => {
+  if (!values || values.size === 0) return null;
+
+  const sorted = Array.from(values)
+    .filter(Boolean)
+    .sort((a, b) => {
+      const diff = memoryToMb(a) - memoryToMb(b);
+      if (diff !== 0) return diff;
+      return String(a).localeCompare(String(b));
+    });
+
+  return sorted.length ? sorted.join(" / ") : null;
+};
+
+const parsePriceNumber = (value) => {
+  if (value === null || value === undefined || value === "") return null;
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+
+  const cleaned = String(value).replace(/[^\d.]/g, "");
+  const parsed = Number(cleaned);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
 const TrendingSection = () => {
   const [activeCategory, setActiveCategory] = useState("smartphone");
   const [currentDevices, setCurrentDevices] = useState([]);
@@ -219,31 +312,103 @@ const TrendingSection = () => {
           : Array.isArray(json)
             ? json
             : [];
-        const mapped = rows.slice(0, 15).map((row) => {
-          const basePrice =
-            row.price ?? row.base_price ?? row.starting_price ?? null;
+        const mapped = rows.map((row, index) => {
+          const basePrice = parsePriceNumber(
+            row.price ?? row.base_price ?? row.starting_price,
+          );
           const specs = getRamStorageFromTrendingRow(row);
           const priceStr =
             basePrice !== null && basePrice !== undefined && basePrice !== ""
               ? `₹${Number(basePrice).toLocaleString()}`
               : "N/A";
+          const productId = row.product_id ?? row.productId ?? row.id ?? null;
+          const variantId =
+            row.variant_id ??
+            row.variantId ??
+            (row.product_id || row.productId ? row.id : null);
 
           return {
-            id: row.id ?? row.product_id ?? null,
-            variantId: row.variant_id ?? row.variantId ?? null,
+            id: productId,
+            variantId,
             name: row.name ?? row.product_name ?? row.model ?? "",
             brand: row.brand ?? row.brand_name ?? "",
             badge: row.badge ?? row.trend_label ?? "Trending",
             base_price: basePrice !== null ? String(basePrice) : null,
             price: priceStr,
-            ram: specs.ram,
-            storage: specs.storage,
+            ram: normalizeMemoryValue(specs.ram),
+            storage: normalizeMemoryValue(specs.storage),
             image: row.image ?? row.image_url ?? "",
-            raw: row,
+            _rowIndex: index,
+            _priceNumber: basePrice,
           };
         });
 
-        setCurrentDevices(mapped);
+        const grouped = new Map();
+
+        mapped.forEach((row) => {
+          const key =
+            row.id != null ? `product-${row.id}` : `row-${row._rowIndex}`;
+          const existing = grouped.get(key);
+
+          if (!existing) {
+            grouped.set(key, {
+              ...row,
+              variantId: null,
+              _ramValues: new Set(row.ram ? [row.ram] : []),
+              _storageValues: new Set(row.storage ? [row.storage] : []),
+              _minPrice:
+                row._priceNumber !== null && row._priceNumber !== undefined
+                  ? row._priceNumber
+                  : null,
+              _minPriceStr: row.price,
+            });
+            return;
+          }
+
+          if (row.ram) existing._ramValues.add(row.ram);
+          if (row.storage) existing._storageValues.add(row.storage);
+
+          if (!existing.image && row.image) existing.image = row.image;
+          if (!existing.brand && row.brand) existing.brand = row.brand;
+          if (!existing.name && row.name) existing.name = row.name;
+
+          if (row._priceNumber !== null && row._priceNumber !== undefined) {
+            if (
+              existing._minPrice === null ||
+              row._priceNumber < existing._minPrice
+            ) {
+              existing._minPrice = row._priceNumber;
+              existing._minPriceStr = row.price;
+            }
+          }
+        });
+
+        const combined = Array.from(grouped.values())
+          .map((item) => {
+            const combinedRam = combineMemoryValues(item._ramValues);
+            const combinedStorage = combineMemoryValues(item._storageValues);
+            const minPrice =
+              item._minPrice !== null && item._minPrice !== undefined
+                ? item._minPrice
+                : null;
+
+            return {
+              id: item.id,
+              variantId: null,
+              name: item.name,
+              brand: item.brand,
+              badge: item.badge,
+              base_price:
+                minPrice !== null ? String(minPrice) : item.base_price,
+              price: minPrice !== null ? item._minPriceStr : item.price,
+              ram: combinedRam,
+              storage: combinedStorage,
+              image: item.image,
+            };
+          })
+          .slice(0, 15);
+
+        setCurrentDevices(combined);
       } catch (err) {
         console.error("Failed to load trending:", err);
         setCurrentDevices([]);
@@ -455,17 +620,21 @@ const TrendingSection = () => {
                         {device.name}
                       </h3>
                       {(device.ram || device.storage) && (
-                        <p className="mt-0.5 text-xs sm:text-sm text-gray-500 line-clamp-1">
-                          {[normalizeRamLabel(device.ram), normalizeRomLabel(device.storage)]
+                        <p className="mt-0.5 text-[11px] sm:text-xs text-gray-500 leading-snug whitespace-normal break-words">
+                          {[
+                            compactMemoryLabel(device.ram, "RAM"),
+                            compactMemoryLabel(device.storage, "ROM"),
+                          ]
                             .filter(Boolean)
                             .join(" | ")}
                         </p>
                       )}
                       {/* Price */}
-                      <div className="mt-2 flex items-center justify-start">
-                        <p className="text-base sm:text-lg font-bold text-green-600">
+                      <div className="mt-2 flex items-center gap-1.5 text-[11px] sm:text-xs text-gray-500 leading-none">
+                        <span>From</span>
+                        <span className="text-base sm:text-lg font-bold text-green-600">
                           {device.price || "N/A"}
-                        </p>
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -478,4 +647,5 @@ const TrendingSection = () => {
 };
 
 export default TrendingSection;
+
 
