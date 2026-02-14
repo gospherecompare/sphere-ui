@@ -102,10 +102,28 @@ const getResolvedProductId = (device) =>
 const getResolvedProductType = (device) =>
   device?.productType || device?.deviceType || device?.product_type || null;
 
+const SCORING_GLOSSARY = {
+  chipset:
+    "Chipset is the main processor family. Newer flagship tiers are scored higher.",
+  refreshRate:
+    "Refresh rate (Hz) means how many times screen updates per second. Higher is smoother.",
+  panelType:
+    "Panel type (AMOLED, OLED, IPS) affects contrast, colors, and viewing quality.",
+  megapixels:
+    "Main camera megapixels indicate sensor resolution. It is one factor, not full photo quality.",
+  sensorCount:
+    "Camera sensor count estimates lens versatility (main, ultrawide, telephoto, etc.).",
+  batteryCapacity:
+    "Battery capacity is measured in mAh. Larger battery usually means longer usage.",
+  priceValue:
+    "Value score compares spec strength against current selected variant price.",
+};
+
 const MobileCompare = () => {
   const [selectedDevices, setSelectedDevices] = useState([]);
   const [comparedDevices, setComparedDevices] = useState([]);
   const [variantSelection, setVariantSelection] = useState({});
+  const [rankingByDeviceId, setRankingByDeviceId] = useState({});
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isComparing, setIsComparing] = useState(false);
@@ -576,6 +594,115 @@ const MobileCompare = () => {
     const variantIndex = variantSelection[device.id] || 0;
     if (Array.isArray(device.variants) && device.variants.length > 0) {
       return device.variants[variantIndex] || device.variants[0];
+    }
+    return null;
+  };
+
+  useEffect(() => {
+    if (!isComparing || comparedDevices.length < MIN_DEVICES) {
+      setRankingByDeviceId({});
+      return;
+    }
+
+    const dedupe = new Set();
+    const payloadDevices = comparedDevices
+      .map((device) => {
+        const productId = Number(
+          device?.productId ?? device?.product_id ?? device?.id,
+        );
+        if (!Number.isInteger(productId) || productId <= 0) return null;
+        if (dedupe.has(productId)) return null;
+        dedupe.add(productId);
+
+        const selectedIndex = Number(
+          variantSelection[device.id] ?? device.selectedVariantIndex ?? 0,
+        );
+        const variants = Array.isArray(device?.variants) ? device.variants : [];
+        const selectedVariant = variants[selectedIndex] || variants[0] || null;
+        const variantId = Number(
+          selectedVariant?.variant_id ?? selectedVariant?.id,
+        );
+
+        const entry = { product_id: productId };
+        if (Number.isInteger(variantId) && variantId > 0) {
+          entry.variant_id = variantId;
+        } else if (Number.isInteger(selectedIndex) && selectedIndex >= 0) {
+          entry.variant_index = selectedIndex;
+        }
+
+        return entry;
+      })
+      .filter(Boolean);
+
+    if (payloadDevices.length < MIN_DEVICES) {
+      setRankingByDeviceId({});
+      return;
+    }
+
+    const controller = new AbortController();
+
+    (async () => {
+      try {
+        const response = await fetch(
+          "https://api.apisphere.in/api/public/compare/scores",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ devices: payloadDevices }),
+            signal: controller.signal,
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        const rows = Array.isArray(data?.scores) ? data.scores : [];
+        const nextScores = {};
+
+        rows.forEach((row) => {
+          const productId = String(row?.product_id ?? "");
+          const overallScore = Number(row?.overall_score);
+          if (!productId || !Number.isFinite(overallScore)) return;
+          nextScores[productId] = { totalScore: overallScore };
+        });
+
+        if (!controller.signal.aborted) {
+          setRankingByDeviceId(nextScores);
+        }
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        console.error("Failed to fetch compare scores:", error);
+        setRankingByDeviceId({});
+      }
+    })();
+
+    return () => controller.abort();
+  }, [isComparing, comparedDevices, variantSelection]);
+
+  const getSpecHint = (sectionId, specKey) => {
+    const key = String(specKey || "").toLowerCase();
+    if (key.includes("processor") || key.includes("chipset")) {
+      return SCORING_GLOSSARY.chipset;
+    }
+    if (key.includes("refresh")) {
+      return SCORING_GLOSSARY.refreshRate;
+    }
+    if (sectionId === "display" && (key === "type" || key.includes("panel"))) {
+      return SCORING_GLOSSARY.panelType;
+    }
+    if (key.includes("megapixel") || key.includes("resolution")) {
+      return SCORING_GLOSSARY.megapixels;
+    }
+    if (key.includes("sensor")) {
+      return SCORING_GLOSSARY.sensorCount;
+    }
+    if (key.includes("battery") || key.includes("capacity")) {
+      return SCORING_GLOSSARY.batteryCapacity;
+    }
+    if (sectionId === "overview" && key === "price") {
+      return SCORING_GLOSSARY.priceValue;
     }
     return null;
   };
@@ -1791,6 +1918,9 @@ const MobileCompare = () => {
                               {comparedDevices.map((device) => {
                                 const selectedVariant =
                                   getSelectedVariant(device);
+                                const ranking = section.id === "overview"
+                                  ? rankingByDeviceId[String(device.id)] || null
+                                  : null;
                                 const name =
                                   device.name ||
                                   device.model ||
@@ -1822,6 +1952,21 @@ const MobileCompare = () => {
                                       <div className="text-xs font-semibold text-gray-900 normal-case truncate">
                                         {name}
                                       </div>
+                                      {ranking ? (
+                                        <div
+                                          className="mt-1 inline-flex h-11 w-11 items-center justify-center rounded-full border-[2px] border-red-500 bg-white text-red-600 shadow-sm"
+                                          title={`Overall score ${ranking.totalScore}/100`}
+                                        >
+                                          <div className="text-center leading-none">
+                                            <div className="text-[6px] font-bold uppercase tracking-wide">
+                                              Overall
+                                            </div>
+                                            <div className="mt-0.5 text-[10px] font-extrabold">
+                                              {ranking.totalScore}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ) : null}
                                       {selectedVariant ? (
                                         <div className="text-[10px] text-gray-500 font-medium normal-case truncate">
                                           {selectedVariant.ram || "N/A"} /{" "}
@@ -1842,6 +1987,10 @@ const MobileCompare = () => {
                               const isPrice = isOverview && specKey === "price";
                               const isVariant =
                                 isOverview && specKey === "variant";
+                              const specHint = getSpecHint(
+                                section.id,
+                                specKey,
+                              );
 
                               return (
                                 <tr
@@ -1851,7 +2000,17 @@ const MobileCompare = () => {
                                   }
                                 >
                                   <td className="px-6 py-2 text-sm font-medium text-gray-600 w-1/3 align-top">
-                                    {toNormalCase(specKey)}
+                                    <div className="inline-flex items-center gap-1.5">
+                                      <span>{toNormalCase(specKey)}</span>
+                                      {specHint ? (
+                                        <span
+                                          className="inline-flex text-gray-400 hover:text-gray-600 cursor-help"
+                                          title={specHint}
+                                        >
+                                          <Info className="h-3.5 w-3.5" />
+                                        </span>
+                                      ) : null}
+                                    </div>
                                   </td>
                                   {comparedDevices.map((device) => {
                                     const specs = getDeviceSpecs(
