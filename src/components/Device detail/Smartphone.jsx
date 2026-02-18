@@ -1432,7 +1432,7 @@ Price: ${price}
 
     return (
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
+        <table className="min-w-full divide-y divide-gray-200 shadow-none">
           <tbody className="bg-white">
             {rows.map(([label, value], idx) => (
               <tr
@@ -1466,7 +1466,7 @@ Price: ${price}
     return (
       <div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-full divide-y divide-gray-200 shadow-none">
             <tbody className="bg-white">
               {entries.map(([key, value], idx) => (
                 <tr
@@ -1584,7 +1584,7 @@ Price: ${price}
                     General
                   </h4>
                   <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-100">
+                    <table className="min-w-full divide-y divide-gray-100 shadow-none">
                       <tbody className="bg-white">
                         {[
                           { label: "Brand", value: mobileData.brand },
@@ -1685,7 +1685,7 @@ Price: ${price}
                       Performance
                     </h4>
                     <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-100">
+                      <table className="min-w-full divide-y divide-gray-100 shadow-none">
                         <tbody className="bg-white">
                           {Object.entries(mobileData.performance || {})
                             .filter(
@@ -1740,7 +1740,7 @@ Price: ${price}
                       Battery
                     </h4>
                     <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-100">
+                      <table className="min-w-full divide-y divide-gray-100 shadow-none">
                         <tbody className="bg-white">
                           {Object.entries(mobileData.battery || {})
                             .filter(
@@ -1780,7 +1780,7 @@ Price: ${price}
                       Connectivity
                     </h4>
                     <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-100">
+                      <table className="min-w-full divide-y divide-gray-100 shadow-none">
                         <tbody className="bg-white">
                           {Object.entries(mobileData.connectivity || {})
                             .filter(
@@ -2001,7 +2001,7 @@ Price: ${price}
   }
 
   return (
-    <div className="max-w-6xl mx-auto mb-8">
+    <div className="px-2 lg:px-4 mx-auto max-w-6xl w-full bg-white">
       <Helmet>
         <title>{metaTitleWithDate}</title>
         <meta name="description" content={metaDescription} />
@@ -2079,7 +2079,7 @@ Price: ${price}
         </div>
       )}
 
-      <div className="bg-gray-50 overflow-hidden">
+      <div className="overflow-hidden">
         {/* Mobile Header */}
         <div className="p-4 bg-white border-b border-gray-200 lg:hidden">
           <div className="flex justify-between items-start mb-2">

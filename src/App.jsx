@@ -7,7 +7,7 @@ import Home from "./components/Home/Home";
 import Smartphones from "./components/Product/Smartphones";
 import Laptops from "./components/Product/Laptops";
 import Networking from "./components/Product/Networking";
-import HomeAppliances from "./components/Product/Appliances";
+import TVs from "./components/Product/TVs";
 import DeviceComparison from "./components/compare";
 import Breadcrumbs from "./components/Breadcrumbs";
 import About from "./components/Static/About";
@@ -18,13 +18,15 @@ import {
   Route,
   Routes,
   BrowserRouter as Router,
+  Navigate,
+  useLocation,
   useParams,
 } from "react-router-dom";
 import MobileDetailCard from "./components/Device detail/Smartphone";
 import MobileCompare from "./components/compare";
 import Login from "./components/Auths/Login";
 import Signup from "./components/Auths/Signup";
-import ApplianceDetailCard from "./components/Device detail/Homeappliance";
+import TVDetailCard from "./components/Device detail/TV";
 import LaptopDetailCard from "./components/Device detail/Laptop";
 import NetworkingDetailCard from "./components/Device detail/Network";
 import Wishlist from "./components/Wishlist";
@@ -33,20 +35,38 @@ function App() {
   // Router for /products/:category to keep SEO-friendly category paths
   const CategoryRouter = () => {
     const { category } = useParams();
+    const location = useLocation();
     switch (category) {
       case "smartphones":
       case "mobiles":
         return <Smartphones />;
       case "laptops":
         return <Laptops />;
+      case "tvs":
+      case "tv":
+      case "television":
+      case "televisions":
+        return <TVs />;
       case "appliances":
-        return <HomeAppliances />;
+        return <Navigate to={`/products/tvs${location.search || ""}`} replace />;
       case "networking":
         return <Networking />;
       default:
         return <div className="p-4">Category not found</div>;
     }
   };
+
+  const AppliancesListRedirect = () => {
+    const location = useLocation();
+    return <Navigate to={`/tvs${location.search || ""}`} replace />;
+  };
+
+  const AppliancesDetailRedirect = () => {
+    const { slug } = useParams();
+    const location = useLocation();
+    return <Navigate to={`/tvs/${slug}${location.search || ""}`} replace />;
+  };
+
   return (
     <Router>
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100">
@@ -72,7 +92,8 @@ function App() {
             element={<Smartphones />}
           />
           <Route path="/laptops" element={<Laptops />} />
-          <Route path="/appliances" element={<HomeAppliances />} />
+          <Route path="/tvs" element={<TVs />} />
+          <Route path="/appliances" element={<AppliancesListRedirect />} />
           <Route path="/networking" element={<Networking />} />
 
           {/* Support /products/:category SEO paths */}
@@ -83,13 +104,15 @@ function App() {
           <Route path="/mobiles" element={<Smartphones />} />
           <Route path="/devices/smartphones" element={<Smartphones />} />
           <Route path="/devices/laptops" element={<Laptops />} />
-          <Route path="/devices/appliances" element={<HomeAppliances />} />
+          <Route path="/devices/tvs" element={<TVs />} />
+          <Route path="/devices/appliances" element={<AppliancesListRedirect />} />
           <Route path="/devices/networking" element={<Networking />} />
 
           {/* Product Detail Pages - SEO-friendly slug-based routes */}
           <Route path="/smartphones/:slug" element={<MobileDetailCard />} />
           <Route path="/laptops/:slug" element={<LaptopDetailCard />} />
-          <Route path="/appliances/:slug" element={<ApplianceDetailCard />} />
+          <Route path="/tvs/:slug" element={<TVDetailCard />} />
+          <Route path="/appliances/:slug" element={<AppliancesDetailRedirect />} />
           <Route path="/networking/:slug" element={<NetworkingDetailCard />} />
 
           {/* Comparison */}

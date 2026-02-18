@@ -2,15 +2,16 @@ import React, { useId } from "react";
 
 export default function HookLogo({
   className,
-  title = "Hook",
-  "aria-label": ariaLabel = "Hook",
+  title = "HOOKS",
+  "aria-label": ariaLabel = "HOOKS",
+  brandName = "HOOKS",
 }) {
   const reactId = useId();
   const gradientId = `device-gradient-${reactId.replace(/:/g, "")}`;
 
   return (
     <svg
-      viewBox="0 0 420 120"
+      viewBox="0 0 520 120"
       preserveAspectRatio="xMinYMid meet"
       role="img"
       aria-label={ariaLabel}
@@ -48,13 +49,15 @@ export default function HookLogo({
 
       <text
         x="110"
-        y="78"
-        fontFamily="Inter, Poppins, Arial, sans-serif"
-        fontSize="48"
+        y="60"
+        dominantBaseline="middle"
+        fontFamily="Poppins, Inter, Arial, sans-serif"
+        fontSize="50"
         fontWeight="800"
+        letterSpacing="2"
         fill="#111"
       >
-        Hook
+        {brandName}
       </text>
     </svg>
   );

@@ -60,4 +60,3 @@ export function getHookBadge(device) {
 
   return null;
 }
-

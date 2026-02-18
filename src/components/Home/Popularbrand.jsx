@@ -2,7 +2,14 @@
 import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDevice } from "../../hooks/useDevice";
-import { FaMobileAlt, FaWifi, FaLaptop, FaPlug, FaTag } from "react-icons/fa";
+import {
+  FaMobileAlt,
+  FaWifi,
+  FaLaptop,
+  FaPlug,
+  FaTag,
+  FaTv,
+} from "react-icons/fa";
 import { Helmet } from "react-helmet-async";
 
 const PopularBrands = () => {
@@ -49,7 +56,9 @@ const PopularBrands = () => {
       return (
         type.includes("appliance") ||
         type.includes("home appliance") ||
-        type.includes("kitchen")
+        type.includes("kitchen") ||
+        type.includes("television") ||
+        type.includes("tv")
       );
     });
 
@@ -91,8 +100,8 @@ const PopularBrands = () => {
     if (applianceBrands.length > 0) {
       categories.push({
         id: "appliance",
-        name: "Appliances",
-        icon: <FaPlug />,
+        name: "TVs",
+        icon: <FaTv />,
         activeGradient: "from-blue-600 via-purple-500 to-blue-600",
         inactiveColor: "text-gray-400",
         count: applianceBrands.length,
@@ -137,6 +146,9 @@ const PopularBrands = () => {
           gradient = "from-blue-600 via-purple-500 to-blue-600";
         } else if (type.includes("laptop") || type.includes("computer")) {
           icon = <FaLaptop />;
+          gradient = "from-blue-600 via-purple-500 to-blue-600";
+        } else if (type.includes("television") || type.includes("tv")) {
+          icon = <FaTv />;
           gradient = "from-blue-600 via-purple-500 to-blue-600";
         } else if (type.includes("appliance") || type.includes("home")) {
           icon = <FaPlug />;
@@ -187,8 +199,13 @@ const PopularBrands = () => {
         category.includes("computer")
       ) {
         navigate(`/laptops?brand=${encodeURIComponent(brandSlug)}`);
-      } else if (category.includes("appliance") || category.includes("home")) {
-        navigate(`/appliances?brand=${encodeURIComponent(brandSlug)}`);
+      } else if (
+        category.includes("appliance") ||
+        category.includes("home") ||
+        category.includes("television") ||
+        category.includes("tv")
+      ) {
+        navigate(`/tvs?brand=${encodeURIComponent(brandSlug)}`);
       } else if (
         category.includes("network") ||
         category.includes("router") ||
@@ -227,7 +244,7 @@ const PopularBrands = () => {
 
   const metaDescription = sanitizeDescription(
     activeBrandData?.originalBrand?.description ||
-      "Explore popular electronics brands on Hook, including smartphones, laptops, appliances, and networking gear with curated recommendations.",
+      "Explore popular electronics brands on Hook, including smartphones, laptops, TVs, and networking gear with curated recommendations.",
   );
 
   return (

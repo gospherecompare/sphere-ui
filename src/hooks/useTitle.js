@@ -9,6 +9,7 @@ const PAGE_TITLES = {
   home: `Compare & Buy Latest Gadgets | ${SITE_NAME}`,
   smartphones: `Best Smartphones ${CURRENT_YEAR} | Compare Prices | ${SITE_NAME}`,
   laptops: `Laptops Online | Compare & Buy Best Laptops | ${SITE_NAME}`,
+  tvs: `TVs | Compare Prices & Features | ${SITE_NAME}`,
   appliances: `Home Appliances | Compare Prices & Features | ${SITE_NAME}`,
   networking: `Networking Devices | Routers, Modems & Switches | ${SITE_NAME}`,
   signin: `Sign In | ${SITE_NAME}`,

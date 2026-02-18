@@ -18,7 +18,8 @@ const routes = [
   { path: "/smartphones", breadcrumb: "Smartphones" },
   { path: "/laptops", breadcrumb: "Laptops" },
   { path: "/networking", breadcrumb: "Networking" },
-  { path: "/appliances", breadcrumb: "Appliances" },
+  { path: "/tvs", breadcrumb: "TVs" },
+  { path: "/appliances", breadcrumb: "TVs" },
   {
     path: "/smartphones/:slug",
     breadcrumb: (match) =>
@@ -29,6 +30,14 @@ const routes = [
   },
   {
     path: "/laptops/:slug",
+    breadcrumb: (match) =>
+      slugToTitle(
+        (match && match.params && (match.params.slug || match.params.id)) ||
+          "Details",
+      ),
+  },
+  {
+    path: "/tvs/:slug",
     breadcrumb: (match) =>
       slugToTitle(
         (match && match.params && (match.params.slug || match.params.id)) ||

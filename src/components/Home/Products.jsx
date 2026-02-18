@@ -2,13 +2,19 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import "../../styles/hideScrollbar.css";
-import { FaMobileAlt, FaWifi, FaLaptop, FaPlug, FaStream } from "react-icons/fa";
+import {
+  FaMobileAlt,
+  FaLaptop,
+  FaTv,
+  FaStream,
+} from "react-icons/fa";
 
 const TOP_CATEGORIES = [
   {
     id: "smartphones",
     name: "Smartphones",
     icon: <FaMobileAlt />,
+    to: "/products/smartphones",
     activeGradient: "from-blue-600 via-purple-500 to-blue-600",
     inactiveColor: "text-gray-400",
   },
@@ -16,26 +22,21 @@ const TOP_CATEGORIES = [
     id: "laptops",
     name: "Laptops",
     icon: <FaLaptop />,
+    to: "/products/laptops",
     activeGradient: "from-purple-600 to-red-600",
     inactiveColor: "text-gray-400",
   },
   {
-    id: "appliances",
-    name: "Appliances",
-    icon: <FaPlug />,
-    activeGradient: "from-purple-600 to-red-600",
-    inactiveColor: "text-gray-400",
-  },
-  {
-    id: "networking",
-    name: "Networking",
-    icon: <FaWifi />,
+    id: "tv",
+    name: "TVs",
+    icon: <FaTv />,
+    to: "/products/tvs",
     activeGradient: "from-purple-600 to-red-600",
     inactiveColor: "text-gray-400",
   },
 ];
 
-const getActiveCategoryFromPathname = (pathname) => {
+const getActiveCategoryFromLocation = (pathname) => {
   const path = String(pathname || "").trim();
   if (!path || path === "/") return null;
 
@@ -53,18 +54,18 @@ const getActiveCategoryFromPathname = (pathname) => {
     mobiles: "smartphones",
     smartphone: "smartphones",
     laptop: "laptops",
-    appliance: "appliances",
-    network: "networking",
+    appliance: "tv",
+    appliances: "tv",
+    tv: "tv",
+    tvs: "tv",
+    television: "tv",
+    televisions: "tv",
   };
 
   const resolved = aliasMap[normalized] || normalized;
-  const validIds = new Set([
-    "smartphones",
-    "laptops",
-    "appliances",
-    "networking",
-  ]);
   if (resolved === "products") return "smartphones";
+
+  const validIds = new Set(["smartphones", "laptops", "tv"]);
   return validIds.has(resolved) ? resolved : null;
 };
 
@@ -72,7 +73,7 @@ const ProductsNav = () => {
   const { pathname } = useLocation();
 
   const activeCategoryId = React.useMemo(
-    () => getActiveCategoryFromPathname(pathname),
+    () => getActiveCategoryFromLocation(pathname),
     [pathname],
   );
 
@@ -89,21 +90,21 @@ const ProductsNav = () => {
           </h2>
         </div>
         <p className="text-sm text-gray-600">
-          Explore smartphones, laptops, appliances, and networking devices
+          Explore smartphones, laptops, and TVs
         </p>
       </div>
 
       <nav
         aria-label="Browse by category"
         className="
-          grid grid-cols-4 gap-2 py-2
+          grid grid-cols-3 gap-2 py-2
           sm:flex sm:overflow-x-auto sm:gap-3 sm:py-2
           hide-scrollbar no-scrollbar scroll-smooth
         "
       >
         {TOP_CATEGORIES.map((category) => {
           const isActive = activeCategoryId === category.id;
-          const to = `/products/${category.id}`;
+          const to = category.to;
 
           return (
             <Link
@@ -126,7 +127,7 @@ const ProductsNav = () => {
                 }`}
               >
                 <span
-                  className={`text-lg lg:text-xl transition-colors duration-300 ${
+                  className={`flex items-center justify-center leading-none transition-colors duration-300 ${
                     isActive ? "text-white" : category.inactiveColor
                   }`}
                 >

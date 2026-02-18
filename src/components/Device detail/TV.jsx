@@ -1,4 +1,4 @@
-// src/components/ApplianceDetailCard.jsx
+// src/components/TVDetailCard.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import useDevice from "../../hooks/useDevice";
@@ -7,7 +7,6 @@ import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
 
 // Icons
 import {
-  FaStar,
   FaHeart,
   FaShare,
   FaCopy,
@@ -18,6 +17,7 @@ import {
   FaTag,
   FaInfoCircle,
   FaBolt,
+  FaPlug,
   FaWater,
   FaSnowflake,
   FaTv,
@@ -49,15 +49,13 @@ import {
   FaTwitter,
   FaEnvelope,
   FaLink,
-  FaRegStar,
-  FaStarHalfAlt,
+  FaSyncAlt,
 } from "react-icons/fa";
 
 import "../../styles/hideScrollbar.css";
 import Spinner from "../ui/Spinner";
 import { Helmet } from "react-helmet-async";
-import { homeApplianceMeta } from "../../constants/meta";
-import RatingReview from "../ui/RatingReview";
+import { tvMeta } from "../../constants/meta";
 import useStoreLogos from "../../hooks/useStoreLogos";
 
 // Ratings UI removed: review submission and inline rating input deleted
@@ -65,28 +63,15 @@ import useStoreLogos from "../../hooks/useStoreLogos";
 // Data comes from API via `useDevice()`; embedded mock removed.
 const mockAppliances = [];
 
-// Default ratings data
-const DEFAULT_RATINGS = {
-  averageRating: 4.2,
-  totalRatings: 128,
-  performance: 4.3,
-  features: 4.1,
-  durability: 4.4,
-  energyEfficiency: 4.0,
-  design: 4.2,
-};
-
-const ApplianceDetailCard = () => {
+const TVDetailCard = () => {
   const { getLogo } = useStoreLogos();
   const [activeTab, setActiveTab] = useState("specifications");
   const [activeImage, setActiveImage] = useState(0);
-  const [showAllSpecs, setShowAllSpecs] = useState(false);
   const [showAllStores, setShowAllStores] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState(0);
   const [copied, setCopied] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [ratingsData, setRatingsData] = useState(DEFAULT_RATINGS);
   // Review form removed
 
   const [loading, setLoading] = useState(false);
@@ -124,7 +109,78 @@ const ApplianceDetailCard = () => {
   const normalizeAppliance = (a) => {
     if (!a) return null;
 
-    const rawVariants = Array.isArray(a.variants)
+    const toObjectIfNeeded = (value) => {
+      if (!value) return {};
+      if (typeof value === "object" && !Array.isArray(value)) return value;
+      if (typeof value !== "string") return {};
+      const t = value.trim();
+      if (!t) return {};
+      if ((t.startsWith("{") && t.endsWith("}")) || t.startsWith("[")) {
+        try {
+          const parsed = JSON.parse(t);
+          return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+            ? parsed
+            : {};
+        } catch {
+          return {};
+        }
+      }
+      return {};
+    };
+
+    const toArrayIfNeeded = (value) => {
+      if (!value) return [];
+      if (Array.isArray(value)) return value;
+      if (typeof value !== "string") return [];
+      const t = value.trim();
+      if (!t) return [];
+      if (t.startsWith("[") || t.startsWith("{")) {
+        try {
+          const parsed = JSON.parse(t);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      }
+      return [];
+    };
+
+    const firstNonEmpty = (...values) => {
+      for (const value of values) {
+        if (value === null || value === undefined) continue;
+        if (typeof value === "string") {
+          const trimmed = value.trim();
+          if (trimmed) return trimmed;
+          continue;
+        }
+        return value;
+      }
+      return "";
+    };
+
+    const basicInfo = toObjectIfNeeded(a.basic_info_json || a.basic_info);
+    const keySpecs = toObjectIfNeeded(
+      a.key_specs_json || a.key_specs || a.specifications,
+    );
+    const displayJson = toObjectIfNeeded(a.display_json || a.display);
+    const audioJson = toObjectIfNeeded(a.audio_json || a.audio);
+    const smartTvJson = toObjectIfNeeded(a.smart_tv_json || a.smart_tv);
+    const connectivityJson = toObjectIfNeeded(
+      a.connectivity_json || a.connectivity,
+    );
+    const portsJson = toObjectIfNeeded(a.ports_json || a.ports);
+    const powerJson = toObjectIfNeeded(a.power_json || a.power || a.performance);
+    const dimensionsJson = toObjectIfNeeded(
+      a.dimensions_json || a.dimensions || a.physical_details,
+    );
+    const designJson = toObjectIfNeeded(a.design_json || a.design);
+    const gamingJson = toObjectIfNeeded(a.gaming_json || a.gaming);
+    const warrantyJson = toObjectIfNeeded(a.warranty_json || a.warranty);
+    const legacySpecs = { ...(a.specifications || {}), ...(a.specs || {}) };
+
+    const rawVariants = Array.isArray(a.variants_json)
+      ? a.variants_json
+      : Array.isArray(a.variants)
       ? a.variants
       : a.variant
         ? Array.isArray(a.variant)
@@ -154,25 +210,169 @@ const ApplianceDetailCard = () => {
 
       return {
         ...v,
-        id: v.id || v.variant_id || v.variantId || null,
-        variant_id: v.variant_id || v.id || v.variantId || null,
-        base_price: v.base_price ?? v.attributes?.base_price ?? null,
+        id: v.id || v.variant_id || v.variantId || v.variant_key || null,
+        variant_id:
+          v.variant_id || v.id || v.variantId || v.variant_key || null,
+        base_price: v.base_price ?? v.price ?? v.attributes?.base_price ?? null,
         store_prices: storePrices,
-        specification_summary: v.specification_summary || v.variant_key || "",
+        screen_size:
+          v.screen_size ||
+          keySpecs.screen_size ||
+          displayJson.screen_size ||
+          "",
+        specification_summary:
+          v.specification_summary || v.screen_size || v.variant_key || "",
       };
     });
 
+    const images = (() => {
+      const fromJson = toArrayIfNeeded(a.images_json);
+      if (fromJson.length) return fromJson.filter(Boolean);
+      if (Array.isArray(a.images)) return a.images.filter(Boolean);
+      if (Array.isArray(a.pictures)) return a.pictures.filter(Boolean);
+      return [];
+    })();
+
+    const screenSize = firstNonEmpty(
+      keySpecs.screen_size,
+      displayJson.screen_size,
+      variants[0]?.screen_size,
+      legacySpecs.screen_size,
+      legacySpecs.capacity,
+    );
+    const resolution = firstNonEmpty(
+      keySpecs.resolution,
+      displayJson.resolution,
+      legacySpecs.resolution,
+    );
+    const refreshRate = firstNonEmpty(
+      keySpecs.refresh_rate,
+      displayJson.refresh_rate,
+      legacySpecs.refresh_rate,
+    );
+    const panelType = firstNonEmpty(
+      keySpecs.panel_type,
+      displayJson.panel_type,
+      legacySpecs.display_type,
+    );
+    const operatingSystem = firstNonEmpty(
+      keySpecs.operating_system,
+      smartTvJson.operating_system,
+      legacySpecs.operating_system,
+    );
+    const energyRating = firstNonEmpty(
+      powerJson.energy_rating,
+      keySpecs.energy_rating,
+      legacySpecs.energy_rating,
+    );
+    const hdrSupport =
+      (Array.isArray(keySpecs.hdr_support) && keySpecs.hdr_support.join(", ")) ||
+      (Array.isArray(displayJson.hdr_formats) &&
+        displayJson.hdr_formats.join(", ")) ||
+      "";
+
+    const features = [
+      ...(Array.isArray(keySpecs.hdr_support) ? keySpecs.hdr_support : []),
+      ...(Array.isArray(displayJson.gaming_features)
+        ? displayJson.gaming_features
+        : []),
+      ...(Array.isArray(audioJson.audio_features) ? audioJson.audio_features : []),
+      ...(Array.isArray(smartTvJson.supported_apps) ? smartTvJson.supported_apps : []),
+    ].filter(Boolean);
+
+    const dimensions = [
+      dimensionsJson.width || legacySpecs.width,
+      dimensionsJson.height || legacySpecs.height,
+      dimensionsJson.depth || legacySpecs.depth,
+    ]
+      .filter(Boolean)
+      .join(" x ");
     return {
       ...a,
       id: a.product_id || a.id || a.productId || null,
-      product_name: a.name || a.product_name || "",
-      model_number: a.model_number || a.model || "",
-      brand: a.brand_name || a.brand || "",
-      appliance_type: a.appliance_type || a.category || a.type || "",
-      category: a.category || a.appliance_type || a.applianceType || "",
+      product_name: firstNonEmpty(a.product_name, a.name, basicInfo.title),
+      model_number: firstNonEmpty(
+        a.model_number,
+        a.model,
+        basicInfo.model_number,
+      ),
+      brand: firstNonEmpty(
+        a.brand_name,
+        a.brand,
+        basicInfo.brand_name,
+        basicInfo.brand,
+      ),
+      appliance_type: firstNonEmpty(
+        a.appliance_type,
+        a.category,
+        a.type,
+        a.product_type,
+      ),
+      category: /tv|television/i.test(
+        String(
+          firstNonEmpty(a.category, a.appliance_type, a.product_type),
+        ).toLowerCase(),
+      )
+        ? "television"
+        : firstNonEmpty(a.category, a.appliance_type, a.applianceType),
       variants,
-      specifications: { ...(a.specifications || {}), ...(a.specs || {}) },
-      images: a.images || a.pictures || [],
+      specifications: {
+        ...legacySpecs,
+        ...keySpecs,
+        capacity: screenSize || legacySpecs.capacity || "",
+        screen_size: screenSize || "",
+        resolution: resolution || "",
+        refresh_rate: refreshRate || "",
+        panel_type: panelType || "",
+        operating_system: operatingSystem || "",
+        energy_rating: energyRating || "",
+        hdr_support: hdrSupport || "",
+        audio_output: firstNonEmpty(
+          keySpecs.audio_output,
+          audioJson.output_power,
+          legacySpecs.audio_output,
+        ),
+        dimensions:
+          dimensions || legacySpecs.dimensions || legacySpecs.dimension || "",
+        width: dimensionsJson.width || legacySpecs.width || "",
+        height: dimensionsJson.height || legacySpecs.height || "",
+        depth: dimensionsJson.depth || legacySpecs.depth || "",
+        weight: dimensionsJson.weight || legacySpecs.weight || "",
+        color:
+          designJson.body_color ||
+          designJson.stand_color ||
+          legacySpecs.color ||
+          "",
+      },
+      features: features.length ? features : a.features || [],
+      performance: {
+        ...(a.performance || {}),
+        ...displayJson,
+        ...audioJson,
+        ...gamingJson,
+        ...powerJson,
+      },
+      physical_details: {
+        ...(a.physical_details || {}),
+        ...dimensionsJson,
+        ...designJson,
+        dimensions,
+      },
+      warranty: { ...(a.warranty || {}), ...warrantyJson },
+      images,
+      key_specs_json: keySpecs,
+      display_json: displayJson,
+      audio_json: audioJson,
+      smart_tv_json: smartTvJson,
+      connectivity_json: connectivityJson,
+      ports_json: portsJson,
+      power_json: powerJson,
+      dimensions_json: dimensionsJson,
+      design_json: designJson,
+      gaming_json: gamingJson,
+      warranty_json: warrantyJson,
+      release_year: a.release_year || basicInfo.launch_year || a.launch_year || "",
+      country: firstNonEmpty(warrantyJson.country_of_origin, a.country_of_origin),
     };
   };
 
@@ -294,10 +494,13 @@ const ApplianceDetailCard = () => {
     if (!applianceData || !routeSlug) return;
 
     const canonicalSlug = generateSlug(
-      applianceData.name || applianceData.model || applianceData.brand || "",
+      applianceData.product_name ||
+        applianceData.model_number ||
+        applianceData.brand ||
+        "",
     );
     if (!canonicalSlug) return;
-    const desiredPath = `/appliances/${canonicalSlug}`;
+    const desiredPath = `/tvs/${canonicalSlug}`;
     const currentPath = window.location.pathname;
     if (currentPath !== desiredPath) {
       navigate(desiredPath + (location.search || ""), { replace: true });
@@ -321,7 +524,7 @@ const ApplianceDetailCard = () => {
       )
         return;
 
-      fetch(`https://api.apisphere.in/api/public/product/${pid}/view`, {
+      fetch(`http://localhost:500/api/public/product/${pid}/view`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -607,16 +810,15 @@ const ApplianceDetailCard = () => {
       applianceData?.type ||
       applianceData?.product_type ||
       "Appliance";
-    const capacity =
+    const screenSize =
+      applianceData?.specifications?.screen_size ||
       applianceData?.specifications?.capacity ||
       applianceData?.capacity ||
-      applianceData?.specs?.capacity ||
-      "Capacity info not available";
-    const voltage =
-      applianceData?.specifications?.voltage ||
-      applianceData?.voltage ||
-      applianceData?.specs?.voltage ||
-      "Voltage info not available";
+      "Screen size info not available";
+    const resolution =
+      applianceData?.specifications?.resolution ||
+      applianceData?.display_json?.resolution ||
+      "Resolution info not available";
     const color =
       applianceData?.specifications?.color ||
       applianceData?.color ||
@@ -625,19 +827,17 @@ const ApplianceDetailCard = () => {
     const price = currentVariant?.base_price
       ? `₹${formatPrice(currentVariant.base_price)}`
       : "Price not available";
-    const rating = applianceData?.rating || ratingsData?.averageRating || 0;
 
     return {
       title: `${brand} ${model}`,
-      description: `${category} | Capacity: ${capacity} | Voltage: ${voltage} | Color: ${color} | Rating: ${rating}/5 | Price: ${price}`,
-      shortDescription: `${brand} ${model} - ${category}, ${capacity}, Price: ${price}`,
+      description: `${category} | Screen: ${screenSize} | Resolution: ${resolution} | Color: ${color} | Price: ${price}`,
+      shortDescription: `${brand} ${model} - ${category}, ${screenSize}, ${resolution}, Price: ${price}`,
       fullDetails: `
 🏠 ${brand} ${model}
 📁 Category: ${category}
-📦 Capacity: ${capacity}
-⚡ Voltage: ${voltage}
+📺 Screen: ${screenSize}
+📡 Resolution: ${resolution}
 🎨 Color: ${color}
-⭐ Rating: ${rating}/5
 💰 Price: ${price}
       `,
     };
@@ -653,10 +853,10 @@ const ApplianceDetailCard = () => {
   const getCanonicalUrl = () => {
     try {
       const slug = generateSlug(
-        applianceData?.name || applianceData?.model || "",
+        applianceData?.product_name || applianceData?.model_number || "",
       );
       if (!slug) return window.location.href;
-      const path = `/appliances/${slug}`;
+      const path = `/tvs/${slug}`;
       return window.location.origin + path + (location.search || "");
     } catch (e) {
       return window.location.href;
@@ -790,190 +990,287 @@ const ApplianceDetailCard = () => {
     initFavorite();
   }, [applianceData?.id, applianceData?.model_number]);
 
-  // Rating submission removed
-
-  const renderStars = (rating, size = "sm") => {
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 >= 0.5;
-    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-
-    const sizeClasses = {
-      xs: "text-xs",
-      sm: "text-sm",
-      md: "text-base",
-      lg: "text-lg",
-      xl: "text-xl",
-    };
-
-    return (
-      <div className="flex items-center gap-1">
-        {[...Array(fullStars)].map((_, i) => (
-          <FaStar
-            key={`full-${i}`}
-            className={`text-yellow-400 ${sizeClasses[size] || sizeClasses.sm}`}
-          />
-        ))}
-        {hasHalfStar && (
-          <FaStarHalfAlt
-            className={`text-yellow-400 ${sizeClasses[size] || sizeClasses.sm}`}
-          />
-        )}
-        {[...Array(emptyStars)].map((_, i) => (
-          <FaRegStar
-            key={`empty-${i}`}
-            className={`text-gray-300 ${sizeClasses[size] || sizeClasses.sm}`}
-          />
-        ))}
-        <span className="ml-2 text-gray-600 font-medium">
-          {rating.toFixed(1)}
-        </span>
-      </div>
-    );
-  };
-
-  // Rating summary removed
-
   // Tabs configuration
-  const mobileTabs = [
-    { id: "specifications", label: "Specs", icon: FaMicrochip },
-    { id: "features", label: "Features", icon: FaBolt },
-    { id: "performance", label: "Performance", icon: FaChartBar },
-    { id: "physical_details", label: "Dimensions", icon: FaRuler },
-    { id: "warranty", label: "Warranty", icon: FaShieldAlt },
-  ];
+  const isTvProduct = /tv|television/.test(
+    String(
+      applianceData?.category ||
+        applianceData?.appliance_type ||
+        applianceData?.product_type ||
+        "",
+    ).toLowerCase(),
+  );
 
-  const desktopTabs = [...mobileTabs];
+  const mobileTabs = isTvProduct
+    ? [
+        { id: "specifications", label: "Specs", icon: FaMicrochip },
+        { id: "display", label: "Display", icon: FaTv },
+        { id: "audio", label: "Audio", icon: FaVolumeUp },
+        { id: "smart_tv", label: "Smart TV", icon: FaBolt },
+        { id: "connectivity", label: "Connectivity", icon: FaWifi },
+        { id: "ports", label: "Ports", icon: FaPlug },
+        { id: "gaming", label: "Gaming", icon: FaGamepad },
+        { id: "physical_details", label: "Dimensions", icon: FaRuler },
+        { id: "warranty", label: "Warranty", icon: FaShieldAlt },
+      ]
+    : [
+        { id: "specifications", label: "Specs", icon: FaMicrochip },
+        { id: "features", label: "Features", icon: FaBolt },
+        { id: "performance", label: "Performance", icon: FaChartBar },
+        { id: "physical_details", label: "Dimensions", icon: FaRuler },
+        { id: "warranty", label: "Warranty", icon: FaShieldAlt },
+      ];
+
+  const desktopTabs = mobileTabs;
 
   const tabs = window.innerWidth < 768 ? mobileTabs : desktopTabs;
 
-  const renderSpecItems = (data, limit = 6) => {
+  const hasContent = (value) => {
+    if (value === null || value === undefined) return false;
+    if (typeof value === "string") return value.trim() !== "";
+    if (typeof value === "number") return Number.isFinite(value);
+    if (typeof value === "boolean") return value;
+    if (Array.isArray(value)) return value.some((v) => hasContent(v));
+    if (typeof value === "object") {
+      return Object.values(value).some((v) => hasContent(v));
+    }
+    return false;
+  };
+
+  const formatSpecValue = (value) => {
+    if (value === null || value === undefined || value === "") {
+      return "Not specified";
+    }
+    if (typeof value === "boolean") return value ? "Yes" : "No";
+    if (Array.isArray(value)) {
+      const filtered = value
+        .map((v) => (typeof v === "object" ? JSON.stringify(v) : String(v)))
+        .map((v) => v.trim())
+        .filter(Boolean);
+      return filtered.length ? filtered.join(", ") : "Not specified";
+    }
+    if (typeof value === "object") {
+      const entries = Object.entries(value)
+        .filter(([_, v]) => hasContent(v))
+        .map(([k, v]) => `${toNormalCase(k)}: ${formatSpecValue(v)}`);
+      return entries.length ? entries.join(" | ") : "Not specified";
+    }
+    return String(value);
+  };
+
+  const renderSpecTable = (data) => {
     if (!data || typeof data !== "object") {
       return (
         <div className="text-center py-4 text-gray-500">No data available</div>
       );
     }
 
-    const entries = Object.entries(data).filter(
+    const rows = Object.entries(data).filter(
       ([_, value]) => value !== "" && value != null && value !== false,
     );
 
-    if (entries.length === 0) {
+    if (!rows.length) {
       return (
         <div className="text-center py-4 text-gray-500">No data available</div>
       );
     }
 
-    const displayEntries = showAllSpecs ? entries : entries.slice(0, limit);
-
     return (
-      <>
-        <div className="space-y-3">
-          {displayEntries.map(([key, value]) => (
-            <div
-              key={key}
-              className="flex justify-between items-start py-3 border-b border-gray-100 last:border-b-0"
-            >
-              <span className="text-gray-700 font-medium text-sm flex-1 pr-4">
-                {toNormalCase(key)}
-              </span>
-              <span className="text-gray-900 font-semibold text-sm text-right flex-1 break-words">
-                {value === true
-                  ? "Yes"
-                  : value === false
-                    ? "No"
-                    : value || "Not specified"}
-              </span>
-            </div>
-          ))}
-        </div>
-        {entries.length > limit && (
-          <button
-            onClick={() => setShowAllSpecs(!showAllSpecs)}
-            className={`w-full mt-4 py-2 ${currentColor.text} font-medium text-sm flex items-center justify-center gap-1`}
-          >
-            {showAllSpecs ? "Show Less" : `Show ${entries.length - limit} More`}
-            <FaChevronDown
-              className={`text-xs transition-transform ${
-                showAllSpecs ? "rotate-180" : ""
-              }`}
-            />
-          </button>
-        )}
-      </>
+      <div className="overflow-x-auto">
+        <table className="min-w-full">
+          <tbody className="bg-white">
+            {rows.map(([key, value], idx) => (
+              <tr key={key} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                <td className="px-6 py-3 text-sm font-medium text-gray-600 w-1/3 align-top">
+                  {toNormalCase(key)}
+                </td>
+                <td className="px-6 py-3 text-sm text-gray-900 w-2/3">
+                  {formatSpecValue(value)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     );
+  };
+
+  const handleTabClick = (tabId) => {
+    setActiveTab(tabId);
+    const sectionId = tabId === "specifications" ? "tv-specifications" : `tv-${tabId}`;
+    window.requestAnimationFrame(() => {
+      const el = document.getElementById(sectionId);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   };
 
   const renderTabContent = () => {
     if (!applianceData) return null;
 
-    switch (activeTab) {
-      case "specifications":
-        return (
-          <div className="space-y-6">
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                <FaMicrochip className={currentColor.text} />
-                Technical Specifications
-              </h3>
-              {renderSpecItems(applianceData.specifications)}
-            </div>
-          </div>
-        );
+    const generalSection = {
+      brand: applianceData.brand || applianceData.brand_name || "",
+      model: applianceData.model_number || applianceData.model || "",
+      category: applianceData.category || applianceData.appliance_type || "",
+      release_year: applianceData.release_year || "",
+      country_of_origin:
+        applianceData.country || applianceData.warranty_json?.country_of_origin || "",
+    };
 
-      case "features":
-        return (
-          <div className="bg-white rounded-lg p-6 border border-gray-200">
+    if (isTvProduct) {
+      return (
+        <div id="tv-specifications" className="space-y-6">
+          <div className="bg-white rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+              <FaMicrochip className={currentColor.text} />
+              TV Specifications
+            </h3>
+            {renderSpecTable(generalSection)}
+          </div>
+
+          {hasContent(applianceData.key_specs_json || applianceData.specifications) && (
+            <div id="tv-display" className="bg-white rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                <FaTv className={currentColor.text} />
+                Display
+              </h3>
+              {renderSpecTable(
+                applianceData.display_json ||
+                  applianceData.key_specs_json ||
+                  applianceData.specifications,
+              )}
+            </div>
+          )}
+
+          {hasContent(applianceData.audio_json) && (
+            <div id="tv-audio" className="bg-white rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                <FaVolumeUp className={currentColor.text} />
+                Audio
+              </h3>
+              {renderSpecTable(applianceData.audio_json)}
+            </div>
+          )}
+
+          {hasContent(applianceData.smart_tv_json) && (
+            <div id="tv-smart_tv" className="bg-white rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                <FaBolt className={currentColor.text} />
+                Smart TV
+              </h3>
+              {renderSpecTable(applianceData.smart_tv_json)}
+            </div>
+          )}
+
+          {hasContent(applianceData.connectivity_json) && (
+            <div
+              id="tv-connectivity"
+              className="bg-white rounded-lg p-6"
+            >
+              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                <FaWifi className={currentColor.text} />
+                Connectivity
+              </h3>
+              {renderSpecTable(applianceData.connectivity_json)}
+            </div>
+          )}
+
+          {hasContent(applianceData.ports_json) && (
+            <div id="tv-ports" className="bg-white rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                <FaPlug className={currentColor.text} />
+                Ports
+              </h3>
+              {renderSpecTable(applianceData.ports_json)}
+            </div>
+          )}
+
+          {hasContent(applianceData.gaming_json) && (
+            <div id="tv-gaming" className="bg-white rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                <FaGamepad className={currentColor.text} />
+                Gaming
+              </h3>
+              {renderSpecTable(applianceData.gaming_json)}
+            </div>
+          )}
+
+          {hasContent(applianceData.dimensions_json || applianceData.physical_details) && (
+            <div
+              id="tv-physical_details"
+              className="bg-white rounded-lg p-6"
+            >
+              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                <FaRuler className={currentColor.text} />
+                Dimensions
+              </h3>
+              {renderSpecTable(
+                applianceData.dimensions_json || applianceData.physical_details,
+              )}
+            </div>
+          )}
+
+          {hasContent(applianceData.warranty_json || applianceData.warranty) && (
+            <div id="tv-warranty" className="bg-white rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                <FaShieldAlt className={currentColor.text} />
+                Warranty
+              </h3>
+              {renderSpecTable(applianceData.warranty_json || applianceData.warranty)}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div id="tv-specifications" className="space-y-6">
+        <div className="bg-white rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+            <FaMicrochip className={currentColor.text} />
+            Technical Specifications
+          </h3>
+          {renderSpecTable(applianceData.specifications || generalSection)}
+        </div>
+        {hasContent(applianceData.features) && (
+          <div id="tv-features" className="bg-white rounded-lg p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
               <FaBolt className={currentColor.text} />
-              Key Features
+              Features
             </h3>
-            {renderSpecItems(applianceData.features)}
+            {renderSpecTable(applianceData.features)}
           </div>
-        );
-
-      case "performance":
-        return (
-          <div className="bg-white rounded-lg p-6 border border-gray-200">
+        )}
+        {hasContent(applianceData.performance) && (
+          <div id="tv-performance" className="bg-white rounded-lg p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
               <FaChartBar className={currentColor.text} />
-              Performance Details
+              Performance
             </h3>
-            {renderSpecItems(applianceData.performance)}
+            {renderSpecTable(applianceData.performance)}
           </div>
-        );
-
-      case "physical_details":
-        return (
-          <div className="bg-white rounded-lg p-6 border border-gray-200">
+        )}
+        {hasContent(applianceData.physical_details) && (
+          <div
+            id="tv-physical_details"
+            className="bg-white rounded-lg p-6"
+          >
             <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
               <FaRuler className={currentColor.text} />
-              Physical Dimensions & Details
+              Physical Details
             </h3>
-            {renderSpecItems(applianceData.physical_details)}
+            {renderSpecTable(applianceData.physical_details)}
           </div>
-        );
-
-      case "warranty":
-        return (
-          <div className="bg-white rounded-lg p-6 border border-gray-200">
+        )}
+        {hasContent(applianceData.warranty) && (
+          <div id="tv-warranty" className="bg-white rounded-lg p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
               <FaShieldAlt className={currentColor.text} />
-              Warranty & Support
+              Warranty
             </h3>
-            {renderSpecItems(applianceData.warranty)}
+            {renderSpecTable(applianceData.warranty)}
           </div>
-        );
-
-      default:
-        return (
-          <div className="bg-white rounded-lg p-6 border border-gray-200">
-            <div className="text-center py-12 text-gray-500">
-              <CategoryIcon className="text-4xl mx-auto mb-4 text-gray-300" />
-              <p>No data available for this section</p>
-            </div>
-          </div>
-        );
-    }
+        )}
+      </div>
+    );
   };
 
   if (loading) {
@@ -994,7 +1291,7 @@ const ApplianceDetailCard = () => {
 
   if (!loading && !applianceData) {
     return (
-      <div className="max-w-8xl mx-auto p-4">
+      <div className="px-2 lg:px-4 mx-auto max-w-6xl w-full p-4">
         <div className="bg-white  p-12 text-center border border-gray-200">
           <div className="text-gray-400 text-6xl mb-4">🏠</div>
           <h3 className="text-2xl font-semibold text-gray-900 mb-3">
@@ -1008,37 +1305,64 @@ const ApplianceDetailCard = () => {
     );
   }
 
+  const metaName =
+    applianceData?.product_name ||
+    applianceData?.model_number ||
+    applianceData?.model ||
+    "TV";
+  const metaBrand = applianceData?.brand || applianceData?.brand_name || "";
+  const metaScreenSize =
+    applianceData?.specifications?.screen_size ||
+    applianceData?.specifications?.capacity ||
+    currentVariant?.screen_size ||
+    "";
+  const metaResolution =
+    applianceData?.specifications?.resolution ||
+    applianceData?.display_json?.resolution ||
+    "";
+  const metaOs =
+    applianceData?.specifications?.operating_system ||
+    applianceData?.smart_tv_json?.operating_system ||
+    "";
+  const metaNameWithBrand =
+    metaBrand && metaName
+      ? metaName.toLowerCase().includes(metaBrand.toLowerCase())
+        ? metaName
+        : `${metaBrand} ${metaName}`
+      : metaName;
+  const metaTitle = tvMeta.title({
+    name: metaNameWithBrand,
+    screenSize: metaScreenSize,
+    resolution: metaResolution,
+  });
+  const metaDescription = tvMeta.description({
+    name: metaName,
+    brand: metaBrand,
+    screenSize: metaScreenSize,
+    resolution: metaResolution,
+    os: metaOs,
+  });
+  const canonicalUrl = getCanonicalUrl();
+  const metaImage = applianceData?.images?.[0] || null;
+
   return (
-    <div className="max-w-8xl mx-auto bg-white">
+    <div className="px-2 lg:px-4 mx-auto max-w-6xl w-full bg-white">
       <Helmet>
-        <title>
-          {homeApplianceMeta.title({
-            name: applianceData?.name || applianceData?.model || "",
-            applianceType:
-              applianceData?.appliance_type ||
-              applianceData?.applianceType ||
-              "",
-            capacity:
-              applianceData?.capacity ||
-              applianceData?.specifications?.capacity ||
-              "",
-          })}
-        </title>
+        <title>{metaTitle}</title>
+        <meta name="description" content={metaDescription} />
+        <link rel="canonical" href={canonicalUrl} />
+        <meta property="og:type" content="product" />
+        <meta property="og:title" content={metaTitle} />
+        <meta property="og:description" content={metaDescription} />
+        {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
+        {metaImage && <meta property="og:image" content={metaImage} />}
         <meta
-          name="description"
-          content={homeApplianceMeta.description({
-            name: applianceData?.name || applianceData?.model || "",
-            applianceType:
-              applianceData?.appliance_type ||
-              applianceData?.applianceType ||
-              "",
-            capacity:
-              applianceData?.capacity ||
-              applianceData?.specifications?.capacity ||
-              "",
-            brand: applianceData?.brand || applianceData?.brand_name || "",
-          })}
+          name="twitter:card"
+          content={metaImage ? "summary_large_image" : "summary"}
         />
+        <meta name="twitter:title" content={metaTitle} />
+        <meta name="twitter:description" content={metaDescription} />
+        {metaImage && <meta name="twitter:image" content={metaImage} />}
       </Helmet>
       {/* Share Menu Modal */}
       {showShareMenu && (
@@ -1160,16 +1484,7 @@ const ApplianceDetailCard = () => {
               </button>
             </div>
           </div>
-          <div className="flex items-center justify-between mt-4">
-            {ratingsData?.averageRating && (
-              <div className="flex items-center gap-2">
-                {renderStars(ratingsData.averageRating)}
-                <span className="text-sm text-gray-600">
-                  ({ratingsData.totalRatings})
-                </span>
-              </div>
-            )}
-            {currentVariant && (
+          <div className="flex items-center justify-end mt-4">            {currentVariant && (
               <span className="text-2xl font-bold text-green-600">
                 ₹{formatPrice(currentVariant.base_price)}
               </span>
@@ -1280,15 +1595,29 @@ const ApplianceDetailCard = () => {
             <div className="lg:hidden grid grid-cols-3 gap-3 mb-6">
               {applianceData.specifications &&
                 [
-                  { key: "capacity", label: "Capacity", icon: FaWeight },
-                  { key: "power_consumption", label: "Power", icon: FaBolt },
+                  {
+                    key: "screen_size",
+                    fallback: "capacity",
+                    label: "Screen",
+                    icon: FaTv,
+                  },
+                  {
+                    key: "resolution",
+                    label: "Resolution",
+                    icon: FaRuler,
+                  },
                   {
                     key: "energy_rating",
+                    fallback: "energyRating",
                     label: "Energy",
                     icon: FaBatteryFull,
                   },
                 ].map((item) => {
-                  const value = applianceData.specifications[item.key];
+                  const value =
+                    applianceData.specifications[item.key] ||
+                    (item.fallback
+                      ? applianceData.specifications[item.fallback]
+                      : null);
                   if (!value) return null;
                   return (
                     <div
@@ -1378,21 +1707,7 @@ const ApplianceDetailCard = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between mb-6">
-                {ratingsData?.averageRating && (
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 bg-gray-50 px-4 py-2.5 rounded-xl">
-                      {renderStars(ratingsData.averageRating, "md")}
-                      <span className="text-gray-700 font-medium">
-                        {ratingsData.averageRating.toFixed(1)}
-                      </span>
-                      <span className="text-gray-500 text-sm">
-                        ({ratingsData.totalRatings} ratings)
-                      </span>
-                    </div>
-                  </div>
-                )}
-                {currentVariant && (
+              <div className="flex items-center justify-end mb-6">                {currentVariant && (
                   <div className="text-right">
                     <div className="text-sm text-gray-500 mb-1">
                       Starting from
@@ -1408,7 +1723,7 @@ const ApplianceDetailCard = () => {
             {/* Store Prices Section */}
             {sortedStores.length > 0 && (
               <div className="mb-8">
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center justify-end mb-6">
                   <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                     <FaStore className={currentColor.text} />
                     Available at Online Stores
@@ -1488,31 +1803,38 @@ const ApplianceDetailCard = () => {
               {applianceData.specifications &&
                 [
                   {
-                    key: "capacity",
-                    label: "Capacity",
-                    icon: FaWeight,
+                    key: "screen_size",
+                    fallback: "capacity",
+                    label: "Screen Size",
+                    icon: FaTv,
                     unit: "",
                   },
                   {
-                    key: "power_rating",
-                    label: "Power",
-                    icon: FaBolt,
-                    unit: "W",
+                    key: "resolution",
+                    label: "Resolution",
+                    icon: FaRuler,
+                    unit: "",
                   },
                   {
                     key: "energy_rating",
+                    fallback: "energyRating",
                     label: "Energy Rating",
                     icon: FaBatteryFull,
                     unit: "",
                   },
                   {
-                    key: "weight",
-                    label: "Weight",
-                    icon: FaWeight,
-                    unit: "kg",
+                    key: "refresh_rate",
+                    fallback: "refreshRate",
+                    label: "Refresh Rate",
+                    icon: FaSyncAlt,
+                    unit: "",
                   },
                 ].map((item) => {
-                  const value = applianceData.specifications[item.key];
+                  const value =
+                    applianceData.specifications[item.key] ||
+                    (item.fallback
+                      ? applianceData.specifications[item.fallback]
+                      : null);
                   if (!value) return null;
                   return (
                     <div
@@ -1546,7 +1868,7 @@ const ApplianceDetailCard = () => {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => handleTabClick(tab.id)}
                   className={`flex items-center gap-2 px-5 py-4 font-medium text-sm whitespace-nowrap border-b-2 transition-colors duration-200 flex-shrink-0 ${
                     activeTab === tab.id
                       ? `${currentColor.border} ${currentColor.text} ${currentColor.light}`
@@ -1561,23 +1883,15 @@ const ApplianceDetailCard = () => {
           </div>
 
           <div className="p-5">{renderTabContent()}</div>
-
-          {/* Ratings Section - Rendered Directly Under Specs */}
-          <div className="border-t border-gray-200 p-5">
-            <RatingReview
-              productId={applianceData?.id || applianceData?.product_id}
-              productName={applianceData?.product_name}
-              brand={applianceData?.brand}
-              isLoading={loading}
-              onReviewSubmitted={() => {
-                // Optionally refresh product data
-              }}
-            />
-          </div>
         </div>
       </div>
     </div>
   );
 };
 
-export default ApplianceDetailCard;
+export default TVDetailCard;
+
+
+
+
+

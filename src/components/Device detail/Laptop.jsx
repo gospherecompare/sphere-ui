@@ -4,9 +4,6 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import useDevice from "../../hooks/useDevice";
 import useStoreLogos from "../../hooks/useStoreLogos";
 import {
-  FaStar,
-  FaRegStar,
-  FaStarHalfAlt,
   FaHeart,
   FaShareAlt,
   FaShare,
@@ -26,12 +23,14 @@ import {
   FaHdd,
   FaExternalLinkAlt,
   FaChevronDown,
+  FaWhatsapp,
+  FaFacebook,
+  FaLink,
   FaCopy,
   FaCheck,
 } from "react-icons/fa";
 import Cookies from "js-cookie";
 import Spinner from "../ui/Spinner";
-import RatingReview from "../ui/RatingReview";
 import { laptopMeta } from "../../constants/meta";
 import { Helmet } from "react-helmet-async";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
@@ -41,25 +40,77 @@ const LaptopDetailCard = () => {
   const normalizeLaptop = (l) => {
     if (!l) return l;
 
-    const rawVariants = Array.isArray(l.variants)
-      ? l.variants
-      : l.variant
-        ? Array.isArray(l.variant)
-          ? l.variant
-          : [l.variant]
-        : [];
+    const toObject = (value) =>
+      value && typeof value === "object" && !Array.isArray(value) ? value : {};
+    const toArray = (value) => (Array.isArray(value) ? value : []);
+    const pickFirstObject = (...values) => {
+      for (const value of values) {
+        const obj = toObject(value);
+        if (Object.keys(obj).length > 0) return obj;
+      }
+      return {};
+    };
+    const pickFirstArray = (...values) => {
+      for (const value of values) {
+        if (Array.isArray(value)) return value;
+      }
+      return [];
+    };
+    const pickFirstString = (...values) => {
+      for (const value of values) {
+        if (value === null || value === undefined) continue;
+        const text = String(value).trim();
+        if (text) return text;
+      }
+      return "";
+    };
 
-    const variants = rawVariants.map((v) => {
-      const storePrices = Array.isArray(v.store_prices)
-        ? v.store_prices.map((sp) => ({
-            ...sp,
-            id: sp.id || sp.store_id || null,
-            store_name: sp.store_name || sp.store || "",
-            price: sp.price ?? sp.amount ?? null,
-            url: sp.url || sp.link || "",
-            delivery_time: sp.delivery_info || sp.delivery_time || null,
-          }))
-        : [];
+    const basicInfo = pickFirstObject(l.basic_info, l.basicInfo);
+    const metadata = pickFirstObject(l.metadata, l.meta);
+    const performance = pickFirstObject(l.performance, l.cpu);
+    const display = pickFirstObject(l.display);
+    const memory = pickFirstObject(l.memory);
+    const storage = pickFirstObject(l.storage);
+    const battery = pickFirstObject(l.battery);
+    const connectivity = pickFirstObject(l.connectivity, metadata.connectivity);
+    const physical = pickFirstObject(l.physical);
+    const software = pickFirstObject(l.software);
+    const warranty = pickFirstObject(l.warranty, metadata.warranty);
+    const multimedia = pickFirstObject(l.multimedia);
+    const security = pickFirstObject(l.security);
+    const ports = pickFirstObject(l.ports);
+    const camera = pickFirstObject(l.camera);
+
+    const normalizeStorePrices = (storeRows) =>
+      toArray(storeRows).map((store) => {
+        const sp = toObject(store);
+        return {
+          ...sp,
+          id: sp.id || sp.store_id || null,
+          store_name: sp.store_name || sp.store || "",
+          price: sp.price ?? sp.amount ?? null,
+          url: sp.url || sp.link || "",
+          offer_text: sp.offer_text || sp.offer || "",
+          delivery_info: sp.delivery_info || sp.offers || null,
+          delivery_time: sp.delivery_info || sp.delivery_time || null,
+        };
+      });
+
+    const rawVariants = toArray(l.variants).length
+      ? toArray(l.variants)
+      : toArray(metadata.variants).length
+        ? toArray(metadata.variants)
+        : l.variant
+          ? Array.isArray(l.variant)
+            ? l.variant
+            : [l.variant]
+          : [];
+
+    const variants = rawVariants.map((variant) => {
+      const v = toObject(variant);
+      const storePrices = normalizeStorePrices(
+        toArray(v.store_prices).length ? v.store_prices : v.stores,
+      );
 
       return {
         ...v,
@@ -72,42 +123,257 @@ const LaptopDetailCard = () => {
       };
     });
 
+    const imageCandidates = [
+      ...pickFirstArray(l.images, metadata.images, l.pictures),
+      l.image,
+      l.image_url,
+    ].filter(Boolean);
+    const images = Array.from(new Set(imageCandidates));
+
+    const features = pickFirstArray(l.features, multimedia.features)
+      .filter(Boolean)
+      .map((item) => String(item));
+
+    const processor = pickFirstString(
+      performance.processor_name,
+      performance.processor,
+      `${performance.brand || ""} ${performance.model || ""}`.trim(),
+      l.specifications?.processor,
+    );
+
+    const normalizedColors = [
+      ...new Set(
+        toArray(basicInfo.colors)
+          .map((color) =>
+            typeof color === "object"
+              ? color.name || color.label || color.value
+              : color,
+          )
+          .filter(Boolean)
+          .map((value) => String(value)),
+      ),
+    ];
+
+    const existingSpecs = {
+      ...toObject(l.specifications),
+      ...toObject(l.specs),
+      ...toObject(l.spec),
+    };
+
+    const launchDate = pickFirstString(
+      l.launch_date,
+      basicInfo.launch_date,
+      metadata.launch_date,
+    );
+    const launchDateObj = launchDate ? new Date(launchDate) : null;
+    const launchYear =
+      launchDateObj && !Number.isNaN(launchDateObj.getTime())
+        ? launchDateObj.getFullYear()
+        : "";
+
+    const warrantyText = pickFirstString(
+      warranty.warranty,
+      warranty.service,
+      warranty.years ? `${warranty.years} years` : "",
+      existingSpecs.warranty,
+    );
+    const yearsMatch = String(warrantyText).match(/(\d+(\.\d+)?)/);
+    const warrantyYears =
+      warranty.years ??
+      existingSpecs.warranty_years ??
+      (yearsMatch ? Number(yearsMatch[1]) : "");
+
     const specifications = {
-      operating_system:
-        l.software?.os ||
-        l.specifications?.operating_system ||
-        l.specs?.operating_system ||
+      ...existingSpecs,
+      operating_system: pickFirstString(
+        software.operating_system,
+        software.os,
+        existingSpecs.operating_system,
+      ),
+      processor: pickFirstString(processor, existingSpecs.processor),
+      processor_generation: pickFirstString(
+        performance.processor_generation,
+        performance.generation,
+        existingSpecs.processor_generation,
+      ),
+      cpu_cores:
+        performance.cores ?? performance.cpu_cores ?? existingSpecs.cpu_cores ?? "",
+      cpu_threads:
+        performance.threads ??
+        performance.cpu_threads ??
+        existingSpecs.cpu_threads ??
         "",
-      processor: l.cpu
-        ? `${l.cpu.brand || ""} ${l.cpu.model || ""}`.trim()
-        : l.specifications?.processor || "",
-      screen_size: l.display?.size || l.specifications?.screen_size || "",
-      panel_type: l.display?.type || l.specifications?.panel_type || "",
-      ram_type: l.memory?.type || l.specifications?.ram_type || "",
-      storage_type: l.storage?.type || l.specifications?.storage_type || "",
-      battery_capacity:
-        l.battery?.capacity || l.specifications?.battery_capacity || "",
-      wifi: l.connectivity?.wifi || l.specifications?.wifi || "",
-      bluetooth: l.connectivity?.bluetooth || l.specifications?.bluetooth || "",
-      weight: l.physical?.weight || l.specifications?.weight || "",
-      warranty_years: l.warranty?.years || l.specifications?.warranty || "",
-      features: Array.isArray(l.features)
-        ? l.features
-        : l.specifications?.features || l.features || [],
-      // preserve any existing spec keys, letting explicit mappings above take precedence
-      ...l.specifications,
-      ...l.specs,
-      ...l.spec,
+      cache: pickFirstString(performance.cache, existingSpecs.cache),
+      screen_size: pickFirstString(
+        display.display_size,
+        display.size,
+        display.size_cm,
+        existingSpecs.screen_size,
+      ),
+      panel_type: pickFirstString(
+        display.panel_type,
+        display.type,
+        display.panel,
+        existingSpecs.panel_type,
+      ),
+      display: pickFirstString(
+        [
+          pickFirstString(display.display_size, display.size),
+          pickFirstString(display.panel_type, display.type),
+          pickFirstString(display.resolution),
+        ]
+          .filter(Boolean)
+          .join(" "),
+        existingSpecs.display,
+      ),
+      resolution: pickFirstString(display.resolution, existingSpecs.resolution),
+      refresh_rate: pickFirstString(
+        display.refresh_rate,
+        existingSpecs.refresh_rate,
+      ),
+      brightness: pickFirstString(display.brightness, existingSpecs.brightness),
+      color_gamut: pickFirstString(display.color_gamut, existingSpecs.color_gamut),
+      touch_screen:
+        display.touchscreen ??
+        display.touch_support ??
+        existingSpecs.touch_screen ??
+        "",
+      ram: pickFirstString(
+        memory.ram,
+        memory.capacity,
+        memory.size,
+        variants[0]?.ram,
+        existingSpecs.ram,
+      ),
+      ram_type: pickFirstString(memory.ram_type, memory.type, existingSpecs.ram_type),
+      ram_speed: pickFirstString(memory.ram_speed, memory.speed, existingSpecs.ram_speed),
+      ram_upgradable:
+        memory.expandable ??
+        memory.ram_expandable ??
+        existingSpecs.ram_upgradable ??
+        "",
+      storage: pickFirstString(
+        storage.capacity,
+        storage.storage,
+        storage.size,
+        variants[0]?.storage,
+        existingSpecs.storage,
+      ),
+      storage_type: pickFirstString(
+        storage.storage_type,
+        storage.type,
+        existingSpecs.storage_type,
+      ),
+      gpu: pickFirstString(performance.gpu, existingSpecs.gpu),
+      battery_capacity: pickFirstString(
+        battery.capacity,
+        battery.battery_type,
+        existingSpecs.battery_capacity,
+      ),
+      battery_life: pickFirstString(
+        battery.life,
+        battery.backup_time,
+        existingSpecs.battery_life,
+      ),
+      fast_charging:
+        battery.fast_charging ?? existingSpecs.fast_charging ?? "",
+      wifi: pickFirstString(
+        connectivity.wifi,
+        connectivity.wireless,
+        existingSpecs.wifi,
+      ),
+      bluetooth: pickFirstString(connectivity.bluetooth, existingSpecs.bluetooth),
+      usb_ports: pickFirstString(
+        ports.ports_description,
+        existingSpecs.usb_ports,
+      ),
+      hdmi: ports.hdmi ?? existingSpecs.hdmi ?? "",
+      audio_jack:
+        ports.audio_combo_jack ?? ports.audio_jack ?? existingSpecs.audio_jack ?? "",
+      sd_card_reader:
+        ports.sd_card_reader ?? existingSpecs.sd_card_reader ?? "",
+      thunderbolt:
+        ports.thunderbolt_4 ?? ports.thunderbolt ?? existingSpecs.thunderbolt ?? "",
+      weight: pickFirstString(physical.weight, existingSpecs.weight),
+      thickness: pickFirstString(
+        physical.thickness,
+        physical.depth,
+        existingSpecs.thickness,
+      ),
+      body_material: pickFirstString(
+        physical.material,
+        existingSpecs.body_material,
+      ),
+      color: pickFirstString(
+        normalizedColors.join(" / "),
+        physical.color,
+        existingSpecs.color,
+      ),
+      keyboard: pickFirstString(multimedia.keyboard, existingSpecs.keyboard),
+      webcam: pickFirstString(camera.webcam, existingSpecs.webcam),
+      speakers: pickFirstString(
+        toArray(multimedia.audio_features).join(", "),
+        multimedia.speaker,
+        existingSpecs.speakers,
+      ),
+      fingerprint_scanner:
+        security.fingerprint ?? existingSpecs.fingerprint_scanner ?? "",
+      security_features: pickFirstString(
+        toArray(security.security_features).join(", "),
+        existingSpecs.security_features,
+      ),
+      warranty: warrantyText,
+      warranty_years: warrantyYears,
+      features: features.length ? features : toArray(existingSpecs.features),
     };
 
     return {
       ...l,
-      product_name: l.product_name || l.name || l.model || l.productName || "",
-      model_number: l.model_number || l.model || l.sku || "",
-      brand: l.brand || l.brand_name || l.manufacturer || "",
+      id: l.id || l.product_id || null,
+      product_id: l.product_id || l.id || null,
+      product_name:
+        l.product_name ||
+        l.name ||
+        basicInfo.product_name ||
+        basicInfo.title ||
+        l.model ||
+        l.productName ||
+        "",
+      model_number:
+        l.model_number || l.model || basicInfo.model || basicInfo.sku || l.sku || "",
+      brand:
+        l.brand ||
+        l.brand_name ||
+        basicInfo.brand_name ||
+        basicInfo.brand ||
+        l.manufacturer ||
+        "",
+      series: l.series || basicInfo.series || "",
+      product_type: l.product_type || basicInfo.product_type || "Laptop",
+      release_year: l.release_year || launchYear,
+      launch_date: launchDate || null,
+      country: pickFirstString(
+        l.country,
+        metadata.in_the_box?.country_of_origin,
+        metadata.import_details?.country_of_origin,
+      ),
+      performance,
+      display,
+      memory,
+      storage,
+      battery,
+      connectivity,
+      physical,
+      software,
+      warranty,
+      multimedia,
+      security,
+      ports,
+      camera,
+      features,
       variants,
       specifications,
-      images: l.images || l.pictures || [],
+      images,
     };
   };
 
@@ -131,7 +397,6 @@ const LaptopDetailCard = () => {
   const [laptopData, setLaptopData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState(0);
-  const [ratingsData, setRatingsData] = useState(null);
   const [showAllSpecs, setShowAllSpecs] = useState(false);
   const [showAllStores, setShowAllStores] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
@@ -318,44 +583,6 @@ const LaptopDetailCard = () => {
       navigate(desiredPath + (location.search || ""), { replace: true });
     }
   }, [laptopData, query, navigate, location.search]);
-
-  // Derive ratings data from API-provided `laptopData.rating` when available
-  useEffect(() => {
-    if (!laptopData) {
-      setRatingsData(null);
-      return;
-    }
-
-    const r = laptopData.rating;
-    if (r == null) {
-      setRatingsData(null);
-      return;
-    }
-
-    if (typeof r === "number") {
-      setRatingsData({
-        averageRating: r,
-        totalRatings: 0,
-        performance: r,
-        display: r,
-        battery: r,
-        build: r,
-        features: r,
-      });
-      return;
-    }
-
-    // r is an object shape — map common fields
-    setRatingsData({
-      averageRating: r.averageRating ?? r.avg ?? r.rating ?? 0,
-      totalRatings: r.totalRatings ?? r.count ?? 0,
-      performance: r.performance ?? 0,
-      display: r.display ?? 0,
-      battery: r.battery ?? 0,
-      build: r.build ?? 0,
-      features: r.features ?? 0,
-    });
-  }, [laptopData]);
 
   // Record a single product view per browser session for laptops.
   useEffect(() => {
@@ -624,11 +851,9 @@ const LaptopDetailCard = () => {
     const price = currentVariant?.base_price
       ? `₹${formatPrice(currentVariant.base_price)}`
       : "Price not available";
-    const rating = laptopData?.rating || ratingsData?.averageRating || 0;
-
     return {
       title: `${brand} ${model}`,
-      description: `${processor} | ${ram} RAM | ${storage} Storage | ${display}" Display | ${gpu} GPU | Rating: ${rating}/5 | Price: ${price}`,
+      description: `${processor} | ${ram} RAM | ${storage} Storage | ${display}" Display | ${gpu} GPU | Price: ${price}`,
       shortDescription: `${brand} ${model} - ${processor}, ${ram}, ${storage}, Price: ${price}`,
       fullDetails: `
 💻 ${brand} ${model}
@@ -637,7 +862,6 @@ const LaptopDetailCard = () => {
 💾 Storage: ${storage}
 📺 Display: ${display}"
 🎮 GPU: ${gpu}
-⭐ Rating: ${rating}/5
 💰 Price: ${price}
       `,
     };
@@ -793,49 +1017,6 @@ const LaptopDetailCard = () => {
     initFavorite();
   }, [laptopData?.id, laptopData?.model_number]);
 
-  // Ratings UI removed.
-
-  const renderStars = (rating, size = "sm") => {
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 >= 0.5;
-    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-
-    const sizeClasses = {
-      xs: "text-xs",
-      sm: "text-sm",
-      md: "text-base",
-      lg: "text-lg",
-      xl: "text-xl",
-    };
-
-    return (
-      <div className="flex items-center gap-1">
-        {[...Array(fullStars)].map((_, i) => (
-          <FaStar
-            key={`full-${i}`}
-            className={`text-yellow-400 ${sizeClasses[size] || sizeClasses.sm}`}
-          />
-        ))}
-        {hasHalfStar && (
-          <FaStarHalfAlt
-            className={`text-yellow-400 ${sizeClasses[size] || sizeClasses.sm}`}
-          />
-        )}
-        {[...Array(emptyStars)].map((_, i) => (
-          <FaRegStar
-            key={`empty-${i}`}
-            className={`text-gray-300 ${sizeClasses[size] || sizeClasses.sm}`}
-          />
-        ))}
-        <span className="ml-2 text-gray-600 font-medium">
-          {rating.toFixed(1)}
-        </span>
-      </div>
-    );
-  };
-
-  // Rating summary removed
-
   // Tabs configuration for laptops
   const mobileTabs = [
     { id: "specifications", label: "Tech Specs", icon: FaMicrochip },
@@ -872,31 +1053,45 @@ const LaptopDetailCard = () => {
 
     const displayEntries = showAllSpecs ? entries : entries.slice(0, limit);
 
+    const toDisplayValue = (value) => {
+      if (value === true) return "Yes";
+      if (value === false) return "No";
+      if (Array.isArray(value)) return value.filter(Boolean).join(", ");
+      if (
+        value &&
+        typeof value === "object" &&
+        !Array.isArray(value) &&
+        Object.keys(value).length > 0
+      ) {
+        return Object.entries(value)
+          .map(([k, v]) => `${toNormalCase(k)}: ${String(v)}`)
+          .join(", ");
+      }
+      return value || "Not specified";
+    };
+
     return (
       <>
-        <div className="space-y-3">
-          {displayEntries.map(([key, value]) => (
-            <div
-              key={key}
-              className="flex justify-between items-start py-3 border-b border-gray-100 last:border-b-0"
-            >
-              <span className="text-gray-700 font-medium text-sm flex-1 pr-4">
-                {toNormalCase(key)}
-              </span>
-              <span className="text-gray-900 font-semibold text-sm text-right flex-1 break-words">
-                {value === true
-                  ? "Yes"
-                  : value === false
-                    ? "No"
-                    : value || "Not specified"}
-              </span>
-            </div>
-          ))}
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-100 shadow-none">
+            <tbody className="bg-white">
+              {displayEntries.map(([key, value], idx) => (
+                <tr key={key} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                  <td className="px-6 py-2 text-sm font-medium text-gray-600 w-1/3 align-top">
+                    {toNormalCase(key)}
+                  </td>
+                  <td className="px-6 py-2 text-sm text-gray-900 w-2/3">
+                    {toDisplayValue(value)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
         {entries.length > limit && (
           <button
             onClick={() => setShowAllSpecs(!showAllSpecs)}
-            className={`w-full mt-4 py-2 ${currentColor.text} font-medium text-sm flex items-center justify-center gap-1`}
+            className="w-full mt-4 py-2 text-purple-600 hover:text-purple-700 font-medium text-sm flex items-center justify-center gap-1 hover:bg-purple-50 rounded-lg transition-colors"
           >
             {showAllSpecs ? "Show Less" : `Show ${entries.length - limit} More`}
             <FaChevronDown
@@ -995,100 +1190,192 @@ const LaptopDetailCard = () => {
     return filteredSpecs;
   };
 
+  const hasSectionData = (data) => {
+    if (!data || typeof data !== "object") return false;
+    return Object.values(data).some((value) => {
+      if (value === "" || value == null || value === false) return false;
+      if (Array.isArray(value)) return value.length > 0;
+      if (typeof value === "object") return Object.keys(value).length > 0;
+      return true;
+    });
+  };
+
+  const getSectionData = (sectionId) => {
+    switch (sectionId) {
+      case "specifications":
+        return filterSpecsByCategory("specifications");
+      case "display":
+        return filterSpecsByCategory("display");
+      case "performance":
+        return laptopData?.performance || {};
+      case "battery":
+        return filterSpecsByCategory("battery");
+      case "build":
+        return filterSpecsByCategory("build");
+      case "connectivity":
+        return filterSpecsByCategory("connectivity");
+      case "software":
+        return filterSpecsByCategory("software");
+      default:
+        return {};
+    }
+  };
+
+  const availableTabs = tabs.filter((tab) => hasSectionData(getSectionData(tab.id)));
+
+  useEffect(() => {
+    if (!availableTabs || availableTabs.length === 0) return;
+    if (!availableTabs.some((tab) => tab.id === activeTab)) {
+      setActiveTab(availableTabs[0].id);
+    }
+  }, [availableTabs, activeTab]);
+
+  const handleTabClick = (tabId) => {
+    setActiveTab(tabId);
+
+    if (tabId === "specifications") {
+      const topEl = document.getElementById("spec-specifications");
+      if (topEl) topEl.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      const sectionEl = document.getElementById(`spec-${tabId}`);
+      if (sectionEl) {
+        sectionEl.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+  };
+
   const renderTabContent = () => {
     if (!laptopData) return null;
 
-    switch (activeTab) {
-      case "specifications":
-        return (
-          <div className="space-y-6">
-            {/* Processor Section */}
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                <FaMicrochip className={currentColor.text} />
-                Processor & Memory
-              </h3>
-              {renderSpecItems(filterSpecsByCategory("specifications"))}
-            </div>
-          </div>
-        );
+    const sectionSpecifications = filterSpecsByCategory("specifications");
+    const sectionDisplay = filterSpecsByCategory("display");
+    const sectionPerformance = laptopData.performance || {};
+    const sectionBattery = filterSpecsByCategory("battery");
+    const sectionBuild = filterSpecsByCategory("build");
+    const sectionConnectivity = filterSpecsByCategory("connectivity");
+    const sectionSoftware = filterSpecsByCategory("software");
 
-      case "display":
-        return (
-          <div className="bg-white rounded-lg p-6 border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <FaExpand className={currentColor.text} />
-              Display Specifications
-            </h3>
-            {renderSpecItems(filterSpecsByCategory("display"))}
-          </div>
-        );
+    const hasAnySection =
+      hasSectionData(sectionSpecifications) ||
+      hasSectionData(sectionDisplay) ||
+      hasSectionData(sectionPerformance) ||
+      hasSectionData(sectionBattery) ||
+      hasSectionData(sectionBuild) ||
+      hasSectionData(sectionConnectivity) ||
+      hasSectionData(sectionSoftware);
 
-      case "battery":
-        return (
-          <div className="bg-white rounded-lg p-6 border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <FaBatteryFull className={currentColor.text} />
-              Battery & Power
-            </h3>
-            {renderSpecItems(filterSpecsByCategory("battery"))}
+    if (!hasAnySection) {
+      return (
+        <div className="bg-white rounded-lg p-4">
+          <div className="text-center py-12 text-gray-500">
+            <FaLaptop className="text-4xl mx-auto mb-4 text-gray-300" />
+            <p>No data available for this section</p>
           </div>
-        );
-
-      case "build":
-        return (
-          <div className="bg-white rounded-lg p-6 border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <FaShieldAlt className={currentColor.text} />
-              Build & Design
-            </h3>
-            {renderSpecItems(filterSpecsByCategory("build"))}
-          </div>
-        );
-
-      case "connectivity":
-        return (
-          <div className="bg-white rounded-lg p-6 border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <FaUsb className={currentColor.text} />
-              Connectivity & Ports
-            </h3>
-            {renderSpecItems(filterSpecsByCategory("connectivity"))}
-          </div>
-        );
-
-      case "software":
-        return (
-          <div className="bg-white rounded-lg p-6 border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <FaWindows className={currentColor.text} />
-              Software & Warranty
-            </h3>
-            {renderSpecItems(filterSpecsByCategory("software"))}
-          </div>
-        );
-
-      case "performance":
-        return (
-          <div className="bg-white rounded-lg p-6 border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <FaBolt className={currentColor.text} />
-              Performance Details
-            </h3>
-            {renderSpecItems(laptopData.performance || {})}
-          </div>
-        );
-
-      default:
-        return (
-          <div className="bg-white rounded-lg p-6 border border-gray-200">
-            <div className="text-center py-12 text-gray-500">
-              <FaLaptop className="text-4xl mx-auto mb-4 text-gray-300" />
-              <p>No data available for this section</p>
-            </div>
-          </div>
-        );
+        </div>
+      );
     }
+
+    return (
+      <div id="spec-specifications" className="space-y-6">
+        <div className="bg-white overflow-hidden">
+          <div className="divide-y divide-gray-100">
+            {hasSectionData(sectionSpecifications) && (
+              <div
+                id="spec-specifications-main"
+                className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
+              >
+                <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
+                  <FaMicrochip className="text-purple-500" />
+                  Processor & Memory
+                </h4>
+                {renderSpecItems(sectionSpecifications)}
+              </div>
+            )}
+
+            {hasSectionData(sectionDisplay) && (
+              <div
+                id="spec-display"
+                className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
+              >
+                <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
+                  <FaExpand className="text-green-500" />
+                  Display
+                </h4>
+                {renderSpecItems(sectionDisplay)}
+              </div>
+            )}
+
+            {hasSectionData(sectionPerformance) && (
+              <div
+                id="spec-performance"
+                className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
+              >
+                <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
+                  <FaBolt className="text-yellow-500" />
+                  Performance
+                </h4>
+                {renderSpecItems(sectionPerformance)}
+              </div>
+            )}
+
+            {hasSectionData(sectionBattery) && (
+              <div
+                id="spec-battery"
+                className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
+              >
+                <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
+                  <FaBatteryFull className="text-blue-500" />
+                  Battery
+                </h4>
+                {renderSpecItems(sectionBattery)}
+              </div>
+            )}
+
+            {hasSectionData(sectionBuild) && (
+              <div
+                id="spec-build"
+                className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
+              >
+                <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
+                  <FaShieldAlt className="text-indigo-500" />
+                  Build & Design
+                </h4>
+                {renderSpecItems(sectionBuild)}
+              </div>
+            )}
+
+            {hasSectionData(sectionConnectivity) && (
+              <div
+                id="spec-connectivity"
+                className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
+              >
+                <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
+                  <FaUsb className="text-purple-500" />
+                  Connectivity
+                </h4>
+                {renderSpecItems(sectionConnectivity)}
+              </div>
+            )}
+
+            {hasSectionData(sectionSoftware) && (
+              <div
+                id="spec-software"
+                className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
+              >
+                <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
+                  <FaWindows className="text-purple-500" />
+                  Software & Warranty
+                </h4>
+                {renderSpecItems(sectionSoftware)}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   if (loading) {
@@ -1109,9 +1396,11 @@ const LaptopDetailCard = () => {
 
   if (!loading && !laptopData) {
     return (
-      <div className="max-w-8xl mx-auto p-4">
+      <div className="max-w-6xl mx-auto p-4">
         <div className="bg-white rounded-xl p-12 text-center border border-gray-200">
-          <div className="text-gray-400 text-6xl mb-4">💻</div>
+          <div className="text-gray-300 text-5xl mb-4 flex justify-center">
+            <FaLaptop />
+          </div>
           <h3 className="text-2xl font-semibold text-gray-900 mb-3">
             Laptop Not Found
           </h3>
@@ -1146,25 +1435,47 @@ const LaptopDetailCard = () => {
     (laptopData?.variants && laptopData.variants[0]?.storage) ||
     laptopData?.specifications?.storage ||
     "";
+  const metaBaseName = metaName || "Laptop";
+  const metaNameWithBrand =
+    metaBrand && metaBaseName
+      ? metaBaseName.toLowerCase().includes(metaBrand.toLowerCase())
+        ? metaBaseName
+        : `${metaBrand} ${metaBaseName}`
+      : metaBaseName;
   const metaTitle = laptopMeta.title({
-    name: metaName,
+    name: metaNameWithBrand,
     cpu: metaCpu,
     ram: metaRam,
     storage: metaStorage,
   });
   const metaDescription = laptopMeta.description({
-    name: metaName,
+    name: metaBaseName,
     cpu: metaCpu,
     ram: metaRam,
     storage: metaStorage,
     brand: metaBrand,
   });
+  const canonicalUrl = getCanonicalUrl();
+  const metaImage = laptopData?.images?.[0] || null;
 
   return (
-    <div className="max-w-8xl bg-white mx-auto p-4">
+    <div className="px-2 lg:px-4 mx-auto max-w-6xl w-full bg-white">
       <Helmet>
         <title>{metaTitle}</title>
         <meta name="description" content={metaDescription} />
+        <link rel="canonical" href={canonicalUrl} />
+        <meta property="og:type" content="product" />
+        <meta property="og:title" content={metaTitle} />
+        <meta property="og:description" content={metaDescription} />
+        {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
+        {metaImage && <meta property="og:image" content={metaImage} />}
+        <meta
+          name="twitter:card"
+          content={metaImage ? "summary_large_image" : "summary"}
+        />
+        <meta name="twitter:title" content={metaTitle} />
+        <meta name="twitter:description" content={metaDescription} />
+        {metaImage && <meta name="twitter:image" content={metaImage} />}
       </Helmet>
       {/* Share Menu Modal */}
       {showShareMenu && (
@@ -1178,7 +1489,7 @@ const LaptopDetailCard = () => {
                 onClick={() => setShowShareMenu(false)}
                 className="text-gray-400 hover:text-gray-600 text-xl"
               >
-                ×
+                X
               </button>
             </div>
             <div className="space-y-3">
@@ -1231,7 +1542,7 @@ const LaptopDetailCard = () => {
 
       <div className="overflow-hidden">
         {/* Mobile Header */}
-        <div className="p-5 border-b border-gray-200 lg:hidden">
+        <div className="p-4 bg-white border-b border-gray-200 lg:hidden">
           <div className="flex justify-between items-start mb-3">
             <div>
               <div className="flex items-center gap-2 mb-2">
@@ -1246,12 +1557,15 @@ const LaptopDetailCard = () => {
                   </span>
                 )}
               </div>
-              <h1 className="text-xl font-bold text-gray-900 mb-1">
+              <h1 className="text-xl font-extrabold tracking-tight mb-1 text-gray-900 leading-tight">
                 {laptopData.product_name}
               </h1>
-              <p className="text-gray-600 text-sm">
-                {laptopData.brand} {laptopData.series} •{" "}
-                {laptopData.model_number}
+              <p className="text-purple-700 text-sm font-medium flex items-center gap-2">
+                <span>{laptopData.brand}</span>
+                {laptopData.series ? <span>{laptopData.series}</span> : null}
+                {laptopData.model_number ? (
+                  <span>| {laptopData.model_number}</span>
+                ) : null}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -1274,14 +1588,6 @@ const LaptopDetailCard = () => {
             </div>
           </div>
           <div className="flex items-center justify-between mt-4">
-            {ratingsData?.averageRating && (
-              <div className="flex items-center gap-2">
-                {renderStars(ratingsData.averageRating)}
-                <span className="text-sm text-gray-600">
-                  ({ratingsData.totalRatings})
-                </span>
-              </div>
-            )}
             {currentVariant && (
               <span className="text-2xl font-bold text-green-600">
                 ₹{formatPrice(currentVariant.base_price)}
@@ -1292,7 +1598,7 @@ const LaptopDetailCard = () => {
 
         <div className="flex flex-col lg:flex-row">
           {/* Images Section */}
-          <div className="lg:w-2/5 p-5 border-b lg:border-b-0 lg:border-r border-gray-200">
+          <div className="lg:w-1/2 p-4 border-b lg:border-b-0 lg:border-r border-indigo-200">
             {/* Main Image */}
             <div className="rounded-xl bg-gray-50 p-8 mb-6 relative">
               <div className="absolute top-3 left-3">
@@ -1331,7 +1637,7 @@ const LaptopDetailCard = () => {
 
             {/* Thumbnails */}
             {laptopData.images && laptopData.images.length > 1 && (
-              <div className="flex gap-3 mb-8 overflow-x-auto no-scrollbar">
+              <div className="flex gap-3 mb-6 overflow-x-auto no-scrollbar">
                 {laptopData.images.slice(0, 4).map((image, index) => (
                   <button
                     key={index}
@@ -1422,17 +1728,17 @@ const LaptopDetailCard = () => {
           </div>
 
           {/* Details Section */}
-          <div className="lg:w-3/5 p-5">
+          <div className="lg:w-1/2 p-4">
             {/* Desktop Header */}
-            <div className="hidden lg:block mb-8">
-              <div className="flex items-start justify-between mb-4">
+            <div className="hidden lg:block mb-6">
+              <div className="flex items-start justify-between mb-2">
                 <div>
-                  <div className="flex items-center gap-3 mb-3">
-                    <span
-                      className={`px-3 py-1.5 rounded-full text-sm font-semibold ${currentColor.bg} text-white`}
-                    >
-                      {laptopData.product_type}
-                    </span>
+                <div className="flex items-center gap-3 mb-3">
+                  <span
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold ${currentColor.bg} text-white`}
+                  >
+                    {laptopData.product_type}
+                  </span>
                     {laptopData.release_year && (
                       <span className="px-3 py-1.5 bg-gray-100 rounded-lg text-sm text-gray-700">
                         Launch: {laptopData.release_year}
@@ -1444,18 +1750,21 @@ const LaptopDetailCard = () => {
                       </span>
                     )}
                   </div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  <h1 className="text-2xl font-extrabold tracking-tight mb-2">
                     {laptopData.product_name}
                   </h1>
-                  <p className="text-gray-600 text-lg mb-4">
-                    {laptopData.brand} {laptopData.series} • Model:{" "}
-                    {laptopData.model_number}
+                  <p className="text-purple-700 mb-3 font-medium text-sm flex items-center gap-2">
+                    <span>{laptopData.brand}</span>
+                    {laptopData.series ? <span>{laptopData.series}</span> : null}
+                    {laptopData.model_number ? (
+                      <span>| {laptopData.model_number}</span>
+                    ) : null}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={toggleFavorite}
-                    className="p-3 rounded-full hover:bg-gray-100"
+                    className="p-2 rounded-full hover:bg-gray-100"
                     title="Add to favorites"
                   >
                     <FaHeart
@@ -1468,14 +1777,14 @@ const LaptopDetailCard = () => {
                   </button>
                   <button
                     onClick={handleShare}
-                    className="p-3 rounded-full hover:bg-gray-100 relative"
+                    className="p-2 rounded-full hover:bg-gray-100 relative"
                     title="Share"
                   >
                     <FaShareAlt className="text-xl text-gray-600" />
                   </button>
                   <button
                     onClick={handleCopyLink}
-                    className="p-3 rounded-full hover:bg-gray-100 relative"
+                    className="p-2 rounded-full hover:bg-gray-100 relative"
                     title="Copy link"
                   >
                     {copied && (
@@ -1492,22 +1801,9 @@ const LaptopDetailCard = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between mb-6">
-                {ratingsData?.averageRating && (
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 bg-gray-50 px-4 py-2.5 rounded-xl">
-                      {renderStars(ratingsData.averageRating, "md")}
-                      <span className="text-gray-700 font-medium">
-                        {ratingsData.averageRating.toFixed(1)}
-                      </span>
-                      <span className="text-gray-500 text-sm">
-                        ({ratingsData.totalRatings} ratings)
-                      </span>
-                    </div>
-                  </div>
-                )}
+              <div className="flex items-center gap-3 mb-6">
                 {currentVariant && (
-                  <div className="text-right">
+                  <div>
                     <div className="text-sm text-gray-500 mb-1">
                       Starting from
                     </div>
@@ -1521,8 +1817,8 @@ const LaptopDetailCard = () => {
 
             {/* Store Prices Section */}
             {sortedStores.length > 0 && (
-              <div className="mb-8">
-                <div className="flex items-center justify-between mb-6">
+              <div className="mb-6 mt-6">
+                <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                     <FaStore className={currentColor.text} />
                     Available at Online Stores
@@ -1542,11 +1838,11 @@ const LaptopDetailCard = () => {
                   )}
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {displayedStores.map((store, index) => (
                     <div
                       key={store.id || index}
-                      className="bg-white border border-gray-200 rounded-xl p-4 hover:border-blue-300 hover:shadow-md transition-all duration-200"
+                      className="bg-white border border-gray-200 rounded-xl p-4 hover:border-blue-300 transition-all duration-200"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4 flex-1">
@@ -1598,7 +1894,7 @@ const LaptopDetailCard = () => {
             )}
 
             {/* Desktop Quick Specs */}
-            <div className="hidden lg:grid grid-cols-4 gap-4 mb-8">
+            <div className="hidden lg:grid grid-cols-4 gap-4 mb-6">
               {laptopData.specifications &&
                 [
                   {
@@ -1667,20 +1963,18 @@ const LaptopDetailCard = () => {
           </div>
         </div>
 
-        {/* Ratings summary removed */}
-
         {/* Tabs Section */}
-        <div className="border-t border-gray-200">
-          <div className="flex overflow-x-auto no-scrollbar border-b border-gray-200">
-            {tabs.map((tab) => {
+        <div className="border-t border-indigo-200">
+          <div className="flex overflow-x-auto no-scrollbar border-b border-indigo-200">
+            {availableTabs.map((tab) => {
               const IconComponent = tab.icon;
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-5 py-4 font-medium text-sm whitespace-nowrap border-b-2 transition-colors duration-200 flex-shrink-0 ${
+                  onClick={() => handleTabClick(tab.id)}
+                  className={`flex items-center gap-2 px-4 py-3 font-medium text-sm whitespace-nowrap border-b-2 transition-colors duration-200 flex-shrink-0 ${
                     activeTab === tab.id
-                      ? `${currentColor.border} ${currentColor.text} ${currentColor.light}`
+                      ? "border-purple-500 text-purple-600 bg-purple-50"
                       : "border-transparent text-gray-500 hover:text-gray-700"
                   }`}
                 >
@@ -1691,20 +1985,8 @@ const LaptopDetailCard = () => {
             })}
           </div>
 
-          <div className="p-5">{renderTabContent()}</div>
+          <div className="p-4">{renderTabContent()}</div>
 
-          {/* Ratings Section - Rendered Directly Under Specs */}
-          <div className="border-t border-gray-200 p-5">
-            <RatingReview
-              productId={laptopData?.id || laptopData?.product_id}
-              productName={laptopData?.product_name || laptopData?.model}
-              brand={laptopData?.brand}
-              isLoading={loading}
-              onReviewSubmitted={() => {
-                // Optionally refresh product data
-              }}
-            />
-          </div>
         </div>
       </div>
     </div>

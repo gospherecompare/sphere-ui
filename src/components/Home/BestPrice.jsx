@@ -6,7 +6,7 @@ import {
   FaFire,
   FaMobileAlt,
   FaLaptop,
-  FaSnowflake,
+  FaTv,
   FaWifi,
   FaArrowRight,
 } from "react-icons/fa";
@@ -168,9 +168,7 @@ const normalizeMemoryValue = (value) => {
   const text = toText(value);
   if (!text) return null;
 
-  const matches = Array.from(
-    text.matchAll(/(\d+(?:\.\d+)?)\s*(TB|GB|MB)/gi),
-  );
+  const matches = Array.from(text.matchAll(/(\d+(?:\.\d+)?)\s*(TB|GB|MB)/gi));
   if (matches.length > 1) {
     const parts = matches.map((match) => {
       const amount = Number(match[1]);
@@ -239,6 +237,115 @@ const parsePriceNumber = (value) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
+const getCategoryEndpoint = (activeCategory) => {
+  const endpointMap = {
+    smartphone: "/api/public/trending/smartphones?limit=15",
+    laptop: "/api/public/trending/laptops?limit=15",
+    appliance: "/api/public/trending/tvs?limit=15",
+    networking: "/api/public/trending/networking?limit=15",
+  };
+  return endpointMap[activeCategory] || endpointMap.smartphone;
+};
+
+const getTrendingRows = (json, activeCategory) => {
+  if (Array.isArray(json?.trending)) return json.trending;
+
+  if (activeCategory === "laptop" && Array.isArray(json?.laptops)) {
+    return json.laptops;
+  }
+  if (activeCategory === "appliance" && Array.isArray(json?.tvs)) {
+    return json.tvs;
+  }
+  if (activeCategory === "smartphone" && Array.isArray(json?.smartphones)) {
+    return json.smartphones;
+  }
+  if (activeCategory === "networking" && Array.isArray(json?.networking)) {
+    return json.networking;
+  }
+
+  if (Array.isArray(json)) return json;
+  return [];
+};
+
+const getRowVariants = (row) => {
+  if (Array.isArray(row?.variants)) return row.variants;
+  if (Array.isArray(row?.metadata?.variants)) return row.metadata.variants;
+  return [];
+};
+
+const getRowPrice = (row) => {
+  const topLevelPrice = parsePriceNumber(
+    row?.price ?? row?.base_price ?? row?.starting_price ?? row?.min_price,
+  );
+  if (topLevelPrice !== null) return topLevelPrice;
+
+  const variants = getRowVariants(row);
+  if (!variants.length) return null;
+
+  const prices = [];
+  variants.forEach((variant) => {
+    const base = parsePriceNumber(variant?.base_price ?? variant?.price);
+    if (base !== null) prices.push(base);
+
+    const storePrices = Array.isArray(variant?.store_prices)
+      ? variant.store_prices
+      : [];
+    storePrices.forEach((store) => {
+      const sp = parsePriceNumber(store?.price);
+      if (sp !== null) prices.push(sp);
+    });
+  });
+
+  if (!prices.length) return null;
+  return Math.min(...prices);
+};
+
+const getRowName = (row) =>
+  firstText(
+    row?.name,
+    row?.product_name,
+    row?.model,
+    row?.basic_info?.product_name,
+    row?.basic_info?.title,
+    row?.basic_info?.model,
+  ) || "";
+
+const getRowBrand = (row) =>
+  firstText(
+    row?.brand,
+    row?.brand_name,
+    row?.basic_info?.brand_name,
+    row?.basic_info?.brand,
+  ) || "";
+
+const getRowImage = (row) => {
+  const topImage = firstText(row?.image, row?.image_url, row?.product_image);
+  if (topImage) return topImage;
+
+  if (Array.isArray(row?.images) && row.images.length) {
+    return firstText(row.images[0]) || "";
+  }
+  if (Array.isArray(row?.metadata?.images) && row.metadata.images.length) {
+    return firstText(row.metadata.images[0]) || "";
+  }
+
+  const variants = getRowVariants(row);
+  const variantImage = firstText(
+    variants?.[0]?.image,
+    variants?.[0]?.image_url,
+    variants?.[0]?.product_image,
+  );
+  return variantImage || "";
+};
+
+const getRowBadge = (row) =>
+  firstText(
+    row?.badge,
+    row?.trend_badge,
+    row?.trend_label,
+    row?.manual_badge,
+  ) || "Trending";
+
 const TrendingSection = () => {
   const [activeCategory, setActiveCategory] = useState("smartphone");
   const [currentDevices, setCurrentDevices] = useState([]);
@@ -265,8 +372,8 @@ const TrendingSection = () => {
     },
     {
       id: "appliance",
-      name: "Appliances",
-      icon: <FaSnowflake />,
+      name: "TVs",
+      icon: <FaTv />,
       activeGradient: "from-blue-600 via-purple-500 to-blue-600",
       inactiveColor: "text-gray-400",
       count: 124,
@@ -281,63 +388,47 @@ const TrendingSection = () => {
     },
   ];
 
-  const apiForCategory = {
-    smartphone: "smartphone",
-    laptop: "laptop",
-    appliance: "home_appliance",
-    networking: "networking",
-  };
-
   // Fetch trending products for active category
   useEffect(() => {
     let cancelled = false;
     const fetchTrending = async () => {
       setLoadingTrending(true);
       setCurrentDevices([]);
-      const type = apiForCategory[activeCategory] || "smartphone";
-      const qs = new URLSearchParams({ type, limit: "15" }).toString();
-      const endpoint =
-        activeCategory === "smartphone"
-          ? "/api/public/trending/smartphones"
-          : `/api/public/trending-products?${qs}`;
+      const endpoint = getCategoryEndpoint(activeCategory);
 
       try {
-        const r = await fetch(`https://api.apisphere.in${endpoint}`);
+        const r = await fetch(`http://localhost:5000${endpoint}`);
         if (!r.ok) throw new Error("Failed to fetch trending");
         const json = await r.json();
         if (cancelled) return;
 
-        const rows = Array.isArray(json?.trending)
-          ? json.trending
-          : Array.isArray(json)
-            ? json
-            : [];
+        const rows = getTrendingRows(json, activeCategory);
         const mapped = rows.map((row, index) => {
-          const basePrice = parsePriceNumber(
-            row.price ?? row.base_price ?? row.starting_price,
-          );
+          const basePrice = getRowPrice(row);
           const specs = getRamStorageFromTrendingRow(row);
           const priceStr =
             basePrice !== null && basePrice !== undefined && basePrice !== ""
               ? `₹${Number(basePrice).toLocaleString()}`
               : "N/A";
-          const productId = row.product_id ?? row.productId ?? row.id ?? null;
-          const variantId =
-            row.variant_id ??
-            row.variantId ??
-            (row.product_id || row.productId ? row.id : null);
+          const productId =
+            row.product_id ??
+            row.productId ??
+            row.id ??
+            row.basic_info?.id ??
+            null;
+          const variantId = row.variant_id ?? row.variantId ?? null;
 
           return {
             id: productId,
             variantId,
-            name: row.name ?? row.product_name ?? row.model ?? "",
-            brand: row.brand ?? row.brand_name ?? "",
-            badge: row.badge ?? row.trend_label ?? "Trending",
+            name: getRowName(row),
+            brand: getRowBrand(row),
+            badge: getRowBadge(row),
             base_price: basePrice !== null ? String(basePrice) : null,
             price: priceStr,
             ram: normalizeMemoryValue(specs.ram),
             storage: normalizeMemoryValue(specs.storage),
-            image: row.image ?? row.image_url ?? "",
+            image: getRowImage(row),
             _rowIndex: index,
             _priceNumber: basePrice,
           };
@@ -427,7 +518,7 @@ const TrendingSection = () => {
     const routeMap = {
       smartphone: "/smartphones",
       laptop: "/laptops",
-      appliance: "/appliances",
+      appliance: "/tvs",
       networking: "/networking",
     };
     const basePath = routeMap[activeCategory] || "/smartphones";
@@ -445,7 +536,7 @@ const TrendingSection = () => {
     const routeMap = {
       smartphone: "/smartphones",
       laptop: "/laptops",
-      appliance: "/appliances",
+      appliance: "/tvs",
       networking: "/networking",
     };
     navigate(routeMap[activeCategory] || "/");
@@ -465,7 +556,8 @@ const TrendingSection = () => {
           </h2>
         </div>
         <p className="text-sm text-gray-600">
-          Explore trending smartphones, laptops, appliances, and networking devices
+          Explore trending smartphones, laptops, TVs, and networking
+          devices
         </p>
       </div>
 
@@ -531,11 +623,15 @@ const TrendingSection = () => {
       <div className="mb-4 px-2">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="text-left">
-            <h3 className="text-lg font-semibold text-gray-900">Trending Now</h3>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Trending Now
+            </h3>
             <p className="text-gray-600 text-sm">
               Can't decide?{" "}
               <span className="font-semibold text-gray-900">
-                Explore all smartphones
+                {activeCategory === "appliance"
+                  ? "Explore all TVs"
+                  : "Explore all smartphones"}
               </span>
             </p>
             <p className="text-gray-400 text-xs mt-1">
@@ -647,5 +743,3 @@ const TrendingSection = () => {
 };
 
 export default TrendingSection;
-
-

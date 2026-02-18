@@ -17,7 +17,7 @@ import {
 import "../styles/hideScrollbar.css";
 import { generateSlug } from "../utils/slugGenerator";
 
-const API_BASE_URL = "https://api.apisphere.in/api";
+const API_BASE_URL = "http://localhost:5000/api";
 
 const Wishlist = () => {
   const navigate = useNavigate();
@@ -189,7 +189,7 @@ const Wishlist = () => {
     const loadFromApi = async () => {
       setLoading(true);
       try {
-        const res = await fetch("https://api.apisphere.in/api/wishlist", {
+        const res = await fetch("http://localhost:5000/api/wishlist", {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
 
@@ -236,7 +236,7 @@ const Wishlist = () => {
       (async () => {
         try {
           const res = await fetch(
-            `https://api.apisphere.in/api/wishlist/${encodeURIComponent(
+            `http://localhost:5000/api/wishlist/${encodeURIComponent(
               item.favoriteId,
             )}`,
             {
@@ -362,7 +362,7 @@ const Wishlist = () => {
     const routes = {
       smartphone: "/smartphones",
       laptop: "/laptops",
-      homeAppliance: "/appliances",
+      homeAppliance: "/tvs",
       networking: "/networking",
     };
     navigate(`${routes[item.type]}/${slug}`);

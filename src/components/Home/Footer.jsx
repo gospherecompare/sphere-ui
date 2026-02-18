@@ -1,5 +1,5 @@
 // src/components/Footer.jsx
-import React, { useState } from "react";
+import React from "react";
 import {
   FaFacebook,
   FaTwitter,
@@ -15,7 +15,7 @@ const Footer = () => {
       {/* Purple-Indigo gradient accent line */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
         {/* Top Navigation Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-8 sm:gap-10 mb-10 sm:mb-12">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-8 sm:gap-10 mb-10 sm:mb-12">
           {/* Mobiles */}
           <div>
             <h4 className="text-sm font-bold mb-4 text-white uppercase tracking-wide">
@@ -27,15 +27,23 @@ const Footer = () => {
                   to="/smartphones"
                   className="hover:text-purple-400 transition-colors duration-200"
                 >
-                  All Mobiles
+                  All Smartphones
                 </Link>
               </li>
               <li>
                 <Link
-                  to="/smartphones"
+                  to="/smartphones?filter=trending"
                   className="hover:text-purple-400 transition-colors duration-200"
                 >
-                  Trending Mobiles
+                  Trending Smartphones
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/smartphones?filter=new"
+                  className="hover:text-purple-400 transition-colors duration-200"
+                >
+                  New Launches
                 </Link>
               </li>
               <li>
@@ -43,15 +51,7 @@ const Footer = () => {
                   to="/compare"
                   className="hover:text-purple-400 transition-colors duration-200"
                 >
-                  Compare Mobiles
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/smartphones"
-                  className="hover:text-purple-400 transition-colors duration-200"
-                >
-                  Mobile Brands
+                  Compare Smartphones
                 </Link>
               </li>
             </ul>
@@ -73,10 +73,18 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  to="/laptops"
+                  to="/laptops?filter=trending"
                   className="hover:text-purple-400 transition-colors duration-200"
                 >
                   Trending Laptops
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/laptops?filter=new"
+                  className="hover:text-purple-400 transition-colors duration-200"
+                >
+                  New Launches
                 </Link>
               </li>
               <li>
@@ -87,78 +95,86 @@ const Footer = () => {
                   Compare Laptops
                 </Link>
               </li>
+            </ul>
+          </div>
+
+          {/* TVs */}
+          <div>
+            <h4 className="text-sm font-bold mb-4 text-white uppercase tracking-wide">
+              TVs
+            </h4>
+            <ul className="space-y-2.5 text-gray-400 text-xs sm:text-sm">
               <li>
                 <Link
-                  to="/laptops"
+                  to="/tvs"
                   className="hover:text-purple-400 transition-colors duration-200"
                 >
-                  Laptop Brands
+                  All TVs
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/tvs?filter=trending"
+                  className="hover:text-purple-400 transition-colors duration-200"
+                >
+                  Trending TVs
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/tvs?filter=new"
+                  className="hover:text-purple-400 transition-colors duration-200"
+                >
+                  New Launches
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/compare"
+                  className="hover:text-purple-400 transition-colors duration-200"
+                >
+                  Compare TVs
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Home Appliances */}
+          {/* Quick Links */}
           <div>
             <h4 className="text-sm font-bold mb-4 text-white uppercase tracking-wide">
-              Home Appliances
+              Quick Links
             </h4>
             <ul className="space-y-2.5 text-gray-400 text-xs sm:text-sm">
               <li>
                 <Link
-                  to="/appliances"
+                  to="/"
                   className="hover:text-purple-400 transition-colors duration-200"
                 >
-                  All Appliances
+                  Home
                 </Link>
               </li>
               <li>
                 <Link
-                  to="/appliances"
+                  to="/compare"
                   className="hover:text-purple-400 transition-colors duration-200"
                 >
-                  Trending Appliances
+                  Compare Devices
                 </Link>
               </li>
               <li>
                 <Link
-                  to="/appliances"
+                  to="/wishlist"
                   className="hover:text-purple-400 transition-colors duration-200"
                 >
-                  Top Brands
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Networking */}
-          <div>
-            <h4 className="text-sm font-bold mb-4 text-white uppercase tracking-wide">
-              Networking
-            </h4>
-            <ul className="space-y-2.5 text-gray-400 text-xs sm:text-sm">
-              <li>
-                <Link
-                  to="/networking"
-                  className="hover:text-purple-400 transition-colors duration-200"
-                >
-                  Routers & Wi-Fi
+                  Wishlist
                 </Link>
               </li>
               <li>
                 <Link
-                  to="/networking"
+                  to="/account"
                   className="hover:text-purple-400 transition-colors duration-200"
                 >
-                  Trending Devices
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/networking"
-                  className="hover:text-purple-400 transition-colors duration-200"
-                >
-                  Networking Brands
+                  My Account
                 </Link>
               </li>
             </ul>
@@ -256,7 +272,7 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8">
           {/* Copyright */}
           <div className="text-gray-400 text-xs sm:text-sm text-center md:text-left">
-            © {new Date().getFullYear()} Hook. All rights reserved.
+            &copy; {new Date().getFullYear()} Hook. All rights reserved.
           </div>
 
           {/* Social Media */}

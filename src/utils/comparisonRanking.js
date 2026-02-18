@@ -3,7 +3,9 @@ const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const toFiniteNumber = (value) => {
   if (value == null || value === "") return null;
   if (typeof value === "number" && Number.isFinite(value)) return value;
-  const match = String(value).replace(/,/g, "").match(/-?\d+(?:\.\d+)?/);
+  const match = String(value)
+    .replace(/,/g, "")
+    .match(/-?\d+(?:\.\d+)?/);
   if (!match) return null;
   const parsed = Number(match[0]);
   return Number.isFinite(parsed) ? parsed : null;
@@ -88,7 +90,9 @@ const scoreChipsetHeuristic = (processorText) => {
     }
   }
 
-  const snapdragonGenMatch = text.match(/snapdragon\s*([0-9])\s*gen\s*([0-9]+)/i);
+  const snapdragonGenMatch = text.match(
+    /snapdragon\s*([0-9])\s*gen\s*([0-9]+)/i,
+  );
   if (snapdragonGenMatch) {
     const series = Number(snapdragonGenMatch[1]);
     const gen = Number(snapdragonGenMatch[2]);
@@ -114,7 +118,9 @@ const scoreChipsetHeuristic = (processorText) => {
     };
   }
 
-  const appleMatch = text.match(/apple\s*a([0-9]{2})|a([0-9]{2})\s*(pro|bionic)?/i);
+  const appleMatch = text.match(
+    /apple\s*a([0-9]{2})|a([0-9]{2})\s*(pro|bionic)?/i,
+  );
   if (appleMatch) {
     const chipNum = Number(appleMatch[1] || appleMatch[2]);
     const score = clamp(74 + (chipNum - 14) * 4, 70, 99);
@@ -169,29 +175,59 @@ const scoreRefreshRate = (refreshRate) => {
 
 const detectPanelType = (display) => {
   const text = normalizeText(
-    display?.panel_type || display?.panel || display?.type || display?.technology,
+    display?.panel_type ||
+      display?.panel ||
+      display?.type ||
+      display?.technology,
   );
-  if (!text) return { panelType: "Unknown", score: 20, reason: "Panel not specified." };
+  if (!text)
+    return { panelType: "Unknown", score: 20, reason: "Panel not specified." };
   if (text.includes("ltpo")) {
-    return { panelType: "LTPO AMOLED", score: 40, reason: "Adaptive flagship display panel." };
+    return {
+      panelType: "LTPO AMOLED",
+      score: 40,
+      reason: "Adaptive flagship display panel.",
+    };
   }
   if (text.includes("amoled")) {
-    return { panelType: "AMOLED", score: 34, reason: "High-contrast panel with deeper blacks." };
+    return {
+      panelType: "AMOLED",
+      score: 34,
+      reason: "High-contrast panel with deeper blacks.",
+    };
   }
   if (text.includes("oled")) {
-    return { panelType: "OLED", score: 32, reason: "Good contrast and efficient pixels." };
+    return {
+      panelType: "OLED",
+      score: 32,
+      reason: "Good contrast and efficient pixels.",
+    };
   }
   if (text.includes("mini led") || text.includes("mini-led")) {
-    return { panelType: "Mini LED", score: 33, reason: "High brightness and local dimming class." };
+    return {
+      panelType: "Mini LED",
+      score: 33,
+      reason: "High brightness and local dimming class.",
+    };
   }
   if (text.includes("ips") || text.includes("lcd")) {
-    return { panelType: "IPS LCD", score: 24, reason: "Reliable but not premium contrast class." };
+    return {
+      panelType: "IPS LCD",
+      score: 24,
+      reason: "Reliable but not premium contrast class.",
+    };
   }
   if (text.includes("tft")) {
-    return { panelType: "TFT", score: 16, reason: "Entry-level display panel class." };
+    return {
+      panelType: "TFT",
+      score: 16,
+      reason: "Entry-level display panel class.",
+    };
   }
   return {
-    panelType: String(display?.panel_type || display?.panel || display?.type || "Unknown"),
+    panelType: String(
+      display?.panel_type || display?.panel || display?.type || "Unknown",
+    ),
     score: 22,
     reason: "Panel type not in known table, using neutral score.",
   };
@@ -221,7 +257,9 @@ const collectMegapixelValues = (value, bucket) => {
     return;
   }
   if (typeof value === "object") {
-    Object.values(value).forEach((nested) => collectMegapixelValues(nested, bucket));
+    Object.values(value).forEach((nested) =>
+      collectMegapixelValues(nested, bucket),
+    );
   }
 };
 
@@ -240,7 +278,8 @@ const countCameraSensors = (camera) => {
   if (!camera || typeof camera !== "object") return 0;
   const rear = camera.rear_camera;
   if (rear && typeof rear === "object" && !Array.isArray(rear)) {
-    return Object.entries(rear).filter(([, val]) => val != null && val !== "").length;
+    return Object.entries(rear).filter(([, val]) => val != null && val !== "")
+      .length;
   }
   if (Array.isArray(rear)) return rear.filter(Boolean).length;
   const fallback = [
@@ -360,7 +399,9 @@ export const buildComparisonRanking = (devices = [], variantSelection = {}) => {
     const valueRaw = price && price > 0 ? baseSpecScore / price : null;
 
     return {
-      deviceId: String(device?.id ?? device?.productId ?? device?.product_id ?? ""),
+      deviceId: String(
+        device?.id ?? device?.productId ?? device?.product_id ?? "",
+      ),
       deviceName: device?.name || device?.model || "Device",
       price,
       valueRaw,

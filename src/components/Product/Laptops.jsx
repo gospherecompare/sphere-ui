@@ -23,7 +23,6 @@ import {
   FaExternalLinkAlt,
   FaPlug,
   FaWindowRestore,
-  FaBolt,
   FaClock,
   FaTag,
   FaExchangeAlt,
@@ -62,7 +61,7 @@ const ImageCarousel = ({ images = [] }) => {
 
   if (!images || images.length === 0) {
     return (
-      <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg">
+      <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg">
         <div className="text-center">
           <FaLaptop className="text-gray-300 text-3xl mx-auto mb-2" />
           <span className="text-gray-400 text-sm">No image</span>
@@ -164,13 +163,20 @@ const Laptops = () => {
   const [params] = useSearchParams();
   const filter = params.get("filter");
   const dispatch = useDispatch();
+  const [sortBy, setSortBy] = useState("featured");
 
   useEffect(() => {
     if (filter === "trending") dispatch(fetchTrendingLaptops());
     else if (filter === "new") dispatch(fetchNewLaunchLaptops());
     else dispatch(fetchLaptops());
   }, [filter, dispatch]);
-  const { getLogo } = useStoreLogos();
+
+  useEffect(() => {
+    if (filter === "trending") {
+      setSortBy("featured");
+    }
+  }, [filter]);
+  const { getLogo, getStore, getStoreLogo } = useStoreLogos();
   // Helper function to extract numeric price
   const extractNumericPrice = (price) => {
     if (!price || price === "NaN") return 0;
@@ -209,17 +215,97 @@ const Laptops = () => {
     return match ? parseInt(match[1]) : 0;
   };
 
+  const toObject = (value) =>
+    value && typeof value === "object" && !Array.isArray(value) ? value : {};
+
+  const toArray = (value) => (Array.isArray(value) ? value : []);
+
+  const pickFirstObject = (...values) => {
+    for (const value of values) {
+      const obj = toObject(value);
+      if (Object.keys(obj).length > 0) return obj;
+    }
+    return {};
+  };
+
+  const pickFirstArray = (...values) => {
+    for (const value of values) {
+      if (Array.isArray(value)) return value;
+    }
+    return [];
+  };
+
+  const pickFirstString = (...values) => {
+    for (const value of values) {
+      if (value === null || value === undefined) continue;
+      const text = String(value).trim();
+      if (text) return text;
+    }
+    return "";
+  };
+
+  const detectCpuBrand = (processorName = "") => {
+    const normalized = String(processorName).toLowerCase();
+    if (normalized.includes("intel")) return "Intel";
+    if (normalized.includes("amd")) return "AMD";
+    if (normalized.includes("apple")) return "Apple";
+    if (normalized.includes("qualcomm")) return "Qualcomm";
+    if (normalized.includes("mediatek")) return "MediaTek";
+    return "";
+  };
+
   // Map API response to device format
   const mapApiToDevice = (apiDevice, idx) => {
-    // Images
-    const images = apiDevice.images || [];
+    const raw = toObject(apiDevice);
+    const identity = normalizeProduct(raw, "laptop");
+    const basicInfo = pickFirstObject(raw.basic_info, raw.basicInfo);
+    const metadata = pickFirstObject(raw.metadata, raw.meta);
+    const performance = pickFirstObject(raw.performance, raw.cpu);
+    const display = pickFirstObject(raw.display);
+    const memory = pickFirstObject(raw.memory);
+    const storage = pickFirstObject(raw.storage);
+    const battery = pickFirstObject(raw.battery);
+    const physical = pickFirstObject(raw.physical);
+    const software = pickFirstObject(raw.software);
+    const multimedia = pickFirstObject(raw.multimedia);
+    const connectivity = pickFirstObject(
+      raw.connectivity,
+      metadata.connectivity,
+    );
+    const warranty = pickFirstObject(raw.warranty, metadata.warranty);
 
-    // Use variants array
-    const variants = Array.isArray(apiDevice.variants)
-      ? apiDevice.variants
-      : [];
+    const imageCandidates = [
+      ...pickFirstArray(raw.images, metadata.images),
+      raw.image,
+      raw.image_url,
+    ].filter(Boolean);
+    const images = Array.from(new Set(imageCandidates));
 
-    // Aggregate store prices from variants
+    const rawVariants = pickFirstArray(raw.variants, metadata.variants);
+    const variants = rawVariants.map((variant) => {
+      const v = toObject(variant);
+      const storeRows = pickFirstArray(v.store_prices, v.stores);
+      return {
+        ...v,
+        variant_id: v.variant_id || v.id || null,
+        ram: v.ram || v.memory || "",
+        storage: v.storage || v.storage_size || "",
+        base_price: v.base_price ?? v.price ?? v.mrp ?? null,
+        store_prices: storeRows.map((store) => {
+          const sp = toObject(store);
+          return {
+            ...sp,
+            id: sp.id || null,
+            store_name: sp.store_name || sp.store || "",
+            price: sp.price ?? sp.amount ?? null,
+            url: sp.url || sp.link || "",
+            offer_text: sp.offer_text || sp.offer || "",
+            delivery_info: sp.delivery_info || sp.offers || "",
+          };
+        }),
+      };
+    });
+
     let storePrices = [];
     if (variants.length > 0) {
       storePrices = variants.flatMap((v) => {
@@ -238,8 +324,8 @@ const Laptops = () => {
         if (prices.length === 0 && variantBase) {
           return [
             {
-              id: `v-${v.id || "unknown"}`,
-              variant_id: v.id,
+              id: `v-${v.variant_id || "unknown"}`,
+              variant_id: v.variant_id,
               store: "Variant",
               price: variantBase,
             },
@@ -248,16 +334,16 @@ const Laptops = () => {
         return prices;
       });
     }
-    // Compute numeric price
+
     let numericPrice = 0;
     if (variants.length > 0) {
       const allPrices = variants
         .flatMap((v) => {
           const base = v.base_price || 0;
-          const storePrices = Array.isArray(v.store_prices)
+          const variantStorePrices = Array.isArray(v.store_prices)
             ? v.store_prices.map((sp) => sp.price).filter(Boolean)
             : [];
-          return [base, ...storePrices];
+          return [base, ...variantStorePrices];
         })
         .map((p) => extractNumericPrice(p))
         .filter((p) => p > 0);
@@ -265,91 +351,256 @@ const Laptops = () => {
       numericPrice = allPrices.length > 0 ? Math.min(...allPrices) : 0;
     }
 
-    // Extract specs
-    const displaySize = extractDisplaySize(apiDevice.display?.size || "");
-    const weight = extractWeight(apiDevice.physical?.weight || "");
+    if (numericPrice <= 0) {
+      numericPrice = extractNumericPrice(
+        raw.price || raw.starting_price || raw.base_price || raw.min_price,
+      );
+    }
+
+    const displaySize = extractDisplaySize(
+      display.display_size || display.size || "",
+    );
+    const weight = extractWeight(physical.weight || "");
     const batteryCapacity = extractBatteryCapacity(
-      apiDevice.battery?.capacity || "",
+      battery.capacity || battery.battery_type || "",
     );
 
-    // Extract RAM options from variants
     const ramOptions = [...new Set(variants.map((v) => v.ram).filter(Boolean))];
     const storageOptions = [
       ...new Set(variants.map((v) => v.storage).filter(Boolean)),
     ];
+    const colorOptionsRaw = [
+      ...variants.map((v) => v.color).filter(Boolean),
+      ...toArray(basicInfo.colors).map((color) =>
+        typeof color === "object"
+          ? color.name || color.label || color.value
+          : color,
+      ),
+    ];
     const colorOptions = [
-      ...new Set(variants.map((v) => v.color).filter(Boolean)),
+      ...new Set(colorOptionsRaw.filter(Boolean).map((value) => String(value))),
     ];
 
+    const processorName = pickFirstString(
+      performance.processor_name,
+      performance.processor,
+      `${performance.brand || ""} ${performance.model || ""}`.trim(),
+      raw.processor,
+    );
+
+    const cpuBrand = pickFirstString(
+      performance.brand,
+      performance.cpu_brand,
+      detectCpuBrand(processorName),
+    );
+
+    const cpuModel = pickFirstString(
+      performance.model,
+      performance.processor_model,
+      processorName.replace(cpuBrand, "").trim(),
+    );
+
+    const displayType = pickFirstString(
+      display.panel_type,
+      display.type,
+      display.panel,
+    );
+    const resolution = pickFirstString(display.resolution);
+    const refreshRate = pickFirstString(display.refresh_rate);
+    const displayLabel = pickFirstString(
+      display.display_size,
+      display.size,
+      display.size_cm,
+    );
+    const displaySummary = [
+      displayLabel,
+      displayType,
+      resolution,
+      refreshRate ? `(${refreshRate})` : "",
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+
+    const ramText =
+      ramOptions.join(" / ") ||
+      pickFirstString(
+        memory.ram,
+        memory.capacity,
+        memory.size,
+        memory.ram_type,
+        memory.type,
+      );
+
+    const storageText =
+      storageOptions.join(" / ") ||
+      pickFirstString(
+        storage.capacity,
+        storage.storage,
+        storage.size,
+        storage.storage_type,
+        storage.type,
+      );
+
+    const gpuLabel = pickFirstString(
+      performance.gpu,
+      raw.graphics?.model,
+      raw.gpu,
+    );
+
+    const graphics =
+      gpuLabel && performance.gpu_type
+        ? `${gpuLabel} (${performance.gpu_type})`
+        : gpuLabel || "Integrated Graphics";
+
+    const featureList = pickFirstArray(raw.features, multimedia.features)
+      .filter(Boolean)
+      .map((item) => String(item))
+      .slice(0, 5);
+
+    const ratingNumber =
+      typeof raw.rating === "number"
+        ? raw.rating
+        : raw.rating && typeof raw.rating === "object"
+          ? Number(
+              raw.rating.averageRating || raw.rating.avg || raw.rating.rating,
+            ) || 0
+          : Number(raw.rating) || 0;
+
+    const toFiniteNumber = (value) => {
+      const n = Number(value);
+      return Number.isFinite(n) ? n : null;
+    };
+    const trendScore = toFiniteNumber(
+      raw.trend_score ?? raw.trending_score ?? raw.trendScore,
+    );
+    const trendViews7d =
+      toFiniteNumber(raw.trend_views_7d ?? raw.views_7d ?? raw.trendViews7d) ??
+      0;
+    const trendViewsPrev7d =
+      toFiniteNumber(
+        raw.trend_views_prev_7d ?? raw.views_prev_7d ?? raw.trendViewsPrev7d,
+      ) ?? 0;
+    const trendDelta =
+      toFiniteNumber(raw.trend_delta ?? raw.trendDelta) ??
+      (trendViews7d - trendViewsPrev7d);
+    const trendVelocity = toFiniteNumber(
+      raw.trend_velocity ?? raw.velocity ?? raw.trendVelocity,
+    );
+    const trendBadge = pickFirstString(
+      raw.trend_badge,
+      raw.badge,
+      raw.trend_label,
+      raw.trendLabel,
+    );
+    const trendCalculatedAt = pickFirstString(
+      raw.trend_calculated_at,
+      raw.trending_calculated_at,
+      raw.calculated_at,
+    );
+    const trendManualBoost = Boolean(
+      raw.trend_manual_boost ?? raw.manual_boost ?? false,
+    );
+
     return {
-      id: apiDevice.product_id || idx + 1,
-      // normalized identity for compare
-      productId: apiDevice.product_id || apiDevice.id || idx + 1,
-      productType: "laptop",
-      name: apiDevice.name || "",
-      brand: apiDevice.brand_name || apiDevice.brand || "",
+      id: raw.product_id || raw.id || identity.productId || idx + 1,
+      product_id: raw.product_id || raw.id || identity.productId || idx + 1,
+      productId: raw.product_id || raw.id || identity.productId || idx + 1,
+      productType:
+        (raw.product_type || basicInfo.product_type || "laptop")
+          .toString()
+          .toLowerCase() || "laptop",
+      name:
+        raw.name ||
+        raw.product_name ||
+        basicInfo.product_name ||
+        basicInfo.title ||
+        identity.name ||
+        "",
+      brand:
+        raw.brand_name ||
+        raw.brand ||
+        basicInfo.brand_name ||
+        basicInfo.brand ||
+        identity.brand ||
+        "",
+      model: raw.model || basicInfo.model || "",
       price:
         numericPrice > 0
-          ? `₹${numericPrice.toLocaleString()}`
+          ? `Rs ${numericPrice.toLocaleString()}`
           : "Price not available",
       numericPrice,
-      rating: parseFloat(apiDevice.rating) || 0,
-      reviews: apiDevice.reviews_count
-        ? `${apiDevice.reviews_count} reviews`
-        : apiDevice.rating
+      rating: ratingNumber,
+      reviews: raw.reviews_count
+        ? `${raw.reviews_count} reviews`
+        : ratingNumber > 0
           ? "No reviews yet"
           : "",
       image: images[0] || "",
       images,
       specs: {
-        cpu: `${apiDevice.cpu?.brand || ""} ${
-          apiDevice.cpu?.model || ""
-        }`.trim(),
-        cpuBrand: apiDevice.cpu?.brand || "",
-        cpuModel: apiDevice.cpu?.model || "",
-        cpuGeneration: apiDevice.cpu?.generation || "",
-        display: `${apiDevice.display?.size || ""} ${
-          apiDevice.display?.type || ""
-        } ${apiDevice.display?.resolution || ""}`.trim(),
+        cpu: processorName || `${cpuBrand} ${cpuModel}`.trim(),
+        cpuBrand,
+        cpuModel,
+        cpuGeneration: pickFirstString(
+          performance.processor_generation,
+          performance.generation,
+        ),
+        display: displaySummary,
         displaySize,
-        displayType: apiDevice.display?.type || "",
-        resolution: apiDevice.display?.resolution || "",
-        refreshRate: apiDevice.display?.refresh_rate || "",
-        ram: ramOptions.join(" / ") || apiDevice.memory?.type || "",
-        storage: storageOptions.join(" / ") || apiDevice.storage?.type || "",
-        graphics: apiDevice.graphics?.model
-          ? `${apiDevice.graphics?.brand || ""} ${
-              apiDevice.graphics?.model || ""
-            }`.trim()
-          : "Integrated Graphics",
-        battery: apiDevice.battery?.capacity || "",
-        batteryLife: apiDevice.battery?.life || "",
-        os: apiDevice.software?.os || "",
-        weight: apiDevice.physical?.weight || "",
-        color: colorOptions.join(" / ") || apiDevice.physical?.color || "",
-        ports: Array.isArray(apiDevice.connectivity?.ports)
-          ? apiDevice.connectivity.ports.join(", ")
+        displayType,
+        resolution,
+        refreshRate,
+        ram: ramText,
+        storage: storageText,
+        graphics,
+        battery: pickFirstString(battery.capacity, battery.battery_type),
+        batteryLife: pickFirstString(battery.life, battery.backup_time),
+        os: pickFirstString(software.operating_system, software.os),
+        weight: physical.weight || "",
+        color: colorOptions.join(" / ") || pickFirstString(physical.color),
+        ports: Array.isArray(connectivity.ports)
+          ? connectivity.ports.join(", ")
           : "",
-        wifi: apiDevice.connectivity?.wifi || "",
-        warranty: apiDevice.warranty?.years
-          ? `${apiDevice.warranty.years} year${
-              apiDevice.warranty.years > 1 ? "s" : ""
-            }`
-          : "",
-        features: Array.isArray(apiDevice.features)
-          ? apiDevice.features.slice(0, 3).join(", ")
-          : "",
+        wifi: pickFirstString(connectivity.wifi, connectivity.wireless),
+        warranty: pickFirstString(
+          warranty.warranty,
+          warranty.service,
+          warranty.years ? `${warranty.years} years` : "",
+        ),
+        features: featureList.join(", "),
       },
       numericWeight: weight,
       numericDisplaySize: displaySize,
       numericBattery: batteryCapacity,
-      launchDate: apiDevice.created_at || "",
+      launchDate:
+        raw.launch_date ||
+        basicInfo.launch_date ||
+        raw.created_at ||
+        metadata.created_at ||
+        "",
+      trendBadge:
+        trendBadge ||
+        (trendScore != null
+          ? trendScore >= 80
+            ? "Trending Now"
+            : trendScore >= 60
+              ? "Popular This Week"
+              : "Gaining Attention"
+          : ""),
+      trendScore,
+      trendViews7d,
+      trendViewsPrev7d,
+      trendDelta,
+      trendVelocity,
+      trendCalculatedAt,
+      trendManualBoost,
       storePrices,
       variants,
       ramOptions,
       storageOptions,
       colorOptions,
-      features: apiDevice.features || [],
+      features: featureList,
     };
   };
 
@@ -567,8 +818,8 @@ const Laptops = () => {
     rating: [],
   });
 
-  const [sortBy, setSortBy] = useState("featured");
   const [searchQuery, setSearchQuery] = useState("");
+  const [brandFilterQuery, setBrandFilterQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
   const [compareItems, setCompareItems] = useState([]);
@@ -598,6 +849,18 @@ const Laptops = () => {
       }) || null
     );
   })();
+
+  const filteredBrandOptions = useMemo(() => {
+    const q = String(brandFilterQuery || "")
+      .trim()
+      .toLowerCase();
+    if (!q) return brands;
+    return brands.filter((brand) =>
+      String(brand || "")
+        .toLowerCase()
+        .includes(q),
+    );
+  }, [brands, brandFilterQuery]);
 
   const navigate = useNavigate();
   const { search } = useLocation();
@@ -848,6 +1111,7 @@ const Laptops = () => {
       rating: [],
     });
     setSearchQuery("");
+    setBrandFilterQuery("");
     try {
       const params = new URLSearchParams(search);
       params.delete("brand");
@@ -976,29 +1240,55 @@ const Laptops = () => {
     });
   };
 
+  const headerLabel =
+    filter === "trending"
+      ? "TRENDING NOW"
+      : filter === "new"
+        ? "LATEST COLLECTION"
+        : "LAPTOP COLLECTION";
+
+  const currentYear = new Date().getFullYear();
+  const sanitizeDescription = (desc = "") => {
+    const text = String(desc || "")
+      .replace(/<[^>]*>/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    return text.length > 180 ? `${text.slice(0, 177)}...` : text;
+  };
+
+  let seoTitle = `Best Laptops ${currentYear} - Compare Prices, Specs & Deals | Hook`;
+  let seoDescription =
+    "Browse the latest laptops with full specifications, prices, and feature comparisons on Hook.";
+
+  if (filter === "trending") {
+    seoTitle = `Trending Laptops ${currentYear} - Most Popular Models & Prices | Hook`;
+    seoDescription =
+      "Explore trending laptops with rising buyer interest, latest prices, and key specs to find the best option quickly on Hook.";
+  } else if (filter === "new") {
+    seoTitle = `Latest Laptops ${currentYear} - New Launches, Specs & Prices | Hook`;
+    seoDescription =
+      "Discover newly launched laptops with updated prices, processor details, RAM and storage options, and full spec breakdowns on Hook.";
+  }
+
+  if (currentBrandObj) {
+    seoTitle = `${currentBrandObj.name} Laptops ${currentYear} - Models, Prices & Specs | Hook`;
+    seoDescription = sanitizeDescription(
+      currentBrandObj.description ||
+        `Compare ${currentBrandObj.name} laptops with detailed specifications, latest prices, and top deals on Hook.`,
+    );
+  }
+
   return (
     <div className="min-h-screen">
       <style>{animationStyles}</style>
-      {currentBrandObj ? (
-        <Helmet>
-          <title>{`${currentBrandObj.name} Laptops - SmartArena`}</title>
-          <meta
-            name="description"
-            content={
-              currentBrandObj.description ||
-              `Explore ${currentBrandObj.name} laptops, models, prices and reviews on SmartArena.`
-            }
-          />
-        </Helmet>
-      ) : (
-        <Helmet>
-          <title>Laptops - SmartArena</title>
-          <meta
-            name="description"
-            content={`Browse latest laptops, specs, prices and reviews on SmartArena.`}
-          />
-        </Helmet>
-      )}
+      <Helmet>
+        <title>{seoTitle}</title>
+        <meta name="description" content={seoDescription} />
+        <meta property="og:title" content={seoTitle} />
+        <meta property="og:description" content={seoDescription} />
+        <meta name="twitter:title" content={seoTitle} />
+        <meta name="twitter:description" content={seoDescription} />
+      </Helmet>
       {/* Page Header */}
 
       {/* Main Content */}
@@ -1008,14 +1298,14 @@ const Laptops = () => {
           <div className="inline-flex items-center gap-2 bg-purple-50 backdrop-blur-sm px-3 py-1.5 rounded-full border border-purple-100 mb-4 sm:mb-6">
             <FaLaptop className="text-purple-600 text-sm" />
             <span className="text-xs sm:text-sm font-semibold text-purple-800">
-              LATEST COLLECTION
+              {headerLabel}
             </span>
           </div>
 
           {/* Main Heading - Gradient Text */}
           <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold mb-3 sm:mb-4 lg:mb-6 leading-tight">
             Explore Premium{" "}
-            <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent">
               Laptops
             </span>
           </h1>
@@ -1043,12 +1333,12 @@ const Laptops = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-12 pr-4 py-3 rounded-xl
-             bg-gradient-to-br from-purple-600 to-blue-600
-             text-gray-700 placeholder:text-gray-400
-             focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent
-             text-sm sm:text-base
-             disabled:opacity-50 disabled:cursor-not-allowed
-"
+             border border-gray-300
+              text-gray-700 placeholder:text-gray-400
+              focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent
+              text-sm sm:text-base
+              disabled:opacity-50 disabled:cursor-not-allowed
+ "
                 />
               </div>
             </div>
@@ -1111,7 +1401,7 @@ const Laptops = () => {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowFilters(true)}
-                className="flex items-center justify-center gap-2 flex-1 h-12 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 rounded-xl transition-all duration-300 font-semibold hover:from-purple-600 hover:to-blue-600 hover:shadow-lg hover:-translate-y-0.5"
+                className="flex items-center justify-center gap-2 flex-1 h-12 bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 text-white px-4 rounded-xl transition-all duration-300 font-semibold hover:from-purple-600 hover:to-blue-600 hover:shadow-lg hover:-translate-y-0.5"
               >
                 <FaFilter />
                 Filters
@@ -1133,7 +1423,7 @@ const Laptops = () => {
 
             {/* Active Filters Badge - Mobile */}
             {getActiveFiltersCount() > 0 && (
-              <div className="flex items-center justify-between p-4 bg-purple-50 rounded-xl border border-purple-200">
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-100 to-blue-50 rounded-xl border border-purple-200">
                 <div className="flex items-center gap-3">
                   <FaInfoCircle className="text-purple-600" />
                   <div>
@@ -1169,7 +1459,7 @@ const Laptops = () => {
               </p>
             </div>
             <div className="hidden lg:block text-sm text-gray-500">
-              Showing {sortedVariants.length} of {variantCards.length} variants
+              Showing {sortedVariants.length} of {variantCards.length} options
             </div>
           </div>
         </div>
@@ -1204,7 +1494,7 @@ const Laptops = () => {
 
               {/* Active Filters Badge */}
               {getActiveFiltersCount() > 0 && (
-                <div className="mb-6 p-4 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl border border-purple-200">
+                <div className="mb-6 p-4 bg-gradient-to-r from-purple-100 to-blue-50 rounded-xl border border-purple-200">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-semibold text-purple-800">
                       Active Filters
@@ -1235,7 +1525,7 @@ const Laptops = () => {
                   </span>
                 </div>
 
-                <div className="bg-gradient-to-br from-purple-600 to-blue-600 border border-indigo-100 rounded-xl p-4">
+                <div className="bg-gradient-to-br from-blue-50 via-purple-50 to-blue-50 border border-indigo-100 rounded-xl p-4">
                   <div className="flex justify-between text-sm font-medium text-gray-700 mb-4">
                     <div className="text-center">
                       <div className="text-xs text-gray-500">Minimum</div>
@@ -1255,7 +1545,7 @@ const Laptops = () => {
                   <div className="relative mb-8">
                     <div className="absolute h-2 bg-gray-200 rounded-full w-full top-1/2 transform -translate-y-1/2"></div>
                     <div
-                      className="absolute h-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full top-1/2 transform -translate-y-1/2"
+                      className="absolute h-2 bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 rounded-full top-1/2 transform -translate-y-1/2"
                       style={{
                         left: `${Math.max(
                           0,
@@ -1327,8 +1617,18 @@ const Laptops = () => {
                     {filters.brand.length} selected
                   </span>
                 </div>
+                <div className="relative mb-3">
+                  <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+                  <input
+                    type="text"
+                    value={brandFilterQuery}
+                    onChange={(e) => setBrandFilterQuery(e.target.value)}
+                    placeholder="Search brand..."
+                    className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
                 <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-                  {brands.map((brand) => (
+                  {filteredBrandOptions.map((brand) => (
                     <label
                       key={brand}
                       className="flex items-center gap-3 cursor-pointer group hover:bg-gray-50 px-3 py-2.5 rounded-lg transition-all duration-200 border border-transparent hover:border-gray-200"
@@ -1347,6 +1647,11 @@ const Laptops = () => {
                       </div>
                     </label>
                   ))}
+                  {filteredBrandOptions.length === 0 && (
+                    <div className="text-sm text-gray-500 px-2 py-1">
+                      No brands found
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1371,8 +1676,8 @@ const Laptops = () => {
                       key={ram}
                       className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium ${
                         filters.ram.includes(ram)
-                          ? "bg-gradient-to-b from-purple-600 to-blue-600 text-white  "
-                          : "text-gray-700 hover:border-gray-300 bg-gradient-to-br from-purple-600 to-blue-600 border  border-indigo-100"
+                          ? "bg-gradient-to-b from-purple-200 to-blue-200 text-blue-500  "
+                          : "text-gray-700 hover:border-gray-300 bg-gradient-to-br from-purple-50 to-blue-50 border  border-indigo-100"
                       }`}
                     >
                       <input
@@ -1408,8 +1713,8 @@ const Laptops = () => {
                       key={storage}
                       className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium ${
                         filters.storage.includes(storage)
-                          ? "bg-gradient-to-b from-purple-600 to-blue-600 text-white "
-                          : "bg-gradient-to-br from-purple-600 to-blue-600 border border-indigo-100 text-gray-700 hover:border-gray-300 hover: "
+                          ? "bg-gradient-to-b from-purple-200 to-blue-200 text-blue-500 "
+                          : "bg-gradient-to-br from-purple-50 to-blue-50 border border-indigo-100 text-gray-700 hover:border-gray-300 hover: "
                       }`}
                     >
                       <input
@@ -1445,8 +1750,8 @@ const Laptops = () => {
                       key={brand}
                       className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium ${
                         filters.cpuBrand.includes(brand)
-                          ? "bg-gradient-to-b from-purple-600 to-blue-600 text-white  "
-                          : "text-gray-700 hover:border-gray-300 bg-gradient-to-br from-purple-600 to-blue-600 border  border-indigo-100"
+                          ? "bg-gradient-to-b from-purple-200 to-blue-200 text-blue-500  "
+                          : "text-gray-700 hover:border-gray-300 bg-gradient-to-br from-purple-50 to-blue-50 border  border-indigo-100"
                       }`}
                     >
                       <input
@@ -1482,8 +1787,8 @@ const Laptops = () => {
                       key={os}
                       className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium ${
                         filters.os.includes(os)
-                          ? "bg-gradient-to-b from-purple-600 to-blue-600 text-white  "
-                          : "text-gray-700 hover:border-gray-300 bg-gradient-to-br from-purple-600 to-blue-600 border  border-indigo-100"
+                          ? "bg-gradient-to-b from-purple-200 to-blue-200 text-blue-500  "
+                          : "text-gray-700 hover:border-gray-300 bg-gradient-to-br from-purple-50 to-blue-50 border  border-indigo-100"
                       }`}
                     >
                       <input
@@ -1519,8 +1824,8 @@ const Laptops = () => {
                       key={range.id}
                       className={`flex items-center justify-between gap-2 cursor-pointer px-4 py-3 rounded-xl transition-all duration-200 font-medium ${
                         filters.displaySize.includes(range.id)
-                          ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white "
-                          : "bg-gradient-to-br from-purple-600 to-blue-600 border border-b border-indigo-100 text-gray-700 hover:border-gray-300"
+                          ? "bg-gradient-to-r from-purple-200 to-blue-200 text-blue-500 "
+                          : "bg-gradient-to-br from-purple-50 to-blue-50 border border-b border-indigo-100 text-gray-700 hover:border-gray-300"
                       }`}
                     >
                       <input
@@ -1565,8 +1870,8 @@ const Laptops = () => {
                       key={range.id}
                       className={`flex items-center justify-between gap-2 cursor-pointer px-4 py-3 rounded-xl transition-all duration-200 font-medium ${
                         filters.weight.includes(range.id)
-                          ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white "
-                          : "bg-gradient-to-br from-purple-600 to-blue-600 border border-b border-indigo-100 text-gray-700 hover:border-gray-300"
+                          ? "bg-gradient-to-r from-purple-200 to-blue-200 text-blue-500 "
+                          : "bg-gradient-to-br from-purple-50 to-blue-50 border border-b border-indigo-100 text-gray-700 hover:border-gray-300"
                       }`}
                     >
                       <input
@@ -1595,198 +1900,151 @@ const Laptops = () => {
             {/* Results Summary */}
 
             {/* Products Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6 lg:w-10/12 auto-rows-fr">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6 auto-rows-fr md:[&>*:nth-child(2n)]:border-l md:[&>*:nth-child(2n)]:border-gray-200 md:[&>*:nth-child(2n)]:pl-6 md:[&>*:nth-child(2n+1)]:pr-6">
               {sortedVariants.map((device, idx) => (
                 <div
-                  key={`${device.id}-${idx}`}
+                  key={`${device.id ?? device.model ?? ""}-${idx}`}
                   onClick={(e) => handleView(device, e)}
-                  className={`h-full transition-all duration-300 overflow-hidden rounded-md cursor-pointer hover:shadow-lg hover:scale-105`}
+                  className={`h-full smooth-transition fade-in-up overflow-hidden rounded-2xl bg-white cursor-pointer transition-all duration-200 md:rounded-none md:bg-white ${
+                    isCompareSelected(device)
+                      ? "ring-2 ring-purple-300 bg-purple-50"
+                      : ""
+                  }`}
                 >
                   <div className="p-3 sm:p-4 md:p-5 lg:p-6 pt-4 sm:pt-5 md:pt-6">
                     {/* Top Row: Image and Basic Info */}
-                    <div className="flex gap-3 sm:gap-4">
-                      {/* Product Image - Fixed container */}
-                      <div className="flex-shrink-0 w-52 h-52 bg-gray-50 rounded-lg overflow-hidden">
-                        <div className="w-full h-full flex items-center justify-center">
+                    <div className="flex gap-3 sm:gap-4 h-50">
+                      {/* Product Image - Fixed container with checkbox overlay */}
+                      <div className="relative flex-shrink-0 w-42 h-52 rounded-2xl overflow-hidden group">
+                        <div className="w-full h-full flex items-center justify-center p-2">
                           <ImageCarousel images={device.images} />
+                        </div>
+                        {/* Compare Checkbox Overlay - Top Right */}
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          className="absolute top-2 right-2 z-10 rounded-md transition-all duration-200 cursor-pointer hover:bg-gray-50 hover:border-purple-500"
+                          title="Add to compare"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isCompareSelected(device)}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              handleCompareToggle(device, e);
+                            }}
+                            className="w-3 h-3 m-1 accent-purple-600 cursor-pointer"
+                          />
                         </div>
                       </div>
 
                       {/* Basic Info */}
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 w-42">
                         {/* Brand and Model */}
                         <div className="flex items-start justify-between mb-2">
                           <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs font-bold text-blue-600  rounded-full">
+                            <div className="flex items-center gap-2 mb-1 md:flex-nowrap">
+                              <span className="text-xs font-semibold text-purple-700">
                                 {device.brand}
                               </span>
+                              {(filter === "trending" || device.trendBadge) && (
+                                <span
+                                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 whitespace-nowrap ${
+                                    device.trendManualBoost
+                                      ? "bg-blue-50 text-blue-700 ring-blue-200"
+                                      : (device.trendDelta || 0) > 0
+                                        ? "bg-orange-50 text-orange-700 ring-orange-200"
+                                        : "bg-sky-50 text-sky-700 ring-sky-200"
+                                  }`}
+                                  title={
+                                    device.trendScore != null
+                                      ? `Trending score ${Number(device.trendScore).toFixed(1)}`
+                                      : "Trending"
+                                  }
+                                >
+                                  {device.trendBadge || "Trending"}
+                                </span>
+                              )}
                             </div>
-                            <h5 className="font-bold text-gray-900 text-sm ">
+                            <p className="font-bold text-gray-900 text-[13px] leading-snug">
                               {(() => {
                                 const name = device.name || device.model || "";
-                                const cpu = String(
-                                  device.specs?.cpu || "",
-                                ).trim();
                                 const ram = String(
-                                  device.specs?.ram || "",
+                                  device.specs?.ram ?? "",
                                 ).trim();
-                                const storage = String(
-                                  device.specs?.storage || "",
+                                const storage = (
+                                  device.specs?.storage ?? ""
                                 ).trim();
                                 const display = String(
-                                  device.specs?.displaySize || "",
+                                  device.specs?.displaySize ?? "",
+                                ).trim();
+                                const cpu = String(
+                                  device.specs?.cpu ?? "",
                                 ).trim();
 
                                 const parts = [name];
 
-                                const ramStorageDisplay = [
-                                  ram,
-                                  storage,
-                                  display ? `${display}"` : "",
-                                ]
-                                  .filter(Boolean)
-                                  .join(" / ");
-                                if (ramStorageDisplay)
-                                  parts.push(ramStorageDisplay);
+                                if (ram) {
+                                  const ramLabel =
+                                    ram.toLowerCase().includes("gb") ||
+                                    ram.toLowerCase().includes("tb")
+                                      ? ram
+                                      : `${ram} RAM`;
+                                  parts.push(ramLabel);
+                                }
+                                if (storage) {
+                                  const storageLabel =
+                                    storage.toLowerCase().includes("gb") ||
+                                    storage.toLowerCase().includes("tb")
+                                      ? storage
+                                      : `${storage} Storage`;
+                                  parts.push(storageLabel);
+                                }
+                                if (display) parts.push(`${display}"`);
 
                                 if (cpu) parts.push(cpu);
 
                                 return parts.filter(Boolean).join(" | ");
                               })()}
-                            </h5>
+                            </p>
                           </div>
                         </div>
 
                         {/* Price and Rating */}
                         <div className="mb-3">
                           <div className="flex items-center justify-between">
-                            <div className="text-lg font-bold text-green-600">
-                              {device.price}
-                            </div>
-                            {device.rating > 0 && (
-                              <div className="flex items-center gap-1">
-                                <FaStar className="text-yellow-500 text-sm" />
-                                <span className="font-bold text-gray-900 text-sm">
-                                  {device.rating}
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                  ({device.reviews})
-                                </span>
+                            <div>
+                              {device.price !== "Price not available" && (
+                                <div className="text-xs text-gray-500 mb-0.5">
+                                  Starting from
+                                </div>
+                              )}
+                              <div
+                                className={`text-lg font-bold ${
+                                  device.price === "Price not available"
+                                    ? "text-gray-400"
+                                    : "text-green-600"
+                                }`}
+                              >
+                                {device.price}
                               </div>
-                            )}
+                              {(filter === "trending" || device.trendViews7d > 0) && (
+                                <div className="text-[11px] text-gray-500 mt-0.5">
+                                  {device.trendDelta > 0
+                                    ? `+${device.trendDelta} views vs last 7d`
+                                    : `${device.trendViews7d || 0} views in last 7d`}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
 
                         {/* Key Specs Badges */}
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          {device.specs.cpu && (
-                            <div className="flex items-center gap-1 text-xs bg-gray-50 px-2 py-1 rounded">
-                              <FaMicrochip className="text-gray-500" />
-                              <span className="font-medium text-gray-700">
-                                {device.specs.cpu
-                                  .split(" ")
-                                  .slice(0, 2)
-                                  .join(" ")}
-                              </span>
-                            </div>
-                          )}
-                          {device.specs.ram && (
-                            <div className="flex items-center gap-1 text-xs bg-gray-50 px-2 py-1 rounded">
-                              <FaMemory className="text-gray-500" />
-                              <span className="font-medium text-gray-700">
-                                {device.specs.ram.split("/")[0]}
-                              </span>
-                            </div>
-                          )}
-                          {device.specs.storage && (
-                            <div className="flex items-center gap-1 text-xs bg-gray-50 px-2 py-1 rounded">
-                              <FaShoppingBag className="text-gray-500" />
-                              <span className="font-medium text-gray-700">
-                                {device.specs.storage.split("/")[0]}
-                              </span>
-                            </div>
-                          )}
-                          {device.specs.display && (
-                            <div className="flex items-center gap-1 text-xs bg-gray-50 px-2 py-1 rounded">
-                              <FaDesktop className="text-gray-500" />
-                              <span className="font-medium text-gray-700">
-                                {device.specs.displaySize}"
-                              </span>
-                            </div>
-                          )}
-                        </div>
                       </div>
                     </div>
 
                     {/* Expanded Details */}
                     <div className="mt-3 sm:mt-4 md:mt-5 pt-3 sm:pt-4 md:pt-5 border-t border-indigo-100">
-                      {/* Detailed Specifications */}
-                      <div className="mb-3 sm:mb-4 md:mb-5">
-                        <h4 className="font-bold text-gray-900 text-sm mb-3 flex items-center gap-2">
-                          <FaInfoCircle className="text-purple-600" />
-                          Key Specs
-                        </h4>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="text-xs">
-                            <div className="text-gray-500">Processor</div>
-                            <div className="font-medium text-gray-900">
-                              {device.specs.cpu || "N/A"}
-                            </div>
-                          </div>
-                          <div className="text-xs">
-                            <div className="text-gray-500">Display</div>
-                            <div className="font-medium text-gray-900">
-                              {device.specs.display || "N/A"}
-                            </div>
-                          </div>
-                          <div className="text-xs">
-                            <div className="text-gray-500">Graphics</div>
-                            <div className="font-medium text-gray-900">
-                              {device.specs.graphics || "N/A"}
-                            </div>
-                          </div>
-                          <div className="text-xs">
-                            <div className="text-gray-500">OS</div>
-                            <div className="font-medium text-gray-900">
-                              {device.specs.os || "N/A"}
-                            </div>
-                          </div>
-                          <div className="text-xs">
-                            <div className="text-gray-500">Weight</div>
-                            <div className="font-medium text-gray-900">
-                              {device.specs.weight || "N/A"}
-                            </div>
-                          </div>
-                          <div className="text-xs">
-                            <div className="text-gray-500">Battery</div>
-                            <div className="font-medium text-gray-900">
-                              {device.specs.battery || "N/A"}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Features */}
-                      {device.features && device.features.length > 0 && (
-                        <div className="mb-4">
-                          <h4 className="font-semibold text-gray-900 text-sm mb-2 flex items-center gap-2">
-                            <FaBolt className="text-amber-500" />
-                            Key Features
-                          </h4>
-                          <div className="flex flex-wrap gap-2">
-                            {device.features.slice(0, 4).map((feature, i) => (
-                              <span
-                                key={i}
-                                className="text-xs bg-amber-50 text-amber-700 px-2 py-1 rounded"
-                              >
-                                {feature}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
                       {/* Store Availability */}
                       {device.storePrices && device.storePrices.length > 0 && (
                         <div className="mb-4">
@@ -1795,27 +2053,36 @@ const Laptops = () => {
                               <FaStore className="text-green-500" />
                               Available At
                             </h4>
-                            <button
-                              onClick={(e) => handleCompareToggle(device, e)}
-                              className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-base font-bold transition-all duration-300 ${
-                                isCompareSelected(device)
-                                  ? "bg-purple-600 text-white shadow-lg"
-                                  : "bg-white border-2 border-purple-600 text-purple-600 hover:bg-purple-50 shadow-md"
-                              }`}
-                              title="Add to compare"
-                            >
-                              +
-                            </button>
                           </div>
                           <div className="space-y-2">
                             {device.storePrices
                               .slice(0, 3)
                               .map((storePrice, i) => {
-                                const logoSrc = getLogo(storePrice.store);
+                                const storeObj =
+                                  storePrice.storeObj ||
+                                  (getStore
+                                    ? getStore(
+                                        storePrice.store ||
+                                          storePrice.store_name ||
+                                          storePrice.storeName ||
+                                          "",
+                                      )
+                                    : null);
+                                const storeNameCandidate =
+                                  storePrice.store ||
+                                  storePrice.store_name ||
+                                  storePrice.storeName ||
+                                  storeObj?.name ||
+                                  "";
+                                const logoSrc =
+                                  storePrice.logo ||
+                                  (getStoreLogo
+                                    ? getStoreLogo(storeNameCandidate)
+                                    : getLogo(storeNameCandidate));
                                 return (
                                   <div
                                     key={`${device.id}-store-${i}`}
-                                    className="flex items-center justify-between text-sm bg-gradient-to-br from-purple-600 to-blue-600 px-3 py-2 rounded-lg"
+                                    className="flex items-center justify-between text-sm bg-gradient-to-br from-purple-50 to-blue-50 px-3 py-2 rounded-lg"
                                   >
                                     <div className="flex items-center gap-2">
                                       {logoSrc ? (
@@ -1840,7 +2107,7 @@ const Laptops = () => {
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         onClick={(e) => e.stopPropagation()}
-                                        className="text-blue-600 hover:text-blue-800 text-xs font-medium flex items-center gap-1"
+                                        className="text-purple-600 hover:text-blue-800 text-xs font-medium flex items-center gap-1"
                                       >
                                         Buy Now
                                         <FaExternalLinkAlt className="text-xs opacity-80" />
@@ -1857,6 +2124,24 @@ const Laptops = () => {
                           </div>
                         </div>
                       )}
+
+                      {/* Launch Date */}
+                      {device.launchDate && (
+                        <div className="flex items-center gap-2 text-xs text-gray-600 mb-4">
+                          <FaCalendarAlt className="text-gray-400" />
+                          <span>
+                            Released:{" "}
+                            {new Date(device.launchDate).toLocaleDateString(
+                              "en-US",
+                              {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                              },
+                            )}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Action Buttons */}
@@ -1868,9 +2153,31 @@ const Laptops = () => {
               ))}
             </div>
 
+            {/* Floating Compare Bar - Appears when 2+ items selected */}
+            {compareItems.length >= 2 && (
+              <div className="fixed bottom-6 left-4 right-4 md:bottom-8 md:left-auto md:right-8 z-40 max-w-sm bg-white rounded-xl p-4 animate-slide-up md:shadow-2xl md:border-2 md:border-purple-500">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {compareItems.length} laptops selected
+                    </p>
+                    <p className="text-xs text-gray-600 mt-0.5">
+                      Ready to compare specifications
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleCompareNavigate}
+                    className="flex-shrink-0 bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:from-purple-600 hover:to-blue-600 transition-all duration-200 whitespace-nowrap text-sm"
+                  >
+                    Compare Now
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* No Results State */}
             {sortedVariants.length === 0 && (
-              <div className="text-center py-16 bg-gradient-to-b from-white to-blue-600 border border-purple-200 rounded-xl  ">
+              <div className="text-center py-16 bg-gradient-to-b from-white to-blue-50 border border-purple-100 rounded-xl transition-all duration-300 ">
                 <div className="max-w-md mx-auto">
                   <FaSearch className="text-gray-300 text-5xl mx-auto mb-4" />
                   <h3 className="text-2xl font-semibold text-gray-900 mb-3">
@@ -1884,13 +2191,13 @@ const Laptops = () => {
                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
                     <button
                       onClick={clearFilters}
-                      className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-purple-600 hover:to-blue-600 transition-all duration-200  "
+                      className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-purple-600 hover:to-blue-600 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 "
                     >
                       Clear All Filters
                     </button>
                     <button
                       onClick={() => setShowFilters(true)}
-                      className="bg-white text-gray-700 px-6 py-3 rounded-lg font-semibold border border-gray-300 hover:bg-gray-50 transition-colors duration-200"
+                      className="text-gray-700 px-6 py-3 rounded-lg font-semibold border border-gray-300 hover:bg-gray-50 transition-all duration-300 hover:shadow-md hover:border-gray-400 "
                     >
                       Adjust Filters
                     </button>
@@ -1905,14 +2212,14 @@ const Laptops = () => {
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                   <div className="text-sm text-gray-600">
                     Showing {sortedVariants.length} of {variantCards.length}{" "}
-                    variants
+                    options
                   </div>
                   <div className="flex items-center gap-3">
                     <button
                       onClick={() =>
                         window.scrollTo({ top: 0, behavior: "smooth" })
                       }
-                      className="flex items-center gap-2 text-purple-600 hover:text-purple-700 text-sm font-medium"
+                      className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
                     >
                       <svg
                         className="w-4 h-4"
@@ -2066,11 +2373,11 @@ const Laptops = () => {
                       {filters.priceRange.max?.toLocaleString()}
                     </span>
                   </div>
-                  <div className="bg-gradient-to-b from-purple-600 to-white rounded-xl p-4 border border-gray-200">
+                  <div className="bg-gradient-to-r from-purple-50 via-blue-50 purple-50 to-white rounded-xl p-4 border border-gray-200">
                     <div className="relative mb-4">
                       <div className="absolute h-2 bg-gray-200 rounded-full w-full top-1/2 transform -translate-y-1/2"></div>
                       <div
-                        className="absolute h-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full top-1/2 transform -translate-y-1/2"
+                        className="absolute h-2 bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 rounded-full top-1/2 transform -translate-y-1/2"
                         style={{
                           left: `${Math.max(
                             0,
@@ -2139,13 +2446,23 @@ const Laptops = () => {
                   <h4 className="font-semibold text-gray-900 text-lg mb-3">
                     Brand
                   </h4>
+                  <div className="relative mb-3">
+                    <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+                    <input
+                      type="text"
+                      value={brandFilterQuery}
+                      onChange={(e) => setBrandFilterQuery(e.target.value)}
+                      placeholder="Search brand..."
+                      className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
                   <div className="grid grid-cols-2 gap-2">
-                    {brands.map((brand) => (
+                    {filteredBrandOptions.map((brand) => (
                       <label
                         key={brand}
                         className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium text-sm ${
                           filters.brand.includes(brand)
-                            ? "bg-gradient-to-b from-purple-600 to-blue-600 text-white shadow-lg"
+                            ? "bg-gradient-to-b from-blue-600 via-purple-500 to-blue-600 text-white shadow-lg"
                             : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300 hover:shadow-sm"
                         }`}
                       >
@@ -2159,6 +2476,11 @@ const Laptops = () => {
                       </label>
                     ))}
                   </div>
+                  {filteredBrandOptions.length === 0 && (
+                    <div className="text-sm text-gray-500 mt-2">
+                      No brands found
+                    </div>
+                  )}
                 </div>
 
                 {/* RAM */}
@@ -2172,7 +2494,7 @@ const Laptops = () => {
                         key={ram}
                         className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium text-sm ${
                           filters.ram.includes(ram)
-                            ? "bg-gradient-to-b from-purple-600 to-blue-600 text-white shadow-lg"
+                            ? "bg-gradient-to-b from-blue-600 via-purple-500 to-blue-600 text-white shadow-lg"
                             : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300 hover:shadow-sm"
                         }`}
                       >
@@ -2199,7 +2521,7 @@ const Laptops = () => {
                         key={storage}
                         className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium text-sm ${
                           filters.storage.includes(storage)
-                            ? "bg-gradient-to-b from-purple-600 to-blue-600 text-white shadow-lg"
+                            ? "bg-gradient-to-b from-blue-600 via-purple-500 to-blue-600 text-white shadow-lg"
                             : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300 hover:shadow-sm"
                         }`}
                       >
@@ -2228,7 +2550,7 @@ const Laptops = () => {
                         key={brand}
                         className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium text-sm ${
                           filters.cpuBrand.includes(brand)
-                            ? "bg-gradient-to-b from-purple-600 to-blue-600 text-white shadow-lg"
+                            ? "bg-gradient-to-b from-blue-600 via-purple-500 to-blue-600 text-white shadow-lg"
                             : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300 hover:shadow-sm"
                         }`}
                       >
@@ -2255,7 +2577,7 @@ const Laptops = () => {
                         key={os}
                         className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium text-sm ${
                           filters.os.includes(os)
-                            ? "bg-gradient-to-b from-purple-600 to-blue-600 text-white shadow-lg"
+                            ? "bg-gradient-to-b from-blue-600 via-purple-500 to-blue-600 text-white shadow-lg"
                             : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300 hover:shadow-sm"
                         }`}
                       >
@@ -2283,7 +2605,7 @@ const Laptops = () => {
                   </button>
                   <button
                     onClick={() => setShowFilters(false)}
-                    className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white py-4 rounded-xl font-semibold hover:from-purple-600 hover:to-blue-600 transition-all duration-200 shadow-lg"
+                    className="flex-1 bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 text-white py-4 rounded-xl font-semibold hover:from-purple-600 hover:to-blue-600 transition-all duration-200 shadow-lg"
                   >
                     Apply Filters
                   </button>
@@ -2295,12 +2617,12 @@ const Laptops = () => {
       </div>
 
       {/* Help Section */}
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="bg-gradient-to-r from-purple-200 to-blue-200 rounded-2xl p-6 lg:p-8">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
             <div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">
-                Need help choosing a laptop?
+                Need help choosing?
               </h3>
               <p className="text-gray-600 mb-4 lg:mb-0">
                 Use our comparison tool to side-by-side compare multiple laptops
@@ -2309,9 +2631,9 @@ const Laptops = () => {
             </div>
             <button
               onClick={() => navigate("/compare")}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-purple-600 hover:to-blue-600 transition-all duration-200 shadow-lg whitespace-nowrap"
+              className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-6 py-3 rounded-xl font-semibold hover:from-purple-600 hover:to-blue-600 transition-all duration-200   whitespace-nowrap"
             >
-              Compare Laptops
+              Open Comparison Tool
             </button>
           </div>
         </div>
@@ -2321,5 +2643,3 @@ const Laptops = () => {
 };
 
 export default Laptops;
-
-

@@ -72,7 +72,6 @@ import {
   FaTv,
   FaLaptop,
   FaPlug,
-  FaSnowflake,
   FaCamera,
   FaGamepad,
   FaHeadphones,
@@ -93,7 +92,6 @@ import {
   FaPercentage,
   FaCalendarAlt,
   FaWeight,
-  FaWeightHanging,
   FaHandsHelping,
   FaAlignJustify,
   FaStream,
@@ -240,8 +238,16 @@ const Header = () => {
     if (t.includes("phone") || t.includes("smart") || t === "smartphone")
       return "smartphones";
     if (t.includes("laptop") || t === "laptop") return "laptops";
-    if (t.includes("appliance") || t.includes("home") || t === "appliance")
-      return "appliances";
+    if (
+      t.includes("television") ||
+      t === "tv" ||
+      t === "tvs" ||
+      t.includes("appliance") ||
+      t.includes("home") ||
+      t === "appliance"
+    ) {
+      return "tvs";
+    }
     if (t.includes("network") || t === "networking") return "networking";
     // Default to smartphones if can't determine
     return "smartphones";
@@ -500,28 +506,29 @@ const Header = () => {
       // Column 4 – By Brand
     },
     {
-      id: "Home Appliances",
-      name: "Home Appliances",
-      icon: <FaSnowflake />,
+      id: "tvs",
+      name: "TVs",
+      icon: <FaTv />,
       // Column 1 – Categories
       subcategories: [
-        { name: "Refrigerators" },
-        { name: "Washing Machines" },
-        { name: "Air Conditioners" },
-        { name: "Televisions" },
+        { name: "All TVs" },
+        { name: "New Launches" },
+        { name: "Trending TVs" },
+        { name: "Compare TVs" },
       ],
       // Column 2 – By Type (mapped into popularProducts column)
       popularProducts: [
-        { name: "Front Load", price: "", discount: "" },
-        { name: "Top Load", price: "", discount: "" },
-        { name: "Inverter AC", price: "", discount: "" },
-        { name: "Smart TV", price: "", discount: "" },
+        { name: "4K Smart TVs", price: "", discount: "" },
+        { name: "QLED TVs", price: "", discount: "" },
+        { name: "OLED TVs", price: "", discount: "" },
+        { name: "Gaming TVs", price: "", discount: "" },
       ],
-      // Column 3 – Energy & Size (mapped into featured column)
+      // Column 3 – By Price (mapped into featured column)
       featured: [
-        { name: "5 Star Rated", discount: "", icon: <FaStar /> },
-        { name: "Large Capacity", discount: "", icon: <FaWeightHanging /> },
-        { name: "Compact Appliances", discount: "", icon: <FaHome /> },
+        { name: "Under â‚¹30,000", discount: "", icon: <FaTag /> },
+        { name: "Under â‚¹50,000", discount: "", icon: <FaTag /> },
+        { name: "Under â‚¹80,000", discount: "", icon: <FaTag /> },
+        { name: "Premium TVs", discount: "", icon: <FaStar /> },
       ],
       // Column 4 – Popular Brands
     },
@@ -1795,7 +1802,7 @@ const Header = () => {
     const navTabs = [
       { label: "Mobiles", link: "/smartphones", icon: <FaMobileAlt /> },
       { label: "Laptops", link: "/laptops", icon: <FaLaptop /> },
-      { label: "Appliances", link: "/appliances", icon: <FaSnowflake /> },
+      { label: "TVs", link: "/tvs", icon: <FaTv /> },
       { label: "Networking", link: "/networking", icon: <FaPlug /> },
     ];
 

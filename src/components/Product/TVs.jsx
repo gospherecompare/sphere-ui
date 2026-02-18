@@ -68,7 +68,7 @@ const ImageCarousel = ({ images = [] }) => {
 
   if (!images || images.length === 0) {
     return (
-      <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg">
+      <div className="relative w-full h-full flex items-center justify-center bg-gray-100 rounded-lg">
         <div className="text-center">
           <FaHome className="text-gray-300 text-3xl mx-auto mb-2" />
           <span className="text-gray-400 text-sm">No image</span>
@@ -177,7 +177,7 @@ const getApplianceTypeIcon = (type) => {
 // Fallback mock (kept empty; real data loads from API via Redux)
 const mockHomeAppliances = [];
 
-const HomeAppliances = () => {
+const TVs = () => {
   const animationStyles = `
     @keyframes slideUp {
       from {
@@ -216,6 +216,13 @@ const HomeAppliances = () => {
     return numeric > 0
       ? `₹ ${numeric.toLocaleString()}`
       : "Price not available";
+  };
+
+  const isLikelyImageSrc = (src) => {
+    if (typeof src !== "string") return false;
+    const value = src.trim();
+    if (!value) return false;
+    return /^(https?:\/\/|\/\/|\/|data:image\/)/i.test(value);
   };
 
   // Helper to extract numeric capacity from string like "7kg", "320L"
@@ -317,12 +324,6 @@ const HomeAppliances = () => {
           ? `₹${numericPrice.toLocaleString()}`
           : "Price not available",
       numericPrice,
-      rating: parseFloat(apiDevice.rating) || 0,
-      reviews: apiDevice.reviews_count
-        ? `${apiDevice.reviews_count} reviews`
-        : apiDevice.rating
-          ? "No reviews yet"
-          : "",
       image: images[0] || "",
       images,
       specs: {
@@ -376,6 +377,376 @@ const HomeAppliances = () => {
     };
   };
 
+  // TV-aware mapping for the new API payload shape.
+  const toObjectIfNeeded = (value) => {
+    if (!value) return {};
+    if (typeof value === "object" && !Array.isArray(value)) return value;
+    if (typeof value !== "string") return {};
+    const t = value.trim();
+    if (!t) return {};
+    if ((t.startsWith("{") && t.endsWith("}")) || t.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(t);
+        return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+          ? parsed
+          : {};
+      } catch {
+        return {};
+      }
+    }
+    return {};
+  };
+
+  const toArrayIfNeeded = (value) => {
+    if (!value) return [];
+    if (Array.isArray(value)) return value;
+    if (typeof value !== "string") return [];
+    const t = value.trim();
+    if (!t) return [];
+    if (t.startsWith("[") || t.startsWith("{")) {
+      try {
+        const parsed = JSON.parse(t);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  };
+
+  const toDisplayText = (value) => {
+    if (value === null || value === undefined) return "";
+
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (!trimmed) return "";
+      const lower = trimmed.toLowerCase();
+      if (lower === "null" || lower === "undefined" || lower === "nan") {
+        return "";
+      }
+      return trimmed;
+    }
+
+    if (typeof value === "number") {
+      return Number.isFinite(value) ? String(value) : "";
+    }
+
+    if (typeof value === "boolean") {
+      return value ? "Yes" : "No";
+    }
+
+    if (Array.isArray(value)) {
+      const parts = value.map((item) => toDisplayText(item)).filter(Boolean);
+      return parts.join(", ");
+    }
+
+    return "";
+  };
+
+  const sanitizeObjectForDisplay = (value) => {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+    const sanitized = {};
+    Object.entries(value).forEach(([key, val]) => {
+      const text = toDisplayText(val);
+      if (text) sanitized[key] = text;
+    });
+    return sanitized;
+  };
+
+  const firstNonEmpty = (...values) => {
+    for (const value of values) {
+      const text = toDisplayText(value);
+      if (text) return text;
+    }
+    return "";
+  };
+
+  const mapTvApiToDevice = (apiDevice, idx) => {
+    const legacy = mapApiToDevice(apiDevice, idx);
+    const basicInfo = toObjectIfNeeded(
+      apiDevice.basic_info_json || apiDevice.basic_info,
+    );
+    const keySpecs = toObjectIfNeeded(
+      apiDevice.key_specs_json ||
+        apiDevice.key_specs ||
+        apiDevice.specifications,
+    );
+    const displayJson = toObjectIfNeeded(
+      apiDevice.display_json || apiDevice.display,
+    );
+    const audioJson = toObjectIfNeeded(apiDevice.audio_json || apiDevice.audio);
+    const smartTvJson = toObjectIfNeeded(
+      apiDevice.smart_tv_json || apiDevice.smart_tv,
+    );
+    const connectivityJson = toObjectIfNeeded(
+      apiDevice.connectivity_json || apiDevice.connectivity,
+    );
+    const portsJson = toObjectIfNeeded(apiDevice.ports_json || apiDevice.ports);
+    const powerJson = toObjectIfNeeded(apiDevice.power_json || apiDevice.power);
+    const dimensionsJson = toObjectIfNeeded(
+      apiDevice.dimensions_json ||
+        apiDevice.dimensions ||
+        apiDevice.physical_details,
+    );
+    const designJson = toObjectIfNeeded(
+      apiDevice.design_json || apiDevice.design,
+    );
+    const gamingJson = toObjectIfNeeded(
+      apiDevice.gaming_json || apiDevice.gaming,
+    );
+    const warrantyJson = toObjectIfNeeded(
+      apiDevice.warranty_json || apiDevice.warranty,
+    );
+
+    const images = (() => {
+      const fromJson = toArrayIfNeeded(apiDevice.images_json);
+      if (fromJson.length) return fromJson.filter(Boolean);
+      if (Array.isArray(apiDevice.images))
+        return apiDevice.images.filter(Boolean);
+      return [];
+    })();
+
+    const rawVariants = Array.isArray(apiDevice.variants_json)
+      ? apiDevice.variants_json
+      : Array.isArray(apiDevice.variants)
+        ? apiDevice.variants
+        : [];
+
+    const variants = rawVariants.map((v, vIdx) => ({
+      ...v,
+      variant_id:
+        v.variant_id ||
+        v.id ||
+        v.variantId ||
+        v.variant_key ||
+        `${idx}-${vIdx}`,
+      base_price: v.base_price ?? v.price ?? null,
+      screen_size: v.screen_size || v.size || keySpecs.screen_size || "",
+      specification_summary: firstNonEmpty(
+        v.specification_summary,
+        v.screen_size,
+        v.variant_key,
+      ),
+      store_prices: Array.isArray(v.store_prices)
+        ? v.store_prices
+        : Array.isArray(v.storePrices)
+          ? v.storePrices
+          : [],
+    }));
+
+    const storePrices = variants.flatMap((v) => {
+      const prices = Array.isArray(v.store_prices)
+        ? v.store_prices.map((sp, spIdx) => ({
+            id: sp.id || `${v.variant_id}-${spIdx}`,
+            variant_id: v.variant_id,
+            store: sp.store_name || sp.store || "Store",
+            price: sp.price,
+            url: sp.url,
+            offer_text: sp.offer_text,
+            delivery_info: sp.delivery_info,
+          }))
+        : [];
+      if (prices.length === 0 && v.base_price) {
+        return [
+          {
+            id: `v-${v.variant_id || "unknown"}`,
+            variant_id: v.variant_id,
+            store: "Base Price",
+            price: v.base_price,
+          },
+        ];
+      }
+      return prices;
+    });
+
+    const numericCandidates = [];
+    variants.forEach((v) => {
+      const base = extractNumericPrice(v.base_price);
+      if (base > 0) numericCandidates.push(base);
+      (v.store_prices || []).forEach((sp) => {
+        const p = extractNumericPrice(sp.price);
+        if (p > 0) numericCandidates.push(p);
+      });
+    });
+    const numericPrice = numericCandidates.length
+      ? Math.min(...numericCandidates)
+      : 0;
+
+    const screenSize = firstNonEmpty(
+      keySpecs.screen_size,
+      displayJson.screen_size,
+      variants[0]?.screen_size,
+    );
+    const resolution = firstNonEmpty(
+      keySpecs.resolution,
+      displayJson.resolution,
+    );
+    const refreshRate = firstNonEmpty(
+      keySpecs.refresh_rate,
+      displayJson.refresh_rate,
+    );
+    const panelType = firstNonEmpty(
+      keySpecs.panel_type,
+      displayJson.panel_type,
+    );
+    const operatingSystem = firstNonEmpty(
+      keySpecs.operating_system,
+      smartTvJson.operating_system,
+    );
+    const energyRating = firstNonEmpty(
+      powerJson.energy_rating,
+      keySpecs.energy_rating,
+    );
+
+    const features = [
+      ...(Array.isArray(keySpecs.hdr_support) ? keySpecs.hdr_support : []),
+      ...(Array.isArray(displayJson.gaming_features)
+        ? displayJson.gaming_features
+        : []),
+      ...(Array.isArray(audioJson.audio_features)
+        ? audioJson.audio_features
+        : []),
+      ...(Array.isArray(smartTvJson.supported_apps)
+        ? smartTvJson.supported_apps
+        : []),
+      ...(Array.isArray(gamingJson.extra_features)
+        ? gamingJson.extra_features
+        : []),
+    ]
+      .map((feature) => toDisplayText(feature))
+      .filter(Boolean);
+
+    const releaseYear =
+      apiDevice.release_year ||
+      basicInfo.launch_year ||
+      (apiDevice.created_at
+        ? new Date(apiDevice.created_at).getFullYear()
+        : null);
+
+    const applianceTypeRaw = firstNonEmpty(
+      apiDevice.appliance_type,
+      apiDevice.category,
+      apiDevice.product_type,
+      "television",
+    );
+    const applianceTypeDisplay = /tv|television/i.test(
+      String(applianceTypeRaw).toLowerCase(),
+    )
+      ? "Television"
+      : String(applianceTypeRaw)
+          .replace(/_/g, " ")
+          .replace(/\b\w/g, (l) => l.toUpperCase());
+
+    const capacity = extractCapacityValue(screenSize || "");
+    const numericEnergyRating = extractEnergyRating(String(energyRating || ""));
+    const dimensions = [
+      dimensionsJson.width,
+      dimensionsJson.height,
+      dimensionsJson.depth,
+    ]
+      .filter(Boolean)
+      .join(" x ");
+
+    const productName = firstNonEmpty(
+      apiDevice.product_name,
+      apiDevice.name,
+      basicInfo.title,
+      apiDevice.model,
+    );
+    const brandName = firstNonEmpty(
+      apiDevice.brand_name,
+      apiDevice.brand,
+      basicInfo.brand_name,
+      basicInfo.brand,
+    );
+
+    const sanitizedWarrantyDetails = sanitizeObjectForDisplay(warrantyJson);
+
+    return {
+      ...legacy,
+      ...apiDevice,
+      id: apiDevice.product_id || apiDevice.id || idx + 1,
+      productId: apiDevice.product_id || apiDevice.id || idx + 1,
+      productType: "home-appliance",
+      name: productName || "",
+      brand: brandName || "",
+      applianceType: /tv|television/i.test(
+        String(applianceTypeRaw).toLowerCase(),
+      )
+        ? "television"
+        : applianceTypeRaw,
+      applianceTypeDisplay,
+      model: firstNonEmpty(
+        apiDevice.model,
+        basicInfo.model_number,
+        apiDevice.model_number,
+      ),
+      price:
+        numericPrice > 0
+          ? `â‚¹${numericPrice.toLocaleString()}`
+          : "Price not available",
+      numericPrice,
+      image: images[0] || "",
+      images,
+      specs: {
+        type: firstNonEmpty(panelType, keySpecs.category, "Smart TV"),
+        capacity: screenSize || "",
+        energyRating: energyRating || "",
+        warranty: firstNonEmpty(
+          warrantyJson.product_warranty,
+          warrantyJson.product,
+          warrantyJson.warranty,
+        ),
+        screenSize: screenSize || "",
+        resolution: resolution || "",
+        displayType: panelType || "",
+        refreshRate: refreshRate || "",
+        operatingSystem: operatingSystem || "",
+        hdr:
+          (Array.isArray(keySpecs.hdr_support) &&
+            keySpecs.hdr_support.join(", ")) ||
+          (Array.isArray(displayJson.hdr_formats) &&
+            displayJson.hdr_formats.join(", ")) ||
+          "",
+        audioOutput: firstNonEmpty(
+          keySpecs.audio_output,
+          audioJson.output_power,
+        ),
+        hdmi: firstNonEmpty(portsJson.hdmi),
+        usb: firstNonEmpty(portsJson.usb),
+        wifi: firstNonEmpty(connectivityJson.wifi),
+        bluetooth: firstNonEmpty(connectivityJson.bluetooth),
+        dimensions: firstNonEmpty(dimensions),
+        weight: firstNonEmpty(dimensionsJson.weight),
+        color: firstNonEmpty(designJson.body_color, designJson.stand_color),
+      },
+      numericCapacity: capacity,
+      numericEnergyRating,
+      releaseYear,
+      launchDate: apiDevice.created_at || "",
+      storePrices,
+      variants,
+      features,
+      warrantyDetails: sanitizedWarrantyDetails,
+      country: firstNonEmpty(
+        warrantyJson.country_of_origin,
+        apiDevice.country_of_origin,
+      ),
+      applianceTypeIcon: getApplianceTypeIcon(applianceTypeRaw),
+      key_specs_json: keySpecs,
+      display_json: displayJson,
+      audio_json: audioJson,
+      smart_tv_json: smartTvJson,
+      connectivity_json: connectivityJson,
+      ports_json: portsJson,
+      power_json: powerJson,
+      dimensions_json: dimensionsJson,
+      design_json: designJson,
+      gaming_json: gamingJson,
+      warranty_json: warrantyJson,
+    };
+  };
+
   // Use Redux-provided home appliances (via `useDevice`) or fallback to mock
   const { homeAppliances, homeAppliancesLoading, setDevices } = useDevice();
 
@@ -384,7 +755,7 @@ const HomeAppliances = () => {
       ? homeAppliances
       : mockHomeAppliances;
 
-  const devices = sourceDevices.map((device, i) => mapApiToDevice(device, i));
+  const devices = sourceDevices.map((device, i) => mapTvApiToDevice(device, i));
 
   // Register normalized devices into global device store so Compare can see them
   useEffect(() => {
@@ -752,7 +1123,7 @@ const HomeAppliances = () => {
 
   // Price range
   const MIN_PRICE = 0;
-  const MAX_PRICE = 100000;
+  const MAX_PRICE = 500000;
 
   const [filters, setFilters] = useState({
     brand: [],
@@ -761,7 +1132,6 @@ const HomeAppliances = () => {
     energyRating: [],
     capacityRange: [],
     releaseYear: [],
-    rating: [],
 
     // Specific filters (will be populated based on appliance type)
     specific: {},
@@ -769,13 +1139,14 @@ const HomeAppliances = () => {
 
   const [sortBy, setSortBy] = useState("featured");
   const [searchQuery, setSearchQuery] = useState("");
+  const [brandFilterQuery, setBrandFilterQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
   const [compareItems, setCompareItems] = useState([]);
 
   // Set page title
   useTitle({
-    page: "appliances",
+    page: "tvs",
   });
 
   const navigate = useNavigate();
@@ -873,6 +1244,18 @@ const HomeAppliances = () => {
     );
   })();
 
+  const filteredBrandOptions = useMemo(() => {
+    const q = String(brandFilterQuery || "")
+      .trim()
+      .toLowerCase();
+    if (!q) return extractDynamicFilters.brands;
+    return extractDynamicFilters.brands.filter((brand) =>
+      String(brand || "")
+        .toLowerCase()
+        .includes(q),
+    );
+  }, [extractDynamicFilters.brands, brandFilterQuery]);
+
   const updatePriceRange = (newMin, newMax) => {
     let min = Number(newMin ?? filters.priceRange.min);
     let max = Number(newMax ?? filters.priceRange.max);
@@ -913,7 +1296,7 @@ const HomeAppliances = () => {
       if (value && value !== "featured") params.set("sort", value);
       else params.delete("sort");
       const qs = params.toString();
-      const path = `/appliances${qs ? `?${qs}` : ""}`;
+      const path = `/tvs${qs ? `?${qs}` : ""}`;
       navigate(path, { replace: true });
     } catch {
       // ignore
@@ -979,20 +1362,6 @@ const HomeAppliances = () => {
     if (filters.releaseYear.length > 0) {
       const year = device.releaseYear || 0;
       if (!filters.releaseYear.includes(String(year))) return false;
-    }
-
-    // Rating filter
-    if (filters.rating.length > 0) {
-      const rating = device.rating || 0;
-      if (
-        !filters.rating.some((r) => {
-          if (r === "4.5+") return rating >= 4.5;
-          if (r === "4.0+") return rating >= 4.0;
-          if (r === "3.5+") return rating >= 3.5;
-          return true;
-        })
-      )
-        return false;
     }
 
     // Specific filters (only if appliance type matches)
@@ -1064,8 +1433,6 @@ const HomeAppliances = () => {
         return a.numericPrice - b.numericPrice;
       case "price-high":
         return b.numericPrice - a.numericPrice;
-      case "rating":
-        return b.rating - a.rating;
       case "newest":
         return new Date(b.launchDate) - new Date(a.launchDate);
       case "capacity":
@@ -1085,10 +1452,10 @@ const HomeAppliances = () => {
       energyRating: [],
       capacityRange: [],
       releaseYear: [],
-      rating: [],
       specific: {},
     });
     setSearchQuery("");
+    setBrandFilterQuery("");
     try {
       const params = new URLSearchParams(search);
       params.delete("brand");
@@ -1101,7 +1468,7 @@ const HomeAppliances = () => {
         params.delete("sort");
       }
       const qs = params.toString();
-      const path = `/appliances${qs ? `?${qs}` : ""}`;
+      const path = `/tvs${qs ? `?${qs}` : ""}`;
       navigate(path, { replace: true });
     } catch {}
   };
@@ -1117,7 +1484,6 @@ const HomeAppliances = () => {
       count += filters.capacityRange.length;
     if (filters.releaseYear && filters.releaseYear.length)
       count += filters.releaseYear.length;
-    if (filters.rating && filters.rating.length) count += filters.rating.length;
 
     // Count specific filters
     if (filters.specific) {
@@ -1137,19 +1503,33 @@ const HomeAppliances = () => {
   const handleView = (device, e, store) => {
     if (e && e.stopPropagation) e.stopPropagation();
     const params = new URLSearchParams();
-    params.set("id", device.id);
+    const productId =
+      device.productId ?? device.product_id ?? device.id ?? device.model ?? "";
+    if (productId !== null && productId !== undefined && productId !== "") {
+      params.set("id", String(productId));
+    }
     params.set("type", "home-appliance");
-    if (device.variant?.variant_id) {
-      params.set("variantId", String(device.variant.variant_id));
+    const variantId =
+      device.variant?.variant_id ??
+      device.variant?.id ??
+      device.variant?.variant_key ??
+      null;
+    if (variantId) {
+      params.set("variantId", String(variantId));
     }
     if (store?.store) {
       params.set("store", String(store.store));
     }
 
     // Generate SEO-friendly slug-based URL
-    const slug = generateSlug(
-      device.name || device.model || device.brand || String(device.id),
-    );
+    const slug =
+      generateSlug(
+        device.name ||
+          device.product_name ||
+          device.model ||
+          device.brand ||
+          String(productId || ""),
+      ) || `tv-${String(productId || "detail")}`;
     const qs = params.toString();
 
     // record a product view for trending metrics
@@ -1162,13 +1542,16 @@ const HomeAppliances = () => {
         null;
       const pid = Number(rawPid);
       if (Number.isInteger(pid) && pid > 0) {
-        fetch(`https://api.apisphere.in/api/public/product/${pid}/view`, {
+        fetch(`http://localhost:500/api/public/product/${pid}/view`, {
           method: "POST",
         }).catch(() => {});
       }
     } catch {}
 
-    navigate(`/appliances/${slug}${qs ? `?${qs}` : ""}`);
+    navigate({
+      pathname: `/tvs/${slug}`,
+      search: qs ? `?${qs}` : "",
+    });
   };
 
   const handleCompareToggle = (device, e) => {
@@ -1210,6 +1593,37 @@ const HomeAppliances = () => {
     });
   };
 
+  const currentYear = new Date().getFullYear();
+  const sanitizeDescription = (desc = "") => {
+    const text = String(desc || "")
+      .replace(/<[^>]*>/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    return text.length > 180 ? `${text.slice(0, 177)}...` : text;
+  };
+
+  let seoTitle = `Best TVs ${currentYear} - Compare Smart TVs, Prices & Specs | Hook`;
+  let seoDescription =
+    "Browse the latest TVs with detailed display, audio, smart features, and price comparisons on Hook.";
+
+  if (filter === "trending") {
+    seoTitle = `Trending TVs ${currentYear} - Most Popular Smart TVs & Prices | Hook`;
+    seoDescription =
+      "Explore trending TVs with rising demand, key specifications, and latest prices to find the right smart TV on Hook.";
+  } else if (filter === "new") {
+    seoTitle = `Latest TVs ${currentYear} - New Smart TV Launches & Prices | Hook`;
+    seoDescription =
+      "Discover newly launched TVs with updated specifications, panel details, refresh rates, and best store prices on Hook.";
+  }
+
+  if (currentBrandObj) {
+    seoTitle = `${currentBrandObj.name} TVs ${currentYear} - Models, Prices & Specs | Hook`;
+    seoDescription = sanitizeDescription(
+      currentBrandObj.description ||
+        `Compare ${currentBrandObj.name} TVs with detailed specifications, latest prices, and top store offers on Hook.`,
+    );
+  }
+
   // Get appliance type icon component
   const ApplianceTypeIcon = ({ applianceType }) => {
     const IconComponent = getApplianceTypeIcon(applianceType);
@@ -1219,26 +1633,14 @@ const HomeAppliances = () => {
   return (
     <div className="min-h-screen  ">
       <style>{animationStyles}</style>
-      {currentBrandObj ? (
-        <Helmet>
-          <title>{`${currentBrandObj.name} Home Appliances - SmartArena`}</title>
-          <meta
-            name="description"
-            content={
-              currentBrandObj.description ||
-              `Explore ${currentBrandObj.name} home appliances, models, prices and reviews on SmartArena.`
-            }
-          />
-        </Helmet>
-      ) : (
-        <Helmet>
-          <title>Home Appliances - SmartArena</title>
-          <meta
-            name="description"
-            content={`Find top home appliances, specs and best deals on SmartArena.`}
-          />
-        </Helmet>
-      )}
+      <Helmet>
+        <title>{seoTitle}</title>
+        <meta name="description" content={seoDescription} />
+        <meta property="og:title" content={seoTitle} />
+        <meta property="og:description" content={seoDescription} />
+        <meta name="twitter:title" content={seoTitle} />
+        <meta name="twitter:description" content={seoDescription} />
+      </Helmet>
       {/* Main Content */}
       <div className="max-w-6xl mx-auto p-4 sm:p-6 md:p-8 lg:p-10 bg-white">
         {/* Hero Section - Professional Styling */}
@@ -1247,7 +1649,7 @@ const HomeAppliances = () => {
           <div className="inline-flex items-center gap-2 bg-purple-50 backdrop-blur-sm px-3 py-1.5 rounded-full border border-purple-100 mb-4 sm:mb-6">
             <FaHome className="text-purple-600 text-sm" />
             <span className="text-xs sm:text-sm font-semibold text-purple-800">
-              SMART LIVING
+              SMART TVS
             </span>
           </div>
 
@@ -1255,16 +1657,15 @@ const HomeAppliances = () => {
           <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold mb-3 sm:mb-4 lg:mb-6 leading-tight">
             Explore Premium{" "}
             <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-              Home Appliances
+              TVs
             </span>
           </h1>
 
           {/* Subtitle */}
           <h4 className="text-base sm:text-lg lg:text-xl mb-6 sm:mb-8 text-gray-700 leading-relaxed max-w-3xl">
-            Discover smart living solutions with washing machines,
-            refrigerators, air conditioners, televisions, and more. Compare
-            specifications and energy ratings to find the perfect appliances for
-            your home.
+            Discover the latest televisions with detailed display, audio, smart
+            features and gaming readiness. Compare specifications and find the
+            right TV for your home.
           </h4>
         </div>
         {/* Control Bar */}
@@ -1278,16 +1679,10 @@ const HomeAppliances = () => {
                 </div>
                 <input
                   type="text"
-                  placeholder="Search washing machines, refrigerators, ACs, TVs..."
+                  placeholder="Search TVs by brand, model, display, or features..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 rounded-xl
-             bg-gradient-to-br from-purple-600 to-blue-600
-             text-gray-700 placeholder:text-gray-400
-             focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent
-             text-sm sm:text-base
-             disabled:opacity-50 disabled:cursor-not-allowed
-"
+                  className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-300 text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
             </div>
@@ -1306,7 +1701,6 @@ const HomeAppliances = () => {
                   <option value="featured">Featured</option>
                   <option value="price-low">Price: Low to High</option>
                   <option value="price-high">Price: High to Low</option>
-                  <option value="rating">Highest Rated</option>
                   <option value="newest">Newest First</option>
                   <option value="capacity">Highest Capacity</option>
                   <option value="energy">Best Energy Rating</option>
@@ -1340,7 +1734,7 @@ const HomeAppliances = () => {
               <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-purple-500 group-focus-within:text-purple-600 transition-colors duration-200" />
               <input
                 type="text"
-                placeholder="Search home appliances..."
+                placeholder="Search TVs..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full h-12 pl-12 pr-4 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-100 focus:border-purple-500 text-gray-700 transition-all duration-200 placeholder:text-gray-400"
@@ -1400,11 +1794,11 @@ const HomeAppliances = () => {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-lg font-semibold text-gray-900">
-                Available Home Appliances
+                Available TVs
               </h2>
               <p className="text-sm text-gray-600 mt-1">
-                Browse through our collection of home appliances with detailed
-                specifications and energy ratings
+                Browse through our TV collection with detailed specs, variants,
+                and latest pricing
               </p>
             </div>
             <div className="hidden lg:block text-sm text-gray-500">
@@ -1424,7 +1818,7 @@ const HomeAppliances = () => {
                     Refine Search
                   </h3>
                   <p className="text-sm text-gray-500 mt-1">
-                    Narrow down appliances by specifications
+                    Narrow down TVs by specifications
                   </p>
                 </div>
                 {getActiveFiltersCount() > 0 && (
@@ -1450,7 +1844,7 @@ const HomeAppliances = () => {
                     </span>
                   </div>
                   <p className="text-xs text-purple-600">
-                    Refine further or clear to see all appliances
+                    Refine further or clear to see all TVs
                   </p>
                 </div>
               )}
@@ -1466,7 +1860,7 @@ const HomeAppliances = () => {
                     {filters.priceRange.max?.toLocaleString()}
                   </span>
                 </div>
-                <div className="bg-gradient-to-b from-purple-600 to-white rounded-xl p-4 border border-gray-200">
+                <div className="bg-gradient-to-r from-purple-50 via-blue-50 to-white rounded-xl p-4 border border-gray-200">
                   <div className="flex justify-between text-sm font-medium text-gray-700 mb-4">
                     <div className="text-center">
                       <div className="text-xs text-gray-500">Minimum</div>
@@ -1486,7 +1880,7 @@ const HomeAppliances = () => {
                   <div className="relative mb-8">
                     <div className="absolute h-2 bg-gray-200 rounded-full w-full top-1/2 transform -translate-y-1/2"></div>
                     <div
-                      className="absolute h-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full top-1/2 transform -translate-y-1/2"
+                      className="absolute h-2 bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 rounded-full top-1/2 transform -translate-y-1/2"
                       style={{
                         left: `${Math.max(
                           0,
@@ -1605,8 +1999,18 @@ const HomeAppliances = () => {
                     {filters.brand.length} selected
                   </span>
                 </div>
+                <div className="relative mb-3">
+                  <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+                  <input
+                    type="text"
+                    value={brandFilterQuery}
+                    onChange={(e) => setBrandFilterQuery(e.target.value)}
+                    placeholder="Search brand..."
+                    className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
                 <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-                  {extractDynamicFilters.brands.map((brand) => (
+                  {filteredBrandOptions.map((brand) => (
                     <label
                       key={brand}
                       className="flex items-center gap-3 cursor-pointer group hover:bg-gray-50 px-3 py-2.5 rounded-lg transition-all duration-200 border border-transparent hover:border-gray-200"
@@ -1625,6 +2029,11 @@ const HomeAppliances = () => {
                       </div>
                     </label>
                   ))}
+                  {filteredBrandOptions.length === 0 && (
+                    <div className="text-sm text-gray-500 px-2 py-1">
+                      No brands found
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1763,20 +2172,37 @@ const HomeAppliances = () => {
             {/* Results Summary */}
 
             {/* Products Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6 lg:w-10/12 auto-rows-fr">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6 auto-rows-fr md:[&>*:nth-child(2n)]:border-l md:[&>*:nth-child(2n)]:border-gray-200 md:[&>*:nth-child(2n)]:pl-6 md:[&>*:nth-child(2n+1)]:pr-6">
               {sortedVariants.map((device, idx) => (
                 <div
                   key={`${device.id}-${idx}`}
                   onClick={(e) => handleView(device, e)}
-                  className="h-full transition-all duration-300 overflow-hidden rounded-md cursor-pointer hover:shadow-lg hover:scale-105"
+                  className="h-full overflow-hidden rounded-md cursor-pointer"
                 >
                   <div className="p-3 sm:p-4 md:p-5 lg:p-6 pt-4 sm:pt-5 md:pt-6">
                     {/* Top Row: Image and Basic Info */}
-                    <div className="flex gap-3 sm:gap-4">
+                    <div className="flex flex-col xl:flex-row gap-3 sm:gap-4">
                       {/* Product Image - Fixed container */}
-                      <div className="flex-shrink-0 w-52 h-52 bg-gray-50 rounded-lg overflow-hidden">
+                      <div className="relative flex-shrink-0 w-full h-44 xl:w-44 xl:h-44 bg-gray-50 rounded-lg overflow-hidden">
                         <div className="w-full h-full flex items-center justify-center">
                           <ImageCarousel images={device.images} />
+                        </div>
+                        {/* Compare Checkbox Overlay - Top Right */}
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          className="absolute top-2 right-2 z-10 rounded-md transition-all duration-200 cursor-pointer hover:bg-gray-50"
+                          title="Add to compare"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isCompareSelected(device)}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              handleCompareToggle(device, e);
+                            }}
+                            className="w-3 h-3 m-1 accent-purple-600 cursor-pointer"
+                          />
                         </div>
                       </div>
 
@@ -1786,101 +2212,58 @@ const HomeAppliances = () => {
                         <div className="flex items-start justify-between mb-2">
                           <div>
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs font-bold text-blue-600  rounded-full">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700">
                                 {device.brand}
                               </span>
                             </div>
-                            <h5 className="font-bold text-gray-900 text-sm ">
-                              {(() => {
-                                const name = device.name || device.model || "";
-                                const capacity = String(
-                                  device.specs?.capacity || "",
-                                ).trim();
-                                const type = String(
-                                  device.specs?.type || "",
-                                ).trim();
-                                const energyRating = String(
-                                  device.specs?.energyRating || "",
-                                ).trim();
-
-                                const parts = [name];
-
-                                const capacityTypeEnergy = [
-                                  capacity,
-                                  type,
-                                  energyRating,
-                                ]
-                                  .filter(Boolean)
-                                  .join(" / ");
-                                if (capacityTypeEnergy)
-                                  parts.push(capacityTypeEnergy);
-
-                                return parts.filter(Boolean).join(" | ");
-                              })()}
+                            <h5 className="font-bold text-gray-900 text-base leading-6 break-words">
+                              {device.name || device.model || "TV"}
                             </h5>
+                            {(() => {
+                              const screenSize = String(
+                                device.specs?.screenSize ||
+                                  device.specs?.capacity ||
+                                  "",
+                              ).trim();
+                              const resolution = String(
+                                device.specs?.resolution || "",
+                              ).trim();
+                              const refreshRate = String(
+                                device.specs?.refreshRate || "",
+                              ).trim();
+                              const tvIdentity = [
+                                screenSize,
+                                resolution,
+                                refreshRate,
+                              ]
+                                .filter(Boolean)
+                                .join(" / ");
+
+                              if (!tvIdentity) return null;
+                              return (
+                                <p className="text-sm text-gray-600 leading-5 break-words mt-1">
+                                  {tvIdentity}
+                                </p>
+                              );
+                            })()}
                           </div>
                         </div>
 
-                        {/* Price and Rating */}
+                        {/* Price */}
                         <div className="mb-3">
                           <div className="flex items-center justify-between">
                             <div className="text-lg font-bold text-green-600">
                               {device.price}
                             </div>
-                            {device.rating > 0 && (
-                              <div className="flex items-center gap-1">
-                                <FaStar className="text-yellow-500 text-sm" />
-                                <span className="font-bold text-gray-900 text-sm">
-                                  {device.rating}
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                  ({device.reviews})
-                                </span>
-                              </div>
-                            )}
                           </div>
                         </div>
 
                         {/* Key Specs Badges */}
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          {device.specs.capacity && (
-                            <div className="flex items-center gap-1 text-xs bg-gray-50 px-2 py-1 rounded">
-                              <FaRuler className="text-gray-500" />
-                              <span className="font-medium text-gray-700">
-                                {device.specs.capacity}
-                              </span>
-                            </div>
-                          )}
-                          {device.specs.type && (
-                            <div className="flex items-center gap-1 text-xs bg-gray-50 px-2 py-1 rounded">
-                              <FaCog className="text-gray-500" />
-                              <span className="font-medium text-gray-700">
-                                {device.specs.type}
-                              </span>
-                            </div>
-                          )}
-                          {device.releaseYear && (
-                            <div className="flex items-center gap-1 text-xs bg-gray-50 px-2 py-1 rounded">
-                              <FaCalendarAlt className="text-gray-500" />
-                              <span className="font-medium text-gray-700">
-                                {device.releaseYear}
-                              </span>
-                            </div>
-                          )}
-                          {device.warrantyDetails.product && (
-                            <div className="flex items-center gap-1 text-xs bg-gray-50 px-2 py-1 rounded">
-                              <FaInfoCircle className="text-gray-500" />
-                              <span className="font-medium text-gray-700">
-                                {device.warrantyDetails.product} Warranty
-                              </span>
-                            </div>
-                          )}
-                        </div>
                       </div>
                     </div>
 
                     {/* Expanded Details */}
-                    <div className="mt-3 sm:mt-4 md:mt-5 pt-3 sm:pt-4 md:pt-5 border-t border-indigo-100">
+                    <div className="mt-3 sm:mt-4 md:mt-5 pt-3 sm:pt-4 md:pt-5">
                       {/* Detailed Specifications */}
                       <div className="mb-3 sm:mb-4 md:mb-5">
                         <h4 className="font-bold text-gray-900 text-sm mb-3 flex items-center gap-2">
@@ -1888,28 +2271,27 @@ const HomeAppliances = () => {
                           Key Specs
                         </h4>
                         <div className="grid grid-cols-2 gap-3">
-                          {/* Dynamic specs based on appliance type */}
-                          {device.specs.capacity && (
+                          {device.specs.screenSize && (
                             <div className="text-xs">
-                              <div className="text-gray-500">Capacity</div>
+                              <div className="text-gray-500">Screen Size</div>
                               <div className="font-medium text-gray-900">
-                                {device.specs.capacity}
+                                {device.specs.screenSize}
                               </div>
                             </div>
                           )}
-                          {device.specs.type && (
+                          {device.specs.resolution && (
                             <div className="text-xs">
-                              <div className="text-gray-500">Type</div>
+                              <div className="text-gray-500">Resolution</div>
                               <div className="font-medium text-gray-900">
-                                {device.specs.type}
+                                {device.specs.resolution}
                               </div>
                             </div>
                           )}
-                          {device.specs.energyRating && (
+                          {device.specs.refreshRate && (
                             <div className="text-xs">
-                              <div className="text-gray-500">Energy Rating</div>
+                              <div className="text-gray-500">Refresh Rate</div>
                               <div className="font-medium text-gray-900">
-                                {device.specs.energyRating}
+                                {device.specs.refreshRate}
                               </div>
                             </div>
                           )}
@@ -1921,98 +2303,62 @@ const HomeAppliances = () => {
                               </div>
                             </div>
                           )}
-                          {device.specs.motor && (
+                          {device.specs.displayType && (
                             <div className="text-xs">
-                              <div className="text-gray-500">Motor</div>
+                              <div className="text-gray-500">Panel Type</div>
                               <div className="font-medium text-gray-900">
-                                {device.specs.motor}
+                                {device.specs.displayType}
                               </div>
                             </div>
                           )}
-                          {device.specs.waterConsumption && (
+                          {device.specs.audioOutput && (
                             <div className="text-xs">
-                              <div className="text-gray-500">
-                                Water Consumption
-                              </div>
+                              <div className="text-gray-500">Audio Output</div>
                               <div className="font-medium text-gray-900">
-                                {device.specs.waterConsumption}
+                                {device.specs.audioOutput}
+                              </div>
+                            </div>
+                          )}
+                          {device.specs.energyRating && (
+                            <div className="text-xs">
+                              <div className="text-gray-500">Energy Rating</div>
+                              <div className="font-medium text-gray-900">
+                                {device.specs.energyRating}
+                              </div>
+                            </div>
+                          )}
+                          {device.specs.hdmi && (
+                            <div className="text-xs">
+                              <div className="text-gray-500">HDMI Ports</div>
+                              <div className="font-medium text-gray-900">
+                                {device.specs.hdmi}
                               </div>
                             </div>
                           )}
                         </div>
                       </div>
 
-                      {/* Features */}
-                      {device.features && device.features.length > 0 && (
-                        <div className="mb-4">
-                          <h4 className="font-semibold text-gray-900 text-sm mb-2 flex items-center gap-2">
-                            <FaBolt className="text-amber-500" />
-                            Key Features
-                          </h4>
-                          <div className="flex flex-wrap gap-2">
-                            {device.features.slice(0, 4).map((feature, i) => (
-                              <span
-                                key={i}
-                                className="text-xs bg-amber-50 text-amber-700 px-2 py-1 rounded"
-                              >
-                                {feature}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Warranty Details */}
-                      {Object.keys(device.warrantyDetails).length > 0 && (
-                        <div className="mb-4">
-                          <h4 className="font-semibold text-gray-900 text-sm mb-2 flex items-center gap-2">
-                            <FaInfoCircle className="text-green-500" />
-                            Warranty
-                          </h4>
-                          <div className="flex flex-wrap gap-2">
-                            {Object.entries(device.warrantyDetails).map(
-                              ([key, value]) => (
-                                <span
-                                  key={key}
-                                  className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded"
-                                >
-                                  {key}: {value}
-                                </span>
-                              ),
-                            )}
-                          </div>
-                        </div>
-                      )}
-
                       {/* Store Availability */}
                       {device.storePrices && device.storePrices.length > 0 && (
                         <div className="mb-4">
-                          <div className="flex items-center justify-between gap-2 mb-3">
+                          <div className="flex items-center gap-2 mb-3">
                             <h4 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
                               <FaStore className="text-green-500" />
-                              Available At
+                              Store Prices
                             </h4>
-                            <button
-                              onClick={(e) => handleCompareToggle(device, e)}
-                              className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-base font-bold transition-all duration-300 ${
-                                isCompareSelected(device)
-                                  ? "bg-purple-600 text-white shadow-lg"
-                                  : "bg-white border-2 border-purple-600 text-purple-600 hover:bg-purple-50 shadow-md"
-                              }`}
-                              title="Add to compare"
-                            >
-                              +
-                            </button>
                           </div>
                           <div className="space-y-2">
                             {device.storePrices
                               .slice(0, 3)
                               .map((storePrice, i) => {
-                                const logoSrc = getLogo(storePrice.store);
+                                const rawLogoSrc = getLogo(storePrice.store);
+                                const logoSrc = isLikelyImageSrc(rawLogoSrc)
+                                  ? rawLogoSrc
+                                  : "";
                                 return (
                                   <div
                                     key={`${device.id}-store-${i}`}
-                                    className="flex items-center justify-between text-sm bg-gradient-to-br from-purple-600 to-blue-600 px-3 py-2 rounded-lg"
+                                    className="flex items-center justify-between text-sm bg-gray-50 px-3 py-2 rounded-lg border border-gray-100"
                                   >
                                     <div className="flex items-center gap-2">
                                       {logoSrc ? (
@@ -2055,27 +2401,6 @@ const HomeAppliances = () => {
                         </div>
                       )}
                     </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-2 mt-4 items-center">
-                      <button
-                        onClick={(e) => handleCompareToggle(device, e)}
-                        className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 ${
-                          isCompareSelected(device)
-                            ? "bg-purple-600 text-white"
-                            : "border-2 border-purple-600 text-purple-600 hover:bg-purple-50"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isCompareSelected(device)}
-                          onChange={(e) => handleCompareToggle(device, e)}
-                          className="cursor-pointer"
-                        />
-                        <span className="hidden sm:inline">Compare</span>
-                      </button>
-                      <div className="flex-1"></div>
-                    </div>
                   </div>
                 </div>
               ))}
@@ -2083,11 +2408,11 @@ const HomeAppliances = () => {
 
             {/* No Results State */}
             {sortedVariants.length === 0 && (
-              <div className="text-center py-16 bg-gradient-to-b from-white to-blue-600 border border-purple-200 rounded-xl  ">
+              <div className="text-center py-16 bg-white border border-gray-200 rounded-xl">
                 <div className="max-w-md mx-auto">
                   <FaSearch className="text-gray-300 text-5xl mx-auto mb-4" />
                   <h3 className="text-2xl font-semibold text-gray-900 mb-3">
-                    No home appliances found
+                    No TVs found
                   </h3>
                   <p className="text-gray-600 mb-6">
                     Try adjusting your filters or search terms to find what
@@ -2097,7 +2422,7 @@ const HomeAppliances = () => {
                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
                     <button
                       onClick={clearFilters}
-                      className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-purple-600 hover:to-blue-600 transition-all duration-200  "
+                      className="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-all duration-200"
                     >
                       Clear All Filters
                     </button>
@@ -2169,7 +2494,7 @@ const HomeAppliances = () => {
                       Sort Options
                     </h3>
                     <p className="text-sm text-gray-500">
-                      Arrange home appliances by preference
+                      Arrange TVs by preference
                     </p>
                   </div>
                 </div>
@@ -2185,8 +2510,8 @@ const HomeAppliances = () => {
                 {[
                   {
                     value: "featured",
-                    label: "Featured Appliances",
-                    desc: "Curated selection of popular models",
+                    label: "Featured TVs",
+                    desc: "Curated selection of popular TV models",
                   },
                   {
                     value: "price-low",
@@ -2196,12 +2521,7 @@ const HomeAppliances = () => {
                   {
                     value: "price-high",
                     label: "Price: High to Low",
-                    desc: "Premium appliances first",
-                  },
-                  {
-                    value: "rating",
-                    label: "Top Rated",
-                    desc: "Highest user ratings",
+                    desc: "Premium TVs first",
                   },
                   {
                     value: "newest",
@@ -2255,7 +2575,7 @@ const HomeAppliances = () => {
                       Refine Search
                     </h3>
                     <p className="text-sm text-gray-500">
-                      Filter home appliances by specifications
+                      Filter TVs by specifications
                     </p>
                   </div>
                 </div>
@@ -2279,11 +2599,11 @@ const HomeAppliances = () => {
                       {filters.priceRange.max?.toLocaleString()}
                     </span>
                   </div>
-                  <div className="bg-gradient-to-b from-purple-600 to-white rounded-xl p-4 border border-gray-200">
+                  <div className="bg-gradient-to-r from-purple-50 via-blue-50 to-white rounded-xl p-4 border border-gray-200">
                     <div className="relative mb-4">
                       <div className="absolute h-2 bg-gray-200 rounded-full w-full top-1/2 transform -translate-y-1/2"></div>
                       <div
-                        className="absolute h-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full top-1/2 transform -translate-y-1/2"
+                        className="absolute h-2 bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 rounded-full top-1/2 transform -translate-y-1/2"
                         style={{
                           left: `${Math.max(
                             0,
@@ -2385,8 +2705,18 @@ const HomeAppliances = () => {
                   <h4 className="font-semibold text-gray-900 text-lg mb-3">
                     Brand
                   </h4>
+                  <div className="relative mb-3">
+                    <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+                    <input
+                      type="text"
+                      value={brandFilterQuery}
+                      onChange={(e) => setBrandFilterQuery(e.target.value)}
+                      placeholder="Search brand..."
+                      className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
                   <div className="grid grid-cols-2 gap-2">
-                    {extractDynamicFilters.brands.map((brand) => (
+                    {filteredBrandOptions.map((brand) => (
                       <label
                         key={brand}
                         className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium text-sm ${
@@ -2405,6 +2735,11 @@ const HomeAppliances = () => {
                       </label>
                     ))}
                   </div>
+                  {filteredBrandOptions.length === 0 && (
+                    <div className="text-sm text-gray-500 mt-2">
+                      No brands found
+                    </div>
+                  )}
                 </div>
 
                 {/* Energy Rating */}
@@ -2508,24 +2843,23 @@ const HomeAppliances = () => {
       </div>
 
       {/* Help Section */}
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="bg-gradient-to-r from-purple-200 to-blue-200 rounded-2xl p-6 lg:p-8">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
             <div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">
-                Need help choosing home appliances?
+                Need help choosing?
               </h3>
               <p className="text-gray-600 mb-4 lg:mb-0">
-                Use our comparison tool to side-by-side compare washing
-                machines, refrigerators, air conditioners, and televisions based
-                on capacity, energy rating, and features.
+                Use our comparison tool to side-by-side compare TV models by
+                screen size, panel, refresh rate, smart features, and price.
               </p>
             </div>
             <button
               onClick={() => navigate("/compare")}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-purple-600 hover:to-blue-600 transition-all duration-200 shadow-lg whitespace-nowrap"
+              className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-6 py-3 rounded-xl font-semibold hover:from-purple-600 hover:to-blue-600 transition-all duration-200 whitespace-nowrap"
             >
-              Compare Appliances
+              Open Comparison Tool
             </button>
           </div>
         </div>
@@ -2534,6 +2868,4 @@ const HomeAppliances = () => {
   );
 };
 
-export default HomeAppliances;
-
-
+export default TVs;
