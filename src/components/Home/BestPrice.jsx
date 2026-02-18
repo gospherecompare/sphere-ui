@@ -397,7 +397,7 @@ const TrendingSection = () => {
       const endpoint = getCategoryEndpoint(activeCategory);
 
       try {
-        const r = await fetch(`http://localhost:5000${endpoint}`);
+        const r = await fetch(`https://api.apisphere.in${endpoint}`);
         if (!r.ok) throw new Error("Failed to fetch trending");
         const json = await r.json();
         if (cancelled) return;
@@ -556,8 +556,7 @@ const TrendingSection = () => {
           </h2>
         </div>
         <p className="text-sm text-gray-600">
-          Explore trending smartphones, laptops, TVs, and networking
-          devices
+          Explore trending smartphones, laptops, TVs, and networking devices
         </p>
       </div>
 

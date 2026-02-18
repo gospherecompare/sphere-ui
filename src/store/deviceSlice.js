@@ -206,7 +206,7 @@ export const fetchSmartphones = createAsyncThunk(
   // Accept an optional options object: { feature }
   async (opts = {}, { rejectWithValue }) => {
     try {
-      const res = await fetch("http://localhost:5000/api/smartphones");
+      const res = await fetch("https://api.apisphere.in/api/smartphones");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
@@ -283,7 +283,7 @@ export const fetchTrendingSmartphones = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const res = await fetch(
-        "http://localhost:5000/api/public/trending/smartphones",
+        "https://api.apisphere.in/api/public/trending/smartphones",
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
@@ -351,7 +351,7 @@ export const fetchNewLaunchSmartphones = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const res = await fetch(
-        "http://localhost:5000/api/public/new/smartphones",
+        "https://api.apisphere.in/api/public/new/smartphones",
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
@@ -416,7 +416,7 @@ export const fetchNetworking = createAsyncThunk(
   "device/fetchNetworking",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch("http://localhost:5000/api/networking");
+      const res = await fetch("https://api.apisphere.in/api/networking");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
       const arr = Array.isArray(body)
@@ -441,7 +441,7 @@ export const fetchTrendingNetworking = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const res = await fetch(
-        "http://localhost:5000/api/public/trending/networking",
+        "https://api.apisphere.in/api/public/trending/networking",
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
@@ -467,7 +467,7 @@ export const fetchNewLaunchNetworking = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const res = await fetch(
-        "http://localhost:5000/api/public/new/networking",
+        "https://api.apisphere.in/api/public/new/networking",
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
@@ -491,7 +491,7 @@ export const fetchLaptops = createAsyncThunk(
   "device/fetchLaptops",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch("http://localhost:5000/api/laptops");
+      const res = await fetch("https://api.apisphere.in/api/laptops");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
       const arr = Array.isArray(body)
@@ -537,18 +537,18 @@ export const fetchLaptops = createAsyncThunk(
             ? item.images
             : Array.isArray(metadata.images)
               ? metadata.images
-            : Array.isArray(sections.images_json)
-              ? sections.images_json
-              : [];
+              : Array.isArray(sections.images_json)
+                ? sections.images_json
+                : [];
 
         const variants =
           Array.isArray(item.variants) && item.variants.length > 0
             ? item.variants
             : Array.isArray(metadata.variants)
               ? metadata.variants
-            : Array.isArray(sections.variants_json)
-              ? sections.variants_json
-              : [];
+              : Array.isArray(sections.variants_json)
+                ? sections.variants_json
+                : [];
 
         const pickFirstObject = (...values) => {
           for (const v of values) {
@@ -560,7 +560,8 @@ export const fetchLaptops = createAsyncThunk(
 
         const name =
           item.name || basicInfo.product_name || basicInfo.title || null;
-        const brandName = item.brand_name || basicInfo.brand_name || basicInfo.brand || null;
+        const brandName =
+          item.brand_name || basicInfo.brand_name || basicInfo.brand || null;
         const productType =
           item.product_type || basicInfo.product_type || "laptop";
         const model = item.model || basicInfo.model || null;
@@ -571,7 +572,10 @@ export const fetchLaptops = createAsyncThunk(
           : toArray(basicInfo.colors);
 
         const cpu = pickFirstObject(item.cpu, performance);
-        const connectivity = pickFirstObject(item.connectivity, metadataConnectivity);
+        const connectivity = pickFirstObject(
+          item.connectivity,
+          metadataConnectivity,
+        );
         const warranty = pickFirstObject(item.warranty, metadataWarranty);
         const features = Array.isArray(item.features)
           ? item.features
@@ -617,7 +621,7 @@ export const fetchTrendingLaptops = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const res = await fetch(
-        "http://localhost:5000/api/public/trending/laptops",
+        "https://api.apisphere.in/api/public/trending/laptops",
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
@@ -625,13 +629,13 @@ export const fetchTrendingLaptops = createAsyncThunk(
         ? body
         : Array.isArray(body.trending)
           ? body.trending
-        : Array.isArray(body.laptops)
-          ? body.laptops
-          : Array.isArray(body.data)
-            ? body.data
-            : Array.isArray(body.rows)
-              ? body.rows
-              : [];
+          : Array.isArray(body.laptops)
+            ? body.laptops
+            : Array.isArray(body.data)
+              ? body.data
+              : Array.isArray(body.rows)
+                ? body.rows
+                : [];
       return arr;
     } catch (err) {
       return rejectWithValue(err.message || String(err));
@@ -644,7 +648,9 @@ export const fetchNewLaunchLaptops = createAsyncThunk(
   "device/fetchNewLaunchLaptops",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch("http://localhost:5000/api/public/new/laptops");
+      const res = await fetch(
+        "https://api.apisphere.in/api/public/new/laptops",
+      );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
       const arr = Array.isArray(body)
@@ -667,7 +673,7 @@ export const fetchHomeAppliances = createAsyncThunk(
   "device/fetchHomeAppliances",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch("http://localhost:5000/api/tvs");
+      const res = await fetch("https://api.apisphere.in/api/tvs");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
       const arr = Array.isArray(body)
@@ -691,7 +697,9 @@ export const fetchTrendingHomeAppliances = createAsyncThunk(
   "device/fetchTrendingHomeAppliances",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch("http://localhost:5000/api/public/trending/tvs");
+      const res = await fetch(
+        "https://api.apisphere.in/api/public/trending/tvs",
+      );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
       const arr = Array.isArray(body)
@@ -715,7 +723,7 @@ export const fetchNewLaunchHomeAppliances = createAsyncThunk(
   "device/fetchNewLaunchHomeAppliances",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch("http://localhost:5000/api/public/new/tvs");
+      const res = await fetch("https://api.apisphere.in/api/public/new/tvs");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
       const arr = Array.isArray(body)
@@ -738,7 +746,7 @@ export const fetchBrands = createAsyncThunk(
   "device/fetchBrands",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch("http://localhost:5000/api/brand");
+      const res = await fetch("https://api.apisphere.in/api/brand");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const arr = Array.isArray(data)
@@ -837,7 +845,7 @@ export const fetchCategories = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       // Use the public categories endpoint (no auth) to avoid 401 on public site
-      const res = await fetch("http://localhost:5000/api/category", {
+      const res = await fetch("https://api.apisphere.in/api/category", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -909,7 +917,7 @@ export const fetchSmartphone = createAsyncThunk(
       if (!Number.isNaN(numericId) && String(identifier).trim() !== "") {
         // try fetch by id using public endpoint
         const res = await fetch(
-          `http://localhost:5000/api/public/product/${encodeURIComponent(
+          `https://api.apisphere.in/api/public/product/${encodeURIComponent(
             identifier,
           )}`,
         );
