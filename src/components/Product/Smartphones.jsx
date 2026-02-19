@@ -3,10 +3,8 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Helmet } from "react-helmet-async";
 import {
   FaStar,
-  FaCamera,
   FaBatteryFull,
   FaMemory,
-  FaMicrochip,
   FaSignal,
   FaSyncAlt,
   FaFingerprint,
@@ -3156,10 +3154,10 @@ const Smartphones = () => {
                   {/* Mobile Optimized Card Layout */}
                   <div className="p-3 sm:p-4 md:p-5 lg:p-4 pt-4 sm:pt-5 md:pt-6 transition-all duration-300">
                     {/* Top Row: Image and Basic Info */}
-                    <div className="flex gap-3 sm:gap-4 h-50">
+                    <div className="grid grid-cols-[minmax(0,8.5rem)_minmax(0,1fr)] sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)] gap-3 w-full items-start">
                       {/* Product Image - Fixed container with checkbox overlay */}
-                      <div className="relative flex-shrink-0 w-42 h-52 rounded-2xl overflow-hidden group">
-                        <div className="w-full h-full flex items-center justify-center p-2">
+                      <div className="relative flex-shrink-0 w-full h-36 sm:h-48 rounded-2xl overflow-hidden group bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-100">
+                        <div className="w-full h-full flex items-center justify-center p-1.5 sm:p-2">
                           <ImageCarousel images={device.images} />
                         </div>
                         {/* Compare Checkbox Overlay - Top Right */}
@@ -3196,9 +3194,9 @@ const Smartphones = () => {
                       </div>
 
                       {/* Basic Info */}
-                      <div className="flex-1 min-w-0 w-42">
+                      <div className="flex-1 min-w-0">
                         {/* Brand and Model */}
-                        <div className="flex items-start justify-between mb-2">
+                        <div className="mb-2">
                           <div>
                             <div className="flex items-center gap-2 mb-1 md:flex-nowrap">
                               <span className="text-xs font-semibold text-purple-700">
@@ -3240,21 +3238,24 @@ const Smartphones = () => {
                                 );
                               })()}
                             </div>
-                            <p className="font-bold text-gray-900 text-[13px] leading-snug">
+                            <div className="leading-snug">
                               {(() => {
                                 const name = device.name || device.model || "";
-                                const ram = (device.specs?.ram || "").trim();
+                                const ram = String(
+                                  device.specs?.ram ?? "",
+                                ).trim();
                                 const storage = (
-                                  device.specs?.storage || ""
+                                  device.specs?.storage ?? ""
+                                ).trim();
+                                const display = String(
+                                  device.specs?.display ?? "",
+                                ).trim();
+                                const processor = String(
+                                  device.specs?.processor ?? "",
                                 ).trim();
 
-                                const refresh = (
-                                  device.specs?.refreshRate || ""
-                                ).trim();
+                                const parts = [];
 
-                                const parts = [name];
-
-                                // push RAM and Storage as separate parts
                                 if (ram) {
                                   const ramLabel =
                                     ram.toLowerCase().includes("gb") ||
@@ -3271,29 +3272,25 @@ const Smartphones = () => {
                                       : `${storage} Storage`;
                                   parts.push(storageLabel);
                                 }
+                                if (display) parts.push(display);
+                                if (processor) parts.push(processor);
 
-                                // Prefer an explicit "AI Camera" label when camera mentions AI, otherwise show camera spec
+                                const summary = parts.filter(Boolean).join(" | ");
 
-                                // append refresh rate if available
-                                if (refresh) parts.push(refresh);
-
-                                // append periscope zoom (variant/device-level) if present
-                                try {
-                                  const zoomVal =
-                                    device?.specs?.periscopeZoom ||
-                                    (device?.variant &&
-                                      (device.variant.periscope_zoom ||
-                                        device.variant.zoom)) ||
-                                    "";
-                                  if (zoomVal) {
-                                    const zoomText = String(zoomVal).trim();
-                                    parts.push(`${zoomText} Zoom`);
-                                  }
-                                } catch {}
-
-                                return parts.filter(Boolean).join(" | ");
+                                return (
+                                  <>
+                                    <h5 className="font-bold text-gray-900 text-[15px] leading-5 whitespace-normal break-normal">
+                                      {name}
+                                    </h5>
+                                    {summary ? (
+                                      <p className="mt-1 text-[12px] text-gray-600 leading-5 whitespace-normal break-normal">
+                                        {summary}
+                                      </p>
+                                    ) : null}
+                                  </>
+                                );
                               })()}
-                            </p>
+                            </div>
                           </div>
                           {/* Details always expanded - removed toggle button */}
                         </div>
@@ -3301,72 +3298,44 @@ const Smartphones = () => {
                         {/* Price and Rating */}
                         <div className="mb-3">
                           <div className="flex items-center justify-between">
-                            <div className="text-lg font-bold text-green-600">
-                              {device.price}
+                            <div>
+                              {(() => {
+                                const brandStoreUrl =
+                                  (device.storePrices || []).find(
+                                    (sp) =>
+                                      typeof sp?.url === "string" &&
+                                      sp.url.trim().length > 0,
+                                  )?.url || null;
+                                if (!device.brand) return null;
+                                return (
+                                  <a
+                                    href={brandStoreUrl || "#"}
+                                    target={brandStoreUrl ? "_blank" : undefined}
+                                    rel={
+                                      brandStoreUrl
+                                        ? "noopener noreferrer"
+                                        : undefined
+                                    }
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (!brandStoreUrl) e.preventDefault();
+                                    }}
+                                    className={`inline-block w-full mb-1 text-[12px] font-medium leading-snug whitespace-nowrap overflow-hidden text-ellipsis ${
+                                      brandStoreUrl
+                                        ? "text-blue-700 hover:text-blue-800 hover:underline"
+                                        : "text-gray-500 cursor-default"
+                                    }`}
+                                  >
+                                    {`Visit the ${device.brand} Store`}
+                                  </a>
+                                );
+                              })()}
+                              <div className="text-lg font-bold text-green-600">
+                                {device.price}
+                              </div>
                             </div>
                           </div>
                         </div>
-
-                        {/* Key Specs Badges */}
-                        {(() => {
-                          const chips = [
-                            device.specs.processor
-                              ? {
-                                  key: "chip-processor",
-                                  icon: (
-                                    <FaMicrochip className="text-gray-500" />
-                                  ),
-                                  label: device.specs.processor.split(" ")[0],
-                                }
-                              : null,
-                            device.specs.camera
-                              ? {
-                                  key: "chip-camera",
-                                  icon: <FaCamera className="text-gray-500" />,
-                                  label:
-                                    device.specs.rearCameraResolution ||
-                                    device.specs.frontCameraResolution
-                                      ? [
-                                          device.specs.rearCameraResolution,
-                                          device.specs.frontCameraResolution,
-                                        ]
-                                          .filter(Boolean)
-                                          .join(" + ")
-                                      : (device.specs.camera || "").split(
-                                          "+",
-                                        )[0],
-                                }
-                              : null,
-                            device.specs.battery
-                              ? {
-                                  key: "chip-battery",
-                                  icon: (
-                                    <FaBatteryFull className="text-gray-500" />
-                                  ),
-                                  label: device.specs.battery,
-                                }
-                              : null,
-                          ].filter(Boolean);
-
-                          if (chips.length === 0) return null;
-
-                          return (
-                            <div className="flex flex-wrap gap-2 mb-3">
-                              {chips.map((chip) => (
-                                <div
-                                  key={chip.key}
-                                  className="flex items-center gap-1 text-[11px] bg-purple-50 px-2 py-1 rounded-full border border-purple-100 max-w-full"
-                                  title={chip.label}
-                                >
-                                  {chip.icon}
-                                  <span className="font-medium text-gray-700 whitespace-nowrap leading-tight">
-                                    {chip.label}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          );
-                        })()}
                       </div>
                     </div>
                     {/* Expanded Details */}
@@ -3459,22 +3428,24 @@ const Smartphones = () => {
                       )}
 
                       {/* Launch Date */}
-                      {device.launchDate && (
-                        <div className="flex items-center gap-2 text-xs text-gray-600 mb-4">
-                          <FaCalendarAlt className="text-gray-400" />
-                          <span>
-                            Released:{" "}
-                            {new Date(device.launchDate).toLocaleDateString(
-                              "en-US",
-                              {
+                      {(() => {
+                        if (!device.launchDate) return null;
+                        const parsed = new Date(device.launchDate);
+                        if (Number.isNaN(parsed.getTime())) return null;
+                        return (
+                          <div className="flex items-center gap-2 text-xs text-gray-600 mb-4">
+                            <FaCalendarAlt className="text-gray-400" />
+                            <span>
+                              Released:{" "}
+                              {parsed.toLocaleDateString("en-US", {
                                 year: "numeric",
                                 month: "long",
                                 day: "numeric",
-                              },
-                            )}
-                          </span>
-                        </div>
-                      )}
+                              })}
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     {/* Action Buttons */}

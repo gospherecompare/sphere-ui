@@ -113,16 +113,26 @@ const Header = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const [mobileHeaderHeight, setMobileHeaderHeight] = useState(112);
   const navigate = useNavigate();
   const location = useLocation();
   const megaMenuRef = useRef(null);
   const authDropdownRef = useRef(null);
   const searchRef = useRef(null);
   const searchInputRef = useRef(null);
+  const mobileHeaderRef = useRef(null);
   const inputWasFocusedRef = useRef(false);
   const suppressRestoreRef = useRef(false);
   const deviceCtx = useDevice();
   const brands = (deviceCtx && deviceCtx.brands) || [];
+  const smartphones =
+    (deviceCtx &&
+      (deviceCtx.smartphoneAll?.length
+        ? deviceCtx.smartphoneAll
+        : deviceCtx.smartphone)) ||
+    [];
+  const laptops = (deviceCtx && deviceCtx.laptops) || [];
+  const tvs = (deviceCtx && deviceCtx.homeAppliances) || [];
 
   const readAuthFromCookies = () => {
     const token = Cookies.get("arenak");
@@ -169,6 +179,42 @@ const Header = () => {
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Keep the mobile spacer in sync with actual fixed header height.
+  useEffect(() => {
+    const updateMobileHeaderHeight = () => {
+      if (typeof window === "undefined") return;
+
+      if (window.innerWidth >= 768) {
+        setMobileHeaderHeight(0);
+        return;
+      }
+
+      const measuredHeight = Math.ceil(
+        mobileHeaderRef.current?.getBoundingClientRect().height || 0,
+      );
+
+      if (measuredHeight > 0) {
+        setMobileHeaderHeight(measuredHeight);
+      }
+    };
+
+    updateMobileHeaderHeight();
+    window.addEventListener("resize", updateMobileHeaderHeight);
+
+    let resizeObserver = null;
+    if (typeof ResizeObserver !== "undefined" && mobileHeaderRef.current) {
+      resizeObserver = new ResizeObserver(updateMobileHeaderHeight);
+      resizeObserver.observe(mobileHeaderRef.current);
+    }
+
+    return () => {
+      window.removeEventListener("resize", updateMobileHeaderHeight);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+    };
   }, []);
 
   // Close mega menu on outside click
@@ -294,6 +340,403 @@ const Header = () => {
     return [];
   };
 
+  const toObjectIfNeeded = (value) => {
+    if (!value) return {};
+    if (typeof value === "object" && !Array.isArray(value)) return value;
+    if (typeof value !== "string") return {};
+    const t = value.trim();
+    if (!t) return {};
+    if (
+      (t.startsWith("{") && t.endsWith("}")) ||
+      (t.startsWith("[") && t.endsWith("]"))
+    ) {
+      try {
+        const parsed = JSON.parse(t);
+        return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+          ? parsed
+          : {};
+      } catch {
+        return {};
+      }
+    }
+    return {};
+  };
+
+  const toArrayIfNeeded = (value) => {
+    if (!value) return [];
+    if (Array.isArray(value)) return value;
+    if (typeof value !== "string") return [];
+    const t = value.trim();
+    if (!t) return [];
+    if (t.startsWith("[") || t.startsWith("{")) {
+      try {
+        const parsed = JSON.parse(t);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  };
+
+  const normalizeText = (value) =>
+    String(value || "")
+      .toLowerCase()
+      .trim();
+
+  const readFirstText = (...values) => {
+    for (const value of values) {
+      if (value === null || value === undefined) continue;
+      const text = String(value).trim();
+      if (text) return text;
+    }
+    return "";
+  };
+
+  const parsePriceNumber = (value) => {
+    if (value === null || value === undefined || value === "") return null;
+    if (typeof value === "number") return Number.isFinite(value) ? value : null;
+    const text = String(value);
+    const numeric = Number(text.replace(/[^0-9.]/g, ""));
+    return Number.isFinite(numeric) ? numeric : null;
+  };
+
+  const toUniqueList = (arr) => {
+    const out = [];
+    const seen = new Set();
+    for (const item of arr || []) {
+      const value = String(item || "").trim();
+      if (!value) continue;
+      const key = value.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(value);
+    }
+    return out;
+  };
+
+  const findMinPrice = (item) => {
+    if (!item || typeof item !== "object") return null;
+    const candidates = [];
+
+    const addPrice = (v) => {
+      const n = parsePriceNumber(v);
+      if (n !== null && n > 0) candidates.push(n);
+    };
+
+    addPrice(item.min_price);
+    addPrice(item.minPrice);
+    addPrice(item.price);
+    addPrice(item.base_price);
+    addPrice(item.starting_price);
+    addPrice(item.numericPrice);
+
+    const variants = Array.isArray(item.variants)
+      ? item.variants
+      : toArrayIfNeeded(item.variants_json);
+
+    variants.forEach((variant) => {
+      const v =
+        variant && typeof variant === "object"
+          ? variant
+          : toObjectIfNeeded(variant);
+      addPrice(v.base_price);
+      addPrice(v.price);
+      const storePrices = Array.isArray(v.store_prices)
+        ? v.store_prices
+        : Array.isArray(v.storePrices)
+          ? v.storePrices
+          : [];
+      storePrices.forEach((sp) => {
+        const row =
+          sp && typeof sp === "object" ? sp : toObjectIfNeeded(sp);
+        addPrice(row.price ?? row.amount);
+      });
+    });
+
+    const topStorePrices = Array.isArray(item.store_prices)
+      ? item.store_prices
+      : Array.isArray(item.storePrices)
+        ? item.storePrices
+        : [];
+    topStorePrices.forEach((sp) => {
+      const row = sp && typeof sp === "object" ? sp : toObjectIfNeeded(sp);
+      addPrice(row.price ?? row.amount);
+    });
+
+    if (!candidates.length) return null;
+    return Math.min(...candidates);
+  };
+
+  const extractVariantTypes = (item) => {
+    if (!item || typeof item !== "object") return [];
+
+    const explicit = item.variant_types || item.variantTypes;
+    if (Array.isArray(explicit) && explicit.length) {
+      return toUniqueList(explicit).slice(0, 3);
+    }
+
+    const variants = Array.isArray(item.variants)
+      ? item.variants
+      : toArrayIfNeeded(item.variants_json);
+
+    const derived = variants.map((variant) => {
+      const v =
+        variant && typeof variant === "object"
+          ? variant
+          : toObjectIfNeeded(variant);
+
+      const ram = readFirstText(v.ram, v.RAM, v.memory);
+      const storage = readFirstText(
+        v.storage,
+        v.storage_size,
+        v.internal_storage,
+        v.rom,
+      );
+      const screen = readFirstText(v.screen_size, v.size);
+      const resolution = readFirstText(v.resolution);
+      const key = readFirstText(v.variant_key, v.name, v.label);
+
+      if (ram && storage) return `${ram}/${storage}`;
+      if (ram) return ram;
+      if (storage) return storage;
+      if (screen && resolution) return `${screen} ${resolution}`.trim();
+      if (screen) return screen;
+      return key;
+    });
+
+    return toUniqueList(derived).slice(0, 3);
+  };
+
+  const extractSearchFeatures = (item, type) => {
+    const explicit = item?.key_features || item?.keyFeatures;
+    if (Array.isArray(explicit) && explicit.length) {
+      return toUniqueList(explicit).slice(0, 3);
+    }
+
+    const features = [];
+    const pushFeature = (value, suffix = "") => {
+      const text = readFirstText(value);
+      if (!text) return;
+      features.push(`${text}${suffix}`.trim());
+    };
+
+    const productType = normalizeText(type || item?.product_type);
+
+    if (productType.includes("laptop")) {
+      pushFeature(
+        item?.cpu?.processor_name ||
+          item?.cpu?.processor ||
+          item?.performance?.processor_name ||
+          item?.performance?.processor ||
+          item?.performance?.chipset,
+      );
+      pushFeature(
+        item?.display?.display_size ||
+          item?.display?.size ||
+          item?.display?.screen_size,
+      );
+      pushFeature(
+        item?.memory?.ram ||
+          item?.memory?.capacity ||
+          item?.memory?.size ||
+          item?.ram,
+      );
+      pushFeature(
+        item?.storage?.capacity ||
+          item?.storage?.storage ||
+          item?.storage?.size ||
+          item?.storage_capacity,
+      );
+    } else if (productType.includes("tv") || productType.includes("appliance")) {
+      const keySpecs = toObjectIfNeeded(item?.key_specs_json || item?.key_specs);
+      const displayJson = toObjectIfNeeded(item?.display_json || item?.display);
+      const specs = toObjectIfNeeded(item?.specifications);
+      pushFeature(
+        keySpecs.screen_size ||
+          displayJson.screen_size ||
+          specs.screen_size ||
+          item?.screen_size,
+      );
+      pushFeature(
+        keySpecs.resolution ||
+          displayJson.resolution ||
+          specs.resolution ||
+          item?.resolution,
+      );
+      pushFeature(
+        keySpecs.panel_type ||
+          displayJson.panel_type ||
+          specs.display_type ||
+          item?.display_type,
+      );
+      pushFeature(
+        keySpecs.refresh_rate ||
+          displayJson.refresh_rate ||
+          specs.refresh_rate ||
+          item?.refresh_rate,
+      );
+    } else {
+      pushFeature(
+        item?.display?.size ||
+          item?.display?.screen_size ||
+          item?.display?.display_size,
+      );
+      pushFeature(
+        item?.battery?.capacity ||
+          item?.battery?.battery_capacity ||
+          item?.battery?.battery_capacity_mah,
+      );
+      pushFeature(
+        item?.camera?.main_camera_megapixels ||
+          item?.camera?.rear_camera?.main?.megapixels ||
+          item?.camera?.main,
+      );
+      pushFeature(
+        item?.performance?.processor ||
+          item?.performance?.cpu ||
+          item?.performance?.chipset,
+      );
+    }
+
+    return toUniqueList(features).slice(0, 3);
+  };
+
+  const toSearchSuggestion = (item, fallbackType) => {
+    if (!item || typeof item !== "object") return null;
+    const name = readFirstText(item.name, item.model, item.model_number, item.title);
+    if (!name) return null;
+    const model = readFirstText(item.model, item.model_number, item.name);
+    const brandName = readFirstText(item.brand_name, item.brand, item.brandName);
+    const productType = readFirstText(
+      item.product_type,
+      item.productType,
+      fallbackType,
+    );
+
+    const image = readFirstText(
+      item.image_url,
+      item.image,
+      item.product_image,
+      item.imageUrl,
+      Array.isArray(item.images) ? item.images[0] : "",
+      toArrayIfNeeded(item.images_json)[0],
+    );
+
+    const minPrice = findMinPrice(item);
+    const variantTypes = extractVariantTypes(item);
+    const keyFeatures = extractSearchFeatures(item, productType);
+    const id = item.id ?? item.product_id ?? item.productId ?? null;
+
+    const searchableText = normalizeText(
+      [name, model, brandName, productType, ...variantTypes, ...keyFeatures].join(
+        " ",
+      ),
+    );
+
+    return {
+      type: "product",
+      id,
+      name,
+      model: model || name,
+      product_type: productType || fallbackType,
+      brand_name: brandName || null,
+      image_url: image || null,
+      min_price: minPrice,
+      variant_types: variantTypes,
+      key_features: keyFeatures,
+      searchable_text: searchableText,
+    };
+  };
+
+  const localSearchSuggestions = React.useMemo(() => {
+    const mapped = [
+      ...smartphones.map((item) => toSearchSuggestion(item, "smartphone")),
+      ...laptops.map((item) => toSearchSuggestion(item, "laptop")),
+      ...tvs.map((item) => toSearchSuggestion(item, "tv")),
+    ].filter(Boolean);
+
+    const deduped = [];
+    const seen = new Set();
+
+    mapped.forEach((item) => {
+      const key = [
+        normalizeText(item.product_type),
+        normalizeText(item.name),
+        normalizeText(item.brand_name),
+      ].join("|");
+      if (seen.has(key)) return;
+      seen.add(key);
+      deduped.push(item);
+    });
+
+    return deduped;
+  }, [smartphones, laptops, tvs]);
+
+  const mergeSuggestions = (apiResults, localResults) => {
+    const merged = new Map();
+
+    const buildKey = (item) => {
+      const baseType = normalizeText(item.type || "product");
+      const normalizedName = normalizeText(item.name);
+      const normalizedBrand = normalizeText(item.brand_name || item.brand);
+      const normalizedProductType = normalizeText(item.product_type);
+      const rawId = item.id ?? item.product_id ?? item.productId ?? "";
+      return [
+        baseType,
+        normalizedProductType,
+        normalizedName,
+        normalizedBrand,
+        String(rawId).trim(),
+      ].join("|");
+    };
+
+    const upsert = (item, priority) => {
+      if (!item || !item.name) return;
+      const key = buildKey(item);
+      const existing = merged.get(key);
+
+      if (!existing) {
+        merged.set(key, { ...item, __priority: priority });
+        return;
+      }
+
+      const existingPrice = existing.min_price ?? existing.minPrice ?? null;
+      const incomingPrice = item.min_price ?? item.minPrice ?? null;
+      const existingVariants = getSuggestionVariantTypes(existing);
+      const incomingVariants = getSuggestionVariantTypes(item);
+      const existingFeatures = getSuggestionFeatures(existing);
+      const incomingFeatures = getSuggestionFeatures(item);
+
+      merged.set(key, {
+        ...existing,
+        ...item,
+        id: existing.id ?? item.id ?? null,
+        product_type: existing.product_type || item.product_type,
+        brand_name: existing.brand_name || item.brand_name || null,
+        image_url:
+          existing.image_url ||
+          existing.image ||
+          item.image_url ||
+          item.image ||
+          null,
+        min_price: existingPrice ?? incomingPrice,
+        variant_types:
+          existingVariants.length > 0 ? existingVariants : incomingVariants,
+        key_features:
+          existingFeatures.length > 0 ? existingFeatures : incomingFeatures,
+        __priority: Math.min(existing.__priority, priority),
+      });
+    };
+
+    (apiResults || []).forEach((item) => upsert(item, 0));
+    (localResults || []).forEach((item) => upsert(item, 1));
+
+    return Array.from(merged.values())
+      .sort((a, b) => a.__priority - b.__priority)
+      .map(({ __priority, searchable_text, ...rest }) => rest);
+  };
+
   // Fetch suggestions from server (debounced)
   const handleSearchInputChange = (value) => {
     // remember whether input was focused before updating state
@@ -323,6 +766,7 @@ const Header = () => {
 
     debounceRef.current = setTimeout(async () => {
       const q = value.trim();
+      const qLower = q.toLowerCase();
       const controller = new AbortController();
       abortRef.current = controller;
       setIsSearching(true);
@@ -336,18 +780,28 @@ const Header = () => {
         });
         if (!r.ok) throw new Error(`Search failed: ${r.status}`);
         const json = await r.json();
-        const results = (json.results || []).map((it) => ({
+        const apiResults = (json.results || []).map((it) => ({
           ...it,
         }));
-        setSearchSuggestions(results);
+
+        const localMatches = localSearchSuggestions
+          .filter((item) => item.searchable_text.includes(qLower))
+          .slice(0, 12);
+
+        const merged = mergeSuggestions(apiResults, localMatches).slice(0, 12);
+        setSearchSuggestions(merged);
       } catch (err) {
         if (err.name === "AbortError") return;
         console.error("Search suggestions error:", err);
-        setSearchSuggestions([]);
+        const localMatches = localSearchSuggestions
+          .filter((item) => item.searchable_text.includes(qLower))
+          .slice(0, 12)
+          .map(({ searchable_text, ...rest }) => rest);
+        setSearchSuggestions(localMatches);
       } finally {
         setIsSearching(false);
       }
-    }, 220);
+    }, 250);
   };
 
   const handleSuggestionClick = (item) => {
@@ -1145,7 +1599,7 @@ const Header = () => {
                                             {formatINR(
                                               sugg.min_price ?? sugg.minPrice,
                                             ) && (
-                                              <span className="text-[11px] px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-100">
+                                              <span className="text-[11px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-100">
                                                 From{" "}
                                                 {formatINR(
                                                   sugg.min_price ??
@@ -1289,7 +1743,7 @@ const Header = () => {
                                       {formatINR(
                                         sugg.min_price ?? sugg.minPrice,
                                       ) && (
-                                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-100">
+                                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-100">
                                           From{" "}
                                           {formatINR(
                                             sugg.min_price ?? sugg.minPrice,
@@ -1330,7 +1784,10 @@ const Header = () => {
   const MainHeader = () => (
     <>
       {/* MOBILE HEADER (≤ 768px) */}
-      <div className="md:hidden border-b bg-white border-purple-50 z-40">
+      <div
+        ref={mobileHeaderRef}
+        className="md:hidden border-b bg-white border-purple-50 z-40"
+      >
         {/* Mobile Top Row: Logo (left) | Icons (right) */}
         <div className="flex items-center justify-between px-4 py-3 gap-3">
           {/* Logo (mobile) */}
@@ -1532,7 +1989,7 @@ const Header = () => {
                                   {formatINR(
                                     sugg.min_price ?? sugg.minPrice,
                                   ) && (
-                                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-100">
+                                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-100">
                                       From{" "}
                                       {formatINR(
                                         sugg.min_price ?? sugg.minPrice,
@@ -1856,7 +2313,7 @@ const Header = () => {
       <MobileMenuDrawer />
 
       {/* Spacer for fixed header (mobile only) */}
-      <div className="h-32 md:hidden" />
+      <div className="md:hidden" style={{ height: `${mobileHeaderHeight}px` }} />
 
       <QuickNavTabs />
     </>

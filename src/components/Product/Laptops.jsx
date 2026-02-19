@@ -1913,10 +1913,10 @@ const Laptops = () => {
                 >
                   <div className="p-3 sm:p-4 md:p-5 lg:p-6 pt-4 sm:pt-5 md:pt-6">
                     {/* Top Row: Image and Basic Info */}
-                    <div className="flex gap-3 sm:gap-4 h-50">
+                    <div className="grid grid-cols-[minmax(0,8.5rem)_minmax(0,1fr)] sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)] gap-3 w-full items-start">
                       {/* Product Image - Fixed container with checkbox overlay */}
-                      <div className="relative flex-shrink-0 w-42 h-52 rounded-2xl overflow-hidden group">
-                        <div className="w-full h-full flex items-center justify-center p-2">
+                      <div className="relative flex-shrink-0 w-full h-36 sm:h-48 rounded-2xl overflow-hidden group bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-100">
+                        <div className="w-full h-full flex items-center justify-center p-1.5 sm:p-2">
                           <ImageCarousel images={device.images} />
                         </div>
                         {/* Compare Checkbox Overlay - Top Right */}
@@ -1939,9 +1939,9 @@ const Laptops = () => {
                       </div>
 
                       {/* Basic Info */}
-                      <div className="flex-1 min-w-0 w-42">
+                      <div className="flex-1 min-w-0">
                         {/* Brand and Model */}
-                        <div className="flex items-start justify-between mb-2">
+                        <div className="mb-2">
                           <div>
                             <div className="flex items-center gap-2 mb-1 md:flex-nowrap">
                               <span className="text-xs font-semibold text-purple-700">
@@ -1966,7 +1966,7 @@ const Laptops = () => {
                                 </span>
                               )}
                             </div>
-                            <p className="font-bold text-gray-900 text-[13px] leading-snug">
+                            <div className="leading-snug">
                               {(() => {
                                 const name = device.name || device.model || "";
                                 const ram = String(
@@ -1982,7 +1982,7 @@ const Laptops = () => {
                                   device.specs?.cpu ?? "",
                                 ).trim();
 
-                                const parts = [name];
+                                const parts = [];
 
                                 if (ram) {
                                   const ramLabel =
@@ -2004,9 +2004,22 @@ const Laptops = () => {
 
                                 if (cpu) parts.push(cpu);
 
-                                return parts.filter(Boolean).join(" | ");
+                                const summary = parts.filter(Boolean).join(" | ");
+
+                                return (
+                                  <>
+                                    <h5 className="font-bold text-gray-900 text-[15px] leading-5 whitespace-normal break-normal">
+                                      {name}
+                                    </h5>
+                                    {summary ? (
+                                      <p className="mt-1 text-[12px] text-gray-600 leading-5 whitespace-normal break-normal">
+                                        {summary}
+                                      </p>
+                                    ) : null}
+                                  </>
+                                );
                               })()}
-                            </p>
+                            </div>
                           </div>
                         </div>
 
@@ -2014,6 +2027,37 @@ const Laptops = () => {
                         <div className="mb-3">
                           <div className="flex items-center justify-between">
                             <div>
+                              {(() => {
+                                const brandStoreUrl =
+                                  (device.storePrices || []).find(
+                                    (sp) =>
+                                      typeof sp?.url === "string" &&
+                                      sp.url.trim().length > 0,
+                                  )?.url || null;
+                                if (!device.brand) return null;
+                                return (
+                                  <a
+                                    href={brandStoreUrl || "#"}
+                                    target={brandStoreUrl ? "_blank" : undefined}
+                                    rel={
+                                      brandStoreUrl
+                                        ? "noopener noreferrer"
+                                        : undefined
+                                    }
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (!brandStoreUrl) e.preventDefault();
+                                    }}
+                                    className={`inline-block w-full mb-1 text-[12px] font-medium leading-snug whitespace-nowrap overflow-hidden text-ellipsis ${
+                                      brandStoreUrl
+                                        ? "text-blue-700 hover:text-blue-800 hover:underline"
+                                        : "text-gray-500 cursor-default"
+                                    }`}
+                                  >
+                                    {`Visit the ${device.brand} Store`}
+                                  </a>
+                                );
+                              })()}
                               {device.price !== "Price not available" && (
                                 <div className="text-xs text-gray-500 mb-0.5">
                                   Starting from
@@ -2126,22 +2170,24 @@ const Laptops = () => {
                       )}
 
                       {/* Launch Date */}
-                      {device.launchDate && (
-                        <div className="flex items-center gap-2 text-xs text-gray-600 mb-4">
-                          <FaCalendarAlt className="text-gray-400" />
-                          <span>
-                            Released:{" "}
-                            {new Date(device.launchDate).toLocaleDateString(
-                              "en-US",
-                              {
+                      {(() => {
+                        if (!device.launchDate) return null;
+                        const parsed = new Date(device.launchDate);
+                        if (Number.isNaN(parsed.getTime())) return null;
+                        return (
+                          <div className="flex items-center gap-2 text-xs text-gray-600 mb-4">
+                            <FaCalendarAlt className="text-gray-400" />
+                            <span>
+                              Released:{" "}
+                              {parsed.toLocaleDateString("en-US", {
                                 year: "numeric",
                                 month: "long",
                                 day: "numeric",
-                              },
-                            )}
-                          </span>
-                        </div>
-                      )}
+                              })}
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     {/* Action Buttons */}

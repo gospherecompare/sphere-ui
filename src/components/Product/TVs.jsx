@@ -2181,10 +2181,10 @@ const TVs = () => {
                 >
                   <div className="p-3 sm:p-4 md:p-5 lg:p-6 pt-4 sm:pt-5 md:pt-6">
                     {/* Top Row: Image and Basic Info */}
-                    <div className="flex flex-col xl:flex-row gap-3 sm:gap-4">
+                    <div className="grid grid-cols-[minmax(0,8.5rem)_minmax(0,1fr)] sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)] gap-3 w-full items-start">
                       {/* Product Image - Fixed container */}
-                      <div className="relative flex-shrink-0 w-full h-44 xl:w-44 xl:h-44 bg-gray-50 rounded-lg overflow-hidden">
-                        <div className="w-full h-full flex items-center justify-center">
+                      <div className="relative flex-shrink-0 w-full h-36 sm:h-48 rounded-2xl overflow-hidden group bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-100">
+                        <div className="w-full h-full flex items-center justify-center p-1.5 sm:p-2">
                           <ImageCarousel images={device.images} />
                         </div>
                         {/* Compare Checkbox Overlay - Top Right */}
