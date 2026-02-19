@@ -10,7 +10,6 @@ import {
   FaTag,
   FaTv,
 } from "react-icons/fa";
-import { Helmet } from "react-helmet-async";
 
 const PopularBrands = () => {
   const [activeBrand, setActiveBrand] = useState("all");
@@ -225,40 +224,8 @@ const PopularBrands = () => {
     }
   };
 
-  const activeBrandData = useMemo(
-    () => uniqueBrands.find((b) => b.id === activeBrand) || null,
-    [uniqueBrands, activeBrand],
-  );
-
-  const sanitizeDescription = (desc = "") => {
-    const text = String(desc || "")
-      .replace(/<[^>]*>/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-    return text.length > 180 ? `${text.slice(0, 177)}...` : text;
-  };
-
-  const metaTitle = activeBrandData
-    ? `${activeBrandData.name} Devices | Hook`
-    : "Popular Electronics Brands | Hook";
-
-  const metaDescription = sanitizeDescription(
-    activeBrandData?.originalBrand?.description ||
-      "Explore popular electronics brands on Hook, including smartphones, laptops, TVs, and networking gear with curated recommendations.",
-  );
-
   return (
-    <>
-      <Helmet>
-        <title>{metaTitle}</title>
-        <meta name="description" content={metaDescription} />
-        <meta property="og:title" content={metaTitle} />
-        <meta property="og:description" content={metaDescription} />
-        <meta name="twitter:title" content={metaTitle} />
-        <meta name="twitter:description" content={metaDescription} />
-      </Helmet>
-
-      <div className="px-2 lg:px-4 mx-auto bg-white max-w-6xl w-full m-5 rounded-lg overflow-hidden pt-8 sm:pt-12">
+    <div className="px-2 lg:px-4 mx-auto bg-white max-w-6xl w-full m-5 rounded-lg overflow-hidden pt-8 sm:pt-12">
       {/* Header Section */}
       <div className="mb-2 px-2">
         <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">
@@ -386,7 +353,6 @@ const PopularBrands = () => {
         </>
       )}
       </div>
-    </>
   );
 };
 

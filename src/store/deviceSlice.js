@@ -289,6 +289,8 @@ export const fetchTrendingSmartphones = createAsyncThunk(
       const data = await res.json();
       const arr = Array.isArray(data)
         ? data
+        : Array.isArray(data.trending)
+          ? data.trending
         : Array.isArray(data.smartphones)
           ? data.smartphones
           : Array.isArray(data.data)

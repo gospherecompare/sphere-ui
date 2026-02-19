@@ -40,6 +40,12 @@ import useTitle from "../../hooks/useTitle";
 import useDevice from "../../hooks/useDevice";
 import { generateSlug } from "../../utils/slugGenerator";
 import normalizeProduct from "../../utils/normalizeProduct";
+import {
+  computePopularLaptopFeatures,
+  getLaptopFeatureSortValue,
+  LAPTOP_FEATURE_CATALOG,
+  matchesLaptopFeature,
+} from "../../utils/laptopPopularFeatures";
 
 // Enhanced Image Carousel - Reusable from smartphone
 // Note: removed mock fallback — rely on `useDevice()` data from the store
@@ -61,10 +67,12 @@ const ImageCarousel = ({ images = [] }) => {
 
   if (!images || images.length === 0) {
     return (
-      <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg">
-        <div className="text-center">
-          <FaLaptop className="text-gray-300 text-3xl mx-auto mb-2" />
-          <span className="text-gray-400 text-sm">No image</span>
+      <div className="relative w-full h-full flex items-center justify-center rounded-lg bg-gray-100">
+        <div className="text-center px-3">
+          <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-200">
+            <FaLaptop className="text-gray-400 text-sm" />
+          </div>
+          <span className="text-xs text-gray-500">No image</span>
         </div>
       </div>
     );
@@ -162,8 +170,15 @@ const Laptops = () => {
 
   const [params] = useSearchParams();
   const filter = params.get("filter");
+  const feature = params.get("feature");
+  const normalizedFeature = feature
+    ? feature.toString().toLowerCase().replace(/\s+/g, "-")
+    : null;
   const dispatch = useDispatch();
   const [sortBy, setSortBy] = useState("featured");
+  const [popularFeatureOrder, setPopularFeatureOrder] = useState([]);
+  const [popularFeatureOrderLoaded, setPopularFeatureOrderLoaded] =
+    useState(false);
 
   useEffect(() => {
     if (filter === "trending") dispatch(fetchTrendingLaptops());
@@ -176,6 +191,48 @@ const Laptops = () => {
       setSortBy("featured");
     }
   }, [filter]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const controller =
+      typeof AbortController !== "undefined" ? new AbortController() : null;
+
+    (async () => {
+      const deviceTypeCandidates = ["laptop", "notebook"];
+      for (const deviceType of deviceTypeCandidates) {
+        try {
+          const res = await fetch(
+            `https://api.apisphere.in/api/public/popular-features?deviceType=${encodeURIComponent(deviceType)}&days=7&limit=16`,
+            controller ? { signal: controller.signal } : undefined,
+          );
+          if (!res.ok) continue;
+
+          const data = await res.json();
+          const order = Array.isArray(data?.results)
+            ? data.results
+                .map((r) => r.feature_id || r.featureId || r.id)
+                .filter(Boolean)
+            : [];
+          if (!cancelled) {
+            if (order.length) setPopularFeatureOrder(order);
+            setPopularFeatureOrderLoaded(true);
+          }
+          if (order.length) return;
+        } catch {
+          // ignore popularity fetch errors
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      try {
+        controller?.abort?.();
+      } catch {
+        // ignore
+      }
+    };
+  }, []);
   const { getLogo, getStore, getStoreLogo } = useStoreLogos();
   // Helper function to extract numeric price
   const extractNumericPrice = (price) => {
@@ -211,8 +268,19 @@ const Laptops = () => {
   // Helper to extract battery capacity
   const extractBatteryCapacity = (batteryStr) => {
     if (!batteryStr) return 0;
-    const match = batteryStr.match(/(\d+)/);
-    return match ? parseInt(match[1]) : 0;
+    const text = String(batteryStr);
+
+    // Prefer explicit Wh values (e.g. "59 Wh", "3-cell, 41 Wh Li-ion")
+    const whMatches = [...text.matchAll(/(\d+(?:\.\d+)?)\s*wh\b/gi)]
+      .map((m) => Number(m[1]))
+      .filter((n) => Number.isFinite(n) && n > 0);
+    if (whMatches.length) return Math.round(Math.max(...whMatches));
+
+    // Fallback: use the largest number to avoid picking "3-cell" over "41"
+    const nums = [...text.matchAll(/(\d+(?:\.\d+)?)/g)]
+      .map((m) => Number(m[1]))
+      .filter((n) => Number.isFinite(n) && n > 0);
+    return nums.length ? Math.round(Math.max(...nums)) : 0;
   };
 
   const toObject = (value) =>
@@ -265,6 +333,8 @@ const Laptops = () => {
     const memory = pickFirstObject(raw.memory);
     const storage = pickFirstObject(raw.storage);
     const battery = pickFirstObject(raw.battery);
+    const camera = pickFirstObject(raw.camera);
+    const ports = pickFirstObject(raw.ports);
     const physical = pickFirstObject(raw.physical);
     const software = pickFirstObject(raw.software);
     const multimedia = pickFirstObject(raw.multimedia);
@@ -362,7 +432,13 @@ const Laptops = () => {
     );
     const weight = extractWeight(physical.weight || "");
     const batteryCapacity = extractBatteryCapacity(
-      battery.capacity || battery.battery_type || "",
+      pickFirstString(
+        battery.capacity,
+        battery.battery_capacity,
+        battery.capacity_wh,
+        battery.wh,
+        battery.battery_type,
+      ),
     );
 
     const ramOptions = [...new Set(variants.map((v) => v.ram).filter(Boolean))];
@@ -554,20 +630,34 @@ const Laptops = () => {
         ram: ramText,
         storage: storageText,
         graphics,
-        battery: pickFirstString(battery.capacity, battery.battery_type),
-        batteryLife: pickFirstString(battery.life, battery.backup_time),
+        battery: pickFirstString(
+          battery.capacity,
+          battery.battery_capacity,
+          battery.capacity_wh,
+          battery.wh,
+          battery.battery_type,
+        ),
+        batteryLife: pickFirstString(
+          battery.battery_life,
+          battery.life,
+          battery.backup_time,
+        ),
+        touchscreen:
+          display.touchscreen ?? display.touch_support ?? display.touch ?? "",
         os: pickFirstString(software.operating_system, software.os),
         weight: physical.weight || "",
         color: colorOptions.join(" / ") || pickFirstString(physical.color),
-        ports: Array.isArray(connectivity.ports)
-          ? connectivity.ports.join(", ")
-          : "",
+        ports: pickFirstString(
+          ports.ports_description,
+          Array.isArray(connectivity.ports) ? connectivity.ports.join(", ") : "",
+        ),
         wifi: pickFirstString(connectivity.wifi, connectivity.wireless),
         warranty: pickFirstString(
           warranty.warranty,
           warranty.service,
           warranty.years ? `${warranty.years} years` : "",
         ),
+        webcam: pickFirstString(camera.webcam),
         features: featureList.join(", "),
       },
       numericWeight: weight,
@@ -595,6 +685,10 @@ const Laptops = () => {
       trendVelocity,
       trendCalculatedAt,
       trendManualBoost,
+      battery,
+      display,
+      performance,
+      camera,
       storePrices,
       variants,
       ramOptions,
@@ -684,6 +778,29 @@ const Laptops = () => {
       };
     });
   });
+
+  const popularFeatures = useMemo(() => {
+    let base = computePopularLaptopFeatures(devices, { limit: 0 });
+
+    if (popularFeatureOrder && popularFeatureOrder.length) {
+      const byId = new Map(base.map((f) => [f.id, f]));
+      const ordered = [];
+      for (const id of popularFeatureOrder) {
+        if (!byId.has(id)) continue;
+        ordered.push(byId.get(id));
+        byId.delete(id);
+      }
+      ordered.push(...byId.values());
+      base = ordered;
+    }
+
+    if (normalizedFeature && !base.some((f) => f.id === normalizedFeature)) {
+      const def = LAPTOP_FEATURE_CATALOG.find((f) => f.id === normalizedFeature);
+      if (def) base = [{ ...def, count: 0 }, ...base];
+    }
+
+    return base.slice(0, 16);
+  }, [devices, normalizedFeature, popularFeatureOrder]);
 
   // Extract filter options dynamically from all devices
   const brands = [...new Set(devices.map((d) => d.brand).filter(Boolean))];
@@ -965,6 +1082,10 @@ const Laptops = () => {
       if (!matchesSearch) return false;
     }
 
+    if (normalizedFeature && !matchesLaptopFeature(device, normalizedFeature)) {
+      return false;
+    }
+
     // Brand filter
     if (filters.brand.length > 0 && !filters.brand.includes(device.brand)) {
       return false;
@@ -1078,6 +1199,18 @@ const Laptops = () => {
   });
 
   const sortedVariants = [...filteredVariants].sort((a, b) => {
+    if (sortBy === "featured" && normalizedFeature) {
+      const av = getLaptopFeatureSortValue(a, normalizedFeature);
+      const bv = getLaptopFeatureSortValue(b, normalizedFeature);
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      if (bv !== av) return bv - av;
+      if (a.numericPrice !== b.numericPrice)
+        return a.numericPrice - b.numericPrice;
+      return String(a.name || "").localeCompare(String(b.name || ""));
+    }
+
     switch (sortBy) {
       case "price-low":
         return a.numericPrice - b.numericPrice;
@@ -1095,6 +1228,38 @@ const Laptops = () => {
         return 0;
     }
   });
+
+  const getSelectedFeatureValueLabel = (device) => {
+    if (!normalizedFeature || !device) return "";
+
+    const val = getLaptopFeatureSortValue(device, normalizedFeature);
+    switch (normalizedFeature) {
+      case "long-battery":
+        return val != null ? `${Math.round(Number(val))} Wh Battery` : "";
+      case "high-refresh-rate":
+        return val != null ? `${Math.round(Number(val))} Hz Display` : "";
+      case "lightweight": {
+        if (val == null) return "";
+        const kg = Math.abs(Number(val));
+        return Number.isFinite(kg) && kg > 0 ? `${kg.toFixed(2)} kg` : "";
+      }
+      case "oled-display":
+        return /oled/i.test(String(device?.specs?.display || ""))
+          ? "OLED Display"
+          : "";
+      case "touchscreen": {
+        const raw = device?.specs?.touchscreen;
+        if (typeof raw === "boolean") return raw ? "Touchscreen" : "";
+        if (raw == null) return "";
+        const s = String(raw).toLowerCase();
+        return /true|yes|supported|touch/.test(s) ? "Touchscreen" : "";
+      }
+      case "gaming":
+        return "Gaming Focus";
+      default:
+        return "";
+    }
+  };
 
   const clearFilters = () => {
     setFilters({
@@ -1154,6 +1319,48 @@ const Laptops = () => {
     )
       count += 1;
     return count;
+  };
+
+  const trackFeatureClick = (featureId) => {
+    try {
+      const url = "https://api.apisphere.in/api/public/feature-click";
+      const body = new URLSearchParams({
+        device_type: "laptop",
+        feature_id: featureId,
+      });
+      if (navigator && typeof navigator.sendBeacon === "function") {
+        navigator.sendBeacon(url, body);
+        return;
+      }
+    } catch {
+      // fall back to fetch
+    }
+
+    try {
+      fetch("https://api.apisphere.in/api/public/feature-click", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+        },
+        body: new URLSearchParams({
+          device_type: "laptop",
+          feature_id: featureId,
+        }),
+        keepalive: true,
+      }).catch(() => {});
+    } catch {
+      // ignore
+    }
+  };
+
+  const setFeatureParam = (featureId) => {
+    const sp = new URLSearchParams(search || "");
+    if (featureId) trackFeatureClick(featureId);
+    if (featureId) sp.set("feature", featureId);
+    else sp.delete("feature");
+    sp.delete("filter");
+    const next = sp.toString();
+    navigate(`/laptops${next ? `?${next}` : ""}`);
   };
 
   const handleView = (device, e, store) => {
@@ -1318,6 +1525,52 @@ const Laptops = () => {
           </h4>
         </div>
 
+        <div className="mb-6 sm:mb-7 md:mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <FaFilter className="text-purple-600" />
+              <h3 className="text-sm sm:text-base font-semibold text-gray-900">
+                Popular Features
+              </h3>
+            </div>
+            {normalizedFeature && (
+              <button
+                onClick={() => setFeatureParam(null)}
+                className="text-xs sm:text-sm text-purple-700 hover:text-purple-900 font-semibold"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          {popularFeatureOrderLoaded && (
+            <p className="text-xs text-gray-600 mb-3">
+              Popular choices from other users (last 7 days)
+            </p>
+          )}
+          <div className="flex gap-2.5 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {popularFeatures.map((pf) => {
+              const isActive = normalizedFeature === pf.id;
+              const Icon = pf.icon;
+              return (
+                <button
+                  key={pf.id}
+                  onClick={() => setFeatureParam(pf.id)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-full border text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors ${
+                    isActive
+                      ? "bg-purple-600 text-white border-purple-600"
+                      : "bg-white text-gray-700 border-gray-200 hover:border-purple-300 hover:text-purple-700"
+                  }`}
+                >
+                  <span className={isActive ? "text-white" : "text-purple-600"}>
+                    {Icon ? <Icon className="text-base" /> : null}
+                  </span>
+                  <span>{pf.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Control Bar */}
         <div className="mb-8">
           {/* Desktop Search and Sort */}
@@ -1354,7 +1607,7 @@ const Laptops = () => {
                   onChange={(e) => handleSortChange(e.target.value)}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 text-gray-700 appearance-none cursor-pointer bg-white pr-10 transition-all duration-200 hover:border-purple-400"
                 >
-                  <option value="featured">Featured</option>
+                  <option value="featured">Featured Devices</option>
                   <option value="price-low">Price: Low to High</option>
                   <option value="price-high">Price: High to Low</option>
                   <option value="rating">Highest Rated</option>
@@ -1915,7 +2168,7 @@ const Laptops = () => {
                     {/* Top Row: Image and Basic Info */}
                     <div className="grid grid-cols-[minmax(0,8.5rem)_minmax(0,1fr)] sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)] gap-3 w-full items-start">
                       {/* Product Image - Fixed container with checkbox overlay */}
-                      <div className="relative flex-shrink-0 w-full h-36 sm:h-48 rounded-2xl overflow-hidden group bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-100">
+                      <div className="relative flex-shrink-0 w-full h-36 sm:h-48 rounded-2xl overflow-hidden group bg-gray-50 border border-gray-200">
                         <div className="w-full h-full flex items-center justify-center p-1.5 sm:p-2">
                           <ImageCarousel images={device.images} />
                         </div>
@@ -1958,7 +2211,7 @@ const Laptops = () => {
                                   }`}
                                   title={
                                     device.trendScore != null
-                                      ? `Trending score ${Number(device.trendScore).toFixed(1)}`
+                                      ? "Trending device"
                                       : "Trending"
                                   }
                                 >
@@ -1981,6 +2234,8 @@ const Laptops = () => {
                                 const cpu = String(
                                   device.specs?.cpu ?? "",
                                 ).trim();
+                                const selectedFeatureValue =
+                                  getSelectedFeatureValueLabel(device);
 
                                 const parts = [];
 
@@ -2014,6 +2269,11 @@ const Laptops = () => {
                                     {summary ? (
                                       <p className="mt-1 text-[12px] text-gray-600 leading-5 whitespace-normal break-normal">
                                         {summary}
+                                      </p>
+                                    ) : null}
+                                    {selectedFeatureValue ? (
+                                      <p className="mt-1 text-[11px] font-semibold text-purple-700 leading-5">
+                                        {selectedFeatureValue}
                                       </p>
                                     ) : null}
                                   </>
@@ -2051,7 +2311,7 @@ const Laptops = () => {
                                     className={`inline-block w-full mb-1 text-[12px] font-medium leading-snug whitespace-nowrap overflow-hidden text-ellipsis ${
                                       brandStoreUrl
                                         ? "text-blue-700 hover:text-blue-800 hover:underline"
-                                        : "text-gray-500 cursor-default"
+                                        : "text-blue-700 cursor-default"
                                     }`}
                                   >
                                     {`Visit the ${device.brand} Store`}
@@ -2325,7 +2585,7 @@ const Laptops = () => {
                 {[
                   {
                     value: "featured",
-                    label: "Featured Laptops",
+                    label: "Featured Devices",
                     desc: "Curated selection of popular models",
                   },
                   {

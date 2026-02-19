@@ -47,6 +47,12 @@ import {
 } from "../../store/deviceSlice";
 import useDevice from "../../hooks/useDevice";
 import normalizeProduct from "../../utils/normalizeProduct";
+import {
+  computePopularTvFeatures,
+  getTvFeatureSortValue,
+  matchesTvFeature,
+  TV_FEATURE_CATALOG,
+} from "../../utils/tvPopularFeatures";
 
 // Enhanced Image Carousel
 const ImageCarousel = ({ images = [] }) => {
@@ -68,10 +74,12 @@ const ImageCarousel = ({ images = [] }) => {
 
   if (!images || images.length === 0) {
     return (
-      <div className="relative w-full h-full flex items-center justify-center bg-gray-100 rounded-lg">
-        <div className="text-center">
-          <FaHome className="text-gray-300 text-3xl mx-auto mb-2" />
-          <span className="text-gray-400 text-sm">No image</span>
+      <div className="relative w-full h-full flex items-center justify-center rounded-lg bg-gray-100">
+        <div className="text-center px-3">
+          <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-200">
+            <FaHome className="text-gray-400 text-sm" />
+          </div>
+          <span className="text-xs text-gray-500">No image</span>
         </div>
       </div>
     );
@@ -216,6 +224,41 @@ const TVs = () => {
     return numeric > 0
       ? `₹ ${numeric.toLocaleString()}`
       : "Price not available";
+  };
+
+  const buildStoreSearchUrl = (storeName, query) => {
+    const normalizedStore = String(storeName || "").toLowerCase().trim();
+    const normalizedQuery = String(query || "").trim();
+    if (!normalizedStore || !normalizedQuery) return "";
+    if (normalizedStore.includes("base price")) return "";
+
+    const encodedQuery = encodeURIComponent(normalizedQuery);
+    if (normalizedStore.includes("amazon")) {
+      return `https://www.amazon.in/s?k=${encodedQuery}`;
+    }
+    if (normalizedStore.includes("flipkart")) {
+      return `https://www.flipkart.com/search?q=${encodedQuery}`;
+    }
+    if (normalizedStore.includes("croma")) {
+      return `https://www.croma.com/searchB?q=${encodedQuery}%3Arelevance`;
+    }
+    if (normalizedStore.includes("reliance")) {
+      return `https://www.reliancedigital.in/search?q=${encodedQuery}`;
+    }
+    if (normalizedStore.includes("vijay sales")) {
+      return `https://www.vijaysales.com/search/${encodedQuery}`;
+    }
+
+    return `https://www.google.com/search?q=${encodeURIComponent(
+      `${storeName} ${normalizedQuery}`,
+    )}`;
+  };
+
+  const getStoreVisitUrl = (rawUrl, storeName, query) => {
+    const resolvedUrl = String(rawUrl || "").trim();
+    if (/^https?:\/\//i.test(resolvedUrl)) return resolvedUrl;
+    if (/^\/\//.test(resolvedUrl)) return `https:${resolvedUrl}`;
+    return buildStoreSearchUrl(storeName, query);
   };
 
   const isLikelyImageSrc = (src) => {
@@ -512,27 +555,49 @@ const TVs = () => {
         ? apiDevice.variants
         : [];
 
-    const variants = rawVariants.map((v, vIdx) => ({
-      ...v,
-      variant_id:
-        v.variant_id ||
-        v.id ||
-        v.variantId ||
-        v.variant_key ||
-        `${idx}-${vIdx}`,
-      base_price: v.base_price ?? v.price ?? null,
-      screen_size: v.screen_size || v.size || keySpecs.screen_size || "",
-      specification_summary: firstNonEmpty(
-        v.specification_summary,
+    const variants = rawVariants.map((v, vIdx) => {
+      const variantScreenSize = firstNonEmpty(
         v.screen_size,
+        v.size,
+        keySpecs.screen_size,
+        displayJson.screen_size,
+      );
+      const variantSummary = firstNonEmpty(
+        v.specification_summary,
         v.variant_key,
-      ),
-      store_prices: Array.isArray(v.store_prices)
-        ? v.store_prices
-        : Array.isArray(v.storePrices)
-          ? v.storePrices
-          : [],
-    }));
+        variantScreenSize,
+        keySpecs.resolution,
+      );
+      const variantStores = (
+        Array.isArray(v.store_prices)
+          ? v.store_prices
+          : Array.isArray(v.storePrices)
+            ? v.storePrices
+            : []
+      ).map((sp, spIdx) => ({
+        ...sp,
+        id: sp.id || `${idx}-${vIdx}-${spIdx}`,
+        store_name: sp.store_name || sp.store || "Store",
+        price: sp.price ?? sp.amount ?? null,
+        url: sp.url || sp.link || "",
+        offer_text: sp.offer_text || sp.offer || null,
+        delivery_info: sp.delivery_info || sp.delivery_time || null,
+      }));
+
+      return {
+        ...v,
+        variant_id:
+          v.variant_id ||
+          v.id ||
+          v.variantId ||
+          v.variant_key ||
+          `${idx}-${vIdx}`,
+        base_price: v.base_price ?? v.price ?? null,
+        screen_size: variantScreenSize || "",
+        specification_summary: variantSummary || "",
+        store_prices: variantStores,
+      };
+    });
 
     const storePrices = variants.flatMap((v) => {
       const prices = Array.isArray(v.store_prices)
@@ -593,13 +658,20 @@ const TVs = () => {
       keySpecs.operating_system,
       smartTvJson.operating_system,
     );
-    const energyRating = firstNonEmpty(
+    const rawEnergyRating = firstNonEmpty(
       powerJson.energy_rating,
+      powerJson.energy_star_rating,
       keySpecs.energy_rating,
+      keySpecs.energy_star_rating,
     );
+    const energyRating =
+      rawEnergyRating && /^\d+(\.\d+)?$/.test(String(rawEnergyRating))
+        ? `${rawEnergyRating} Star`
+        : rawEnergyRating;
 
     const features = [
       ...(Array.isArray(keySpecs.hdr_support) ? keySpecs.hdr_support : []),
+      ...(Array.isArray(keySpecs.ai_features) ? keySpecs.ai_features : []),
       ...(Array.isArray(displayJson.gaming_features)
         ? displayJson.gaming_features
         : []),
@@ -608,6 +680,9 @@ const TVs = () => {
         : []),
       ...(Array.isArray(smartTvJson.supported_apps)
         ? smartTvJson.supported_apps
+        : []),
+      ...(Array.isArray(smartTvJson.voice_assistant)
+        ? smartTvJson.voice_assistant
         : []),
       ...(Array.isArray(gamingJson.extra_features)
         ? gamingJson.extra_features
@@ -683,7 +758,7 @@ const TVs = () => {
       ),
       price:
         numericPrice > 0
-          ? `â‚¹${numericPrice.toLocaleString()}`
+          ? `₹${numericPrice.toLocaleString()}`
           : "Price not available",
       numericPrice,
       image: images[0] || "",
@@ -798,18 +873,18 @@ const TVs = () => {
       return [{ ...device, id: `${device.id}-default` }];
     }
 
-    return vars.map((v) => {
+    return vars.map((v, vIdx) => {
       const rawVariantStorePrices = Array.isArray(v.store_prices)
         ? v.store_prices
         : [];
 
-      const mappedVariantStores = rawVariantStorePrices.map((sp) => ({
-        id: sp.id,
+      const mappedVariantStores = rawVariantStorePrices.map((sp, spIdx) => ({
+        id: sp.id || `${device.id}-${v.variant_id || vIdx}-${spIdx}`,
         store: sp.store_name || sp.store || "Store",
-        price: sp.price,
-        url: sp.url,
-        offer_text: sp.offer_text,
-        delivery_info: sp.delivery_info,
+        price: sp.price ?? sp.amount ?? null,
+        url: sp.url || sp.link || null,
+        offer_text: sp.offer_text || sp.offer || null,
+        delivery_info: sp.delivery_info || sp.delivery_time || null,
       }));
 
       const base = v.base_price || 0;
@@ -820,9 +895,7 @@ const TVs = () => {
           : base > 0
             ? [
                 {
-                  id: `variant-base-${
-                    v.variant_id || Math.random().toString(36).slice(2, 8)
-                  }`,
+                  id: `variant-base-${device.id}-${v.variant_id || vIdx}`,
                   store: "Base Price",
                   price: base,
                   url: null,
@@ -844,13 +917,24 @@ const TVs = () => {
 
       return {
         ...device,
-        id: `${device.id}-${
-          v.variant_id || Math.random().toString(36).slice(2, 8)
-        }`,
+        id: `${device.id}-${v.variant_id || vIdx}`,
         variant: v,
         storePrices,
         price,
         numericPrice,
+        specs: {
+          ...device.specs,
+          screenSize:
+            v.screen_size ||
+            device.specs?.screenSize ||
+            device.specs?.capacity ||
+            "",
+          capacity:
+            v.screen_size ||
+            device.specs?.capacity ||
+            device.specs?.screenSize ||
+            "",
+        },
       };
     });
   });
@@ -1153,13 +1237,85 @@ const TVs = () => {
   const { search } = useLocation();
   const [params] = useSearchParams();
   const filter = params.get("filter");
+  const feature = params.get("feature");
+  const normalizedFeature = feature
+    ? feature.toString().toLowerCase().replace(/\s+/g, "-")
+    : null;
   const dispatch = useDispatch();
+  const [popularFeatureOrder, setPopularFeatureOrder] = useState([]);
+  const [popularFeatureOrderLoaded, setPopularFeatureOrderLoaded] =
+    useState(false);
 
   useEffect(() => {
     if (filter === "trending") dispatch(fetchTrendingHomeAppliances());
     else if (filter === "new") dispatch(fetchNewLaunchHomeAppliances());
     else dispatch(fetchHomeAppliances());
   }, [filter, dispatch]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const controller =
+      typeof AbortController !== "undefined" ? new AbortController() : null;
+
+    (async () => {
+      const deviceTypeCandidates = ["tv", "television", "home-appliance"];
+      for (const deviceType of deviceTypeCandidates) {
+        try {
+          const res = await fetch(
+            `https://api.apisphere.in/api/public/popular-features?deviceType=${encodeURIComponent(deviceType)}&days=7&limit=16`,
+            controller ? { signal: controller.signal } : undefined,
+          );
+          if (!res.ok) continue;
+
+          const data = await res.json();
+          const order = Array.isArray(data?.results)
+            ? data.results
+                .map((r) => r.feature_id || r.featureId || r.id)
+                .filter(Boolean)
+            : [];
+          if (!cancelled) {
+            if (order.length) setPopularFeatureOrder(order);
+            setPopularFeatureOrderLoaded(true);
+          }
+          if (order.length) return;
+        } catch {
+          // ignore popularity fetch errors
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      try {
+        controller?.abort?.();
+      } catch {
+        // ignore
+      }
+    };
+  }, []);
+
+  const popularFeatures = useMemo(() => {
+    let base = computePopularTvFeatures(devices, { limit: 0 });
+
+    if (popularFeatureOrder && popularFeatureOrder.length) {
+      const byId = new Map(base.map((f) => [f.id, f]));
+      const ordered = [];
+      for (const id of popularFeatureOrder) {
+        if (!byId.has(id)) continue;
+        ordered.push(byId.get(id));
+        byId.delete(id);
+      }
+      ordered.push(...byId.values());
+      base = ordered;
+    }
+
+    if (normalizedFeature && !base.some((f) => f.id === normalizedFeature)) {
+      const def = TV_FEATURE_CATALOG.find((f) => f.id === normalizedFeature);
+      if (def) base = [{ ...def, count: 0 }, ...base];
+    }
+
+    return base.slice(0, 16);
+  }, [devices, normalizedFeature, popularFeatureOrder]);
 
   // Get selected appliance type for specific filters
   const selectedApplianceType =
@@ -1316,6 +1472,10 @@ const TVs = () => {
       if (!matchesSearch) return false;
     }
 
+    if (normalizedFeature && !matchesTvFeature(device, normalizedFeature)) {
+      return false;
+    }
+
     // Brand filter
     if (filters.brand.length > 0 && !filters.brand.includes(device.brand)) {
       return false;
@@ -1428,6 +1588,18 @@ const TVs = () => {
   });
 
   const sortedVariants = [...filteredVariants].sort((a, b) => {
+    if (sortBy === "featured" && normalizedFeature) {
+      const av = getTvFeatureSortValue(a, normalizedFeature);
+      const bv = getTvFeatureSortValue(b, normalizedFeature);
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      if (bv !== av) return bv - av;
+      if (a.numericPrice !== b.numericPrice)
+        return a.numericPrice - b.numericPrice;
+      return String(a.name || "").localeCompare(String(b.name || ""));
+    }
+
     switch (sortBy) {
       case "price-low":
         return a.numericPrice - b.numericPrice;
@@ -1498,6 +1670,48 @@ const TVs = () => {
     )
       count += 1;
     return count;
+  };
+
+  const trackFeatureClick = (featureId) => {
+    try {
+      const url = "https://api.apisphere.in/api/public/feature-click";
+      const body = new URLSearchParams({
+        device_type: "tv",
+        feature_id: featureId,
+      });
+      if (navigator && typeof navigator.sendBeacon === "function") {
+        navigator.sendBeacon(url, body);
+        return;
+      }
+    } catch {
+      // fall back to fetch
+    }
+
+    try {
+      fetch("https://api.apisphere.in/api/public/feature-click", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+        },
+        body: new URLSearchParams({
+          device_type: "tv",
+          feature_id: featureId,
+        }),
+        keepalive: true,
+      }).catch(() => {});
+    } catch {
+      // ignore
+    }
+  };
+
+  const setFeatureParam = (featureId) => {
+    const sp = new URLSearchParams(search || "");
+    if (featureId) trackFeatureClick(featureId);
+    if (featureId) sp.set("feature", featureId);
+    else sp.delete("feature");
+    sp.delete("filter");
+    const next = sp.toString();
+    navigate(`/tvs${next ? `?${next}` : ""}`);
   };
 
   const handleView = (device, e, store) => {
@@ -1668,6 +1882,52 @@ const TVs = () => {
             right TV for your home.
           </h4>
         </div>
+
+        <div className="mb-6 sm:mb-7 md:mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <FaFilter className="text-purple-600" />
+              <h3 className="text-sm sm:text-base font-semibold text-gray-900">
+                Popular Features
+              </h3>
+            </div>
+            {normalizedFeature && (
+              <button
+                onClick={() => setFeatureParam(null)}
+                className="text-xs sm:text-sm text-purple-700 hover:text-purple-900 font-semibold"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          {popularFeatureOrderLoaded && (
+            <p className="text-xs text-gray-600 mb-3">
+              Popular choices from other users (last 7 days)
+            </p>
+          )}
+          <div className="flex gap-2.5 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {popularFeatures.map((pf) => {
+              const isActive = normalizedFeature === pf.id;
+              const Icon = pf.icon;
+              return (
+                <button
+                  key={pf.id}
+                  onClick={() => setFeatureParam(pf.id)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-full border text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors ${
+                    isActive
+                      ? "bg-purple-600 text-white border-purple-600"
+                      : "bg-white text-gray-700 border-gray-200 hover:border-purple-300 hover:text-purple-700"
+                  }`}
+                >
+                  <span className={isActive ? "text-white" : "text-purple-600"}>
+                    {Icon ? <Icon className="text-base" /> : null}
+                  </span>
+                  <span>{pf.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
         {/* Control Bar */}
         <div className="mb-8">
           {/* Desktop Search and Sort */}
@@ -1698,7 +1958,7 @@ const TVs = () => {
                   onChange={(e) => handleSortChange(e.target.value)}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 text-gray-700 appearance-none cursor-pointer bg-white pr-10 transition-all duration-200 hover:border-purple-400"
                 >
-                  <option value="featured">Featured</option>
+                  <option value="featured">Featured Devices</option>
                   <option value="price-low">Price: Low to High</option>
                   <option value="price-high">Price: High to Low</option>
                   <option value="newest">Newest First</option>
@@ -2183,7 +2443,7 @@ const TVs = () => {
                     {/* Top Row: Image and Basic Info */}
                     <div className="grid grid-cols-[minmax(0,8.5rem)_minmax(0,1fr)] sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)] gap-3 w-full items-start">
                       {/* Product Image - Fixed container */}
-                      <div className="relative flex-shrink-0 w-full h-36 sm:h-48 rounded-2xl overflow-hidden group bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-100">
+                      <div className="relative flex-shrink-0 w-full h-36 sm:h-48 rounded-2xl overflow-hidden group bg-gray-50 border border-gray-200">
                         <div className="w-full h-full flex items-center justify-center p-1.5 sm:p-2">
                           <ImageCarousel images={device.images} />
                         </div>
@@ -2231,17 +2491,27 @@ const TVs = () => {
                               const refreshRate = String(
                                 device.specs?.refreshRate || "",
                               ).trim();
+                              const panelType = String(
+                                device.specs?.displayType ||
+                                  device.specs?.type ||
+                                  "",
+                              ).trim();
+                              const operatingSystem = String(
+                                device.specs?.operatingSystem || "",
+                              ).trim();
                               const tvIdentity = [
                                 screenSize,
                                 resolution,
                                 refreshRate,
+                                panelType,
+                                operatingSystem,
                               ]
                                 .filter(Boolean)
-                                .join(" / ");
+                                .join(" | ");
 
                               if (!tvIdentity) return null;
                               return (
-                                <p className="text-sm text-gray-600 leading-5 break-words mt-1">
+                                <p className="mt-1 text-[12px] text-gray-600 leading-5 break-words">
                                   {tvIdentity}
                                 </p>
                               );
@@ -2252,91 +2522,62 @@ const TVs = () => {
                         {/* Price */}
                         <div className="mb-3">
                           <div className="flex items-center justify-between">
-                            <div className="text-lg font-bold text-green-600">
-                              {device.price}
+                            <div>
+                              {(() => {
+                                const firstStoreUrl = (
+                                  device.storePrices || []
+                                )
+                                  .map((sp) =>
+                                    getStoreVisitUrl(
+                                      sp?.url,
+                                      sp?.store,
+                                      [
+                                        device.brand,
+                                        device.name || device.model || "TV",
+                                        device.specs?.screenSize,
+                                        device.specs?.resolution,
+                                      ]
+                                        .filter(Boolean)
+                                        .join(" "),
+                                    ),
+                                  )
+                                  .find((url) => Boolean(url));
+                                if (!device.brand) return null;
+                                return (
+                                  <a
+                                    href={firstStoreUrl || "#"}
+                                    target={firstStoreUrl ? "_blank" : undefined}
+                                    rel={
+                                      firstStoreUrl
+                                        ? "noopener noreferrer"
+                                        : undefined
+                                    }
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (!firstStoreUrl) e.preventDefault();
+                                    }}
+                                    className={`inline-block w-full mb-1 text-[12px] font-medium leading-snug whitespace-nowrap overflow-hidden text-ellipsis ${
+                                      firstStoreUrl
+                                        ? "text-blue-700 hover:text-blue-800 hover:underline"
+                                        : "text-blue-700 cursor-default"
+                                    }`}
+                                  >
+                                    {`Visit the ${device.brand} Store`}
+                                  </a>
+                                );
+                              })()}
+                              <div className="text-lg font-bold text-green-600">
+                                {device.price}
+                              </div>
                             </div>
                           </div>
                         </div>
 
-                        {/* Key Specs Badges */}
                       </div>
                     </div>
 
                     {/* Expanded Details */}
                     <div className="mt-3 sm:mt-4 md:mt-5 pt-3 sm:pt-4 md:pt-5">
-                      {/* Detailed Specifications */}
-                      <div className="mb-3 sm:mb-4 md:mb-5">
-                        <h4 className="font-bold text-gray-900 text-sm mb-3 flex items-center gap-2">
-                          <FaInfoCircle className="text-purple-600" />
-                          Key Specs
-                        </h4>
-                        <div className="grid grid-cols-2 gap-3">
-                          {device.specs.screenSize && (
-                            <div className="text-xs">
-                              <div className="text-gray-500">Screen Size</div>
-                              <div className="font-medium text-gray-900">
-                                {device.specs.screenSize}
-                              </div>
-                            </div>
-                          )}
-                          {device.specs.resolution && (
-                            <div className="text-xs">
-                              <div className="text-gray-500">Resolution</div>
-                              <div className="font-medium text-gray-900">
-                                {device.specs.resolution}
-                              </div>
-                            </div>
-                          )}
-                          {device.specs.refreshRate && (
-                            <div className="text-xs">
-                              <div className="text-gray-500">Refresh Rate</div>
-                              <div className="font-medium text-gray-900">
-                                {device.specs.refreshRate}
-                              </div>
-                            </div>
-                          )}
-                          {device.releaseYear && (
-                            <div className="text-xs">
-                              <div className="text-gray-500">Release Year</div>
-                              <div className="font-medium text-gray-900">
-                                {device.releaseYear}
-                              </div>
-                            </div>
-                          )}
-                          {device.specs.displayType && (
-                            <div className="text-xs">
-                              <div className="text-gray-500">Panel Type</div>
-                              <div className="font-medium text-gray-900">
-                                {device.specs.displayType}
-                              </div>
-                            </div>
-                          )}
-                          {device.specs.audioOutput && (
-                            <div className="text-xs">
-                              <div className="text-gray-500">Audio Output</div>
-                              <div className="font-medium text-gray-900">
-                                {device.specs.audioOutput}
-                              </div>
-                            </div>
-                          )}
-                          {device.specs.energyRating && (
-                            <div className="text-xs">
-                              <div className="text-gray-500">Energy Rating</div>
-                              <div className="font-medium text-gray-900">
-                                {device.specs.energyRating}
-                              </div>
-                            </div>
-                          )}
-                          {device.specs.hdmi && (
-                            <div className="text-xs">
-                              <div className="text-gray-500">HDMI Ports</div>
-                              <div className="font-medium text-gray-900">
-                                {device.specs.hdmi}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
 
                       {/* Store Availability */}
                       {device.storePrices && device.storePrices.length > 0 && (
@@ -2355,6 +2596,18 @@ const TVs = () => {
                                 const logoSrc = isLikelyImageSrc(rawLogoSrc)
                                   ? rawLogoSrc
                                   : "";
+                                const visitUrl = getStoreVisitUrl(
+                                  storePrice.url,
+                                  storePrice.store,
+                                  [
+                                    device.brand,
+                                    device.name || device.model || "TV",
+                                    device.specs?.screenSize,
+                                    device.specs?.resolution,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" "),
+                                );
                                 return (
                                   <div
                                     key={`${device.id}-store-${i}`}
@@ -2379,10 +2632,13 @@ const TVs = () => {
                                     </div>
                                     <div className="flex items-center gap-2">
                                       <a
-                                        href={storePrice.url}
+                                        href={visitUrl || "#"}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        onClick={(e) => e.stopPropagation()}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (!visitUrl) e.preventDefault();
+                                        }}
                                         className="text-blue-600 hover:text-blue-800 text-xs font-medium flex items-center gap-1"
                                       >
                                         Buy Now
@@ -2510,7 +2766,7 @@ const TVs = () => {
                 {[
                   {
                     value: "featured",
-                    label: "Featured TVs",
+                    label: "Featured Devices",
                     desc: "Curated selection of popular TV models",
                   },
                   {

@@ -13,6 +13,35 @@ import {
 
 const toText = (value) => {
   if (value === null || value === undefined) return null;
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const normalized = toText(item);
+      if (normalized) return normalized;
+    }
+    return null;
+  }
+  if (typeof value === "object") {
+    const objectCandidate =
+      toText(value?.value) ||
+      toText(value?.label) ||
+      toText(value?.name) ||
+      toText(value?.text) ||
+      toText(value?.title) ||
+      toText(value?.display) ||
+      toText(value?.ram) ||
+      toText(value?.RAM) ||
+      toText(value?.storage) ||
+      toText(value?.rom) ||
+      toText(value?.ROM) ||
+      toText(value?.capacity) ||
+      toText(value?.size);
+    if (objectCandidate) return objectCandidate;
+
+    const amount = toText(value?.amount ?? value?.val);
+    const unit = toText(value?.unit ?? value?.uom);
+    if (amount && unit) return `${amount} ${unit}`;
+    return null;
+  }
   const text = String(value).trim();
   if (!text) return null;
   const lower = text.toLowerCase();
@@ -124,6 +153,9 @@ const getRamStorageFromTrendingRow = (row) => {
     perf?.RAM,
     variant?.ram,
     variant?.RAM,
+    row?.memory?.ram,
+    row?.memory?.RAM,
+    row?.memory?.memory,
   );
 
   let storage = firstText(
@@ -146,6 +178,11 @@ const getRamStorageFromTrendingRow = (row) => {
     perf?.ROM_storage,
     variant?.storage,
     variant?.rom,
+    row?.storage?.capacity,
+    row?.storage?.storage,
+    row?.storage?.rom,
+    row?.storage?.ROM,
+    row?.storage?.internal_storage,
   );
 
   if (!ram || !storage) {
@@ -534,13 +571,22 @@ const TrendingSection = () => {
 
   const handleViewAll = () => {
     const routeMap = {
-      smartphone: "/smartphones",
-      laptop: "/laptops",
-      appliance: "/tvs",
-      networking: "/networking",
+      smartphone: "/trending/smartphones",
+      laptop: "/trending/laptops",
+      appliance: "/trending/tvs",
+      networking: "/trending/smartphones",
     };
     navigate(routeMap[activeCategory] || "/");
   };
+
+  const FallbackCardIcon =
+    activeCategory === "laptop"
+      ? FaLaptop
+      : activeCategory === "appliance"
+        ? FaTv
+        : activeCategory === "networking"
+          ? FaWifi
+          : FaMobileAlt;
 
   return (
     <div className="px-2 lg:px-4 mx-auto bg-white max-w-6xl rounded-xl mb-5 w-full m-0 overflow-hidden pt-5 sm:pt-10">
@@ -687,9 +733,12 @@ const TrendingSection = () => {
                             }}
                           />
                         ) : (
-                          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full  flex items-center justify-center">
-                            <span className="text-lg font-bold text-gray-500">
-                              {device.brand?.charAt(0) || "P"}
+                          <div className="text-center px-3">
+                            <div className="mx-auto mb-1.5 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-200">
+                              <FallbackCardIcon className="text-gray-400 text-sm" />
+                            </div>
+                            <span className="text-[11px] text-gray-500">
+                              No image
                             </span>
                           </div>
                         )}

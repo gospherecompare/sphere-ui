@@ -8,12 +8,14 @@ import Smartphones from "./components/Product/Smartphones";
 import Laptops from "./components/Product/Laptops";
 import Networking from "./components/Product/Networking";
 import TVs from "./components/Product/TVs";
+import TrendingProductsHub from "./components/Product/TrendingProductsHub";
 import DeviceComparison from "./components/compare";
 import Breadcrumbs from "./components/Breadcrumbs";
 import About from "./components/Static/About";
 import Contact from "./components/Static/Contact";
 import PrivacyPolicy from "./components/Static/PrivacyPolicy";
 import Terms from "./components/Static/Terms";
+import NotFound from "./components/Static/NotFound";
 import {
   Route,
   Routes,
@@ -52,7 +54,7 @@ function App() {
       case "networking":
         return <Networking />;
       default:
-        return <div className="p-4">Category not found</div>;
+        return <NotFound />;
     }
   };
 
@@ -96,6 +98,13 @@ function App() {
           <Route path="/appliances" element={<AppliancesListRedirect />} />
           <Route path="/networking" element={<Networking />} />
 
+          {/* Unified Trending Product Explorer */}
+          <Route
+            path="/trending"
+            element={<Navigate to="/trending/smartphones" replace />}
+          />
+          <Route path="/trending/:category" element={<TrendingProductsHub />} />
+
           {/* Support /products/:category SEO paths */}
           <Route path="/products" element={<Smartphones />} />
           <Route path="/products/:category" element={<CategoryRouter />} />
@@ -137,10 +146,7 @@ function App() {
           />
 
           {/* 404 Fallback */}
-          <Route
-            path="*"
-            element={<div className="p-4">404 - Page Not Found</div>}
-          />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
       <Footer />

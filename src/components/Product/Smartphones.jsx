@@ -75,10 +75,12 @@ const ImageCarousel = ({ images = [] }) => {
   // If no images or single image, show static image
   if (!images || images.length === 0) {
     return (
-      <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg">
-        <div className="text-center">
-          <FaMobileAlt className="text-gray-300 text-3xl mx-auto mb-2" />
-          <span className="text-gray-400 text-sm">No image</span>
+      <div className="relative w-full h-full flex items-center justify-center rounded-lg bg-gray-100">
+        <div className="text-center px-3">
+          <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-200">
+            <FaMobileAlt className="text-gray-400 text-sm" />
+          </div>
+          <span className="text-xs text-gray-500">No image</span>
         </div>
       </div>
     );
@@ -417,9 +419,14 @@ const Smartphones = () => {
     const batteryRaw =
       apiDevice.battery?.battery_capacity_mah ||
       apiDevice.battery?.battery_capacity ||
+      apiDevice.battery?.capacity_mAh ||
+      apiDevice.battery?.capacity_mah ||
       apiDevice.battery?.capacity ||
+      apiDevice.battery?.battery ||
       apiDevice.battery_capacity_mah ||
       apiDevice.battery_capacity ||
+      apiDevice.capacity_mAh ||
+      apiDevice.capacity_mah ||
       apiDevice.battery ||
       "";
     const numericBattery = parseInt(
@@ -1840,6 +1847,7 @@ const Smartphones = () => {
             parseFirstInt(b.capacity_mAh) ??
             parseFirstInt(b.capacity_mah) ??
             parseFirstInt(b.battery_capacity) ??
+            parseFirstInt(b.battery) ??
             parseFirstInt(b.capacity) ??
             null
           );
@@ -2263,6 +2271,7 @@ const Smartphones = () => {
       parseFirstInt(b.capacity_mAh) ??
       parseFirstInt(b.capacity_mah) ??
       parseFirstInt(b.battery_capacity) ??
+      parseFirstInt(b.battery) ??
       parseFirstInt(b.capacity) ??
       null
     );
@@ -3156,7 +3165,7 @@ const Smartphones = () => {
                     {/* Top Row: Image and Basic Info */}
                     <div className="grid grid-cols-[minmax(0,8.5rem)_minmax(0,1fr)] sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)] gap-3 w-full items-start">
                       {/* Product Image - Fixed container with checkbox overlay */}
-                      <div className="relative flex-shrink-0 w-full h-36 sm:h-48 rounded-2xl overflow-hidden group bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-100">
+                      <div className="relative flex-shrink-0 w-full h-36 sm:h-48 rounded-2xl overflow-hidden group bg-gray-50 border border-gray-200">
                         <div className="w-full h-full flex items-center justify-center p-1.5 sm:p-2">
                           <ImageCarousel images={device.images} />
                         </div>
@@ -3253,6 +3262,14 @@ const Smartphones = () => {
                                 const processor = String(
                                   device.specs?.processor ?? "",
                                 ).trim();
+                                const rearCameraMp = getRearCameraMp(device);
+                                const rearCameraRaw = String(
+                                  device.specs?.rearCameraResolution ?? "",
+                                ).trim();
+                                const batteryMah = getBatteryMah(device);
+                                const batteryRaw = String(
+                                  device.specs?.battery ?? "",
+                                ).trim();
 
                                 const parts = [];
 
@@ -3271,6 +3288,24 @@ const Smartphones = () => {
                                       ? storage
                                       : `${storage} Storage`;
                                   parts.push(storageLabel);
+                                }
+                                if (rearCameraMp) {
+                                  parts.push(`${rearCameraMp} MP Camera`);
+                                } else if (rearCameraRaw) {
+                                  parts.push(
+                                    /camera/i.test(rearCameraRaw)
+                                      ? rearCameraRaw
+                                      : `${rearCameraRaw} Camera`,
+                                  );
+                                }
+                                if (batteryMah) {
+                                  parts.push(`${batteryMah} mAh Battery`);
+                                } else if (batteryRaw) {
+                                  parts.push(
+                                    /battery/i.test(batteryRaw)
+                                      ? batteryRaw
+                                      : `${batteryRaw} Battery`,
+                                  );
                                 }
                                 if (display) parts.push(display);
                                 if (processor) parts.push(processor);
@@ -3323,7 +3358,7 @@ const Smartphones = () => {
                                     className={`inline-block w-full mb-1 text-[12px] font-medium leading-snug whitespace-nowrap overflow-hidden text-ellipsis ${
                                       brandStoreUrl
                                         ? "text-blue-700 hover:text-blue-800 hover:underline"
-                                        : "text-gray-500 cursor-default"
+                                        : "text-blue-700 cursor-default"
                                     }`}
                                   >
                                     {`Visit the ${device.brand} Store`}

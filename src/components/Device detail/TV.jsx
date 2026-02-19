@@ -1,4 +1,4 @@
-// src/components/TVDetailCard.jsx
+﻿// src/components/TVDetailCard.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import useDevice from "../../hooks/useDevice";
@@ -175,6 +175,9 @@ const TVDetailCard = () => {
     );
     const designJson = toObjectIfNeeded(a.design_json || a.design);
     const gamingJson = toObjectIfNeeded(a.gaming_json || a.gaming);
+    const productDetailsJson = toObjectIfNeeded(
+      a.product_details_json || a.product_details,
+    );
     const warrantyJson = toObjectIfNeeded(a.warranty_json || a.warranty);
     const legacySpecs = { ...(a.specifications || {}), ...(a.specs || {}) };
 
@@ -189,6 +192,18 @@ const TVDetailCard = () => {
         : [];
 
     const variants = rawVariants.map((v) => {
+      const variantScreenSize = firstNonEmpty(
+        v.screen_size,
+        v.size,
+        keySpecs.screen_size,
+        displayJson.screen_size,
+      );
+      const variantSummary = firstNonEmpty(
+        v.specification_summary,
+        v.variant_key,
+        variantScreenSize,
+        keySpecs.resolution,
+      );
       const storePrices = Array.isArray(v.store_prices)
         ? v.store_prices.map((sp) => ({
             ...sp,
@@ -215,13 +230,8 @@ const TVDetailCard = () => {
           v.variant_id || v.id || v.variantId || v.variant_key || null,
         base_price: v.base_price ?? v.price ?? v.attributes?.base_price ?? null,
         store_prices: storePrices,
-        screen_size:
-          v.screen_size ||
-          keySpecs.screen_size ||
-          displayJson.screen_size ||
-          "",
-        specification_summary:
-          v.specification_summary || v.screen_size || v.variant_key || "",
+        screen_size: variantScreenSize || "",
+        specification_summary: variantSummary || "",
       };
     });
 
@@ -260,11 +270,17 @@ const TVDetailCard = () => {
       smartTvJson.operating_system,
       legacySpecs.operating_system,
     );
-    const energyRating = firstNonEmpty(
+    const rawEnergyRating = firstNonEmpty(
       powerJson.energy_rating,
+      powerJson.energy_star_rating,
       keySpecs.energy_rating,
+      keySpecs.energy_star_rating,
       legacySpecs.energy_rating,
     );
+    const energyRating =
+      rawEnergyRating && /^\d+(\.\d+)?$/.test(String(rawEnergyRating))
+        ? `${rawEnergyRating} Star`
+        : rawEnergyRating;
     const hdrSupport =
       (Array.isArray(keySpecs.hdr_support) && keySpecs.hdr_support.join(", ")) ||
       (Array.isArray(displayJson.hdr_formats) &&
@@ -273,11 +289,15 @@ const TVDetailCard = () => {
 
     const features = [
       ...(Array.isArray(keySpecs.hdr_support) ? keySpecs.hdr_support : []),
+      ...(Array.isArray(keySpecs.ai_features) ? keySpecs.ai_features : []),
       ...(Array.isArray(displayJson.gaming_features)
         ? displayJson.gaming_features
         : []),
       ...(Array.isArray(audioJson.audio_features) ? audioJson.audio_features : []),
       ...(Array.isArray(smartTvJson.supported_apps) ? smartTvJson.supported_apps : []),
+      ...(Array.isArray(smartTvJson.voice_assistant)
+        ? smartTvJson.voice_assistant
+        : []),
     ].filter(Boolean);
 
     const dimensions = [
@@ -371,8 +391,17 @@ const TVDetailCard = () => {
       design_json: designJson,
       gaming_json: gamingJson,
       warranty_json: warrantyJson,
-      release_year: a.release_year || basicInfo.launch_year || a.launch_year || "",
-      country: firstNonEmpty(warrantyJson.country_of_origin, a.country_of_origin),
+      release_year:
+        a.release_year ||
+        basicInfo.launch_year ||
+        productDetailsJson.launch_year ||
+        a.launch_year ||
+        "",
+      country: firstNonEmpty(
+        warrantyJson.country_of_origin,
+        productDetailsJson.country_of_origin,
+        a.country_of_origin,
+      ),
     };
   };
 
@@ -487,11 +516,11 @@ const TVDetailCard = () => {
     }, 200);
 
     return () => clearTimeout(timer);
-  }, [window.location.search, homeAppliances]);
+  }, [location.search, homeAppliances, routeSlug]);
 
-  // Redirect to canonical SEO-friendly appliance URL when data available
+  // Redirect to canonical SEO-friendly appliance URL when data is available
   useEffect(() => {
-    if (!applianceData || !routeSlug) return;
+    if (!applianceData) return;
 
     const canonicalSlug = generateSlug(
       applianceData.product_name ||
@@ -505,7 +534,7 @@ const TVDetailCard = () => {
     if (currentPath !== desiredPath) {
       navigate(desiredPath + (location.search || ""), { replace: true });
     }
-  }, [applianceData, routeSlug, navigate, location.search]);
+  }, [applianceData, navigate, location.search]);
 
   // Record a single product view per browser session for home appliances.
   useEffect(() => {
@@ -524,7 +553,7 @@ const TVDetailCard = () => {
       )
         return;
 
-      fetch(`http://localhost:500/api/public/product/${pid}/view`, {
+      fetch(`https://api.apisphere.in/api/public/product/${pid}/view`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -639,6 +668,63 @@ const TVDetailCard = () => {
 
   const variants = applianceData?.variants || [];
   const currentVariant = variants?.[selectedVariant];
+  const currentProductId =
+    applianceData?.id ??
+    applianceData?.product_id ??
+    applianceData?.productId ??
+    null;
+
+  const popularComparisonTargets = (() => {
+    const list = Array.isArray(homeAppliances) ? homeAppliances : [];
+    if (!currentProductId || list.length === 0) return [];
+
+    const normalizePrice = (d) => {
+      const vars = Array.isArray(d?.variants) ? d.variants : [];
+      const raw = vars?.[0]?.base_price ?? d?.base_price ?? d?.price ?? null;
+      const n = Number(raw);
+      return Number.isFinite(n) ? n : null;
+    };
+
+    const normalized = list
+      .map((d) => normalizeAppliance(d))
+      .filter(Boolean)
+      .filter((d) => {
+        const typeText = String(
+          d?.category || d?.appliance_type || d?.product_type || "",
+        ).toLowerCase();
+        return typeText.includes("tv") || typeText.includes("television");
+      })
+      .filter((d) => String(d.id ?? "") !== String(currentProductId));
+
+    const currentBrand = String(applianceData?.brand || "").toLowerCase();
+
+    return normalized
+      .map((d) => {
+        const brand = String(d.brand || "").toLowerCase();
+        const sameBrand = Boolean(currentBrand && brand === currentBrand);
+        const rating = Number(d.rating ?? d.avg_rating ?? d.score ?? 0) || 0;
+        const price = normalizePrice(d);
+        return { d, sameBrand, rating, price };
+      })
+      .sort((a, b) => {
+        if (a.sameBrand !== b.sameBrand) return a.sameBrand ? -1 : 1;
+        if (b.rating !== a.rating) return b.rating - a.rating;
+        if (a.price == null && b.price != null) return 1;
+        if (a.price != null && b.price == null) return -1;
+        if (a.price != null && b.price != null) return a.price - b.price;
+        return 0;
+      })
+      .slice(0, 6)
+      .map((x) => x.d);
+  })();
+
+  const handlePopularCompare = (other) => {
+    const otherId = other?.id ?? other?.product_id ?? other?.productId ?? null;
+    if (!currentProductId || !otherId) return;
+    navigate(`/compare?devices=${currentProductId}:0,${otherId}:0`, {
+      state: { initialProduct: applianceData },
+    });
+  };
 
   const allStorePrices =
     variants?.flatMap(
@@ -676,6 +762,43 @@ const TVDetailCard = () => {
   const formatPrice = (price) => {
     if (price == null || price === "") return "N/A";
     return new Intl.NumberFormat("en-IN").format(price);
+  };
+
+  const RUPEE_SYMBOL = "\u20B9";
+
+  const buildStoreSearchUrl = (storeName, query) => {
+    const normalizedStore = String(storeName || "").toLowerCase().trim();
+    const normalizedQuery = String(query || "").trim();
+    if (!normalizedStore || !normalizedQuery) return "";
+    if (normalizedStore.includes("base price")) return "";
+
+    const encodedQuery = encodeURIComponent(normalizedQuery);
+    if (normalizedStore.includes("amazon")) {
+      return `https://www.amazon.in/s?k=${encodedQuery}`;
+    }
+    if (normalizedStore.includes("flipkart")) {
+      return `https://www.flipkart.com/search?q=${encodedQuery}`;
+    }
+    if (normalizedStore.includes("croma")) {
+      return `https://www.croma.com/searchB?q=${encodedQuery}%3Arelevance`;
+    }
+    if (normalizedStore.includes("reliance")) {
+      return `https://www.reliancedigital.in/search?q=${encodedQuery}`;
+    }
+    if (normalizedStore.includes("vijay sales")) {
+      return `https://www.vijaysales.com/search/${encodedQuery}`;
+    }
+
+    return `https://www.google.com/search?q=${encodeURIComponent(
+      `${storeName} ${normalizedQuery}`,
+    )}`;
+  };
+
+  const getStoreVisitUrl = (rawUrl, storeName, query) => {
+    const resolvedUrl = String(rawUrl || "").trim();
+    if (/^https?:\/\//i.test(resolvedUrl)) return resolvedUrl;
+    if (/^\/\//.test(resolvedUrl)) return `https:${resolvedUrl}`;
+    return buildStoreSearchUrl(storeName, query);
   };
 
   const toNormalCase = (raw) => {
@@ -770,6 +893,75 @@ const TVDetailCard = () => {
     return normalized;
   };
 
+  const isPrimitive = (v) =>
+    v == null || (typeof v !== "object" && typeof v !== "function");
+
+  // Build descriptive title similar to smartphone details header style
+  const buildDescriptiveTitle = (data, variant) => {
+    if (!data) return "";
+
+    const model =
+      data.product_name || data.model_number || data.model || data.name || "TV";
+
+    const processorRaw =
+      data.display_json?.picture_processor ||
+      data.specifications?.picture_processor ||
+      data.performance?.picture_processor ||
+      data.performance?.processor ||
+      data.key_specs_json?.ai_features?.[0] ||
+      "";
+    const processor =
+      !isPrimitive(processorRaw) || processorRaw === ""
+        ? ""
+        : formatSpecValue(processorRaw);
+
+    const screenSizeRaw =
+      variant?.screen_size ||
+      data.specifications?.screen_size ||
+      data.specifications?.capacity ||
+      "";
+    const screenSize =
+      !isPrimitive(screenSizeRaw) || screenSizeRaw === ""
+        ? ""
+        : formatSpecValue(screenSizeRaw);
+
+    const resolutionRaw =
+      data.specifications?.resolution || data.display_json?.resolution || "";
+    const resolution =
+      !isPrimitive(resolutionRaw) || resolutionRaw === ""
+        ? ""
+        : formatSpecValue(resolutionRaw);
+
+    const refreshRaw =
+      data.specifications?.refresh_rate || data.display_json?.refresh_rate || "";
+    let refreshRate =
+      !isPrimitive(refreshRaw) || refreshRaw === ""
+        ? ""
+        : formatSpecValue(refreshRaw);
+    if (
+      refreshRate &&
+      /^\d+(\.\d+)?$/.test(refreshRate) &&
+      !/hz/i.test(refreshRate)
+    ) {
+      refreshRate = `${refreshRate}Hz`;
+    }
+
+    const panelRaw =
+      data.specifications?.panel_type || data.display_json?.panel_type || "";
+    const panelType =
+      !isPrimitive(panelRaw) || panelRaw === "" ? "" : formatSpecValue(panelRaw);
+
+    const specs = [];
+    if (processor) specs.push(processor);
+    if (screenSize || resolution) {
+      specs.push([screenSize, resolution].filter(Boolean).join(" / "));
+    }
+    if (refreshRate) specs.push(refreshRate);
+    if (panelType) specs.push(panelType);
+
+    return specs.length ? `${model} - ${specs.join(" ")}` : model;
+  };
+
   const sortedStores = allStorePrices.slice().sort((a, b) => {
     const priceA = a?.price || Infinity;
     const priceB = b?.price || Infinity;
@@ -785,19 +977,6 @@ const TVDetailCard = () => {
   const displayedStores = showAllStores
     ? sortedStores
     : sortedVariantStores.slice(0, 3);
-
-  // Share functionality
-  const shareData = {
-    title: `${applianceData?.brand} ${applianceData?.product_name}`,
-    text: `Check out ${applianceData?.brand} ${applianceData?.product_name} - ${
-      applianceData?.category
-    }. Price starts at ₹${
-      currentVariant?.base_price
-        ? formatPrice(currentVariant.base_price)
-        : "N/A"
-    }`,
-    url: window.location.href,
-  };
 
   // Generate detailed share content with product information
   const generateShareContent = () => {
@@ -825,30 +1004,23 @@ const TVDetailCard = () => {
       applianceData?.specs?.color ||
       "Various";
     const price = currentVariant?.base_price
-      ? `₹${formatPrice(currentVariant.base_price)}`
+      ? `${RUPEE_SYMBOL}${formatPrice(currentVariant.base_price)}`
       : "Price not available";
 
     return {
       title: `${brand} ${model}`,
       description: `${category} | Screen: ${screenSize} | Resolution: ${resolution} | Color: ${color} | Price: ${price}`,
       shortDescription: `${brand} ${model} - ${category}, ${screenSize}, ${resolution}, Price: ${price}`,
-      fullDetails: `
-🏠 ${brand} ${model}
-📁 Category: ${category}
-📺 Screen: ${screenSize}
-📡 Resolution: ${resolution}
-🎨 Color: ${color}
-💰 Price: ${price}
-      `,
+      fullDetails: [
+        `${brand} ${model}`,
+        `Category: ${category}`,
+        `Screen: ${screenSize}`,
+        `Resolution: ${resolution}`,
+        `Color: ${color}`,
+        `Price: ${price}`,
+      ].join("\n"),
     };
   };
-
-  const slugify = (str = "") =>
-    String(str)
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
 
   const getCanonicalUrl = () => {
     try {
@@ -857,14 +1029,54 @@ const TVDetailCard = () => {
       );
       if (!slug) return window.location.href;
       const path = `/tvs/${slug}`;
-      return window.location.origin + path + (location.search || "");
+      return window.location.origin + path;
     } catch (e) {
       return window.location.href;
     }
   };
 
+  const getShareUrl = () => {
+    try {
+      const base = getCanonicalUrl();
+      const url = new URL(base);
+      const productId =
+        applianceData?.id ||
+        applianceData?.product_id ||
+        applianceData?.productId ||
+        applianceData?.model_number ||
+        "";
+      if (productId) url.searchParams.set("id", String(productId));
+      url.searchParams.set("shared", "1");
+      return url.toString();
+    } catch (e) {
+      return getCanonicalUrl();
+    }
+  };
+
+  const copyTextToClipboard = async (text) => {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise((resolve, reject) => {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+        if (ok) resolve();
+        else reject(new Error("copy failed"));
+      } catch (e) {
+        reject(e);
+      }
+    });
+  };
+
   const handleShare = async () => {
-    const url = getCanonicalUrl();
+    const url = getShareUrl();
     const content = generateShareContent();
     const payload = {
       title: content.title,
@@ -874,36 +1086,32 @@ const TVDetailCard = () => {
     if (navigator.share) {
       try {
         await navigator.share(payload);
+        return;
       } catch (err) {
-        console.log("Error sharing:", err);
+        console.warn("Native share failed:", err);
       }
-    } else {
+    }
+
+    try {
+      await copyTextToClipboard(url);
+      setShowShareMenu(true);
+    } catch (err) {
+      console.error("Clipboard fallback failed:", err);
       setShowShareMenu(true);
     }
   };
 
-  const handleCopyLink = () => {
-    const url = getCanonicalUrl();
+  const handleCopyLink = async () => {
+    const url = getShareUrl();
     const content = generateShareContent();
-    // Copy with product details and link
-    const textToCopy = `${content.title}\n${content.description}\n\n${url}`;
-    navigator.clipboard
-      .writeText(textToCopy)
-      .then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      })
-      .catch((err) => {
-        console.error("Failed to copy:", err);
-        const textArea = document.createElement("textarea");
-        textArea.value = textToCopy;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand("copy");
-        document.body.removeChild(textArea);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      });
+    const textToCopy = `${content.fullDetails}\n\nView details: ${url}`;
+    try {
+      await copyTextToClipboard(textToCopy);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
   };
 
   const toggleFavorite = async () => {
@@ -1064,8 +1272,9 @@ const TVDetailCard = () => {
       );
     }
 
+    const isScoreKey = (key) => /(^|[_-])score$/i.test(String(key || ""));
     const rows = Object.entries(data).filter(
-      ([_, value]) => value !== "" && value != null && value !== false,
+      ([key, value]) => hasContent(value) && !isScoreKey(key),
     );
 
     if (!rows.length) {
@@ -1292,8 +1501,8 @@ const TVDetailCard = () => {
   if (!loading && !applianceData) {
     return (
       <div className="px-2 lg:px-4 mx-auto max-w-6xl w-full p-4">
-        <div className="bg-white  p-12 text-center border border-gray-200">
-          <div className="text-gray-400 text-6xl mb-4">🏠</div>
+          <div className="bg-white  p-12 text-center border border-gray-200">
+          <div className="text-gray-400 text-6xl mb-4">TV</div>
           <h3 className="text-2xl font-semibold text-gray-900 mb-3">
             Product Not Found
           </h3>
@@ -1305,7 +1514,9 @@ const TVDetailCard = () => {
     );
   }
 
+  const descriptiveTitle = buildDescriptiveTitle(applianceData, currentVariant);
   const metaName =
+    descriptiveTitle ||
     applianceData?.product_name ||
     applianceData?.model_number ||
     applianceData?.model ||
@@ -1335,6 +1546,12 @@ const TVDetailCard = () => {
     screenSize: metaScreenSize,
     resolution: metaResolution,
   });
+  const currentDateLabel = new Date().toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  const metaTitleWithDate = `${metaTitle} [${currentDateLabel}]`;
   const metaDescription = tvMeta.description({
     name: metaName,
     brand: metaBrand,
@@ -1348,7 +1565,7 @@ const TVDetailCard = () => {
   return (
     <div className="px-2 lg:px-4 mx-auto max-w-6xl w-full bg-white">
       <Helmet>
-        <title>{metaTitle}</title>
+        <title>{metaTitleWithDate}</title>
         <meta name="description" content={metaDescription} />
         <link rel="canonical" href={canonicalUrl} />
         <meta property="og:type" content="product" />
@@ -1376,13 +1593,15 @@ const TVDetailCard = () => {
                 onClick={() => setShowShareMenu(false)}
                 className="text-gray-400 hover:text-gray-600 text-xl"
               >
-                ×
+                &times;
               </button>
             </div>
             <div className="space-y-3">
               <button
                 onClick={() => {
-                  const message = `${shareData.title}\n${shareData.text}\n\n${shareData.url}`;
+                  const content = generateShareContent();
+                  const shareUrl = getShareUrl();
+                  const message = `${content.fullDetails}\n\nCheck it out: ${shareUrl}`;
                   const url = `https://wa.me/?text=${encodeURIComponent(
                     message,
                   )}`;
@@ -1396,8 +1615,9 @@ const TVDetailCard = () => {
               </button>
               <button
                 onClick={() => {
+                  const shareUrl = getShareUrl();
                   const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-                    window.location.href,
+                    shareUrl,
                   )}`;
                   window.open(url, "_blank");
                   setShowShareMenu(false);
@@ -1409,12 +1629,12 @@ const TVDetailCard = () => {
               </button>
               <button
                 onClick={() => {
-                  const tweet = `${
-                    shareData.title
-                  } - ${shareData.text.substring(0, 100)}...`;
+                  const content = generateShareContent();
+                  const shareUrl = getShareUrl();
+                  const tweet = `Check out: ${content.title}\n${content.shortDescription}\n\n#TV #SmartTV`;
                   const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
                     tweet,
-                  )}&url=${encodeURIComponent(window.location.href)}`;
+                  )}&url=${encodeURIComponent(shareUrl)}`;
                   window.open(url, "_blank");
                   setShowShareMenu(false);
                 }}
@@ -1458,11 +1678,11 @@ const TVDetailCard = () => {
                   </span>
                 )}
               </div>
-              <h1 className="text-xl font-bold text-gray-900 mb-1">
-                {applianceData.product_name}
+              <h1 className="text-xl font-extrabold tracking-tight mb-1 text-gray-900 leading-tight">
+                {descriptiveTitle || applianceData.product_name}
               </h1>
               <p className="text-gray-600 text-sm">
-                {applianceData.brand} • {applianceData.model_number}
+                {applianceData.brand} | {applianceData.model_number}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -1486,11 +1706,78 @@ const TVDetailCard = () => {
           </div>
           <div className="flex items-center justify-end mt-4">            {currentVariant && (
               <span className="text-2xl font-bold text-green-600">
-                ₹{formatPrice(currentVariant.base_price)}
+                {RUPEE_SYMBOL}
+                {formatPrice(currentVariant.base_price)}
               </span>
             )}
           </div>
         </div>
+
+        {/* Popular Comparisons */}
+        {popularComparisonTargets.length > 0 && (
+          <div className="px-4 pt-4 pb-1">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-sm font-semibold text-gray-900">
+                Popular comparisons
+              </h2>
+              <button
+                type="button"
+                onClick={() =>
+                  navigate("/compare", {
+                    state: { initialProduct: applianceData },
+                  })
+                }
+                className="text-xs font-semibold text-purple-700 hover:text-purple-800"
+              >
+                Open compare
+              </button>
+            </div>
+            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-3">
+              {popularComparisonTargets.map((d) => {
+                const otherId = d?.id ?? d?.product_id ?? d?.productId ?? null;
+                const otherName = d?.product_name || d?.name || d?.model || "TV";
+                const otherImg = d?.images?.[0] || d?.image || "";
+
+                return (
+                  <button
+                    key={String(otherId || otherName)}
+                    type="button"
+                    onClick={() => handlePopularCompare(d)}
+                    className="min-w-[240px] max-w-[280px] flex-shrink-0 rounded-xl border border-gray-200 bg-white p-3 hover:border-purple-200 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
+                        {otherImg ? (
+                          <img
+                            src={otherImg}
+                            alt={otherName}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                            }}
+                          />
+                        ) : (
+                          <FaTv className="text-gray-400 text-sm" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[11px] text-gray-500 truncate">
+                          Compare with
+                        </div>
+                        <div className="text-sm font-semibold text-gray-900 truncate">
+                          {otherName}
+                        </div>
+                      </div>
+                      <span className="text-xs font-semibold text-purple-700">
+                        Compare
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <div className="flex flex-col lg:flex-row">
           {/* Images Section */}
@@ -1577,13 +1864,18 @@ const TVDetailCard = () => {
                           variant.capacity ||
                           variant.screen_size ||
                           variant.type ||
-                          "Standard"}
+                          applianceData.specifications?.screen_size ||
+                          `Variant ${index + 1}`}
                       </div>
                       <div className="text-xs text-gray-600 mb-2">
-                        {variant.specification_summary || ""}
+                        {variant.specification_summary ||
+                          applianceData.specifications?.resolution ||
+                          applianceData.specifications?.panel_type ||
+                          ""}
                       </div>
                       <div className="text-sm font-bold text-green-600">
-                        ₹{formatPrice(variant.base_price)}
+                        {RUPEE_SYMBOL}
+                        {formatPrice(variant.base_price)}
                       </div>
                     </button>
                   ))}
@@ -1607,10 +1899,10 @@ const TVDetailCard = () => {
                     icon: FaRuler,
                   },
                   {
-                    key: "energy_rating",
-                    fallback: "energyRating",
-                    label: "Energy",
-                    icon: FaBatteryFull,
+                    key: "refresh_rate",
+                    fallback: "refreshRate",
+                    label: "Refresh",
+                    icon: FaSyncAlt,
                   },
                 ].map((item) => {
                   const value =
@@ -1622,15 +1914,15 @@ const TVDetailCard = () => {
                   return (
                     <div
                       key={item.key}
-                      className={`text-center p-3 rounded-lg ${currentColor.light}`}
+                      className="text-center p-3 rounded-xl bg-white border border-gray-200 shadow-sm"
                     >
-                      <item.icon
-                        className={`${currentColor.text} text-lg mx-auto mb-1`}
-                      />
-                      <div className={`font-bold ${currentColor.text} text-sm`}>
+                      <item.icon className={`${currentColor.text} text-base mx-auto mb-2`} />
+                      <div className="font-semibold text-gray-900 text-sm leading-5">
                         {value}
                       </div>
-                      <div className="text-xs text-gray-600">{item.label}</div>
+                      <div className="text-[11px] mt-1 text-gray-500">
+                        {item.label}
+                      </div>
                     </div>
                   );
                 })}
@@ -1660,11 +1952,11 @@ const TVDetailCard = () => {
                       </span>
                     )}
                   </div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                    {applianceData.product_name}
+                  <h1 className="text-2xl font-extrabold tracking-tight mb-2 text-gray-900">
+                    {descriptiveTitle || applianceData.product_name}
                   </h1>
                   <p className="text-gray-600 text-lg mb-4">
-                    {applianceData.brand} • Model: {applianceData.model_number}
+                    {applianceData.brand} | Model: {applianceData.model_number}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -1713,7 +2005,7 @@ const TVDetailCard = () => {
                       Starting from
                     </div>
                     <div className="text-4xl font-bold text-green-600">
-                      ₹ {formatPrice(currentVariant.base_price)}
+                      {RUPEE_SYMBOL} {formatPrice(currentVariant.base_price)}
                     </div>
                   </div>
                 )}
@@ -1723,7 +2015,7 @@ const TVDetailCard = () => {
             {/* Store Prices Section */}
             {sortedStores.length > 0 && (
               <div className="mb-8">
-                <div className="flex items-center justify-end mb-6">
+                <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                     <FaStore className={currentColor.text} />
                     Available at Online Stores
@@ -1744,7 +2036,23 @@ const TVDetailCard = () => {
                 </div>
 
                 <div className="space-y-4">
-                  {displayedStores.map((store, index) => (
+                  {displayedStores.map((store, index) => {
+                    const visitUrl = getStoreVisitUrl(
+                      store.url,
+                      store.store_name,
+                      [
+                        applianceData?.brand,
+                        applianceData?.product_name ||
+                          applianceData?.model_number,
+                        store.variantName || store.variantSpec,
+                        applianceData?.specifications?.screen_size,
+                        applianceData?.specifications?.resolution,
+                      ]
+                        .filter(Boolean)
+                        .join(" "),
+                    );
+
+                    return (
                     <div
                       key={store.id || index}
                       className="bg-white border border-gray-200 rounded-xl p-4 hover:border-blue-300 hover:shadow-md transition-all duration-200"
@@ -1772,8 +2080,19 @@ const TVDetailCard = () => {
                         </div>
                         <div className="flex items-center gap-6">
                           <div className="text-right">
+                            <a
+                              href={visitUrl || "#"}
+                              target="_blank"
+                              rel="noopener noreferrer nofollow"
+                              onClick={(e) => {
+                                if (!visitUrl) e.preventDefault();
+                              }}
+                              className="text-blue-600 hover:text-blue-800 text-xs font-medium inline-flex items-center gap-1 mb-1"
+                            >
+                              {`Visit Store ${store.store_name || "Store"}`}
+                            </a>
                             <div className="text-lg font-bold text-green-600">
-                              ₹ {formatPrice(store.price)}
+                              {RUPEE_SYMBOL} {formatPrice(store.price)}
                             </div>
                             {store.delivery_time && (
                               <div className="text-xs text-gray-500">
@@ -1782,10 +2101,13 @@ const TVDetailCard = () => {
                             )}
                           </div>
                           <a
-                            href={store.url}
+                            href={visitUrl || "#"}
                             target="_blank"
                             rel="noopener noreferrer nofollow"
-                            className={`${currentColor.bg} hover:opacity-90 text-white px-5 py-2.5 rounded-lg font-semibold text-sm flex items-center gap-2 transition-all duration-200`}
+                            onClick={(e) => {
+                              if (!visitUrl) e.preventDefault();
+                            }}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-semibold text-sm flex items-center gap-2 transition-all duration-200"
                           >
                             <FaExternalLinkAlt className="text-xs" />
                             Buy Now
@@ -1793,7 +2115,8 @@ const TVDetailCard = () => {
                         </div>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -1839,16 +2162,14 @@ const TVDetailCard = () => {
                   return (
                     <div
                       key={item.key}
-                      className={`text-center p-4 rounded-xl ${currentColor.light} border ${currentColor.border}`}
+                      className="text-center p-4 rounded-xl bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200"
                     >
-                      <item.icon
-                        className={`${currentColor.text} text-xl mx-auto mb-2`}
-                      />
-                      <div className={`font-bold text-lg ${currentColor.text}`}>
+                      <item.icon className={`${currentColor.text} text-xl mx-auto mb-2`} />
+                      <div className="font-bold text-lg text-gray-900 leading-snug">
                         {value}
                         {item.unit && ` ${item.unit}`}
                       </div>
-                      <div className="text-sm text-gray-600 mt-1">
+                      <div className="text-sm mt-1 text-gray-500">
                         {item.label}
                       </div>
                     </div>

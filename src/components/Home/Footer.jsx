@@ -32,7 +32,7 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  to="/smartphones?filter=trending"
+                  to="/trending/smartphones"
                   className="hover:text-purple-400 transition-colors duration-200"
                 >
                   Trending Smartphones
@@ -73,7 +73,7 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  to="/laptops?filter=trending"
+                  to="/trending/laptops"
                   className="hover:text-purple-400 transition-colors duration-200"
                 >
                   Trending Laptops
@@ -114,7 +114,7 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  to="/tvs?filter=trending"
+                  to="/trending/tvs"
                   className="hover:text-purple-400 transition-colors duration-200"
                 >
                   Trending TVs

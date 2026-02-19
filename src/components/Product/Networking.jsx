@@ -60,10 +60,12 @@ const ImageCarousel = ({ images = [] }) => {
 
   if (!images || images.length === 0) {
     return (
-      <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg">
-        <div className="text-center">
-          <FaWifi className="text-gray-300 text-3xl mx-auto mb-2" />
-          <span className="text-gray-400 text-sm">No image</span>
+      <div className="relative w-full h-full flex items-center justify-center rounded-lg bg-gray-100">
+        <div className="text-center px-3">
+          <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-200">
+            <FaWifi className="text-gray-400 text-sm" />
+          </div>
+          <span className="text-xs text-gray-500">No image</span>
         </div>
       </div>
     );
@@ -1516,7 +1518,7 @@ const Networking = () => {
                     {/* Top Row: Image and Basic Info */}
                     <div className="flex gap-3 sm:gap-4">
                       {/* Product Image - Fixed container */}
-                      <div className="flex-shrink-0 w-52 h-52 bg-gray-50 rounded-lg overflow-hidden">
+                      <div className="flex-shrink-0 w-52 h-52 bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
                         <div className="w-full h-full flex items-center justify-center">
                           <ImageCarousel images={device.images} />
                         </div>

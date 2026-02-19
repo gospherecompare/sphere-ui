@@ -267,16 +267,27 @@ const LaptopDetailCard = () => {
       gpu: pickFirstString(performance.gpu, existingSpecs.gpu),
       battery_capacity: pickFirstString(
         battery.capacity,
+        battery.battery_capacity,
+        battery.capacity_wh,
+        battery.wh,
         battery.battery_type,
         existingSpecs.battery_capacity,
       ),
       battery_life: pickFirstString(
+        battery.battery_life,
         battery.life,
         battery.backup_time,
         existingSpecs.battery_life,
       ),
-      fast_charging:
-        battery.fast_charging ?? existingSpecs.fast_charging ?? "",
+      fast_charging: pickFirstString(
+        battery.fast_charging,
+        existingSpecs.fast_charging,
+      ),
+      charger_type: pickFirstString(
+        battery.adapter,
+        battery.charger,
+        existingSpecs.charger_type,
+      ),
       wifi: pickFirstString(
         connectivity.wifi,
         connectivity.wireless,
@@ -557,19 +568,7 @@ const LaptopDetailCard = () => {
   // Redirect to canonical SEO-friendly path when laptopData is available
   useEffect(() => {
     if (!laptopData) return;
-    const slugify = (str = "") =>
-      String(str)
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "");
 
-    const resolvedId =
-      query.get("id") ||
-      laptopData.id ||
-      laptopData.product_id ||
-      laptopData.model_number;
-    if (!resolvedId) return;
     const canonicalSlug = generateSlug(
       laptopData.product_name ||
         laptopData.model_number ||
@@ -582,7 +581,7 @@ const LaptopDetailCard = () => {
     if (currentPath !== desiredPath) {
       navigate(desiredPath + (location.search || ""), { replace: true });
     }
-  }, [laptopData, query, navigate, location.search]);
+  }, [laptopData, navigate, location.search]);
 
   // Record a single product view per browser session for laptops.
   useEffect(() => {
@@ -676,6 +675,54 @@ const LaptopDetailCard = () => {
 
   const variants = laptopData?.variants || [];
   const currentVariant = variants?.[selectedVariant];
+  const currentProductId =
+    laptopData?.id ?? laptopData?.product_id ?? laptopData?.productId ?? null;
+
+  const popularComparisonTargets = (() => {
+    const list = Array.isArray(laptops) ? laptops : [];
+    if (!currentProductId || list.length === 0) return [];
+
+    const normalizePrice = (d) => {
+      const vars = Array.isArray(d?.variants) ? d.variants : [];
+      const raw = vars?.[0]?.base_price ?? d?.base_price ?? d?.price ?? null;
+      const n = Number(raw);
+      return Number.isFinite(n) ? n : null;
+    };
+
+    const normalized = list
+      .map((d) => normalizeLaptop(d))
+      .filter(Boolean)
+      .filter((d) => String(d.id ?? "") !== String(currentProductId));
+
+    const currentBrand = String(laptopData?.brand || "").toLowerCase();
+
+    return normalized
+      .map((d) => {
+        const brand = String(d.brand || "").toLowerCase();
+        const sameBrand = Boolean(currentBrand && brand === currentBrand);
+        const rating = Number(d.rating ?? d.avg_rating ?? d.score ?? 0) || 0;
+        const price = normalizePrice(d);
+        return { d, sameBrand, rating, price };
+      })
+      .sort((a, b) => {
+        if (a.sameBrand !== b.sameBrand) return a.sameBrand ? -1 : 1;
+        if (b.rating !== a.rating) return b.rating - a.rating;
+        if (a.price == null && b.price != null) return 1;
+        if (a.price != null && b.price == null) return -1;
+        if (a.price != null && b.price != null) return a.price - b.price;
+        return 0;
+      })
+      .slice(0, 6)
+      .map((x) => x.d);
+  })();
+
+  const handlePopularCompare = (other) => {
+    const otherId = other?.id ?? other?.product_id ?? other?.productId ?? null;
+    if (!currentProductId || !otherId) return;
+    navigate(`/compare?devices=${currentProductId}:0,${otherId}:0`, {
+      state: { initialProduct: laptopData },
+    });
+  };
 
   const allStorePrices =
     variants?.flatMap(
@@ -699,6 +746,41 @@ const LaptopDetailCard = () => {
   const formatPrice = (price) => {
     if (price == null || price === "") return "N/A";
     return new Intl.NumberFormat("en-IN").format(price);
+  };
+  const RUPEE_SYMBOL = "\u20B9";
+
+  const getCompactProcessorLabel = (raw) => {
+    const text = String(raw || "").trim();
+    if (!text) return "";
+
+    const coreUltra = text.match(/(?:Intel\s+)?Core\s+Ultra\s+\d+/i);
+    if (coreUltra) return coreUltra[0];
+
+    const coreI = text.match(/(?:Intel\s+)?Core\s+i[3579](?:-\d+\w*)?/i);
+    if (coreI) return coreI[0];
+
+    const ryzen = text.match(/Ryzen\s+\d+\s*[A-Za-z0-9-]*/i);
+    if (ryzen) return ryzen[0].trim();
+
+    return text.split(/\s+/).slice(0, 4).join(" ");
+  };
+
+  const getCompactStorageLabel = (raw) => {
+    const text = String(raw || "").trim();
+    if (!text) return "";
+    const m = text.match(/(\d+(?:\.\d+)?)\s*(TB|GB)/i);
+    if (m) return `${m[1]} ${String(m[2]).toUpperCase()}`;
+    return text.split(/\s+/).slice(0, 2).join(" ");
+  };
+
+  const getCompactBatteryLabel = (raw) => {
+    const text = String(raw || "").trim();
+    if (!text) return "";
+    const wh = text.match(/(\d+(?:\.\d+)?)\s*wh/i);
+    if (wh) return `${wh[1]} Wh`;
+    const mah = text.match(/(\d+(?:\.\d+)?)\s*mah/i);
+    if (mah) return `${mah[1]} mAh`;
+    return text.split(/\s+/).slice(0, 3).join(" ");
   };
 
   const toNormalCase = (raw) => {
@@ -805,25 +887,21 @@ const LaptopDetailCard = () => {
     ? sortedStores
     : sortedVariantStores.slice(0, 3);
 
-  // Share functionality
-  const shareData = {
-    title: `${laptopData?.brand} ${laptopData?.product_name}`,
-    text: `Check out ${laptopData?.brand} ${laptopData?.product_name} - ${
-      laptopData?.product_type
-    }. Price starts at ₹${
-      currentVariant?.base_price
-        ? formatPrice(currentVariant.base_price)
-        : "N/A"
-    }`,
-    url: window.location.href,
-  };
-
   // Generate detailed share content with product information
   const generateShareContent = () => {
-    const brand = laptopData?.brand || laptopData?.manufacturer || "Laptop";
-    const model = laptopData?.product_name || laptopData?.model || "Unknown";
+    const brand =
+      laptopData?.brand ||
+      laptopData?.brand_name ||
+      laptopData?.manufacturer ||
+      "Laptop";
+    const model =
+      laptopData?.product_name ||
+      laptopData?.model ||
+      laptopData?.model_number ||
+      "Unknown";
     const processor =
       laptopData?.specifications?.processor ||
+      laptopData?.specifications?.processor_name ||
       laptopData?.processor ||
       laptopData?.cpu ||
       laptopData?.specs?.processor ||
@@ -849,30 +927,24 @@ const LaptopDetailCard = () => {
       laptopData?.specs?.gpu ||
       "GPU info not available";
     const price = currentVariant?.base_price
-      ? `₹${formatPrice(currentVariant.base_price)}`
+      ? `${RUPEE_SYMBOL}${formatPrice(currentVariant.base_price)}`
       : "Price not available";
+
     return {
       title: `${brand} ${model}`,
-      description: `${processor} | ${ram} RAM | ${storage} Storage | ${display}" Display | ${gpu} GPU | Price: ${price}`,
+      description: `${processor} | ${ram} RAM | ${storage} Storage | ${display} Display | ${gpu} GPU | Price: ${price}`,
       shortDescription: `${brand} ${model} - ${processor}, ${ram}, ${storage}, Price: ${price}`,
-      fullDetails: `
-💻 ${brand} ${model}
-🔧 Processor: ${processor}
-📦 RAM: ${ram}
-💾 Storage: ${storage}
-📺 Display: ${display}"
-🎮 GPU: ${gpu}
-💰 Price: ${price}
-      `,
+      fullDetails: [
+        `${brand} ${model}`,
+        `Processor: ${processor}`,
+        `RAM: ${ram}`,
+        `Storage: ${storage}`,
+        `Display: ${display}`,
+        `GPU: ${gpu}`,
+        `Price: ${price}`,
+      ].join("\n"),
     };
   };
-
-  const slugify = (str = "") =>
-    String(str)
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
 
   const getCanonicalUrl = () => {
     try {
@@ -884,14 +956,54 @@ const LaptopDetailCard = () => {
       );
       if (!slug) return window.location.href;
       const path = `/laptops/${slug}`;
-      return window.location.origin + path + (location.search || "");
+      return window.location.origin + path;
     } catch (e) {
       return window.location.href;
     }
   };
 
+  const getShareUrl = () => {
+    try {
+      const base = getCanonicalUrl();
+      const url = new URL(base);
+      const productId =
+        laptopData?.id ||
+        laptopData?.product_id ||
+        laptopData?.productId ||
+        laptopData?.model_number ||
+        "";
+      if (productId) url.searchParams.set("id", String(productId));
+      url.searchParams.set("shared", "1");
+      return url.toString();
+    } catch (e) {
+      return getCanonicalUrl();
+    }
+  };
+
+  const copyTextToClipboard = async (text) => {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise((resolve, reject) => {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+        if (ok) resolve();
+        else reject(new Error("copy failed"));
+      } catch (e) {
+        reject(e);
+      }
+    });
+  };
+
   const handleShare = async () => {
-    const url = getCanonicalUrl();
+    const url = getShareUrl();
     const content = generateShareContent();
     const payload = {
       title: content.title,
@@ -901,36 +1013,32 @@ const LaptopDetailCard = () => {
     if (navigator.share) {
       try {
         await navigator.share(payload);
+        return;
       } catch (err) {
-        console.log("Error sharing:", err);
+        console.warn("Native share failed:", err);
       }
-    } else {
+    }
+
+    try {
+      await copyTextToClipboard(url);
+      setShowShareMenu(true);
+    } catch (err) {
+      console.error("Clipboard fallback failed:", err);
       setShowShareMenu(true);
     }
   };
 
-  const handleCopyLink = () => {
-    const url = getCanonicalUrl();
+  const handleCopyLink = async () => {
+    const url = getShareUrl();
     const content = generateShareContent();
-    // Copy with product details and link
-    const textToCopy = `${content.title}\n${content.description}\n\n${url}`;
-    navigator.clipboard
-      .writeText(textToCopy)
-      .then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      })
-      .catch((err) => {
-        console.error("Failed to copy:", err);
-        const textArea = document.createElement("textarea");
-        textArea.value = textToCopy;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand("copy");
-        document.body.removeChild(textArea);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      });
+    const textToCopy = `${content.fullDetails}\n\nView details: ${url}`;
+    try {
+      await copyTextToClipboard(textToCopy);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
   };
 
   const toggleFavorite = async () => {
@@ -1034,6 +1142,8 @@ const LaptopDetailCard = () => {
 
   const tabs = window.innerWidth < 768 ? mobileTabs : desktopTabs;
 
+  const isScoreKey = (key) => /(^|[_-])score$/i.test(String(key || ""));
+
   const renderSpecItems = (data, limit = 6) => {
     if (!data || typeof data !== "object") {
       return (
@@ -1042,7 +1152,11 @@ const LaptopDetailCard = () => {
     }
 
     const entries = Object.entries(data).filter(
-      ([_, value]) => value !== "" && value != null && value !== false,
+      ([key, value]) =>
+        value !== "" &&
+        value != null &&
+        value !== false &&
+        !isScoreKey(key),
     );
 
     if (entries.length === 0) {
@@ -1448,6 +1562,12 @@ const LaptopDetailCard = () => {
     ram: metaRam,
     storage: metaStorage,
   });
+  const currentDateLabel = new Date().toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  const metaTitleWithDate = `${metaTitle} [${currentDateLabel}]`;
   const metaDescription = laptopMeta.description({
     name: metaBaseName,
     cpu: metaCpu,
@@ -1461,7 +1581,7 @@ const LaptopDetailCard = () => {
   return (
     <div className="px-2 lg:px-4 mx-auto max-w-6xl w-full bg-white">
       <Helmet>
-        <title>{metaTitle}</title>
+        <title>{metaTitleWithDate}</title>
         <meta name="description" content={metaDescription} />
         <link rel="canonical" href={canonicalUrl} />
         <meta property="og:type" content="product" />
@@ -1495,8 +1615,9 @@ const LaptopDetailCard = () => {
             <div className="space-y-3">
               <button
                 onClick={() => {
-                  const urlToShare = getCanonicalUrl();
-                  const message = `${shareData.title}\n${shareData.text}\n\n${urlToShare}`;
+                  const content = generateShareContent();
+                  const shareUrl = getShareUrl();
+                  const message = `${content.fullDetails}\n\nCheck it out: ${shareUrl}`;
                   const url = `https://wa.me/?text=${encodeURIComponent(
                     message,
                   )}`;
@@ -1510,9 +1631,9 @@ const LaptopDetailCard = () => {
               </button>
               <button
                 onClick={() => {
-                  const urlToShare = getCanonicalUrl();
+                  const shareUrl = getShareUrl();
                   const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-                    urlToShare,
+                    shareUrl,
                   )}`;
                   window.open(url, "_blank");
                   setShowShareMenu(false);
@@ -1596,6 +1717,72 @@ const LaptopDetailCard = () => {
           </div>
         </div>
 
+        {/* Popular Comparisons */}
+        {popularComparisonTargets.length > 0 && (
+          <div className="px-4 pt-4 pb-1">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-sm font-semibold text-gray-900">
+                Popular comparisons
+              </h2>
+              <button
+                type="button"
+                onClick={() =>
+                  navigate("/compare", {
+                    state: { initialProduct: laptopData },
+                  })
+                }
+                className="text-xs font-semibold text-purple-700 hover:text-purple-800"
+              >
+                Open compare
+              </button>
+            </div>
+            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-3">
+              {popularComparisonTargets.map((d) => {
+                const otherId = d?.id ?? d?.product_id ?? d?.productId ?? null;
+                const otherName = d?.product_name || d?.name || d?.model || "Laptop";
+                const otherImg = d?.images?.[0] || d?.image || "";
+
+                return (
+                  <button
+                    key={String(otherId || otherName)}
+                    type="button"
+                    onClick={() => handlePopularCompare(d)}
+                    className="min-w-[240px] max-w-[280px] flex-shrink-0 rounded-xl border border-gray-200 bg-white p-3 hover:border-purple-200 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
+                        {otherImg ? (
+                          <img
+                            src={otherImg}
+                            alt={otherName}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                            }}
+                          />
+                        ) : (
+                          <FaLaptop className="text-gray-400 text-sm" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[11px] text-gray-500 truncate">
+                          Compare with
+                        </div>
+                        <div className="text-sm font-semibold text-gray-900 truncate">
+                          {otherName}
+                        </div>
+                      </div>
+                      <span className="text-xs font-semibold text-purple-700">
+                        Compare
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-col lg:flex-row">
           {/* Images Section */}
           <div className="lg:w-1/2 p-4 border-b lg:border-b-0 lg:border-r border-indigo-200">
@@ -1678,9 +1865,11 @@ const LaptopDetailCard = () => {
                       <div className="font-semibold text-gray-900 text-sm mb-1">
                         {variant.ram} / {variant.storage}
                       </div>
-                      <div className="text-xs text-gray-600 mb-2">
-                        {variant.processor}
-                      </div>
+                      {variant.processor ? (
+                        <div className="text-xs text-gray-600 mb-2">
+                          {variant.processor}
+                        </div>
+                      ) : null}
                       <div className="text-sm font-bold text-green-600">
                         ₹{formatPrice(variant.base_price)}
                       </div>
@@ -1691,23 +1880,45 @@ const LaptopDetailCard = () => {
             )}
 
             {/* Quick Specs - Mobile Only */}
-            <div className="lg:hidden grid grid-cols-3 gap-3 mb-6">
+            <div className="lg:hidden grid grid-cols-2 gap-3 mb-6">
               {laptopData.specifications &&
                 [
                   {
                     key: "processor",
                     label: "Processor",
                     icon: FaMicrochip,
-                    maxLength: 15,
+                    maxLength: 18,
+                    format: (v) => getCompactProcessorLabel(v),
                   },
                   { key: "ram", label: "RAM", icon: FaMemory },
-                  { key: "storage", label: "Storage", icon: FaHdd },
+                  {
+                    key: "storage",
+                    label: "Storage",
+                    icon: FaHdd,
+                    format: (v) => getCompactStorageLabel(v),
+                  },
+                  {
+                    key: "battery_capacity",
+                    label: "Battery",
+                    icon: FaBatteryFull,
+                    format: (v) => getCompactBatteryLabel(v),
+                  },
                 ].map((item) => {
-                  const value = laptopData.specifications[item.key];
-                  if (!value) return null;
-                  let displayValue = value;
-                  if (item.maxLength && value.length > item.maxLength) {
-                    displayValue = value.substring(0, item.maxLength) + "...";
+                  const rawValue = laptopData.specifications[item.key];
+                  if (rawValue === undefined || rawValue === null || rawValue === "")
+                    return null;
+                  const normalizedValue =
+                    typeof item.format === "function"
+                      ? item.format(String(rawValue))
+                      : String(rawValue);
+                  if (!normalizedValue) return null;
+                  let displayValue = normalizedValue;
+                  if (
+                    item.maxLength &&
+                    displayValue.length > Number(item.maxLength)
+                  ) {
+                    displayValue =
+                      displayValue.substring(0, Number(item.maxLength)) + "...";
                   }
                   return (
                     <div
@@ -1880,7 +2091,7 @@ const LaptopDetailCard = () => {
                             href={store.url}
                             target="_blank"
                             rel="noopener noreferrer nofollow"
-                            className={`${currentColor.bg} hover:opacity-90 text-white px-5 py-2.5 rounded-lg font-semibold text-sm flex items-center gap-2 transition-all duration-200`}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-semibold text-sm flex items-center gap-2 transition-all duration-200"
                           >
                             <FaExternalLinkAlt className="text-xs" />
                             Buy Now
@@ -1894,14 +2105,14 @@ const LaptopDetailCard = () => {
             )}
 
             {/* Desktop Quick Specs */}
-            <div className="hidden lg:grid grid-cols-4 gap-4 mb-6">
+            <div className="hidden lg:grid grid-cols-5 gap-4 mb-6">
               {laptopData.specifications &&
                 [
                   {
                     key: "processor",
                     label: "Processor",
                     icon: FaMicrochip,
-                    format: (v) => v.split(" ")[0] + " " + v.split(" ")[1],
+                    format: (v) => getCompactProcessorLabel(v),
                   },
                   {
                     key: "ram",
@@ -1913,13 +2124,19 @@ const LaptopDetailCard = () => {
                     key: "storage",
                     label: "Storage",
                     icon: FaHdd,
-                    format: (v) => v.split(" ")[0],
+                    format: (v) => getCompactStorageLabel(v),
                   },
                   {
                     key: "screen_size",
                     label: "Display",
                     icon: FaExpand,
                     format: (v) => v,
+                  },
+                  {
+                    key: "battery_capacity",
+                    label: "Battery",
+                    icon: FaBatteryFull,
+                    format: (v) => getCompactBatteryLabel(v),
                   },
                 ].map((item) => {
                   const value = laptopData.specifications[item.key];
@@ -1994,3 +2211,4 @@ const LaptopDetailCard = () => {
 };
 
 export default LaptopDetailCard;
+

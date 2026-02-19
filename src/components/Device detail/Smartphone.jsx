@@ -177,6 +177,50 @@ const MobileDetailCard = () => {
     return false;
   };
 
+  const pickFirstBatteryValue = (...values) => {
+    for (const value of values) {
+      if (value === 0) return value;
+      if (value === null || value === undefined) continue;
+      if (typeof value === "string" && value.trim() === "") continue;
+      return value;
+    }
+    return null;
+  };
+
+  const getBatteryCapacityRaw = (deviceData) => {
+    if (!deviceData) return null;
+    const batteryData = deviceData?.battery;
+    const nested =
+      batteryData && typeof batteryData === "object"
+        ? pickFirstBatteryValue(
+            batteryData.battery_capacity_mah,
+            batteryData.battery_capacity,
+            batteryData.capacity_mAh,
+            batteryData.capacity_mah,
+            batteryData.capacity,
+            batteryData.battery,
+          )
+        : null;
+
+    return pickFirstBatteryValue(
+      nested,
+      typeof batteryData === "string" || typeof batteryData === "number"
+        ? batteryData
+        : null,
+      deviceData?.battery_capacity_mah,
+      deviceData?.battery_capacity,
+      deviceData?.batteryCapacity,
+    );
+  };
+
+  const getBatteryCapacityMah = (deviceData) => {
+    const raw = getBatteryCapacityRaw(deviceData);
+    if (raw === null || raw === undefined) return null;
+    if (typeof raw === "number" && Number.isFinite(raw)) return raw;
+    const m = String(raw).match(/(\d{3,6})/);
+    return m ? parseInt(m[1], 10) : null;
+  };
+
   const normalizeSmartphone = (d) => {
     if (!d) return null;
     const out = { ...d };
@@ -275,15 +319,21 @@ const MobileDetailCard = () => {
     // Normalize battery capacity in mAh (clone to avoid mutating originals)
     const battSrc = d.battery || out.battery || {};
     const batt = { ...battSrc };
-    const capRaw =
-      d.battery?.capacity ||
-      d.battery?.battery_capacity ||
-      d.battery?.capacity_mAh ||
-      d.battery;
-    if (capRaw && !batt.battery_capacity_mah) {
-      const m = String(capRaw).match(/(\d{3,5})/);
-      batt.battery_capacity_mah = m ? parseInt(m[1], 10) : null;
-      batt.capacity = d.battery?.capacity ?? d.battery;
+    const capRaw = getBatteryCapacityRaw(d);
+    const capMah = getBatteryCapacityMah(d);
+    if (capRaw != null) {
+      if (!batt.battery_capacity_mah && capMah != null) {
+        batt.battery_capacity_mah = capMah;
+      }
+      if (!batt.capacity) {
+        batt.capacity = capRaw;
+      }
+      if (!batt.battery) {
+        batt.battery = d.battery?.battery ?? capRaw;
+      }
+      if (!batt.battery_capacity && d.battery?.battery_capacity != null) {
+        batt.battery_capacity = d.battery.battery_capacity;
+      }
     }
     out.battery = batt;
 
@@ -347,7 +397,7 @@ const MobileDetailCard = () => {
         ? {
             capacity: batt.battery_capacity_mah
               ? `${batt.battery_capacity_mah} mAh`
-              : batt.capacity || "",
+              : batt.capacity || batt.battery || "",
             rated_capacity: batt.rated_capacity || "",
             fast_charging: batt.fast_charging || d.fast_charging || "",
             ai_features: batt.ai_features || [],
@@ -703,8 +753,8 @@ const MobileDetailCard = () => {
         : formatSpecValue(cameraRaw, "camera");
 
     // 👉 Battery formatting (ignore non-primitive inputs)
-    const batteryValue = data.battery?.battery_capacity_mah;
-    const batteryRaw = data.battery?.capacity || "";
+    const batteryValue = getBatteryCapacityMah(data);
+    const batteryRaw = getBatteryCapacityRaw(data) ?? "";
     const battery = batteryValue
       ? `${batteryValue}mAh Battery`
       : !isPrimitive(batteryRaw) || batteryRaw === ""
@@ -772,8 +822,8 @@ const MobileDetailCard = () => {
           ? ""
           : formatSpecValue(cameraRaw, "camera").trim();
 
-    const batteryValue = data.battery?.battery_capacity_mah;
-    const batteryRaw = data.battery?.capacity || "";
+    const batteryValue = getBatteryCapacityMah(data);
+    const batteryRaw = getBatteryCapacityRaw(data) ?? "";
     const battery =
       batteryValue != null
         ? `${batteryValue}mAh`
@@ -832,14 +882,25 @@ const MobileDetailCard = () => {
     ? sortedStores
     : sortedVariantStores.slice(0, 3);
 
+  const batteryForShareRaw =
+    getBatteryCapacityMah(mobileData) ??
+    getBatteryCapacityRaw(mobileData) ??
+    mobileData?.specs?.battery ??
+    "";
+  const batteryForShare = batteryForShareRaw
+    ? String(batteryForShareRaw).toLowerCase().includes("mah")
+      ? String(batteryForShareRaw)
+      : `${batteryForShareRaw}mAh`
+    : "";
+
   // Share functionality
   const shareData = {
     title: `${mobileData?.brand} ${mobileData?.model}`,
     text: `Check out ${mobileData?.brand} ${mobileData?.model} - ${
       mobileData?.performance?.processor
     }, ${mobileData?.camera?.main_camera_megapixels || ""}MP Camera, ${
-      mobileData?.battery?.battery_capacity_mah || ""
-    }mAh Battery. Price starts at ₹${
+      batteryForShare
+    } Battery. Price starts at ₹${
       currentVariant?.base_price
         ? formatPrice(currentVariant.base_price)
         : "N/A"
@@ -864,11 +925,15 @@ const MobileDetailCard = () => {
       mobileData?.specs?.camera ||
       "Camera info not available";
     const battery =
-      mobileData?.battery?.battery_capacity_mah ||
-      mobileData?.battery?.capacity ||
+      getBatteryCapacityMah(mobileData) ||
+      getBatteryCapacityRaw(mobileData) ||
       mobileData?.batteryCapacity ||
       mobileData?.specs?.battery ||
       "Battery info not available";
+    const batteryText =
+      String(battery).toLowerCase().includes("mah")
+        ? String(battery)
+        : `${battery}mAh`;
     const price = currentVariant?.base_price
       ? `₹${formatPrice(currentVariant.base_price)}`
       : "Price not available";
@@ -880,13 +945,13 @@ const MobileDetailCard = () => {
 
     return {
       title: `${brand} ${model}`,
-      description: `${processor}  ${camera}MP Camera | ${battery}mAh Battery | ${display}" Display | Price: ${price}`,
-      shortDescription: `${brand} ${model} - ${processor}, ${camera}MP, ${battery}mAh, Price: ${price}`,
+      description: `${processor}  ${camera}MP Camera | ${batteryText} Battery | ${display}" Display | Price: ${price}`,
+      shortDescription: `${brand} ${model} - ${processor}, ${camera}MP, ${batteryText}, Price: ${price}`,
       fullDetails: `
 ${brand} ${model}
 processor: ${processor}
 Camera: ${camera}MP
-Battery: ${battery}mAh
+Battery: ${batteryText}
 Display: ${display}"
 Price: ${price}
       `,
@@ -1231,6 +1296,8 @@ Price: ${price}
     });
   };
 
+  const isScoreKey = (key) => /(^|[_-])score$/i.test(String(key || ""));
+
   const renderSpecItems = (data, limit = 5) => {
     if (!data || typeof data !== "object") {
       return (
@@ -1242,7 +1309,8 @@ Price: ${price}
         value !== "" &&
         value != null &&
         value !== false &&
-        key !== "sphere_rating",
+        key !== "sphere_rating" &&
+        !isScoreKey(key),
     );
 
     if (entries.length === 0) {
@@ -1301,7 +1369,8 @@ Price: ${price}
 
           {groupedEntries.map(([gkey, group]) => {
             const subEntries = Object.entries(group).filter(
-              ([_, v]) => v !== "" && v != null && v !== false,
+              ([k, v]) =>
+                v !== "" && v != null && v !== false && !isScoreKey(k),
             );
             if (subEntries.length === 0) return null;
             return (
@@ -1460,7 +1529,10 @@ Price: ${price}
       );
 
     const entries = Object.entries(data).filter(
-      ([k]) => k !== "sphere_rating" && !/ai[_-]?features?/i.test(k),
+      ([k]) =>
+        k !== "sphere_rating" &&
+        !/ai[_-]?features?/i.test(k) &&
+        !isScoreKey(k),
     );
 
     return (
@@ -1546,9 +1618,10 @@ Price: ${price}
                 },
                 {
                   label: "Battery",
-                  value: mobileData.battery?.battery_capacity_mah
-                    ? `${mobileData.battery.battery_capacity_mah} mAh`
-                    : mobileData.battery?.capacity || "N/A",
+                  value:
+                    getBatteryCapacityMah(mobileData) != null
+                      ? `${getBatteryCapacityMah(mobileData)} mAh`
+                      : getBatteryCapacityRaw(mobileData) || "N/A",
                   icon: FaBatteryFull,
                   color: "bg-blue-50 text-blue-700",
                 },
@@ -1691,7 +1764,8 @@ Price: ${price}
                             .filter(
                               ([k, v]) =>
                                 v &&
-                                !["sphere_rating", "ai_features"].includes(k),
+                                !["sphere_rating", "ai_features"].includes(k) &&
+                                !isScoreKey(k),
                             )
                             .map(([key, value], idx) => (
                               <tr
@@ -1744,7 +1818,10 @@ Price: ${price}
                         <tbody className="bg-white">
                           {Object.entries(mobileData.battery || {})
                             .filter(
-                              ([k, v]) => v && !/ai[_-]?features?/i.test(k),
+                              ([k, v]) =>
+                                v &&
+                                !/ai[_-]?features?/i.test(k) &&
+                                !isScoreKey(k),
                             )
                             .map(([key, value], idx) => (
                               <tr
@@ -1757,7 +1834,10 @@ Price: ${price}
                                   {toNormalCase(key)}
                                 </td>
                                 <td className="px-6 py-2 text-sm text-gray-900 w-2/3">
-                                  {key === "battery_capacity_mah"
+                                  {[
+                                    "battery_capacity_mah",
+                                    "battery_capacity",
+                                  ].includes(key)
                                     ? `${value} mAh`
                                     : formatSpecValue(value, key)}
                                 </td>
@@ -1784,7 +1864,10 @@ Price: ${price}
                         <tbody className="bg-white">
                           {Object.entries(mobileData.connectivity || {})
                             .filter(
-                              ([k, v]) => v && !/ai[_-]?features?/i.test(k),
+                              ([k, v]) =>
+                                v &&
+                                !/ai[_-]?features?/i.test(k) &&
+                                !isScoreKey(k),
                             )
                             .map(([key, value], idx) => (
                               <tr
@@ -2305,7 +2388,7 @@ Price: ${price}
               <div className="text-center p-3 bg-purple-50 rounded-lg">
                 <FaBatteryFull className="text-purple-600 text-lg mx-auto mb-1" />
                 <div className="font-bold text-purple-900 text-sm">
-                  {mobileData.battery?.battery_capacity_mah || "-"} mAh
+                  {getBatteryCapacityMah(mobileData) || "-"} mAh
                 </div>
                 <div className="text-xs text-purple-700">Battery</div>
               </div>
@@ -2523,7 +2606,7 @@ Price: ${price}
               <div className="text-center p-4 bg-purple-50 rounded-xl">
                 <FaBatteryFull className="text-purple-600 text-xl mx-auto mb-2" />
                 <div className="font-bold text-purple-900">
-                  {mobileData.battery?.battery_capacity_mah || "-"} mAh
+                  {getBatteryCapacityMah(mobileData) || "-"} mAh
                 </div>
                 <div className="text-sm text-purple-700">Battery</div>
               </div>
@@ -2565,3 +2648,6 @@ Price: ${price}
 };
 
 export default MobileDetailCard;
+
+
+
