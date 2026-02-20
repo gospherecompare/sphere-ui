@@ -63,6 +63,28 @@ import useStoreLogos from "../../hooks/useStoreLogos";
 // Data comes from API via `useDevice()`; embedded mock removed.
 const mockAppliances = [];
 
+const toNumericPrice = (value) => {
+  if (value === null || value === undefined || value === "") return null;
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+  const cleaned = String(value).replace(/[^0-9.]/g, "");
+  if (!cleaned) return null;
+  const parsed = Number(cleaned);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const getVariantBestPrice = (variant) => {
+  const stores = Array.isArray(variant?.store_prices) ? variant.store_prices : [];
+  const storePrices = stores
+    .map((store) => toNumericPrice(store?.price))
+    .filter((price) => price !== null && price > 0);
+  if (storePrices.length) return Math.min(...storePrices);
+
+  const base = toNumericPrice(variant?.base_price);
+  return base !== null && base > 0 ? base : null;
+};
+
 const TVDetailCard = () => {
   const { getLogo } = useStoreLogos();
   const [activeTab, setActiveTab] = useState("specifications");
@@ -82,7 +104,6 @@ const TVDetailCard = () => {
   const params = useParams();
   const location = useLocation();
   const query = new URLSearchParams(location.search);
-  const categoryParam = query.get("category") || "washing_machine";
   let idParam = query.get("id");
 
   // Extract slug from route params (SEO-friendly slug-based URL)
@@ -191,10 +212,12 @@ const TVDetailCard = () => {
           : [a.variant]
         : [];
 
-    const variants = rawVariants.map((v) => {
+    const variants = rawVariants.map((v, variantIndex) => {
       const variantScreenSize = firstNonEmpty(
         v.screen_size,
         v.size,
+        v.attributes?.screen_size,
+        v.attributes?.size,
         keySpecs.screen_size,
         displayJson.screen_size,
       );
@@ -204,34 +227,73 @@ const TVDetailCard = () => {
         variantScreenSize,
         keySpecs.resolution,
       );
-      const storePrices = Array.isArray(v.store_prices)
-        ? v.store_prices.map((sp) => ({
-            ...sp,
-            id: sp.id || sp.store_id || null,
-            store_name: sp.store_name || sp.store || "",
-            price: sp.price ?? sp.amount ?? null,
-            url: sp.url || sp.link || "",
-            delivery_time: sp.delivery_info || sp.delivery_time || null,
-          }))
+      const rawStoreRows = Array.isArray(v.store_prices)
+        ? v.store_prices
         : Array.isArray(v.attributes?.stores)
-          ? v.attributes.stores.map((sp) => ({
-              id: sp.id || null,
-              store_name: sp.store_name || sp.store || "",
-              price: sp.price ?? sp.amount ?? null,
-              url: sp.url || sp.link || "",
-              delivery_time: sp.delivery_info || null,
-            }))
+          ? v.attributes.stores
           : [];
+      const normalizedStores = rawStoreRows
+        .map((sp, storeIndex) => ({
+          ...sp,
+          id: sp?.id || sp?.store_id || `${variantIndex}-${storeIndex}`,
+          store_name: firstNonEmpty(
+            sp?.store_name,
+            sp?.store,
+            sp?.storeName,
+            "Store",
+          ),
+          price: toNumericPrice(sp?.price ?? sp?.amount),
+          url: sp?.url || sp?.link || "",
+          offer_text: sp?.offer_text || sp?.offer || null,
+          delivery_time: sp?.delivery_info || sp?.delivery_time || null,
+        }))
+        .filter((sp) => Boolean(sp.store_name));
+      const storesByName = new Map();
+      normalizedStores.forEach((store) => {
+        const key = String(store.store_name || "")
+          .trim()
+          .toLowerCase();
+        if (!key) return;
+        const prev = storesByName.get(key);
+        if (!prev) {
+          storesByName.set(key, store);
+          return;
+        }
+        const prevPrice = toNumericPrice(prev.price);
+        const nextPrice = toNumericPrice(store.price);
+        const shouldReplace =
+          (nextPrice !== null && prevPrice === null) ||
+          (nextPrice !== null && prevPrice !== null && nextPrice < prevPrice);
+        if (shouldReplace) storesByName.set(key, store);
+      });
+      const storePrices = Array.from(storesByName.values());
+      const variantImages = [
+        ...toArrayIfNeeded(v.images_json),
+        ...(Array.isArray(v.images) ? v.images : []),
+        ...(Array.isArray(v.variant_images) ? v.variant_images : []),
+        ...toArrayIfNeeded(v.variant_images_json),
+      ]
+        .map((img) => String(img || "").trim())
+        .filter(Boolean);
 
       return {
         ...v,
         id: v.id || v.variant_id || v.variantId || v.variant_key || null,
         variant_id:
           v.variant_id || v.id || v.variantId || v.variant_key || null,
-        base_price: v.base_price ?? v.price ?? v.attributes?.base_price ?? null,
+        variant_key: firstNonEmpty(v.variant_key, variantScreenSize),
+        base_price: toNumericPrice(
+          v.base_price ?? v.price ?? v.attributes?.base_price,
+        ),
         store_prices: storePrices,
         screen_size: variantScreenSize || "",
+        screen_size_value:
+          v.screen_size_value ||
+          (variantScreenSize.match(/(\d+(\.\d+)?)/)?.[1]
+            ? Number(variantScreenSize.match(/(\d+(\.\d+)?)/)?.[1])
+            : null),
         specification_summary: variantSummary || "",
+        images: Array.from(new Set(variantImages)),
       };
     });
 
@@ -668,11 +730,41 @@ const TVDetailCard = () => {
 
   const variants = applianceData?.variants || [];
   const currentVariant = variants?.[selectedVariant];
+  const variantImages = Array.isArray(currentVariant?.images)
+    ? currentVariant.images.filter(Boolean)
+    : [];
+  const galleryImages =
+    variantImages.length > 0
+      ? variantImages
+      : Array.isArray(applianceData?.images)
+        ? applianceData.images
+        : [];
+  const currentVariantBestPrice = getVariantBestPrice(currentVariant);
+  const fallbackBestPrice = variants
+    .map((variant) => getVariantBestPrice(variant))
+    .filter((price) => price !== null && price > 0)
+    .sort((a, b) => a - b)[0];
+  const headlinePrice = currentVariantBestPrice ?? fallbackBestPrice ?? null;
   const currentProductId =
     applianceData?.id ??
     applianceData?.product_id ??
     applianceData?.productId ??
     null;
+
+  useEffect(() => {
+    setActiveImage(0);
+  }, [selectedVariant, galleryImages.length]);
+
+  useEffect(() => {
+    setShowAllStores(false);
+  }, [selectedVariant]);
+
+  useEffect(() => {
+    if (!variants.length) return;
+    if (selectedVariant >= variants.length) {
+      setSelectedVariant(0);
+    }
+  }, [selectedVariant, variants.length]);
 
   const popularComparisonTargets = (() => {
     const list = Array.isArray(homeAppliances) ? homeAppliances : [];
@@ -680,9 +772,12 @@ const TVDetailCard = () => {
 
     const normalizePrice = (d) => {
       const vars = Array.isArray(d?.variants) ? d.variants : [];
-      const raw = vars?.[0]?.base_price ?? d?.base_price ?? d?.price ?? null;
-      const n = Number(raw);
-      return Number.isFinite(n) ? n : null;
+      const variantPrices = vars
+        .map((variant) => getVariantBestPrice(variant))
+        .filter((price) => price !== null && price > 0);
+      if (variantPrices.length) return Math.min(...variantPrices);
+      const fallback = toNumericPrice(d?.base_price ?? d?.price ?? null);
+      return fallback !== null && fallback > 0 ? fallback : null;
     };
 
     const normalized = list
@@ -727,24 +822,48 @@ const TVDetailCard = () => {
   };
 
   const allStorePrices =
-    variants?.flatMap(
-      (variant) =>
-        variant.store_prices?.map((store) => ({
-          ...store,
-          variantName: `${
-            variant.model ||
-            variant.capacity ||
-            variant.screen_size ||
-            variant.type ||
-            ""
-          }`,
-          variantSpec: variant.specification_summary || "",
-        })) || [],
-    ) || [];
+    variants?.flatMap((variant) => {
+      const stores = Array.isArray(variant?.store_prices)
+        ? variant.store_prices
+        : [];
+      const mappedStores = stores.map((store) => ({
+        ...store,
+        price: toNumericPrice(store?.price),
+        variantName: `${
+          variant.model ||
+          variant.capacity ||
+          variant.screen_size ||
+          variant.type ||
+          variant.variant_key ||
+          ""
+        }`,
+        variantSpec: variant.specification_summary || "",
+      }));
+      if (mappedStores.length) return mappedStores;
+
+      const base = toNumericPrice(variant?.base_price);
+      if (base !== null && base > 0) {
+        return [
+          {
+            id: `base-${
+              variant?.variant_id || variant?.id || variant?.variant_key || "tv"
+            }`,
+            store_name: "Base Price",
+            price: base,
+            variantName:
+              variant.screen_size || variant.variant_key || "Default Variant",
+            variantSpec: variant.specification_summary || "",
+            url: "",
+          },
+        ];
+      }
+      return [];
+    }) || [];
 
   const variantStorePrices =
     currentVariant?.store_prices?.map((sp) => ({
       ...sp,
+      price: toNumericPrice(sp?.price),
       variantName: `${
         currentVariant.model ||
         currentVariant.capacity ||
@@ -760,8 +879,9 @@ const TVDetailCard = () => {
   };
 
   const formatPrice = (price) => {
-    if (price == null || price === "") return "N/A";
-    return new Intl.NumberFormat("en-IN").format(price);
+    const numeric = toNumericPrice(price);
+    if (numeric === null) return "N/A";
+    return new Intl.NumberFormat("en-IN").format(numeric);
   };
 
   const RUPEE_SYMBOL = "\u20B9";
@@ -963,20 +1083,23 @@ const TVDetailCard = () => {
   };
 
   const sortedStores = allStorePrices.slice().sort((a, b) => {
-    const priceA = a?.price || Infinity;
-    const priceB = b?.price || Infinity;
+    const priceA = toNumericPrice(a?.price) ?? Number.POSITIVE_INFINITY;
+    const priceB = toNumericPrice(b?.price) ?? Number.POSITIVE_INFINITY;
     return priceA - priceB;
   });
 
   const sortedVariantStores = variantStorePrices.slice().sort((a, b) => {
-    const priceA = a?.price || Infinity;
-    const priceB = b?.price || Infinity;
+    const priceA = toNumericPrice(a?.price) ?? Number.POSITIVE_INFINITY;
+    const priceB = toNumericPrice(b?.price) ?? Number.POSITIVE_INFINITY;
     return priceA - priceB;
   });
 
   const displayedStores = showAllStores
     ? sortedStores
-    : sortedVariantStores.slice(0, 3);
+    : (sortedVariantStores.length
+        ? sortedVariantStores
+        : sortedStores
+      ).slice(0, 3);
 
   // Generate detailed share content with product information
   const generateShareContent = () => {
@@ -990,11 +1113,13 @@ const TVDetailCard = () => {
       applianceData?.product_type ||
       "Appliance";
     const screenSize =
+      currentVariant?.screen_size ||
       applianceData?.specifications?.screen_size ||
       applianceData?.specifications?.capacity ||
       applianceData?.capacity ||
       "Screen size info not available";
     const resolution =
+      currentVariant?.specification_summary ||
       applianceData?.specifications?.resolution ||
       applianceData?.display_json?.resolution ||
       "Resolution info not available";
@@ -1003,8 +1128,8 @@ const TVDetailCard = () => {
       applianceData?.color ||
       applianceData?.specs?.color ||
       "Various";
-    const price = currentVariant?.base_price
-      ? `${RUPEE_SYMBOL}${formatPrice(currentVariant.base_price)}`
+    const price = headlinePrice
+      ? `${RUPEE_SYMBOL}${formatPrice(headlinePrice)}`
       : "Price not available";
 
     return {
@@ -1704,12 +1829,13 @@ const TVDetailCard = () => {
               </button>
             </div>
           </div>
-          <div className="flex items-center justify-end mt-4">            {currentVariant && (
+          <div className="flex items-center justify-end mt-4">
+            {headlinePrice ? (
               <span className="text-2xl font-bold text-green-600">
                 {RUPEE_SYMBOL}
-                {formatPrice(currentVariant.base_price)}
+                {formatPrice(headlinePrice)}
               </span>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -1789,7 +1915,7 @@ const TVDetailCard = () => {
               </div>
               <img
                 src={
-                  applianceData.images?.[activeImage] ||
+                  galleryImages?.[activeImage] ||
                   "/placeholder-appliance.jpg"
                 }
                 alt={applianceData.product_name}
@@ -1820,9 +1946,9 @@ const TVDetailCard = () => {
             </div>
 
             {/* Thumbnails */}
-            {applianceData.images && applianceData.images.length > 1 && (
+            {galleryImages && galleryImages.length > 1 && (
               <div className="flex gap-3 mb-8 overflow-x-auto no-scrollbar">
-                {applianceData.images.slice(0, 4).map((image, index) => (
+                {galleryImages.slice(0, 6).map((image, index) => (
                   <button
                     key={index}
                     onClick={() => setActiveImage(index)}
@@ -1875,7 +2001,7 @@ const TVDetailCard = () => {
                       </div>
                       <div className="text-sm font-bold text-green-600">
                         {RUPEE_SYMBOL}
-                        {formatPrice(variant.base_price)}
+                        {formatPrice(getVariantBestPrice(variant))}
                       </div>
                     </button>
                   ))}
@@ -1999,16 +2125,17 @@ const TVDetailCard = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-end mb-6">                {currentVariant && (
+              <div className="flex items-center justify-end mb-6">
+                {headlinePrice ? (
                   <div className="text-right">
                     <div className="text-sm text-gray-500 mb-1">
                       Starting from
                     </div>
                     <div className="text-4xl font-bold text-green-600">
-                      {RUPEE_SYMBOL} {formatPrice(currentVariant.base_price)}
+                      {RUPEE_SYMBOL} {formatPrice(headlinePrice)}
                     </div>
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
 

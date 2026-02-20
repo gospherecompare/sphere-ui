@@ -1,4 +1,4 @@
-// src/components/HomeApplianceList.jsx
+﻿// src/components/HomeApplianceList.jsx
 import React, { useState, useEffect, useMemo } from "react";
 import { Helmet } from "react-helmet-async";
 import {
@@ -74,7 +74,7 @@ const ImageCarousel = ({ images = [] }) => {
 
   if (!images || images.length === 0) {
     return (
-      <div className="relative w-full h-full flex items-center justify-center rounded-lg bg-gray-100">
+      <div className="relative w-full h-full flex items-center justify-center rounded-lg bg-white">
         <div className="text-center px-3">
           <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-200">
             <FaHome className="text-gray-400 text-sm" />
@@ -208,7 +208,7 @@ const TVs = () => {
     }
   `;
 
-  const { getLogo } = useStoreLogos();
+  const { getLogo, getStore, getStoreLogo } = useStoreLogos();
   // Helper function to extract numeric price
   const extractNumericPrice = (price) => {
     if (!price || price === "NaN") return 0;
@@ -504,6 +504,83 @@ const TVs = () => {
     return "";
   };
 
+  const toNumericPrice = (value) => {
+    if (value === null || value === undefined || value === "") return null;
+    if (typeof value === "number") {
+      return Number.isFinite(value) ? value : null;
+    }
+    const cleaned = String(value).replace(/[^0-9.]/g, "");
+    if (!cleaned) return null;
+    const parsed = Number(cleaned);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+
+  const normalizeTvStoreRows = (storeRows, fallbackKeyPrefix = "tv-store") => {
+    const rows = (Array.isArray(storeRows) ? storeRows : toArrayIfNeeded(storeRows))
+      .map((row, rowIndex) => {
+        const storeName = firstNonEmpty(
+          row?.store_name,
+          row?.store,
+          row?.storeName,
+        );
+        if (!storeName) return null;
+        const normalizedPrice = toNumericPrice(row?.price ?? row?.amount);
+        return {
+          ...row,
+          id: row?.id || `${fallbackKeyPrefix}-${rowIndex}`,
+          store_name: storeName,
+          price: normalizedPrice,
+          url: row?.url || row?.link || "",
+          offer_text: row?.offer_text || row?.offer || null,
+          delivery_info: row?.delivery_info || row?.delivery_time || null,
+        };
+      })
+      .filter(Boolean);
+
+    const byStore = new Map();
+    rows.forEach((row) => {
+      const key = String(row.store_name || "")
+        .trim()
+        .toLowerCase();
+      if (!key) return;
+      const prev = byStore.get(key);
+      if (!prev) {
+        byStore.set(key, row);
+        return;
+      }
+      const prevPrice = toNumericPrice(prev.price);
+      const nextPrice = toNumericPrice(row.price);
+      const shouldReplace =
+        (nextPrice !== null && prevPrice === null) ||
+        (nextPrice !== null && prevPrice !== null && nextPrice < prevPrice);
+      if (shouldReplace) byStore.set(key, row);
+    });
+
+    return Array.from(byStore.values()).sort((a, b) => {
+      const pa = toNumericPrice(a.price);
+      const pb = toNumericPrice(b.price);
+      if (pa !== null && pb !== null && pa !== pb) return pa - pb;
+      if (pa !== null && pb === null) return -1;
+      if (pa === null && pb !== null) return 1;
+      return String(a.store_name || "").localeCompare(String(b.store_name || ""));
+    });
+  };
+
+  const normalizeTvVariantImages = (variantLike) => {
+    const images = [
+      ...toArrayIfNeeded(variantLike?.images_json),
+      ...(Array.isArray(variantLike?.images) ? variantLike.images : []),
+      ...(Array.isArray(variantLike?.variant_images)
+        ? variantLike.variant_images
+        : []),
+      ...toArrayIfNeeded(variantLike?.variant_images_json),
+    ]
+      .map((img) => String(img || "").trim())
+      .filter(Boolean);
+
+    return Array.from(new Set(images));
+  };
+
   const mapTvApiToDevice = (apiDevice, idx) => {
     const legacy = mapApiToDevice(apiDevice, idx);
     const basicInfo = toObjectIfNeeded(
@@ -553,12 +630,19 @@ const TVs = () => {
       ? apiDevice.variants_json
       : Array.isArray(apiDevice.variants)
         ? apiDevice.variants
-        : [];
+        : toArrayIfNeeded(apiDevice.variants_json || apiDevice.variants);
+    const fallbackTopLevelStores = normalizeTvStoreRows(
+      apiDevice.store_prices || apiDevice.storePrices || [],
+      `${idx}-top`,
+    );
 
     const variants = rawVariants.map((v, vIdx) => {
+      const attributes = toObjectIfNeeded(v?.attributes);
       const variantScreenSize = firstNonEmpty(
         v.screen_size,
         v.size,
+        attributes.screen_size,
+        attributes.size,
         keySpecs.screen_size,
         displayJson.screen_size,
       );
@@ -566,51 +650,66 @@ const TVs = () => {
         v.specification_summary,
         v.variant_key,
         variantScreenSize,
+        attributes.resolution,
         keySpecs.resolution,
       );
-      const variantStores = (
+      const variantStores = normalizeTvStoreRows(
         Array.isArray(v.store_prices)
           ? v.store_prices
           : Array.isArray(v.storePrices)
             ? v.storePrices
-            : []
-      ).map((sp, spIdx) => ({
-        ...sp,
-        id: sp.id || `${idx}-${vIdx}-${spIdx}`,
-        store_name: sp.store_name || sp.store || "Store",
-        price: sp.price ?? sp.amount ?? null,
-        url: sp.url || sp.link || "",
-        offer_text: sp.offer_text || sp.offer || null,
-        delivery_info: sp.delivery_info || sp.delivery_time || null,
-      }));
+            : Array.isArray(attributes.store_prices)
+              ? attributes.store_prices
+              : [],
+        `${idx}-${vIdx}`,
+      );
+      const variantImages = normalizeTvVariantImages({
+        ...attributes,
+        ...v,
+      });
+      const basePrice = toNumericPrice(
+        v.base_price ?? v.price ?? attributes.base_price,
+      );
 
       return {
         ...v,
+        ...attributes,
         variant_id:
           v.variant_id ||
           v.id ||
           v.variantId ||
           v.variant_key ||
           `${idx}-${vIdx}`,
-        base_price: v.base_price ?? v.price ?? null,
+        variant_key: firstNonEmpty(
+          v.variant_key,
+          attributes.variant_key,
+          variantScreenSize,
+          `${idx}-${vIdx}`,
+        ),
+        base_price: basePrice,
         screen_size: variantScreenSize || "",
+        screen_size_value:
+          v.screen_size_value ?? extractCapacityValue(variantScreenSize || ""),
         specification_summary: variantSummary || "",
-        store_prices: variantStores,
+        images: variantImages,
+        store_prices: variantStores.length
+          ? variantStores
+          : fallbackTopLevelStores.map((store) => ({ ...store })),
       };
     });
 
-    const storePrices = variants.flatMap((v) => {
-      const prices = Array.isArray(v.store_prices)
-        ? v.store_prices.map((sp, spIdx) => ({
-            id: sp.id || `${v.variant_id}-${spIdx}`,
-            variant_id: v.variant_id,
-            store: sp.store_name || sp.store || "Store",
-            price: sp.price,
-            url: sp.url,
-            offer_text: sp.offer_text,
-            delivery_info: sp.delivery_info,
-          }))
-        : [];
+    const aggregatedVariantStores = variants.flatMap((v) => {
+      const prices = normalizeTvStoreRows(v.store_prices, `${v.variant_id}-agg`).map(
+        (sp, spIdx) => ({
+          id: sp.id || `${v.variant_id}-${spIdx}`,
+          variant_id: v.variant_id,
+          store: sp.store_name || sp.store || "Store",
+          price: sp.price,
+          url: sp.url,
+          offer_text: sp.offer_text,
+          delivery_info: sp.delivery_info,
+        }),
+      );
       if (prices.length === 0 && v.base_price) {
         return [
           {
@@ -623,8 +722,23 @@ const TVs = () => {
       }
       return prices;
     });
+    const storePrices = aggregatedVariantStores.length
+      ? aggregatedVariantStores
+      : fallbackTopLevelStores.map((store, storeIndex) => ({
+          id: store.id || `${idx}-fallback-${storeIndex}`,
+          variant_id: null,
+          store: store.store_name || "Store",
+          price: store.price,
+          url: store.url || "",
+          offer_text: store.offer_text || null,
+          delivery_info: store.delivery_info || null,
+        }));
 
     const numericCandidates = [];
+    storePrices.forEach((sp) => {
+      const p = toNumericPrice(sp.price);
+      if (p !== null && p > 0) numericCandidates.push(p);
+    });
     variants.forEach((v) => {
       const base = extractNumericPrice(v.base_price);
       if (base > 0) numericCandidates.push(base);
@@ -862,8 +976,8 @@ const TVs = () => {
     }
   }, [devices, setDevices, homeAppliances]);
 
-  // Build variant-level cards
-  const variantCards = devices.flatMap((device) => {
+  // Legacy variant-card flow kept for backward compatibility debugging.
+  const legacyVariantCards = devices.flatMap((device) => {
     const vars =
       Array.isArray(device.variants) && device.variants.length
         ? device.variants
@@ -939,6 +1053,275 @@ const TVs = () => {
     });
   });
 
+  const getTvVariantIdentity = (variant, fallbackIndex = 0) =>
+    String(
+      variant?.variant_id ??
+        variant?.id ??
+        variant?.variant_key ??
+        `variant-${fallbackIndex}`,
+    );
+
+  const mapVariantStorePrices = (device, variant) => {
+    const rawVariantStorePrices = normalizeTvStoreRows(
+      Array.isArray(variant?.store_prices) ? variant.store_prices : [],
+      `${device.id}-${getTvVariantIdentity(variant, 0)}`,
+    );
+
+    const mappedVariantStores = rawVariantStorePrices.map((sp, spIdx) => {
+      const storeName =
+        sp.store_name || sp.store || sp.storeName || "Store";
+      const storeObj = getStore ? getStore(storeName) : null;
+      const logo =
+        (getStoreLogo ? getStoreLogo(storeName) : null) ||
+        getLogo(storeName) ||
+        null;
+      return {
+        id:
+          sp.id ||
+          `${device.id}-${getTvVariantIdentity(variant, spIdx)}-${spIdx}`,
+        store: storeName,
+        storeObj,
+        logo,
+        price: sp.price ?? sp.amount ?? null,
+        url: sp.url || sp.link || null,
+        offer_text: sp.offer_text || sp.offer || null,
+        delivery_info: sp.delivery_info || sp.delivery_time || null,
+      };
+    });
+
+    // Keep one row per store (lowest valid price first) for a cleaner card view.
+    const dedupedByStore = [];
+    const bestByStore = new Map();
+    mappedVariantStores.forEach((storeRow) => {
+      const key = String(storeRow?.store || "")
+        .trim()
+        .toLowerCase();
+      if (!key) return;
+      const price = extractNumericPrice(storeRow?.price);
+      const previous = bestByStore.get(key);
+      if (!previous) {
+        bestByStore.set(key, storeRow);
+        return;
+      }
+      const prevPrice = extractNumericPrice(previous?.price);
+      const shouldReplace =
+        (price > 0 && prevPrice <= 0) || (price > 0 && price < prevPrice);
+      if (shouldReplace) bestByStore.set(key, storeRow);
+    });
+    bestByStore.forEach((value) => dedupedByStore.push(value));
+    dedupedByStore.sort((a, b) => {
+      const pa = extractNumericPrice(a?.price);
+      const pb = extractNumericPrice(b?.price);
+      if (pa > 0 && pb > 0 && pa !== pb) return pa - pb;
+      if (pa > 0 && pb <= 0) return -1;
+      if (pb > 0 && pa <= 0) return 1;
+      return String(a?.store || "").localeCompare(String(b?.store || ""));
+    });
+
+    if (dedupedByStore.length > 0) return dedupedByStore;
+
+    const fallbackDeviceStores = Array.isArray(device?.storePrices)
+      ? device.storePrices
+      : [];
+    if (fallbackDeviceStores.length > 0) {
+      return fallbackDeviceStores.map((store, storeIndex) => ({
+        ...store,
+        id:
+          store.id ||
+          `${device.id}-${getTvVariantIdentity(variant, 0)}-fallback-${storeIndex}`,
+      }));
+    }
+
+    const base = variant?.base_price || 0;
+    if (extractNumericPrice(base) > 0) {
+      return [
+        {
+          id: `variant-base-${device.id}-${getTvVariantIdentity(variant, 0)}`,
+          store: "Base Price",
+          price: base,
+          url: null,
+        },
+      ];
+    }
+
+    return [];
+  };
+
+  const resolveDeviceWithVariant = (device, variant) => {
+    if (!variant) return device;
+
+    const storePrices = mapVariantStorePrices(device, variant);
+    const candidatePrices = storePrices
+      .map((p) => extractNumericPrice(p.price))
+      .filter((n) => n > 0);
+    const variantBasePrice = extractNumericPrice(variant?.base_price);
+    const numericPrice = candidatePrices.length
+      ? Math.min(...candidatePrices)
+      : variantBasePrice > 0
+        ? variantBasePrice
+        : device.numericPrice || 0;
+
+    const price =
+      numericPrice > 0
+        ? `₹${numericPrice.toLocaleString()}`
+        : "Price not available";
+
+    const resolvedScreenSize = firstNonEmpty(
+      variant?.screen_size,
+      variant?.size,
+      device.specs?.screenSize,
+      device.specs?.capacity,
+    );
+
+    const variantImages = Array.isArray(variant?.images)
+      ? variant.images.filter(Boolean)
+      : [];
+    const resolvedImages = variantImages.length ? variantImages : device.images;
+
+    return {
+      ...device,
+      variant,
+      storePrices,
+      price,
+      numericPrice,
+      image: resolvedImages?.[0] || device.image,
+      images: resolvedImages,
+      specs: {
+        ...device.specs,
+        screenSize: resolvedScreenSize || "",
+        capacity:
+          resolvedScreenSize ||
+          device.specs?.capacity ||
+          device.specs?.screenSize ||
+          "",
+      },
+      numericCapacity:
+        extractCapacityValue(
+          resolvedScreenSize ||
+            device.specs?.capacity ||
+            device.specs?.screenSize ||
+            "",
+        ) || device.numericCapacity,
+    };
+  };
+
+  // Product-level TV cards with switchable size variants.
+  const variantCards = devices.map((device) => {
+    const vars =
+      Array.isArray(device.variants) && device.variants.length
+        ? device.variants
+        : [];
+
+    if (vars.length === 0) {
+      return { ...device, availableSizes: [] };
+    }
+
+    const normalizedVariants = vars
+      .map((variant, vIdx) => ({
+        ...variant,
+        variant_id:
+          variant?.variant_id ||
+          variant?.id ||
+          variant?.variant_key ||
+          `${device.id}-${vIdx}`,
+        screen_size: firstNonEmpty(
+          variant?.screen_size,
+          variant?.size,
+          variant?.variant_key,
+          device.specs?.screenSize,
+          device.specs?.capacity,
+        ),
+      }))
+      .sort((a, b) => {
+        const sizeA = extractCapacityValue(a?.screen_size || "");
+        const sizeB = extractCapacityValue(b?.screen_size || "");
+        if (sizeA !== sizeB) return sizeA - sizeB;
+        const priceA = extractNumericPrice(a?.base_price);
+        const priceB = extractNumericPrice(b?.base_price);
+        return priceA - priceB;
+      });
+
+    const getVariantEffectivePrice = (variant) => {
+      const stores = mapVariantStorePrices(device, variant);
+      const candidateStorePrices = stores
+        .map((store) => extractNumericPrice(store?.price))
+        .filter((price) => price > 0);
+      if (candidateStorePrices.length) return Math.min(...candidateStorePrices);
+      return extractNumericPrice(variant?.base_price) || Number.POSITIVE_INFINITY;
+    };
+
+    const uniqueVariantMap = new Map();
+    const variantsWithoutSize = [];
+    normalizedVariants.forEach((variant) => {
+      const sizeLabel = firstNonEmpty(
+        variant?.screen_size,
+        variant?.size,
+        variant?.variant_key,
+      );
+      const sizeKey = String(sizeLabel || "")
+        .trim()
+        .toLowerCase();
+      if (!sizeKey) {
+        variantsWithoutSize.push(variant);
+        return;
+      }
+      const prev = uniqueVariantMap.get(sizeKey);
+      if (!prev) {
+        uniqueVariantMap.set(sizeKey, variant);
+        return;
+      }
+      if (getVariantEffectivePrice(variant) < getVariantEffectivePrice(prev)) {
+        uniqueVariantMap.set(sizeKey, variant);
+      }
+    });
+
+    const dedupedVariants = [
+      ...Array.from(uniqueVariantMap.values()),
+      ...variantsWithoutSize,
+    ].sort((a, b) => {
+      const sizeA = extractCapacityValue(a?.screen_size || "");
+      const sizeB = extractCapacityValue(b?.screen_size || "");
+      if (sizeA !== sizeB) return sizeA - sizeB;
+      return getVariantEffectivePrice(a) - getVariantEffectivePrice(b);
+    });
+
+    const defaultVariant = dedupedVariants.reduce((best, current) => {
+      const bestStores = mapVariantStorePrices(device, best);
+      const currentStores = mapVariantStorePrices(device, current);
+      const bestPriceCandidates = bestStores
+        .map((sp) => extractNumericPrice(sp?.price))
+        .filter((n) => n > 0);
+      const currentPriceCandidates = currentStores
+        .map((sp) => extractNumericPrice(sp?.price))
+        .filter((n) => n > 0);
+      const bestPrice = bestPriceCandidates.length
+        ? Math.min(...bestPriceCandidates)
+        : extractNumericPrice(best?.base_price);
+      const currentPrice = currentPriceCandidates.length
+        ? Math.min(...currentPriceCandidates)
+        : extractNumericPrice(current?.base_price);
+
+      if (bestPrice <= 0 && currentPrice > 0) return current;
+      if (currentPrice > 0 && currentPrice < bestPrice) return current;
+      return best;
+    }, dedupedVariants[0]);
+
+    const resolved = resolveDeviceWithVariant(
+      { ...device, variants: dedupedVariants },
+      defaultVariant,
+    );
+
+    return {
+      ...resolved,
+      variants: dedupedVariants,
+      availableSizes: dedupedVariants
+        .map((variant) =>
+          firstNonEmpty(variant?.screen_size, variant?.size, variant?.variant_key),
+        )
+        .filter(Boolean),
+    };
+  });
+
   // DYNAMIC FILTER EXTRACTION - Based on your design
   const extractDynamicFilters = useMemo(() => {
     const meta = {
@@ -1001,7 +1384,26 @@ const TVs = () => {
           p.features.forEach((f) => meta.features.add(f));
         }
       } else if (p.applianceType === "television") {
-        if (p.specs.screenSize) meta.screenSize.add(p.specs.screenSize);
+        const tvVariantSizes = Array.isArray(p.variants)
+          ? p.variants
+              .map((variant) =>
+                firstNonEmpty(
+                  variant?.screen_size,
+                  variant?.size,
+                  variant?.variant_key,
+                ),
+              )
+              .filter(Boolean)
+          : [];
+        if (tvVariantSizes.length) {
+          tvVariantSizes.forEach((sizeText) => {
+            meta.screenSize.add(sizeText);
+            const numeric = extractCapacityValue(sizeText);
+            if (numeric > 0) meta.capacities.add(numeric);
+          });
+        } else if (p.specs.screenSize) {
+          meta.screenSize.add(p.specs.screenSize);
+        }
         if (p.specs.resolution) meta.resolution.add(p.specs.resolution);
         if (p.features) {
           p.features.forEach((f) => meta.tvFeatures.add(f));
@@ -1227,6 +1629,7 @@ const TVs = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
   const [compareItems, setCompareItems] = useState([]);
+  const [selectedVariantByProduct, setSelectedVariantByProduct] = useState({});
 
   // Set page title
   useTitle({
@@ -1459,8 +1862,65 @@ const TVs = () => {
     }
   };
 
+  const handleSelectTvSize = (device, variant, event) => {
+    if (event?.stopPropagation) event.stopPropagation();
+    const productKey = String(
+      device.productId ?? device.product_id ?? device.id ?? "",
+    );
+    if (!productKey) return;
+    setSelectedVariantByProduct((prev) => ({
+      ...prev,
+      [productKey]: getTvVariantIdentity(variant),
+    }));
+  };
+
+  useEffect(() => {
+    const validProductKeys = new Set(
+      variantCards.map((device) =>
+        String(device.productId ?? device.product_id ?? device.id ?? ""),
+      ),
+    );
+    setSelectedVariantByProduct((prev) => {
+      let changed = false;
+      const next = {};
+      Object.entries(prev).forEach(([key, value]) => {
+        if (validProductKeys.has(key)) next[key] = value;
+        else changed = true;
+      });
+      return changed ? next : prev;
+    });
+  }, [variantCards]);
+
+  const resolvedVariantCards = useMemo(() => {
+    return variantCards.map((device) => {
+      const variants = Array.isArray(device.variants) ? device.variants : [];
+      if (!variants.length) return device;
+
+      const productKey = String(
+        device.productId ?? device.product_id ?? device.id ?? "",
+      );
+      const selectedVariantId = selectedVariantByProduct[productKey];
+      if (!selectedVariantId) return device;
+
+      const selectedVariant = variants.find(
+        (variant, variantIndex) =>
+          getTvVariantIdentity(variant, variantIndex) ===
+          String(selectedVariantId),
+      );
+
+      if (!selectedVariant) return device;
+
+      const resolved = resolveDeviceWithVariant(device, selectedVariant);
+      return {
+        ...resolved,
+        variants: device.variants,
+        availableSizes: device.availableSizes,
+      };
+    });
+  }, [variantCards, selectedVariantByProduct]);
+
   // Filter logic
-  const filteredVariants = variantCards.filter((device) => {
+  const filteredVariants = resolvedVariantCards.filter((device) => {
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -1556,7 +2016,18 @@ const TVs = () => {
               deviceValue = device.specs.technology;
               break;
             case "screenSize":
-              deviceValue = device.specs.screenSize;
+              deviceValue =
+                Array.isArray(device.variants) && device.variants.length
+                  ? device.variants
+                      .map((variant) =>
+                        firstNonEmpty(
+                          variant?.screen_size,
+                          variant?.size,
+                          variant?.variant_key,
+                        ),
+                      )
+                      .filter(Boolean)
+                  : device.specs.screenSize;
               break;
             case "resolution":
               deviceValue = device.specs.resolution;
@@ -2036,7 +2507,7 @@ const TVs = () => {
                     </span>
                     <p className="text-xs text-purple-600 mt-0.5">
                       Showing {filteredVariants.length} of {variantCards.length}{" "}
-                      options
+                      products
                     </p>
                   </div>
                 </div>
@@ -2057,12 +2528,12 @@ const TVs = () => {
                 Available TVs
               </h2>
               <p className="text-sm text-gray-600 mt-1">
-                Browse through our TV collection with detailed specs, variants,
-                and latest pricing
+                Browse through our TV collection with detailed specs, size
+                options, and latest pricing
               </p>
             </div>
             <div className="hidden lg:block text-sm text-gray-500">
-              Showing {sortedVariants.length} of {variantCards.length} variants
+              Showing {sortedVariants.length} of {variantCards.length} products
             </div>
           </div>
         </div>
@@ -2443,7 +2914,7 @@ const TVs = () => {
                     {/* Top Row: Image and Basic Info */}
                     <div className="grid grid-cols-[minmax(0,8.5rem)_minmax(0,1fr)] sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)] gap-3 w-full items-start">
                       {/* Product Image - Fixed container */}
-                      <div className="relative flex-shrink-0 w-full h-36 sm:h-48 rounded-2xl overflow-hidden group bg-gray-50 border border-gray-200">
+                      <div className="relative flex-shrink-0 w-full h-36 sm:h-48 rounded-2xl overflow-hidden group bg-white">
                         <div className="w-full h-full flex items-center justify-center p-1.5 sm:p-2">
                           <ImageCarousel images={device.images} />
                         </div>
@@ -2519,6 +2990,51 @@ const TVs = () => {
                           </div>
                         </div>
 
+                        {Array.isArray(device.variants) &&
+                          device.variants.length > 0 && (
+                            <div className="mb-3">
+                              <p className="text-[11px] font-semibold text-gray-500 mb-1.5">
+                                Available Sizes
+                              </p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {device.variants.map((variant, variantIndex) => {
+                                  const label = firstNonEmpty(
+                                    variant?.screen_size,
+                                    variant?.size,
+                                    variant?.variant_key,
+                                  );
+                                  if (!label) return null;
+                                  const variantId = getTvVariantIdentity(
+                                    variant,
+                                    variantIndex,
+                                  );
+                                  const activeVariantId = getTvVariantIdentity(
+                                    device.variant,
+                                    0,
+                                  );
+                                  const isSelected = activeVariantId === variantId;
+
+                                  return (
+                                    <button
+                                      key={`${device.id}-size-${variantId}`}
+                                      type="button"
+                                      onClick={(event) =>
+                                        handleSelectTvSize(device, variant, event)
+                                      }
+                                      className={`px-2.5 py-1 rounded-full border text-[11px] font-semibold transition-colors ${
+                                        isSelected
+                                          ? "bg-purple-600 text-white border-purple-600"
+                                          : "bg-white text-gray-700 border-gray-300 hover:border-purple-300 hover:text-purple-700"
+                                      }`}
+                                    >
+                                      {label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
                         {/* Price */}
                         <div className="mb-3">
                           <div className="flex items-center justify-between">
@@ -2585,16 +3101,36 @@ const TVs = () => {
                           <div className="flex items-center gap-2 mb-3">
                             <h4 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
                               <FaStore className="text-green-500" />
-                              Store Prices
+                              Available At
                             </h4>
                           </div>
                           <div className="space-y-2">
                             {device.storePrices
                               .slice(0, 3)
                               .map((storePrice, i) => {
-                                const rawLogoSrc = getLogo(storePrice.store);
-                                const logoSrc = isLikelyImageSrc(rawLogoSrc)
-                                  ? rawLogoSrc
+                                const storeObj =
+                                  storePrice.storeObj ||
+                                  (getStore
+                                    ? getStore(
+                                        storePrice.store ||
+                                          storePrice.store_name ||
+                                          storePrice.storeName ||
+                                          "",
+                                      )
+                                    : null);
+                                const storeNameCandidate =
+                                  storePrice.store ||
+                                  storePrice.store_name ||
+                                  storePrice.storeName ||
+                                  storeObj?.name ||
+                                  "";
+                                const logoSrcRaw =
+                                  storePrice.logo ||
+                                  (getStoreLogo
+                                    ? getStoreLogo(storeNameCandidate)
+                                    : getLogo(storeNameCandidate));
+                                const logoSrc = isLikelyImageSrc(logoSrcRaw)
+                                  ? logoSrcRaw
                                   : "";
                                 const visitUrl = getStoreVisitUrl(
                                   storePrice.url,
@@ -2611,20 +3147,20 @@ const TVs = () => {
                                 return (
                                   <div
                                     key={`${device.id}-store-${i}`}
-                                    className="flex items-center justify-between text-sm bg-gray-50 px-3 py-2 rounded-lg border border-gray-100"
+                                    className="flex items-center justify-between text-sm bg-gradient-to-br from-purple-50 to-blue-50 px-3 py-2 rounded-lg"
                                   >
                                     <div className="flex items-center gap-2">
                                       {logoSrc ? (
                                         <img
                                           src={logoSrc}
-                                          alt={storePrice.store}
+                                          alt={storeObj?.name || storePrice.store}
                                           className="w-6 h-6 object-contain"
                                         />
                                       ) : (
                                         <FaStore className="text-gray-400" />
                                       )}
                                       <span className="font-medium text-gray-900 capitalize">
-                                        {storePrice.store || "Online Store"}
+                                        {storePrice.store || storeObj?.name || "Online Store"}
                                       </span>
                                     </div>
                                     <div className="font-bold text-green-600">
@@ -2699,7 +3235,7 @@ const TVs = () => {
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                   <div className="text-sm text-gray-600">
                     Showing {sortedVariants.length} of {variantCards.length}{" "}
-                    variants
+                    products
                   </div>
                   <div className="flex items-center gap-3">
                     <button
@@ -3125,3 +3661,4 @@ const TVs = () => {
 };
 
 export default TVs;
+
