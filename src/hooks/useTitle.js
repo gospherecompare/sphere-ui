@@ -17,6 +17,7 @@ const PAGE_TITLES = {
   account: `My Account | ${SITE_NAME}`,
   compare: `Compare Gadgets | ${SITE_NAME}`,
   wishlist: `My Wishlist | ${SITE_NAME}`,
+  careers: `Careers at ${SITE_NAME} | Product, Content & SEO Roles`,
 };
 
 function formatTitle({

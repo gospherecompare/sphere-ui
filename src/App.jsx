@@ -12,6 +12,7 @@ import TrendingProductsHub from "./components/Product/TrendingProductsHub";
 import DeviceComparison from "./components/compare";
 import Breadcrumbs from "./components/Breadcrumbs";
 import About from "./components/Static/About";
+import Careers from "./components/Static/Careers";
 import Contact from "./components/Static/Contact";
 import PrivacyPolicy from "./components/Static/PrivacyPolicy";
 import Terms from "./components/Static/Terms";
@@ -132,6 +133,8 @@ function App() {
             path="/about"
             element={<About />}
           />
+          <Route path="/careers" element={<Careers />} />
+          <Route path="/career" element={<Navigate to="/careers" replace />} />
           <Route
             path="/contact"
             element={<Contact />}
