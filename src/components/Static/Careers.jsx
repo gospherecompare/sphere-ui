@@ -48,7 +48,7 @@ const STEPS = [
 
 const getTodayDate = () => new Date().toISOString().slice(0, 10);
 
-const INITIAL_FORM = {
+const createInitialForm = () => ({
   role: "",
   gender: "",
   firstName: "",
@@ -88,53 +88,28 @@ const INITIAL_FORM = {
   projects: "",
 
   resume: null,
-  portfolio: "",
   coverLetter: "",
   applicationPlace: "",
   applicationDate: getTodayDate(),
   agreeTerms: false,
-};
+});
 
 const INPUT_CLASS =
-  "w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
+  "w-full rounded-xl border border-indigo-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-100";
 
-const LABEL_CLASS = "mb-1.5 block text-sm font-semibold text-slate-700";
+const LABEL_CLASS = "mb-1.5 block text-sm font-semibold text-indigo-700";
 
 const hasValue = (value) => String(value ?? "").trim().length > 0;
-const MONTH_NAMES = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
 
-const padTwo = (value) => String(value).padStart(2, "0");
+const formatISODateForDisplay = (value) => {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return "";
 
-const parseISODate = (value) => {
-  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return { year: "", month: "", day: "" };
-  }
-
-  const [year, month, day] = value.split("-");
-  return { year, month, day };
-};
-
-const getDaysInMonth = (year, month) => {
-  if (!year || !month) return 31;
-  return new Date(Number(year), Number(month), 0).getDate();
-};
-
-const formatISODate = ({ year, month, day }) => {
-  if (!year || !month || !day) return "";
-  return `${year}-${month}-${day}`;
+  const parsedDate = new Date(`${value}T00:00:00`);
+  return parsedDate.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 };
 
 const QuestionInput = ({ question, name, className = "", ...props }) => (
@@ -176,7 +151,10 @@ const QuestionSelect = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef(null);
-  const selectedOption = options.find((option) => option.value === value);
+  const normalizedValue = value == null ? "" : String(value);
+  const selectedOption = options.find(
+    (option) => String(option.value) === normalizedValue,
+  );
 
   useEffect(() => {
     const closeOnOutsideClick = (event) => {
@@ -195,7 +173,7 @@ const QuestionSelect = ({
   }, []);
 
   const selectValue = (nextValue) => {
-    onChange({ target: { name, value: nextValue } });
+    onChange({ target: { name, value: String(nextValue ?? "") } });
     setIsOpen(false);
   };
 
@@ -226,12 +204,12 @@ const QuestionSelect = ({
           className={`${INPUT_CLASS} flex items-center justify-between pr-10 text-left`}
         >
           <span
-            className={selectedOption ? "text-slate-900" : "text-slate-400"}
+            className={selectedOption ? "text-indigo-900" : "text-indigo-400"}
           >
             {selectedOption ? selectedOption.label : placeholder}
           </span>
           <svg
-            className={`absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500 transition-transform ${
+            className={`absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-indigo-500 transition-transform ${
               isOpen ? "rotate-180" : ""
             }`}
             viewBox="0 0 20 20"
@@ -249,19 +227,19 @@ const QuestionSelect = ({
           </svg>
         </button>
 
-        <input type="hidden" name={name} value={value} />
+        <input type="hidden" name={name} value={normalizedValue} />
 
         {isOpen ? (
           <ul
             role="listbox"
-            className="absolute z-30 mt-2 max-h-64 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 "
+            className="absolute z-30 mt-2 max-h-64 w-full overflow-y-auto rounded-xl border border-indigo-100 bg-white p-1.5 shadow-xl"
           >
             {!required ? (
               <li>
                 <button
                   type="button"
                   onClick={() => selectValue("")}
-                  className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-100"
+                  className="w-full rounded-lg px-3 py-2 text-left text-sm text-indigo-600 hover:bg-indigo-50"
                 >
                   {placeholder}
                 </button>
@@ -269,7 +247,7 @@ const QuestionSelect = ({
             ) : null}
 
             {options.map((option) => {
-              const isSelected = option.value === value;
+              const isSelected = String(option.value) === normalizedValue;
 
               return (
                 <li key={option.value}>
@@ -278,8 +256,8 @@ const QuestionSelect = ({
                     onClick={() => selectValue(option.value)}
                     className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition ${
                       isSelected
-                        ? "bg-blue-50 text-blue-700"
-                        : "text-slate-700 hover:bg-slate-100"
+                        ? "bg-violet-50 text-violet-700"
+                        : "text-indigo-700 hover:bg-indigo-50"
                     }`}
                   >
                     <span>{option.label}</span>
@@ -302,92 +280,58 @@ const QuestionDate = ({
   name,
   value,
   onChange,
-  minYear = 1980,
-  maxYear = new Date().getFullYear(),
+  min = "1980-01-01",
+  max = new Date().toISOString().slice(0, 10),
 }) => {
-  const { year, month, day } = parseISODate(value);
-  const years = [];
-
-  for (let y = maxYear; y >= minYear; y -= 1) {
-    years.push({ value: String(y), label: String(y) });
-  }
-
-  const monthOptions = MONTH_NAMES.map((monthName, index) => ({
-    value: padTwo(index + 1),
-    label: monthName,
-  }));
-
-  const maxDay = getDaysInMonth(year, month);
-  const dayOptions = Array.from({ length: maxDay }, (_, index) => ({
-    value: padTwo(index + 1),
-    label: String(index + 1),
-  }));
-
-  const updateDatePart = (part, partValue) => {
-    let nextYear = year;
-    let nextMonth = month;
-    let nextDay = day;
-
-    if (part === "year") nextYear = partValue;
-    if (part === "month") nextMonth = partValue;
-    if (part === "day") nextDay = partValue;
-
-    if (nextYear && nextMonth && nextDay) {
-      const cappedMaxDay = getDaysInMonth(nextYear, nextMonth);
-      if (Number(nextDay) > cappedMaxDay) {
-        nextDay = padTwo(cappedMaxDay);
-      }
-    }
-
-    const nextValue = formatISODate({
-      year: nextYear,
-      month: nextMonth,
-      day: nextDay,
-    });
-
-    onChange({ target: { name, value: nextValue } });
-  };
+  const displayValue = formatISODateForDisplay(value);
 
   return (
     <div>
-      <label className={LABEL_CLASS}>{question}</label>
-      <div className="grid gap-3 sm:grid-cols-3">
-        <QuestionSelect
-          question="Which day?"
-          name={`${name}-day`}
-          value={day}
-          onChange={(event) => updateDatePart("day", event.target.value)}
-          options={dayOptions}
-          placeholder="Select day"
+      <label htmlFor={name} className={LABEL_CLASS}>
+        {question}
+      </label>
+      <div className="relative">
+        <input
+          id={name}
+          type="date"
+          name={name}
+          value={value}
+          min={min}
+          max={max}
+          onChange={onChange}
+          className={`${INPUT_CLASS} pr-10 [color-scheme:light]`}
         />
-        <QuestionSelect
-          question="Which month?"
-          name={`${name}-month`}
-          value={month}
-          onChange={(event) => updateDatePart("month", event.target.value)}
-          options={monthOptions}
-          placeholder="Select month"
-        />
-        <QuestionSelect
-          question="Which year?"
-          name={`${name}-year`}
-          value={year}
-          onChange={(event) => updateDatePart("year", event.target.value)}
-          options={years}
-          placeholder="Select year"
-        />
+        <svg
+          className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-indigo-500"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+        >
+          <path
+            d="M8 3V5M16 3V5M4 9H20M6 4H18C19.1046 4 20 4.89543 20 6V19C20 20.1046 19.1046 21 18 21H6C4.89543 21 4 20.1046 4 19V6C4 4.89543 4.89543 4 6 4Z"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
       </div>
-      <input type="hidden" name={name} value={value} />
+      {displayValue ? (
+        <p className="mt-1 text-xs font-medium text-indigo-600">
+          Selected: {displayValue}
+        </p>
+      ) : null}
     </div>
   );
 };
 
 const SectionCard = ({ title, children, optional = false }) => (
-  <section className="rounded-2xl border border-slate-200 bg-white p-4  sm:p-5">
+  <section className="rounded-2xl border border-indigo-100 bg-white p-4 sm:p-5">
     <div className="mb-4 flex items-center justify-between">
       <h3 className="text-sm font-bold text-slate-900 sm:text-base">{title}</h3>
       {optional ? (
-        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+        <span className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-medium text-violet-700">
           Optional
         </span>
       ) : null}
@@ -401,7 +345,7 @@ const Careers = () => {
 
   const [step, setStep] = useState(0);
   const [submitted, setSubmitted] = useState(false);
-  const [formData, setFormData] = useState(INITIAL_FORM);
+  const [formData, setFormData] = useState(createInitialForm);
 
   const handleChange = (event) => {
     const { name, value, type, checked, files } = event.target;
@@ -499,15 +443,13 @@ const Careers = () => {
       return;
     }
 
+    setFormData(createInitialForm());
+    setStep(0);
     setSubmitted(true);
   };
 
-  const selectedRoleLabel =
-    ROLE_OPTIONS.find((role) => role.value === formData.role)?.label ||
-    "Not selected";
-
   return (
-    <main className="relative min-h-screen overflow-hidden bg-white max-w-6xl mx-auto">
+    <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-blue-50 via-violet-50 to-indigo-50">
       <Helmet>
         <title>Careers at Hook | Apply in Easy Steps</title>
         <meta
@@ -517,8 +459,8 @@ const Careers = () => {
         <meta name="robots" content="index, follow" />
       </Helmet>
 
-      <div className="relative mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
-        <div className="rounded-3xl border border-slate-200 bg-white/95 p-5 backdrop-blur sm:p-8">
+      <div className="relative mx-auto max-w-6xl bg-white px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+        <div className="rounded-lg border border-indigo-100 bg-white p-5  backdrop-blur sm:p-8">
           <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
             Careers at Hook
           </h1>
@@ -537,13 +479,13 @@ const Careers = () => {
                   key={item.title}
                   className={`rounded-2xl border px-4 py-3 ${
                     isActive
-                      ? "border-blue-300 bg-blue-50"
+                      ? "border-violet-300 bg-violet-50"
                       : isDone
-                        ? "border-emerald-300 bg-emerald-50"
-                        : "border-slate-200 bg-white"
+                        ? "border-blue-300 bg-blue-50"
+                        : "border-indigo-100 bg-white"
                   }`}
                 >
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500">
                     {item.title}
                   </p>
                   <p className="mt-1 text-sm font-semibold text-slate-800">
@@ -618,13 +560,13 @@ const Careers = () => {
                 />
 
                 <div className="sm:col-span-2">
-                  <QuestionInput
+                  <QuestionDate
                     question="What is your date of birth?"
-                    type="date"
                     name="dob"
                     value={formData.dob}
                     onChange={handleChange}
-                    required
+                    min="1900-01-01"
+                    max={new Date().toISOString().slice(0, 10)}
                   />
                 </div>
               </div>
@@ -912,23 +854,14 @@ const Careers = () => {
                     accept=".pdf,.doc,.docx"
                     onChange={handleChange}
                     required
-                    className={`${INPUT_CLASS} file:mr-4 file:rounded-lg file:border-0 file:bg-blue-100 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-200`}
+                    className={`${INPUT_CLASS} file:mr-4 file:rounded-lg file:border-0 file:bg-violet-100 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-violet-700 hover:file:bg-violet-200`}
                   />
                   {formData.resume ? (
-                    <p className="mt-1 text-xs font-medium text-emerald-700">
+                    <p className="mt-1 text-xs font-medium text-violet-700">
                       Selected file: {formData.resume.name}
                     </p>
                   ) : null}
                 </div>
-
-                <QuestionInput
-                  question="Do you want to share your portfolio or profile link?"
-                  type="url"
-                  name="portfolio"
-                  value={formData.portfolio}
-                  onChange={handleChange}
-                  placeholder="https://portfolio-link"
-                />
 
                 <QuestionTextArea
                   question="Why do you want to join Hook?"
@@ -950,23 +883,23 @@ const Careers = () => {
                     required
                   />
 
-                  <QuestionInput
+                  <QuestionDate
                     question="What is today\'s application date?"
-                    type="date"
                     name="applicationDate"
                     value={formData.applicationDate}
                     onChange={handleChange}
-                    required
+                    min="1980-01-01"
+                    max={new Date().toISOString().slice(0, 10)}
                   />
                 </div>
 
-                <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <label className="flex items-start gap-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-4">
                   <input
                     type="checkbox"
                     name="agreeTerms"
                     checked={formData.agreeTerms}
                     onChange={handleChange}
-                    className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    className="mt-0.5 h-4 w-4 rounded border-indigo-300 text-violet-600 focus:ring-violet-500"
                     required
                   />
                   <span className="text-sm text-slate-700">
@@ -974,25 +907,6 @@ const Careers = () => {
                     correct, and I agree to be contacted for hiring updates.
                   </span>
                 </label>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                  <p className="text-sm font-semibold text-slate-900">
-                    Final review
-                  </p>
-                  <div className="mt-2 grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
-                    <p>Role: {selectedRoleLabel}</p>
-                    <p>
-                      Name:{" "}
-                      {`${formData.firstName || ""} ${formData.lastName || ""}`.trim() ||
-                        "Not added"}
-                    </p>
-                    <p>Email: {formData.email || "Not added"}</p>
-                    <p>
-                      Preferred location:{" "}
-                      {formData.preferredLocation || "Not added"}
-                    </p>
-                  </div>
-                </div>
               </div>
             ) : null}
 
@@ -1001,7 +915,7 @@ const Careers = () => {
                 <button
                   type="button"
                   onClick={goBack}
-                  className="rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  className="rounded-xl border border-indigo-200 bg-white px-5 py-2.5 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50"
                 >
                   Back
                 </button>
@@ -1012,7 +926,7 @@ const Careers = () => {
                   type="button"
                   onClick={goNext}
                   disabled={!isStepComplete()}
-                  className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                  className="rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:from-blue-700 hover:to-violet-700 disabled:cursor-not-allowed disabled:from-blue-300 disabled:to-violet-300"
                 >
                   Continue
                 </button>
@@ -1020,22 +934,53 @@ const Careers = () => {
                 <button
                   type="submit"
                   disabled={!isStepComplete()}
-                  className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
+                  className="rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:from-violet-700 hover:to-blue-700 disabled:cursor-not-allowed disabled:from-violet-300 disabled:to-blue-300"
                 >
                   Submit Application
                 </button>
               )}
             </div>
-
-            {submitted ? (
-              <p className="text-sm font-semibold text-emerald-700">
-                Application submitted successfully. Our team will review and
-                contact you.
-              </p>
-            ) : null}
           </form>
         </div>
       </div>
+
+      {submitted ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-indigo-950/45 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-violet-200 bg-white p-6 shadow-2xl">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-violet-100">
+              <svg
+                viewBox="0 0 24 24"
+                className="h-7 w-7 text-violet-600"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <path
+                  d="M5 12.5L9.5 17L19 7.5"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+            <h2 className="text-center text-xl font-bold text-slate-900">
+              Application Submitted
+            </h2>
+            <p className="mt-2 text-center text-sm text-slate-600">
+              Your form has been submitted successfully. We will review your
+              profile and contact you soon.
+            </p>
+            <button
+              type="button"
+              onClick={() => setSubmitted(false)}
+              className="mt-5 w-full rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:from-violet-700 hover:to-blue-700"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 };
