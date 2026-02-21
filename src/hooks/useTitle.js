@@ -18,6 +18,10 @@ const PAGE_TITLES = {
   compare: `Compare Gadgets | ${SITE_NAME}`,
   wishlist: `My Wishlist | ${SITE_NAME}`,
   careers: `Careers at ${SITE_NAME} | Product, Content & SEO Roles`,
+  about: `About ${SITE_NAME} | Product Discovery & Comparison`,
+  contact: `Contact ${SITE_NAME} | Support and Partnerships`,
+  privacypolicy: `Privacy Policy | ${SITE_NAME}`,
+  terms: `Terms of Use | ${SITE_NAME}`,
 };
 
 function formatTitle({
