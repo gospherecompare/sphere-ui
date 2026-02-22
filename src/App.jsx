@@ -324,20 +324,19 @@ function App() {
     switch (category) {
       case "smartphones":
       case "mobiles":
-        return <Smartphones />;
+        return <Navigate to={`/smartphones${location.search || ""}`} replace />;
       case "laptops":
-        return <Laptops />;
       case "laptop":
-        return <Navigate to={`/products/laptops${location.search || ""}`} replace />;
+        return <Navigate to={`/laptops${location.search || ""}`} replace />;
       case "tvs":
       case "tv":
       case "television":
       case "televisions":
-        return <TVs />;
+        return <Navigate to={`/tvs${location.search || ""}`} replace />;
       case "appliances":
-        return <Navigate to={`/products/tvs${location.search || ""}`} replace />;
+        return <Navigate to={`/tvs${location.search || ""}`} replace />;
       case "networking":
-        return <Networking />;
+        return <Navigate to={`/networking${location.search || ""}`} replace />;
       default:
         return <NotFound />;
     }
@@ -399,7 +398,7 @@ function App() {
           <Route path="/trending/:category" element={<TrendingProductsHub />} />
 
           {/* Support /products/:category SEO paths */}
-          <Route path="/products" element={<Smartphones />} />
+          <Route path="/products" element={<Navigate to="/smartphones" replace />} />
           <Route path="/products/:category" element={<CategoryRouter />} />
 
           {/* Category shortcuts */}

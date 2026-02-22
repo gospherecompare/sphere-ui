@@ -483,6 +483,8 @@ const replaceMetaTag = (html, regex, tag) =>
 const applySeoToHtml = (html, routePath) => {
   const seo = resolveSeo(routePath);
   const canonicalUrl = `${SITE_ORIGIN}${seo.canonicalPath}`;
+  const normalizedRoute = normalizePath(routePath || "/");
+  const isAliasRoute = normalizedRoute !== seo.canonicalPath;
   let next = html;
 
   next = next.replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeHtml(seo.title)}</title>`);
@@ -531,6 +533,14 @@ const applySeoToHtml = (html, routePath) => {
     /<link\s+rel=["']canonical["'][^>]*>/i,
     `<link rel="canonical" href="${escapeHtml(canonicalUrl)}">`,
   );
+
+  if (isAliasRoute) {
+    next = replaceMetaTag(
+      next,
+      /<meta\s+http-equiv=["']refresh["'][^>]*>/i,
+      `<meta http-equiv="refresh" content="0;url=${escapeHtml(canonicalUrl)}">`,
+    );
+  }
 
   return next;
 };
