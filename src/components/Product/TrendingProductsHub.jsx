@@ -227,8 +227,12 @@ const batteryLabel = (row) => {
 };
 
 const dateLabel = (v) => {
-  const d = new Date(v);
+  const raw = text(v);
+  if (!raw) return "";
+  const d = new Date(raw);
   if (Number.isNaN(d.getTime())) return "";
+  // Avoid rendering placeholder epoch-style dates from invalid/null-like values.
+  if (d.getUTCFullYear() <= 1971) return "";
   return d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 };
 
@@ -242,7 +246,7 @@ const ImageCarousel = ({ images = [], fallbackIcon: FallbackIcon = FaMobileAlt }
 
   if (!safeImages.length) {
     return (
-      <div className="relative w-full h-full flex items-center justify-center rounded-lg bg-gray-100">
+      <div className="relative w-full h-full flex items-center justify-center rounded-lg bg-white">
         <div className="text-center px-3">
           <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-200">
             <FallbackIcon className="text-gray-400 text-sm" />
@@ -1309,6 +1313,7 @@ const TrendingProductsHub = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:[&>*:nth-child(2n)]:border-l md:[&>*:nth-child(2n)]:border-gray-200 md:[&>*:nth-child(2n)]:pl-6 md:[&>*:nth-child(2n+1)]:pr-6">
               {visible.map((p) => {
                 const storeLink = p.stores.find((s) => s.url)?.url || `https://www.google.com/search?q=${encodeURIComponent(`${p.brand || ""} official store`)}`;
+                const releasedOn = dateLabel(p.release);
                 return (
                   <article
                     key={p.key}
@@ -1317,7 +1322,7 @@ const TrendingProductsHub = () => {
                   >
                     <div className="p-3 sm:p-4 md:p-5 lg:p-4 pt-4 sm:pt-5 md:pt-6 transition-all duration-300">
                       <div className="grid grid-cols-[minmax(0,8.5rem)_minmax(0,1fr)] sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)] gap-3 w-full items-start">
-                        <div className="relative flex-shrink-0 w-full h-36 sm:h-48 rounded-2xl overflow-hidden group bg-gray-50 border border-gray-200">
+                        <div className="relative flex-shrink-0 w-full h-36 sm:h-48 rounded-2xl overflow-hidden group bg-white">
                           <div className="w-full h-full flex items-center justify-center p-1.5 sm:p-2">
                             <ImageCarousel
                               images={arr(p.images).length ? p.images : p.image ? [p.image] : []}
@@ -1375,10 +1380,10 @@ const TrendingProductsHub = () => {
                         </div>
                       </div>
 
-                      {text(p.release) && activeCategory === "smartphones" ? (
+                      {releasedOn && activeCategory === "smartphones" ? (
                         <div className="mt-3 flex items-center gap-2 text-xs text-gray-600">
                           <FaCalendarAlt className="text-gray-400" />
-                          <span>Released: {dateLabel(p.release)}</span>
+                          <span>Released: {releasedOn}</span>
                         </div>
                       ) : null}
                     </div>

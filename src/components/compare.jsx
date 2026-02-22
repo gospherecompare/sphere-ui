@@ -382,7 +382,7 @@ const MobileCompare = () => {
     }
 
     if (Array.isArray(value)) {
-      const entries = value.filter((entry) => entry != null && entry !== "");
+      const entries = value.filter((entry) => hasRenderableValue(entry));
       if (entries.length === 0) return "N/A";
 
       return (
@@ -401,7 +401,7 @@ const MobileCompare = () => {
 
     if (typeof value === "object") {
       const entries = Object.entries(value).filter(
-        ([, nestedValue]) => nestedValue != null && nestedValue !== "",
+        ([, nestedValue]) => hasRenderableValue(nestedValue),
       );
 
       if (entries.length === 0) return "N/A";
@@ -426,27 +426,77 @@ const MobileCompare = () => {
     return formatSpecValue(value, specKey);
   };
 
+  const hasRenderableValue = (value) => {
+    if (value == null || value === false) return false;
+    if (typeof value === "string") {
+      const t = value.trim();
+      if (!t) return false;
+      const lower = t.toLowerCase();
+      if (
+        lower === "n/a" ||
+        lower === "na" ||
+        lower === "null" ||
+        lower === "undefined" ||
+        lower === "not specified" ||
+        t === "{}" ||
+        t === "[]"
+      ) {
+        return false;
+      }
+      return true;
+    }
+    if (typeof value === "number") return Number.isFinite(value);
+    if (Array.isArray(value)) return value.some((entry) => hasRenderableValue(entry));
+    if (typeof value === "object") {
+      return Object.values(value).some((entry) => hasRenderableValue(entry));
+    }
+    return Boolean(value);
+  };
+
+  const mergeSpecObjects = (...objects) =>
+    objects.reduce((acc, obj) => {
+      if (obj && typeof obj === "object" && !Array.isArray(obj)) {
+        return { ...acc, ...obj };
+      }
+      return acc;
+    }, {});
+
+  const toArray = (value) => {
+    if (Array.isArray(value)) return value.filter((item) => item != null && item !== "");
+    if (typeof value === "string") return value.trim() ? [value.trim()] : [];
+    return [];
+  };
+
+  const collectAiFeatures = (device) => {
+    const buckets = [
+      device?.ai_features,
+      device?.performance?.ai_features,
+      device?.camera?.ai_features,
+      device?.display?.ai_features,
+      device?.battery?.ai_features,
+      device?.connectivity?.ai_features,
+      device?.multimedia?.ai_features,
+      device?.build_design?.ai_features,
+      device?.buildDesign?.ai_features,
+    ];
+
+    return Array.from(
+      new Set(buckets.flatMap((bucket) => toArray(bucket).map((x) => String(x).trim()))),
+    ).filter(Boolean);
+  };
+
   const cleanSpecs = (specs) => {
     if (!specs || typeof specs !== "object") return {};
     const blocked = new Set(["sphere_rating", "ai_features"]);
     return Object.fromEntries(
-      Object.entries(specs).filter(([k, v]) => v && !blocked.has(k)),
+      Object.entries(specs).filter(
+        ([k, v]) => !blocked.has(k) && !/(^|[_-])score$/i.test(k) && hasRenderableValue(v),
+      ),
     );
   };
 
   const hasAiFeatures = (device) => {
-    if (!device) return false;
-    const buckets = [
-      device.ai_features,
-      device.performance?.ai_features,
-      device.camera?.ai_features,
-      device.display?.ai_features,
-      device.battery?.ai_features,
-      device.connectivity?.ai_features,
-      device.multimedia?.ai_features,
-      device.build_design?.ai_features,
-    ];
-    return buckets.some((v) => Array.isArray(v) && v.length > 0);
+    return collectAiFeatures(device).length > 0;
   };
 
   // Render specification table with professional styling
@@ -461,7 +511,10 @@ const MobileCompare = () => {
     }
 
     const entries = Object.entries(specs).filter(
-      ([k, v]) => k !== "sphere_rating" && v !== "" && v != null && v !== false,
+      ([k, v]) =>
+        k !== "sphere_rating" &&
+        !/(^|[_-])score$/i.test(k) &&
+        hasRenderableValue(v),
     );
 
     if (entries.length === 0) {
@@ -511,7 +564,9 @@ const MobileCompare = () => {
         !Array.isArray(camera.rear_camera)
       ) {
         Object.entries(camera.rear_camera).forEach(([lens, spec]) => {
-          rows.push([toNormalCase(lens), formatSpecValue(spec, lens)]);
+          if (hasRenderableValue(spec)) {
+            rows.push([toNormalCase(lens), formatSpecValue(spec, lens)]);
+          }
         });
       } else {
         rows.push([
@@ -546,6 +601,14 @@ const MobileCompare = () => {
       rows.push(["AI Features", camera.ai_features.join(", ")]);
     }
 
+    if (rows.length === 0) {
+      return (
+        <div className="text-center py-4 text-gray-500">
+          No camera data available
+        </div>
+      );
+    }
+
     return (
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
@@ -571,21 +634,88 @@ const MobileCompare = () => {
 
   // Get device specs
   const getDeviceSpecs = (device, section) => {
+    const displaySpecs = mergeSpecObjects(device?.display, device?.display_json);
+    const performanceSpecs = mergeSpecObjects(
+      device?.performance,
+      device?.performance_json,
+    );
+    const cameraSpecs = mergeSpecObjects(device?.camera, device?.camera_json);
+    const batterySpecs = mergeSpecObjects(device?.battery, device?.battery_json);
+    const networkSpecs = mergeSpecObjects(
+      device?.connectivity,
+      device?.connectivity_json,
+      device?.network,
+      device?.network_json,
+      device?.ports,
+    );
+    const audioSpecs = mergeSpecObjects(
+      device?.audio,
+      device?.multimedia,
+      device?.multimedia_json,
+    );
+    const featureSpecs = {
+      ai_features: collectAiFeatures(device),
+      design_features:
+        device?.build_design?.design_features ||
+        device?.buildDesign?.design_features ||
+        [],
+      durability:
+        device?.build_design?.durability ||
+        device?.build_design?.military_grade_certification ||
+        device?.buildDesign?.durability ||
+        null,
+      water_dust_resistance:
+        device?.build_design?.water_dust_resistance ||
+        device?.buildDesign?.water_dust_resistance ||
+        null,
+      protection:
+        device?.display?.cover_glass ||
+        device?.build_design?.front_protection ||
+        device?.build_design?.protection_glass ||
+        null,
+      sensors: device?.sensors || null,
+    };
+
     if (section === "overview") {
       const selectedVariant = getSelectedVariant(device);
+      const launchDateRaw = device?.launch_date ?? device?.launchDate ?? null;
+      const launchDateText =
+        launchDateRaw && typeof launchDateRaw !== "object"
+          ? (() => {
+              const dt = new Date(launchDateRaw);
+              return Number.isNaN(dt.getTime()) ? "N/A" : dt.toLocaleDateString();
+            })()
+          : "N/A";
       return {
         rating: device.rating,
-        price: formatPrice(selectedVariant?.base_price || device.price || 0),
+        price: formatPrice(
+          selectedVariant?.base_price ||
+            selectedVariant?.basePrice ||
+            selectedVariant?.price ||
+            device.price ||
+            0,
+        ),
         variant: `${selectedVariant?.ram || "N/A"} / ${
           selectedVariant?.storage || "N/A"
         }`,
-        os: device.performance?.os || device.os || "N/A",
-        processor: device.performance?.processor || "N/A",
-        launch_date: device.launch_date
-          ? new Date(device.launch_date).toLocaleDateString()
-          : "N/A",
+        os:
+          performanceSpecs?.operating_system ||
+          performanceSpecs?.os ||
+          device.os ||
+          "N/A",
+        processor: performanceSpecs?.processor || performanceSpecs?.chipset || "N/A",
+        launch_date: launchDateText,
       };
     }
+
+    if (section === "display") return cleanSpecs(displaySpecs);
+    if (section === "camera") return cleanSpecs(cameraSpecs);
+    if (section === "performance") return cleanSpecs(performanceSpecs);
+    if (section === "battery") return cleanSpecs(batterySpecs);
+    if (section === "network") return cleanSpecs(networkSpecs);
+    if (section === "audio") return cleanSpecs(audioSpecs);
+    if (section === "features") return cleanSpecs(featureSpecs);
+
     return cleanSpecs(device[section] || {});
   };
 
@@ -740,8 +870,10 @@ const MobileCompare = () => {
     const battery = device?.battery || {};
     const capacity =
       battery.battery_capacity_mah ||
+      battery.battery_capacity ||
       battery.capacity_mah ||
       battery.capacity ||
+      battery.battery ||
       null;
     if (!capacity) return battery.type || "N/A";
     const capacityText = String(capacity);
@@ -801,7 +933,7 @@ const MobileCompare = () => {
       devicesForSpecs.forEach((device) => {
         const specs = getDeviceSpecs(device, section.id);
         Object.keys(specs).forEach((key) => {
-          if (specs[key] && specs[key] !== "N/A") specKeys.add(key);
+          if (hasRenderableValue(specs[key])) specKeys.add(key);
         });
       });
 
@@ -2355,25 +2487,51 @@ const MobileCompare = () => {
                       {[
                         {
                           label: "Main Camera",
-                          value: modalDevice.camera?.main_camera_megapixels
-                            ? `${modalDevice.camera.main_camera_megapixels} MP`
-                            : "N/A",
+                          value: (() => {
+                            const cam = modalDevice.camera || {};
+                            if (cam.main_camera_megapixels) {
+                              return `${cam.main_camera_megapixels} MP`;
+                            }
+                            const rearMain =
+                              cam.rear_camera?.main_camera ||
+                              cam.rear_camera?.main ||
+                              cam.main_camera ||
+                              cam.main ||
+                              null;
+                            if (!rearMain) return "N/A";
+                            if (typeof rearMain === "object") {
+                              return (
+                                rearMain.resolution ||
+                                rearMain.megapixels ||
+                                formatSpecValue(rearMain, "main_camera")
+                              );
+                            }
+                            return formatSpecValue(rearMain, "main_camera");
+                          })(),
                         },
                         {
                           label: "Front Camera",
-                          value: modalDevice.camera?.front_camera || "N/A",
+                          value: modalDevice.camera?.front_camera
+                            ? formatSpecValue(
+                                modalDevice.camera.front_camera,
+                                "front_camera",
+                              )
+                            : "N/A",
                         },
                         {
                           label: "Recording",
-                          value: modalDevice.camera?.recording || "N/A",
+                          value:
+                            modalDevice.camera?.video_recording ||
+                            modalDevice.camera?.recording ||
+                            "N/A",
                         },
                         {
                           label: "Features",
-                          value: modalDevice.camera?.features
-                            ? Array.isArray(modalDevice.camera.features)
-                              ? modalDevice.camera.features.join(", ")
-                              : String(modalDevice.camera.features)
-                            : "N/A",
+                          value:
+                            modalDevice.camera?.rear_camera_photography_features ||
+                            modalDevice.camera?.features ||
+                            modalDevice.camera?.ai_features ||
+                            "N/A",
                         },
                       ].map((item, idx) => (
                         <tr
@@ -2384,7 +2542,7 @@ const MobileCompare = () => {
                             {item.label}
                           </td>
                           <td className="px-6 py-3 text-sm font-semibold text-gray-900 w-2/3">
-                            {item.value}
+                            {formatSpecValue(item.value, item.label)}
                           </td>
                         </tr>
                       ))}
@@ -2407,22 +2565,41 @@ const MobileCompare = () => {
                       {[
                         {
                           label: "Capacity",
-                          value: modalDevice.battery?.battery_capacity_mah
-                            ? `${modalDevice.battery.battery_capacity_mah} mAh`
-                            : "N/A",
+                          value: (() => {
+                            const b = modalDevice.battery || {};
+                            const cap =
+                              b.battery_capacity_mah ||
+                              b.battery_capacity ||
+                              b.capacity_mah ||
+                              b.capacity ||
+                              b.battery ||
+                              null;
+                            if (!cap) return "N/A";
+                            const capText = String(cap);
+                            return /mah/i.test(capText) ? capText : `${capText} mAh`;
+                          })(),
                         },
                         {
                           label: "Type",
-                          value: modalDevice.battery?.type || "N/A",
+                          value:
+                            modalDevice.battery?.type ||
+                            modalDevice.battery?.battery_type ||
+                            "N/A",
                         },
                         {
                           label: "Fast Charging",
-                          value: modalDevice.battery?.fast_charging || "N/A",
+                          value:
+                            modalDevice.battery?.fast_charging ||
+                            modalDevice.battery?.charging_power ||
+                            modalDevice.battery?.charging ||
+                            "N/A",
                         },
                         {
                           label: "Wireless Charging",
                           value:
-                            modalDevice.battery?.wireless_charging || "N/A",
+                            modalDevice.battery?.wireless_charging ||
+                            modalDevice.battery?.wireless_reverse_charging ||
+                            "N/A",
                         },
                       ].map((item, idx) => (
                         <tr
@@ -2432,7 +2609,9 @@ const MobileCompare = () => {
                           <td className="px-6 py-3 text-sm font-medium text-gray-600 w-1/3">
                             {item.label}
                           </td>
-                          <td className="px-6 py-3 text-sm font-semibold text-gray-900 w-2/3"></td>
+                          <td className="px-6 py-3 text-sm font-semibold text-gray-900 w-2/3">
+                            {formatSpecValue(item.value, item.label)}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -2454,23 +2633,41 @@ const MobileCompare = () => {
                       {[
                         {
                           label: "5G",
-                          value: modalDevice.network?.["5g"] || "N/A",
+                          value:
+                            modalDevice.network?.["5g"] ||
+                            modalDevice.network?.["5g_bands"] ||
+                            modalDevice.network?.five_g ||
+                            modalDevice.connectivity?.["5g_bands"] ||
+                            modalDevice.connectivity?.network_type ||
+                            "N/A",
                         },
                         {
                           label: "WiFi",
-                          value: modalDevice.network?.wifi || "N/A",
+                          value:
+                            modalDevice.connectivity?.wifi ||
+                            modalDevice.network?.wifi ||
+                            "N/A",
                         },
                         {
                           label: "Bluetooth",
-                          value: modalDevice.network?.bluetooth || "N/A",
+                          value:
+                            modalDevice.connectivity?.bluetooth ||
+                            modalDevice.network?.bluetooth ||
+                            "N/A",
                         },
                         {
                           label: "GPS",
-                          value: modalDevice.network?.gps || "N/A",
+                          value:
+                            modalDevice.network?.gps ||
+                            modalDevice.connectivity?.gps ||
+                            "N/A",
                         },
                         {
                           label: "NFC",
-                          value: modalDevice.network?.nfc || "N/A",
+                          value:
+                            modalDevice.connectivity?.nfc ||
+                            modalDevice.network?.nfc ||
+                            "N/A",
                         },
                       ].map((item, idx) => (
                         <tr
@@ -2481,7 +2678,7 @@ const MobileCompare = () => {
                             {item.label}
                           </td>
                           <td className="px-6 py-3 text-sm font-semibold text-gray-900 w-2/3">
-                            {item.value}
+                            {formatSpecValue(item.value, item.label)}
                           </td>
                         </tr>
                       ))}

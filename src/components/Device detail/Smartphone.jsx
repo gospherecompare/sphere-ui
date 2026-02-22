@@ -1,5 +1,5 @@
-// src/components/MobileDetailCard.jsx
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+﻿// src/components/MobileDetailCard.jsx
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import PopularComparisons from "../Home/Brandshowcase";
 import { useDevice } from "../../hooks/useDevice";
 import Cookies from "js-cookie";
@@ -60,6 +60,7 @@ const MobileDetailCard = () => {
   const [activeStoreId, setActiveStoreId] = useState(null);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
+  const variantInitKeyRef = useRef("");
   const {
     selectedDevice,
     fetchDevice,
@@ -187,6 +188,30 @@ const MobileDetailCard = () => {
     return null;
   };
 
+  const normalizeDateLikeValue = (value) => {
+    if (value == null) return null;
+    if (value instanceof Date) {
+      return Number.isNaN(value.getTime()) ? null : value.toISOString();
+    }
+    if (typeof value === "object") return null;
+    const dt = new Date(value);
+    return Number.isNaN(dt.getTime()) ? null : dt.toISOString();
+  };
+
+  const formatDateForDisplay = (value) => {
+    const normalized = normalizeDateLikeValue(value);
+    if (!normalized) return "N/A";
+    try {
+      return new Date(normalized).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+    } catch (e) {
+      return "N/A";
+    }
+  };
+
   const getBatteryCapacityRaw = (deviceData) => {
     if (!deviceData) return null;
     const batteryData = deviceData?.battery;
@@ -221,6 +246,70 @@ const MobileDetailCard = () => {
     return m ? parseInt(m[1], 10) : null;
   };
 
+  const parseMegapixelValue = (value) => {
+    if (value == null || value === "") return null;
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    const str = String(value);
+    const mpMatch = str.match(/(\d+(?:\.\d+)?)\s*mp/i);
+    if (mpMatch) return Number(mpMatch[1]);
+    const numMatch = str.match(/(\d{1,4}(?:\.\d+)?)/);
+    return numMatch ? Number(numMatch[1]) : null;
+  };
+
+  const getMainCameraMp = (deviceData) => {
+    if (!deviceData) return null;
+    const camera = deviceData.camera || {};
+
+    const direct = parseMegapixelValue(camera.main_camera_megapixels);
+    if (direct) return Math.round(direct);
+
+    const tryObjects = [
+      camera.main_camera,
+      camera.main,
+      camera.primary,
+      camera.rear_camera?.main_camera,
+      camera.rear_camera?.main,
+      camera.rear_camera?.wide,
+      camera.rear_camera?.primary,
+    ];
+
+    for (const item of tryObjects) {
+      if (!item) continue;
+      if (typeof item === "object") {
+        const nested =
+          parseMegapixelValue(item.resolution) ||
+          parseMegapixelValue(item.megapixels) ||
+          parseMegapixelValue(item.main_camera_megapixels) ||
+          parseMegapixelValue(item.sensor);
+        if (nested) return Math.round(nested);
+      }
+      const parsed = parseMegapixelValue(item);
+      if (parsed) return Math.round(parsed);
+    }
+
+    const rear = camera.rear_camera;
+    if (rear && typeof rear === "object" && !Array.isArray(rear)) {
+      const candidates = Object.values(rear)
+        .map((lens) => {
+          if (!lens) return null;
+          if (typeof lens === "object") {
+            return (
+              parseMegapixelValue(lens.resolution) ||
+              parseMegapixelValue(lens.megapixels) ||
+              parseMegapixelValue(lens.main_camera_megapixels)
+            );
+          }
+          return parseMegapixelValue(lens);
+        })
+        .filter((v) => Number.isFinite(v));
+      if (candidates.length > 0) {
+        return Math.round(Math.max(...candidates));
+      }
+    }
+
+    return null;
+  };
+
   const normalizeSmartphone = (d) => {
     if (!d) return null;
     const out = { ...d };
@@ -230,6 +319,11 @@ const MobileDetailCard = () => {
     out.name = d.name ?? d.model ?? d.title ?? "";
     out.model = d.model ?? d.name ?? out.name;
     out.images = d.images ?? d.photos ?? d.images_urls ?? [];
+    out.launch_date =
+      normalizeDateLikeValue(d.launch_date) ||
+      normalizeDateLikeValue(d.launchDate) ||
+      normalizeDateLikeValue(d.created_at) ||
+      normalizeDateLikeValue(d.createdAt);
 
     // Normalize performance (clone to avoid mutating possibly read-only objects)
     const perfSrc = d.performance || out.performance || {};
@@ -288,32 +382,13 @@ const MobileDetailCard = () => {
 
     // Camera main megapixels heuristic
     out.camera = out.camera || {};
-    const tryParseMP = (val) => {
-      if (!val) return null;
-      const m =
-        String(val).match(/(\d{1,4})(?=\s*MP|MP| megapixel|MP\b)/i) ||
-        String(val).match(/(\d{1,4})\s*MP/i) ||
-        String(val).match(/(\d{1,4})/);
-      return m ? parseInt(m[1], 10) : null;
-    };
-
     // Try common camera locations (clone camera object before mutating)
     const camSrc = d.camera || out.camera || {};
     const cam = { ...camSrc };
-    const rearMain =
-      d.camera?.rear_camera?.main ||
-      d.camera?.rear_camera ||
-      d.camera?.main ||
-      d.camera;
-    cam.main_camera_megapixels =
-      cam.main_camera_megapixels ||
-      tryParseMP(
-        rearMain?.resolution ||
-          rearMain?.resolution_mp ||
-          rearMain?.megapixels ||
-          rearMain?.sensor ||
-          rearMain,
-      );
+    const parsedMainMp = getMainCameraMp(d);
+    if (!cam.main_camera_megapixels && parsedMainMp != null) {
+      cam.main_camera_megapixels = parsedMainMp;
+    }
     out.camera = cam;
 
     // Normalize battery capacity in mAh (clone to avoid mutating originals)
@@ -481,8 +556,12 @@ const MobileDetailCard = () => {
     return out;
   };
 
-  const mobileData = normalizeSmartphone(
-    localResolved || selectedDevice?.smartphones?.[0] || selectedDevice,
+  const mobileData = useMemo(
+    () =>
+      normalizeSmartphone(
+        localResolved || selectedDevice?.smartphones?.[0] || selectedDevice,
+      ),
+    [localResolved, selectedDevice],
   );
   const hookBadge = useMemo(() => getHookBadge(mobileData), [mobileData]);
 
@@ -498,24 +577,59 @@ const MobileDetailCard = () => {
   // While fetching, show spinner to avoid null access to `mobileData`
   const showInitialLoading = loading && !mobileData;
 
-  const variants =
-    mobileData?.variants ?? (mobileData?.variant ? [mobileData.variant] : []);
+  const variants = useMemo(
+    () => mobileData?.variants ?? (mobileData?.variant ? [mobileData.variant] : []),
+    [mobileData],
+  );
+  const variantsSignature = useMemo(
+    () =>
+      (variants || [])
+        .map((v, index) =>
+          [
+            v?.variant_id ?? v?.id ?? v?.variantId ?? `idx-${index}`,
+            v?.ram ?? "",
+            v?.storage ?? "",
+            v?.base_price ?? "",
+            Array.isArray(v?.store_prices) ? v.store_prices.length : 0,
+          ].join("|"),
+        )
+        .join("::"),
+    [variants],
+  );
 
   useEffect(() => {
     if (selectedVariant >= variants.length) setSelectedVariant(0);
-  }, [variants, selectedVariant]);
+  }, [variants.length, selectedVariant]);
 
   useEffect(() => {
     if (!variants || variants.length === 0) return;
+    const productKey = String(
+      mobileData?.id ?? mobileData?.product_id ?? routeSlug ?? searchModel ?? "",
+    );
+    const initKey = [
+      productKey,
+      variantQuery ?? "",
+      ramParam ?? "",
+      storageParam ?? "",
+      storeQuery ?? "",
+      storeNameParam ?? "",
+      variantsSignature,
+    ].join("::");
+    if (variantInitKeyRef.current === initKey) return;
+    variantInitKeyRef.current = initKey;
+
+    let nextVariantIndex = -1;
+    let nextStoreId = null;
+
     if (variantQuery) {
       const idx = variants.findIndex(
         (v) =>
           String(v.variant_id ?? v.id ?? v.variantId) === String(variantQuery),
       );
-      if (idx >= 0) setSelectedVariant(idx);
+      if (idx >= 0) nextVariantIndex = idx;
     }
     // If ram/storage params provided, prefer matching variant
-    if ((ramParam || storageParam) && variants.length > 0) {
+    if (nextVariantIndex < 0 && (ramParam || storageParam) && variants.length > 0) {
       const idx = variants.findIndex((v) => {
         const ramOk = ramParam
           ? String(v.ram).toLowerCase() === String(ramParam).toLowerCase()
@@ -526,15 +640,15 @@ const MobileDetailCard = () => {
           : true;
         return ramOk && storageOk;
       });
-      if (idx >= 0) setSelectedVariant(idx);
+      if (idx >= 0) nextVariantIndex = idx;
     }
 
     if (storeQuery) {
-      setActiveStoreId(String(storeQuery));
+      nextStoreId = String(storeQuery);
     }
 
     // If store name provided, try to find store id from variant stores
-    if (storeNameParam && variants.length > 0 && !storeQuery) {
+    if (nextVariantIndex < 0 && storeNameParam && variants.length > 0 && !storeQuery) {
       for (let i = 0; i < variants.length; i++) {
         const v = variants[i];
         const sp = (v.store_prices || []).find(
@@ -543,13 +657,28 @@ const MobileDetailCard = () => {
             String(storeNameParam).toLowerCase(),
         );
         if (sp) {
-          setSelectedVariant(i);
-          setActiveStoreId(String(sp.id || sp.store_id || sp.storeId));
+          nextVariantIndex = i;
+          nextStoreId = String(sp.id || sp.store_id || sp.storeId);
           break;
         }
       }
     }
-  }, [variants, variantQuery, storeQuery]);
+
+    if (nextVariantIndex >= 0) setSelectedVariant(nextVariantIndex);
+    if (nextStoreId !== null) setActiveStoreId(nextStoreId);
+  }, [
+    variants,
+    variantsSignature,
+    variantQuery,
+    storeQuery,
+    ramParam,
+    storageParam,
+    storeNameParam,
+    mobileData?.id,
+    mobileData?.product_id,
+    routeSlug,
+    searchModel,
+  ]);
 
   const currentVariant = variants?.[selectedVariant];
   const currentProductId =
@@ -698,19 +827,117 @@ const MobileDetailCard = () => {
         .filter(Boolean);
       return parts.length ? parts.join(" | ") : JSON.stringify(value);
     }
-    if (value === true) return "✓ Yes";
-    if (value === false) return "✗ No";
+    if (value === true) return "âœ“ Yes";
+    if (value === false) return "âœ— No";
     return String(value);
+  };
+
+  const normalizeSpecToken = (value) =>
+    String(value ?? "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "");
+
+  const getLogicalSpecKey = (key, formattedValue = "") => {
+    const token = normalizeSpecToken(key);
+    const valueText = String(formattedValue ?? "").toLowerCase();
+    const looksLikeMah =
+      /(\d{3,6})\s*mah/.test(valueText) || /^\d{3,6}$/.test(valueText.trim());
+
+    // Treat battery aliases as one logical key when they represent capacity.
+    if (
+      [
+        "capacity",
+        "capacitymah",
+        "batterycapacity",
+        "batterycapacitymah",
+        "batterymah",
+      ].includes(token)
+    ) {
+      return "batterycapacity";
+    }
+    if (token === "battery" && looksLikeMah) return "batterycapacity";
+
+    // Main camera aliases (including computed MP field).
+    if (["maincamera", "maincameramegapixels", "primarycamera"].includes(token)) {
+      return "maincamera";
+    }
+
+    return token;
+  };
+
+  const normalizeSpecValueForCompare = (value) =>
+    String(value ?? "")
+      .toLowerCase()
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const dedupeSpecEntries = (entries = []) => {
+    const seen = new Set();
+    const unique = [];
+
+    for (const [key, value] of entries) {
+      const formatted = formatSpecValue(value, key);
+      const logicalKey = getLogicalSpecKey(key, formatted);
+      const normalizedValue = normalizeSpecValueForCompare(formatted);
+      const signature = `${logicalKey}::${normalizedValue}`;
+      if (seen.has(signature)) continue;
+      seen.add(signature);
+      unique.push([key, value]);
+    }
+
+    return unique;
+  };
+
+  const dedupeSpecRowsByLabel = (rows = []) => {
+    const scoreValue = (value) => {
+      const text = String(value ?? "");
+      const structuredBonus =
+        (text.includes("|") ? 60 : 0) +
+        (text.includes(":") ? 30 : 0) +
+        (/\b(focus|sensor|aperture|resolution|fov)\b/i.test(text) ? 30 : 0);
+      return text.length + structuredBonus;
+    };
+
+    const byKey = new Map();
+    for (const row of rows) {
+      const [label, value] = row;
+      const logicalKey = getLogicalSpecKey(label, value);
+      const existing = byKey.get(logicalKey);
+      if (!existing || scoreValue(value) > scoreValue(existing[1])) {
+        byKey.set(logicalKey, row);
+      }
+    }
+    return Array.from(byKey.values());
   };
 
   const isPrimitive = (v) =>
     v == null || (typeof v !== "object" && typeof v !== "function");
 
+  const isLikelyModelCode = (value) => {
+    if (!value) return false;
+    const s = String(value).trim();
+    if (!s || /\s/.test(s)) return false;
+    return /^(?:[a-z]{0,3})?[a-z]+[-]?\d+[a-z0-9-]*$/i.test(s);
+  };
+
+  const getDisplayProductName = (data) => {
+    if (!data) return "";
+    const preferred = String(data.name || data.title || "").trim();
+    if (preferred) return preferred;
+
+    const model = String(data.model || "").trim();
+    if (!model) return "";
+    if (isLikelyModelCode(model)) {
+      return String(data.brand || data.brand_name || "").trim();
+    }
+    return model;
+  };
+
   // Build descriptive title for visible heading and meta title (exclude brand)
   const buildDescriptiveTitle = (data, variant) => {
     if (!data) return "";
 
-    const model = data.name || data.model || "";
+    const displayName = getDisplayProductName(data);
 
     const processorRaw =
       variant?.processor || data.performance?.processor || data.processor || "";
@@ -721,7 +948,7 @@ const MobileDetailCard = () => {
             .replace(/\s+/g, " ")
             .trim();
 
-    // 👉 Format RAM properly (ignore non-primitive inputs)
+    // ðŸ‘‰ Format RAM properly (ignore non-primitive inputs)
     const ramRaw = variant?.ram || data.performance?.ram || "";
     const ram =
       !isPrimitive(ramRaw) || ramRaw === ""
@@ -730,7 +957,7 @@ const MobileDetailCard = () => {
           ? `${ramRaw} RAM`
           : `${ramRaw}GB RAM`;
 
-    // 👉 Format Storage properly (ignore non-primitive inputs)
+    // ðŸ‘‰ Format Storage properly (ignore non-primitive inputs)
     const storageRaw =
       variant?.storage ||
       data.performance?.storage ||
@@ -743,8 +970,8 @@ const MobileDetailCard = () => {
           ? `${storageRaw} Storage`
           : `${storageRaw}GB Storage`;
 
-    // 👉 Camera formatting — treat structured/object camera specs as empty
-    const cameraMPValue = data.camera?.main_camera_megapixels;
+    // Camera formatting
+    const cameraMPValue = getMainCameraMp(data);
     const cameraRaw = data.camera?.main_camera || data.camera || "";
     const camera = cameraMPValue
       ? `${cameraMPValue}MP Camera`
@@ -752,7 +979,7 @@ const MobileDetailCard = () => {
         ? ""
         : formatSpecValue(cameraRaw, "camera");
 
-    // 👉 Battery formatting (ignore non-primitive inputs)
+    // ðŸ‘‰ Battery formatting (ignore non-primitive inputs)
     const batteryValue = getBatteryCapacityMah(data);
     const batteryRaw = getBatteryCapacityRaw(data) ?? "";
     const battery = batteryValue
@@ -761,7 +988,7 @@ const MobileDetailCard = () => {
         ? ""
         : formatSpecValue(batteryRaw, "battery");
 
-    const primary = model || data.name || "";
+    const primary = displayName;
 
     const specs = [];
 
@@ -782,7 +1009,7 @@ const MobileDetailCard = () => {
     if (!data) return "";
 
     const brand = data.brand || data.brand_name || data.manufacturer || "";
-    const name = data.name || data.model || "";
+    const name = getDisplayProductName(data);
 
     const processorRaw =
       variant?.processor || data.performance?.processor || data.processor || "";
@@ -813,7 +1040,7 @@ const MobileDetailCard = () => {
           ? storageRaw
           : `${storageRaw}GB`;
 
-    const cameraValue = data.camera?.main_camera_megapixels;
+    const cameraValue = getMainCameraMp(data);
     const cameraRaw = data.camera?.main_camera || data.camera || "";
     const camera =
       cameraValue != null
@@ -854,11 +1081,49 @@ const MobileDetailCard = () => {
     const identity = [brand, name].filter(Boolean).join(" ").trim();
     if (!identity) return "";
     const highlightText = highlights.length
-      ? ` — ${highlights.slice(0, 4).join(" · ")}`
+      ? ` â€” ${highlights.slice(0, 4).join(" Â· ")}`
       : "";
     const priceSuffix = priceText ? `. ${priceText}.` : ".";
 
     return `${identity}${highlightText}${priceSuffix} Compare prices, variants, and detailed specs on Hook.`;
+  };
+
+  const getCompactProcessorLabel = (raw) => {
+    const text = String(raw || "").replace(/\s+/g, " ").trim();
+    if (!text) return "";
+
+    const dimensity = text.match(/Dimensity\s+\d+\w*(?:[-\s]?Ultra)?/i);
+    if (dimensity) return dimensity[0].trim();
+
+    const snapdragon = text.match(
+      /Snapdragon\s+[A-Za-z0-9+\-]+(?:\s+Gen\s+\d+)?/i,
+    );
+    if (snapdragon) return snapdragon[0].trim();
+
+    const tensor = text.match(/Tensor\s+G\d+/i);
+    if (tensor) return tensor[0].trim();
+
+    const exynos = text.match(/Exynos\s+\d+/i);
+    if (exynos) return exynos[0].trim();
+
+    const apple = text.match(/A\d+\s*Bionic/i);
+    if (apple) return apple[0].trim();
+
+    return text.split(" ").slice(0, 4).join(" ");
+  };
+
+  const getCompactDisplayLabel = (raw) => {
+    const text = String(raw || "").replace(/\s+/g, " ").trim();
+    if (!text) return "";
+    const match = text.match(/(\d+(?:\.\d+)?)\s*(?:inch|inches|in|")/i);
+    if (match) return `${match[1]}"`;
+    return text;
+  };
+
+  const capitalizeFirst = (raw) => {
+    const text = String(raw || "").trim();
+    if (!text) return "";
+    return text.charAt(0).toUpperCase() + text.slice(1);
   };
 
   const sortedVariantStores = variantStorePrices.slice().sort((a, b) => {
@@ -894,13 +1159,50 @@ const MobileDetailCard = () => {
     : "";
 
   // Share functionality
+  const currentMainCameraMp = getMainCameraMp(mobileData);
+  const currentVariantLabel = [currentVariant?.ram, currentVariant?.storage]
+    .filter(Boolean)
+    .join(" / ");
+  const headerTitle = capitalizeFirst(
+    getDisplayProductName(mobileData) ||
+      [mobileData?.brand, mobileData?.name].filter(Boolean).join(" "),
+  );
+  const headerType = toNormalCase(
+    mobileData?.product_type || mobileData?.category || "Smartphone",
+  );
+  const headerProcessor = getCompactProcessorLabel(
+    currentVariant?.processor ||
+      mobileData?.performance?.processor ||
+      mobileData?.processor ||
+      mobileData?.cpu ||
+      "",
+  );
+  const headerDisplayRaw =
+    mobileData?.display?.size ??
+    mobileData?.display_json?.size ??
+    mobileData?.specs?.display ??
+    (isPrimitive(mobileData?.display) ? mobileData?.display : "");
+  const headerDisplay = getCompactDisplayLabel(headerDisplayRaw);
+  const headerDescriptor = [
+    headerType,
+    headerProcessor,
+    headerDisplay && `${headerDisplay} Display`,
+  ]
+    .filter(Boolean)
+    .join(" | ");
+  const productDisplayName =
+    getDisplayProductName(mobileData) ||
+    [mobileData?.brand, mobileData?.name].filter(Boolean).join(" ");
+  const shareCameraText = currentMainCameraMp
+    ? `${currentMainCameraMp}MP Camera`
+    : "Main camera details";
   const shareData = {
-    title: `${mobileData?.brand} ${mobileData?.model}`,
-    text: `Check out ${mobileData?.brand} ${mobileData?.model} - ${
+    title: `${productDisplayName}${
+      currentVariantLabel ? ` (${currentVariantLabel})` : ""
+    }`,
+    text: `Check out ${productDisplayName} - ${
       mobileData?.performance?.processor
-    }, ${mobileData?.camera?.main_camera_megapixels || ""}MP Camera, ${
-      batteryForShare
-    } Battery. Price starts at ₹${
+    }, ${shareCameraText}, ${batteryForShare} Battery. Price starts at ₹${
       currentVariant?.base_price
         ? formatPrice(currentVariant.base_price)
         : "N/A"
@@ -911,15 +1213,16 @@ const MobileDetailCard = () => {
   // Generate detailed share content with product information
   const generateShareContent = () => {
     const brand = mobileData?.brand || mobileData?.manufacturer || "Device";
-    const model = mobileData?.model || mobileData?.name || "Unknown";
+    const model = productDisplayName || "Unknown";
     const processor =
       mobileData?.performance?.processor ||
       mobileData?.processor ||
       mobileData?.cpu ||
       mobileData?.specs?.processor ||
       "Processor info not available";
+    const cameraMp = getMainCameraMp(mobileData);
     const camera =
-      mobileData?.camera?.main_camera_megapixels ||
+      cameraMp ||
       mobileData?.camera?.main ||
       mobileData?.mainCamera ||
       mobileData?.specs?.camera ||
@@ -944,13 +1247,19 @@ const MobileDetailCard = () => {
       "Display info not available";
 
     return {
-      title: `${brand} ${model}`,
-      description: `${processor}  ${camera}MP Camera | ${batteryText} Battery | ${display}" Display | Price: ${price}`,
-      shortDescription: `${brand} ${model} - ${processor}, ${camera}MP, ${batteryText}, Price: ${price}`,
+      title: `${brand} ${model}${
+        currentVariantLabel ? ` (${currentVariantLabel})` : ""
+      }`,
+      description: `${processor}  ${camera}${
+        cameraMp ? "MP" : ""
+      } Camera | ${batteryText} Battery | ${display}" Display | Price: ${price}`,
+      shortDescription: `${brand} ${model} - ${processor}, ${camera}${
+        cameraMp ? "MP" : ""
+      }, ${batteryText}, Price: ${price}`,
       fullDetails: `
 ${brand} ${model}
 processor: ${processor}
-Camera: ${camera}MP
+Camera: ${camera}${cameraMp ? "MP" : ""}
 Battery: ${batteryText}
 Display: ${display}"
 Price: ${price}
@@ -1034,7 +1343,7 @@ Price: ${price}
       // user has explicit platform choices.
       try {
         await copyTextToClipboard(urlStr);
-        alert("Link copied to clipboard — paste to share");
+        alert("Link copied to clipboard â€” paste to share");
         setShowShareMenu(true);
       } catch (err) {
         console.error("Clipboard fallback failed:", err);
@@ -1047,7 +1356,7 @@ Price: ${price}
     }
   };
 
-  // copy link functionality removed — share-only flow
+  // copy link functionality removed â€” share-only flow
 
   const shareToWhatsApp = () => {
     const base = getCanonicalUrl();
@@ -1057,7 +1366,7 @@ Price: ${price}
     shareUrl.searchParams.set("shared", "1");
     const urlToShare = shareUrl.toString();
     const content = generateShareContent();
-    const message = `${content.fullDetails}\n\n🔗 Check it out: ${urlToShare}`;
+    const message = `${content.fullDetails}\n\nðŸ”— Check it out: ${urlToShare}`;
     const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(url, "_blank");
   };
@@ -1210,48 +1519,75 @@ Price: ${price}
 
   // Determine whether a piece of spec data actually contains useful content
   const hasContent = (data) => {
-    if (data == null) return false;
-    if (typeof data === "object") {
-      const entries = Object.entries(data).filter(
-        ([_, value]) => value !== "" && value != null && value !== false,
-      );
-      return entries.length > 0;
+    if (data == null || data === false) return false;
+    if (typeof data === "string") {
+      const t = data.trim();
+      if (!t) return false;
+      const lower = t.toLowerCase();
+      if (
+        lower === "n/a" ||
+        lower === "na" ||
+        lower === "null" ||
+        lower === "undefined" ||
+        lower === "invalid date" ||
+        t === "{}" ||
+        t === "[]"
+      ) {
+        return false;
+      }
+      return true;
     }
-    return String(data).trim() !== "";
+    if (typeof data === "number") return Number.isFinite(data);
+    if (Array.isArray(data)) return data.some((item) => hasContent(item));
+    if (typeof data === "object") {
+      return Object.values(data).some((value) => hasContent(value));
+    }
+    return Boolean(data);
   };
 
   // Map tab ids to the fields we consider for presence checks
   const filterTabByData = (tabId) => {
+    const displayData = mobileData?.display || mobileData?.display_json;
+    const performanceData =
+      mobileData?.performance || mobileData?.performance_json;
+    const cameraData = mobileData?.camera || mobileData?.camera_json;
+    const batteryData = mobileData?.battery || mobileData?.battery_json;
+    const buildData = mobileData?.build_design || mobileData?.build_design_json;
+    const connectivityData =
+      mobileData?.connectivity || mobileData?.connectivity_json;
+    const networkData = mobileData?.network || mobileData?.network_json;
+    const multimediaData = mobileData?.multimedia || mobileData?.multimedia_json;
+
     switch (tabId) {
       case "specifications":
         return [
           mobileData?.brand,
           mobileData?.model,
           mobileData?.category,
-          mobileData?.performance,
-          mobileData?.display,
-          mobileData?.camera,
-          mobileData?.battery,
+          performanceData,
+          displayData,
+          cameraData,
+          batteryData,
         ].some((v) => hasContent(v));
       case "display":
-        return hasContent(mobileData?.display);
+        return hasContent(displayData);
       case "performance":
-        return hasContent(mobileData?.performance);
+        return hasContent(performanceData);
       case "camera":
-        return hasContent(mobileData?.camera);
+        return hasContent(cameraData);
       case "battery":
-        return hasContent(mobileData?.battery);
+        return hasContent(batteryData);
       case "build_design":
-        return hasContent(mobileData?.build_design);
+        return hasContent(buildData);
       case "connectivity":
         return (
-          hasContent(mobileData?.connectivity_network) ||
-          hasContent(mobileData?.ports)
+          hasContent(connectivityData) ||
+          hasContent(networkData) ||
+          hasContent(mobileData?.ports) ||
+          hasContent(mobileData?.positioning_json)
         );
       case "multimedia":
-        return (
-          hasContent(mobileData?.audio) || hasContent(mobileData?.multimedia)
-        );
+        return hasContent(mobileData?.audio) || hasContent(multimediaData);
       default:
         return true;
     }
@@ -1290,7 +1626,7 @@ Price: ${price}
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "start" });
       } else {
-        // subsection not present — activate the tab normally
+        // subsection not present â€” activate the tab normally
         setActiveTab(tabId);
       }
     });
@@ -1306,9 +1642,7 @@ Price: ${price}
     }
     const entries = Object.entries(data).filter(
       ([key, value]) =>
-        value !== "" &&
-        value != null &&
-        value !== false &&
+        hasContent(value) &&
         key !== "sphere_rating" &&
         !isScoreKey(key),
     );
@@ -1370,7 +1704,7 @@ Price: ${price}
           {groupedEntries.map(([gkey, group]) => {
             const subEntries = Object.entries(group).filter(
               ([k, v]) =>
-                v !== "" && v != null && v !== false && !isScoreKey(k),
+                hasContent(v) && !isScoreKey(k),
             );
             if (subEntries.length === 0) return null;
             return (
@@ -1451,8 +1785,9 @@ Price: ${price}
 
     const rows = [];
 
-    if (camera.main_camera_megapixels) {
-      rows.push(["Main Camera", `${camera.main_camera_megapixels} MP`]);
+    const mainCameraMp = getMainCameraMp({ camera });
+    if (mainCameraMp) {
+      rows.push(["Main Camera", `${mainCameraMp} MP`]);
     }
 
     // Rear camera can be an object with lenses or a string
@@ -1462,7 +1797,9 @@ Price: ${price}
         !Array.isArray(camera.rear_camera)
       ) {
         Object.entries(camera.rear_camera).forEach(([lens, spec]) => {
-          rows.push([toNormalCase(lens), formatSpecValue(spec, lens)]);
+          if (hasContent(spec)) {
+            rows.push([toNormalCase(lens), formatSpecValue(spec, lens)]);
+          }
         });
       } else {
         rows.push([
@@ -1499,11 +1836,13 @@ Price: ${price}
       rows.push(["AI Features", camera.ai_features.join(", ")]);
     }
 
+    const uniqueRows = dedupeSpecRowsByLabel(rows);
+
     return (
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200 shadow-none">
           <tbody className="bg-white">
-            {rows.map(([label, value], idx) => (
+            {uniqueRows.map(([label, value], idx) => (
               <tr
                 key={idx}
                 className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
@@ -1528,11 +1867,13 @@ Price: ${price}
         <div className="text-center py-4 text-gray-500">No data available</div>
       );
 
-    const entries = Object.entries(data).filter(
-      ([k]) =>
-        k !== "sphere_rating" &&
-        !/ai[_-]?features?/i.test(k) &&
-        !isScoreKey(k),
+    const entries = dedupeSpecEntries(
+      Object.entries(data).filter(
+        ([k]) =>
+          k !== "sphere_rating" &&
+          !/ai[_-]?features?/i.test(k) &&
+          !isScoreKey(k),
+      ),
     );
 
     return (
@@ -1560,7 +1901,7 @@ Price: ${price}
     );
   };
 
-  // Display-specific renderer — fallback to generic spec table when possible
+  // Display-specific renderer â€” fallback to generic spec table when possible
   const renderDisplayTable = (display) => {
     if (
       !display ||
@@ -1585,11 +1926,34 @@ Price: ${price}
     return renderSpecTable(d);
   };
 
+  const toSectionTableData = (raw, fallbackKey) => {
+    if (!hasContent(raw)) return null;
+    if (Array.isArray(raw)) return { [fallbackKey]: raw };
+    if (typeof raw === "object") return raw;
+    return { [fallbackKey]: raw };
+  };
+
   const renderTabContent = () => {
     if (!mobileData) return null;
 
     switch (activeTab) {
-      case "specifications":
+      case "specifications": {
+        const displayData = mobileData.display || mobileData.display_json;
+        const performanceData =
+          mobileData.performance || mobileData.performance_json || {};
+        const cameraData = mobileData.camera || mobileData.camera_json;
+        const batteryData = mobileData.battery || mobileData.battery_json || {};
+        const connectivityData = toSectionTableData(
+          mobileData.connectivity || mobileData.connectivity_json,
+          "connectivity",
+        );
+        const networkData = toSectionTableData(
+          mobileData.network || mobileData.network_json,
+          "network",
+        );
+        const audioData = toSectionTableData(mobileData.audio, "audio");
+        const sensorsData = toSectionTableData(mobileData.sensors, "sensors");
+
         return (
           <div id="spec-specifications" className="space-y-6">
             {/* Key Specs Highlight Cards */}
@@ -1665,15 +2029,9 @@ Price: ${price}
                           { label: "Segment", value: mobileData.category },
                           {
                             label: "Release Date",
-                            value: mobileData.launch_date
-                              ? new Date(
-                                  mobileData.launch_date,
-                                ).toLocaleDateString("en-IN", {
-                                  day: "numeric",
-                                  month: "long",
-                                  year: "numeric",
-                                })
-                              : "N/A",
+                            value: formatDateForDisplay(
+                              mobileData.launch_date || mobileData.launchDate,
+                            ),
                           },
                           {
                             label: "Operating System",
@@ -1701,9 +2059,12 @@ Price: ${price}
                           },
                           {
                             label: "Weight",
-                            value: mobileData.build_design?.weight
-                              ? `${mobileData.build_design.weight} g`
-                              : "N/A",
+                            value: (() => {
+                              const w = mobileData.build_design?.weight;
+                              if (!w) return "N/A";
+                              const ws = String(w).trim();
+                              return /\bg\b/i.test(ws) ? ws : `${ws} g`;
+                            })(),
                           },
                         ]
                           .filter(
@@ -1733,7 +2094,7 @@ Price: ${price}
                 </div>
 
                 {/* Display Section */}
-                {hasContent(mobileData.display) && (
+                {hasContent(displayData) && (
                   <div
                     id="spec-display"
                     className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
@@ -1743,12 +2104,12 @@ Price: ${price}
                       Display
                     </h4>
 
-                    {renderDisplayTable(mobileData.display)}
+                    {renderDisplayTable(displayData)}
                   </div>
                 )}
 
                 {/* Performance Section */}
-                {hasContent(mobileData.performance) && (
+                {hasContent(performanceData) && (
                   <div
                     id="spec-performance"
                     className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
@@ -1760,13 +2121,14 @@ Price: ${price}
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-100 shadow-none">
                         <tbody className="bg-white">
-                          {Object.entries(mobileData.performance || {})
-                            .filter(
+                          {dedupeSpecEntries(
+                            Object.entries(performanceData || {}).filter(
                               ([k, v]) =>
-                                v &&
+                                hasContent(v) &&
                                 !["sphere_rating", "ai_features"].includes(k) &&
                                 !isScoreKey(k),
-                            )
+                            ),
+                          )
                             .map(([key, value], idx) => (
                               <tr
                                 key={key}
@@ -1789,7 +2151,7 @@ Price: ${price}
                 )}
 
                 {/* Camera Section - Using nested object structure */}
-                {hasContent(mobileData.camera) && (
+                {hasContent(cameraData) && (
                   <div
                     id="spec-camera"
                     className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
@@ -1799,12 +2161,12 @@ Price: ${price}
                       Camera
                     </h4>
 
-                    {renderCameraTable(mobileData.camera)}
+                    {renderCameraTable(cameraData)}
                   </div>
                 )}
 
                 {/* Battery Section */}
-                {hasContent(mobileData.battery) && (
+                {hasContent(batteryData) && (
                   <div
                     id="spec-battery"
                     className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
@@ -1816,13 +2178,14 @@ Price: ${price}
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-100 shadow-none">
                         <tbody className="bg-white">
-                          {Object.entries(mobileData.battery || {})
-                            .filter(
+                          {dedupeSpecEntries(
+                            Object.entries(batteryData || {}).filter(
                               ([k, v]) =>
-                                v &&
+                                hasContent(v) &&
                                 !/ai[_-]?features?/i.test(k) &&
                                 !isScoreKey(k),
-                            )
+                            ),
+                          )
                             .map(([key, value], idx) => (
                               <tr
                                 key={key}
@@ -1850,7 +2213,7 @@ Price: ${price}
                 )}
 
                 {/* Connectivity Section */}
-                {hasContent(mobileData.connectivity) && (
+                {hasContent(connectivityData) && (
                   <div
                     id="spec-connectivity"
                     className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
@@ -1862,13 +2225,14 @@ Price: ${price}
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-100 shadow-none">
                         <tbody className="bg-white">
-                          {Object.entries(mobileData.connectivity || {})
-                            .filter(
+                          {dedupeSpecEntries(
+                            Object.entries(connectivityData || {}).filter(
                               ([k, v]) =>
-                                v &&
+                                hasContent(v) &&
                                 !/ai[_-]?features?/i.test(k) &&
                                 !isScoreKey(k),
-                            )
+                            ),
+                          )
                             .map(([key, value], idx) => (
                               <tr
                                 key={key}
@@ -1890,12 +2254,55 @@ Price: ${price}
                   </div>
                 )}
 
+                {/* Network Section */}
+                {hasContent(networkData) && (
+                  <div
+                    id="spec-network"
+                    className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
+                  >
+                    <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
+                      <FaWifi className="text-indigo-500" />
+                      Network
+                    </h4>
+                    {renderSpecTable(networkData)}
+                  </div>
+                )}
+
+                {/* Audio Section */}
+                {hasContent(audioData) && (
+                  <div
+                    id="spec-audio"
+                    className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
+                  >
+                    <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
+                      <FaVolumeUp className="text-pink-500" />
+                      Audio
+                    </h4>
+                    {renderSpecTable(audioData)}
+                  </div>
+                )}
+
+                {/* Sensors Section */}
+                {hasContent(sensorsData) && (
+                  <div
+                    id="spec-sensors"
+                    className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
+                  >
+                    <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
+                      <FaShieldAlt className="text-teal-500" />
+                      Sensors
+                    </h4>
+                    {renderSpecTable(sensorsData)}
+                  </div>
+                )}
+
                 {/* Available colors removed */}
                 {/* Price Comparison Call to Action */}
               </div>
             </div>
           </div>
         );
+      }
 
       case "display":
         return (
@@ -1942,30 +2349,71 @@ Price: ${price}
         );
 
       case "connectivity":
+        {
+          const connectivityData = toSectionTableData(
+            mobileData.connectivity || mobileData.connectivity_json,
+            "connectivity",
+          );
+          const networkData = toSectionTableData(
+            mobileData.network || mobileData.network_json,
+            "network",
+          );
+          const portsData = toSectionTableData(mobileData.ports, "ports");
+
         return (
           <div className="bg-white rounded-lg p-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <FaWifi className="text-purple-500" />
               Connectivity
             </h3>
-            {renderSpecTable(
-              mobileData.connectivity || mobileData.connectivity_json,
-            )}
+            {hasContent(connectivityData) ? renderSpecTable(connectivityData) : null}
+            {hasContent(networkData) ? (
+              <div className="mt-5">
+                <h4 className="font-semibold text-gray-800 mb-2">Network</h4>
+                {renderSpecTable(networkData)}
+              </div>
+            ) : null}
+            {hasContent(portsData) ? (
+              <div className="mt-5">
+                <h4 className="font-semibold text-gray-800 mb-2">Ports</h4>
+                {renderSpecTable(portsData)}
+              </div>
+            ) : null}
           </div>
         );
+        }
 
       case "multimedia":
+        {
+          const audioData = toSectionTableData(mobileData.audio, "audio");
+          const multimediaData = toSectionTableData(
+            mobileData.multimedia || mobileData.multimedia_json,
+            "multimedia",
+          );
+          const sensorsData = toSectionTableData(mobileData.sensors, "sensors");
+
         return (
           <div className="bg-white rounded-lg p-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <FaFilm className="text-indigo-500" />
               Multimedia
             </h3>
-            {renderSpecTable(
-              mobileData.multimedia || mobileData.multimedia_json,
-            )}
+            {hasContent(multimediaData) ? renderSpecTable(multimediaData) : null}
+            {hasContent(audioData) ? (
+              <div className="mt-5">
+                <h4 className="font-semibold text-gray-800 mb-2">Audio</h4>
+                {renderSpecTable(audioData)}
+              </div>
+            ) : null}
+            {hasContent(sensorsData) ? (
+              <div className="mt-5">
+                <h4 className="font-semibold text-gray-800 mb-2">Sensors</h4>
+                {renderSpecTable(sensorsData)}
+              </div>
+            ) : null}
           </div>
         );
+        }
 
       case "build_design":
         return (
@@ -1994,7 +2442,7 @@ Price: ${price}
       <div className="max-w-6xl mx-auto p-8">
         <div className="bg-white rounded-lg p-8 text-center">
           <Spinner />
-          <div className="text-sm text-gray-500 mt-3">Please wait…</div>
+          <div className="text-sm text-gray-500 mt-3">Please waitâ€¦</div>
         </div>
       </div>
     );
@@ -2004,7 +2452,7 @@ Price: ${price}
     return (
       <div className="max-w-6xl mx-auto p-4">
         <div className="bg-white rounded-lg p-8 text-center">
-          <div className="text-gray-400 text-6xl mb-4">📱</div>
+          <div className="text-gray-400 text-6xl mb-4">ðŸ“±</div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
             Device Not Found
           </h3>
@@ -2017,7 +2465,7 @@ Price: ${price}
   }
 
   // compute SEO meta values
-  const metaName = mobileData?.name || mobileData?.model || "";
+  const metaName = getDisplayProductName(mobileData) || mobileData?.name || "";
   const metaBrand = mobileData?.brand || mobileData?.brand_name || "";
   const metaRam = currentVariant?.ram || mobileData?.performance?.ram || "";
   const metaStorage =
@@ -2037,13 +2485,20 @@ Price: ${price}
     month: "2-digit",
     year: "numeric",
   });
-  const metaTitle =
+  const metaTitleBase =
     titleWithBrand ||
     smartphoneMeta.title({
       name: metaName,
       ram: metaRam,
       storage: metaStorage,
     });
+  const metaVariantTag = [currentVariant?.ram, currentVariant?.storage]
+    .filter(Boolean)
+    .join(" / ");
+  const metaTitle =
+    metaVariantTag && !String(metaTitleBase).includes(metaVariantTag)
+      ? `${metaTitleBase} (${metaVariantTag})`
+      : metaTitleBase;
   const metaTitleWithDate = `${metaTitle} [${currentDateLabel}]`;
 
   const metaDescription =
@@ -2076,7 +2531,7 @@ Price: ${price}
       <div className="max-w-6xl mx-auto p-8">
         <div className="bg-white rounded-lg p-8 text-center">
           <Spinner />
-          <div className="text-sm text-gray-500 mt-3">Please wait…</div>
+          <div className="text-sm text-gray-500 mt-3">Please waitâ€¦</div>
         </div>
       </div>
     );
@@ -2102,7 +2557,7 @@ Price: ${price}
       {isSharedLink && (
         <div className="max-w-6xl mx-auto px-4">
           <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded">
-            Shared link detected — showing the shared product details.
+            Shared link detected â€” showing the shared product details.
           </div>
         </div>
       )}
@@ -2118,7 +2573,7 @@ Price: ${price}
                 onClick={() => setShowShareMenu(false)}
                 className="text-gray-400 hover:text-gray-600"
               >
-                ×
+                Ã—
               </button>
             </div>
             <div className="space-y-3">
@@ -2150,7 +2605,7 @@ Price: ${price}
                 <FaEnvelope className="text-xl" />
                 Share via Email
               </button>
-              {/* Copy link removed — share-only option provided above */}
+              {/* Copy link removed â€” share-only option provided above */}
             </div>
             <button
               onClick={() => setShowShareMenu(false)}
@@ -2167,11 +2622,16 @@ Price: ${price}
         <div className="p-4 bg-white border-b border-gray-200 lg:hidden">
           <div className="flex justify-between items-start mb-2">
             <div>
+              {headerDescriptor ? (
+                <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500 mb-1">
+                  {headerDescriptor}
+                </p>
+              ) : null}
               <h1 className="text-xl font-extrabold tracking-tight mb-1 text-gray-900 leading-tight">
-                {buildDescriptiveTitle(mobileData, currentVariant)}
+                {headerTitle}
               </h1>
               <p className="text-purple-700 text-sm font-medium flex items-center gap-2">
-                <span>{mobileData?.model}</span>
+                {currentVariantLabel ? <span>{currentVariantLabel}</span> : null}
                 {mobileData?.isAiPhone ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 px-2 py-0.5 text-[10px] font-semibold text-white ring-1 ring-white/30">
                     <span
@@ -2370,22 +2830,22 @@ Price: ${price}
             </div>
 
             {/* Quick Specs - Mobile Only */}
-            <div className="lg:hidden grid grid-cols-3 gap-3 mb-4">
-              <div className="text-center p-3 bg-purple-50 rounded-lg">
+            <div className="lg:hidden grid grid-cols-3 gap-2 mb-4">
+              <div className="text-center p-2 bg-purple-50 rounded-lg">
                 <FaMicrochip className="text-purple-600 text-lg mx-auto mb-1" />
                 <div className="font-bold text-purple-900 text-sm">
                   {mobileData.performance?.processor?.split(" ")[0] || "-"}
                 </div>
                 <div className="text-xs text-purple-700">Processor</div>
               </div>
-              <div className="text-center p-3 bg-green-50 rounded-lg">
+              <div className="text-center p-2 bg-green-50 rounded-lg">
                 <FaCamera className="text-green-600 text-lg mx-auto mb-1" />
                 <div className="font-bold text-green-900 text-sm">
-                  {mobileData.camera?.main_camera_megapixels || "-"} MP
+                  {getMainCameraMp(mobileData) || "-"} MP
                 </div>
                 <div className="text-xs text-green-700">Main Camera</div>
               </div>
-              <div className="text-center p-3 bg-purple-50 rounded-lg">
+              <div className="text-center p-2 bg-purple-50 rounded-lg">
                 <FaBatteryFull className="text-purple-600 text-lg mx-auto mb-1" />
                 <div className="font-bold text-purple-900 text-sm">
                   {getBatteryCapacityMah(mobileData) || "-"} mAh
@@ -2395,25 +2855,33 @@ Price: ${price}
             </div>
             {variants && variants.length > 0 && (
               <div className="mb-6">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                <h4 className="text-sm font-semibold text-gray-800 mb-2">
                   Available Variants
                 </h4>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2.5">
                   {variants.map((variant, index) => (
                     <button
-                      key={variant.id}
+                      key={variant.variant_id ?? variant.id ?? index}
                       onClick={() => setSelectedVariant(index)}
-                      className={`p-3 rounded-lg border-2 transition-all duration-150 ${
+                      aria-pressed={selectedVariant === index}
+                      className={`relative p-2.5 rounded-xl border-2 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 ${
                         selectedVariant === index
-                          ? "border-purple-500 bg-purple-50"
-                          : "border-purple-200 hover:border-indigo-300"
+                          ? "border-violet-600 bg-violet-50 ring-2 ring-violet-200 shadow-sm"
+                          : "border-slate-200 bg-white hover:border-violet-300 hover:bg-violet-50/40"
                       }`}
                     >
-                      <div className="text-sm font-semibold text-gray-900">
-                        <FaMemory className="text-gray-600 text-lg center" />
-                        {variant.ram} / {variant.storage}
+                      {selectedVariant === index ? (
+                        <span className="absolute top-2 right-2 inline-flex items-center justify-center w-4 h-4 rounded-full bg-violet-600 text-white">
+                          <FaCheck className="text-[9px]" />
+                        </span>
+                      ) : null}
+                      <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                        <FaMemory className="text-gray-600 text-sm" />
+                        <span className="leading-tight">
+                          {variant.ram} / {variant.storage}
+                        </span>
                       </div>
-                      <div className="text-sm font-bold text-green-600">
+                      <div className="mt-1 text-sm font-bold text-green-600">
                         ₹{formatPrice(variant.base_price)}
                       </div>
                     </button>
@@ -2429,11 +2897,18 @@ Price: ${price}
             <div className="hidden lg:block mb-6">
               <div className="flex justify-between items-start mb-2">
                 <div>
+                  {headerDescriptor ? (
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500 mb-1">
+                      {headerDescriptor}
+                    </p>
+                  ) : null}
                   <h1 className="text-2xl font-extrabold tracking-tight mb-2">
-                    {buildDescriptiveTitle(mobileData, currentVariant)}
+                    {headerTitle}
                   </h1>
                   <h4 className="text-purple-700 mb-3 font-medium text-sm flex items-center gap-2">
-                    <span>{mobileData?.model}</span>
+                    {currentVariantLabel ? (
+                      <span>{currentVariantLabel}</span>
+                    ) : null}
                     {mobileData?.isAiPhone ? (
                       <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-purple-50 to-blue-100 px-2 py-0.5 text-[10px] font-semibold text-purple-700 ring-1 ring-purple-200">
                         <span
@@ -2485,7 +2960,7 @@ Price: ${price}
                   >
                     <FaShareAlt className="text-xl text-gray-600" />
                   </button>
-                  {/* Copy link removed — share-only */}
+                  {/* Copy link removed â€” share-only */}
                 </div>
               </div>
               <div className="flex items-center gap-3 mb-6">
@@ -2502,11 +2977,11 @@ Price: ${price}
               </div>
             </div>
 
-            {/* Ratings Card removed from details column — rendered below tabs */}
+            {/* Ratings Card removed from details column â€” rendered below tabs */}
 
             {/* Store Prices Section */}
             {sortedStores.length > 0 && (
-              <div className="mb-6 mt-6">
+              <div className="mb-5 mt-5">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                     <FaStore className="text-purple-500" />
@@ -2530,19 +3005,20 @@ Price: ${price}
                 <div className="space-y-3">
                   {displayedStores.map((store, index) => {
                     const isActive = String(store.id) === String(activeStoreId);
+                    const hasStoreUrl = Boolean(store.url);
                     return (
                       <div
                         key={store.id || index}
-                        className={`bg-white border rounded-xl p-3 transition-all duration-200 ${
+                        className={`bg-white border rounded-xl p-2.5 transition-all duration-200 ${
                           isActive
-                            ? "border-purple-400 shadow-md bg-purple-50"
-                            : "border-indigo-200 hover:border-purple-300 hover:shadow-md"
+                            ? "border-violet-500 ring-2 ring-violet-200 shadow-sm bg-violet-50/40"
+                            : "border-indigo-200 hover:border-violet-300 hover:shadow-sm"
                         }`}
                       >
                         <div className="flex items-center justify-between">
                           {/* Store Info */}
-                          <div className="flex items-center gap-3 flex-1">
-                            <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center p-2 shadow-sm">
+                          <div className="flex items-center gap-2.5 flex-1">
+                            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center p-2 shadow-sm">
                               <img
                                 src={getLogo(store.store_name)}
                                 alt={store.store_name}
@@ -2553,30 +3029,37 @@ Price: ${price}
                               />
                             </div>
                             <div className="flex-1">
-                              <h4 className="font-bold text-gray-900 text-md capitalize">
+                              <h4 className="font-bold text-gray-900 text-sm capitalize">
                                 {store.store_name}
                               </h4>
-                              <p className="text-xs text-gray-500">
-                                {store.variantRam} / {store.variantStorage} •
+                              <p className="text-[11px] text-gray-500">
+                                {store.variantRam} / {store.variantStorage}
                               </p>
                             </div>
                           </div>
 
                           {/* Price & CTA */}
-                          <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-3">
                             <div className="text-right">
-                              <div className="text-md font-bold text-green-600">
+                              <div className="text-sm font-bold text-green-600">
                                 ₹ {formatPrice(store.price)}
                               </div>
                             </div>
                             <a
-                              href={store.url}
+                              href={hasStoreUrl ? store.url : undefined}
                               target="_blank"
                               rel="noopener noreferrer nofollow"
-                              className="bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 hover:from-purple-600 hover:to-blue-600 text-purple-500 px-4 py-2 rounded-full hover:text-white font-semibold text-sm flex items-center gap-2 transition-all duration-200 hover:shadow-lg"
+                              onClick={(e) => {
+                                if (!hasStoreUrl) e.preventDefault();
+                              }}
+                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs transition-all duration-200 ${
+                                hasStoreUrl
+                                  ? "bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-sm hover:shadow-md"
+                                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                              }`}
                             >
                               <FaExternalLinkAlt className="text-xs" />
-                              Buy Now
+                              {hasStoreUrl ? "Buy Now" : "Unavailable"}
                             </a>
                           </div>
                         </div>
@@ -2599,7 +3082,7 @@ Price: ${price}
               <div className="text-center p-4 bg-green-50 rounded-xl">
                 <FaCamera className="text-green-600 text-xl mx-auto mb-2" />
                 <div className="font-bold text-green-900">
-                  {mobileData.camera?.main_camera_megapixels || "-"} MP
+                  {getMainCameraMp(mobileData) || "-"} MP
                 </div>
                 <div className="text-sm text-green-700">Main Camera</div>
               </div>
@@ -2637,7 +3120,7 @@ Price: ${price}
             })}
           </div>
 
-          <div className="p-4">{renderTabContent()}</div>
+          <div className="p-2 sm:p-3">{renderTabContent()}</div>
         </div>
       </div>
       <div className="px-3 sm:px-4 lg:px-0">
@@ -2648,6 +3131,8 @@ Price: ${price}
 };
 
 export default MobileDetailCard;
+
+
 
 
 

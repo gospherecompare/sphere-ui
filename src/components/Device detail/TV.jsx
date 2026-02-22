@@ -18,11 +18,7 @@ import {
   FaInfoCircle,
   FaBolt,
   FaPlug,
-  FaWater,
-  FaSnowflake,
   FaTv,
-  FaFan,
-  FaThermometerHalf,
   FaWeight,
   FaRuler,
   FaShieldAlt,
@@ -36,8 +32,6 @@ import {
   FaExpand,
   FaWifi,
   FaBluetooth,
-  FaFire,
-  FaWind,
   FaBatteryFull,
   FaMemory,
   FaMobile,
@@ -630,32 +624,6 @@ const TVDetailCard = () => {
     }
   }, [applianceData?.product_id, applianceData?.productId, applianceData?.id]);
 
-  // Get category-specific icon
-  const getCategoryIcon = () => {
-    switch (applianceData?.category?.toLowerCase()) {
-      case "washing machine":
-        return FaWater;
-      case "air conditioner":
-      case "ac":
-        return FaSnowflake;
-      case "television":
-      case "tv":
-        return FaTv;
-      case "refrigerator":
-        return FaThermometerHalf;
-      case "microwave":
-        return FaFire;
-      case "fan":
-        return FaFan;
-      case "air purifier":
-        return FaWind;
-      default:
-        return FaBolt;
-    }
-  };
-
-  const CategoryIcon = getCategoryIcon();
-
   // Get category-specific color
   const getCategoryColor = () => {
     switch (applianceData?.category?.toLowerCase()) {
@@ -745,6 +713,17 @@ const TVDetailCard = () => {
     .filter((price) => price !== null && price > 0)
     .sort((a, b) => a - b)[0];
   const headlinePrice = currentVariantBestPrice ?? fallbackBestPrice ?? null;
+  const currentVariantSize =
+    currentVariant?.screen_size || currentVariant?.capacity || "";
+  const currentVariantResolution =
+    currentVariant?.resolution ||
+    currentVariant?.specification_summary ||
+    applianceData?.specifications?.resolution ||
+    applianceData?.display_json?.resolution ||
+    "";
+  const currentVariantLabel = [currentVariantSize, currentVariantResolution]
+    .filter(Boolean)
+    .join(" / ");
   const currentProductId =
     applianceData?.id ??
     applianceData?.product_id ??
@@ -1016,12 +995,40 @@ const TVDetailCard = () => {
   const isPrimitive = (v) =>
     v == null || (typeof v !== "object" && typeof v !== "function");
 
+  const isLikelyModelCode = (value) => {
+    if (!value) return false;
+    const s = String(value).trim();
+    if (!s || /\s/.test(s)) return false;
+    return /^(?:[a-z]{0,3})?[a-z]+[-]?\d+[a-z0-9-]*$/i.test(s);
+  };
+
+  const getDisplayProductName = (data) => {
+    if (!data) return "";
+    const preferred = String(data.product_name || data.name || data.title || "").trim();
+    const modelNumber = String(data.model_number || "").trim();
+    if (preferred) {
+      if (modelNumber) {
+        const escaped = modelNumber.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const stripped = preferred
+          .replace(new RegExp(escaped, "ig"), " ")
+          .replace(/\s+/g, " ")
+          .trim();
+        if (stripped) return stripped;
+      }
+      return preferred;
+    }
+
+    const model = String(data.model || "").trim();
+    if (model && !isLikelyModelCode(model)) return model;
+
+    return String(data.brand || data.brand_name || "").trim() || "TV";
+  };
+
   // Build descriptive title similar to smartphone details header style
   const buildDescriptiveTitle = (data, variant) => {
     if (!data) return "";
 
-    const model =
-      data.product_name || data.model_number || data.model || data.name || "TV";
+    const model = getDisplayProductName(data) || "TV";
 
     const processorRaw =
       data.display_json?.picture_processor ||
@@ -1410,14 +1417,14 @@ const TVDetailCard = () => {
 
     return (
       <div className="overflow-x-auto">
-        <table className="min-w-full">
+        <table className="min-w-full divide-y divide-gray-200 shadow-none">
           <tbody className="bg-white">
             {rows.map(([key, value], idx) => (
               <tr key={key} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                <td className="px-6 py-3 text-sm font-medium text-gray-600 w-1/3 align-top">
+                <td className="px-6 py-2 text-sm font-medium text-gray-600 w-1/3 align-top">
                   {toNormalCase(key)}
                 </td>
-                <td className="px-6 py-3 text-sm text-gray-900 w-2/3">
+                <td className="px-6 py-2 text-sm text-gray-900 w-2/3">
                   {formatSpecValue(value)}
                 </td>
               </tr>
@@ -1640,12 +1647,7 @@ const TVDetailCard = () => {
   }
 
   const descriptiveTitle = buildDescriptiveTitle(applianceData, currentVariant);
-  const metaName =
-    descriptiveTitle ||
-    applianceData?.product_name ||
-    applianceData?.model_number ||
-    applianceData?.model ||
-    "TV";
+  const metaName = descriptiveTitle || getDisplayProductName(applianceData) || "TV";
   const metaBrand = applianceData?.brand || applianceData?.brand_name || "";
   const metaScreenSize =
     applianceData?.specifications?.screen_size ||
@@ -1788,27 +1790,17 @@ const TVDetailCard = () => {
 
       <div className="overflow-hidden  ">
         {/* Mobile Header */}
-        <div className="p-5 border-b border-gray-200 lg:hidden">
+        <div className="p-4 border-b border-gray-200 lg:hidden">
           <div className="flex justify-between items-start mb-3">
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${currentColor.bg} text-white`}
-                >
-                  {applianceData.category}
-                </span>
-                {applianceData.release_year && (
-                  <span className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-600">
-                    {applianceData.release_year}
-                  </span>
-                )}
-              </div>
               <h1 className="text-xl font-extrabold tracking-tight mb-1 text-gray-900 leading-tight">
                 {descriptiveTitle || applianceData.product_name}
               </h1>
-              <p className="text-gray-600 text-sm">
-                {applianceData.brand} | {applianceData.model_number}
-              </p>
+              {currentVariantLabel ? (
+                <p className="text-purple-700 text-sm font-medium">
+                  {currentVariantLabel}
+                </p>
+              ) : null}
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -1907,12 +1899,9 @@ const TVDetailCard = () => {
 
         <div className="flex flex-col lg:flex-row">
           {/* Images Section */}
-          <div className="lg:w-2/5 p-5 border-b lg:border-b-0 lg:border-r border-gray-200">
+          <div className="lg:w-2/5 p-4">
             {/* Main Image */}
-            <div className="rounded-xl bg-gray-50 p-8 mb-6 relative">
-              <div className="absolute top-3 left-3">
-                <CategoryIcon className={`text-2xl ${currentColor.text}`} />
-              </div>
+            <div className="rounded-xl bg-white p-8 mb-6 relative">
               <img
                 src={
                   galleryImages?.[activeImage] ||
@@ -1922,7 +1911,7 @@ const TVDetailCard = () => {
                 className="w-full h-64 object-contain"
                 onError={(e) => {
                   e.target.src =
-                    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%23f9fafb'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='16' fill='%239ca3af'%3ENo Image Available%3C/text%3E%3C/svg%3E";
+                    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%23ffffff'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='16' fill='%239ca3af'%3ENo Image Available%3C/text%3E%3C/svg%3E";
                 }}
               />
               <div className="absolute top-3 right-3 flex flex-col gap-2">
@@ -1955,7 +1944,7 @@ const TVDetailCard = () => {
                     className={`flex-shrink-0 w-20 h-20 rounded-lg p-2 border-2 transition-all duration-200 ${
                       activeImage === index
                         ? `${currentColor.border} bg-white`
-                        : "border-gray-200 hover:border-gray-300"
+                        : "border-gray-100 hover:border-gray-200"
                     }`}
                   >
                     <img
@@ -1971,30 +1960,36 @@ const TVDetailCard = () => {
             {/* Variant Selection */}
             {variants && variants.length > 0 && (
               <div className="mb-6">
-                <h4 className="text-sm font-medium text-gray-700 mb-3">
+                <h4 className="text-sm font-semibold text-gray-800 mb-2">
                   Available Variants
                 </h4>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2.5">
                   {variants.map((variant, index) => (
                     <button
                       key={variant.id || index}
                       onClick={() => setSelectedVariant(index)}
-                      className={`p-4 rounded-xl border-2 transition-all duration-150 text-left ${
+                      aria-pressed={selectedVariant === index}
+                      className={`relative p-2.5 rounded-xl border-2 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 ${
                         selectedVariant === index
-                          ? `${currentColor.border} ${currentColor.light}`
-                          : "border-gray-200 hover:border-gray-300"
+                          ? "border-violet-600 bg-violet-50 ring-2 ring-violet-200 shadow-sm"
+                          : "border-slate-200 bg-white hover:border-violet-300 hover:bg-violet-50/40"
                       }`}
                     >
-                      <div className="font-semibold text-gray-900 text-sm mb-1">
-                        {variant.model ||
-                          variant.capacity ||
+                      {selectedVariant === index ? (
+                        <span className="absolute top-2 right-2 inline-flex items-center justify-center w-4 h-4 rounded-full bg-violet-600 text-white">
+                          <FaCheck className="text-[9px]" />
+                        </span>
+                      ) : null}
+                      <div className="font-semibold text-gray-900 text-sm mb-1 leading-tight">
+                        {variant.capacity ||
                           variant.screen_size ||
                           variant.type ||
                           applianceData.specifications?.screen_size ||
                           `Variant ${index + 1}`}
                       </div>
-                      <div className="text-xs text-gray-600 mb-2">
-                        {variant.specification_summary ||
+                      <div className="text-[11px] text-gray-500 mb-1.5 leading-tight">
+                        {variant.resolution ||
+                          variant.specification_summary ||
                           applianceData.specifications?.resolution ||
                           applianceData.specifications?.panel_type ||
                           ""}
@@ -2010,80 +2005,96 @@ const TVDetailCard = () => {
             )}
 
             {/* Quick Specs - Mobile Only */}
-            <div className="lg:hidden grid grid-cols-3 gap-3 mb-6">
-              {applianceData.specifications &&
-                [
-                  {
-                    key: "screen_size",
-                    fallback: "capacity",
-                    label: "Screen",
-                    icon: FaTv,
-                  },
-                  {
-                    key: "resolution",
-                    label: "Resolution",
-                    icon: FaRuler,
-                  },
-                  {
-                    key: "refresh_rate",
-                    fallback: "refreshRate",
-                    label: "Refresh",
-                    icon: FaSyncAlt,
-                  },
-                ].map((item) => {
-                  const value =
-                    applianceData.specifications[item.key] ||
-                    (item.fallback
-                      ? applianceData.specifications[item.fallback]
-                      : null);
-                  if (!value) return null;
-                  return (
-                    <div
-                      key={item.key}
-                      className="text-center p-3 rounded-xl bg-white border border-gray-200 shadow-sm"
-                    >
-                      <item.icon className={`${currentColor.text} text-base mx-auto mb-2`} />
-                      <div className="font-semibold text-gray-900 text-sm leading-5">
-                        {value}
+            <div className="lg:hidden mb-4 rounded-xl border border-slate-200 bg-white p-1.5">
+              <div className="grid grid-cols-3 gap-1.5">
+                {applianceData.specifications &&
+                  [
+                    {
+                      key: "screen_size",
+                      fallback: "capacity",
+                      label: "Screen",
+                      icon: FaTv,
+                      tone: "purple",
+                    },
+                    {
+                      key: "resolution",
+                      label: "Resolution",
+                      icon: FaRuler,
+                      tone: "green",
+                    },
+                    {
+                      key: "refresh_rate",
+                      fallback: "refreshRate",
+                      label: "Refresh",
+                      icon: FaSyncAlt,
+                      tone: "purple",
+                    },
+                  ].map((item) => {
+                    const value =
+                      applianceData.specifications[item.key] ||
+                      (item.fallback
+                        ? applianceData.specifications[item.fallback]
+                        : null);
+                    if (!value) return null;
+                    const toneClasses =
+                      item.tone === "green"
+                        ? {
+                            card:
+                              "border-emerald-100 bg-gradient-to-b from-emerald-50 to-emerald-100/40",
+                            iconWrap: "bg-white/90 ring-1 ring-emerald-200",
+                            icon: "text-emerald-600",
+                            value: "text-emerald-900",
+                            label: "text-emerald-700",
+                          }
+                        : {
+                            card:
+                              "border-violet-100 bg-gradient-to-b from-violet-50 to-indigo-100/40",
+                            iconWrap: "bg-white/90 ring-1 ring-violet-200",
+                            icon: "text-violet-600",
+                            value: "text-violet-900",
+                            label: "text-violet-700",
+                          };
+                    return (
+                      <div
+                        key={item.key}
+                        className={`group rounded-lg border px-2 py-1.5 text-center transition-colors duration-200 ${toneClasses.card}`}
+                      >
+                        <div
+                          className={`mx-auto mb-1 inline-flex h-6 w-6 items-center justify-center rounded-md ${toneClasses.iconWrap}`}
+                        >
+                          <item.icon className={`${toneClasses.icon} text-[11px]`} />
+                        </div>
+                        <div
+                          className={`font-bold text-xs leading-4 tracking-tight ${toneClasses.value}`}
+                        >
+                          {value}
+                        </div>
+                        <div
+                          className={`mt-0.5 text-[9px] font-semibold tracking-wide ${toneClasses.label}`}
+                        >
+                          {item.label}
+                        </div>
                       </div>
-                      <div className="text-[11px] mt-1 text-gray-500">
-                        {item.label}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+              </div>
             </div>
           </div>
 
           {/* Details Section */}
-          <div className="lg:w-3/5 p-5">
+          <div className="lg:w-3/5 p-4">
             {/* Desktop Header */}
             <div className="hidden lg:block mb-8">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <div className="flex items-center gap-3 mb-3">
-                    <span
-                      className={`px-3 py-1.5 rounded-full text-sm font-semibold ${currentColor.bg} text-white`}
-                    >
-                      {applianceData.category}
-                    </span>
-                    {applianceData.release_year && (
-                      <span className="px-3 py-1.5 bg-gray-100 rounded-lg text-sm text-gray-700">
-                        Launch: {applianceData.release_year}
-                      </span>
-                    )}
-                    {applianceData.country && (
-                      <span className="px-3 py-1.5 bg-gray-100 rounded-lg text-sm text-gray-700">
-                        Made in {applianceData.country}
-                      </span>
-                    )}
-                  </div>
                   <h1 className="text-2xl font-extrabold tracking-tight mb-2 text-gray-900">
                     {descriptiveTitle || applianceData.product_name}
                   </h1>
-                  <p className="text-gray-600 text-lg mb-4">
-                    {applianceData.brand} | Model: {applianceData.model_number}
-                  </p>
+                  {currentVariantLabel ? (
+                    <h4 className="text-purple-700 mb-3 font-medium text-sm">
+                      {currentVariantLabel}
+                    </h4>
+                  ) : null}
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -2125,32 +2136,27 @@ const TVDetailCard = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-end mb-6">
+              <div className="mb-4">
                 {headlinePrice ? (
-                  <div className="text-right">
-                    <div className="text-sm text-gray-500 mb-1">
-                      Starting from
-                    </div>
-                    <div className="text-4xl font-bold text-green-600">
-                      {RUPEE_SYMBOL} {formatPrice(headlinePrice)}
-                    </div>
-                  </div>
+                  <span className="text-3xl font-bold text-green-600">
+                    {RUPEE_SYMBOL} {formatPrice(headlinePrice)}
+                  </span>
                 ) : null}
               </div>
             </div>
 
             {/* Store Prices Section */}
             {sortedStores.length > 0 && (
-              <div className="mb-8">
-                <div className="flex items-center justify-between mb-6">
+              <div className="mb-5 mt-5">
+                <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                    <FaStore className={currentColor.text} />
-                    Available at Online Stores
+                    <FaStore className="text-purple-500" />
+                    Available at
                   </h3>
                   {sortedStores.length > 3 && (
                     <button
                       onClick={() => setShowAllStores(!showAllStores)}
-                      className={`text-sm font-medium flex items-center gap-1 ${currentColor.text}`}
+                      className="text-purple-600 text-sm font-medium flex items-center gap-1"
                     >
                       {showAllStores ? "Show Less" : "View All"}
                       <FaChevronDown
@@ -2162,7 +2168,7 @@ const TVDetailCard = () => {
                   )}
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {displayedStores.map((store, index) => {
                     const visitUrl = getStoreVisitUrl(
                       store.url,
@@ -2178,70 +2184,59 @@ const TVDetailCard = () => {
                         .filter(Boolean)
                         .join(" "),
                     );
+                    const hasStoreUrl = Boolean(visitUrl);
 
                     return (
-                    <div
-                      key={store.id || index}
-                      className="bg-white border border-gray-200 rounded-xl p-4 hover:border-blue-300 hover:shadow-md transition-all duration-200"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4 flex-1">
-                          <div className="w-14 h-14 bg-white border border-gray-200 rounded-lg flex items-center justify-center p-2">
-                            <img
-                              src={getStoreLogo(store.store_name)}
-                              alt={store.store_name}
-                              className="w-full h-full object-contain"
-                              onError={(e) => {
-                                e.target.src = getLogo("");
-                              }}
-                            />
+                      <div
+                        key={store.id || index}
+                        className="bg-white border rounded-xl p-2.5 transition-all duration-200 border-indigo-200 hover:border-violet-300 hover:shadow-sm"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2.5 flex-1">
+                            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center p-2 shadow-sm">
+                              <img
+                                src={getStoreLogo(store.store_name)}
+                                alt={store.store_name}
+                                className="w-full h-full object-contain"
+                                onError={(e) => {
+                                  e.target.src = getLogo("");
+                                }}
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-bold text-gray-900 text-sm capitalize">
+                                {store.store_name}
+                              </h4>
+                              <p className="text-[11px] text-gray-500">
+                                {store.variantName || store.variantSpec}
+                              </p>
+                            </div>
                           </div>
-                          <div className="flex-1">
-                            <h4 className="font-bold text-gray-900 text-md">
-                              {store.store_name}
-                            </h4>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {store.variantSpec}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-6">
-                          <div className="text-right">
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <div className="text-sm font-bold text-green-600">
+                                {RUPEE_SYMBOL} {formatPrice(store.price)}
+                              </div>
+                            </div>
                             <a
-                              href={visitUrl || "#"}
+                              href={hasStoreUrl ? visitUrl : undefined}
                               target="_blank"
                               rel="noopener noreferrer nofollow"
                               onClick={(e) => {
-                                if (!visitUrl) e.preventDefault();
+                                if (!hasStoreUrl) e.preventDefault();
                               }}
-                              className="text-blue-600 hover:text-blue-800 text-xs font-medium inline-flex items-center gap-1 mb-1"
+                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs transition-all duration-200 ${
+                                hasStoreUrl
+                                  ? "bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-sm hover:shadow-md"
+                                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                              }`}
                             >
-                              {`Visit Store ${store.store_name || "Store"}`}
+                              <FaExternalLinkAlt className="text-xs" />
+                              {hasStoreUrl ? "Buy Now" : "Unavailable"}
                             </a>
-                            <div className="text-lg font-bold text-green-600">
-                              {RUPEE_SYMBOL} {formatPrice(store.price)}
-                            </div>
-                            {store.delivery_time && (
-                              <div className="text-xs text-gray-500">
-                                Delivery: {store.delivery_time}
-                              </div>
-                            )}
                           </div>
-                          <a
-                            href={visitUrl || "#"}
-                            target="_blank"
-                            rel="noopener noreferrer nofollow"
-                            onClick={(e) => {
-                              if (!visitUrl) e.preventDefault();
-                            }}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-semibold text-sm flex items-center gap-2 transition-all duration-200"
-                          >
-                            <FaExternalLinkAlt className="text-xs" />
-                            Buy Now
-                          </a>
                         </div>
                       </div>
-                    </div>
                     );
                   })}
                 </div>
@@ -2249,59 +2244,91 @@ const TVDetailCard = () => {
             )}
 
             {/* Desktop Quick Specs */}
-            <div className="hidden lg:grid grid-cols-4 gap-4 mb-8">
-              {applianceData.specifications &&
-                [
-                  {
-                    key: "screen_size",
-                    fallback: "capacity",
-                    label: "Screen Size",
-                    icon: FaTv,
-                    unit: "",
-                  },
-                  {
-                    key: "resolution",
-                    label: "Resolution",
-                    icon: FaRuler,
-                    unit: "",
-                  },
-                  {
-                    key: "energy_rating",
-                    fallback: "energyRating",
-                    label: "Energy Rating",
-                    icon: FaBatteryFull,
-                    unit: "",
-                  },
-                  {
-                    key: "refresh_rate",
-                    fallback: "refreshRate",
-                    label: "Refresh Rate",
-                    icon: FaSyncAlt,
-                    unit: "",
-                  },
-                ].map((item) => {
-                  const value =
-                    applianceData.specifications[item.key] ||
-                    (item.fallback
-                      ? applianceData.specifications[item.fallback]
-                      : null);
-                  if (!value) return null;
-                  return (
-                    <div
-                      key={item.key}
-                      className="text-center p-4 rounded-xl bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200"
-                    >
-                      <item.icon className={`${currentColor.text} text-xl mx-auto mb-2`} />
-                      <div className="font-bold text-lg text-gray-900 leading-snug">
-                        {value}
-                        {item.unit && ` ${item.unit}`}
+            <div className="hidden lg:block mb-8 rounded-xl border border-slate-200 bg-white p-2">
+              <div className="grid grid-cols-4 gap-1.5">
+                {applianceData.specifications &&
+                  [
+                    {
+                      key: "screen_size",
+                      fallback: "capacity",
+                      label: "Screen Size",
+                      icon: FaTv,
+                      unit: "",
+                      tone: "purple",
+                    },
+                    {
+                      key: "resolution",
+                      label: "Resolution",
+                      icon: FaRuler,
+                      unit: "",
+                      tone: "green",
+                    },
+                    {
+                      key: "energy_rating",
+                      fallback: "energyRating",
+                      label: "Energy Rating",
+                      icon: FaBatteryFull,
+                      unit: "",
+                      tone: "purple",
+                    },
+                    {
+                      key: "refresh_rate",
+                      fallback: "refreshRate",
+                      label: "Refresh Rate",
+                      icon: FaSyncAlt,
+                      unit: "",
+                      tone: "purple",
+                    },
+                  ].map((item) => {
+                    const value =
+                      applianceData.specifications[item.key] ||
+                      (item.fallback
+                        ? applianceData.specifications[item.fallback]
+                        : null);
+                    if (!value) return null;
+                    const toneClasses =
+                      item.tone === "green"
+                        ? {
+                            card:
+                              "border-emerald-100 bg-gradient-to-b from-emerald-50 to-emerald-100/40",
+                            iconWrap: "bg-white/90 ring-1 ring-emerald-200",
+                            icon: "text-emerald-600",
+                            value: "text-emerald-900",
+                            label: "text-emerald-700",
+                          }
+                        : {
+                            card:
+                              "border-violet-100 bg-gradient-to-b from-violet-50 to-indigo-100/40",
+                            iconWrap: "bg-white/90 ring-1 ring-violet-200",
+                            icon: "text-violet-600",
+                            value: "text-violet-900",
+                            label: "text-violet-700",
+                          };
+                    return (
+                      <div
+                        key={item.key}
+                        className={`min-h-[96px] rounded-lg border p-2 text-center transition-colors duration-200 ${toneClasses.card}`}
+                      >
+                        <div
+                          className={`mx-auto mb-1 inline-flex h-7 w-7 items-center justify-center rounded-md ${toneClasses.iconWrap}`}
+                        >
+                          <item.icon className={`${toneClasses.icon} text-xs`} />
+                        </div>
+                        <div
+                          className={`font-bold text-lg leading-tight tracking-tight ${toneClasses.value}`}
+                        >
+                          {value}
+                          {item.unit && ` ${item.unit}`}
+                        </div>
+                        <div
+                          className={`mt-0.5 text-[10px] font-semibold tracking-wide ${toneClasses.label}`}
+                        >
+                          {item.label}
+                        </div>
                       </div>
-                      <div className="text-sm mt-1 text-gray-500">
-                        {item.label}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+              </div>
             </div>
           </div>
         </div>
@@ -2309,17 +2336,17 @@ const TVDetailCard = () => {
         {/* Ratings summary removed */}
 
         {/* Tabs Section */}
-        <div className="border-t border-gray-200">
-          <div className="flex overflow-x-auto no-scrollbar border-b border-gray-200">
+        <div className="border-t border-indigo-200">
+          <div className="flex overflow-x-auto no-scrollbar border-b border-indigo-200">
             {tabs.map((tab) => {
               const IconComponent = tab.icon;
               return (
                 <button
                   key={tab.id}
                   onClick={() => handleTabClick(tab.id)}
-                  className={`flex items-center gap-2 px-5 py-4 font-medium text-sm whitespace-nowrap border-b-2 transition-colors duration-200 flex-shrink-0 ${
+                  className={`flex items-center gap-2 px-4 py-3 font-medium text-sm whitespace-nowrap border-b-2 transition-colors duration-200 flex-shrink-0 ${
                     activeTab === tab.id
-                      ? `${currentColor.border} ${currentColor.text} ${currentColor.light}`
+                      ? "border-purple-500 text-purple-600 bg-purple-50"
                       : "border-transparent text-gray-500 hover:text-gray-700"
                   }`}
                 >
@@ -2330,7 +2357,7 @@ const TVDetailCard = () => {
             })}
           </div>
 
-          <div className="p-5">{renderTabContent()}</div>
+          <div className="p-2 sm:p-3">{renderTabContent()}</div>
         </div>
       </div>
     </div>

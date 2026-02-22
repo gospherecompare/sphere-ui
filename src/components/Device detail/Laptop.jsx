@@ -754,22 +754,41 @@ const LaptopDetailCard = () => {
     if (!text) return "";
 
     const coreUltra = text.match(/(?:Intel\s+)?Core\s+Ultra\s+\d+/i);
-    if (coreUltra) return coreUltra[0];
+    if (coreUltra) return coreUltra[0].replace(/^intel\s+/i, "");
 
     const coreI = text.match(/(?:Intel\s+)?Core\s+i[3579](?:-\d+\w*)?/i);
-    if (coreI) return coreI[0];
+    if (coreI) return coreI[0].replace(/^intel\s+/i, "");
 
     const ryzen = text.match(/Ryzen\s+\d+\s*[A-Za-z0-9-]*/i);
     if (ryzen) return ryzen[0].trim();
 
-    return text.split(/\s+/).slice(0, 4).join(" ");
+    const apple = text.match(/Apple\s+M\d+\s*(?:Pro|Max|Ultra)?/i);
+    if (apple) return apple[0].trim();
+
+    return text.split(/\s+/).slice(0, 3).join(" ");
+  };
+
+  const getCompactRamLabel = (raw) => {
+    const text = String(raw || "").trim();
+    if (!text) return "";
+    const m = text.match(/(\d+(?:\.\d+)?)\s*(TB|GB|MB)/i);
+    if (m) return `${m[1]}${String(m[2]).toUpperCase()}`;
+    return text.replace(/\s+/g, "");
+  };
+
+  const getCompactDisplayLabel = (raw) => {
+    const text = String(raw || "").trim();
+    if (!text) return "";
+    const m = text.match(/(\d+(?:\.\d+)?)\s*(?:inch|inches|in|")/i);
+    if (m) return `${m[1]}"`;
+    return text.replace(/\s+inch(es)?/i, '"');
   };
 
   const getCompactStorageLabel = (raw) => {
     const text = String(raw || "").trim();
     if (!text) return "";
     const m = text.match(/(\d+(?:\.\d+)?)\s*(TB|GB)/i);
-    if (m) return `${m[1]} ${String(m[2]).toUpperCase()}`;
+    if (m) return `${m[1]}${String(m[2]).toUpperCase()}`;
     return text.split(/\s+/).slice(0, 2).join(" ");
   };
 
@@ -777,10 +796,68 @@ const LaptopDetailCard = () => {
     const text = String(raw || "").trim();
     if (!text) return "";
     const wh = text.match(/(\d+(?:\.\d+)?)\s*wh/i);
-    if (wh) return `${wh[1]} Wh`;
+    if (wh) return `${wh[1]}Wh`;
     const mah = text.match(/(\d+(?:\.\d+)?)\s*mah/i);
-    if (mah) return `${mah[1]} mAh`;
+    if (mah) return `${mah[1]}mAh`;
     return text.split(/\s+/).slice(0, 3).join(" ");
+  };
+
+  const normalizeInlineText = (value) =>
+    String(value || "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const escapeRegex = (value) =>
+    String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  const cleanSeriesLabel = (seriesRaw, brandRaw) => {
+    const brand = normalizeInlineText(brandRaw);
+    let series = normalizeInlineText(seriesRaw);
+    if (!series) return "";
+    if (brand) {
+      const brandPrefix = new RegExp(`^${escapeRegex(brand)}\\s+`, "i");
+      series = normalizeInlineText(series.replace(brandPrefix, ""));
+      if (series.toLowerCase() === brand.toLowerCase()) return "";
+    }
+    return series;
+  };
+
+  const buildCleanLaptopTitle = (data, brandRaw, modelRaw) => {
+    const brand = normalizeInlineText(brandRaw);
+    const model = normalizeInlineText(modelRaw);
+    let title = normalizeInlineText(
+      data?.product_name || data?.name || data?.model || model || "Laptop",
+    );
+
+    if (!title) return "Laptop";
+
+    // Collapse duplicated brand prefixes like "HP HP ..."
+    if (brand) {
+      const repeatedBrand = new RegExp(
+        `^(${escapeRegex(brand)})(?:\\s+${escapeRegex(brand)})+\\b`,
+        "i",
+      );
+      title = normalizeInlineText(title.replace(repeatedBrand, "$1"));
+    }
+
+    // Remove model code from visible title when present to avoid repetition.
+    if (model) {
+      const modelRe = new RegExp(`\\b${escapeRegex(model)}\\b`, "ig");
+      const withoutModel = normalizeInlineText(
+        title.replace(modelRe, "").replace(/[\-|:|,]+$/g, ""),
+      );
+      if (withoutModel && withoutModel.length >= 6) {
+        title = withoutModel;
+      }
+    }
+
+    return title || "Laptop";
+  };
+
+  const capitalizeFirst = (raw) => {
+    const text = normalizeInlineText(raw);
+    if (!text) return "";
+    return text.charAt(0).toUpperCase() + text.slice(1);
   };
 
   const toNormalCase = (raw) => {
@@ -1536,6 +1613,43 @@ const LaptopDetailCard = () => {
   };
 
   const OSIcon = getOSIcon();
+  const headerBrand = normalizeInlineText(
+    laptopData?.brand || laptopData?.brand_name || "",
+  );
+  const headerModel = normalizeInlineText(
+    laptopData?.model_number || laptopData?.model || "",
+  );
+  const headerSeries = cleanSeriesLabel(laptopData?.series, headerBrand);
+  const headerTitle = capitalizeFirst(
+    buildCleanLaptopTitle(laptopData, headerBrand, headerModel),
+  );
+  const headerType = toNormalCase(
+    normalizeInlineText(laptopData?.product_type || "Laptop"),
+  );
+  const headerProcessor = getCompactProcessorLabel(
+    laptopData?.specifications?.processor ||
+      laptopData?.specifications?.processor_name ||
+      laptopData?.cpu ||
+      "",
+  );
+  const headerDisplay = getCompactDisplayLabel(
+    laptopData?.specifications?.screen_size ||
+      laptopData?.specifications?.display ||
+      "",
+  );
+  const headerDescriptor = [headerType, headerProcessor, headerDisplay && `${headerDisplay} Display`]
+    .filter(Boolean)
+    .join(" | ");
+  const headerModelSubtitle =
+    headerModel &&
+    !headerTitle.toLowerCase().includes(headerModel.toLowerCase())
+      ? headerModel
+      : "";
+  const headerSubtitle = [headerBrand, headerSeries, headerModelSubtitle]
+    .filter(Boolean)
+    .map((part) => capitalizeFirst(part))
+    .join(" | ");
+
   // SEO meta
   const metaName = laptopData?.product_name || laptopData?.model || "";
   const metaBrand = laptopData?.brand || laptopData?.brand_name || "";
@@ -1666,28 +1780,26 @@ const LaptopDetailCard = () => {
         <div className="p-4 bg-white border-b border-gray-200 lg:hidden">
           <div className="flex justify-between items-start mb-3">
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${currentColor.bg} text-white`}
-                >
-                  {laptopData.product_type}
-                </span>
-                {laptopData.release_year && (
+              {laptopData.release_year && (
+                <div className="flex items-center gap-2 mb-2">
                   <span className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-600">
                     {laptopData.release_year}
                   </span>
-                )}
-              </div>
+                </div>
+              )}
+              {headerDescriptor ? (
+                <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500 mb-1">
+                  {headerDescriptor}
+                </p>
+              ) : null}
               <h1 className="text-xl font-extrabold tracking-tight mb-1 text-gray-900 leading-tight">
-                {laptopData.product_name}
+                {headerTitle}
               </h1>
-              <p className="text-purple-700 text-sm font-medium flex items-center gap-2">
-                <span>{laptopData.brand}</span>
-                {laptopData.series ? <span>{laptopData.series}</span> : null}
-                {laptopData.model_number ? (
-                  <span>| {laptopData.model_number}</span>
-                ) : null}
-              </p>
+              {headerSubtitle ? (
+                <p className="text-purple-700 text-sm font-medium flex items-center gap-2">
+                  {headerSubtitle}
+                </p>
+              ) : null}
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -1787,7 +1899,7 @@ const LaptopDetailCard = () => {
           {/* Images Section */}
           <div className="lg:w-1/2 p-4 border-b lg:border-b-0 lg:border-r border-indigo-200">
             {/* Main Image */}
-            <div className="rounded-xl bg-gray-50 p-8 mb-6 relative">
+            <div className="rounded-xl bg-white p-8 mb-6 relative">
               <div className="absolute top-3 left-3">
                 <FaLaptop className={`text-2xl ${currentColor.text}`} />
               </div>
@@ -1799,7 +1911,7 @@ const LaptopDetailCard = () => {
                 className="w-full h-64 object-contain"
                 onError={(e) => {
                   e.target.src =
-                    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%23f9fafb'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='16' fill='%239ca3af'%3ENo Image Available%3C/text%3E%3C/svg%3E";
+                    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%23ffffff'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='16' fill='%239ca3af'%3ENo Image Available%3C/text%3E%3C/svg%3E";
                 }}
               />
               <div className="absolute top-3 right-3 flex flex-col gap-2">
@@ -1880,17 +1992,21 @@ const LaptopDetailCard = () => {
             )}
 
             {/* Quick Specs - Mobile Only */}
-            <div className="lg:hidden grid grid-cols-2 gap-3 mb-6">
+            <div className="lg:hidden grid grid-cols-2 gap-2 mb-6">
               {laptopData.specifications &&
                 [
                   {
                     key: "processor",
                     label: "Processor",
                     icon: FaMicrochip,
-                    maxLength: 18,
                     format: (v) => getCompactProcessorLabel(v),
                   },
-                  { key: "ram", label: "RAM", icon: FaMemory },
+                  {
+                    key: "ram",
+                    label: "RAM",
+                    icon: FaMemory,
+                    format: (v) => getCompactRamLabel(v),
+                  },
                   {
                     key: "storage",
                     label: "Storage",
@@ -1912,26 +2028,25 @@ const LaptopDetailCard = () => {
                       ? item.format(String(rawValue))
                       : String(rawValue);
                   if (!normalizedValue) return null;
-                  let displayValue = normalizedValue;
-                  if (
-                    item.maxLength &&
-                    displayValue.length > Number(item.maxLength)
-                  ) {
-                    displayValue =
-                      displayValue.substring(0, Number(item.maxLength)) + "...";
-                  }
+                  const displayValue = normalizedValue;
                   return (
                     <div
                       key={item.key}
-                      className={`text-center p-3 rounded-lg ${currentColor.light}`}
+                      className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 flex items-center gap-2.5"
                     >
-                      <item.icon
-                        className={`${currentColor.text} text-lg mx-auto mb-1`}
-                      />
-                      <div className={`font-bold ${currentColor.text} text-xs`}>
-                        {displayValue}
+                      <span
+                        className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${currentColor.light}`}
+                      >
+                        <item.icon className={`${currentColor.text} text-xs`} />
+                      </span>
+                      <div className="min-w-0">
+                        <div className="text-[10px] font-medium uppercase tracking-wide text-slate-500">
+                          {item.label}
+                        </div>
+                        <div className="font-semibold text-sm leading-tight text-slate-900 whitespace-nowrap">
+                          {displayValue}
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-600">{item.label}</div>
                     </div>
                   );
                 })}
@@ -1944,33 +2059,26 @@ const LaptopDetailCard = () => {
             <div className="hidden lg:block mb-6">
               <div className="flex items-start justify-between mb-2">
                 <div>
-                <div className="flex items-center gap-3 mb-3">
-                  <span
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold ${currentColor.bg} text-white`}
-                  >
-                    {laptopData.product_type}
-                  </span>
-                    {laptopData.release_year && (
+                  {laptopData.release_year && (
+                    <div className="flex items-center gap-3 mb-3">
                       <span className="px-3 py-1.5 bg-gray-100 rounded-lg text-sm text-gray-700">
                         Launch: {laptopData.release_year}
                       </span>
-                    )}
-                    {laptopData.country && (
-                      <span className="px-3 py-1.5 bg-gray-100 rounded-lg text-sm text-gray-700">
-                        Made in {laptopData.country}
-                      </span>
-                    )}
-                  </div>
+                    </div>
+                  )}
+                  {headerDescriptor ? (
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500 mb-1">
+                      {headerDescriptor}
+                    </p>
+                  ) : null}
                   <h1 className="text-2xl font-extrabold tracking-tight mb-2">
-                    {laptopData.product_name}
+                    {headerTitle}
                   </h1>
-                  <p className="text-purple-700 mb-3 font-medium text-sm flex items-center gap-2">
-                    <span>{laptopData.brand}</span>
-                    {laptopData.series ? <span>{laptopData.series}</span> : null}
-                    {laptopData.model_number ? (
-                      <span>| {laptopData.model_number}</span>
-                    ) : null}
-                  </p>
+                  {headerSubtitle ? (
+                    <p className="text-purple-700 mb-3 font-medium text-sm flex items-center gap-2">
+                      {headerSubtitle}
+                    </p>
+                  ) : null}
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -2050,62 +2158,74 @@ const LaptopDetailCard = () => {
                 </div>
 
                 <div className="space-y-3">
-                  {displayedStores.map((store, index) => (
-                    <div
-                      key={store.id || index}
-                      className="bg-white border border-gray-200 rounded-xl p-4 hover:border-blue-300 transition-all duration-200"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4 flex-1">
-                          <div className="w-14 h-14 bg-white border border-gray-200 rounded-lg flex items-center justify-center p-2">
-                            <img
-                              src={getStoreLogo(store.store_name)}
-                              alt={store.store_name}
-                              className="w-full h-full object-contain"
-                              onError={(e) => {
-                                e.target.src = getLogo("");
-                              }}
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="font-bold text-gray-900 text-md">
-                              {store.store_name}
-                            </h4>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {store.variantSpec}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-6">
-                          <div className="text-right">
-                            <div className="text-lg font-bold text-green-600">
-                              ₹ {formatPrice(store.price)}
+                  {displayedStores.map((store, index) => {
+                    const hasStoreUrl = Boolean(store?.url);
+                    return (
+                      <div
+                        key={store.id || index}
+                        className="bg-white border border-slate-200 rounded-xl p-3 hover:border-violet-300 transition-colors duration-200"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div className="w-11 h-11 bg-white border border-slate-200 rounded-lg flex items-center justify-center p-2 shrink-0">
+                              <img
+                                src={getStoreLogo(store.store_name)}
+                                alt={store.store_name}
+                                className="w-full h-full object-contain"
+                                onError={(e) => {
+                                  e.target.src = getLogo("");
+                                }}
+                              />
                             </div>
-                            {store.delivery_time && (
-                              <div className="text-xs text-gray-500">
-                                Delivery: {store.delivery_time}
-                              </div>
-                            )}
+                            <div className="min-w-0 flex-1">
+                              <h4 className="font-semibold text-gray-900 text-sm capitalize truncate">
+                                {store.store_name}
+                              </h4>
+                              {store.variantSpec ? (
+                                <p className="text-[11px] text-gray-500 mt-0.5 truncate">
+                                  {store.variantSpec}
+                                </p>
+                              ) : null}
+                            </div>
                           </div>
-                          <a
-                            href={store.url}
-                            target="_blank"
-                            rel="noopener noreferrer nofollow"
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-semibold text-sm flex items-center gap-2 transition-all duration-200"
-                          >
-                            <FaExternalLinkAlt className="text-xs" />
-                            Buy Now
-                          </a>
+                          <div className="flex items-center justify-between sm:justify-end gap-3">
+                            <div className="text-right">
+                              <div className="text-base font-semibold text-green-600">
+                                {RUPEE_SYMBOL} {formatPrice(store.price)}
+                              </div>
+                              {store.delivery_time ? (
+                                <div className="text-[11px] text-gray-500">
+                                  Delivery: {store.delivery_time}
+                                </div>
+                              ) : null}
+                            </div>
+                            <a
+                              href={hasStoreUrl ? store.url : undefined}
+                              target="_blank"
+                              rel="noopener noreferrer nofollow"
+                              onClick={(e) => {
+                                if (!hasStoreUrl) e.preventDefault();
+                              }}
+                              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg font-semibold text-xs transition-all duration-200 ${
+                                hasStoreUrl
+                                  ? "bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white"
+                                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                              }`}
+                            >
+                              <FaExternalLinkAlt className="text-[10px]" />
+                              {hasStoreUrl ? "Visit Store" : "Unavailable"}
+                            </a>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
 
             {/* Desktop Quick Specs */}
-            <div className="hidden lg:grid grid-cols-5 gap-4 mb-6">
+            <div className="hidden lg:grid grid-cols-2 gap-2.5 mb-6">
               {laptopData.specifications &&
                 [
                   {
@@ -2118,7 +2238,7 @@ const LaptopDetailCard = () => {
                     key: "ram",
                     label: "RAM",
                     icon: FaMemory,
-                    format: (v) => v,
+                    format: (v) => getCompactRamLabel(v),
                   },
                   {
                     key: "storage",
@@ -2130,7 +2250,7 @@ const LaptopDetailCard = () => {
                     key: "screen_size",
                     label: "Display",
                     icon: FaExpand,
-                    format: (v) => v,
+                    format: (v) => getCompactDisplayLabel(v),
                   },
                   {
                     key: "battery_capacity",
@@ -2142,19 +2262,26 @@ const LaptopDetailCard = () => {
                   const value = laptopData.specifications[item.key];
                   if (!value) return null;
                   const displayValue = item.format ? item.format(value) : value;
+                  const valueClass = "text-sm";
                   return (
                     <div
                       key={item.key}
-                      className={`text-center p-4 rounded-xl ${currentColor.light} border ${currentColor.border}`}
+                      className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 flex items-center gap-2.5"
                     >
-                      <item.icon
-                        className={`${currentColor.text} text-xl mx-auto mb-2`}
-                      />
-                      <div className={`font-bold text-lg ${currentColor.text}`}>
-                        {displayValue}
-                      </div>
-                      <div className="text-sm text-gray-600 mt-1">
-                        {item.label}
+                      <span
+                        className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${currentColor.light}`}
+                      >
+                        <item.icon className={`${currentColor.text} text-sm`} />
+                      </span>
+                      <div className="min-w-0">
+                        <div className="text-[10px] font-medium uppercase tracking-wide text-slate-500">
+                          {item.label}
+                        </div>
+                        <div
+                          className={`font-semibold text-slate-900 ${valueClass} whitespace-nowrap`}
+                        >
+                          {displayValue}
+                        </div>
                       </div>
                     </div>
                   );
@@ -2164,15 +2291,19 @@ const LaptopDetailCard = () => {
             {/* OS Badge */}
             {laptopData.specifications?.operating_system && (
               <div
-                className={`hidden lg:flex items-center gap-2 mb-6 px-4 py-3 rounded-lg ${currentColor.light} border ${currentColor.border}`}
+                className="hidden lg:flex items-center gap-3 mb-6 px-4 py-3 rounded-xl bg-white border border-slate-200"
               >
-                <OSIcon className={`${currentColor.text} text-xl`} />
+                <span
+                  className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${currentColor.light}`}
+                >
+                  <OSIcon className={`${currentColor.text} text-sm`} />
+                </span>
                 <div>
-                  <div className="text-sm font-semibold text-gray-900">
-                    {laptopData.specifications.operating_system}
+                  <div className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+                    Operating System
                   </div>
-                  <div className="text-xs text-gray-600">
-                    Pre-installed Operating System
+                  <div className="text-sm font-semibold text-slate-900 mt-0.5">
+                    {laptopData.specifications.operating_system}
                   </div>
                 </div>
               </div>
