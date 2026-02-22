@@ -13,6 +13,11 @@ const Renderer = vitePrerender.PuppeteerRenderer;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const SITE_ORIGIN = "https://tryhook.shop";
+const CURRENT_YEAR = new Date().getFullYear();
+const BUDGET_PHONE_KEYWORDS =
+  "budget phones under 10000, budget phones under 15000, budget phones under 20000, budget phones under 30000, budget phones under 50000";
+const DEFAULT_SEO_KEYWORDS =
+  `hook, best gadget comparison site, mobile price comparison india, moblie price comparison india, compare laptops smartphones tvs, compare smartphone tv laptops, compare specs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch phones, trending phone in india, most popular mobiles, top selling gadgets india, 5g phones in india, ai phones in india, ${BUDGET_PHONE_KEYWORDS}, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, gaming laptops india, student laptops india, laptop comparison india, vacuum cooler laptop and phone, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000, smart tv comparison india`;
 const STATIC_PRERENDER_ROUTES = [
   "/",
   "/smartphones",
@@ -117,72 +122,94 @@ const resolveSeo = (routePath) => {
       title: "Hook | Compare Smartphones, Laptops, TVs & Networking Devices",
       description:
         "Explore and compare smartphones, laptops, TVs, and networking devices with clear specs, pricing, and trend insights.",
+      keywords:
+        `hook, best gadget comparison site, mobile price comparison india, compare laptops smartphones tvs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, latest laptops in india ${CURRENT_YEAR}, latest smart tvs in india ${CURRENT_YEAR}, new launch and trending gadgets, top selling gadgets india, compare specs`,
     },
     {
       test: (p) => p.startsWith("/smartphones"),
       title: "Smartphones - Compare Prices, Specs & Variants | Hook",
       description:
         "Compare smartphones by price, RAM/ROM variants, camera, battery, and performance. Find trending and latest mobile launches on Hook.",
+      keywords:
+        `smartphones, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch mobiles, trending phone in india, most popular mobiles, mobile price comparison india, moblie price comparison india, compare smartphone specs, compare smartphone prices, 5g phones in india, ai phone, ai budget phone, ${BUDGET_PHONE_KEYWORDS}`,
     },
     {
       test: (p) => p.startsWith("/laptops"),
       title: "Laptops - Compare Models, Prices & Specifications | Hook",
       description:
         "Discover and compare laptops by processor, RAM, storage, display, and price. View current deals and top laptop picks on Hook.",
+      keywords:
+        `laptops, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, compare laptops india, laptop comparison site, laptop compare specs, gaming laptops india, student laptops india, productivity laptops, vacuum cooler laptop and phone`,
     },
     {
       test: (p) => p.startsWith("/tvs"),
       title: "TVs - Compare Screen Sizes, Specs & Prices | Hook",
       description:
         "Compare TVs across 43, 55, 65, and larger screen sizes with full specifications, variant pricing, and store availability on Hook.",
+      keywords:
+        `tvs, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, smart tv comparison india, compare tv prices india, compare tv specs, 43 inch tv, 55 inch tv, 65 inch tv, 75 inch tv, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000`,
     },
     {
       test: (p) => p.startsWith("/networking"),
       title: "Networking Devices - Compare Routers & More | Hook",
       description:
         "Compare routers and networking products with speed, band, and connectivity specs to choose the right setup for your needs.",
+      keywords:
+        "networking devices, routers, wifi routers, dual band router, compare routers, modem router specs",
     },
     {
       test: (p) => p.startsWith("/compare"),
       title: "Device Comparison - Side by Side Specs & Prices | Hook",
       description:
         "Compare devices side by side with full specs, pricing, and feature differences to make faster buying decisions.",
+      keywords:
+        "device comparison, compare smartphones laptops tvs, compare smartphone tv laptops, compare spec online, compare prices india, side by side comparison, best gadget comparison site",
     },
     {
       test: (p) => p.startsWith("/trending"),
       title: "Trending Devices - Smartphones, Laptops & TVs | Hook",
       description:
         "Track trending smartphones, laptops, and TVs based on momentum and user interest to spot what is hot right now.",
+      keywords:
+        `trending smartphones india, trending laptops india, trending tvs india, trending phone in india, most popular mobiles, top selling gadgets india, new launch and trending devices, latest smartphones in india ${CURRENT_YEAR}`,
     },
     {
       test: (p) => p.startsWith("/careers"),
       title: "Careers at Hook | Apply for Open Roles",
       description:
         "Apply for frontend, backend, content developer, and fullstack opportunities at Hook through a simple step-by-step application form.",
+      keywords:
+        "careers at hook, frontend jobs, backend jobs, fullstack jobs, content developer jobs, tech careers",
     },
     {
       test: (p) => p.startsWith("/about"),
       title: "About Hook | Product Discovery & Comparison Platform",
       description:
         "Learn about Hook, our mission, and how we help users compare technology products with structured and transparent information.",
+      keywords:
+        "about hook, product comparison platform, technology discovery, gadget research platform",
     },
     {
       test: (p) => p.startsWith("/contact"),
       title: "Contact Hook | Support, Partnerships & Press",
       description:
         "Contact Hook for product support, partnerships, and press queries. Reach the team through verified contact channels.",
+      keywords:
+        "contact hook, support hook, partnerships, press inquiries, hook contact details",
     },
     {
       test: (p) => p.startsWith("/privacy-policy"),
       title: "Privacy Policy | Hook",
       description:
         "Read Hook privacy policy to understand what data we collect, why we collect it, and how you can control your information.",
+      keywords: "privacy policy, data privacy, hook policy, personal data rights",
     },
     {
       test: (p) => p.startsWith("/terms"),
       title: "Terms of Use | Hook",
       description:
         "Read Hook terms of use covering platform usage, content accuracy, and service limitations.",
+      keywords: "terms of use, hook terms, website terms, usage policy",
     },
   ];
 
@@ -193,6 +220,7 @@ const resolveSeo = (routePath) => {
     description:
       matched?.description ||
       "Compare smartphones, laptops, TVs, and networking devices with specs, variants, pricing insights, and trend signals on Hook.",
+    keywords: matched?.keywords || DEFAULT_SEO_KEYWORDS,
   };
 };
 
@@ -216,6 +244,11 @@ const applySeoToHtml = (html, routePath) => {
     next,
     /<meta\s+name=["']description["'][^>]*>/i,
     `<meta name="description" content="${escapeHtml(seo.description)}">`,
+  );
+  next = replaceMetaTag(
+    next,
+    /<meta\s+name=["']keywords["'][^>]*>/i,
+    `<meta name="keywords" content="${escapeHtml(seo.keywords)}">`,
   );
   next = replaceMetaTag(
     next,
