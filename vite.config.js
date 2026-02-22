@@ -111,6 +111,12 @@ const toCanonicalPath = (rawPath) => {
   if (pathName === "/products" || pathName === "/products/mobiles") return "/smartphones";
   if (pathName === "/devices") return "/smartphones";
   if (pathName === "/mobiles") return "/smartphones";
+  if (pathName.startsWith("/products/mobiles")) {
+    return pathName.replace("/products/mobiles", "/smartphones");
+  }
+  if (pathName.startsWith("/devices/mobiles")) {
+    return pathName.replace("/devices/mobiles", "/smartphones");
+  }
   if (pathName.startsWith("/products/smartphones")) {
     return pathName.replace("/products/smartphones", "/smartphones");
   }
@@ -260,7 +266,37 @@ const fetchDetailRoutesFromApi = async () => {
     }
   }
 
-  return [...new Set(routes)];
+  const aliasRoutes = routes.flatMap((routePath) => {
+    if (routePath.startsWith("/smartphones/")) {
+      const slug = routePath.slice("/smartphones/".length);
+      return [
+        `/products/smartphones/${slug}`,
+        `/products/mobiles/${slug}`,
+        `/devices/smartphones/${slug}`,
+        `/devices/mobiles/${slug}`,
+      ];
+    }
+
+    if (routePath.startsWith("/laptops/")) {
+      const slug = routePath.slice("/laptops/".length);
+      return [`/products/laptops/${slug}`, `/devices/laptops/${slug}`];
+    }
+
+    if (routePath.startsWith("/tvs/")) {
+      const slug = routePath.slice("/tvs/".length);
+      return [
+        `/appliances/${slug}`,
+        `/products/tvs/${slug}`,
+        `/products/appliances/${slug}`,
+        `/devices/tvs/${slug}`,
+        `/devices/appliances/${slug}`,
+      ];
+    }
+
+    return [];
+  });
+
+  return [...new Set([...routes, ...aliasRoutes])];
 };
 
 const getPrerenderRoutes = async () => {

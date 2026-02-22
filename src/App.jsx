@@ -63,6 +63,12 @@ const toCanonicalPath = (path) => {
   if (path === "/devices") return "/smartphones";
 
   if (path === "/mobiles") return "/smartphones";
+  if (path.startsWith("/products/mobiles")) {
+    return path.replace("/products/mobiles", "/smartphones");
+  }
+  if (path.startsWith("/devices/mobiles")) {
+    return path.replace("/devices/mobiles", "/smartphones");
+  }
   if (path.startsWith("/products/smartphones")) {
     return path.replace("/products/smartphones", "/smartphones");
   }
@@ -336,6 +342,12 @@ function App() {
     return <Navigate to={`/tvs/${slug}${location.search || ""}`} replace />;
   };
 
+  const ProductDetailRedirect = ({ toBasePath }) => {
+    const { slug } = useParams();
+    const location = useLocation();
+    return <Navigate to={`${toBasePath}/${slug}${location.search || ""}`} replace />;
+  };
+
   return (
     <Router>
       <RouteSeoFallback />
@@ -391,6 +403,48 @@ function App() {
           <Route path="/tvs/:slug" element={<TVDetailCard />} />
           <Route path="/appliances/:slug" element={<AppliancesDetailRedirect />} />
           <Route path="/networking/:slug" element={<NetworkingDetailCard />} />
+
+          {/* Detail alias redirects to canonical SEO routes */}
+          <Route
+            path="/products/smartphones/:slug"
+            element={<ProductDetailRedirect toBasePath="/smartphones" />}
+          />
+          <Route
+            path="/products/mobiles/:slug"
+            element={<ProductDetailRedirect toBasePath="/smartphones" />}
+          />
+          <Route
+            path="/devices/smartphones/:slug"
+            element={<ProductDetailRedirect toBasePath="/smartphones" />}
+          />
+          <Route
+            path="/devices/mobiles/:slug"
+            element={<ProductDetailRedirect toBasePath="/smartphones" />}
+          />
+          <Route
+            path="/products/laptops/:slug"
+            element={<ProductDetailRedirect toBasePath="/laptops" />}
+          />
+          <Route
+            path="/devices/laptops/:slug"
+            element={<ProductDetailRedirect toBasePath="/laptops" />}
+          />
+          <Route
+            path="/products/tvs/:slug"
+            element={<ProductDetailRedirect toBasePath="/tvs" />}
+          />
+          <Route
+            path="/products/appliances/:slug"
+            element={<ProductDetailRedirect toBasePath="/tvs" />}
+          />
+          <Route
+            path="/devices/tvs/:slug"
+            element={<ProductDetailRedirect toBasePath="/tvs" />}
+          />
+          <Route
+            path="/devices/appliances/:slug"
+            element={<ProductDetailRedirect toBasePath="/tvs" />}
+          />
 
           {/* Comparison */}
           <Route path="/compare" element={<DeviceComparison />} />
