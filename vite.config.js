@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
@@ -12,8 +13,7 @@ const Renderer = vitePrerender.PuppeteerRenderer;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const SITE_ORIGIN = "https://tryhook.shop";
-
-const prerenderRoutes = [
+const STATIC_PRERENDER_ROUTES = [
   "/",
   "/smartphones",
   "/laptops",
@@ -79,6 +79,35 @@ const toCanonicalPath = (rawPath) => {
   }
   return pathName;
 };
+
+const routesFromSitemap = () => {
+  try {
+    const sitemapPath = path.join(__dirname, "public", "sitemap.xml");
+    const xml = fs.readFileSync(sitemapPath, "utf8");
+    const locMatches = [...xml.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/gi)];
+    const parsed = locMatches
+      .map((m) => m?.[1]?.trim())
+      .filter(Boolean)
+      .map((loc) => {
+        if (loc.startsWith("/")) return normalizePath(loc);
+        try {
+          const parsedUrl = new URL(loc);
+          return normalizePath(parsedUrl.pathname || "/");
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean)
+      .map((routePath) => toCanonicalPath(routePath));
+
+    return parsed;
+  } catch (err) {
+    console.warn("[prerender] Failed to read sitemap routes, using static route list only.");
+    return [];
+  }
+};
+
+const prerenderRoutes = [...new Set(["/", ...STATIC_PRERENDER_ROUTES, ...routesFromSitemap()])];
 
 const resolveSeo = (routePath) => {
   const canonicalPath = toCanonicalPath(routePath);
