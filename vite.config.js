@@ -335,7 +335,7 @@ const resolveSeo = (routePath) => {
   const rules = [
     {
       test: (p) => p === "/",
-      title: "Hook | Compare Smartphones, Laptops, TVs & Networking Devices",
+      title: "Compare Smartphones, Laptops, TVs & More in India | Hook",
       description:
         "Explore and compare smartphones, laptops, TVs, and networking devices with clear specs, pricing, and trend insights.",
       keywords:
