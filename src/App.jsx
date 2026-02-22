@@ -104,9 +104,40 @@ const toCanonicalPath = (path) => {
   return path;
 };
 
+const toReadableTitleFromSlug = (slug = "") => {
+  const raw = (() => {
+    try {
+      return decodeURIComponent(String(slug || ""));
+    } catch {
+      return String(slug || "");
+    }
+  })()
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!raw) return "";
+  return raw
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
+const extractDetailSlugName = (path, prefix) => {
+  if (!path.startsWith(prefix)) return "";
+  const tail = path.slice(prefix.length);
+  if (!tail || tail.includes("/")) return "";
+  return toReadableTitleFromSlug(tail);
+};
+
 const resolveSeoMeta = (pathname) => {
   const path = normalizeSeoPath(pathname);
   const canonicalPath = toCanonicalPath(path);
+  const smartphoneDetailName = extractDetailSlugName(
+    canonicalPath,
+    "/smartphones/",
+  );
+  const laptopDetailName = extractDetailSlugName(canonicalPath, "/laptops/");
+  const tvDetailName = extractDetailSlugName(canonicalPath, "/tvs/");
 
   const rules = [
     {
@@ -116,6 +147,24 @@ const resolveSeoMeta = (pathname) => {
         "Explore and compare smartphones, laptops, TVs, and networking devices with clear specs, pricing, and trend insights.",
       keywords:
         `hook, best gadget comparison site, mobile price comparison india, compare laptops smartphones tvs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, latest laptops in india ${CURRENT_YEAR}, latest smart tvs in india ${CURRENT_YEAR}, new launch and trending gadgets, top selling gadgets india, compare specs`,
+    },
+    {
+      test: () => Boolean(smartphoneDetailName),
+      title: `${smartphoneDetailName} Price, Specs & Comparison in India (${CURRENT_YEAR}) | Hook`,
+      description: `Compare ${smartphoneDetailName} price in India, full specifications, variants, launch details, and latest offers on Hook.`,
+      keywords: `${smartphoneDetailName.toLowerCase()}, ${smartphoneDetailName.toLowerCase()} price in india, ${smartphoneDetailName.toLowerCase()} specifications, ${smartphoneDetailName.toLowerCase()} launch date, compare smartphones, mobile price comparison india`,
+    },
+    {
+      test: () => Boolean(laptopDetailName),
+      title: `${laptopDetailName} Price, Specs & Comparison in India (${CURRENT_YEAR}) | Hook`,
+      description: `Compare ${laptopDetailName} laptop price in India, full specifications, variants, and best store offers on Hook.`,
+      keywords: `${laptopDetailName.toLowerCase()}, ${laptopDetailName.toLowerCase()} price in india, ${laptopDetailName.toLowerCase()} specs, compare laptops india, laptop prices list ${CURRENT_YEAR}`,
+    },
+    {
+      test: () => Boolean(tvDetailName),
+      title: `${tvDetailName} Price, Specs & TV Comparison in India (${CURRENT_YEAR}) | Hook`,
+      description: `Compare ${tvDetailName} TV price in India, size variants, display specs, smart features, and store offers on Hook.`,
+      keywords: `${tvDetailName.toLowerCase()}, ${tvDetailName.toLowerCase()} tv price in india, ${tvDetailName.toLowerCase()} specifications, smart tv comparison india, tv prices list ${CURRENT_YEAR}`,
     },
     {
       test: (p) => p.startsWith("/smartphones") || p === "/mobiles",

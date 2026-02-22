@@ -13,6 +13,8 @@ const Renderer = vitePrerender.PuppeteerRenderer;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const SITE_ORIGIN = "https://tryhook.shop";
+const API_BASE_URL = "https://api.apisphere.in/api";
+const MAX_DETAIL_ROUTES_PER_CATEGORY = 200;
 const CURRENT_YEAR = new Date().getFullYear();
 const BUDGET_PHONE_KEYWORDS =
   "budget phones under 10000, budget phones under 15000, budget phones under 20000, budget phones under 30000, budget phones under 50000";
@@ -63,6 +65,41 @@ const normalizePath = (routePath = "/") => {
   }
   return routePath;
 };
+
+const toReadableTitleFromSlug = (slug = "") => {
+  const normalized = (() => {
+    try {
+      return decodeURIComponent(String(slug || ""));
+    } catch {
+      return String(slug || "");
+    }
+  })()
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!normalized) return "";
+  return normalized
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
+const extractDetailSlugName = (path, prefix) => {
+  if (!path.startsWith(prefix)) return "";
+  const tail = path.slice(prefix.length);
+  if (!tail || tail.includes("/")) return "";
+  return toReadableTitleFromSlug(tail);
+};
+
+const toSlug = (value = "") =>
+  String(value || "")
+    .toLowerCase()
+    .trim()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 
 const toCanonicalPath = (rawPath) => {
   const pathName = normalizePath(rawPath);
@@ -138,10 +175,108 @@ const routesFromSitemap = () => {
   }
 };
 
-const prerenderRoutes = [...new Set(["/", ...STATIC_PRERENDER_ROUTES, ...routesFromSitemap()])];
+const parseApiRows = (body, preferredKeys = []) => {
+  if (Array.isArray(body)) return body;
+  for (const key of preferredKeys) {
+    if (Array.isArray(body?.[key])) return body[key];
+    if (Array.isArray(body?.data?.[key])) return body.data[key];
+  }
+  if (Array.isArray(body?.data)) return body.data;
+  if (Array.isArray(body?.results)) return body.results;
+  if (Array.isArray(body?.items)) return body.items;
+  if (Array.isArray(body?.payload)) return body.payload;
+  if (Array.isArray(body?.rows)) return body.rows;
+  if (Array.isArray(body?.data?.rows)) return body.data.rows;
+  return [];
+};
+
+const fetchApiRows = async (endpoint, preferredKeys = []) => {
+  if (typeof fetch !== "function") return [];
+  try {
+    const response = await fetch(endpoint);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const body = await response.json();
+    return parseApiRows(body, preferredKeys);
+  } catch (error) {
+    console.warn(
+      `[prerender] Failed to fetch detail routes from ${endpoint}: ${error?.message || error}`,
+    );
+    return [];
+  }
+};
+
+const fetchDetailRoutesFromApi = async () => {
+  const sources = [
+    {
+      endpoint: `${API_BASE_URL}/smartphones`,
+      preferredKeys: ["smartphones"],
+      basePath: "/smartphones",
+      getName: (item) => item?.name || item?.model || item?.product_name,
+    },
+    {
+      endpoint: `${API_BASE_URL}/laptops`,
+      preferredKeys: ["laptops"],
+      basePath: "/laptops",
+      getName: (item) =>
+        item?.product_name ||
+        item?.name ||
+        item?.model_number ||
+        item?.model ||
+        item?.basic_info?.product_name ||
+        item?.basic_info?.title ||
+        item?.basic_info?.model_number ||
+        item?.basic_info?.model,
+    },
+    {
+      endpoint: `${API_BASE_URL}/tvs`,
+      preferredKeys: ["tvs"],
+      basePath: "/tvs",
+      getName: (item) =>
+        item?.product_name ||
+        item?.name ||
+        item?.model_number ||
+        item?.model ||
+        item?.basic_info?.product_name ||
+        item?.basic_info?.title ||
+        item?.basic_info?.model_number ||
+        item?.basic_info?.model,
+    },
+  ];
+
+  const routes = [];
+
+  for (const source of sources) {
+    const rows = await fetchApiRows(source.endpoint, source.preferredKeys);
+    let addedCount = 0;
+
+    for (const row of rows) {
+      const slug = toSlug(source.getName(row));
+      if (!slug) continue;
+      routes.push(`${source.basePath}/${slug}`);
+      addedCount += 1;
+      if (addedCount >= MAX_DETAIL_ROUTES_PER_CATEGORY) break;
+    }
+  }
+
+  return [...new Set(routes)];
+};
+
+const getPrerenderRoutes = async () => {
+  const sitemapRoutes = routesFromSitemap();
+  const detailRoutes = await fetchDetailRoutesFromApi();
+  return [...new Set(["/", ...STATIC_PRERENDER_ROUTES, ...sitemapRoutes, ...detailRoutes])];
+};
 
 const resolveSeo = (routePath) => {
   const canonicalPath = toCanonicalPath(routePath);
+  const smartphoneDetailName = extractDetailSlugName(
+    canonicalPath,
+    "/smartphones/",
+  );
+  const laptopDetailName = extractDetailSlugName(canonicalPath, "/laptops/");
+  const tvDetailName = extractDetailSlugName(canonicalPath, "/tvs/");
   const rules = [
     {
       test: (p) => p === "/",
@@ -150,6 +285,24 @@ const resolveSeo = (routePath) => {
         "Explore and compare smartphones, laptops, TVs, and networking devices with clear specs, pricing, and trend insights.",
       keywords:
         `hook, best gadget comparison site, mobile price comparison india, compare laptops smartphones tvs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, latest laptops in india ${CURRENT_YEAR}, latest smart tvs in india ${CURRENT_YEAR}, new launch and trending gadgets, top selling gadgets india, compare specs`,
+    },
+    {
+      test: () => Boolean(smartphoneDetailName),
+      title: `${smartphoneDetailName} Price, Specs & Comparison in India (${CURRENT_YEAR}) | Hook`,
+      description: `Compare ${smartphoneDetailName} price in India, full specifications, variants, launch details, and latest offers on Hook.`,
+      keywords: `${smartphoneDetailName.toLowerCase()}, ${smartphoneDetailName.toLowerCase()} price in india, ${smartphoneDetailName.toLowerCase()} specifications, ${smartphoneDetailName.toLowerCase()} launch date, compare smartphones, mobile price comparison india`,
+    },
+    {
+      test: () => Boolean(laptopDetailName),
+      title: `${laptopDetailName} Price, Specs & Comparison in India (${CURRENT_YEAR}) | Hook`,
+      description: `Compare ${laptopDetailName} laptop price in India, full specifications, variants, and best store offers on Hook.`,
+      keywords: `${laptopDetailName.toLowerCase()}, ${laptopDetailName.toLowerCase()} price in india, ${laptopDetailName.toLowerCase()} specs, compare laptops india, laptop prices list ${CURRENT_YEAR}`,
+    },
+    {
+      test: () => Boolean(tvDetailName),
+      title: `${tvDetailName} Price, Specs & TV Comparison in India (${CURRENT_YEAR}) | Hook`,
+      description: `Compare ${tvDetailName} TV price in India, size variants, display specs, smart features, and store offers on Hook.`,
+      keywords: `${tvDetailName.toLowerCase()}, ${tvDetailName.toLowerCase()} tv price in india, ${tvDetailName.toLowerCase()} specifications, smart tv comparison india, tv prices list ${CURRENT_YEAR}`,
     },
     {
       test: (p) => p.startsWith("/smartphones"),
@@ -327,37 +480,41 @@ const applySeoToHtml = (html, routePath) => {
   return next;
 };
 
-export default defineConfig({
-  plugins: [
-    react(),
-    tailwindcss(),
-    vitePrerender({
-      staticDir: path.join(__dirname, "dist"),
-      routes: prerenderRoutes,
-      renderer: new Renderer({
-        renderAfterTime: 1500,
-        maxConcurrentRoutes: 4,
-        consoleHandler(route, message) {
-          const type = message?.type?.() || "log";
-          const text = message?.text?.() || "";
-          if (type === "error" || text.includes("Error")) {
-            console.log(`[prerender:${route}] ${type}: ${text}`);
-          }
+export default defineConfig(async () => {
+  const prerenderRoutes = await getPrerenderRoutes();
+
+  return {
+    plugins: [
+      react(),
+      tailwindcss(),
+      vitePrerender({
+        staticDir: path.join(__dirname, "dist"),
+        routes: prerenderRoutes,
+        renderer: new Renderer({
+          renderAfterTime: 1500,
+          maxConcurrentRoutes: 4,
+          consoleHandler(route, message) {
+            const type = message?.type?.() || "log";
+            const text = message?.text?.() || "";
+            if (type === "error" || text.includes("Error")) {
+              console.log(`[prerender:${route}] ${type}: ${text}`);
+            }
+          },
+        }),
+        postProcess(renderedRoute) {
+          renderedRoute.route = renderedRoute.originalRoute || renderedRoute.route;
+          renderedRoute.html = applySeoToHtml(
+            renderedRoute.html || "",
+            renderedRoute.route || "/",
+          );
+          return renderedRoute;
         },
       }),
-      postProcess(renderedRoute) {
-        renderedRoute.route = renderedRoute.originalRoute || renderedRoute.route;
-        renderedRoute.html = applySeoToHtml(
-          renderedRoute.html || "",
-          renderedRoute.route || "/",
-        );
-        return renderedRoute;
-      },
-    }),
-  ],
-  server: {
-    port: 3000,
-    host: true,
-  },
-  base: "/",
+    ],
+    server: {
+      port: 3000,
+      host: true,
+    },
+    base: "/",
+  };
 });

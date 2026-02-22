@@ -971,7 +971,7 @@ Price: ${price}
       const slug = generateSlug(mobileData?.name || mobileData?.model || "");
       if (!slug) return window.location.href;
       const path = `/smartphones/${slug}`;
-      return window.location.origin + path + (location.search || "");
+      return window.location.origin + path;
     } catch (e) {
       return window.location.href;
     }
@@ -2064,8 +2064,7 @@ Price: ${price}
     return url.startsWith("/") ? `${origin}${url}` : `${origin}/${url}`;
   };
 
-  const canonicalUrl =
-    typeof window !== "undefined" ? window.location.href : "";
+  const canonicalUrl = getCanonicalUrl();
   const primaryImage = Array.isArray(mobileData?.images)
     ? mobileData.images[0]
     : null;
@@ -2088,6 +2087,7 @@ Price: ${price}
       <Helmet>
         <title>{metaTitleWithDate}</title>
         <meta name="description" content={metaDescription} />
+        {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
         <meta property="og:type" content="product" />
         <meta property="og:title" content={metaTitle} />
         <meta property="og:description" content={metaDescription} />
