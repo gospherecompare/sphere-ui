@@ -99,9 +99,9 @@ const toSlug = (value = "") =>
   String(value || "")
     .toLowerCase()
     .trim()
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "");
 
 const toCanonicalPath = (rawPath) => {
