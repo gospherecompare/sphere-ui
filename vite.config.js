@@ -24,9 +24,11 @@ const STATIC_PRERENDER_ROUTES = [
   "/",
   "/career",
   "/trending",
+  "/laptop",
   "/mobiles",
   "/appliances",
   "/products",
+  "/products/laptop",
   "/products/mobiles",
   "/products/smartphones",
   "/products/laptops",
@@ -34,6 +36,7 @@ const STATIC_PRERENDER_ROUTES = [
   "/products/appliances",
   "/products/networking",
   "/devices",
+  "/devices/laptop",
   "/devices/smartphones",
   "/devices/laptops",
   "/devices/tvs",
@@ -110,6 +113,10 @@ const toCanonicalPath = (rawPath) => {
   if (pathName === "/trending/tv") return "/trending/tvs";
   if (pathName === "/products" || pathName === "/products/mobiles") return "/smartphones";
   if (pathName === "/devices") return "/smartphones";
+  if (pathName === "/laptop") return "/laptops";
+  if (pathName.startsWith("/laptop/")) {
+    return pathName.replace("/laptop/", "/laptops/");
+  }
   if (pathName === "/mobiles") return "/smartphones";
   if (pathName.startsWith("/products/mobiles")) {
     return pathName.replace("/products/mobiles", "/smartphones");
@@ -126,8 +133,14 @@ const toCanonicalPath = (rawPath) => {
   if (pathName.startsWith("/products/laptops")) {
     return pathName.replace("/products/laptops", "/laptops");
   }
+  if (pathName.startsWith("/products/laptop")) {
+    return pathName.replace("/products/laptop", "/laptops");
+  }
   if (pathName.startsWith("/devices/laptops")) {
     return pathName.replace("/devices/laptops", "/laptops");
+  }
+  if (pathName.startsWith("/devices/laptop")) {
+    return pathName.replace("/devices/laptop", "/laptops");
   }
   if (pathName === "/appliances") return "/tvs";
   if (pathName.startsWith("/appliances/")) {
@@ -279,7 +292,13 @@ const fetchDetailRoutesFromApi = async () => {
 
     if (routePath.startsWith("/laptops/")) {
       const slug = routePath.slice("/laptops/".length);
-      return [`/products/laptops/${slug}`, `/devices/laptops/${slug}`];
+      return [
+        `/laptop/${slug}`,
+        `/products/laptop/${slug}`,
+        `/products/laptops/${slug}`,
+        `/devices/laptop/${slug}`,
+        `/devices/laptops/${slug}`,
+      ];
     }
 
     if (routePath.startsWith("/tvs/")) {

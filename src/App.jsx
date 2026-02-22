@@ -61,6 +61,10 @@ const toCanonicalPath = (path) => {
   if (path === "/trending/tv") return "/trending/tvs";
   if (path === "/products" || path === "/products/mobiles") return "/smartphones";
   if (path === "/devices") return "/smartphones";
+  if (path === "/laptop") return "/laptops";
+  if (path.startsWith("/laptop/")) {
+    return path.replace("/laptop/", "/laptops/");
+  }
 
   if (path === "/mobiles") return "/smartphones";
   if (path.startsWith("/products/mobiles")) {
@@ -79,8 +83,14 @@ const toCanonicalPath = (path) => {
   if (path.startsWith("/products/laptops")) {
     return path.replace("/products/laptops", "/laptops");
   }
+  if (path.startsWith("/products/laptop")) {
+    return path.replace("/products/laptop", "/laptops");
+  }
   if (path.startsWith("/devices/laptops")) {
     return path.replace("/devices/laptops", "/laptops");
+  }
+  if (path.startsWith("/devices/laptop")) {
+    return path.replace("/devices/laptop", "/laptops");
   }
 
   if (path === "/appliances") return "/tvs";
@@ -317,6 +327,8 @@ function App() {
         return <Smartphones />;
       case "laptops":
         return <Laptops />;
+      case "laptop":
+        return <Navigate to={`/products/laptops${location.search || ""}`} replace />;
       case "tvs":
       case "tv":
       case "television":
@@ -374,6 +386,7 @@ function App() {
             element={<Smartphones />}
           />
           <Route path="/laptops" element={<Laptops />} />
+          <Route path="/laptop" element={<Navigate to="/laptops" replace />} />
           <Route path="/tvs" element={<TVs />} />
           <Route path="/appliances" element={<AppliancesListRedirect />} />
           <Route path="/networking" element={<Networking />} />
@@ -393,6 +406,7 @@ function App() {
           <Route path="/mobiles" element={<Smartphones />} />
           <Route path="/devices/smartphones" element={<Smartphones />} />
           <Route path="/devices/laptops" element={<Laptops />} />
+          <Route path="/devices/laptop" element={<Navigate to="/laptops" replace />} />
           <Route path="/devices/tvs" element={<TVs />} />
           <Route path="/devices/appliances" element={<AppliancesListRedirect />} />
           <Route path="/devices/networking" element={<Networking />} />
@@ -400,6 +414,10 @@ function App() {
           {/* Product Detail Pages - SEO-friendly slug-based routes */}
           <Route path="/smartphones/:slug" element={<MobileDetailCard />} />
           <Route path="/laptops/:slug" element={<LaptopDetailCard />} />
+          <Route
+            path="/laptop/:slug"
+            element={<ProductDetailRedirect toBasePath="/laptops" />}
+          />
           <Route path="/tvs/:slug" element={<TVDetailCard />} />
           <Route path="/appliances/:slug" element={<AppliancesDetailRedirect />} />
           <Route path="/networking/:slug" element={<NetworkingDetailCard />} />
@@ -426,7 +444,15 @@ function App() {
             element={<ProductDetailRedirect toBasePath="/laptops" />}
           />
           <Route
+            path="/products/laptop/:slug"
+            element={<ProductDetailRedirect toBasePath="/laptops" />}
+          />
+          <Route
             path="/devices/laptops/:slug"
+            element={<ProductDetailRedirect toBasePath="/laptops" />}
+          />
+          <Route
+            path="/devices/laptop/:slug"
             element={<ProductDetailRedirect toBasePath="/laptops" />}
           />
           <Route
