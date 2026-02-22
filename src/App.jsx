@@ -56,6 +56,11 @@ const normalizeSeoPath = (pathname) => {
 const toCanonicalPath = (path) => {
   if (path === "/career") return "/careers";
   if (path === "/trending") return "/trending/smartphones";
+  if (path === "/trending/smartphone") return "/trending/smartphones";
+  if (path === "/trending/laptop") return "/trending/laptops";
+  if (path === "/trending/tv") return "/trending/tvs";
+  if (path === "/products" || path === "/products/mobiles") return "/smartphones";
+  if (path === "/devices") return "/smartphones";
 
   if (path === "/mobiles") return "/smartphones";
   if (path.startsWith("/products/smartphones")) {

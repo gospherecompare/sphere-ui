@@ -20,6 +20,23 @@ const DEFAULT_SEO_KEYWORDS =
   `hook, best gadget comparison site, mobile price comparison india, moblie price comparison india, compare laptops smartphones tvs, compare smartphone tv laptops, compare specs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch phones, trending phone in india, most popular mobiles, top selling gadgets india, 5g phones in india, ai phones in india, ${BUDGET_PHONE_KEYWORDS}, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, gaming laptops india, student laptops india, laptop comparison india, vacuum cooler laptop and phone, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000, smart tv comparison india`;
 const STATIC_PRERENDER_ROUTES = [
   "/",
+  "/career",
+  "/trending",
+  "/mobiles",
+  "/appliances",
+  "/products",
+  "/products/mobiles",
+  "/products/smartphones",
+  "/products/laptops",
+  "/products/tvs",
+  "/products/appliances",
+  "/products/networking",
+  "/devices",
+  "/devices/smartphones",
+  "/devices/laptops",
+  "/devices/tvs",
+  "/devices/appliances",
+  "/devices/networking",
   "/smartphones",
   "/laptops",
   "/tvs",
@@ -33,6 +50,10 @@ const STATIC_PRERENDER_ROUTES = [
   "/contact",
   "/privacy-policy",
   "/terms",
+  "/login",
+  "/signup",
+  "/account",
+  "/wishlist",
 ];
 
 const normalizePath = (routePath = "/") => {
@@ -47,6 +68,11 @@ const toCanonicalPath = (rawPath) => {
   const pathName = normalizePath(rawPath);
   if (pathName === "/career") return "/careers";
   if (pathName === "/trending") return "/trending/smartphones";
+  if (pathName === "/trending/smartphone") return "/trending/smartphones";
+  if (pathName === "/trending/laptop") return "/trending/laptops";
+  if (pathName === "/trending/tv") return "/trending/tvs";
+  if (pathName === "/products" || pathName === "/products/mobiles") return "/smartphones";
+  if (pathName === "/devices") return "/smartphones";
   if (pathName === "/mobiles") return "/smartphones";
   if (pathName.startsWith("/products/smartphones")) {
     return pathName.replace("/products/smartphones", "/smartphones");
@@ -211,6 +237,17 @@ const resolveSeo = (routePath) => {
         "Read Hook terms of use covering platform usage, content accuracy, and service limitations.",
       keywords: "terms of use, hook terms, website terms, usage policy",
     },
+    {
+      test: (p) =>
+        p.startsWith("/account") ||
+        p.startsWith("/wishlist") ||
+        p.startsWith("/login") ||
+        p.startsWith("/signup"),
+      title: "Hook Account",
+      description: "Secure account pages for your Hook profile and saved data.",
+      keywords: "hook account, user account, login, signup, wishlist",
+      robots: "noindex, nofollow",
+    },
   ];
 
   const matched = rules.find((rule) => rule.test(canonicalPath));
@@ -221,6 +258,7 @@ const resolveSeo = (routePath) => {
       matched?.description ||
       "Compare smartphones, laptops, TVs, and networking devices with specs, variants, pricing insights, and trend signals on Hook.",
     keywords: matched?.keywords || DEFAULT_SEO_KEYWORDS,
+    robots: matched?.robots || "index, follow",
   };
 };
 
@@ -240,6 +278,11 @@ const applySeoToHtml = (html, routePath) => {
   let next = html;
 
   next = next.replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeHtml(seo.title)}</title>`);
+  next = replaceMetaTag(
+    next,
+    /<meta\s+name=["']robots["'][^>]*>/i,
+    `<meta name="robots" content="${escapeHtml(seo.robots)}">`,
+  );
   next = replaceMetaTag(
     next,
     /<meta\s+name=["']description["'][^>]*>/i,
