@@ -451,7 +451,7 @@ const Careers = () => {
   return (
     <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-blue-50 via-violet-50 to-indigo-50">
       <Helmet>
-        <title>Careers at Hook | Apply in Easy Steps</title>
+        <title>Careers at Hooks | Apply in Easy Steps</title>
         <meta
           name="description"
           content="Apply for frontend, backend, content developer, and fullstack roles at Hook with a clean step-by-step form."
@@ -462,14 +462,14 @@ const Careers = () => {
       <div className="relative mx-auto max-w-6xl bg-white px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
         <div className="rounded-lg border border-indigo-100 bg-white p-5  backdrop-blur sm:p-8">
           <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
-            Careers at Hook
+            Careers at Hooks
           </h1>
           <p className="mt-2 text-sm text-slate-600 sm:text-base">
             Please answer each question and complete all steps to submit your
             application.
           </p>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-6 flex gap-2 overflow-x-auto pb-1 no-scrollbar sm:grid sm:grid-cols-2 sm:gap-3 sm:overflow-visible sm:pb-0 lg:grid-cols-4">
             {STEPS.map((item, index) => {
               const isActive = step === index;
               const isDone = step > index;
@@ -477,18 +477,18 @@ const Careers = () => {
               return (
                 <div
                   key={item.title}
-                  className={`rounded-2xl border px-4 py-3 ${
+                  className={`min-w-[150px] shrink-0 rounded-xl border px-3 py-2.5 sm:min-w-0 sm:rounded-2xl sm:px-4 sm:py-3 ${
                     isActive
-                      ? "border-violet-300 bg-violet-50"
+                      ? "border-indigo-300 bg-indigo-50"
                       : isDone
-                        ? "border-blue-300 bg-blue-50"
-                        : "border-indigo-100 bg-white"
+                        ? "border-slate-300 bg-slate-50"
+                        : "border-slate-200 bg-white"
                   }`}
                 >
-                  <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 sm:text-xs">
                     {item.title}
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-slate-800">
+                  <p className="mt-1 text-xs font-semibold text-slate-800 sm:text-sm">
                     {item.subtitle}
                   </p>
                 </div>
