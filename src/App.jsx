@@ -16,8 +16,6 @@ import Careers from "./components/Static/Careers";
 import Contact from "./components/Static/Contact";
 import PrivacyPolicy from "./components/Static/PrivacyPolicy";
 import Terms from "./components/Static/Terms";
-import Blogs from "./components/Static/Blogs";
-import BlogDetail from "./components/Static/BlogDetail";
 import NotFound from "./components/Static/NotFound";
 import {
   Route,
@@ -44,8 +42,7 @@ const DEFAULT_SEO_DESCRIPTION =
   "Compare smartphones, laptops, TVs, and networking devices with specs, variants, pricing insights, and trend signals on Hook.";
 const BUDGET_PHONE_KEYWORDS =
   "budget phones under 10000, budget phones under 15000, budget phones under 20000, budget phones under 30000, budget phones under 50000";
-const DEFAULT_SEO_KEYWORDS =
-  `hook, best gadget comparison site, mobile price comparison india, moblie price comparison india, compare laptops smartphones tvs, compare smartphone tv laptops, compare specs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch phones, trending phone in india, most popular mobiles, top selling gadgets india, 5g phones in india, ai phones in india, ${BUDGET_PHONE_KEYWORDS}, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, gaming laptops india, student laptops india, laptop comparison india, vacuum cooler laptop and phone, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000, smart tv comparison india`;
+const DEFAULT_SEO_KEYWORDS = `hook, best gadget comparison site, mobile price comparison india, moblie price comparison india, compare laptops smartphones tvs, compare smartphone tv laptops, compare specs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch phones, trending phone in india, most popular mobiles, top selling gadgets india, 5g phones in india, ai phones in india, ${BUDGET_PHONE_KEYWORDS}, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, gaming laptops india, student laptops india, laptop comparison india, vacuum cooler laptop and phone, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000, smart tv comparison india`;
 
 const normalizeSeoPath = (pathname) => {
   if (!pathname) return "/";
@@ -65,7 +62,8 @@ const toCanonicalPath = (path) => {
   if (path === "/trending/smartphone") return "/trending/smartphones";
   if (path === "/trending/laptop") return "/trending/laptops";
   if (path === "/trending/tv") return "/trending/tvs";
-  if (path === "/products" || path === "/products/mobiles") return "/smartphones";
+  if (path === "/products" || path === "/products/mobiles")
+    return "/smartphones";
   if (path === "/devices") return "/smartphones";
   if (path === "/laptop") return "/laptops";
   if (path.startsWith("/laptop/")) {
@@ -168,8 +166,7 @@ const resolveSeoMeta = (pathname) => {
       title: "Compare Smartphones, Laptops, TVs & More in India | Hook",
       description:
         "Explore and compare smartphones, laptops, TVs, and networking devices with clear specs, pricing, and trend insights.",
-      keywords:
-        `hook, best gadget comparison site, mobile price comparison india, compare laptops smartphones tvs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, latest laptops in india ${CURRENT_YEAR}, latest smart tvs in india ${CURRENT_YEAR}, new launch and trending gadgets, top selling gadgets india, compare specs`,
+      keywords: `hook, best gadget comparison site, mobile price comparison india, compare laptops smartphones tvs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, latest laptops in india ${CURRENT_YEAR}, latest smart tvs in india ${CURRENT_YEAR}, new launch and trending gadgets, top selling gadgets india, compare specs`,
     },
     {
       test: () => Boolean(smartphoneDetailName),
@@ -200,24 +197,21 @@ const resolveSeoMeta = (pathname) => {
       title: "Smartphones - Compare Prices, Specs & Variants | Hook",
       description:
         "Compare smartphones by price, RAM/ROM variants, camera, battery, and performance. Find trending and latest mobile launches on Hook.",
-      keywords:
-        `smartphones, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch mobiles, trending phone in india, most popular mobiles, mobile price comparison india, moblie price comparison india, compare smartphone specs, compare smartphone prices, 5g phones in india, ai phone, ai budget phone, ${BUDGET_PHONE_KEYWORDS}`,
+      keywords: `smartphones, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch mobiles, trending phone in india, most popular mobiles, mobile price comparison india, moblie price comparison india, compare smartphone specs, compare smartphone prices, 5g phones in india, ai phone, ai budget phone, ${BUDGET_PHONE_KEYWORDS}`,
     },
     {
       test: (p) => p.startsWith("/laptops"),
       title: "Laptops - Compare Models, Prices & Specifications | Hook",
       description:
         "Discover and compare laptops by processor, RAM, storage, display, and price. View current deals and top laptop picks on Hook.",
-      keywords:
-        `laptops, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, compare laptops india, laptop comparison site, laptop compare specs, gaming laptops india, student laptops india, productivity laptops, vacuum cooler laptop and phone`,
+      keywords: `laptops, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, compare laptops india, laptop comparison site, laptop compare specs, gaming laptops india, student laptops india, productivity laptops, vacuum cooler laptop and phone`,
     },
     {
       test: (p) => p.startsWith("/tvs") || p.startsWith("/appliances"),
       title: "TVs - Compare Screen Sizes, Specs & Prices | Hook",
       description:
         "Compare TVs across 43, 55, 65, and larger screen sizes with full specifications, variant pricing, and store availability on Hook.",
-      keywords:
-        `tvs, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, smart tv comparison india, compare tv prices india, compare tv specs, 43 inch tv, 55 inch tv, 65 inch tv, 75 inch tv, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000`,
+      keywords: `tvs, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, smart tv comparison india, compare tv prices india, compare tv specs, 43 inch tv, 55 inch tv, 65 inch tv, 75 inch tv, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000`,
     },
     {
       test: (p) => p.startsWith("/networking"),
@@ -240,8 +234,7 @@ const resolveSeoMeta = (pathname) => {
       title: "Trending Devices - Smartphones, Laptops & TVs | Hook",
       description:
         "Track trending smartphones, laptops, and TVs based on momentum and user interest to spot what is hot right now.",
-      keywords:
-        `trending smartphones india, trending laptops india, trending tvs india, trending phone in india, most popular mobiles, top selling gadgets india, new launch and trending devices, latest smartphones in india ${CURRENT_YEAR}`,
+      keywords: `trending smartphones india, trending laptops india, trending tvs india, trending phone in india, most popular mobiles, top selling gadgets india, new launch and trending devices, latest smartphones in india ${CURRENT_YEAR}`,
     },
     {
       test: (p) => p.startsWith("/blogs") || p.startsWith("/blog"),
@@ -280,7 +273,8 @@ const resolveSeoMeta = (pathname) => {
       title: "Privacy Policy | Hook",
       description:
         "Read Hook privacy policy to understand what data we collect, why we collect it, and how you can control your information.",
-      keywords: "privacy policy, data privacy, hook policy, personal data rights",
+      keywords:
+        "privacy policy, data privacy, hook policy, personal data rights",
     },
     {
       test: (p) => p.startsWith("/terms"),
@@ -377,7 +371,9 @@ function App() {
   const ProductDetailRedirect = ({ toBasePath }) => {
     const { slug } = useParams();
     const location = useLocation();
-    return <Navigate to={`${toBasePath}/${slug}${location.search || ""}`} replace />;
+    return (
+      <Navigate to={`${toBasePath}/${slug}${location.search || ""}`} replace />
+    );
   };
 
   return (
@@ -419,16 +415,25 @@ function App() {
           <Route path="/trending/:category" element={<TrendingProductsHub />} />
 
           {/* Support /products/:category SEO paths */}
-          <Route path="/products" element={<Navigate to="/smartphones" replace />} />
+          <Route
+            path="/products"
+            element={<Navigate to="/smartphones" replace />}
+          />
           <Route path="/products/:category" element={<CategoryRouter />} />
 
           {/* Category shortcuts */}
           <Route path="/mobiles" element={<Smartphones />} />
           <Route path="/devices/smartphones" element={<Smartphones />} />
           <Route path="/devices/laptops" element={<Laptops />} />
-          <Route path="/devices/laptop" element={<Navigate to="/laptops" replace />} />
+          <Route
+            path="/devices/laptop"
+            element={<Navigate to="/laptops" replace />}
+          />
           <Route path="/devices/tvs" element={<TVs />} />
-          <Route path="/devices/appliances" element={<AppliancesListRedirect />} />
+          <Route
+            path="/devices/appliances"
+            element={<AppliancesListRedirect />}
+          />
           <Route path="/devices/networking" element={<Networking />} />
 
           {/* Product Detail Pages - SEO-friendly slug-based routes */}
@@ -439,7 +444,10 @@ function App() {
             element={<ProductDetailRedirect toBasePath="/laptops" />}
           />
           <Route path="/tvs/:slug" element={<TVDetailCard />} />
-          <Route path="/appliances/:slug" element={<AppliancesDetailRedirect />} />
+          <Route
+            path="/appliances/:slug"
+            element={<AppliancesDetailRedirect />}
+          />
           <Route path="/networking/:slug" element={<NetworkingDetailCard />} />
 
           {/* Detail alias redirects to canonical SEO routes */}
@@ -496,28 +504,12 @@ function App() {
           <Route path="/compare" element={<DeviceComparison />} />
 
           {/* Placeholder routes for footer links (can be implemented later) */}
-          <Route
-            path="/about"
-            element={<About />}
-          />
+          <Route path="/about" element={<About />} />
           <Route path="/careers" element={<Careers />} />
           <Route path="/career" element={<Navigate to="/careers" replace />} />
-          <Route path="/blog" element={<Navigate to="/blogs" replace />} />
-          <Route path="/blog/:slug" element={<ProductDetailRedirect toBasePath="/blogs" />} />
-          <Route path="/blogs" element={<Blogs />} />
-          <Route path="/blogs/:slug" element={<BlogDetail />} />
-          <Route
-            path="/contact"
-            element={<Contact />}
-          />
-          <Route
-            path="/privacy-policy"
-            element={<PrivacyPolicy />}
-          />
-          <Route
-            path="/terms"
-            element={<Terms />}
-          />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<Terms />} />
 
           {/* 404 Fallback */}
           <Route path="*" element={<NotFound />} />
@@ -529,4 +521,3 @@ function App() {
 }
 
 export default App;
-

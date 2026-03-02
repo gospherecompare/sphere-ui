@@ -3352,12 +3352,41 @@ Price: ${price}
   const frontVideoSummary = Array.isArray(frontVideoRaw)
     ? frontVideoRaw.slice(0, 2).join(", ")
     : frontVideoRaw;
+  const getSectionTone = (score) => {
+    const value = Number(score);
+    if (!Number.isFinite(value)) return "Balanced";
+    if (value >= 95) return "Top-tier";
+    if (value >= 90) return "Strong";
+    if (value >= 80) return "Balanced";
+    return "Basic";
+  };
+  const getSectionDescription = (sectionKey, score) => {
+    const tone = getSectionTone(score);
+    switch (sectionKey) {
+      case "performance":
+        return `${tone} processing setup for app handling, multitasking, and stable daily speed.`;
+      case "display":
+        return `${tone} display quality for media viewing, readability, and smoother interaction.`;
+      case "camera":
+        return `${tone} rear camera setup for daylight details and flexible shooting modes.`;
+      case "camera-front":
+        return `${tone} front camera quality for selfies, social uploads, and video calls.`;
+      case "battery":
+        return `${tone} battery and charging setup for longer screen time and quick top-ups.`;
+      default:
+        return `${tone} section-level hardware profile.`;
+    }
+  };
   const infoKeySections = [
     {
       key: "performance",
       scoreKey: "performance",
       title: "Performance",
       score: getSectionScore("performance"),
+      description: getSectionDescription(
+        "performance",
+        getSectionScore("performance"),
+      ),
       points: [
         mobileData?.performance?.processor || mobileData?.processor,
         mobileData?.performance?.cpu_clock_speed,
@@ -3369,6 +3398,7 @@ Price: ${price}
       scoreKey: "display",
       title: "Display",
       score: getSectionScore("display"),
+      description: getSectionDescription("display", getSectionScore("display")),
       points: [
         [mobileData?.display?.size, mobileData?.display?.panel]
           .filter(Boolean)
@@ -3384,6 +3414,7 @@ Price: ${price}
       scoreKey: "camera",
       title: "Rear Camera",
       score: getSectionScore("camera"),
+      description: getSectionDescription("camera", getSectionScore("camera")),
       points: [
         getMainCameraMp(mobileData) != null
           ? `${getMainCameraMp(mobileData)} MP main camera`
@@ -3402,6 +3433,7 @@ Price: ${price}
       scoreKey: "camera",
       title: "Front Camera",
       score: getSectionScore("camera"),
+      description: getSectionDescription("camera-front", getSectionScore("camera")),
       points: [
         frontCamera?.resolution ? `${frontCamera.resolution} selfie camera` : null,
         frontCamera?.focus || frontCamera?.autofocus || frontCamera?.type,
@@ -3413,6 +3445,7 @@ Price: ${price}
       scoreKey: "battery",
       title: "Battery",
       score: getSectionScore("battery"),
+      description: getSectionDescription("battery", getSectionScore("battery")),
       points: [
         getBatteryCapacityMah(mobileData) != null
           ? `${getBatteryCapacityMah(mobileData)} mAh`
@@ -3975,9 +4008,16 @@ Price: ${price}
                     return (
                       <div key={section.key} className="py-2">
                         <div className="flex items-center justify-between gap-2">
-                          <h4 className="text-sm font-semibold text-gray-900">
-                            {section.title}
-                          </h4>
+                          <div className="min-w-0">
+                            <h4 className="text-sm font-semibold text-gray-900">
+                              {section.title}
+                            </h4>
+                            {hasContent(section.description) ? (
+                              <p className="mt-0.5 text-xs text-slate-500">
+                                {section.description}
+                              </p>
+                            ) : null}
+                          </div>
                           <div className="flex items-center gap-1.5">
                             <SpecScoreBadge score={section.score} size={32} />
                             <button
