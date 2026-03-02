@@ -11,6 +11,9 @@ import {
   FaTv,
 } from "react-icons/fa";
 
+const BRAND_PLACEHOLDER_LOGO =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Crect width='80' height='80' rx='12' fill='%23f3f4f6'/%3E%3Ctext x='40' y='46' font-family='Arial' font-size='10' text-anchor='middle' fill='%239ca3af'%3ELogo%3C/text%3E%3C/svg%3E";
+
 const PopularBrands = () => {
   const [activeBrand, setActiveBrand] = useState("all");
   const navigate = useNavigate();
@@ -306,10 +309,7 @@ const PopularBrands = () => {
                   >
                     <div className="w-full h-full flex items-center justify-center">
                       <img
-                        src={
-                          brand.logo ||
-                          "https://via.placeholder.com/80?text=Logo"
-                        }
+                        src={brand.logo || BRAND_PLACEHOLDER_LOGO}
                         alt={brand.name || "brand"}
                         loading="lazy"
                         decoding="async"
@@ -318,8 +318,7 @@ const PopularBrands = () => {
                         }`}
                         onError={(e) => {
                           e.currentTarget.onerror = null;
-                          e.currentTarget.src =
-                            "https://via.placeholder.com/80?text=No+Logo";
+                          e.currentTarget.src = BRAND_PLACEHOLDER_LOGO;
                         }}
                       />
                     </div>

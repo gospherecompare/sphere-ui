@@ -23,6 +23,8 @@ const DEFAULT_SEO_KEYWORDS =
 const STATIC_PRERENDER_ROUTES = [
   "/",
   "/career",
+  "/blog",
+  "/blogs",
   "/trending",
   "/laptop",
   "/mobiles",
@@ -107,6 +109,10 @@ const toSlug = (value = "") =>
 const toCanonicalPath = (rawPath) => {
   const pathName = normalizePath(rawPath);
   if (pathName === "/career") return "/careers";
+  if (pathName === "/blog") return "/blogs";
+  if (pathName.startsWith("/blog/")) {
+    return pathName.replace("/blog/", "/blogs/");
+  }
   if (pathName === "/trending") return "/trending/smartphones";
   if (pathName === "/trending/smartphone") return "/trending/smartphones";
   if (pathName === "/trending/laptop") return "/trending/laptops";
@@ -262,6 +268,12 @@ const fetchDetailRoutesFromApi = async () => {
         item?.basic_info?.model_number ||
         item?.basic_info?.model,
     },
+    {
+      endpoint: `${API_BASE_URL}/public/blogs?limit=${MAX_DETAIL_ROUTES_PER_CATEGORY}`,
+      preferredKeys: ["blogs"],
+      basePath: "/blogs",
+      getName: (item) => item?.slug || item?.title || item?.name,
+    },
   ];
 
   const routes = [];
@@ -312,6 +324,11 @@ const fetchDetailRoutesFromApi = async () => {
       ];
     }
 
+    if (routePath.startsWith("/blogs/")) {
+      const slug = routePath.slice("/blogs/".length);
+      return [`/blog/${slug}`];
+    }
+
     return [];
   });
 
@@ -332,6 +349,7 @@ const resolveSeo = (routePath) => {
   );
   const laptopDetailName = extractDetailSlugName(canonicalPath, "/laptops/");
   const tvDetailName = extractDetailSlugName(canonicalPath, "/tvs/");
+  const blogDetailName = extractDetailSlugName(canonicalPath, "/blogs/");
   const rules = [
     {
       test: (p) => p === "/",
@@ -358,6 +376,12 @@ const resolveSeo = (routePath) => {
       title: `${tvDetailName} Price, Specs & TV Comparison in India (${CURRENT_YEAR}) | Hook`,
       description: `Compare ${tvDetailName} TV price in India, size variants, display specs, smart features, and store offers on Hook.`,
       keywords: `${tvDetailName.toLowerCase()}, ${tvDetailName.toLowerCase()} tv price in india, ${tvDetailName.toLowerCase()} specifications, smart tv comparison india, tv prices list ${CURRENT_YEAR}`,
+    },
+    {
+      test: () => Boolean(blogDetailName),
+      title: `${blogDetailName} | Hook Blog`,
+      description: `Read ${blogDetailName} on Hook with product insights, specs breakdown, and buying guidance.`,
+      keywords: `${blogDetailName.toLowerCase()}, hook blog, product insights, buying guide, gadget analysis`,
     },
     {
       test: (p) => p.startsWith("/smartphones"),
@@ -390,6 +414,14 @@ const resolveSeo = (routePath) => {
         "Compare routers and networking products with speed, band, and connectivity specs to choose the right setup for your needs.",
       keywords:
         "networking devices, routers, wifi routers, dual band router, compare routers, modem router specs",
+    },
+    {
+      test: (p) => p.startsWith("/blogs"),
+      title: "Hook Blogs | Product Insights and Buying Guides",
+      description:
+        "Read Hook blogs for smartphones, laptops, and TVs with product insights, key specifications, and practical buying guidance.",
+      keywords:
+        "hook blogs, smartphone blog, laptop buying guide, tv buying guide, gadget insights",
     },
     {
       test: (p) => p.startsWith("/compare"),

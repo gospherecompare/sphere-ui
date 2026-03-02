@@ -212,6 +212,8 @@ export const fetchSmartphones = createAsyncThunk(
 
       const arr = Array.isArray(data)
         ? data
+        : Array.isArray(data.new)
+          ? data.new
         : Array.isArray(data.smartphones)
           ? data.smartphones
           : Array.isArray(data.data)
@@ -498,6 +500,8 @@ export const fetchLaptops = createAsyncThunk(
       const body = await res.json();
       const arr = Array.isArray(body)
         ? body
+        : Array.isArray(body.new)
+          ? body.new
         : Array.isArray(body.laptops)
           ? body.laptops
           : Array.isArray(body.data)

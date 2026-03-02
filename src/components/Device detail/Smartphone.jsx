@@ -1,6 +1,7 @@
 ﻿// src/components/MobileDetailCard.jsx
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import PopularComparisons from "../Home/Brandshowcase";
+import CompetitorCards from "../ui/CompetitorCards";
+import ProductDiscoverySections from "../ui/ProductDiscoverySections";
 import { useDevice } from "../../hooks/useDevice";
 import Cookies from "js-cookie";
 
@@ -28,6 +29,7 @@ import {
   FaStore,
   FaChevronLeft,
   FaChevronDown,
+  FaChevronUp,
   FaExternalLinkAlt,
   FaTag,
   FaCopy,
@@ -48,16 +50,88 @@ import { Helmet } from "react-helmet-async";
 import { smartphoneMeta } from "../../constants/meta";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
 import { getHookBadge } from "../../utils/hookScore";
+import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
+import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
+import { normalizeGroupKey } from "../../utils/groupScoreStats";
+import ScoreGroupTable from "../ui/ScoreGroupTable";
 
 const token = Cookies.get("arenak");
 
+const normalizeScore100 = (value) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  if (n <= 1) return Math.max(0, Math.min(100, n * 100));
+  if (n <= 10) return Math.max(0, Math.min(100, n * 10));
+  return Math.max(0, Math.min(100, n));
+};
+
+const SpecScoreBadge = ({
+  score,
+  size = 42,
+  showSpecLabel = false,
+  zeroFallback = false,
+}) => {
+  const normalized = normalizeScore100(score);
+  const percentageRaw =
+    normalized != null
+      ? Number(normalized.toFixed(1))
+      : zeroFallback
+        ? 0
+        : null;
+  const percentage = percentageRaw;
+  const label = percentage != null ? `${percentage.toFixed(1)}%` : "--";
+  const compact = size <= 34;
+
+  if (showSpecLabel) {
+    return (
+      <div
+        className="inline-flex flex-col items-center justify-center rounded-2xl border border-violet-200 bg-violet-50/95 px-2 py-1.5 leading-none"
+        style={{ minWidth: `${Math.max(44, Math.round(size * 1.2))}px` }}
+        aria-label={
+          percentage != null
+            ? `Overall score ${percentage.toFixed(1)} percent`
+            : "Overall score unavailable"
+        }
+      >
+        <span
+          className={`${compact ? "text-[11px]" : "text-[12px]"} font-bold text-violet-700`}
+        >
+          <span>{label}</span>
+        </span>
+        <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide text-violet-600">
+          Spec
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="relative inline-flex items-center rounded-[26px] border border-violet-200 bg-violet-50/95 pl-7 pr-3 py-2 leading-none"
+      style={{ minWidth: `${Math.max(88, Math.round(size * 1.9))}px` }}
+      aria-label={
+        percentage != null
+          ? `Overall score ${percentage.toFixed(1)} percent`
+          : "Overall score unavailable"
+      }
+    >
+      <span className={`${compact ? "text-[11px]" : "text-[12px]"} font-bold text-violet-700`}>
+        {label}
+      </span>
+    </div>
+  );
+};
+
 const MobileDetailCard = () => {
+  const [activePrimaryTab, setActivePrimaryTab] = useState("info");
   const [activeTab, setActiveTab] = useState("specifications");
   const [activeImage, setActiveImage] = useState(0);
   const [showAllSpecs, setShowAllSpecs] = useState(false);
   const [showAllStores, setShowAllStores] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState(0);
   const [activeStoreId, setActiveStoreId] = useState(null);
+  const [infoKeySpecOpen, setInfoKeySpecOpen] = useState({});
+  const [specSectionBenchOpen, setSpecSectionBenchOpen] = useState({});
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const variantInitKeyRef = useRef("");
@@ -69,6 +143,7 @@ const MobileDetailCard = () => {
     smartphone,
     refreshDevices,
   } = useDevice();
+  const deviceFieldProfiles = useDeviceFieldProfiles();
   const navigate = useNavigate();
 
   const params = useParams();
@@ -552,6 +627,16 @@ const MobileDetailCard = () => {
         : out.sensors || [];
 
     out.biometrics = d.biometrics || out.biometrics || {};
+    const profileResult = resolveDeviceFieldProfile(
+      "smartphone",
+      out,
+      deviceFieldProfiles,
+    );
+    out.field_profile = profileResult;
+    if (out.spec_score == null && out.overall_score == null && out.hook_score == null) {
+      out.spec_score = profileResult.score;
+      out.overall_score = profileResult.score;
+    }
 
     return out;
   };
@@ -564,6 +649,334 @@ const MobileDetailCard = () => {
     [localResolved, selectedDevice],
   );
   const hookBadge = useMemo(() => getHookBadge(mobileData), [mobileData]);
+  const pickScore100 = useCallback((...values) => {
+    for (const value of values) {
+      const normalized = normalizeScore100(value);
+      if (normalized != null) return normalized;
+    }
+    return null;
+  }, []);
+  const buildScoreSummary = useCallback(
+    (deviceData, options = {}) => {
+      if (!deviceData) {
+        return {
+          overall: null,
+          overallDisplay: null,
+          sections: [],
+        };
+      }
+
+      const {
+        allowProfileSectionFallback = true,
+        allowProfileOverallFallback = true,
+        allowSectionAverageFallback = true,
+        allowFallbackPersistedScores = true,
+      } = options;
+
+      const normalizeScoreSource = (value) =>
+        String(value || "")
+          .trim()
+          .toLowerCase();
+      const resolvePersistedScore = (value, source) => {
+        const normalized = normalizeScore100(value);
+        if (normalized == null) return null;
+
+        const sourceKey = normalizeScoreSource(source);
+        if (
+          !allowFallbackPersistedScores &&
+          sourceKey &&
+          sourceKey.includes("fallback")
+        ) {
+          return null;
+        }
+
+        return normalized;
+      };
+
+      const sphereRating =
+        deviceData.sphere_rating ||
+        deviceData.ratings ||
+        deviceData.rating_json ||
+        {};
+      const specScoreV2Source =
+        deviceData.spec_score_v2_source ?? deviceData.specScoreV2Source;
+      const overallScoreV2Source =
+        deviceData.overall_score_v2_source ?? deviceData.overallScoreV2Source;
+      const specScoreSource =
+        deviceData.spec_score_source ?? deviceData.specScoreSource;
+      const overallScoreSource =
+        deviceData.overall_score_source ?? deviceData.overallScoreSource;
+      const persistedSpecScore = pickScore100(
+        resolvePersistedScore(deviceData.spec_score_v2, specScoreV2Source),
+        resolvePersistedScore(deviceData.specScoreV2, specScoreV2Source),
+        resolvePersistedScore(deviceData.spec_score, specScoreSource),
+        resolvePersistedScore(deviceData.specScore, specScoreSource),
+      );
+      const persistedOverallScore = pickScore100(
+        resolvePersistedScore(deviceData.overall_score_v2, overallScoreV2Source),
+        resolvePersistedScore(deviceData.overallScoreV2, overallScoreV2Source),
+        resolvePersistedScore(deviceData.overall_score, overallScoreSource),
+        resolvePersistedScore(deviceData.overallScore, overallScoreSource),
+      );
+      const persistedOverallScoreDisplay = pickScore100(
+        resolvePersistedScore(
+          deviceData.overall_score_v2_display_80_98,
+          overallScoreV2Source,
+        ),
+        resolvePersistedScore(
+          deviceData.overallScoreV2Display8098,
+          overallScoreV2Source,
+        ),
+        resolvePersistedScore(
+          deviceData.spec_score_v2_display_80_98,
+          specScoreV2Source,
+        ),
+        resolvePersistedScore(
+          deviceData.specScoreV2Display8098,
+          specScoreV2Source,
+        ),
+      );
+
+      const sections = [
+        {
+          key: "performance",
+          label: "Performance",
+          icon: FaBolt,
+          fillColor: "#6d28d9",
+          score: pickScore100(
+            deviceData.performance?.score,
+            deviceData.performance_json?.score,
+            sphereRating?.performance?.score,
+            sphereRating?.performance,
+            allowProfileSectionFallback
+              ? deviceData.field_profile?.section_scores?.core
+              : null,
+          ),
+        },
+        {
+          key: "display",
+          label: "Display",
+          icon: FaExpand,
+          fillColor: "#2563eb",
+          score: pickScore100(
+            deviceData.display?.score,
+            deviceData.display_json?.score,
+            sphereRating?.display?.score,
+            sphereRating?.display,
+            allowProfileSectionFallback
+              ? deviceData.field_profile?.section_scores?.display
+              : null,
+          ),
+        },
+        {
+          key: "camera",
+          label: "Camera",
+          icon: FaCamera,
+          fillColor: "#0d9488",
+          score: pickScore100(
+            deviceData.camera?.score,
+            deviceData.camera_json?.score,
+            sphereRating?.camera?.score,
+            sphereRating?.camera,
+          ),
+        },
+        {
+          key: "battery",
+          label: "Battery",
+          icon: FaBatteryFull,
+          fillColor: "#059669",
+          score: pickScore100(
+            deviceData.battery?.score,
+            deviceData.battery_json?.score,
+            sphereRating?.battery?.score,
+            sphereRating?.battery,
+            allowProfileSectionFallback
+              ? deviceData.field_profile?.section_scores?.core
+              : null,
+          ),
+        },
+        {
+          key: "network",
+          label: "Network",
+          icon: FaWifi,
+          fillColor: "#7c3aed",
+          score: pickScore100(
+            deviceData.network?.score,
+            deviceData.network_json?.score,
+            deviceData.connectivity?.score,
+            deviceData.connectivity_json?.score,
+            sphereRating?.network?.score,
+            sphereRating?.connectivity?.score,
+            sphereRating?.network,
+            sphereRating?.connectivity,
+          ),
+        },
+      ];
+
+      const numericSectionScores = sections
+        .map((section) => section.score)
+        .filter((score) => Number.isFinite(score));
+      const sectionAverage =
+        numericSectionScores.length > 0
+          ? numericSectionScores.reduce((sum, score) => sum + score, 0) /
+            numericSectionScores.length
+          : null;
+
+      const overall = pickScore100(
+        persistedOverallScore,
+        persistedSpecScore,
+        allowProfileOverallFallback ? deviceData.field_profile?.score : null,
+        allowSectionAverageFallback ? sectionAverage : null,
+      );
+      const overallDisplay = pickScore100(persistedOverallScoreDisplay, overall);
+
+      return {
+        overall,
+        overallDisplay,
+        sections,
+      };
+    },
+    [pickScore100],
+  );
+  const scoreSummary = useMemo(() => {
+    if (!mobileData) {
+      return {
+        overall: null,
+        overallDisplay: null,
+        sections: [],
+      };
+    }
+    return buildScoreSummary(mobileData, {
+      allowProfileSectionFallback: true,
+      allowProfileOverallFallback: false,
+      allowSectionAverageFallback: true,
+      allowFallbackPersistedScores: true,
+    });
+  }, [mobileData, buildScoreSummary]);
+  const getSectionScore = useCallback(
+    (key) => {
+      if (!key || key === "overall") return scoreSummary.overall;
+      const matched = scoreSummary.sections.find((section) => section.key === key);
+      return matched?.score ?? scoreSummary.overall;
+    },
+    [scoreSummary],
+  );
+  const getSectionScoreDisplay = useCallback(
+    (key) => {
+      if (!key || key === "overall") {
+        return scoreSummary.overallDisplay ?? scoreSummary.overall;
+      }
+      const matched = scoreSummary.sections.find((section) => section.key === key);
+      return matched?.score ?? scoreSummary.overall;
+    },
+    [scoreSummary],
+  );
+  const resolveDeviceBenchmarkPrice = useCallback((deviceData) => {
+    if (!deviceData) return null;
+
+    const directCandidates = [
+      deviceData?.price,
+      deviceData?.base_price,
+      deviceData?.starting_price,
+      deviceData?.min_price,
+    ];
+    for (const candidate of directCandidates) {
+      const parsed = Number(candidate);
+      if (Number.isFinite(parsed) && parsed > 0) return parsed;
+    }
+
+    const variants = Array.isArray(deviceData?.variants) ? deviceData.variants : [];
+    const prices = [];
+    variants.forEach((variant) => {
+      const base = Number(variant?.base_price);
+      if (Number.isFinite(base) && base > 0) prices.push(base);
+
+      if (Array.isArray(variant?.store_prices)) {
+        variant.store_prices.forEach((store) => {
+          const p = Number(store?.price);
+          if (Number.isFinite(p) && p > 0) prices.push(p);
+        });
+      }
+    });
+
+    return prices.length > 0 ? Math.min(...prices) : null;
+  }, []);
+  const getPriceBandLabel = useCallback((price) => {
+    const value = Number(price);
+    if (!Number.isFinite(value) || value <= 0) return null;
+    if (value <= 10000) return "Under \u20B910,000";
+    if (value <= 15000) return "Under \u20B915,000";
+    if (value <= 20000) return "Under \u20B920,000";
+    if (value <= 25000) return "Under \u20B925,000";
+    if (value <= 30000) return "Under \u20B930,000";
+    if (value <= 40000) return "Under \u20B940,000";
+    if (value <= 50000) return "Under \u20B950,000";
+    return "Above \u20B950,000";
+  }, []);
+  const scoreGroupData = useMemo(() => {
+    const allDevices = (Array.isArray(smartphone) ? smartphone : [])
+      .map((item) => normalizeSmartphone(item))
+      .filter(Boolean);
+    if (!mobileData || allDevices.length === 0) {
+      return { label: "All Smartphones", byKey: {} };
+    }
+
+    const currentId = String(mobileData?.id ?? mobileData?.product_id ?? "");
+    const currentGroupKey = normalizeGroupKey(
+      mobileData?.category || mobileData?.product_type,
+      "smartphone",
+    );
+    const sameGroup = allDevices.filter(
+      (item) =>
+        normalizeGroupKey(item?.category || item?.product_type, "smartphone") ===
+        currentGroupKey,
+    );
+    const scopedDevices = sameGroup.length > 0 ? sameGroup : allDevices;
+    const currentPriceBand = getPriceBandLabel(resolveDeviceBenchmarkPrice(mobileData));
+    const samePriceBandDevices = currentPriceBand
+      ? scopedDevices.filter(
+          (item) =>
+            getPriceBandLabel(resolveDeviceBenchmarkPrice(item)) === currentPriceBand,
+        )
+      : [];
+    const benchmarkPool =
+      samePriceBandDevices.length >= 6 ? samePriceBandDevices : scopedDevices;
+
+    const byKey = { overall: [] };
+    benchmarkPool.forEach((item) => {
+      const itemId = String(item?.id ?? item?.product_id ?? "");
+      if (itemId && currentId && itemId === currentId) return;
+      const summary = buildScoreSummary(item, {
+        allowProfileSectionFallback: false,
+        allowProfileOverallFallback: false,
+        allowSectionAverageFallback: true,
+        allowFallbackPersistedScores: false,
+      });
+      if (Number.isFinite(summary?.overall)) byKey.overall.push(summary.overall);
+      (summary?.sections || []).forEach((section) => {
+        if (!Number.isFinite(section?.score)) return;
+        if (!byKey[section.key]) byKey[section.key] = [];
+        byKey[section.key].push(section.score);
+      });
+    });
+
+    return {
+      label: currentPriceBand
+        ? `${mobileData?.category || mobileData?.product_type || "All Smartphones"} · ${currentPriceBand}`
+        : mobileData?.category || mobileData?.product_type || "All Smartphones",
+      byKey,
+    };
+  }, [
+    mobileData,
+    smartphone,
+    buildScoreSummary,
+    resolveDeviceBenchmarkPrice,
+    getPriceBandLabel,
+  ]);
+  const getGroupPeerScores = useCallback(
+    (sectionKey) => scoreGroupData.byKey?.[sectionKey || "overall"] || [],
+    [scoreGroupData],
+  );
 
   useTitle({
     brand: mobileData?.brand,
@@ -1516,6 +1929,11 @@ Price: ${price}
   ];
 
   const tabs = window.innerWidth < 768 ? mobileTabs : desktopTabs;
+  const primaryTabs = [
+    { id: "info", label: "Info" },
+    { id: "specs", label: "Specs" },
+    { id: "competitors", label: "Competitors" },
+  ];
 
   // Determine whether a piece of spec data actually contains useful content
   const hasContent = (data) => {
@@ -1776,7 +2194,7 @@ Price: ${price}
   };
 
   const renderCameraTable = (camera) => {
-    if (!camera)
+    if (!camera || !hasContent(camera))
       return (
         <div className="text-center py-4 text-gray-500">
           No camera data available
@@ -1785,9 +2203,84 @@ Price: ${price}
 
     const rows = [];
 
+    const normalizeCameraLensLabel = (lensKey) => {
+      const key = String(lensKey || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
+
+      if (
+        ["main", "maincamera", "wide", "primary", "primarycamera"].includes(
+          key,
+        )
+      ) {
+        return "Main Camera";
+      }
+      if (["ultrawide", "ultrawidecamera", "ultrawideangle"].includes(key)) {
+        return "Ultra Wide Camera";
+      }
+      if (["telephoto", "periscope", "periscopetelephoto"].includes(key)) {
+        return "Telephoto Camera";
+      }
+      return toNormalCase(lensKey);
+    };
+
+    const normalizeCameraLabel = (rawKey) => {
+      const key = normalizeSpecToken(rawKey);
+      if (
+        ["maincamera", "maincameramegapixels", "primarycamera"].includes(key)
+      ) {
+        return "Main Camera";
+      }
+      if (key === "rearcamera") return "Rear Camera";
+      if (key === "frontcamera") return "Front Camera";
+      if (key === "shootingmodes") return "Shooting Modes";
+      if (key === "videorecording") return "Video Recording";
+      if (key === "aifeatures") return "AI Features";
+      if (key === "camerafeatures") return "Camera Features";
+      if (key === "rearcameraphotographyfeatures") return "Photography Features";
+      return toNormalCase(rawKey);
+    };
+
+    const formatCameraObject = (value, key) => {
+      if (!hasContent(value)) return "";
+      if (Array.isArray(value)) {
+        return value
+          .map((item) => formatCameraObject(item, key))
+          .filter((item) => hasContent(item))
+          .join(", ");
+      }
+      if (typeof value === "object") {
+        const parts = Object.entries(value)
+          .filter(([, v]) => hasContent(v))
+          .map(([k, v]) => `${toNormalCase(k)}: ${formatCameraObject(v, k)}`)
+          .filter(Boolean);
+        return parts.join(" | ");
+      }
+      return formatSpecValue(value, key);
+    };
+
+    const addRow = (label, value, key = label) => {
+      const formatted = formatCameraObject(value, key);
+      if (!hasContent(formatted) || formatted === "Not specified") return;
+      rows.push([label, formatted]);
+    };
+
+    const mainCandidates = [
+      camera.main_camera,
+      camera.main,
+      camera.primary,
+      camera.rear_camera?.main_camera,
+      camera.rear_camera?.main,
+      camera.rear_camera?.wide,
+      camera.rear_camera?.primary,
+    ];
+
     const mainCameraMp = getMainCameraMp({ camera });
-    if (mainCameraMp) {
-      rows.push(["Main Camera", `${mainCameraMp} MP`]);
+    const detailedMain = mainCandidates.find((entry) => hasContent(entry));
+    if (detailedMain) {
+      addRow("Main Camera", detailedMain, "main_camera");
+    } else if (mainCameraMp) {
+      addRow("Main Camera", `${mainCameraMp} MP`, "main_camera_megapixels");
     }
 
     // Rear camera can be an object with lenses or a string
@@ -1798,60 +2291,117 @@ Price: ${price}
       ) {
         Object.entries(camera.rear_camera).forEach(([lens, spec]) => {
           if (hasContent(spec)) {
-            rows.push([toNormalCase(lens), formatSpecValue(spec, lens)]);
+            addRow(normalizeCameraLensLabel(lens), spec, lens);
           }
         });
       } else {
-        rows.push([
-          "Rear Camera",
-          formatSpecValue(camera.rear_camera, "rear_camera"),
-        ]);
+        addRow("Rear Camera", camera.rear_camera, "rear_camera");
       }
     }
 
     // Front camera
     if (camera.front_camera) {
-      const frontVal =
-        typeof camera.front_camera === "object"
-          ? Object.entries(camera.front_camera)
-              .map(([k, v]) => `${toNormalCase(k)}: ${formatSpecValue(v, k)}`)
-              .join(" | ")
-          : String(camera.front_camera);
-      rows.push(["Front Camera", frontVal]);
+      addRow("Front Camera", camera.front_camera, "front_camera");
     }
 
-    // Shooting modes / features
-    if (camera.shooting_modes) {
-      rows.push([
-        "Shooting Modes",
-        formatSpecValue(camera.shooting_modes, "shooting_modes"),
-      ]);
+    // Add remaining dynamic keys so camera stays future-proof for varying JSON shapes.
+    const handledKeys = new Set([
+      "main_camera",
+      "main",
+      "primary",
+      "main_camera_megapixels",
+      "rear_camera",
+      "front_camera",
+    ]);
+
+    Object.entries(camera).forEach(([key, value]) => {
+      if (handledKeys.has(key)) return;
+      if (!hasContent(value)) return;
+      addRow(normalizeCameraLabel(key), value, key);
+    });
+
+    const uniqueRows = dedupeSpecRowsByLabel(rows).filter(([, value]) =>
+      hasContent(value),
+    );
+    if (!uniqueRows.length) {
+      return (
+        <div className="text-center py-4 text-gray-500">
+          No camera data available
+        </div>
+      );
     }
 
-    if (Array.isArray(camera.features) && camera.features.length) {
-      rows.push(["Features", camera.features.join(", ")]);
-    }
+    const renderCameraValueCell = (value) => {
+      const text = String(value ?? "").trim();
+      if (!text) return "Not specified";
 
-    if (Array.isArray(camera.ai_features) && camera.ai_features.length) {
-      rows.push(["AI Features", camera.ai_features.join(", ")]);
-    }
+      // Convert "Key: Value | Key: Value" into a readable mini table.
+      if (text.includes("|") && text.includes(":")) {
+        const pairs = text
+          .split("|")
+          .map((part) => part.trim())
+          .filter(Boolean)
+          .map((part) => {
+            const separatorIndex = part.indexOf(":");
+            if (separatorIndex === -1) return null;
+            const field = part.slice(0, separatorIndex).trim();
+            const fieldValue = part.slice(separatorIndex + 1).trim();
+            if (!field || !fieldValue) return null;
+            return [field, fieldValue];
+          })
+          .filter(Boolean);
 
-    const uniqueRows = dedupeSpecRowsByLabel(rows);
+        if (pairs.length >= 2) {
+          return (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[460px] border border-gray-200 text-xs sm:text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {pairs.map(([field]) => (
+                      <th
+                        key={field}
+                        className="px-2 sm:px-3 py-1.5 sm:py-2 text-left text-[11px] sm:text-xs font-semibold text-gray-700 border-b border-gray-200 whitespace-nowrap"
+                      >
+                        {field}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="bg-white">
+                    {pairs.map(([field, fieldValue]) => (
+                      <td
+                        key={`${field}-${fieldValue}`}
+                        className="px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-gray-900 border-t border-gray-200 whitespace-nowrap align-top"
+                      >
+                        {fieldValue}
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          );
+        }
+      }
+
+      return text;
+    };
 
     return (
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 shadow-none">
+        <table className="w-full min-w-[360px] sm:min-w-full divide-y divide-gray-200 shadow-none">
           <tbody className="bg-white">
             {uniqueRows.map(([label, value], idx) => (
               <tr
                 key={idx}
                 className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
               >
-                <td className="px-6 py-3 text-sm font-medium text-gray-600 w-1/3 align-top">
+                <td className="px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-gray-600 w-[34%] align-top">
                   {label}
                 </td>
-                <td className="px-6 py-3 text-sm text-gray-900 w-2/3">
-                  {value || "Not specified"}
+                <td className="px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm text-gray-900 align-top">
+                  {renderCameraValueCell(value)}
                 </td>
               </tr>
             ))}
@@ -1879,17 +2429,17 @@ Price: ${price}
     return (
       <div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 shadow-none">
+          <table className="w-full min-w-[360px] sm:min-w-full divide-y divide-gray-200 shadow-none">
             <tbody className="bg-white">
               {entries.map(([key, value], idx) => (
                 <tr
                   key={key}
                   className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
                 >
-                  <td className="px-6 py-3 text-sm font-medium text-gray-600 w-1/3 align-top">
+                  <td className="px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-gray-600 w-[34%] align-top">
                     {toNormalCase(key)}
                   </td>
-                  <td className="px-6 py-3 text-sm text-gray-900 w-2/3">
+                  <td className="px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm text-gray-900 align-top">
                     {formatSpecValue(value, key)}
                   </td>
                 </tr>
@@ -1953,76 +2503,65 @@ Price: ${price}
         );
         const audioData = toSectionTableData(mobileData.audio, "audio");
         const sensorsData = toSectionTableData(mobileData.sensors, "sensors");
+        const sectionScore = (key) => getSectionScore(key);
+        const sectionScoreDisplay = (key) => getSectionScoreDisplay(key);
 
         return (
-          <div id="spec-specifications" className="space-y-6">
-            {/* Key Specs Highlight Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              {[
-                {
-                  label: "Processor",
-                  value: mobileData.performance?.processor || "N/A",
-                  icon: FaMicrochip,
-                  color: "bg-purple-50 text-purple-700",
-                },
-                {
-                  label: "RAM",
-                  value: mobileData.performance?.ram || "N/A",
-                  icon: FaMemory,
-                  color: "bg-purple-50 text-purple-700",
-                },
-                {
-                  label: "Storage",
-                  value:
-                    mobileData.performance?.storage ||
-                    mobileData.performance?.ROM_storage ||
-                    "N/A",
-                  icon: FaMobile,
-                  color: "bg-green-50 text-green-700",
-                },
-                {
-                  label: "Battery",
-                  value:
-                    getBatteryCapacityMah(mobileData) != null
-                      ? `${getBatteryCapacityMah(mobileData)} mAh`
-                      : getBatteryCapacityRaw(mobileData) || "N/A",
-                  icon: FaBatteryFull,
-                  color: "bg-blue-50 text-blue-700",
-                },
-              ].map((spec, idx) => (
-                <div
-                  key={idx}
-                  className={`${spec.color} p-4`}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <spec.icon className="text-lg" />
-                    <span className="text-xs font-semibold uppercase tracking-wide">
-                      {spec.label}
-                    </span>
-                  </div>
-                  <div className="text-sm font-bold truncate">{spec.value}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Main Specs Table - Professional Layout */}
-            <div className="bg-white overflow-hidden">
-              {/* Brand & Model Header */}
-              <div className="border-b border-gray-200"></div>
-
-              {/* Specs Sections */}
-              <div className="divide-y divide-gray-100">
+          <div id="spec-specifications" className="space-y-4">
+            {/* Specs Sections */}
+            <div className="space-y-4">
                 {/* General Section */}
                 <div
                   id="spec-general"
-                  className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
+                  className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
                 >
-                  <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide">
-                    General
-                  </h4>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-100 shadow-none">
-                      <tbody className="bg-white">
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
+                      <FaInfoCircle className="text-sm text-violet-500" />
+                      General
+                    </h4>
+                    <div className="flex items-center gap-1.5">
+                      <SpecScoreBadge
+                        score={sectionScoreDisplay("overall")}
+                        size={38}
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSpecSectionBenchOpen((prev) => ({
+                            ...prev,
+                            general: !prev.general,
+                          }))
+                        }
+                        aria-expanded={Boolean(specSectionBenchOpen.general)}
+                        aria-label={
+                          specSectionBenchOpen.general
+                            ? "Hide General benchmark"
+                            : "Show General benchmark"
+                        }
+                        className="inline-flex h-6 w-6 items-center justify-center text-violet-700 hover:text-violet-800"
+                      >
+                        {specSectionBenchOpen.general ? (
+                          <FaChevronUp size={10} />
+                        ) : (
+                          <FaChevronDown size={10} />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                  <ScoreGroupTable
+                    currentScore={sectionScore("overall")}
+                    peerScores={getGroupPeerScores("overall")}
+                    groupLabel={scoreGroupData.label}
+                    minScore={0}
+                    maxScore={100}
+                    className="mb-3"
+                    showHeader={false}
+                    isOpen={Boolean(specSectionBenchOpen.general)}
+                  />
+                  <div className="overflow-hidden rounded-lg">
+                    <table className="min-w-full">
+                      <tbody className="divide-y divide-slate-100 bg-white">
                         {[
                           { label: "Brand", value: mobileData.brand },
                           { label: "Model", value: mobileData.model },
@@ -2077,13 +2616,13 @@ Price: ${price}
                             <tr
                               key={idx}
                               className={
-                                idx % 2 === 0 ? "bg-white" : "bg-gray-50"
+                                idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"
                               }
                             >
-                              <td className="px-6 py-2 text-sm font-medium text-gray-600 w-1/3 align-top">
+                              <td className="w-1/3 px-3 py-2.5 text-[13px] font-medium text-slate-600 sm:px-4 md:px-5 align-top">
                                 {item.label}
                               </td>
-                              <td className="px-6 py-2 text-sm text-gray-900 w-2/3">
+                              <td className="w-2/3 px-3 py-2.5 text-[13px] text-slate-900 sm:px-4 md:px-5">
                                 {formatSpecValue(item.value, item.label)}
                               </td>
                             </tr>
@@ -2097,12 +2636,49 @@ Price: ${price}
                 {hasContent(displayData) && (
                   <div
                     id="spec-display"
-                    className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
+                    className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
                   >
-                    <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
-                      <FaExpand className="text-purple-500" />
-                      Display
-                    </h4>
+                    <div className="mb-3 flex items-center justify-between gap-2">
+                      <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
+                        <FaExpand className="text-purple-500" />
+                        Display
+                      </h4>
+                      <div className="flex items-center gap-1.5">
+                        <SpecScoreBadge score={sectionScore("display")} size={38} />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSpecSectionBenchOpen((prev) => ({
+                              ...prev,
+                              display: !prev.display,
+                            }))
+                          }
+                          aria-expanded={Boolean(specSectionBenchOpen.display)}
+                          aria-label={
+                            specSectionBenchOpen.display
+                              ? "Hide Display benchmark"
+                              : "Show Display benchmark"
+                          }
+                          className="inline-flex h-6 w-6 items-center justify-center text-violet-700 hover:text-violet-800"
+                        >
+                          {specSectionBenchOpen.display ? (
+                            <FaChevronUp size={10} />
+                          ) : (
+                            <FaChevronDown size={10} />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <ScoreGroupTable
+                      currentScore={sectionScore("display")}
+                      peerScores={getGroupPeerScores("display")}
+                      groupLabel={scoreGroupData.label}
+                      minScore={0}
+                      maxScore={100}
+                      className="mb-3"
+                      showHeader={false}
+                      isOpen={Boolean(specSectionBenchOpen.display)}
+                    />
 
                     {renderDisplayTable(displayData)}
                   </div>
@@ -2112,15 +2688,55 @@ Price: ${price}
                 {hasContent(performanceData) && (
                   <div
                     id="spec-performance"
-                    className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
+                    className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
                   >
-                    <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
-                      <FaBolt className="text-yellow-500" />
-                      Performance
-                    </h4>
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-100 shadow-none">
-                        <tbody className="bg-white">
+                    <div className="mb-3 flex items-center justify-between gap-2">
+                      <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
+                        <FaBolt className="text-yellow-500" />
+                        Performance
+                      </h4>
+                      <div className="flex items-center gap-1.5">
+                        <SpecScoreBadge
+                          score={sectionScore("performance")}
+                          size={38}
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSpecSectionBenchOpen((prev) => ({
+                              ...prev,
+                              performance: !prev.performance,
+                            }))
+                          }
+                          aria-expanded={Boolean(specSectionBenchOpen.performance)}
+                          aria-label={
+                            specSectionBenchOpen.performance
+                              ? "Hide Performance benchmark"
+                              : "Show Performance benchmark"
+                          }
+                          className="inline-flex h-6 w-6 items-center justify-center text-violet-700 hover:text-violet-800"
+                        >
+                          {specSectionBenchOpen.performance ? (
+                            <FaChevronUp size={10} />
+                          ) : (
+                            <FaChevronDown size={10} />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <ScoreGroupTable
+                      currentScore={sectionScore("performance")}
+                      peerScores={getGroupPeerScores("performance")}
+                      groupLabel={scoreGroupData.label}
+                      minScore={0}
+                      maxScore={100}
+                      className="mb-3"
+                      showHeader={false}
+                      isOpen={Boolean(specSectionBenchOpen.performance)}
+                    />
+                    <div className="overflow-hidden rounded-lg">
+                      <table className="min-w-full">
+                        <tbody className="divide-y divide-slate-100 bg-white">
                           {dedupeSpecEntries(
                             Object.entries(performanceData || {}).filter(
                               ([k, v]) =>
@@ -2133,13 +2749,13 @@ Price: ${price}
                               <tr
                                 key={key}
                                 className={
-                                  idx % 2 === 0 ? "bg-white" : "bg-gray-50"
+                                  idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"
                                 }
                               >
-                                <td className="px-6 py-2 text-sm font-medium text-gray-600 w-1/3 align-top">
+                                <td className="w-1/3 px-3 py-2.5 text-[13px] font-medium text-slate-600 sm:px-4 md:px-5 align-top">
                                   {toNormalCase(key)}
                                 </td>
-                                <td className="px-6 py-2 text-sm text-gray-900 w-2/3">
+                                <td className="w-2/3 px-3 py-2.5 text-[13px] text-slate-900 sm:px-4 md:px-5">
                                   {formatSpecValue(value, key)}
                                 </td>
                               </tr>
@@ -2154,12 +2770,49 @@ Price: ${price}
                 {hasContent(cameraData) && (
                   <div
                     id="spec-camera"
-                    className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
+                    className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
                   >
-                    <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
-                      <FaCamera className="text-purple-500" />
-                      Camera
-                    </h4>
+                    <div className="mb-3 flex items-center justify-between gap-2">
+                      <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
+                        <FaCamera className="text-purple-500" />
+                        Camera
+                      </h4>
+                      <div className="flex items-center gap-1.5">
+                        <SpecScoreBadge score={sectionScore("camera")} size={38} />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSpecSectionBenchOpen((prev) => ({
+                              ...prev,
+                              camera: !prev.camera,
+                            }))
+                          }
+                          aria-expanded={Boolean(specSectionBenchOpen.camera)}
+                          aria-label={
+                            specSectionBenchOpen.camera
+                              ? "Hide Camera benchmark"
+                              : "Show Camera benchmark"
+                          }
+                          className="inline-flex h-6 w-6 items-center justify-center text-violet-700 hover:text-violet-800"
+                        >
+                          {specSectionBenchOpen.camera ? (
+                            <FaChevronUp size={10} />
+                          ) : (
+                            <FaChevronDown size={10} />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <ScoreGroupTable
+                      currentScore={sectionScore("camera")}
+                      peerScores={getGroupPeerScores("camera")}
+                      groupLabel={scoreGroupData.label}
+                      minScore={0}
+                      maxScore={100}
+                      className="mb-3"
+                      showHeader={false}
+                      isOpen={Boolean(specSectionBenchOpen.camera)}
+                    />
 
                     {renderCameraTable(cameraData)}
                   </div>
@@ -2169,15 +2822,52 @@ Price: ${price}
                 {hasContent(batteryData) && (
                   <div
                     id="spec-battery"
-                    className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
+                    className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
                   >
-                    <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
-                      <FaBatteryFull className="text-green-500" />
-                      Battery
-                    </h4>
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-100 shadow-none">
-                        <tbody className="bg-white">
+                    <div className="mb-3 flex items-center justify-between gap-2">
+                      <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
+                        <FaBatteryFull className="text-green-500" />
+                        Battery
+                      </h4>
+                      <div className="flex items-center gap-1.5">
+                        <SpecScoreBadge score={sectionScore("battery")} size={38} />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSpecSectionBenchOpen((prev) => ({
+                              ...prev,
+                              battery: !prev.battery,
+                            }))
+                          }
+                          aria-expanded={Boolean(specSectionBenchOpen.battery)}
+                          aria-label={
+                            specSectionBenchOpen.battery
+                              ? "Hide Battery benchmark"
+                              : "Show Battery benchmark"
+                          }
+                          className="inline-flex h-6 w-6 items-center justify-center text-violet-700 hover:text-violet-800"
+                        >
+                          {specSectionBenchOpen.battery ? (
+                            <FaChevronUp size={10} />
+                          ) : (
+                            <FaChevronDown size={10} />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <ScoreGroupTable
+                      currentScore={sectionScore("battery")}
+                      peerScores={getGroupPeerScores("battery")}
+                      groupLabel={scoreGroupData.label}
+                      minScore={0}
+                      maxScore={100}
+                      className="mb-3"
+                      showHeader={false}
+                      isOpen={Boolean(specSectionBenchOpen.battery)}
+                    />
+                    <div className="overflow-hidden rounded-lg">
+                      <table className="min-w-full">
+                        <tbody className="divide-y divide-slate-100 bg-white">
                           {dedupeSpecEntries(
                             Object.entries(batteryData || {}).filter(
                               ([k, v]) =>
@@ -2190,13 +2880,13 @@ Price: ${price}
                               <tr
                                 key={key}
                                 className={
-                                  idx % 2 === 0 ? "bg-white" : "bg-gray-50"
+                                  idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"
                                 }
                               >
-                                <td className="px-6 py-2 text-sm font-medium text-gray-600 w-1/3 align-top">
+                                <td className="w-1/3 px-3 py-2.5 text-[13px] font-medium text-slate-600 sm:px-4 md:px-5 align-top">
                                   {toNormalCase(key)}
                                 </td>
-                                <td className="px-6 py-2 text-sm text-gray-900 w-2/3">
+                                <td className="w-2/3 px-3 py-2.5 text-[13px] text-slate-900 sm:px-4 md:px-5">
                                   {[
                                     "battery_capacity_mah",
                                     "battery_capacity",
@@ -2216,15 +2906,52 @@ Price: ${price}
                 {hasContent(connectivityData) && (
                   <div
                     id="spec-connectivity"
-                    className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
+                    className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
                   >
-                    <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
-                      <FaWifi className="text-purple-500" />
-                      Connectivity
-                    </h4>
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-100 shadow-none">
-                        <tbody className="bg-white">
+                    <div className="mb-3 flex items-center justify-between gap-2">
+                      <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
+                        <FaWifi className="text-purple-500" />
+                        Connectivity
+                      </h4>
+                      <div className="flex items-center gap-1.5">
+                        <SpecScoreBadge score={sectionScore("network")} size={38} />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSpecSectionBenchOpen((prev) => ({
+                              ...prev,
+                              connectivity: !prev.connectivity,
+                            }))
+                          }
+                          aria-expanded={Boolean(specSectionBenchOpen.connectivity)}
+                          aria-label={
+                            specSectionBenchOpen.connectivity
+                              ? "Hide Connectivity benchmark"
+                              : "Show Connectivity benchmark"
+                          }
+                          className="inline-flex h-6 w-6 items-center justify-center text-violet-700 hover:text-violet-800"
+                        >
+                          {specSectionBenchOpen.connectivity ? (
+                            <FaChevronUp size={10} />
+                          ) : (
+                            <FaChevronDown size={10} />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <ScoreGroupTable
+                      currentScore={sectionScore("network")}
+                      peerScores={getGroupPeerScores("network")}
+                      groupLabel={scoreGroupData.label}
+                      minScore={0}
+                      maxScore={100}
+                      className="mb-3"
+                      showHeader={false}
+                      isOpen={Boolean(specSectionBenchOpen.connectivity)}
+                    />
+                    <div className="overflow-hidden rounded-lg">
+                      <table className="min-w-full">
+                        <tbody className="divide-y divide-slate-100 bg-white">
                           {dedupeSpecEntries(
                             Object.entries(connectivityData || {}).filter(
                               ([k, v]) =>
@@ -2237,13 +2964,13 @@ Price: ${price}
                               <tr
                                 key={key}
                                 className={
-                                  idx % 2 === 0 ? "bg-white" : "bg-gray-50"
+                                  idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"
                                 }
                               >
-                                <td className="px-6 py-2 text-sm font-medium text-gray-600 w-1/3 align-top">
+                                <td className="w-1/3 px-3 py-2.5 text-[13px] font-medium text-slate-600 sm:px-4 md:px-5 align-top">
                                   {toNormalCase(key)}
                                 </td>
-                                <td className="px-6 py-2 text-sm text-gray-900 w-2/3">
+                                <td className="w-2/3 px-3 py-2.5 text-[13px] text-slate-900 sm:px-4 md:px-5">
                                   {formatSpecValue(value, key)}
                                 </td>
                               </tr>
@@ -2258,12 +2985,49 @@ Price: ${price}
                 {hasContent(networkData) && (
                   <div
                     id="spec-network"
-                    className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
+                    className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
                   >
-                    <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
-                      <FaWifi className="text-indigo-500" />
-                      Network
-                    </h4>
+                    <div className="mb-3 flex items-center justify-between gap-2">
+                      <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
+                        <FaWifi className="text-indigo-500" />
+                        Network
+                      </h4>
+                      <div className="flex items-center gap-1.5">
+                        <SpecScoreBadge score={sectionScore("network")} size={38} />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSpecSectionBenchOpen((prev) => ({
+                              ...prev,
+                              network: !prev.network,
+                            }))
+                          }
+                          aria-expanded={Boolean(specSectionBenchOpen.network)}
+                          aria-label={
+                            specSectionBenchOpen.network
+                              ? "Hide Network benchmark"
+                              : "Show Network benchmark"
+                          }
+                          className="inline-flex h-6 w-6 items-center justify-center text-violet-700 hover:text-violet-800"
+                        >
+                          {specSectionBenchOpen.network ? (
+                            <FaChevronUp size={10} />
+                          ) : (
+                            <FaChevronDown size={10} />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <ScoreGroupTable
+                      currentScore={sectionScore("network")}
+                      peerScores={getGroupPeerScores("network")}
+                      groupLabel={scoreGroupData.label}
+                      minScore={0}
+                      maxScore={100}
+                      className="mb-3"
+                      showHeader={false}
+                      isOpen={Boolean(specSectionBenchOpen.network)}
+                    />
                     {renderSpecTable(networkData)}
                   </div>
                 )}
@@ -2272,12 +3036,18 @@ Price: ${price}
                 {hasContent(audioData) && (
                   <div
                     id="spec-audio"
-                    className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
+                    className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
                   >
-                    <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
-                      <FaVolumeUp className="text-pink-500" />
-                      Audio
-                    </h4>
+                    <div className="mb-3 flex items-center justify-between gap-2">
+                      <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
+                        <FaVolumeUp className="text-pink-500" />
+                        Audio
+                      </h4>
+                      <SpecScoreBadge
+                        score={sectionScoreDisplay("overall")}
+                        size={38}
+                      />
+                    </div>
                     {renderSpecTable(audioData)}
                   </div>
                 )}
@@ -2286,19 +3056,24 @@ Price: ${price}
                 {hasContent(sensorsData) && (
                   <div
                     id="spec-sensors"
-                    className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
+                    className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
                   >
-                    <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
-                      <FaShieldAlt className="text-teal-500" />
-                      Sensors
-                    </h4>
+                    <div className="mb-3 flex items-center justify-between gap-2">
+                      <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
+                        <FaShieldAlt className="text-teal-500" />
+                        Sensors
+                      </h4>
+                      <SpecScoreBadge
+                        score={sectionScoreDisplay("overall")}
+                        size={38}
+                      />
+                    </div>
                     {renderSpecTable(sensorsData)}
                   </div>
                 )}
 
                 {/* Available colors removed */}
                 {/* Price Comparison Call to Action */}
-              </div>
             </div>
           </div>
         );
@@ -2307,10 +3082,13 @@ Price: ${price}
       case "display":
         return (
           <div className="bg-white rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <FaExpand className="text-green-500" />
-              Display
-            </h3>
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <FaExpand className="text-green-500" />
+                Display
+              </h3>
+              <SpecScoreBadge score={getSectionScore("display")} size={38} />
+            </div>
             {renderSpecTable(mobileData.display)}
           </div>
         );
@@ -2318,10 +3096,13 @@ Price: ${price}
       case "performance":
         return (
           <div className="bg-white rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <FaBolt className="text-yellow-500" />
-              Performance
-            </h3>
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <FaBolt className="text-yellow-500" />
+                Performance
+              </h3>
+              <SpecScoreBadge score={getSectionScore("performance")} size={38} />
+            </div>
             {renderSpecTable(mobileData.performance)}
           </div>
         );
@@ -2329,10 +3110,13 @@ Price: ${price}
       case "camera":
         return (
           <div className="bg-white rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <FaCamera className="text-purple-500" />
-              Camera
-            </h3>
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <FaCamera className="text-purple-500" />
+                Camera
+              </h3>
+              <SpecScoreBadge score={getSectionScore("camera")} size={38} />
+            </div>
             {renderCameraTable(mobileData.camera)}
           </div>
         );
@@ -2340,10 +3124,13 @@ Price: ${price}
       case "battery":
         return (
           <div className="bg-white rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <FaBatteryFull className="text-blue-500" />
-              Battery
-            </h3>
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <FaBatteryFull className="text-blue-500" />
+                Battery
+              </h3>
+              <SpecScoreBadge score={getSectionScore("battery")} size={38} />
+            </div>
             {renderSpecTable(mobileData.battery)}
           </div>
         );
@@ -2362,20 +3149,29 @@ Price: ${price}
 
         return (
           <div className="bg-white rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <FaWifi className="text-purple-500" />
-              Connectivity
-            </h3>
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <FaWifi className="text-purple-500" />
+                Connectivity
+              </h3>
+              <SpecScoreBadge score={getSectionScore("network")} size={38} />
+            </div>
             {hasContent(connectivityData) ? renderSpecTable(connectivityData) : null}
             {hasContent(networkData) ? (
               <div className="mt-5">
-                <h4 className="font-semibold text-gray-800 mb-2">Network</h4>
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <h4 className="font-semibold text-gray-800">Network</h4>
+                  <SpecScoreBadge score={getSectionScore("network")} size={34} />
+                </div>
                 {renderSpecTable(networkData)}
               </div>
             ) : null}
             {hasContent(portsData) ? (
               <div className="mt-5">
-                <h4 className="font-semibold text-gray-800 mb-2">Ports</h4>
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <h4 className="font-semibold text-gray-800">Ports</h4>
+                  <SpecScoreBadge score={getSectionScoreDisplay("overall")} size={34} />
+                </div>
                 {renderSpecTable(portsData)}
               </div>
             ) : null}
@@ -2394,20 +3190,29 @@ Price: ${price}
 
         return (
           <div className="bg-white rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <FaFilm className="text-indigo-500" />
-              Multimedia
-            </h3>
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <FaFilm className="text-indigo-500" />
+                Multimedia
+              </h3>
+              <SpecScoreBadge score={getSectionScoreDisplay("overall")} size={38} />
+            </div>
             {hasContent(multimediaData) ? renderSpecTable(multimediaData) : null}
             {hasContent(audioData) ? (
               <div className="mt-5">
-                <h4 className="font-semibold text-gray-800 mb-2">Audio</h4>
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <h4 className="font-semibold text-gray-800">Audio</h4>
+                  <SpecScoreBadge score={getSectionScoreDisplay("overall")} size={34} />
+                </div>
                 {renderSpecTable(audioData)}
               </div>
             ) : null}
             {hasContent(sensorsData) ? (
               <div className="mt-5">
-                <h4 className="font-semibold text-gray-800 mb-2">Sensors</h4>
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <h4 className="font-semibold text-gray-800">Sensors</h4>
+                  <SpecScoreBadge score={getSectionScoreDisplay("overall")} size={34} />
+                </div>
                 {renderSpecTable(sensorsData)}
               </div>
             ) : null}
@@ -2418,10 +3223,13 @@ Price: ${price}
       case "build_design":
         return (
           <div className="bg-white rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <FaMobile className="text-indigo-500" />
-              Build & Design
-            </h3>
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <FaMobile className="text-indigo-500" />
+                Build & Design
+              </h3>
+              <SpecScoreBadge score={getSectionScoreDisplay("overall")} size={38} />
+            </div>
             {renderSpecTable(mobileData.build_design)}
           </div>
         );
@@ -2524,6 +3332,96 @@ Price: ${price}
     ? mobileData.images[0]
     : null;
   const ogImage = toAbsoluteUrl(primaryImage);
+  const infoOsSummary =
+    mobileData?.performance?.operating_system ||
+    mobileData?.performance?.os ||
+    mobileData?.operating_system;
+  const rearMainCamera = mobileData?.camera?.rear_camera?.main_camera;
+  const rearUltraCamera =
+    mobileData?.camera?.rear_camera?.ultra_wide_camera ||
+    mobileData?.camera?.rear_camera?.ultra_wide;
+  const rearTeleCamera =
+    mobileData?.camera?.rear_camera?.telephoto ||
+    mobileData?.camera?.rear_camera?.periscope;
+  const frontCamera = mobileData?.camera?.front_camera;
+  const rearVideoRaw = mobileData?.camera?.video_recording?.rear;
+  const frontVideoRaw = mobileData?.camera?.video_recording?.front;
+  const rearVideoSummary = Array.isArray(rearVideoRaw)
+    ? rearVideoRaw.slice(0, 3).join(", ")
+    : rearVideoRaw;
+  const frontVideoSummary = Array.isArray(frontVideoRaw)
+    ? frontVideoRaw.slice(0, 2).join(", ")
+    : frontVideoRaw;
+  const infoKeySections = [
+    {
+      key: "performance",
+      scoreKey: "performance",
+      title: "Performance",
+      score: getSectionScore("performance"),
+      points: [
+        mobileData?.performance?.processor || mobileData?.processor,
+        mobileData?.performance?.cpu_clock_speed,
+        mobileData?.performance?.ram,
+      ].filter((value) => hasContent(value)),
+    },
+    {
+      key: "display",
+      scoreKey: "display",
+      title: "Display",
+      score: getSectionScore("display"),
+      points: [
+        [mobileData?.display?.size, mobileData?.display?.panel]
+          .filter(Boolean)
+          .join(" | "),
+        mobileData?.display?.resolution,
+        mobileData?.display?.refresh_rate
+          ? `${mobileData.display.refresh_rate} refresh rate`
+          : null,
+      ].filter((value) => hasContent(value)),
+    },
+    {
+      key: "camera",
+      scoreKey: "camera",
+      title: "Rear Camera",
+      score: getSectionScore("camera"),
+      points: [
+        getMainCameraMp(mobileData) != null
+          ? `${getMainCameraMp(mobileData)} MP main camera`
+          : rearMainCamera?.resolution,
+        rearUltraCamera?.resolution
+          ? `${rearUltraCamera.resolution} ultra-wide`
+          : null,
+        rearTeleCamera?.resolution
+          ? `${rearTeleCamera.resolution} telephoto`
+          : null,
+        rearVideoSummary ? `Video: ${rearVideoSummary}` : null,
+      ].filter((value) => hasContent(value)),
+    },
+    {
+      key: "camera-front",
+      scoreKey: "camera",
+      title: "Front Camera",
+      score: getSectionScore("camera"),
+      points: [
+        frontCamera?.resolution ? `${frontCamera.resolution} selfie camera` : null,
+        frontCamera?.focus || frontCamera?.autofocus || frontCamera?.type,
+        frontVideoSummary ? `Video: ${frontVideoSummary}` : null,
+      ].filter((value) => hasContent(value)),
+    },
+    {
+      key: "battery",
+      scoreKey: "battery",
+      title: "Battery",
+      score: getSectionScore("battery"),
+      points: [
+        getBatteryCapacityMah(mobileData) != null
+          ? `${getBatteryCapacityMah(mobileData)} mAh`
+          : getBatteryCapacityRaw(mobileData),
+        mobileData?.battery?.charging_power || mobileData?.battery?.fast_charging,
+        mobileData?.battery?.battery_type,
+      ].filter((value) => hasContent(value)),
+    },
+  ].filter((section) => section.points.length > 0);
 
   // If initial loading state (no mobileData yet), render spinner now
   if (showInitialLoading) {
@@ -2538,7 +3436,7 @@ Price: ${price}
   }
 
   return (
-    <div className="px-2 lg:px-4 mx-auto max-w-6xl w-full bg-white">
+    <div className="px-2 lg:px-4 mx-auto bg-white max-w-6xl w-full m-0 overflow-hidden">
       <Helmet>
         <title>{metaTitleWithDate}</title>
         <meta name="description" content={metaDescription} />
@@ -2617,7 +3515,7 @@ Price: ${price}
         </div>
       )}
 
-      <div className="overflow-hidden">
+      <div className="bg-white">
         {/* Mobile Header */}
         <div className="p-4 bg-white border-b border-gray-200 lg:hidden">
           <div className="flex justify-between items-start mb-2">
@@ -2669,7 +3567,9 @@ Price: ${price}
               >
                 <FaHeart
                   className={`text-lg ${
-                    isFavorite ? "text-blue-500 fill-current" : "text-gray-400"
+                    isFavorite
+                      ? "text-violet-600 fill-current"
+                      : "text-violet-500"
                   }`}
                 />
               </button>
@@ -2677,7 +3577,7 @@ Price: ${price}
                 onClick={handleShare}
                 className="p-2 rounded-full hover:bg-gray-100"
               >
-                <FaShareAlt className="text-lg text-gray-600" />
+                <FaShareAlt className="text-lg text-violet-600" />
               </button>
             </div>
           </div>
@@ -2691,22 +3591,6 @@ Price: ${price}
         {/* Popular Comparisons */}
         {popularComparisonTargets.length > 0 && (
           <div className="px-4 pt-4 pb-1">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-sm font-semibold text-gray-900">
-                Popular comparisons
-              </h2>
-              <button
-                type="button"
-                onClick={() =>
-                  navigate("/compare", {
-                    state: { initialProduct: mobileData },
-                  })
-                }
-                className="text-xs font-semibold text-purple-700 hover:text-purple-800"
-              >
-                Open compare
-              </button>
-            </div>
             <div className="flex gap-3 overflow-x-auto no-scrollbar pb-3">
               {popularComparisonTargets.map((d) => {
                 const otherId = d?.id ?? d?.product_id ?? d?.productId ?? null;
@@ -2752,11 +3636,40 @@ Price: ${price}
           </div>
         )}
 
+        {/* Top Tabs Section */}
+        <div className="sticky top-0 z-20 border-y border-slate-200 bg-white">
+          <div className="flex overflow-x-auto no-scrollbar bg-white">
+            {primaryTabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActivePrimaryTab(tab.id)}
+                className={`px-4 py-3 font-semibold text-xs uppercase tracking-wide whitespace-nowrap border-b-2 transition-colors duration-200 flex-shrink-0 focus-visible:outline-none ${
+                  activePrimaryTab === tab.id
+                    ? "border-slate-300 text-slate-800 bg-white"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {activePrimaryTab === "info" ? (
+        <>
         <div className="flex flex-col lg:flex-row">
           {/* Images Section */}
-          <div className="lg:w-2/5 p-4 border-b lg:border-b-0 lg:border-r border-indigo-200">
+          <div className="lg:w-2/5 p-4 border-b lg:border-b-0 lg:border-r border-slate-200">
             {/* Main Image */}
-            <div className="rounded-lg p-6 mb-4 relative">
+            <div className="bg-gray-100 rounded-lg p-6 mb-4 relative">
+              <div className="absolute left-2 top-2 z-10 pointer-events-none">
+                <SpecScoreBadge
+                  score={scoreSummary.overallDisplay ?? scoreSummary.overall}
+                  size={40}
+                  showSpecLabel
+                  zeroFallback
+                />
+              </div>
               <img
                 src={
                   mobileData.images?.[activeImage] || "/placeholder-image.jpg"
@@ -2777,8 +3690,8 @@ Price: ${price}
                   <FaHeart
                     className={`${
                       isFavorite
-                        ? "text-blue-500 fill-current"
-                        : "text-gray-600"
+                        ? "text-violet-600 fill-current"
+                        : "text-violet-500"
                     }`}
                   />
                 </button>
@@ -2786,7 +3699,7 @@ Price: ${price}
                   onClick={handleShare}
                   className="p-2 bg-white rounded-full shadow-md hover:shadow-lg"
                 >
-                  <FaShare className="text-gray-600" />
+                  <FaShare className="text-violet-600" />
                 </button>
               </div>
             </div>
@@ -2800,8 +3713,8 @@ Price: ${price}
                     onClick={() => setActiveImage(index)}
                     className={`flex-shrink-0 w-16 h-16 rounded-lg p-1 border-1 transition-all duration-200 ${
                       activeImage === index
-                        ? "border-purple-500 bg-purple-50"
-                        : "border-indigo-100 hover:border-purple-100"
+                        ? "bg-gray-100 rounded-lg border-slate-300"
+                        : "border-slate-200 hover:border-slate-300"
                     }`}
                   >
                     <img
@@ -2829,30 +3742,6 @@ Price: ${price}
               </button>
             </div>
 
-            {/* Quick Specs - Mobile Only */}
-            <div className="lg:hidden grid grid-cols-3 gap-2 mb-4">
-              <div className="text-center p-2 bg-purple-50 rounded-lg">
-                <FaMicrochip className="text-purple-600 text-lg mx-auto mb-1" />
-                <div className="font-bold text-purple-900 text-sm">
-                  {mobileData.performance?.processor?.split(" ")[0] || "-"}
-                </div>
-                <div className="text-xs text-purple-700">Processor</div>
-              </div>
-              <div className="text-center p-2 bg-green-50 rounded-lg">
-                <FaCamera className="text-green-600 text-lg mx-auto mb-1" />
-                <div className="font-bold text-green-900 text-sm">
-                  {getMainCameraMp(mobileData) || "-"} MP
-                </div>
-                <div className="text-xs text-green-700">Main Camera</div>
-              </div>
-              <div className="text-center p-2 bg-purple-50 rounded-lg">
-                <FaBatteryFull className="text-purple-600 text-lg mx-auto mb-1" />
-                <div className="font-bold text-purple-900 text-sm">
-                  {getBatteryCapacityMah(mobileData) || "-"} mAh
-                </div>
-                <div className="text-xs text-purple-700">Battery</div>
-              </div>
-            </div>
             {variants && variants.length > 0 && (
               <div className="mb-6">
                 <h4 className="text-sm font-semibold text-gray-800 mb-2">
@@ -2948,8 +3837,8 @@ Price: ${price}
                     <FaHeart
                       className={`text-xl ${
                         isFavorite
-                          ? "text-blue-500 fill-current"
-                          : "text-gray-400"
+                          ? "text-violet-600 fill-current"
+                          : "text-violet-500"
                       }`}
                     />
                   </button>
@@ -2958,7 +3847,7 @@ Price: ${price}
                     className="p-2 rounded-full hover:bg-gray-100"
                     title="Share"
                   >
-                    <FaShareAlt className="text-xl text-gray-600" />
+                    <FaShareAlt className="text-xl text-violet-600" />
                   </button>
                   {/* Copy link removed â€” share-only */}
                 </div>
@@ -3012,7 +3901,7 @@ Price: ${price}
                         className={`bg-white border rounded-xl p-2.5 transition-all duration-200 ${
                           isActive
                             ? "border-violet-500 ring-2 ring-violet-200 shadow-sm bg-violet-50/40"
-                            : "border-indigo-200 hover:border-violet-300 hover:shadow-sm"
+                            : "border-slate-200 hover:border-slate-300 hover:shadow-sm"
                         }`}
                       >
                         <div className="flex items-center justify-between">
@@ -3070,62 +3959,147 @@ Price: ${price}
               </div>
             )}
 
-            {/* Desktop Quick Specs */}
-            <div className="hidden lg:grid grid-cols-3 gap-4 mb-6">
-              <div className="text-center p-4 bg-purple-50 rounded-xl">
-                <FaMicrochip className="text-purple-600 text-xl mx-auto mb-2" />
-                <div className="font-bold text-purple-900">
-                  {mobileData.performance?.processor || "-"}
+            {infoKeySections.length > 0 ? (
+              <div className="mt-4 bg-white">
+                <div className="px-0 py-1 flex items-center justify-between gap-2">
+                  <h3 className="text-sm font-semibold text-gray-900">Key Specs</h3>
+                  {hasContent(infoOsSummary) ? (
+                    <span className="text-[11px] font-medium text-gray-600">
+                      {formatSpecValue(infoOsSummary, "OS")}
+                    </span>
+                  ) : null}
                 </div>
-                <div className="text-sm text-purple-700">Processor</div>
-              </div>
-              <div className="text-center p-4 bg-green-50 rounded-xl">
-                <FaCamera className="text-green-600 text-xl mx-auto mb-2" />
-                <div className="font-bold text-green-900">
-                  {getMainCameraMp(mobileData) || "-"} MP
+                <div className="space-y-3">
+                  {infoKeySections.map((section) => {
+                    const isBenchOpen = Boolean(infoKeySpecOpen[section.key]);
+                    return (
+                      <div key={section.key} className="py-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="text-sm font-semibold text-gray-900">
+                            {section.title}
+                          </h4>
+                          <div className="flex items-center gap-1.5">
+                            <SpecScoreBadge score={section.score} size={32} />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setInfoKeySpecOpen((prev) => ({
+                                  ...prev,
+                                  [section.key]: !prev[section.key],
+                                }))
+                              }
+                              aria-expanded={isBenchOpen}
+                              aria-label={
+                                isBenchOpen
+                                  ? `Hide ${section.title} benchmark`
+                                  : `Show ${section.title} benchmark`
+                              }
+                              className="inline-flex h-7 w-7 items-center justify-center text-violet-700 hover:text-violet-800"
+                            >
+                              {isBenchOpen ? (
+                                <FaChevronUp size={10} />
+                              ) : (
+                                <FaChevronDown size={10} />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                        <ul className="mt-2 list-disc pl-4 space-y-1 text-sm text-gray-800 marker:text-gray-400">
+                          {section.points.map((point, idx) => (
+                            <li key={idx}>{formatSpecValue(point, section.title)}</li>
+                          ))}
+                        </ul>
+                        <ScoreGroupTable
+                          currentScore={section.score}
+                          peerScores={getGroupPeerScores(section.scoreKey || section.key)}
+                          groupLabel={scoreGroupData.label}
+                          minScore={0}
+                          maxScore={100}
+                          className="mt-2"
+                          defaultOpen={false}
+                          showHeader={false}
+                          isOpen={isBenchOpen}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="text-sm text-green-700">Main Camera</div>
               </div>
-              <div className="text-center p-4 bg-purple-50 rounded-xl">
-                <FaBatteryFull className="text-purple-600 text-xl mx-auto mb-2" />
-                <div className="font-bold text-purple-900">
-                  {getBatteryCapacityMah(mobileData) || "-"} mAh
-                </div>
-                <div className="text-sm text-purple-700">Battery</div>
-              </div>
-            </div>
+            ) : null}
+
           </div>
         </div>
+        </>
+        ) : null}
 
-        {/* Tabs Section */}
-        <div className="border-t border-indigo-200">
-          <div className="flex overflow-x-auto no-scrollbar border-b border-indigo-200">
-            {availableTabs.map((tab) => {
-              const IconComponent = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => handleTabClick(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-3 font-medium text-sm whitespace-nowrap border-b-2 transition-colors duration-200 flex-shrink-0 
-                    ${
+        {activePrimaryTab === "specs" ? (
+          <div className="border-t border-slate-200">
+            <div className="flex overflow-x-auto no-scrollbar border-b border-slate-200 bg-white">
+              {availableTabs.map((tab) => {
+                const IconComponent = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => handleTabClick(tab.id)}
+                    className={`flex items-center gap-2 px-4 py-3 font-medium text-sm whitespace-nowrap border-b-2 transition-colors duration-200 flex-shrink-0 focus-visible:outline-none ${
                       activeTab === tab.id
-                        ? "border-purple-500 text-purple-600 bg-purple-50"
+                        ? "border-slate-300 text-slate-700 bg-slate-50"
                         : "border-transparent text-gray-500 hover:text-gray-700"
                     }`}
-                >
-                  <IconComponent className="text-sm" />
-                  {tab.label}
-                </button>
-              );
-            })}
+                  >
+                    <IconComponent className="text-sm" />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="p-2 sm:p-3">{renderTabContent()}</div>
           </div>
+        ) : null}
 
-          <div className="p-2 sm:p-3">{renderTabContent()}</div>
+        {activePrimaryTab === "competitors" ? (
+          <div className="p-2 sm:p-3 border-t border-slate-200">
+            <CompetitorCards
+              title={
+                mobileData?.name
+                  ? `Competitors For ${mobileData.name}`
+                  : "Top Competitors"
+              }
+              productName={mobileData?.name || mobileData?.model || "This Device"}
+            productId={currentProductId}
+            onCompare={handlePopularCompare}
+            fallbackCompetitors={popularComparisonTargets}
+            currentBrand={mobileData?.brand || ""}
+            currentPrice={currentVariant?.base_price ?? mobileData?.price ?? null}
+            maxCards={6}
+          />
         </div>
+      ) : null}
       </div>
-      <div className="px-3 sm:px-4 lg:px-0">
-        <PopularComparisons variant="flat" className="mt-6 rounded-md" />
-      </div>
+      {activePrimaryTab === "info" ? (
+        <div className="w-full bg-white">
+          <CompetitorCards
+            title={
+              mobileData?.name
+                ? `Competitors For ${mobileData.name}`
+                : "Top Competitors"
+            }
+            productName={mobileData?.name || mobileData?.model || "This Device"}
+            productId={currentProductId}
+            onCompare={handlePopularCompare}
+            fallbackCompetitors={popularComparisonTargets}
+            currentBrand={mobileData?.brand || ""}
+            currentPrice={currentVariant?.base_price ?? mobileData?.price ?? null}
+            maxCards={4}
+            className="w-full"
+          />
+          <ProductDiscoverySections
+            productId={currentProductId}
+            currentBrand={mobileData?.brand || ""}
+            className="w-full"
+          />
+        </div>
+      ) : null}
     </div>
   );
 };

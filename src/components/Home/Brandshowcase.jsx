@@ -58,7 +58,8 @@ const PopularComparisons = ({
           </h2>
         </div>
         <p className="text-sm text-gray-600">
-          Compare top smartphones, laptops, appliances, and networking devices side by side
+          Compare top smartphones, laptops, appliances, and networking devices
+          side by side
         </p>
       </div>
 
@@ -72,7 +73,7 @@ const PopularComparisons = ({
           >
             {/* Comparison Card */}
             <div
-              className={`relative bg-gray-100 p-2 sm:p-3 transition-all duration-300 group-hover:shadow-lg group-hover:border-blue-300 ${
+              className={`relative bg-white border border-purple-100 p-2 sm:p-3 transition-all duration-300 group-hover:shadow-lg group-hover:border-blue-300 ${
                 isFlat ? "" : "rounded-xl"
               }`}
             >
@@ -177,4 +178,3 @@ const PopularComparisons = ({
 };
 
 export default PopularComparisons;
-

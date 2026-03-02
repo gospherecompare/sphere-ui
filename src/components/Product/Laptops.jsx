@@ -40,6 +40,8 @@ import useTitle from "../../hooks/useTitle";
 import useDevice from "../../hooks/useDevice";
 import { generateSlug } from "../../utils/slugGenerator";
 import normalizeProduct from "../../utils/normalizeProduct";
+import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
+import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
 import {
   computePopularLaptopFeatures,
   getLaptopFeatureSortValue,
@@ -145,6 +147,44 @@ const ImageCarousel = ({ images = [] }) => {
   );
 };
 
+const clampScore100 = (value) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  if (n <= 1) return Math.max(0, Math.min(100, n * 100));
+  if (n <= 10) return Math.max(0, Math.min(100, n * 10));
+  return Math.max(0, Math.min(100, n));
+};
+
+const mapScoreToDisplayBand = (score, minTarget = 80, maxTarget = 98) => {
+  const normalized = clampScore100(score);
+  if (normalized == null) return null;
+  const mapped = minTarget + (normalized / 100) * (maxTarget - minTarget);
+  return Number(mapped.toFixed(1));
+};
+
+const CircularScoreBadge = ({ score, size = 42 }) => {
+  const normalized = clampScore100(score);
+  const percentage = normalized != null ? Number(normalized.toFixed(1)) : null;
+  const label = percentage != null ? `${percentage.toFixed(1)}%` : "--";
+
+  return (
+    <div
+      className="inline-flex flex-col items-center justify-center rounded-md border border-violet-200 bg-violet-50/95 px-1.5 py-1 leading-none"
+      style={{ minWidth: `${Math.max(38, Math.round(size))}px` }}
+      aria-label={
+        percentage != null
+          ? `Overall score ${percentage.toFixed(1)} percent`
+          : "Overall score unavailable"
+      }
+    >
+      <span className="text-[11px] font-bold text-violet-700">{label}</span>
+      <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide text-violet-600">
+        Spec
+      </span>
+    </div>
+  );
+};
+
 const Laptops = () => {
   const animationStyles = `
     @keyframes slideUp {
@@ -175,6 +215,7 @@ const Laptops = () => {
     ? feature.toString().toLowerCase().replace(/\s+/g, "-")
     : null;
   const dispatch = useDispatch();
+  const deviceFieldProfiles = useDeviceFieldProfiles();
   const [sortBy, setSortBy] = useState("featured");
   const [popularFeatureOrder, setPopularFeatureOrder] = useState([]);
   const [popularFeatureOrderLoaded, setPopularFeatureOrderLoaded] =
@@ -456,12 +497,19 @@ const Laptops = () => {
     const colorOptions = [
       ...new Set(colorOptionsRaw.filter(Boolean).map((value) => String(value))),
     ];
+    const profileResult = resolveDeviceFieldProfile(
+      "laptop",
+      raw,
+      deviceFieldProfiles,
+    );
+    const profileDisplay = profileResult.display_display || {};
 
     const processorName = pickFirstString(
       performance.processor_name,
       performance.processor,
       `${performance.brand || ""} ${performance.model || ""}`.trim(),
       raw.processor,
+      profileDisplay.processor,
     );
 
     const cpuBrand = pickFirstString(
@@ -480,13 +528,18 @@ const Laptops = () => {
       display.panel_type,
       display.type,
       display.panel,
+      profileDisplay.panel_type,
     );
-    const resolution = pickFirstString(display.resolution);
-    const refreshRate = pickFirstString(display.refresh_rate);
+    const resolution = pickFirstString(display.resolution, profileDisplay.resolution);
+    const refreshRate = pickFirstString(
+      display.refresh_rate,
+      profileDisplay.refresh_rate,
+    );
     const displayLabel = pickFirstString(
       display.display_size,
       display.size,
       display.size_cm,
+      profileDisplay.display_size,
     );
     const displaySummary = [
       displayLabel,
@@ -506,6 +559,7 @@ const Laptops = () => {
         memory.size,
         memory.ram_type,
         memory.type,
+        profileDisplay.ram,
       );
 
     const storageText =
@@ -516,12 +570,14 @@ const Laptops = () => {
         storage.size,
         storage.storage_type,
         storage.type,
+        profileDisplay.storage,
       );
 
     const gpuLabel = pickFirstString(
       performance.gpu,
       raw.graphics?.model,
       raw.gpu,
+      profileDisplay.graphics,
     );
 
     const graphics =
@@ -547,6 +603,25 @@ const Laptops = () => {
       const n = Number(value);
       return Number.isFinite(n) ? n : null;
     };
+    const overallScoreRaw = toFiniteNumber(
+      raw.overall_score_v2 ??
+        raw.overallScoreV2 ??
+        raw.spec_score_v2 ??
+        raw.specScoreV2 ??
+        raw.overall_score ??
+        raw.overallScore ??
+        raw.spec_score ??
+        raw.specScore ??
+        raw.hook_score ??
+        raw.hookScore ??
+        profileResult.score,
+    );
+    const overallScoreDisplay = toFiniteNumber(
+      raw.overall_score_v2_display_80_98 ??
+        raw.overallScoreV2Display8098 ??
+        raw.spec_score_v2_display_80_98 ??
+        raw.specScoreV2Display8098,
+    );
     const trendScore = toFiniteNumber(
       raw.trend_score ?? raw.trending_score ?? raw.trendScore,
     );
@@ -636,6 +711,7 @@ const Laptops = () => {
           battery.capacity_wh,
           battery.wh,
           battery.battery_type,
+          profileDisplay.battery,
         ),
         batteryLife: pickFirstString(
           battery.battery_life,
@@ -644,7 +720,11 @@ const Laptops = () => {
         ),
         touchscreen:
           display.touchscreen ?? display.touch_support ?? display.touch ?? "",
-        os: pickFirstString(software.operating_system, software.os),
+        os: pickFirstString(
+          software.operating_system,
+          software.os,
+          profileDisplay.os,
+        ),
         weight: physical.weight || "",
         color: colorOptions.join(" / ") || pickFirstString(physical.color),
         ports: pickFirstString(
@@ -669,6 +749,11 @@ const Laptops = () => {
         raw.created_at ||
         metadata.created_at ||
         "",
+      overall_score: overallScoreRaw,
+      overall_score_display:
+        overallScoreDisplay != null
+          ? overallScoreDisplay
+          : mapScoreToDisplayBand(overallScoreRaw),
       trendBadge:
         trendBadge ||
         (trendScore != null
@@ -695,6 +780,7 @@ const Laptops = () => {
       storageOptions,
       colorOptions,
       features: featureList,
+      field_profile: profileResult,
     };
   };
 
@@ -2171,6 +2257,12 @@ const Laptops = () => {
                       <div className="relative flex-shrink-0 w-full h-36 sm:h-48 rounded-2xl overflow-hidden group bg-white">
                         <div className="w-full h-full flex items-center justify-center p-1.5 sm:p-2">
                           <ImageCarousel images={device.images} />
+                        </div>
+                        <div className="absolute left-1.5 top-1.5 z-10 pointer-events-none">
+                          <CircularScoreBadge
+                            score={device.overall_score_display ?? device.overall_score}
+                            size={42}
+                          />
                         </div>
                         {/* Compare Checkbox Overlay - Top Right */}
                         <div

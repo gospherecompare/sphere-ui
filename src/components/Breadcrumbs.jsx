@@ -153,6 +153,15 @@ const routes = [
   { path: "/brands", breadcrumb: "Brands" },
   { path: "/product/:id", breadcrumb: () => "Product Details" },
   { path: "/about", breadcrumb: "About" },
+  { path: "/blogs", breadcrumb: "Blogs" },
+  {
+    path: "/blogs/:slug",
+    breadcrumb: renderSlugBreadcrumb,
+  },
+  {
+    path: "/blog/:slug",
+    breadcrumb: renderSlugBreadcrumb,
+  },
   { path: "/contact", breadcrumb: "Contact" },
   { path: "/privacy-policy", breadcrumb: "Privacy Policy" },
   { path: "/terms", breadcrumb: "Terms" },

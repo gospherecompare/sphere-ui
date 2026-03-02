@@ -17,7 +17,7 @@ import {
 import "../styles/hideScrollbar.css";
 import { generateSlug } from "../utils/slugGenerator";
 
-const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL = "https://api.apisphere.in/api";
 
 const Wishlist = () => {
   const navigate = useNavigate();
@@ -189,7 +189,7 @@ const Wishlist = () => {
     const loadFromApi = async () => {
       setLoading(true);
       try {
-        const res = await fetch("http://localhost:5000/api/wishlist", {
+        const res = await fetch("https://api.apisphere.in/api/wishlist", {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
 
@@ -236,7 +236,7 @@ const Wishlist = () => {
       (async () => {
         try {
           const res = await fetch(
-            `http://localhost:5000/api/wishlist/${encodeURIComponent(
+            `https://api.apisphere.in/api/wishlist/${encodeURIComponent(
               item.favoriteId,
             )}`,
             {
@@ -373,7 +373,7 @@ const Wishlist = () => {
       item.image_url ||
       item.images?.[0] ||
       item.primary_image ||
-      "https://via.placeholder.com/250x250?text=Product"
+      "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='250' height='250' viewBox='0 0 250 250'%3E%3Crect width='250' height='250' fill='%23f3f4f6'/%3E%3Ctext x='125' y='128' font-family='Arial' font-size='14' text-anchor='middle' fill='%239ca3af'%3EProduct%3C/text%3E%3C/svg%3E"
     );
   };
 

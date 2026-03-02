@@ -85,8 +85,8 @@ const MobilePriceFinder = () => {
       {/* Header Section */}
       <div className="mb-8 px-2">
         <div className="flex items-center gap-3 mb-3">
-          <div className="p-2 rounded-xl bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 shadow-lg">
-            <FaFilter className="text-white text-lg" />
+          <div className="p-2">
+            <FaFilter className="text-purple-500 text-lg" />
           </div>
           <div>
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">

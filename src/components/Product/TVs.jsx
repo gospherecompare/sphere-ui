@@ -37,9 +37,11 @@ import { useNavigate, useLocation } from "react-router-dom";
 import useStoreLogos from "../../hooks/useStoreLogos";
 import Spinner from "../ui/Spinner";
 import useTitle from "../../hooks/useTitle";
+import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import { useSearchParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { generateSlug } from "../../utils/slugGenerator";
+import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
 import {
   fetchHomeAppliances,
   fetchTrendingHomeAppliances,
@@ -153,6 +155,44 @@ const ImageCarousel = ({ images = [] }) => {
   );
 };
 
+const clampScore100 = (value) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  if (n <= 1) return Math.max(0, Math.min(100, n * 100));
+  if (n <= 10) return Math.max(0, Math.min(100, n * 10));
+  return Math.max(0, Math.min(100, n));
+};
+
+const mapScoreToDisplayBand = (score, minTarget = 80, maxTarget = 98) => {
+  const normalized = clampScore100(score);
+  if (normalized == null) return null;
+  const mapped = minTarget + (normalized / 100) * (maxTarget - minTarget);
+  return Number(mapped.toFixed(1));
+};
+
+const CircularScoreBadge = ({ score, size = 42 }) => {
+  const normalized = clampScore100(score);
+  const percentage = normalized != null ? Number(normalized.toFixed(1)) : null;
+  const label = percentage != null ? `${percentage.toFixed(1)}%` : "--";
+
+  return (
+    <div
+      className="inline-flex flex-col items-center justify-center rounded-md border border-violet-200 bg-violet-50/95 px-1.5 py-1 leading-none"
+      style={{ minWidth: `${Math.max(38, Math.round(size))}px` }}
+      aria-label={
+        percentage != null
+          ? `Overall score ${percentage.toFixed(1)} percent`
+          : "Overall score unavailable"
+      }
+    >
+      <span className="text-[11px] font-bold text-violet-700">{label}</span>
+      <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide text-violet-600">
+        Spec
+      </span>
+    </div>
+  );
+};
+
 // Helper function to get appliance type icon
 const getApplianceTypeIcon = (type) => {
   switch (type?.toLowerCase()) {
@@ -209,6 +249,7 @@ const TVs = () => {
   `;
 
   const { getLogo, getStore, getStoreLogo } = useStoreLogos();
+  const deviceFieldProfiles = useDeviceFieldProfiles();
   // Helper function to extract numeric price
   const extractNumericPrice = (price) => {
     if (!price || price === "NaN") return 0;
@@ -504,6 +545,53 @@ const TVs = () => {
     return "";
   };
 
+  const normalizeLooseKey = (value) =>
+    String(value || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "");
+
+  const extractVariantSpecificValue = (rawValue, variantSizeLabel) => {
+    const sizeLabel = toDisplayText(variantSizeLabel);
+    if (!sizeLabel) return toDisplayText(rawValue);
+
+    if (rawValue && typeof rawValue === "object" && !Array.isArray(rawValue)) {
+      const targetKey = normalizeLooseKey(sizeLabel);
+      const matchedEntry = Object.entries(rawValue).find(([key]) => {
+        const normalizedKey = normalizeLooseKey(key);
+        return (
+          normalizedKey === targetKey ||
+          normalizedKey.includes(targetKey) ||
+          targetKey.includes(normalizedKey)
+        );
+      });
+      if (matchedEntry) {
+        return toDisplayText(matchedEntry[1]);
+      }
+    }
+
+    const rawText = toDisplayText(rawValue);
+    if (!rawText) return "";
+
+    const segments = rawText
+      .split("|")
+      .map((segment) => segment.trim())
+      .filter(Boolean);
+    if (segments.length > 1) {
+      const targetKey = normalizeLooseKey(sizeLabel);
+      const matchedSegment = segments.find((segment) =>
+        normalizeLooseKey(segment).includes(targetKey),
+      );
+      if (matchedSegment) {
+        const colonIndex = matchedSegment.indexOf(":");
+        return colonIndex >= 0
+          ? matchedSegment.slice(colonIndex + 1).trim()
+          : matchedSegment;
+      }
+    }
+
+    return rawText;
+  };
+
   const toNumericPrice = (value) => {
     if (value === null || value === undefined || value === "") return null;
     if (typeof value === "number") {
@@ -594,6 +682,13 @@ const TVs = () => {
     const displayJson = toObjectIfNeeded(
       apiDevice.display_json || apiDevice.display,
     );
+    const videoEngineJson = toObjectIfNeeded(
+      apiDevice.video_engine_json ||
+        apiDevice.video_engine ||
+        apiDevice.videoEngine ||
+        apiDevice.performance_json ||
+        apiDevice.performance,
+    );
     const audioJson = toObjectIfNeeded(apiDevice.audio_json || apiDevice.audio);
     const smartTvJson = toObjectIfNeeded(
       apiDevice.smart_tv_json || apiDevice.smart_tv,
@@ -603,10 +698,18 @@ const TVs = () => {
     );
     const portsJson = toObjectIfNeeded(apiDevice.ports_json || apiDevice.ports);
     const powerJson = toObjectIfNeeded(apiDevice.power_json || apiDevice.power);
+    const physicalJson = toObjectIfNeeded(
+      apiDevice.physical_json ||
+        apiDevice.physical ||
+        apiDevice.physical_details ||
+        apiDevice.dimensions_json ||
+        apiDevice.dimensions,
+    );
     const dimensionsJson = toObjectIfNeeded(
       apiDevice.dimensions_json ||
         apiDevice.dimensions ||
-        apiDevice.physical_details,
+        apiDevice.physical_details ||
+        physicalJson,
     );
     const designJson = toObjectIfNeeded(
       apiDevice.design_json || apiDevice.design,
@@ -616,6 +719,12 @@ const TVs = () => {
     );
     const warrantyJson = toObjectIfNeeded(
       apiDevice.warranty_json || apiDevice.warranty,
+    );
+    const productDetailsJson = toObjectIfNeeded(
+      apiDevice.product_details_json || apiDevice.product_details,
+    );
+    const inTheBoxJson = toObjectIfNeeded(
+      apiDevice.in_the_box_json || apiDevice.in_the_box,
     );
 
     const images = (() => {
@@ -750,33 +859,98 @@ const TVs = () => {
     const numericPrice = numericCandidates.length
       ? Math.min(...numericCandidates)
       : 0;
+    const profileSource = {
+      ...apiDevice,
+      basic_info_json: basicInfo,
+      key_specs_json: keySpecs,
+      display_json: displayJson,
+      video_engine_json: videoEngineJson,
+      audio_json: audioJson,
+      smart_tv_json: smartTvJson,
+      connectivity_json: connectivityJson,
+      ports_json: portsJson,
+      power_json: powerJson,
+      physical_json: physicalJson,
+      product_details_json: productDetailsJson,
+      in_the_box_json: inTheBoxJson,
+      warranty_json: warrantyJson,
+      images,
+      variants,
+      variants_json: variants,
+    };
+    const profileResult = resolveDeviceFieldProfile(
+      "tv",
+      profileSource,
+      deviceFieldProfiles,
+    );
+    const profileDisplay = profileResult.display_display || {};
+    const toFiniteNumber = (value) => {
+      const n = Number(value);
+      return Number.isFinite(n) ? n : null;
+    };
+    const pickScoreValue = (...values) => {
+      for (const value of values) {
+        const resolved = toFiniteNumber(value);
+        if (resolved !== null && resolved > 0) return resolved;
+      }
+      for (const value of values) {
+        const resolved = toFiniteNumber(value);
+        if (resolved !== null) return resolved;
+      }
+      return null;
+    };
+    const overallScoreRaw = pickScoreValue(
+      apiDevice.overall_score_v2,
+      apiDevice.overallScoreV2,
+      apiDevice.spec_score_v2,
+      apiDevice.specScoreV2,
+      apiDevice.overall_score,
+      apiDevice.overallScore,
+      apiDevice.spec_score,
+      apiDevice.specScore,
+      apiDevice.hook_score,
+      apiDevice.hookScore,
+      profileResult.score,
+    );
+    const overallScoreDisplay = pickScoreValue(
+      apiDevice.overall_score_v2_display_80_98,
+      apiDevice.overallScoreV2Display8098,
+      apiDevice.spec_score_v2_display_80_98,
+      apiDevice.specScoreV2Display8098,
+    );
 
     const screenSize = firstNonEmpty(
       keySpecs.screen_size,
       displayJson.screen_size,
       variants[0]?.screen_size,
+      profileDisplay.screen_size,
     );
     const resolution = firstNonEmpty(
       keySpecs.resolution,
       displayJson.resolution,
+      profileDisplay.resolution,
     );
     const refreshRate = firstNonEmpty(
       keySpecs.refresh_rate,
       displayJson.refresh_rate,
+      profileDisplay.refresh_rate,
     );
     const panelType = firstNonEmpty(
       keySpecs.panel_type,
       displayJson.panel_type,
+      profileDisplay.panel_type,
     );
     const operatingSystem = firstNonEmpty(
       keySpecs.operating_system,
       smartTvJson.operating_system,
+      profileDisplay.os,
     );
     const rawEnergyRating = firstNonEmpty(
       powerJson.energy_rating,
       powerJson.energy_star_rating,
       keySpecs.energy_rating,
       keySpecs.energy_star_rating,
+      profileDisplay.energy_rating,
     );
     const energyRating =
       rawEnergyRating && /^\d+(\.\d+)?$/.test(String(rawEnergyRating))
@@ -870,6 +1044,12 @@ const TVs = () => {
         basicInfo.model_number,
         apiDevice.model_number,
       ),
+      spec_score: overallScoreRaw,
+      overall_score: overallScoreRaw,
+      overall_score_display:
+        overallScoreDisplay != null
+          ? overallScoreDisplay
+          : mapScoreToDisplayBand(overallScoreRaw),
       price:
         numericPrice > 0
           ? `₹${numericPrice.toLocaleString()}`
@@ -900,6 +1080,7 @@ const TVs = () => {
         audioOutput: firstNonEmpty(
           keySpecs.audio_output,
           audioJson.output_power,
+          profileDisplay.audio_output,
         ),
         hdmi: firstNonEmpty(portsJson.hdmi),
         usb: firstNonEmpty(portsJson.usb),
@@ -919,20 +1100,27 @@ const TVs = () => {
       warrantyDetails: sanitizedWarrantyDetails,
       country: firstNonEmpty(
         warrantyJson.country_of_origin,
+        productDetailsJson.country_of_origin,
         apiDevice.country_of_origin,
       ),
       applianceTypeIcon: getApplianceTypeIcon(applianceTypeRaw),
+      basic_info_json: basicInfo,
       key_specs_json: keySpecs,
       display_json: displayJson,
+      video_engine_json: videoEngineJson,
       audio_json: audioJson,
       smart_tv_json: smartTvJson,
       connectivity_json: connectivityJson,
       ports_json: portsJson,
       power_json: powerJson,
+      physical_json: physicalJson,
       dimensions_json: dimensionsJson,
       design_json: designJson,
       gaming_json: gamingJson,
+      product_details_json: productDetailsJson,
+      in_the_box_json: inTheBoxJson,
       warranty_json: warrantyJson,
+      field_profile: profileResult,
     };
   };
 
@@ -1172,6 +1360,32 @@ const TVs = () => {
       device.specs?.screenSize,
       device.specs?.capacity,
     );
+    const variantSummary = firstNonEmpty(variant?.specification_summary);
+    const variantSummaryIsSize =
+      normalizeLooseKey(variantSummary) === normalizeLooseKey(resolvedScreenSize);
+    const usableVariantSummary = variantSummaryIsSize ? "" : variantSummary;
+    const resolvedResolution = firstNonEmpty(
+      variant?.resolution,
+      usableVariantSummary,
+      variant?.variant_resolution,
+      variant?.attributes?.resolution,
+      extractVariantSpecificValue(device.specs?.resolution, resolvedScreenSize),
+      device.specs?.resolution,
+    );
+    const resolvedRefreshRate = firstNonEmpty(
+      variant?.refresh_rate,
+      variant?.attributes?.refresh_rate,
+      extractVariantSpecificValue(device.specs?.refreshRate, resolvedScreenSize),
+      device.specs?.refreshRate,
+    );
+    const resolvedPanelType = firstNonEmpty(
+      variant?.panel_type,
+      variant?.display_type,
+      variant?.attributes?.panel_type,
+      extractVariantSpecificValue(device.specs?.displayType, resolvedScreenSize),
+      device.specs?.displayType,
+      device.specs?.type,
+    );
 
     const variantImages = Array.isArray(variant?.images)
       ? variant.images.filter(Boolean)
@@ -1194,6 +1408,9 @@ const TVs = () => {
           device.specs?.capacity ||
           device.specs?.screenSize ||
           "",
+        resolution: resolvedResolution || "",
+        refreshRate: resolvedRefreshRate || "",
+        displayType: resolvedPanelType || "",
       },
       numericCapacity:
         extractCapacityValue(
@@ -2227,7 +2444,7 @@ const TVs = () => {
         null;
       const pid = Number(rawPid);
       if (Number.isInteger(pid) && pid > 0) {
-        fetch(`http://localhost:500/api/public/product/${pid}/view`, {
+        fetch(`https://api.apisphere.in/api/public/product/${pid}/view`, {
           method: "POST",
         }).catch(() => {});
       }
@@ -2918,6 +3135,12 @@ const TVs = () => {
                         <div className="w-full h-full flex items-center justify-center p-1.5 sm:p-2">
                           <ImageCarousel images={device.images} />
                         </div>
+                        <div className="absolute left-1.5 top-1.5 z-10 pointer-events-none">
+                          <CircularScoreBadge
+                            score={device.overall_score_display ?? device.overall_score}
+                            size={42}
+                          />
+                        </div>
                         {/* Compare Checkbox Overlay - Top Right */}
                         <div
                           onClick={(e) => e.stopPropagation()}
@@ -2951,21 +3174,56 @@ const TVs = () => {
                               {device.name || device.model || "TV"}
                             </h5>
                             {(() => {
+                              const activeSize = firstNonEmpty(
+                                device.variant?.screen_size,
+                                device.variant?.size,
+                                device.variant?.variant_key,
+                                device.specs?.screenSize,
+                                device.specs?.capacity,
+                              );
                               const screenSize = String(
-                                device.specs?.screenSize ||
-                                  device.specs?.capacity ||
-                                  "",
+                                activeSize || device.specs?.screenSize || "",
                               ).trim();
+                              const variantSummary = firstNonEmpty(
+                                device.variant?.specification_summary,
+                              );
+                              const variantSummaryIsSize =
+                                normalizeLooseKey(variantSummary) ===
+                                normalizeLooseKey(screenSize);
                               const resolution = String(
-                                device.specs?.resolution || "",
+                                firstNonEmpty(
+                                  device.variant?.resolution,
+                                  variantSummaryIsSize ? "" : variantSummary,
+                                  device.variant?.variant_resolution,
+                                  extractVariantSpecificValue(
+                                    device.specs?.resolution,
+                                    screenSize,
+                                  ),
+                                  device.specs?.resolution,
+                                ),
                               ).trim();
                               const refreshRate = String(
-                                device.specs?.refreshRate || "",
+                                firstNonEmpty(
+                                  device.variant?.refresh_rate,
+                                  extractVariantSpecificValue(
+                                    device.specs?.refreshRate,
+                                    screenSize,
+                                  ),
+                                  device.specs?.refreshRate,
+                                ),
                               ).trim();
                               const panelType = String(
-                                device.specs?.displayType ||
+                                firstNonEmpty(
+                                  device.variant?.panel_type,
+                                  device.variant?.display_type,
+                                  extractVariantSpecificValue(
+                                    device.specs?.displayType,
+                                    screenSize,
+                                  ),
+                                  device.specs?.displayType,
                                   device.specs?.type ||
                                   "",
+                                ),
                               ).trim();
                               const operatingSystem = String(
                                 device.specs?.operatingSystem || "",

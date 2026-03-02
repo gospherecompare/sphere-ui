@@ -34,9 +34,63 @@ import Spinner from "../ui/Spinner";
 import { laptopMeta } from "../../constants/meta";
 import { Helmet } from "react-helmet-async";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
+import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
+import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
+import {
+  normalizeGroupKey,
+  normalizeScore100Value,
+  remapScoreToBand,
+} from "../../utils/groupScoreStats";
+import ScoreGroupTable from "../ui/ScoreGroupTable";
+
+const normalizeScore100 = (value) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  if (n <= 1) return Math.max(0, Math.min(100, n * 100));
+  if (n <= 10) return Math.max(0, Math.min(100, n * 10));
+  return Math.max(0, Math.min(100, n));
+};
+
+const SpecScoreBadge = ({
+  score,
+  size = 40,
+  showSpecLabel = false,
+  zeroFallback = false,
+}) => {
+  const normalized = normalizeScore100(score);
+  const percentageRaw =
+    normalized != null
+      ? Number(normalized.toFixed(1))
+      : zeroFallback
+        ? 0
+        : null;
+  const percentage =
+    percentageRaw != null ? remapScoreToBand(percentageRaw, 80, 98) : null;
+  const label = percentage != null ? `${percentage.toFixed(1)}%` : "--";
+
+  return (
+    <div
+      className="inline-flex flex-col items-center justify-center rounded-md border border-violet-200 bg-violet-50/95 px-1.5 py-1 leading-none"
+      style={{ minWidth: `${Math.max(38, Math.round(size))}px` }}
+      aria-label={
+        percentage != null
+          ? `Overall score ${percentage.toFixed(1)} percent`
+          : "Overall score unavailable"
+      }
+    >
+      <span className="text-[11px] font-bold text-violet-700">{label}</span>
+      {showSpecLabel ? (
+        <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide text-violet-600">
+          Spec
+        </span>
+      ) : null}
+    </div>
+  );
+};
 
 const LaptopDetailCard = () => {
   const { getLogo } = useStoreLogos();
+  const deviceFieldProfiles = useDeviceFieldProfiles();
   const normalizeLaptop = (l) => {
     if (!l) return l;
 
@@ -338,7 +392,7 @@ const LaptopDetailCard = () => {
       features: features.length ? features : toArray(existingSpecs.features),
     };
 
-    return {
+    const normalizedLaptop = {
       ...l,
       id: l.id || l.product_id || null,
       product_id: l.product_id || l.id || null,
@@ -386,6 +440,22 @@ const LaptopDetailCard = () => {
       specifications,
       images,
     };
+    const profileResult = resolveDeviceFieldProfile(
+      "laptop",
+      normalizedLaptop,
+      deviceFieldProfiles,
+    );
+    normalizedLaptop.field_profile = profileResult;
+    if (
+      normalizedLaptop.spec_score == null &&
+      normalizedLaptop.overall_score == null &&
+      normalizedLaptop.hook_score == null
+    ) {
+      normalizedLaptop.spec_score = profileResult.score;
+      normalizedLaptop.overall_score = profileResult.score;
+    }
+
+    return normalizedLaptop;
   };
 
   // Read URL and route params and select laptop by brand/model/variant details
@@ -677,6 +747,202 @@ const LaptopDetailCard = () => {
   const currentVariant = variants?.[selectedVariant];
   const currentProductId =
     laptopData?.id ?? laptopData?.product_id ?? laptopData?.productId ?? null;
+  const pickScore100 = (...values) => {
+    for (const value of values) {
+      const normalized = normalizeScore100(value);
+      if (normalized != null) return normalized;
+    }
+    return null;
+  };
+  const sectionScores = {
+    specifications: pickScore100(
+      laptopData?.specifications?.score,
+      laptopData?.specifications?.spec_score,
+      laptopData?.spec_score,
+      laptopData?.specScore,
+      laptopData?.field_profile?.score,
+    ),
+    display: pickScore100(
+      laptopData?.display?.score,
+      laptopData?.specifications?.display_score,
+      laptopData?.field_profile?.section_scores?.display,
+    ),
+    performance: pickScore100(
+      laptopData?.performance?.score,
+      laptopData?.specifications?.performance_score,
+      laptopData?.field_profile?.section_scores?.core,
+    ),
+    battery: pickScore100(
+      laptopData?.battery?.score,
+      laptopData?.specifications?.battery_score,
+      laptopData?.field_profile?.section_scores?.core,
+    ),
+    build: pickScore100(
+      laptopData?.physical?.score,
+      laptopData?.specifications?.build_score,
+      laptopData?.field_profile?.section_scores?.core,
+    ),
+    connectivity: pickScore100(
+      laptopData?.connectivity?.score,
+      laptopData?.specifications?.connectivity_score,
+      laptopData?.specifications?.network_score,
+      laptopData?.field_profile?.section_scores?.display,
+    ),
+    software: pickScore100(
+      laptopData?.software?.score,
+      laptopData?.warranty?.score,
+      laptopData?.specifications?.software_score,
+      laptopData?.field_profile?.section_scores?.display,
+    ),
+  };
+  const numericSectionScores = Object.values(sectionScores).filter((score) =>
+    Number.isFinite(score),
+  );
+  const overallScore = pickScore100(
+    laptopData?.spec_score,
+    laptopData?.specScore,
+    laptopData?.overall_score,
+    laptopData?.overallScore,
+    laptopData?.hook_score,
+    laptopData?.hookScore,
+    laptopData?.field_profile?.score,
+    laptopData?.rating,
+    laptopData?.avg_rating,
+    numericSectionScores.length
+      ? numericSectionScores.reduce((sum, score) => sum + score, 0) /
+          numericSectionScores.length
+      : null,
+  );
+  const getSectionScore = (key) =>
+    sectionScores[key] != null ? sectionScores[key] : overallScore;
+  const pickLaptopScore100 = (...values) => {
+    for (const value of values) {
+      const normalized = normalizeScore100Value(value);
+      if (normalized != null) return normalized;
+    }
+    return null;
+  };
+  const getLaptopSectionScoreForGroup = (device, sectionKey) => {
+    const overall = pickLaptopScore100(
+      device?.spec_score,
+      device?.specScore,
+      device?.overall_score,
+      device?.overallScore,
+      device?.hook_score,
+      device?.hookScore,
+      device?.field_profile?.score,
+      device?.rating,
+      device?.avg_rating,
+    );
+    const coreFallback = pickLaptopScore100(
+      device?.field_profile?.section_scores?.core,
+      overall,
+    );
+    const displayFallback = pickLaptopScore100(
+      device?.field_profile?.section_scores?.display,
+      overall,
+    );
+
+    switch (sectionKey) {
+      case "overall":
+        return overall;
+      case "specifications":
+        return pickLaptopScore100(
+          device?.specifications?.score,
+          device?.specifications?.spec_score,
+          device?.spec_score,
+          device?.specScore,
+          overall,
+        );
+      case "display":
+        return pickLaptopScore100(
+          device?.display?.score,
+          device?.specifications?.display_score,
+          displayFallback,
+          overall,
+        );
+      case "performance":
+        return pickLaptopScore100(
+          device?.performance?.score,
+          device?.specifications?.performance_score,
+          coreFallback,
+          overall,
+        );
+      case "battery":
+        return pickLaptopScore100(
+          device?.battery?.score,
+          device?.specifications?.battery_score,
+          coreFallback,
+          overall,
+        );
+      case "build":
+        return pickLaptopScore100(
+          device?.physical?.score,
+          device?.specifications?.build_score,
+          coreFallback,
+          overall,
+        );
+      case "connectivity":
+        return pickLaptopScore100(
+          device?.connectivity?.score,
+          device?.specifications?.connectivity_score,
+          device?.specifications?.network_score,
+          displayFallback,
+          overall,
+        );
+      case "software":
+        return pickLaptopScore100(
+          device?.software?.score,
+          device?.warranty?.score,
+          device?.specifications?.software_score,
+          displayFallback,
+          overall,
+        );
+      default:
+        return overall;
+    }
+  };
+  const scoreGroupData = (() => {
+    const sourceList = Array.isArray(laptops) ? laptops : [];
+    const normalizedList = sourceList.map((item) => normalizeLaptop(item)).filter(Boolean);
+    if (!laptopData || normalizedList.length === 0) {
+      return { label: "All Laptops", byKey: {} };
+    }
+
+    const currentId = String(
+      laptopData?.id ?? laptopData?.product_id ?? laptopData?.productId ?? "",
+    );
+    const currentGroupKey = normalizeGroupKey(
+      laptopData?.category || laptopData?.product_type || categoryParam,
+      "laptop",
+    );
+    const sameGroup = normalizedList.filter(
+      (item) =>
+        normalizeGroupKey(item?.category || item?.product_type || categoryParam, "laptop") ===
+        currentGroupKey,
+    );
+    const scopedList = sameGroup.length > 0 ? sameGroup : normalizedList;
+    const byKey = {};
+    const scoreKeys = ["overall", ...Object.keys(sectionScores)];
+
+    scopedList.forEach((item) => {
+      const itemId = String(item?.id ?? item?.product_id ?? item?.productId ?? "");
+      if (itemId && currentId && itemId === currentId) return;
+      scoreKeys.forEach((key) => {
+        const value = getLaptopSectionScoreForGroup(item, key);
+        if (!Number.isFinite(value)) return;
+        if (!byKey[key]) byKey[key] = [];
+        byKey[key].push(value);
+      });
+    });
+
+    return {
+      label: laptopData?.category || laptopData?.product_type || categoryParam || "All Laptops",
+      byKey,
+    };
+  })();
+  const getGroupPeerScores = (sectionKey) =>
+    scoreGroupData.byKey?.[sectionKey || "overall"] || [];
 
   const popularComparisonTargets = (() => {
     const list = Array.isArray(laptops) ? laptops : [];
@@ -1478,10 +1744,22 @@ const LaptopDetailCard = () => {
                 id="spec-specifications-main"
                 className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
               >
-                <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
-                  <FaMicrochip className="text-purple-500" />
-                  Processor & Memory
-                </h4>
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wide flex items-center gap-2">
+                    <FaMicrochip className="text-purple-500" />
+                    Processor & Memory
+                  </h4>
+                  <SpecScoreBadge
+                    score={getSectionScore("specifications")}
+                    size={38}
+                  />
+                </div>
+                <ScoreGroupTable
+                  currentScore={getSectionScore("specifications")}
+                  peerScores={getGroupPeerScores("specifications")}
+                  groupLabel={scoreGroupData.label}
+                  className="mb-3"
+                />
                 {renderSpecItems(sectionSpecifications)}
               </div>
             )}
@@ -1491,10 +1769,19 @@ const LaptopDetailCard = () => {
                 id="spec-display"
                 className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
               >
-                <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
-                  <FaExpand className="text-green-500" />
-                  Display
-                </h4>
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wide flex items-center gap-2">
+                    <FaExpand className="text-green-500" />
+                    Display
+                  </h4>
+                  <SpecScoreBadge score={getSectionScore("display")} size={38} />
+                </div>
+                <ScoreGroupTable
+                  currentScore={getSectionScore("display")}
+                  peerScores={getGroupPeerScores("display")}
+                  groupLabel={scoreGroupData.label}
+                  className="mb-3"
+                />
                 {renderSpecItems(sectionDisplay)}
               </div>
             )}
@@ -1504,10 +1791,22 @@ const LaptopDetailCard = () => {
                 id="spec-performance"
                 className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
               >
-                <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
-                  <FaBolt className="text-yellow-500" />
-                  Performance
-                </h4>
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wide flex items-center gap-2">
+                    <FaBolt className="text-yellow-500" />
+                    Performance
+                  </h4>
+                  <SpecScoreBadge
+                    score={getSectionScore("performance")}
+                    size={38}
+                  />
+                </div>
+                <ScoreGroupTable
+                  currentScore={getSectionScore("performance")}
+                  peerScores={getGroupPeerScores("performance")}
+                  groupLabel={scoreGroupData.label}
+                  className="mb-3"
+                />
                 {renderSpecItems(sectionPerformance)}
               </div>
             )}
@@ -1517,10 +1816,19 @@ const LaptopDetailCard = () => {
                 id="spec-battery"
                 className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
               >
-                <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
-                  <FaBatteryFull className="text-blue-500" />
-                  Battery
-                </h4>
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wide flex items-center gap-2">
+                    <FaBatteryFull className="text-blue-500" />
+                    Battery
+                  </h4>
+                  <SpecScoreBadge score={getSectionScore("battery")} size={38} />
+                </div>
+                <ScoreGroupTable
+                  currentScore={getSectionScore("battery")}
+                  peerScores={getGroupPeerScores("battery")}
+                  groupLabel={scoreGroupData.label}
+                  className="mb-3"
+                />
                 {renderSpecItems(sectionBattery)}
               </div>
             )}
@@ -1530,10 +1838,19 @@ const LaptopDetailCard = () => {
                 id="spec-build"
                 className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
               >
-                <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
-                  <FaShieldAlt className="text-indigo-500" />
-                  Build & Design
-                </h4>
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wide flex items-center gap-2">
+                    <FaShieldAlt className="text-indigo-500" />
+                    Build & Design
+                  </h4>
+                  <SpecScoreBadge score={getSectionScore("build")} size={38} />
+                </div>
+                <ScoreGroupTable
+                  currentScore={getSectionScore("build")}
+                  peerScores={getGroupPeerScores("build")}
+                  groupLabel={scoreGroupData.label}
+                  className="mb-3"
+                />
                 {renderSpecItems(sectionBuild)}
               </div>
             )}
@@ -1543,10 +1860,22 @@ const LaptopDetailCard = () => {
                 id="spec-connectivity"
                 className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
               >
-                <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
-                  <FaUsb className="text-purple-500" />
-                  Connectivity
-                </h4>
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wide flex items-center gap-2">
+                    <FaUsb className="text-purple-500" />
+                    Connectivity
+                  </h4>
+                  <SpecScoreBadge
+                    score={getSectionScore("connectivity")}
+                    size={38}
+                  />
+                </div>
+                <ScoreGroupTable
+                  currentScore={getSectionScore("connectivity")}
+                  peerScores={getGroupPeerScores("connectivity")}
+                  groupLabel={scoreGroupData.label}
+                  className="mb-3"
+                />
                 {renderSpecItems(sectionConnectivity)}
               </div>
             )}
@@ -1556,10 +1885,19 @@ const LaptopDetailCard = () => {
                 id="spec-software"
                 className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
               >
-                <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
-                  <FaWindows className="text-purple-500" />
-                  Software & Warranty
-                </h4>
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wide flex items-center gap-2">
+                    <FaWindows className="text-purple-500" />
+                    Software & Warranty
+                  </h4>
+                  <SpecScoreBadge score={getSectionScore("software")} size={38} />
+                </div>
+                <ScoreGroupTable
+                  currentScore={getSectionScore("software")}
+                  peerScores={getGroupPeerScores("software")}
+                  groupLabel={scoreGroupData.label}
+                  className="mb-3"
+                />
                 {renderSpecItems(sectionSoftware)}
               </div>
             )}
@@ -1900,8 +2238,13 @@ const LaptopDetailCard = () => {
           <div className="lg:w-1/2 p-4 border-b lg:border-b-0 lg:border-r border-indigo-200">
             {/* Main Image */}
             <div className="rounded-xl bg-white p-8 mb-6 relative">
-              <div className="absolute top-3 left-3">
-                <FaLaptop className={`text-2xl ${currentColor.text}`} />
+              <div className="absolute left-2 top-2 z-10 pointer-events-none">
+                <SpecScoreBadge
+                  score={overallScore}
+                  size={40}
+                  showSpecLabel
+                  zeroFallback
+                />
               </div>
               <img
                 src={
@@ -2032,20 +2375,10 @@ const LaptopDetailCard = () => {
                   return (
                     <div
                       key={item.key}
-                      className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 flex items-center gap-2.5"
+                      className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-center"
                     >
-                      <span
-                        className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${currentColor.light}`}
-                      >
-                        <item.icon className={`${currentColor.text} text-xs`} />
-                      </span>
-                      <div className="min-w-0">
-                        <div className="text-[10px] font-medium uppercase tracking-wide text-slate-500">
-                          {item.label}
-                        </div>
-                        <div className="font-semibold text-sm leading-tight text-slate-900 whitespace-nowrap">
-                          {displayValue}
-                        </div>
+                      <div className="font-semibold text-sm leading-tight text-slate-900 whitespace-nowrap">
+                        {displayValue}
                       </div>
                     </div>
                   );
@@ -2266,22 +2599,12 @@ const LaptopDetailCard = () => {
                   return (
                     <div
                       key={item.key}
-                      className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 flex items-center gap-2.5"
+                      className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-center"
                     >
-                      <span
-                        className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${currentColor.light}`}
+                      <div
+                        className={`font-semibold text-slate-900 ${valueClass} whitespace-nowrap`}
                       >
-                        <item.icon className={`${currentColor.text} text-sm`} />
-                      </span>
-                      <div className="min-w-0">
-                        <div className="text-[10px] font-medium uppercase tracking-wide text-slate-500">
-                          {item.label}
-                        </div>
-                        <div
-                          className={`font-semibold text-slate-900 ${valueClass} whitespace-nowrap`}
-                        >
-                          {displayValue}
-                        </div>
+                        {displayValue}
                       </div>
                     </div>
                   );

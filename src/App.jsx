@@ -16,6 +16,8 @@ import Careers from "./components/Static/Careers";
 import Contact from "./components/Static/Contact";
 import PrivacyPolicy from "./components/Static/PrivacyPolicy";
 import Terms from "./components/Static/Terms";
+import Blogs from "./components/Static/Blogs";
+import BlogDetail from "./components/Static/BlogDetail";
 import NotFound from "./components/Static/NotFound";
 import {
   Route,
@@ -55,6 +57,10 @@ const normalizeSeoPath = (pathname) => {
 
 const toCanonicalPath = (path) => {
   if (path === "/career") return "/careers";
+  if (path === "/blog") return "/blogs";
+  if (path.startsWith("/blog/")) {
+    return path.replace("/blog/", "/blogs/");
+  }
   if (path === "/trending") return "/trending/smartphones";
   if (path === "/trending/smartphone") return "/trending/smartphones";
   if (path === "/trending/laptop") return "/trending/laptops";
@@ -154,6 +160,7 @@ const resolveSeoMeta = (pathname) => {
   );
   const laptopDetailName = extractDetailSlugName(canonicalPath, "/laptops/");
   const tvDetailName = extractDetailSlugName(canonicalPath, "/tvs/");
+  const blogDetailName = extractDetailSlugName(canonicalPath, "/blogs/");
 
   const rules = [
     {
@@ -181,6 +188,12 @@ const resolveSeoMeta = (pathname) => {
       title: `${tvDetailName} Price, Specs & TV Comparison in India (${CURRENT_YEAR}) | Hook`,
       description: `Compare ${tvDetailName} TV price in India, size variants, display specs, smart features, and store offers on Hook.`,
       keywords: `${tvDetailName.toLowerCase()}, ${tvDetailName.toLowerCase()} tv price in india, ${tvDetailName.toLowerCase()} specifications, smart tv comparison india, tv prices list ${CURRENT_YEAR}`,
+    },
+    {
+      test: () => Boolean(blogDetailName),
+      title: `${blogDetailName} | Hook Blog`,
+      description: `Read ${blogDetailName} and more product insights, specifications, and buying guidance on Hook.`,
+      keywords: `${blogDetailName.toLowerCase()}, hook blog, gadget blog, product insights`,
     },
     {
       test: (p) => p.startsWith("/smartphones") || p === "/mobiles",
@@ -231,8 +244,16 @@ const resolveSeoMeta = (pathname) => {
         `trending smartphones india, trending laptops india, trending tvs india, trending phone in india, most popular mobiles, top selling gadgets india, new launch and trending devices, latest smartphones in india ${CURRENT_YEAR}`,
     },
     {
+      test: (p) => p.startsWith("/blogs") || p.startsWith("/blog"),
+      title: "Hook Blogs | Product Insights and Buying Guides",
+      description:
+        "Read Hook blogs for smartphones, laptops, and TVs with practical product insights and buying guidance.",
+      keywords:
+        "hook blogs, gadget blog india, smartphone blog, laptop blog, tv buying guide, product insights",
+    },
+    {
       test: (p) => p.startsWith("/careers") || p.startsWith("/career"),
-      title: "Careers at Hook | Apply for Open Roles",
+      title: "Careers at Hook | Join Hooks Team",
       description:
         "Apply for frontend, backend, content developer, and fullstack opportunities at Hook through a simple step-by-step application form.",
       keywords:
@@ -481,6 +502,10 @@ function App() {
           />
           <Route path="/careers" element={<Careers />} />
           <Route path="/career" element={<Navigate to="/careers" replace />} />
+          <Route path="/blog" element={<Navigate to="/blogs" replace />} />
+          <Route path="/blog/:slug" element={<ProductDetailRedirect toBasePath="/blogs" />} />
+          <Route path="/blogs" element={<Blogs />} />
+          <Route path="/blogs/:slug" element={<BlogDetail />} />
           <Route
             path="/contact"
             element={<Contact />}
@@ -504,3 +529,4 @@ function App() {
 }
 
 export default App;
+

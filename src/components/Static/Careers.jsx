@@ -2,6 +2,11 @@
 import { Helmet } from "react-helmet-async";
 import useTitle from "../../hooks/useTitle";
 
+const CAREERS_API_BASE = (
+  import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in"
+).replace(/\/$/, "");
+const CAREERS_API_URL = `${CAREERS_API_BASE}/api/careers`;
+
 const ROLE_OPTIONS = [
   { value: "frontend", label: "Frontend Developer" },
   { value: "backend", label: "Backend Developer" },
@@ -43,7 +48,7 @@ const STEPS = [
   { title: "Step 1", subtitle: "Role and contact" },
   { title: "Step 2", subtitle: "Education details" },
   { title: "Step 3", subtitle: "Work experience" },
-  { title: "Step 4", subtitle: "Resume and submit" },
+  { title: "Step 4", subtitle: "Final details and submit" },
 ];
 
 const getTodayDate = () => new Date().toISOString().slice(0, 10);
@@ -87,7 +92,6 @@ const createInitialForm = () => ({
   skills: "",
   projects: "",
 
-  resume: null,
   coverLetter: "",
   applicationPlace: "",
   applicationDate: getTodayDate(),
@@ -95,11 +99,18 @@ const createInitialForm = () => ({
 });
 
 const INPUT_CLASS =
-  "w-full rounded-xl border border-indigo-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-100";
+  "w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
 
-const LABEL_CLASS = "mb-1.5 block text-sm font-semibold text-indigo-700";
+const LABEL_CLASS =
+  "mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-slate-600";
 
 const hasValue = (value) => String(value ?? "").trim().length > 0;
+
+const toNullableNumber = (value) => {
+  if (value === undefined || value === null || value === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
 
 const formatISODateForDisplay = (value) => {
   if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return "";
@@ -110,6 +121,59 @@ const formatISODateForDisplay = (value) => {
     month: "short",
     year: "numeric",
   });
+};
+
+const DATE_WEEK_DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+const DATE_MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+const parseISODate = (value) => {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [year, month, day] = value.split("-").map(Number);
+  const parsed = new Date(year, month - 1, day);
+  if (
+    parsed.getFullYear() !== year ||
+    parsed.getMonth() !== month - 1 ||
+    parsed.getDate() !== day
+  ) {
+    return null;
+  }
+  return parsed;
+};
+
+const formatDateToISO = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const isBeforeDay = (left, right) => {
+  if (!left || !right) return false;
+  return (
+    left.getFullYear() < right.getFullYear() ||
+    (left.getFullYear() === right.getFullYear() &&
+      (left.getMonth() < right.getMonth() ||
+        (left.getMonth() === right.getMonth() &&
+          left.getDate() < right.getDate())))
+  );
+};
+
+const isAfterDay = (left, right) => {
+  if (!left || !right) return false;
+  return isBeforeDay(right, left);
 };
 
 const QuestionInput = ({ question, name, className = "", ...props }) => (
@@ -204,12 +268,12 @@ const QuestionSelect = ({
           className={`${INPUT_CLASS} flex items-center justify-between pr-10 text-left`}
         >
           <span
-            className={selectedOption ? "text-indigo-900" : "text-indigo-400"}
+            className={selectedOption ? "text-slate-900" : "text-slate-400"}
           >
             {selectedOption ? selectedOption.label : placeholder}
           </span>
           <svg
-            className={`absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-indigo-500 transition-transform ${
+            className={`absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500 transition-transform ${
               isOpen ? "rotate-180" : ""
             }`}
             viewBox="0 0 20 20"
@@ -232,14 +296,14 @@ const QuestionSelect = ({
         {isOpen ? (
           <ul
             role="listbox"
-            className="absolute z-30 mt-2 max-h-64 w-full overflow-y-auto rounded-xl border border-indigo-100 bg-white p-1.5 shadow-xl"
+            className="absolute z-30 mt-2 max-h-64 w-full overflow-y-auto rounded-md border border-slate-200 bg-white p-1.5"
           >
             {!required ? (
               <li>
                 <button
                   type="button"
                   onClick={() => selectValue("")}
-                  className="w-full rounded-lg px-3 py-2 text-left text-sm text-indigo-600 hover:bg-indigo-50"
+                  className="w-full rounded-md px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50"
                 >
                   {placeholder}
                 </button>
@@ -254,10 +318,10 @@ const QuestionSelect = ({
                   <button
                     type="button"
                     onClick={() => selectValue(option.value)}
-                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition ${
+                    className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition ${
                       isSelected
-                        ? "bg-violet-50 text-violet-700"
-                        : "text-indigo-700 hover:bg-indigo-50"
+                        ? "bg-blue-50 text-blue-700"
+                        : "text-slate-700 hover:bg-slate-50"
                     }`}
                   >
                     <span>{option.label}</span>
@@ -283,42 +347,359 @@ const QuestionDate = ({
   min = "1980-01-01",
   max = new Date().toISOString().slice(0, 10),
 }) => {
+  const wrapperRef = useRef(null);
+  const selectedDate = parseISODate(value);
+  const minDate = parseISODate(min);
+  const maxDate = parseISODate(max);
+  const today = new Date();
+  const todayISO = formatDateToISO(today);
+  const [isOpen, setIsOpen] = useState(false);
+  const [viewDate, setViewDate] = useState(() => {
+    const base = selectedDate || maxDate || new Date();
+    return new Date(base.getFullYear(), base.getMonth(), 1);
+  });
   const displayValue = formatISODateForDisplay(value);
+
+  useEffect(() => {
+    if (!selectedDate) return;
+    setViewDate(
+      new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
+    );
+  }, [value]);
+
+  useEffect(() => {
+    const closeOnOutsideClick = (event) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("touchstart", closeOnOutsideClick);
+
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("touchstart", closeOnOutsideClick);
+    };
+  }, []);
+
+  useEffect(() => {
+    const onEsc = (event) => {
+      if (event.key === "Escape") setIsOpen(false);
+    };
+    document.addEventListener("keydown", onEsc);
+    return () => document.removeEventListener("keydown", onEsc);
+  }, []);
+
+  const canViewMonth = (year, monthIndex) => {
+    const monthStart = new Date(year, monthIndex, 1);
+    const monthEnd = new Date(year, monthIndex + 1, 0);
+
+    if (minDate && isBeforeDay(monthEnd, minDate)) return false;
+    if (maxDate && isAfterDay(monthStart, maxDate)) return false;
+    return true;
+  };
+
+  const firstDayOfMonth = new Date(
+    viewDate.getFullYear(),
+    viewDate.getMonth(),
+    1,
+  ).getDay();
+  const daysInMonth = new Date(
+    viewDate.getFullYear(),
+    viewDate.getMonth() + 1,
+    0,
+  ).getDate();
+
+  const days = [];
+  for (let index = 0; index < firstDayOfMonth; index += 1) {
+    days.push(null);
+  }
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    days.push(new Date(viewDate.getFullYear(), viewDate.getMonth(), day));
+  }
+  while (days.length % 7 !== 0) {
+    days.push(null);
+  }
+
+  const isDateDisabled = (candidate) =>
+    (minDate && isBeforeDay(candidate, minDate)) ||
+    (maxDate && isAfterDay(candidate, maxDate));
+
+  const previousMonthDate = new Date(
+    viewDate.getFullYear(),
+    viewDate.getMonth() - 1,
+    1,
+  );
+  const nextMonthDate = new Date(
+    viewDate.getFullYear(),
+    viewDate.getMonth() + 1,
+    1,
+  );
+  const isPrevDisabled = !canViewMonth(
+    previousMonthDate.getFullYear(),
+    previousMonthDate.getMonth(),
+  );
+  const isNextDisabled = !canViewMonth(
+    nextMonthDate.getFullYear(),
+    nextMonthDate.getMonth(),
+  );
+
+  const changeMonth = (direction) => {
+    setViewDate((prev) => {
+      const candidate = new Date(
+        prev.getFullYear(),
+        prev.getMonth() + direction,
+        1,
+      );
+      if (!canViewMonth(candidate.getFullYear(), candidate.getMonth())) {
+        return prev;
+      }
+      return candidate;
+    });
+  };
+
+  const yearStart = minDate ? minDate.getFullYear() : today.getFullYear() - 80;
+  const yearEnd = maxDate ? maxDate.getFullYear() : today.getFullYear() + 5;
+  const yearOptions = [];
+  for (let year = yearEnd; year >= yearStart; year -= 1) {
+    yearOptions.push(year);
+  }
+
+  const updateYear = (nextYear) => {
+    const year = Number(nextYear);
+    if (!Number.isFinite(year)) return;
+
+    let monthIndex = viewDate.getMonth();
+    if (!canViewMonth(year, monthIndex)) {
+      monthIndex = DATE_MONTHS.findIndex((_, month) =>
+        canViewMonth(year, month),
+      );
+      if (monthIndex < 0) return;
+    }
+
+    setViewDate(new Date(year, monthIndex, 1));
+  };
+
+  const updateMonth = (nextMonth) => {
+    const monthIndex = Number(nextMonth);
+    if (!Number.isFinite(monthIndex)) return;
+    if (!canViewMonth(viewDate.getFullYear(), monthIndex)) return;
+    setViewDate(new Date(viewDate.getFullYear(), monthIndex, 1));
+  };
+
+  const pickDate = (date) => {
+    if (!date || isDateDisabled(date)) return;
+    onChange({ target: { name, value: formatDateToISO(date) } });
+    setIsOpen(false);
+  };
+
+  const selectToday = () => {
+    if (isDateDisabled(today)) return;
+    onChange({ target: { name, value: todayISO } });
+    setViewDate(new Date(today.getFullYear(), today.getMonth(), 1));
+    setIsOpen(false);
+  };
+
+  const clearDate = () => {
+    onChange({ target: { name, value: "" } });
+    setIsOpen(false);
+  };
 
   return (
     <div>
       <label htmlFor={name} className={LABEL_CLASS}>
         {question}
       </label>
-      <div className="relative">
-        <input
+      <div ref={wrapperRef} className="relative">
+        <input type="hidden" name={name} value={value} />
+        <button
           id={name}
-          type="date"
-          name={name}
-          value={value}
-          min={min}
-          max={max}
-          onChange={onChange}
-          className={`${INPUT_CLASS} pr-10 [color-scheme:light]`}
-        />
-        <svg
-          className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-indigo-500"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
+          type="button"
+          onClick={() => setIsOpen((prev) => !prev)}
+          className={`${INPUT_CLASS} flex items-center justify-between text-left`}
         >
-          <path
-            d="M8 3V5M16 3V5M4 9H20M6 4H18C19.1046 4 20 4.89543 20 6V19C20 20.1046 19.1046 21 18 21H6C4.89543 21 4 20.1046 4 19V6C4 4.89543 4.89543 4 6 4Z"
-            stroke="currentColor"
-            strokeWidth="1.7"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+          <span className={displayValue ? "text-slate-900" : "text-slate-400"}>
+            {displayValue || "Select date"}
+          </span>
+          <svg
+            className="h-4 w-4 text-slate-500"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <path
+              d="M8 3V5M16 3V5M4 9H20M6 4H18C19.1046 4 20 4.89543 20 6V19C20 20.1046 19.1046 21 18 21H6C4.89543 21 4 20.1046 4 19V6C4 4.89543 4.89543 4 6 4Z"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+
+        {isOpen ? (
+          <div className="absolute z-40 mt-2 w-full min-w-[290px] rounded-lg border border-slate-200 bg-white p-3 ring-1 ring-slate-100">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => changeMonth(-1)}
+                disabled={isPrevDisabled}
+                className="rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="Previous month"
+              >
+                <svg
+                  viewBox="0 0 20 20"
+                  className="h-3.5 w-3.5"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M12.5 4.5L7.5 10L12.5 15.5"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+
+              <div className="flex items-center gap-2">
+                <select
+                  value={viewDate.getMonth()}
+                  onChange={(event) => updateMonth(event.target.value)}
+                  className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 outline-none focus:border-blue-400"
+                  aria-label="Select month"
+                >
+                  {DATE_MONTHS.map((monthLabel, monthIndex) => (
+                    <option
+                      key={monthLabel}
+                      value={monthIndex}
+                      disabled={!canViewMonth(viewDate.getFullYear(), monthIndex)}
+                    >
+                      {monthLabel}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={viewDate.getFullYear()}
+                  onChange={(event) => updateYear(event.target.value)}
+                  className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 outline-none focus:border-blue-400"
+                  aria-label="Select year"
+                >
+                  {yearOptions.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => changeMonth(1)}
+                disabled={isNextDisabled}
+                className="rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="Next month"
+              >
+                <svg
+                  viewBox="0 0 20 20"
+                  className="h-3.5 w-3.5"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M7.5 4.5L12.5 10L7.5 15.5"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div className="mb-1 grid grid-cols-7 gap-1">
+              {DATE_WEEK_DAYS.map((dayLabel) => (
+                <span
+                  key={dayLabel}
+                  className="py-1 text-center text-[11px] font-semibold text-slate-500"
+                >
+                  {dayLabel}
+                </span>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-1">
+              {days.map((day, index) => {
+                if (!day) {
+                  return <span key={`blank-${index}`} className="h-8" />;
+                }
+
+                const isoValue = formatDateToISO(day);
+                const disabled = isDateDisabled(day);
+                const isSelected = isoValue === value;
+                const isToday = isoValue === todayISO;
+
+                return (
+                  <button
+                    key={isoValue}
+                    type="button"
+                    onClick={() => pickDate(day)}
+                    disabled={disabled}
+                    className={`h-8 rounded-md text-sm font-medium transition ${
+                      isSelected
+                        ? "bg-blue-600 text-white"
+                        : disabled
+                          ? "cursor-not-allowed text-slate-300"
+                          : isToday
+                            ? "border border-blue-200 text-blue-700 hover:bg-blue-50"
+                            : "text-slate-700 hover:bg-blue-50"
+                    }`}
+                  >
+                    {day.getDate()}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-200 pt-2">
+              <div className="text-[11px] font-medium text-slate-500">
+                {displayValue ? `Selected: ${displayValue}` : "No date selected"}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={clearDate}
+                  className="rounded-md border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50"
+                >
+                  Clear
+                </button>
+                <button
+                  type="button"
+                  onClick={selectToday}
+                  disabled={isDateDisabled(today)}
+                  className="rounded-md border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Today
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  className="rounded-md bg-blue-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-blue-700"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
       {displayValue ? (
-        <p className="mt-1 text-xs font-medium text-indigo-600">
+        <p className="mt-1 text-xs font-medium text-slate-600">
           Selected: {displayValue}
         </p>
       ) : null}
@@ -327,11 +708,11 @@ const QuestionDate = ({
 };
 
 const SectionCard = ({ title, children, optional = false }) => (
-  <section className="rounded-2xl border border-indigo-100 bg-white p-4 sm:p-5">
+  <section className="rounded-lg border border-slate-200 bg-slate-50/30 p-4">
     <div className="mb-4 flex items-center justify-between">
-      <h3 className="text-sm font-bold text-slate-900 sm:text-base">{title}</h3>
+      <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
       {optional ? (
-        <span className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-medium text-violet-700">
+        <span className="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700">
           Optional
         </span>
       ) : null}
@@ -346,15 +727,19 @@ const Careers = () => {
   const [step, setStep] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState(createInitialForm);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const handleChange = (event) => {
-    const { name, value, type, checked, files } = event.target;
+    const { name, value, type, checked } = event.target;
 
     let nextValue = value;
-    if (name === "resume") {
-      nextValue = files?.[0] || null;
-    } else if (type === "checkbox") {
+    if (type === "checkbox") {
       nextValue = checked;
+    }
+
+    if (submitError) {
+      setSubmitError("");
     }
 
     setFormData((prev) => ({
@@ -414,7 +799,6 @@ const Careers = () => {
 
     if (step === 3) {
       return (
-        Boolean(formData.resume) &&
         hasValue(formData.applicationPlace) &&
         hasValue(formData.applicationDate) &&
         formData.agreeTerms
@@ -425,48 +809,146 @@ const Careers = () => {
   };
 
   const goNext = () => {
-    if (step < STEPS.length - 1 && isStepComplete()) {
+    if (step < STEPS.length - 1 && isStepComplete() && !isSubmitting) {
       setStep((prev) => prev + 1);
     }
   };
 
   const goBack = () => {
-    if (step > 0) {
+    if (step > 0 && !isSubmitting) {
       setStep((prev) => prev - 1);
     }
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (!isStepComplete()) {
       return;
     }
 
-    setFormData(createInitialForm());
-    setStep(0);
-    setSubmitted(true);
+    setIsSubmitting(true);
+    setSubmitError("");
+
+    const payload = {
+      role: formData.role,
+      gender: formData.gender,
+      first_name: formData.firstName,
+      last_name: formData.lastName,
+      email: formData.email,
+      phone: formData.phone,
+      dob: formData.dob,
+
+      education: {
+        tenth: {
+          board: formData.tenthBoard,
+          stream: formData.tenthStream,
+          marks: formData.tenthMarks,
+          year: formData.tenthYear,
+        },
+        twelfth: {
+          board: formData.twelfthBoard,
+          stream: formData.twelfthStream,
+          marks: formData.twelfthMarks,
+          year: formData.twelfthYear,
+        },
+        ug: {
+          institute: formData.ugInstitute,
+          stream: formData.ugStream,
+          marks: formData.ugMarks,
+          year: formData.ugYear,
+        },
+        pg: {
+          institute: formData.pgInstitute,
+          stream: formData.pgStream,
+          marks: formData.pgMarks,
+          year: formData.pgYear,
+        },
+      },
+
+      experience_level: formData.experienceLevel,
+      employment_status: formData.employmentStatus,
+      current_company: formData.currentCompany,
+      current_role: formData.currentRole,
+      notice_period: formData.noticePeriod,
+      preferred_location: formData.preferredLocation,
+      expected_ctc: toNullableNumber(formData.expectedCtc),
+      skills: formData.skills,
+      projects: formData.projects,
+      cover_letter: formData.coverLetter,
+      application_place: formData.applicationPlace,
+      application_date: formData.applicationDate,
+      agree_terms: Boolean(formData.agreeTerms),
+      source: "hooks-web-careers",
+    };
+
+    try {
+      const response = await fetch(CAREERS_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to submit application");
+      }
+
+      setFormData(createInitialForm());
+      setStep(0);
+      setSubmitted(true);
+    } catch (error) {
+      setSubmitError(
+        error?.message ||
+          "Unable to submit application right now. Please try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-blue-50 via-violet-50 to-indigo-50">
+    <main className="min-h-screen bg-slate-100">
       <Helmet>
-        <title>Careers at Hooks | Apply in Easy Steps</title>
+        <title>Careers at Hook | Join Hooks Team</title>
         <meta
           name="description"
-          content="Apply for frontend, backend, content developer, and fullstack roles at Hook with a clean step-by-step form."
+          content="Join Hooks Team. Apply for Frontend, Backend, Content Developer, and Fullstack roles through a simple 4-step career application process."
+        />
+        <meta
+          name="keywords"
+          content="Hook careers, jobs at Hook, frontend developer jobs, backend developer jobs, fullstack developer jobs, content developer jobs, apply jobs India"
+        />
+        <meta property="og:title" content="Careers at Hook | Join Hooks Team" />
+        <meta
+          property="og:description"
+          content="Apply for Frontend, Backend, Content Developer, and Fullstack roles at Hook."
+        />
+        <meta
+          name="twitter:title"
+          content="Careers at Hook | Join Hooks Team"
+        />
+        <meta
+          name="twitter:description"
+          content="Apply for Frontend, Backend, Content Developer, and Fullstack roles at Hook."
         />
         <meta name="robots" content="index, follow" />
       </Helmet>
 
-      <div className="relative mx-auto max-w-6xl bg-white px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
-        <div className="rounded-lg border border-indigo-100 bg-white p-5  backdrop-blur sm:p-8">
-          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
-            Careers at Hooks
+      <div className="mx-auto max-w-6xl bg-white px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
+          <p className="inline-flex rounded-md bg-blue-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-blue-700">
+            Hiring Process
+          </p>
+          <h1 className="mt-3 text-2xl font-bold text-slate-900 sm:text-3xl">
+            Join Hooks Team
           </h1>
-          <p className="mt-2 text-sm text-slate-600 sm:text-base">
-            Please answer each question and complete all steps to submit your
-            application.
+          <p className="mt-2 text-sm text-slate-600">
+            Build your career with us. Complete the 4-step application form to
+            apply for current openings.
           </p>
 
           <div className="mt-6 flex gap-2 overflow-x-auto pb-1 no-scrollbar sm:grid sm:grid-cols-2 sm:gap-3 sm:overflow-visible sm:pb-0 lg:grid-cols-4">
@@ -477,15 +959,15 @@ const Careers = () => {
               return (
                 <div
                   key={item.title}
-                  className={`min-w-[150px] shrink-0 rounded-xl border px-3 py-2.5 sm:min-w-0 sm:rounded-2xl sm:px-4 sm:py-3 ${
+                  className={`min-w-[150px] shrink-0 rounded-lg border px-3 py-2.5 sm:min-w-0 sm:px-4 sm:py-3 ${
                     isActive
-                      ? "border-indigo-300 bg-indigo-50"
+                      ? "border-blue-500 bg-blue-50"
                       : isDone
-                        ? "border-slate-300 bg-slate-50"
+                        ? "border-emerald-300 bg-emerald-50"
                         : "border-slate-200 bg-white"
                   }`}
                 >
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 sm:text-xs">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                     {item.title}
                   </p>
                   <p className="mt-1 text-xs font-semibold text-slate-800 sm:text-sm">
@@ -843,26 +1325,6 @@ const Careers = () => {
 
             {step === 3 ? (
               <div className="space-y-4">
-                <div>
-                  <label htmlFor="resume" className={LABEL_CLASS}>
-                    Can you upload your latest resume?
-                  </label>
-                  <input
-                    id="resume"
-                    type="file"
-                    name="resume"
-                    accept=".pdf,.doc,.docx"
-                    onChange={handleChange}
-                    required
-                    className={`${INPUT_CLASS} file:mr-4 file:rounded-lg file:border-0 file:bg-violet-100 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-violet-700 hover:file:bg-violet-200`}
-                  />
-                  {formData.resume ? (
-                    <p className="mt-1 text-xs font-medium text-violet-700">
-                      Selected file: {formData.resume.name}
-                    </p>
-                  ) : null}
-                </div>
-
                 <QuestionTextArea
                   question="Why do you want to join Hook?"
                   name="coverLetter"
@@ -893,13 +1355,13 @@ const Careers = () => {
                   />
                 </div>
 
-                <label className="flex items-start gap-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-4">
+                <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
                   <input
                     type="checkbox"
                     name="agreeTerms"
                     checked={formData.agreeTerms}
                     onChange={handleChange}
-                    className="mt-0.5 h-4 w-4 rounded border-indigo-300 text-violet-600 focus:ring-violet-500"
+                    className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                     required
                   />
                   <span className="text-sm text-slate-700">
@@ -915,7 +1377,8 @@ const Careers = () => {
                 <button
                   type="button"
                   onClick={goBack}
-                  className="rounded-xl border border-indigo-200 bg-white px-5 py-2.5 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50"
+                  disabled={isSubmitting}
+                  className="rounded-md border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Back
                 </button>
@@ -925,32 +1388,38 @@ const Careers = () => {
                 <button
                   type="button"
                   onClick={goNext}
-                  disabled={!isStepComplete()}
-                  className="rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:from-blue-700 hover:to-violet-700 disabled:cursor-not-allowed disabled:from-blue-300 disabled:to-violet-300"
+                  disabled={!isStepComplete() || isSubmitting}
+                  className="rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
                 >
                   Continue
                 </button>
               ) : (
                 <button
                   type="submit"
-                  disabled={!isStepComplete()}
-                  className="rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:from-violet-700 hover:to-blue-700 disabled:cursor-not-allowed disabled:from-violet-300 disabled:to-blue-300"
+                  disabled={!isStepComplete() || isSubmitting}
+                  className="rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
                 >
-                  Submit Application
+                  {isSubmitting ? "Submitting..." : "Submit Application"}
                 </button>
               )}
             </div>
+
+            {submitError ? (
+              <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+                {submitError}
+              </p>
+            ) : null}
           </form>
         </div>
       </div>
 
       {submitted ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-indigo-950/45 px-4">
-          <div className="w-full max-w-md rounded-2xl border border-violet-200 bg-white p-6 shadow-2xl">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-violet-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
+          <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
               <svg
                 viewBox="0 0 24 24"
-                className="h-7 w-7 text-violet-600"
+                className="h-7 w-7 text-blue-600"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
                 aria-hidden="true"
@@ -973,8 +1442,10 @@ const Careers = () => {
             </p>
             <button
               type="button"
-              onClick={() => setSubmitted(false)}
-              className="mt-5 w-full rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:from-violet-700 hover:to-blue-700"
+              onClick={() => {
+                setSubmitted(false);
+              }}
+              className="mt-5 w-full rounded-md bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
             >
               Close
             </button>

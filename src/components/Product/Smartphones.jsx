@@ -49,6 +49,8 @@ import Breadcrumbs from "../Breadcrumbs";
 import { generateSlug } from "../../utils/slugGenerator";
 import normalizeProduct from "../../utils/normalizeProduct";
 import { getHookBadge } from "../../utils/hookScore";
+import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
+import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
 import {
   computePopularSmartphoneFeatures,
   SMARTPHONE_FEATURE_CATALOG,
@@ -158,6 +160,44 @@ const ImageCarousel = ({ images = [] }) => {
   );
 };
 
+const clampScore100 = (value) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  if (n <= 1) return Math.max(0, Math.min(100, n * 100));
+  if (n <= 10) return Math.max(0, Math.min(100, n * 10));
+  return Math.max(0, Math.min(100, n));
+};
+
+const mapScoreToDisplayBand = (score, minTarget = 80, maxTarget = 98) => {
+  const normalized = clampScore100(score);
+  if (normalized == null) return null;
+  const mapped = minTarget + (normalized / 100) * (maxTarget - minTarget);
+  return Number(mapped.toFixed(1));
+};
+
+const CircularScoreBadge = ({ score, size = 62 }) => {
+  const normalized = clampScore100(score);
+  const percentage = normalized != null ? Number(normalized.toFixed(1)) : null;
+  const label = percentage != null ? `${percentage.toFixed(1)}%` : "--";
+
+  return (
+    <div
+      className="inline-flex flex-col items-center justify-center rounded-md border border-violet-200 bg-violet-50/95 px-1.5 py-1 leading-none"
+      style={{ minWidth: `${Math.max(38, Math.round(size))}px` }}
+      aria-label={
+        percentage != null
+          ? `Overall score ${percentage.toFixed(1)} percent`
+          : "Overall score unavailable"
+      }
+    >
+      <span className="text-[11px] font-bold text-violet-700">{label}</span>
+      <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide text-violet-600">
+        Spec
+      </span>
+    </div>
+  );
+};
+
 const Smartphones = () => {
   // Add animation styles
   const animationStyles = `
@@ -177,6 +217,7 @@ const Smartphones = () => {
   `;
 
   const deviceContext = useDevice();
+  const deviceFieldProfiles = useDeviceFieldProfiles();
   const { smartphone, smartphoneAll } = deviceContext || {};
   const [params] = useSearchParams();
   const filter = params.get("filter");
@@ -319,6 +360,12 @@ const Smartphones = () => {
     // pick: choose first non-null, non-empty value
     const pick = (...vals) =>
       vals.find((v) => v != null && String(v).trim() !== "");
+    const profileResult = resolveDeviceFieldProfile(
+      "smartphone",
+      apiDevice,
+      deviceFieldProfiles,
+    );
+    const profileDisplay = profileResult.display_display || {};
 
     // If this device already looks normalized (from Redux), return as-is to avoid double-normalization
     if (
@@ -428,6 +475,7 @@ const Smartphones = () => {
       apiDevice.capacity_mAh ||
       apiDevice.capacity_mah ||
       apiDevice.battery ||
+      profileDisplay.battery ||
       "";
     const numericBattery = parseInt(
       String(batteryRaw).replace(/[^0-9]/g, "") || "0",
@@ -435,7 +483,10 @@ const Smartphones = () => {
 
     // Refresh rate
     const refreshRate =
-      apiDevice.display?.refresh_rate || apiDevice.display?.refreshRate || "";
+      apiDevice.display?.refresh_rate ||
+      apiDevice.display?.refreshRate ||
+      profileDisplay.refresh_rate ||
+      "";
 
     // Build / design specifics (dimensions, weight, thickness, back material)
     const build = apiDevice.build_design || apiDevice.build || {};
@@ -648,6 +699,7 @@ const Smartphones = () => {
         : apiDevice.performance?.ROM_storage ||
           apiDevice.performance?.rom ||
           apiDevice.performance?.storage ||
+          profileDisplay.storage ||
           "";
 
     const variantRams = variants.length
@@ -656,13 +708,13 @@ const Smartphones = () => {
     const ramStr =
       variantRams.length > 0
         ? variantRams.join(" / ")
-        : apiDevice.performance?.ram || "";
+        : apiDevice.performance?.ram || profileDisplay.ram || "";
 
     // build safe display string
     const displayStr =
       typeof apiDevice.display === "string"
         ? apiDevice.display
-        : `${apiDevice.display?.size || ""} ${apiDevice.display?.type || ""}`.trim();
+        : `${apiDevice.display?.size || profileDisplay.display_size || ""} ${apiDevice.display?.type || ""}`.trim();
 
     // toString: safely convert various shapes to a usable string
     const toString = (v) => {
@@ -697,6 +749,7 @@ const Smartphones = () => {
       toString(apiDevice.processor),
       toString(apiDevice.cpu),
       toString(apiDevice.performance?.processor),
+      profileDisplay.processor,
     );
 
     const ramCandidate = pick(
@@ -731,6 +784,7 @@ const Smartphones = () => {
           : toString(cam.main_camera_megapixels) ||
               toString(cam.main_camera) ||
               toString(cam.primary),
+        profileDisplay.main_camera,
       );
     }
 
@@ -767,6 +821,26 @@ const Smartphones = () => {
     };
     const isAiPhone = detectAiPhone();
 
+    const overallScoreRaw = toNumber(
+      apiDevice.overall_score_v2 ??
+        apiDevice.overallScoreV2 ??
+        apiDevice.spec_score_v2 ??
+        apiDevice.specScoreV2 ??
+        apiDevice.overall_score ??
+        apiDevice.overallScore ??
+        apiDevice.spec_score ??
+        apiDevice.specScore ??
+        apiDevice.hook_score ??
+        apiDevice.hookScore ??
+        profileResult.score,
+    );
+    const overallScoreDisplay = toNumber(
+      apiDevice.overall_score_v2_display_80_98 ??
+        apiDevice.overallScoreV2Display8098 ??
+        apiDevice.spec_score_v2_display_80_98 ??
+        apiDevice.specScoreV2Display8098,
+    );
+
     return {
       id: pick(
         apiDevice.id,
@@ -789,6 +863,11 @@ const Smartphones = () => {
         "",
       ),
       hook_score: toNumber(apiDevice.hook_score ?? apiDevice.hookScore),
+      overall_score: overallScoreRaw,
+      overall_score_display:
+        overallScoreDisplay != null
+          ? overallScoreDisplay
+          : mapScoreToDisplayBand(overallScoreRaw),
       buyer_intent: toNumber(apiDevice.buyer_intent ?? apiDevice.buyerIntent),
       trend_velocity: toNumber(
         apiDevice.trend_velocity ?? apiDevice.trendVelocity,
@@ -861,6 +940,7 @@ const Smartphones = () => {
       ),
       storePrices: storePrices,
       variants: variants,
+      field_profile: profileResult,
     };
   };
 
@@ -1325,6 +1405,26 @@ const Smartphones = () => {
       (Array.isArray(smartphonesForList) && smartphonesForList.length === 0)) &&
     !loading;
 
+  const hasUrlDrivenFilters = useMemo(() => {
+    const qp = new URLSearchParams(search || "");
+    return Boolean(
+      normalizedFilterSlug ||
+        qp.get("brand") ||
+        qp.get("network") ||
+        qp.get("ram") ||
+        qp.get("processor") ||
+        qp.get("refreshRate") ||
+        qp.get("priceMin") ||
+        qp.get("minPrice") ||
+        qp.get("min") ||
+        qp.get("min_price") ||
+        qp.get("priceMax") ||
+        qp.get("maxPrice") ||
+        qp.get("max") ||
+        qp.get("max_price"),
+    );
+  }, [search, normalizedFilterSlug]);
+
   // Apply query param filters
   useEffect(() => {
     const params = new URLSearchParams(search);
@@ -1364,6 +1464,16 @@ const Smartphones = () => {
     const networkArr = toArray(networkParam);
     const processorArr = toArray(processorParam);
     const refreshArr = toArray(refreshParam);
+    const hasExplicitUrlFilters = Boolean(
+      brandParam ||
+        rawMin ||
+        rawMax ||
+        ramParam ||
+        networkParam ||
+        processorParam ||
+        refreshParam ||
+        priceFilter,
+    );
 
     // Helper to resolve a brand param (slug or name) to the display brand name
     const resolveBrandName = (bp) => {
@@ -1401,33 +1511,39 @@ const Smartphones = () => {
 
     // Build next filters state using provided params; fall back to current state
     setFilters((prev) => {
+      const base = hasExplicitUrlFilters
+        ? {
+            ...prev,
+            brand: [],
+            priceRange: { min: MIN_PRICE, max: MAX_PRICE },
+            ram: [],
+            network: [],
+            processor: [],
+            refreshRate: [],
+          }
+        : prev;
+
       const resolvedBrand = brandParam ? resolveBrandName(brandParam) : null;
       const next = {
-        ...prev,
-        brand: resolvedBrand ? [resolvedBrand] : prev.brand,
+        ...base,
+        brand: resolvedBrand ? [resolvedBrand] : base.brand,
         priceRange: {
           min:
             priceFilter?.min ??
             (priceMin !== null && !Number.isNaN(priceMin)
               ? priceMin
-              : prev.priceRange.min),
+              : base.priceRange.min),
           max:
             priceFilter?.max ??
             (priceMax !== null && !Number.isNaN(priceMax)
               ? priceMax
-              : prev.priceRange.max),
+              : base.priceRange.max),
         },
-        ram: ramArr.length ? ramArr : prev.ram,
-        network: networkArr.length ? networkArr : prev.network,
-        processor: processorArr.length ? processorArr : prev.processor,
-        refreshRate: refreshArr.length ? refreshArr : prev.refreshRate,
+        ram: ramArr.length ? ramArr : base.ram,
+        network: networkArr.length ? networkArr : base.network,
+        processor: processorArr.length ? processorArr : base.processor,
+        refreshRate: refreshArr.length ? refreshArr : base.refreshRate,
       };
-
-      // Also sync to device context filters so other components remain consistent
-      try {
-        deviceContext?.setFilters?.(next);
-      } catch {}
-
       return next;
     });
 
@@ -1446,6 +1562,7 @@ const Smartphones = () => {
   // Sync filters when DeviceContext provides filters
   // Depend only on `contextFilters` so local changes don't trigger an overwrite.
   useEffect(() => {
+    if (hasUrlDrivenFilters) return;
     if (!contextFilters) return;
     try {
       const ctx = contextFilters;
@@ -1460,7 +1577,7 @@ const Smartphones = () => {
     } catch {
       // ignore
     }
-  }, [contextFilters]);
+  }, [contextFilters, hasUrlDrivenFilters]);
 
   // Update price range when devices data changes
   useEffect(() => {
@@ -1673,22 +1790,19 @@ const Smartphones = () => {
       } catch {}
       return;
     }
-
-    setFilters((prev) => {
-      const currentArr = Array.isArray(prev[filterType])
-        ? prev[filterType]
-        : [];
-      const nextArr = currentArr.includes(value)
-        ? currentArr.filter((item) => item !== value)
-        : [...currentArr, value];
-      const next = { ...prev, [filterType]: nextArr };
-      try {
-        deviceContext?.setFilters?.(next);
-      } catch {
-        // ignore
-      }
-      return next;
-    });
+    const currentArr = Array.isArray(filters[filterType])
+      ? filters[filterType]
+      : [];
+    const nextArr = currentArr.includes(value)
+      ? currentArr.filter((item) => item !== value)
+      : [...currentArr, value];
+    const next = { ...filters, [filterType]: nextArr };
+    setFilters(next);
+    try {
+      deviceContext?.setFilters?.(next);
+    } catch {
+      // ignore
+    }
   };
 
   const updatePriceRange = (newMin, newMax) => {
@@ -2471,9 +2585,10 @@ const Smartphones = () => {
   const clearFilters = () => {
     const empty = {
       brand: [],
-      priceRange: { min: 0, max: MAX_PRICE },
+      priceRange: { min: MIN_PRICE, max: MAX_PRICE },
       ram: [],
       storage: [],
+      color: [],
       battery: [],
       processor: [],
       network: [],
@@ -2490,17 +2605,32 @@ const Smartphones = () => {
     setBrandFilterQuery("");
     try {
       const params = new URLSearchParams(search);
-      params.delete("brand");
-      params.delete("q");
-      params.delete("query");
-      params.delete("search");
+      [
+        "brand",
+        "q",
+        "query",
+        "search",
+        "feature",
+        "network",
+        "ram",
+        "processor",
+        "refreshRate",
+        "priceMin",
+        "minPrice",
+        "min",
+        "min_price",
+        "priceMax",
+        "maxPrice",
+        "max",
+        "max_price",
+      ].forEach((key) => params.delete(key));
       if (sortBy && sortBy !== "featured") {
         params.set("sort", sortBy);
       } else {
         params.delete("sort");
       }
       const qs = params.toString();
-      const path = `/devicelist/smartphones${qs ? `?${qs}` : ""}`;
+      const path = `/smartphones${qs ? `?${qs}` : ""}`;
       navigate(path, { replace: true });
     } catch {
       // ignore URL update errors
@@ -3164,40 +3294,15 @@ const Smartphones = () => {
                   <div className="p-3 sm:p-4 md:p-5 lg:p-4 pt-4 sm:pt-5 md:pt-6 transition-all duration-300">
                     {/* Top Row: Image and Basic Info */}
                     <div className="grid grid-cols-[minmax(0,8.5rem)_minmax(0,1fr)] sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)] gap-3 w-full items-start">
-                      {/* Product Image - Fixed container with checkbox overlay */}
+                      {/* Product Image with score + compare overlays */}
                       <div className="relative flex-shrink-0 w-full h-36 sm:h-48 rounded-2xl overflow-hidden group bg-white">
                         <div className="w-full h-full flex items-center justify-center p-1.5 sm:p-2">
                           <ImageCarousel images={device.images} />
                         </div>
-                        {/* Compare Checkbox Overlay - Top Right */}
-                        <div
-                          onClick={(e) => e.stopPropagation()}
-                          className="absolute top-2 right-2 z-10 rounded-md  transition-all duration-200 cursor-pointer hover:bg-gray-50 hover:border-purple-500"
-                          title={
-                            !isCompareSelected(device) &&
-                            compareItems.length >= MAX_COMPARE_ITEMS
-                              ? `You can compare up to ${MAX_COMPARE_ITEMS} devices`
-                              : "Add to compare"
-                          }
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isCompareSelected(device)}
-                            disabled={
-                              !isCompareSelected(device) &&
-                              compareItems.length >= MAX_COMPARE_ITEMS
-                            }
-                            onClick={(e) => e.stopPropagation()}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              handleCompareToggle(device, e);
-                            }}
-                            className={`w-3 h-3 m-1 accent-purple-600 ${
-                              !isCompareSelected(device) &&
-                              compareItems.length >= MAX_COMPARE_ITEMS
-                                ? "cursor-not-allowed opacity-60"
-                                : "cursor-pointer"
-                            }`}
+                        <div className="absolute left-1.5 top-1.5 z-10 pointer-events-none">
+                          <CircularScoreBadge
+                            score={device.overall_score_display ?? device.overall_score}
+                            size={42}
                           />
                         </div>
                       </div>
@@ -3208,44 +3313,46 @@ const Smartphones = () => {
                         <div className="mb-2">
                           <div>
                             <div className="flex items-center gap-2 mb-1 md:flex-nowrap">
-                              <span className="text-xs font-semibold text-purple-700">
-                                {device.brand}
-                              </span>
-                              {device.specs?.isAiPhone ? (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-purple-50 to-blue-100 px-2 py-0.5 text-[10px] font-semibold text-purple-700 ring-1 ring-purple-200 whitespace-nowrap">
-                                  <span
-                                    className="inline-flex items-center justify-center w-3 h-3"
-                                    aria-hidden="true"
-                                  >
-                                    <svg
-                                      viewBox="0 0 64 64"
-                                      className="w-3 h-3"
-                                    >
-                                      <path
-                                        d="M32 2C34.5 14.5 40 20 52 22C40 24 34.5 29.5 32 42C29.5 29.5 24 24 12 22C24 20 29.5 14.5 32 2Z"
-                                        fill="red"
-                                      />
-                                      <path
-                                        d="M50 34C51.5 41.5 55 45 62 46C55 47 51.5 50.5 50 58C48.5 50.5 45 47 38 46C45 45 48.5 41.5 50 34Z"
-                                        fill="#7E57C2"
-                                      />
-                                    </svg>
-                                  </span>
-                                  <span>AI Phone</span>
+                              <div className="flex min-w-0 items-center gap-2 flex-wrap">
+                                <span className="text-xs font-semibold text-purple-700">
+                                  {device.brand}
                                 </span>
-                              ) : null}
-                              {(() => {
-                                const badge = getHookBadge(device);
-                                if (!badge) return null;
-                                return (
-                                  <span
-                                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 whitespace-nowrap ${badge.className}`}
-                                    title={badge.title}
-                                  >
-                                    {badge.label}
+                                {device.specs?.isAiPhone ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-purple-50 to-blue-100 px-2 py-0.5 text-[10px] font-semibold text-purple-700 ring-1 ring-purple-200 whitespace-nowrap">
+                                    <span
+                                      className="inline-flex items-center justify-center w-3 h-3"
+                                      aria-hidden="true"
+                                    >
+                                      <svg
+                                        viewBox="0 0 64 64"
+                                        className="w-3 h-3"
+                                      >
+                                        <path
+                                          d="M32 2C34.5 14.5 40 20 52 22C40 24 34.5 29.5 32 42C29.5 29.5 24 24 12 22C24 20 29.5 14.5 32 2Z"
+                                          fill="red"
+                                        />
+                                        <path
+                                          d="M50 34C51.5 41.5 55 45 62 46C55 47 51.5 50.5 50 58C48.5 50.5 45 47 38 46C45 45 48.5 41.5 50 34Z"
+                                          fill="#7E57C2"
+                                        />
+                                      </svg>
+                                    </span>
+                                    <span>AI Phone</span>
                                   </span>
-                                );
-                              })()}
+                                ) : null}
+                                {(() => {
+                                  const badge = getHookBadge(device);
+                                  if (!badge) return null;
+                                  return (
+                                    <span
+                                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 whitespace-nowrap ${badge.className}`}
+                                      title={badge.title}
+                                    >
+                                      {badge.label}
+                                    </span>
+                                  );
+                                })()}
+                              </div>
                             </div>
                             <div className="leading-snug">
                               {(() => {
@@ -3332,7 +3439,7 @@ const Smartphones = () => {
 
                         {/* Price and Rating */}
                         <div className="mb-3">
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-end justify-between">
                             <div>
                               {(() => {
                                 const brandStoreUrl =
@@ -3368,6 +3475,37 @@ const Smartphones = () => {
                               <div className="text-lg font-bold text-green-600">
                                 {device.price}
                               </div>
+                            </div>
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center justify-center ml-1"
+                              title={
+                                !isCompareSelected(device) &&
+                                compareItems.length >= MAX_COMPARE_ITEMS
+                                  ? `You can compare up to ${MAX_COMPARE_ITEMS} devices`
+                                  : "Add to compare"
+                              }
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isCompareSelected(device)}
+                                disabled={
+                                  !isCompareSelected(device) &&
+                                  compareItems.length >= MAX_COMPARE_ITEMS
+                                }
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  handleCompareToggle(device, e);
+                                }}
+                                className={`h-3 w-3 accent-violet-600 ${
+                                  !isCompareSelected(device) &&
+                                  compareItems.length >= MAX_COMPARE_ITEMS
+                                    ? "cursor-not-allowed opacity-60"
+                                    : "cursor-pointer"
+                                }`}
+                                aria-label="Compare product"
+                              />
                             </div>
                           </div>
                         </div>
@@ -4100,3 +4238,7 @@ const Smartphones = () => {
 };
 
 export default Smartphones;
+
+
+
+

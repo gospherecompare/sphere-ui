@@ -51,6 +51,14 @@ import Spinner from "../ui/Spinner";
 import { Helmet } from "react-helmet-async";
 import { tvMeta } from "../../constants/meta";
 import useStoreLogos from "../../hooks/useStoreLogos";
+import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
+import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
+import {
+  normalizeGroupKey,
+  normalizeScore100Value,
+  remapScoreToBand,
+} from "../../utils/groupScoreStats";
+import ScoreGroupTable from "../ui/ScoreGroupTable";
 
 // Ratings UI removed: review submission and inline rating input deleted
 
@@ -79,8 +87,80 @@ const getVariantBestPrice = (variant) => {
   return base !== null && base > 0 ? base : null;
 };
 
+const normalizeScore100 = (value) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  if (n <= 1) return Math.max(0, Math.min(100, n * 100));
+  if (n <= 10) return Math.max(0, Math.min(100, n * 10));
+  return Math.max(0, Math.min(100, n));
+};
+
+const isPlainObject = (value) =>
+  value && typeof value === "object" && !Array.isArray(value);
+
+const toSafeText = (value) => {
+  if (value === null || value === undefined || value === "") return "";
+  if (typeof value === "string") return value.trim();
+  if (typeof value === "number") return Number.isFinite(value) ? String(value) : "";
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => toSafeText(item))
+      .filter(Boolean)
+      .join(", ");
+  }
+  if (isPlainObject(value)) {
+    return Object.entries(value)
+      .map(([key, val]) => {
+        const formatted = toSafeText(val);
+        return formatted ? `${key}: ${formatted}` : "";
+      })
+      .filter(Boolean)
+      .join(" | ");
+  }
+  return String(value);
+};
+
+const SpecScoreBadge = ({
+  score,
+  size = 40,
+  showSpecLabel = false,
+  zeroFallback = false,
+}) => {
+  const normalized = normalizeScore100(score);
+  const percentageRaw =
+    normalized != null
+      ? Number(normalized.toFixed(1))
+      : zeroFallback
+        ? 0
+        : null;
+  const percentage =
+    percentageRaw != null ? remapScoreToBand(percentageRaw, 80, 98) : null;
+  const label = percentage != null ? `${percentage.toFixed(1)}%` : "--";
+
+  return (
+    <div
+      className="inline-flex flex-col items-center justify-center rounded-md border border-violet-200 bg-violet-50/95 px-1.5 py-1 leading-none"
+      style={{ minWidth: `${Math.max(38, Math.round(size))}px` }}
+      aria-label={
+        percentage != null
+          ? `Overall score ${percentage.toFixed(1)} percent`
+          : "Overall score unavailable"
+      }
+    >
+      <span className="text-[11px] font-bold text-violet-700">{label}</span>
+      {showSpecLabel ? (
+        <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide text-violet-600">
+          Spec
+        </span>
+      ) : null}
+    </div>
+  );
+};
+
 const TVDetailCard = () => {
   const { getLogo } = useStoreLogos();
+  const deviceFieldProfiles = useDeviceFieldProfiles();
   const [activeTab, setActiveTab] = useState("specifications");
   const [activeImage, setActiveImage] = useState(0);
   const [showAllStores, setShowAllStores] = useState(false);
@@ -178,6 +258,13 @@ const TVDetailCard = () => {
       a.key_specs_json || a.key_specs || a.specifications,
     );
     const displayJson = toObjectIfNeeded(a.display_json || a.display);
+    const videoEngineJson = toObjectIfNeeded(
+      a.video_engine_json ||
+        a.video_engine ||
+        a.videoEngine ||
+        a.performance_json ||
+        a.performance,
+    );
     const audioJson = toObjectIfNeeded(a.audio_json || a.audio);
     const smartTvJson = toObjectIfNeeded(a.smart_tv_json || a.smart_tv);
     const connectivityJson = toObjectIfNeeded(
@@ -185,14 +272,22 @@ const TVDetailCard = () => {
     );
     const portsJson = toObjectIfNeeded(a.ports_json || a.ports);
     const powerJson = toObjectIfNeeded(a.power_json || a.power || a.performance);
+    const physicalJson = toObjectIfNeeded(
+      a.physical_json ||
+        a.physical ||
+        a.physical_details ||
+        a.dimensions_json ||
+        a.dimensions,
+    );
     const dimensionsJson = toObjectIfNeeded(
-      a.dimensions_json || a.dimensions || a.physical_details,
+      a.dimensions_json || a.dimensions || a.physical_details || physicalJson,
     );
     const designJson = toObjectIfNeeded(a.design_json || a.design);
     const gamingJson = toObjectIfNeeded(a.gaming_json || a.gaming);
     const productDetailsJson = toObjectIfNeeded(
       a.product_details_json || a.product_details,
     );
+    const inTheBoxJson = toObjectIfNeeded(a.in_the_box_json || a.in_the_box);
     const warrantyJson = toObjectIfNeeded(a.warranty_json || a.warranty);
     const legacySpecs = { ...(a.specifications || {}), ...(a.specs || {}) };
 
@@ -363,7 +458,7 @@ const TVDetailCard = () => {
     ]
       .filter(Boolean)
       .join(" x ");
-    return {
+    const normalizedAppliance = {
       ...a,
       id: a.product_id || a.id || a.productId || null,
       product_name: firstNonEmpty(a.product_name, a.name, basicInfo.title),
@@ -423,6 +518,7 @@ const TVDetailCard = () => {
       features: features.length ? features : a.features || [],
       performance: {
         ...(a.performance || {}),
+        ...videoEngineJson,
         ...displayJson,
         ...audioJson,
         ...gamingJson,
@@ -430,22 +526,28 @@ const TVDetailCard = () => {
       },
       physical_details: {
         ...(a.physical_details || {}),
+        ...physicalJson,
         ...dimensionsJson,
         ...designJson,
         dimensions,
       },
       warranty: { ...(a.warranty || {}), ...warrantyJson },
       images,
+      basic_info_json: basicInfo,
       key_specs_json: keySpecs,
       display_json: displayJson,
+      video_engine_json: videoEngineJson,
       audio_json: audioJson,
       smart_tv_json: smartTvJson,
       connectivity_json: connectivityJson,
       ports_json: portsJson,
       power_json: powerJson,
+      physical_json: physicalJson,
       dimensions_json: dimensionsJson,
       design_json: designJson,
       gaming_json: gamingJson,
+      product_details_json: productDetailsJson,
+      in_the_box_json: inTheBoxJson,
       warranty_json: warrantyJson,
       release_year:
         a.release_year ||
@@ -459,6 +561,28 @@ const TVDetailCard = () => {
         a.country_of_origin,
       ),
     };
+    const profileResult = resolveDeviceFieldProfile(
+      "tv",
+      normalizedAppliance,
+      deviceFieldProfiles,
+    );
+    normalizedAppliance.field_profile = profileResult;
+    const incomingScore = normalizeScore100(
+      normalizedAppliance.spec_score ??
+        normalizedAppliance.overall_score ??
+        normalizedAppliance.hook_score,
+    );
+    const fallbackProfileScore = normalizeScore100(profileResult.score);
+    if (
+      (incomingScore == null || incomingScore <= 0) &&
+      fallbackProfileScore != null &&
+      fallbackProfileScore > 0
+    ) {
+      normalizedAppliance.spec_score = fallbackProfileScore;
+      normalizedAppliance.overall_score = fallbackProfileScore;
+    }
+
+    return normalizedAppliance;
   };
 
   useEffect(() => {
@@ -714,13 +838,15 @@ const TVDetailCard = () => {
     .sort((a, b) => a - b)[0];
   const headlinePrice = currentVariantBestPrice ?? fallbackBestPrice ?? null;
   const currentVariantSize =
-    currentVariant?.screen_size || currentVariant?.capacity || "";
+    toSafeText(currentVariant?.screen_size || currentVariant?.capacity || "");
   const currentVariantResolution =
-    currentVariant?.resolution ||
-    currentVariant?.specification_summary ||
-    applianceData?.specifications?.resolution ||
-    applianceData?.display_json?.resolution ||
-    "";
+    toSafeText(
+      currentVariant?.resolution ||
+        currentVariant?.specification_summary ||
+        applianceData?.specifications?.resolution ||
+        applianceData?.display_json?.resolution ||
+        "",
+    );
   const currentVariantLabel = [currentVariantSize, currentVariantResolution]
     .filter(Boolean)
     .join(" / ");
@@ -729,6 +855,362 @@ const TVDetailCard = () => {
     applianceData?.product_id ??
     applianceData?.productId ??
     null;
+  const pickScore100 = (...values) => {
+    for (const value of values) {
+      const normalized = normalizeScore100(value);
+      if (normalized != null) return normalized;
+    }
+    return null;
+  };
+  const pickPositiveScore100 = (...values) => {
+    for (const value of values) {
+      const normalized = normalizeScore100(value);
+      if (normalized != null && normalized > 0) return normalized;
+    }
+    return null;
+  };
+  const coreSectionFallback =
+    pickPositiveScore100(
+      applianceData?.field_profile?.section_scores?.core,
+      applianceData?.field_profile?.mandatory_coverage,
+      applianceData?.field_profile?.score,
+    ) ??
+    pickScore100(applianceData?.field_profile?.section_scores?.core);
+  const displaySectionFallback =
+    pickPositiveScore100(
+      applianceData?.field_profile?.section_scores?.display,
+      applianceData?.field_profile?.display_coverage,
+      applianceData?.field_profile?.score,
+    ) ??
+    pickScore100(applianceData?.field_profile?.section_scores?.display);
+  const sectionScores = {
+    specifications:
+      pickPositiveScore100(
+        applianceData?.specifications?.score,
+        applianceData?.key_specs_json?.score,
+        coreSectionFallback,
+      ) ??
+      pickScore100(
+        applianceData?.specifications?.score,
+        applianceData?.key_specs_json?.score,
+        coreSectionFallback,
+      ),
+    display:
+      pickPositiveScore100(
+        applianceData?.display_json?.score,
+        applianceData?.key_specs_json?.display_score,
+        applianceData?.specifications?.display_score,
+        displaySectionFallback,
+      ) ??
+      pickScore100(
+        applianceData?.display_json?.score,
+        applianceData?.key_specs_json?.display_score,
+        applianceData?.specifications?.display_score,
+        displaySectionFallback,
+      ),
+    video_engine:
+      pickPositiveScore100(
+        applianceData?.video_engine_json?.score,
+        applianceData?.performance?.video_engine_score,
+        coreSectionFallback,
+      ) ??
+      pickScore100(
+        applianceData?.video_engine_json?.score,
+        applianceData?.performance?.video_engine_score,
+        coreSectionFallback,
+      ),
+    audio:
+      pickPositiveScore100(
+        applianceData?.audio_json?.score,
+        displaySectionFallback,
+      ) ??
+      pickScore100(applianceData?.audio_json?.score, displaySectionFallback),
+    smart_tv:
+      pickPositiveScore100(
+        applianceData?.smart_tv_json?.score,
+        applianceData?.performance?.smart_tv_score,
+        displaySectionFallback,
+      ) ??
+      pickScore100(
+        applianceData?.smart_tv_json?.score,
+        applianceData?.performance?.smart_tv_score,
+        displaySectionFallback,
+      ),
+    connectivity:
+      pickPositiveScore100(
+        applianceData?.connectivity_json?.score,
+        applianceData?.specifications?.connectivity_score,
+        applianceData?.specifications?.network_score,
+        displaySectionFallback,
+      ) ??
+      pickScore100(
+        applianceData?.connectivity_json?.score,
+        applianceData?.specifications?.connectivity_score,
+        applianceData?.specifications?.network_score,
+        displaySectionFallback,
+      ),
+    ports:
+      pickPositiveScore100(
+        applianceData?.ports_json?.score,
+        displaySectionFallback,
+      ) ??
+      pickScore100(applianceData?.ports_json?.score, displaySectionFallback),
+    gaming:
+      pickPositiveScore100(
+        applianceData?.gaming_json?.score,
+        displaySectionFallback,
+      ) ??
+      pickScore100(applianceData?.gaming_json?.score, displaySectionFallback),
+    power:
+      pickPositiveScore100(
+        applianceData?.power_json?.score,
+        coreSectionFallback,
+      ) ??
+      pickScore100(applianceData?.power_json?.score, coreSectionFallback),
+    physical_details:
+      pickPositiveScore100(
+        applianceData?.physical_json?.score,
+        applianceData?.dimensions_json?.score,
+        applianceData?.physical_details?.score,
+        coreSectionFallback,
+      ) ??
+      pickScore100(
+        applianceData?.physical_json?.score,
+        applianceData?.dimensions_json?.score,
+        applianceData?.physical_details?.score,
+        coreSectionFallback,
+      ),
+    product_details:
+      pickPositiveScore100(
+        applianceData?.product_details_json?.score,
+        coreSectionFallback,
+      ) ??
+      pickScore100(
+        applianceData?.product_details_json?.score,
+        coreSectionFallback,
+      ),
+    in_the_box:
+      pickPositiveScore100(
+        applianceData?.in_the_box_json?.score,
+        coreSectionFallback,
+      ) ??
+      pickScore100(applianceData?.in_the_box_json?.score, coreSectionFallback),
+    warranty:
+      pickPositiveScore100(
+        applianceData?.warranty_json?.score,
+        applianceData?.warranty?.score,
+        coreSectionFallback,
+      ) ??
+      pickScore100(
+        applianceData?.warranty_json?.score,
+        applianceData?.warranty?.score,
+        coreSectionFallback,
+      ),
+    features:
+      pickPositiveScore100(
+        applianceData?.features?.score,
+        displaySectionFallback,
+      ) ??
+      pickScore100(applianceData?.features?.score, displaySectionFallback),
+    performance:
+      pickPositiveScore100(
+        applianceData?.performance?.score,
+        coreSectionFallback,
+      ) ??
+      pickScore100(applianceData?.performance?.score, coreSectionFallback),
+  };
+  const numericSectionScores = Object.values(sectionScores).filter(
+    (score) => Number.isFinite(score) && score > 0,
+  );
+  const sectionAverageScore = numericSectionScores.length
+    ? numericSectionScores.reduce((sum, score) => sum + score, 0) /
+      numericSectionScores.length
+    : null;
+  const overallScore =
+    pickPositiveScore100(
+      applianceData?.spec_score,
+      applianceData?.specScore,
+      applianceData?.overall_score,
+      applianceData?.overallScore,
+      applianceData?.hook_score,
+      applianceData?.hookScore,
+      applianceData?.field_profile?.score,
+      applianceData?.rating,
+      applianceData?.avg_rating,
+      sectionAverageScore,
+    ) ??
+    pickScore100(
+      applianceData?.spec_score,
+      applianceData?.specScore,
+      applianceData?.overall_score,
+      applianceData?.overallScore,
+      applianceData?.hook_score,
+      applianceData?.hookScore,
+      applianceData?.field_profile?.score,
+      applianceData?.rating,
+      applianceData?.avg_rating,
+      sectionAverageScore,
+    );
+  const getSectionScore = (key) =>
+    sectionScores[key] != null ? sectionScores[key] : overallScore;
+  const pickTvScore100 = (...values) => {
+    for (const value of values) {
+      const normalized = normalizeScore100Value(value);
+      if (normalized != null) return normalized;
+    }
+    return null;
+  };
+  const getTvSectionScoreForGroup = (device, sectionKey) => {
+    const overall = pickTvScore100(
+      device?.spec_score,
+      device?.specScore,
+      device?.overall_score,
+      device?.overallScore,
+      device?.hook_score,
+      device?.hookScore,
+      device?.field_profile?.score,
+      device?.rating,
+      device?.avg_rating,
+    );
+    const coreFallback = pickTvScore100(
+      device?.field_profile?.section_scores?.core,
+      overall,
+    );
+    const displayFallback = pickTvScore100(
+      device?.field_profile?.section_scores?.display,
+      overall,
+    );
+
+    switch (sectionKey) {
+      case "overall":
+        return overall;
+      case "specifications":
+        return pickTvScore100(
+          device?.specifications?.score,
+          device?.key_specs_json?.score,
+          device?.spec_score,
+          device?.specScore,
+          coreFallback,
+          overall,
+        );
+      case "display":
+        return pickTvScore100(
+          device?.display_json?.score,
+          device?.key_specs_json?.display_score,
+          device?.specifications?.display_score,
+          displayFallback,
+          overall,
+        );
+      case "video_engine":
+        return pickTvScore100(
+          device?.video_engine_json?.score,
+          device?.performance?.video_engine_score,
+          coreFallback,
+          overall,
+        );
+      case "audio":
+        return pickTvScore100(device?.audio_json?.score, displayFallback, overall);
+      case "smart_tv":
+        return pickTvScore100(
+          device?.smart_tv_json?.score,
+          device?.performance?.smart_tv_score,
+          displayFallback,
+          overall,
+        );
+      case "connectivity":
+        return pickTvScore100(
+          device?.connectivity_json?.score,
+          device?.specifications?.connectivity_score,
+          device?.specifications?.network_score,
+          displayFallback,
+          overall,
+        );
+      case "ports":
+        return pickTvScore100(device?.ports_json?.score, displayFallback, overall);
+      case "gaming":
+        return pickTvScore100(device?.gaming_json?.score, displayFallback, overall);
+      case "power":
+        return pickTvScore100(device?.power_json?.score, coreFallback, overall);
+      case "physical_details":
+        return pickTvScore100(
+          device?.physical_json?.score,
+          device?.dimensions_json?.score,
+          device?.physical_details?.score,
+          coreFallback,
+          overall,
+        );
+      case "product_details":
+        return pickTvScore100(
+          device?.product_details_json?.score,
+          coreFallback,
+          overall,
+        );
+      case "in_the_box":
+        return pickTvScore100(device?.in_the_box_json?.score, coreFallback, overall);
+      case "warranty":
+        return pickTvScore100(
+          device?.warranty_json?.score,
+          device?.warranty?.score,
+          coreFallback,
+          overall,
+        );
+      case "features":
+        return pickTvScore100(device?.features?.score, displayFallback, overall);
+      case "performance":
+        return pickTvScore100(device?.performance?.score, coreFallback, overall);
+      default:
+        return overall;
+    }
+  };
+  const scoreGroupData = (() => {
+    const sourceList = Array.isArray(homeAppliances) ? homeAppliances : [];
+    const normalizedList = sourceList
+      .map((item) => normalizeAppliance(item))
+      .filter(Boolean);
+    if (!applianceData || normalizedList.length === 0) {
+      return { label: "All Televisions", byKey: {} };
+    }
+
+    const currentId = String(
+      applianceData?.id ?? applianceData?.product_id ?? applianceData?.productId ?? "",
+    );
+    const currentGroupKey = normalizeGroupKey(
+      applianceData?.category || applianceData?.appliance_type || applianceData?.product_type,
+      "tv",
+    );
+    const sameGroup = normalizedList.filter(
+      (item) =>
+        normalizeGroupKey(
+          item?.category || item?.appliance_type || item?.product_type,
+          "tv",
+        ) === currentGroupKey,
+    );
+    const scopedList = sameGroup.length > 0 ? sameGroup : normalizedList;
+    const byKey = {};
+    const scoreKeys = ["overall", ...Object.keys(sectionScores)];
+
+    scopedList.forEach((item) => {
+      const itemId = String(item?.id ?? item?.product_id ?? item?.productId ?? "");
+      if (itemId && currentId && itemId === currentId) return;
+      scoreKeys.forEach((key) => {
+        const value = getTvSectionScoreForGroup(item, key);
+        if (!Number.isFinite(value)) return;
+        if (!byKey[key]) byKey[key] = [];
+        byKey[key].push(value);
+      });
+    });
+
+    return {
+      label:
+        applianceData?.category ||
+        applianceData?.appliance_type ||
+        applianceData?.product_type ||
+        "All Televisions",
+      byKey,
+    };
+  })();
+  const getGroupPeerScores = (sectionKey) =>
+    scoreGroupData.byKey?.[sectionKey || "overall"] || [];
 
   useEffect(() => {
     setActiveImage(0);
@@ -1344,12 +1826,16 @@ const TVDetailCard = () => {
     ? [
         { id: "specifications", label: "Specs", icon: FaMicrochip },
         { id: "display", label: "Display", icon: FaTv },
+        { id: "video_engine", label: "Video", icon: FaChartBar },
         { id: "audio", label: "Audio", icon: FaVolumeUp },
         { id: "smart_tv", label: "Smart TV", icon: FaBolt },
         { id: "connectivity", label: "Connectivity", icon: FaWifi },
         { id: "ports", label: "Ports", icon: FaPlug },
         { id: "gaming", label: "Gaming", icon: FaGamepad },
-        { id: "physical_details", label: "Dimensions", icon: FaRuler },
+        { id: "power", label: "Power", icon: FaBatteryFull },
+        { id: "physical_details", label: "Physical", icon: FaRuler },
+        { id: "product_details", label: "Details", icon: FaInfoCircle },
+        { id: "in_the_box", label: "In Box", icon: FaShoppingCart },
         { id: "warranty", label: "Warranty", icon: FaShieldAlt },
       ]
     : [
@@ -1397,6 +1883,300 @@ const TVDetailCard = () => {
     return String(value);
   };
 
+  const formatSpecValueText = (value) => {
+    if (value === null || value === undefined || value === "") {
+      return "Not specified";
+    }
+    if (typeof value === "boolean") return value ? "Yes" : "No";
+    if (Array.isArray(value)) {
+      const filtered = value
+        .map((v) => formatSpecValueText(v))
+        .map((v) => v.trim())
+        .filter(Boolean);
+      return filtered.length ? filtered.join(", ") : "Not specified";
+    }
+    if (typeof value === "object") {
+      const entries = Object.entries(value)
+        .filter(([_, v]) => hasContent(v))
+        .map(([k, v]) => `${toNormalCase(k)}: ${formatSpecValueText(v)}`);
+      return entries.length ? entries.join(" | ") : "Not specified";
+    }
+    return String(value);
+  };
+
+  const isVariantSizeLabel = (label) =>
+    /^\s*\d+(\.\d+)?\s*(inch|inches|cm|mm|")\s*$/i.test(
+      String(label || "").trim(),
+    );
+
+  const parseVariantRowsFromString = (rawValue) => {
+    const text = String(rawValue || "").trim();
+    if (!text || !text.includes("|")) return null;
+
+    const tokens = text
+      .split("|")
+      .map((token) => token.trim())
+      .filter(Boolean);
+    if (tokens.length < 2) return null;
+
+    const rows = [];
+    let currentRow = null;
+    let foundVariantToken = false;
+
+    tokens.forEach((token) => {
+      const match = token.match(
+        /^(\d+(\.\d+)?\s*(inch|inches|cm|mm|"))\s*:\s*(.*)$/i,
+      );
+      if (match) {
+        foundVariantToken = true;
+        currentRow = {
+          label: match[1].trim(),
+          parts: [],
+        };
+        const remainder = (match[4] || "").trim();
+        if (remainder) currentRow.parts.push(remainder);
+        rows.push(currentRow);
+        return;
+      }
+
+      if (currentRow) currentRow.parts.push(token);
+    });
+
+    if (!foundVariantToken || !rows.length) return null;
+
+    const normalized = rows
+      .map((row) => ({
+        label: row.label,
+        value: row.parts.join(" | ").trim(),
+      }))
+      .filter((row) => row.label && row.value);
+
+    return normalized.length ? normalized : null;
+  };
+
+  const parseVariantRowsFromObject = (value) => {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+    const entries = Object.entries(value).filter(([_, v]) => hasContent(v));
+    if (!entries.length) return null;
+    if (!entries.every(([k]) => isVariantSizeLabel(k))) return null;
+
+    const normalized = entries.map(([label, rowValue]) => ({
+      label: String(label).trim(),
+      value: formatSpecValueText(rowValue),
+    }));
+    return normalized.length ? normalized : null;
+  };
+
+  const parseMeasurementGroups = (rawValue) => {
+    const text = String(rawValue || "").trim();
+    if (!text || !text.includes("|")) return null;
+
+    const tokens = text
+      .split("|")
+      .map((token) => token.trim())
+      .filter(Boolean);
+    if (!tokens.length) return null;
+
+    const metricPattern =
+      /^(width|height|length|depth|weight|thickness|diagonal)\s*:\s*(.+)$/i;
+    const groupHintPattern =
+      /^(with|without|stand|packing|package|base|mount|wall|net|gross)\b/i;
+
+    const groups = [];
+    let currentGroup = null;
+    let metricCount = 0;
+
+    const startGroup = (label) => {
+      currentGroup = {
+        label: toNormalCase(label || "General"),
+        metrics: {},
+        others: [],
+      };
+      groups.push(currentGroup);
+    };
+
+    tokens.forEach((token) => {
+      const metricMatch = token.match(metricPattern);
+      if (metricMatch) {
+        if (!currentGroup) startGroup("General");
+        currentGroup.metrics[String(metricMatch[1]).toLowerCase()] = String(
+          metricMatch[2],
+        ).trim();
+        metricCount += 1;
+        return;
+      }
+
+      const colonIndex = token.indexOf(":");
+      if (colonIndex > -1) {
+        const prefix = token.slice(0, colonIndex).trim();
+        const rest = token.slice(colonIndex + 1).trim();
+
+        if (groupHintPattern.test(prefix)) {
+          startGroup(prefix);
+          if (rest) {
+            const nestedMetricMatch = rest.match(metricPattern);
+            if (nestedMetricMatch) {
+              currentGroup.metrics[
+                String(nestedMetricMatch[1]).toLowerCase()
+              ] = String(nestedMetricMatch[2]).trim();
+              metricCount += 1;
+            } else {
+              currentGroup.others.push(rest);
+            }
+          }
+          return;
+        }
+      }
+
+      if (!currentGroup) startGroup("General");
+      currentGroup.others.push(token);
+    });
+
+    if (!metricCount) return null;
+
+    return groups.map((group) => {
+      const otherMetrics = Object.entries(group.metrics)
+        .filter(([key]) => !["width", "height", "length"].includes(key))
+        .map(([key, value]) => `${toNormalCase(key)}: ${value}`);
+      return {
+        label: group.label,
+        width: group.metrics.width || "",
+        height: group.metrics.height || "",
+        length: group.metrics.length || "",
+        others: [...group.others, ...otherMetrics].filter(Boolean).join(" | "),
+      };
+    });
+  };
+
+  const renderVariantRows = (rows) => {
+    const expandedRows = rows.flatMap((row) => {
+      const measurementGroups = parseMeasurementGroups(row.value);
+      if (measurementGroups?.length) {
+        return measurementGroups.map((group) => ({
+          size: row.label,
+          type: group.label || "-",
+          width: group.width || "-",
+          height: group.height || "-",
+          length: group.length || "-",
+          others: group.others || "-",
+          hasMeasurement: true,
+        }));
+      }
+      return [
+        {
+          size: row.label,
+          value: row.value || "-",
+          hasMeasurement: false,
+        },
+      ];
+    });
+
+    const hasMeasurement = expandedRows.some((row) => row.hasMeasurement);
+
+    if (hasMeasurement) {
+      return (
+        <div className="border border-gray-200 overflow-x-auto">
+          <table className="w-full min-w-[640px] text-[11px] sm:text-xs">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left font-semibold text-gray-700 border-b border-gray-200 whitespace-nowrap">
+                  Size
+                </th>
+                <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left font-semibold text-gray-700 border-b border-gray-200 whitespace-nowrap">
+                  Type
+                </th>
+                <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left font-semibold text-gray-700 border-b border-gray-200 whitespace-nowrap">
+                  Width
+                </th>
+                <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left font-semibold text-gray-700 border-b border-gray-200 whitespace-nowrap">
+                  Height
+                </th>
+                <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left font-semibold text-gray-700 border-b border-gray-200 whitespace-nowrap">
+                  Length
+                </th>
+                <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left font-semibold text-gray-700 border-b border-gray-200 whitespace-nowrap">
+                  Others
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {expandedRows.map((row, index) => (
+                <tr key={`${row.size}-${index}`} className="odd:bg-white even:bg-gray-50">
+                  <td className="px-2 sm:px-3 py-1.5 sm:py-2 font-semibold text-gray-700 border-b border-gray-100 whitespace-nowrap align-top">
+                    {row.size}
+                  </td>
+                  <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900 border-b border-gray-100 whitespace-nowrap align-top">
+                    {row.hasMeasurement ? row.type : "-"}
+                  </td>
+                  <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900 border-b border-gray-100 whitespace-nowrap align-top">
+                    {row.hasMeasurement ? row.width : "-"}
+                  </td>
+                  <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900 border-b border-gray-100 whitespace-nowrap align-top">
+                    {row.hasMeasurement ? row.height : "-"}
+                  </td>
+                  <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900 border-b border-gray-100 whitespace-nowrap align-top">
+                    {row.hasMeasurement ? row.length : "-"}
+                  </td>
+                  <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900 border-b border-gray-100 align-top">
+                    {row.hasMeasurement ? row.others : row.value}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+
+    return (
+      <div className="border border-gray-200 overflow-x-auto">
+        <table className="w-full min-w-[320px] text-xs sm:text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left font-semibold text-gray-700 border-b border-gray-200 w-[100px] whitespace-nowrap">
+                Size
+              </th>
+              <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left font-semibold text-gray-700 border-b border-gray-200 whitespace-nowrap">
+                Value
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {expandedRows.map((row, index) => (
+              <tr key={`${row.size}-${index}`} className="odd:bg-white even:bg-gray-50">
+                <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-xs font-semibold text-gray-700 whitespace-nowrap border-b border-gray-100 align-top">
+                  {row.size}
+                </td>
+                <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-gray-900 border-b border-gray-100 align-top">
+                  {row.value || "-"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  const renderSpecValue = (value) => {
+    if (value === null || value === undefined || value === "") {
+      return "Not specified";
+    }
+
+    if (typeof value === "string") {
+      const variantRows = parseVariantRowsFromString(value);
+      if (variantRows) return renderVariantRows(variantRows);
+      return value;
+    }
+
+    if (typeof value === "object" && !Array.isArray(value)) {
+      const variantRows = parseVariantRowsFromObject(value);
+      if (variantRows) return renderVariantRows(variantRows);
+    }
+
+    return formatSpecValueText(value);
+  };
+
   const renderSpecTable = (data) => {
     if (!data || typeof data !== "object") {
       return (
@@ -1417,15 +2197,25 @@ const TVDetailCard = () => {
 
     return (
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 shadow-none">
+        <table className="w-full min-w-[360px] sm:min-w-full divide-y divide-gray-200 shadow-none">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-3 sm:px-6 py-2.5 sm:py-3 text-left text-[11px] sm:text-xs font-semibold uppercase tracking-wide text-gray-600 w-[34%]">
+                Specification
+              </th>
+              <th className="px-3 sm:px-6 py-2.5 sm:py-3 text-left text-[11px] sm:text-xs font-semibold uppercase tracking-wide text-gray-600">
+                Value
+              </th>
+            </tr>
+          </thead>
           <tbody className="bg-white">
             {rows.map(([key, value], idx) => (
               <tr key={key} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                <td className="px-6 py-2 text-sm font-medium text-gray-600 w-1/3 align-top">
+                <td className="px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-gray-600 w-[34%] align-top">
                   {toNormalCase(key)}
                 </td>
-                <td className="px-6 py-2 text-sm text-gray-900 w-2/3">
-                  {formatSpecValue(value)}
+                <td className="px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm text-gray-900 align-top">
+                  {renderSpecValue(value)}
                 </td>
               </tr>
             ))}
@@ -1447,32 +2237,86 @@ const TVDetailCard = () => {
   const renderTabContent = () => {
     if (!applianceData) return null;
 
+    const primarySpecs = applianceData.key_specs_json || applianceData.specifications || {};
     const generalSection = {
       brand: applianceData.brand || applianceData.brand_name || "",
       model: applianceData.model_number || applianceData.model || "",
       category: applianceData.category || applianceData.appliance_type || "",
+      screen_size:
+        primarySpecs.screen_size ||
+        applianceData.display_json?.screen_size ||
+        "",
+      resolution:
+        primarySpecs.resolution ||
+        applianceData.display_json?.resolution ||
+        "",
+      refresh_rate:
+        primarySpecs.refresh_rate ||
+        applianceData.display_json?.refresh_rate ||
+        "",
+      panel_type:
+        primarySpecs.panel_type ||
+        applianceData.display_json?.panel_type ||
+        "",
+      operating_system:
+        primarySpecs.operating_system ||
+        applianceData.smart_tv_json?.operating_system ||
+        "",
+      audio_output:
+        primarySpecs.audio_output ||
+        applianceData.audio_json?.output_power ||
+        "",
+      energy_rating:
+        applianceData.power_json?.energy_rating ||
+        applianceData.power_json?.energy_star_rating ||
+        primarySpecs.energy_rating ||
+        "",
       release_year: applianceData.release_year || "",
       country_of_origin:
-        applianceData.country || applianceData.warranty_json?.country_of_origin || "",
+        applianceData.country ||
+        applianceData.product_details_json?.country_of_origin ||
+        applianceData.warranty_json?.country_of_origin ||
+        "",
     };
 
     if (isTvProduct) {
       return (
         <div id="tv-specifications" className="space-y-6">
           <div className="bg-white rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <FaMicrochip className={currentColor.text} />
-              TV Specifications
-            </h3>
+            <div className="mb-6 flex items-center justify-between gap-2">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <FaMicrochip className={currentColor.text} />
+                Core Specifications
+              </h3>
+              <SpecScoreBadge
+                score={getSectionScore("specifications")}
+                size={38}
+              />
+            </div>
+            <ScoreGroupTable
+              currentScore={getSectionScore("specifications")}
+              peerScores={getGroupPeerScores("specifications")}
+              groupLabel={scoreGroupData.label}
+              className="mb-4"
+            />
             {renderSpecTable(generalSection)}
           </div>
 
           {hasContent(applianceData.key_specs_json || applianceData.specifications) && (
             <div id="tv-display" className="bg-white rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                <FaTv className={currentColor.text} />
-                Display
-              </h3>
+              <div className="mb-6 flex items-center justify-between gap-2">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <FaTv className={currentColor.text} />
+                  Display
+                </h3>
+                <SpecScoreBadge score={getSectionScore("display")} size={38} />
+              </div>
+              <ScoreGroupTable
+                currentScore={getSectionScore("display")}
+                peerScores={getGroupPeerScores("display")}
+                groupLabel={scoreGroupData.label}
+                className="mb-4"
+              />
               {renderSpecTable(
                 applianceData.display_json ||
                   applianceData.key_specs_json ||
@@ -1481,22 +2325,59 @@ const TVDetailCard = () => {
             </div>
           )}
 
+          {hasContent(applianceData.video_engine_json) && (
+            <div id="tv-video_engine" className="bg-white rounded-lg p-6">
+              <div className="mb-6 flex items-center justify-between gap-2">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <FaChartBar className={currentColor.text} />
+                  Video Engine
+                </h3>
+                <SpecScoreBadge score={getSectionScore("video_engine")} size={38} />
+              </div>
+              <ScoreGroupTable
+                currentScore={getSectionScore("video_engine")}
+                peerScores={getGroupPeerScores("video_engine")}
+                groupLabel={scoreGroupData.label}
+                className="mb-4"
+              />
+              {renderSpecTable(applianceData.video_engine_json)}
+            </div>
+          )}
+
           {hasContent(applianceData.audio_json) && (
             <div id="tv-audio" className="bg-white rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                <FaVolumeUp className={currentColor.text} />
-                Audio
-              </h3>
+              <div className="mb-6 flex items-center justify-between gap-2">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <FaVolumeUp className={currentColor.text} />
+                  Audio
+                </h3>
+                <SpecScoreBadge score={getSectionScore("audio")} size={38} />
+              </div>
+              <ScoreGroupTable
+                currentScore={getSectionScore("audio")}
+                peerScores={getGroupPeerScores("audio")}
+                groupLabel={scoreGroupData.label}
+                className="mb-4"
+              />
               {renderSpecTable(applianceData.audio_json)}
             </div>
           )}
 
           {hasContent(applianceData.smart_tv_json) && (
             <div id="tv-smart_tv" className="bg-white rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                <FaBolt className={currentColor.text} />
-                Smart TV
-              </h3>
+              <div className="mb-6 flex items-center justify-between gap-2">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <FaBolt className={currentColor.text} />
+                  Smart TV
+                </h3>
+                <SpecScoreBadge score={getSectionScore("smart_tv")} size={38} />
+              </div>
+              <ScoreGroupTable
+                currentScore={getSectionScore("smart_tv")}
+                peerScores={getGroupPeerScores("smart_tv")}
+                groupLabel={scoreGroupData.label}
+                className="mb-4"
+              />
               {renderSpecTable(applianceData.smart_tv_json)}
             </div>
           )}
@@ -1506,55 +2387,169 @@ const TVDetailCard = () => {
               id="tv-connectivity"
               className="bg-white rounded-lg p-6"
             >
-              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                <FaWifi className={currentColor.text} />
-                Connectivity
-              </h3>
+              <div className="mb-6 flex items-center justify-between gap-2">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <FaWifi className={currentColor.text} />
+                  Connectivity
+                </h3>
+                <SpecScoreBadge score={getSectionScore("connectivity")} size={38} />
+              </div>
+              <ScoreGroupTable
+                currentScore={getSectionScore("connectivity")}
+                peerScores={getGroupPeerScores("connectivity")}
+                groupLabel={scoreGroupData.label}
+                className="mb-4"
+              />
               {renderSpecTable(applianceData.connectivity_json)}
             </div>
           )}
 
           {hasContent(applianceData.ports_json) && (
             <div id="tv-ports" className="bg-white rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                <FaPlug className={currentColor.text} />
-                Ports
-              </h3>
+              <div className="mb-6 flex items-center justify-between gap-2">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <FaPlug className={currentColor.text} />
+                  Ports
+                </h3>
+                <SpecScoreBadge score={getSectionScore("ports")} size={38} />
+              </div>
+              <ScoreGroupTable
+                currentScore={getSectionScore("ports")}
+                peerScores={getGroupPeerScores("ports")}
+                groupLabel={scoreGroupData.label}
+                className="mb-4"
+              />
               {renderSpecTable(applianceData.ports_json)}
             </div>
           )}
 
           {hasContent(applianceData.gaming_json) && (
             <div id="tv-gaming" className="bg-white rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                <FaGamepad className={currentColor.text} />
-                Gaming
-              </h3>
+              <div className="mb-6 flex items-center justify-between gap-2">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <FaGamepad className={currentColor.text} />
+                  Gaming
+                </h3>
+                <SpecScoreBadge score={getSectionScore("gaming")} size={38} />
+              </div>
+              <ScoreGroupTable
+                currentScore={getSectionScore("gaming")}
+                peerScores={getGroupPeerScores("gaming")}
+                groupLabel={scoreGroupData.label}
+                className="mb-4"
+              />
               {renderSpecTable(applianceData.gaming_json)}
             </div>
           )}
 
-          {hasContent(applianceData.dimensions_json || applianceData.physical_details) && (
+          {hasContent(applianceData.power_json) && (
+            <div id="tv-power" className="bg-white rounded-lg p-6">
+              <div className="mb-6 flex items-center justify-between gap-2">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <FaBatteryFull className={currentColor.text} />
+                  Power
+                </h3>
+                <SpecScoreBadge score={getSectionScore("power")} size={38} />
+              </div>
+              <ScoreGroupTable
+                currentScore={getSectionScore("power")}
+                peerScores={getGroupPeerScores("power")}
+                groupLabel={scoreGroupData.label}
+                className="mb-4"
+              />
+              {renderSpecTable(applianceData.power_json)}
+            </div>
+          )}
+
+          {hasContent(
+            applianceData.physical_json ||
+              applianceData.dimensions_json ||
+              applianceData.physical_details,
+          ) && (
             <div
               id="tv-physical_details"
               className="bg-white rounded-lg p-6"
             >
-              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                <FaRuler className={currentColor.text} />
-                Dimensions
-              </h3>
+              <div className="mb-6 flex items-center justify-between gap-2">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <FaRuler className={currentColor.text} />
+                  Physical
+                </h3>
+                <SpecScoreBadge
+                  score={getSectionScore("physical_details")}
+                  size={38}
+                />
+              </div>
+              <ScoreGroupTable
+                currentScore={getSectionScore("physical_details")}
+                peerScores={getGroupPeerScores("physical_details")}
+                groupLabel={scoreGroupData.label}
+                className="mb-4"
+              />
               {renderSpecTable(
-                applianceData.dimensions_json || applianceData.physical_details,
+                applianceData.physical_json ||
+                  applianceData.dimensions_json ||
+                  applianceData.physical_details,
               )}
+            </div>
+          )}
+
+          {hasContent(applianceData.product_details_json) && (
+            <div id="tv-product_details" className="bg-white rounded-lg p-6">
+              <div className="mb-6 flex items-center justify-between gap-2">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <FaInfoCircle className={currentColor.text} />
+                  Product Details
+                </h3>
+                <SpecScoreBadge
+                  score={getSectionScore("product_details")}
+                  size={38}
+                />
+              </div>
+              <ScoreGroupTable
+                currentScore={getSectionScore("product_details")}
+                peerScores={getGroupPeerScores("product_details")}
+                groupLabel={scoreGroupData.label}
+                className="mb-4"
+              />
+              {renderSpecTable(applianceData.product_details_json)}
+            </div>
+          )}
+
+          {hasContent(applianceData.in_the_box_json) && (
+            <div id="tv-in_the_box" className="bg-white rounded-lg p-6">
+              <div className="mb-6 flex items-center justify-between gap-2">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <FaShoppingCart className={currentColor.text} />
+                  In The Box
+                </h3>
+                <SpecScoreBadge score={getSectionScore("in_the_box")} size={38} />
+              </div>
+              <ScoreGroupTable
+                currentScore={getSectionScore("in_the_box")}
+                peerScores={getGroupPeerScores("in_the_box")}
+                groupLabel={scoreGroupData.label}
+                className="mb-4"
+              />
+              {renderSpecTable(applianceData.in_the_box_json)}
             </div>
           )}
 
           {hasContent(applianceData.warranty_json || applianceData.warranty) && (
             <div id="tv-warranty" className="bg-white rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                <FaShieldAlt className={currentColor.text} />
-                Warranty
-              </h3>
+              <div className="mb-6 flex items-center justify-between gap-2">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <FaShieldAlt className={currentColor.text} />
+                  Warranty
+                </h3>
+                <SpecScoreBadge score={getSectionScore("warranty")} size={38} />
+              </div>
+              <ScoreGroupTable
+                currentScore={getSectionScore("warranty")}
+                peerScores={getGroupPeerScores("warranty")}
+                groupLabel={scoreGroupData.label}
+                className="mb-4"
+              />
               {renderSpecTable(applianceData.warranty_json || applianceData.warranty)}
             </div>
           )}
@@ -1565,27 +2560,54 @@ const TVDetailCard = () => {
     return (
       <div id="tv-specifications" className="space-y-6">
         <div className="bg-white rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-            <FaMicrochip className={currentColor.text} />
-            Technical Specifications
-          </h3>
+          <div className="mb-6 flex items-center justify-between gap-2">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <FaMicrochip className={currentColor.text} />
+              Technical Specifications
+            </h3>
+            <SpecScoreBadge score={getSectionScore("specifications")} size={38} />
+          </div>
+          <ScoreGroupTable
+            currentScore={getSectionScore("specifications")}
+            peerScores={getGroupPeerScores("specifications")}
+            groupLabel={scoreGroupData.label}
+            className="mb-4"
+          />
           {renderSpecTable(applianceData.specifications || generalSection)}
         </div>
         {hasContent(applianceData.features) && (
           <div id="tv-features" className="bg-white rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <FaBolt className={currentColor.text} />
-              Features
-            </h3>
+            <div className="mb-6 flex items-center justify-between gap-2">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <FaBolt className={currentColor.text} />
+                Features
+              </h3>
+              <SpecScoreBadge score={getSectionScore("features")} size={38} />
+            </div>
+            <ScoreGroupTable
+              currentScore={getSectionScore("features")}
+              peerScores={getGroupPeerScores("features")}
+              groupLabel={scoreGroupData.label}
+              className="mb-4"
+            />
             {renderSpecTable(applianceData.features)}
           </div>
         )}
         {hasContent(applianceData.performance) && (
           <div id="tv-performance" className="bg-white rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <FaChartBar className={currentColor.text} />
-              Performance
-            </h3>
+            <div className="mb-6 flex items-center justify-between gap-2">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <FaChartBar className={currentColor.text} />
+                Performance
+              </h3>
+              <SpecScoreBadge score={getSectionScore("performance")} size={38} />
+            </div>
+            <ScoreGroupTable
+              currentScore={getSectionScore("performance")}
+              peerScores={getGroupPeerScores("performance")}
+              groupLabel={scoreGroupData.label}
+              className="mb-4"
+            />
             {renderSpecTable(applianceData.performance)}
           </div>
         )}
@@ -1594,19 +2616,40 @@ const TVDetailCard = () => {
             id="tv-physical_details"
             className="bg-white rounded-lg p-6"
           >
-            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <FaRuler className={currentColor.text} />
-              Physical Details
-            </h3>
+            <div className="mb-6 flex items-center justify-between gap-2">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <FaRuler className={currentColor.text} />
+                Physical Details
+              </h3>
+              <SpecScoreBadge
+                score={getSectionScore("physical_details")}
+                size={38}
+              />
+            </div>
+            <ScoreGroupTable
+              currentScore={getSectionScore("physical_details")}
+              peerScores={getGroupPeerScores("physical_details")}
+              groupLabel={scoreGroupData.label}
+              className="mb-4"
+            />
             {renderSpecTable(applianceData.physical_details)}
           </div>
         )}
         {hasContent(applianceData.warranty) && (
           <div id="tv-warranty" className="bg-white rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <FaShieldAlt className={currentColor.text} />
-              Warranty
-            </h3>
+            <div className="mb-6 flex items-center justify-between gap-2">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <FaShieldAlt className={currentColor.text} />
+                Warranty
+              </h3>
+              <SpecScoreBadge score={getSectionScore("warranty")} size={38} />
+            </div>
+            <ScoreGroupTable
+              currentScore={getSectionScore("warranty")}
+              peerScores={getGroupPeerScores("warranty")}
+              groupLabel={scoreGroupData.label}
+              className="mb-4"
+            />
             {renderSpecTable(applianceData.warranty)}
           </div>
         )}
@@ -1902,6 +2945,14 @@ const TVDetailCard = () => {
           <div className="lg:w-2/5 p-4">
             {/* Main Image */}
             <div className="rounded-xl bg-white p-8 mb-6 relative">
+              <div className="absolute left-2 top-2 z-10 pointer-events-none">
+                <SpecScoreBadge
+                  score={overallScore}
+                  size={40}
+                  showSpecLabel
+                  zeroFallback
+                />
+              </div>
               <img
                 src={
                   galleryImages?.[activeImage] ||
@@ -1981,18 +3032,22 @@ const TVDetailCard = () => {
                         </span>
                       ) : null}
                       <div className="font-semibold text-gray-900 text-sm mb-1 leading-tight">
-                        {variant.capacity ||
-                          variant.screen_size ||
-                          variant.type ||
-                          applianceData.specifications?.screen_size ||
-                          `Variant ${index + 1}`}
+                        {toSafeText(
+                          variant.capacity ||
+                            variant.screen_size ||
+                            variant.type ||
+                            applianceData.specifications?.screen_size ||
+                            `Variant ${index + 1}`,
+                        ) || `Variant ${index + 1}`}
                       </div>
                       <div className="text-[11px] text-gray-500 mb-1.5 leading-tight">
-                        {variant.resolution ||
-                          variant.specification_summary ||
-                          applianceData.specifications?.resolution ||
-                          applianceData.specifications?.panel_type ||
-                          ""}
+                        {toSafeText(
+                          variant.resolution ||
+                            variant.specification_summary ||
+                            applianceData.specifications?.resolution ||
+                            applianceData.specifications?.panel_type ||
+                            "",
+                        )}
                       </div>
                       <div className="text-sm font-bold text-green-600">
                         {RUPEE_SYMBOL}
@@ -2030,11 +3085,12 @@ const TVDetailCard = () => {
                       tone: "purple",
                     },
                   ].map((item) => {
-                    const value =
+                    const rawValue =
                       applianceData.specifications[item.key] ||
                       (item.fallback
                         ? applianceData.specifications[item.fallback]
                         : null);
+                    const value = toSafeText(rawValue);
                     if (!value) return null;
                     const toneClasses =
                       item.tone === "green"
@@ -2060,19 +3116,9 @@ const TVDetailCard = () => {
                         className={`group rounded-lg border px-2 py-1.5 text-center transition-colors duration-200 ${toneClasses.card}`}
                       >
                         <div
-                          className={`mx-auto mb-1 inline-flex h-6 w-6 items-center justify-center rounded-md ${toneClasses.iconWrap}`}
-                        >
-                          <item.icon className={`${toneClasses.icon} text-[11px]`} />
-                        </div>
-                        <div
                           className={`font-bold text-xs leading-4 tracking-tight ${toneClasses.value}`}
                         >
                           {value}
-                        </div>
-                        <div
-                          className={`mt-0.5 text-[9px] font-semibold tracking-wide ${toneClasses.label}`}
-                        >
-                          {item.label}
                         </div>
                       </div>
                     );
@@ -2280,11 +3326,12 @@ const TVDetailCard = () => {
                       tone: "purple",
                     },
                   ].map((item) => {
-                    const value =
+                    const rawValue =
                       applianceData.specifications[item.key] ||
                       (item.fallback
                         ? applianceData.specifications[item.fallback]
                         : null);
+                    const value = toSafeText(rawValue);
                     if (!value) return null;
                     const toneClasses =
                       item.tone === "green"
@@ -2310,20 +3357,10 @@ const TVDetailCard = () => {
                         className={`min-h-[96px] rounded-lg border p-2 text-center transition-colors duration-200 ${toneClasses.card}`}
                       >
                         <div
-                          className={`mx-auto mb-1 inline-flex h-7 w-7 items-center justify-center rounded-md ${toneClasses.iconWrap}`}
-                        >
-                          <item.icon className={`${toneClasses.icon} text-xs`} />
-                        </div>
-                        <div
                           className={`font-bold text-lg leading-tight tracking-tight ${toneClasses.value}`}
                         >
                           {value}
                           {item.unit && ` ${item.unit}`}
-                        </div>
-                        <div
-                          className={`mt-0.5 text-[10px] font-semibold tracking-wide ${toneClasses.label}`}
-                        >
-                          {item.label}
                         </div>
                       </div>
                     );

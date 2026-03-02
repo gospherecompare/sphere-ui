@@ -17,7 +17,7 @@ const PAGE_TITLES = {
   account: `My Account | ${SITE_NAME}`,
   compare: `Compare Gadgets | ${SITE_NAME}`,
   wishlist: `My Wishlist | ${SITE_NAME}`,
-  careers: `Careers at ${SITE_NAME} | Product, Content & SEO Roles`,
+  careers: `Careers at ${SITE_NAME} | Join Hooks Team`,
   about: `About ${SITE_NAME} | Product Discovery & Comparison`,
   contact: `Contact ${SITE_NAME} | Support and Partnerships`,
   privacypolicy: `Privacy Policy | ${SITE_NAME}`,
@@ -79,3 +79,4 @@ export default function useTitle({ page, brand, name, siteName } = {}) {
 }
 
 export { formatTitle, PAGE_TITLES, SITE_NAME, BRAND_TAGLINE };
+

@@ -189,7 +189,7 @@ const Footer = () => {
             Hook
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 items-center">
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-6 gap-4">
               <div>
                 <Link
                   to="/about"
@@ -212,6 +212,14 @@ const Footer = () => {
                   className="hover:text-purple-400 transition-colors duration-200 text-gray-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 rounded"
                 >
                   Contact
+                </Link>
+              </div>
+              <div>
+                <Link
+                  to="/blogs"
+                  className="hover:text-purple-400 transition-colors duration-200 text-gray-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 rounded"
+                >
+                  Blogs
                 </Link>
               </div>
               <div>

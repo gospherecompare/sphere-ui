@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Blog files (local-only)
+src/components/Static/Blogs.jsx
+src/components/Static/BlogDetail.jsx
