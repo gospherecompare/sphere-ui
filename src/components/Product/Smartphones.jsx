@@ -1621,7 +1621,6 @@ const Smartphones = () => {
     const identifier = device.model || device.id;
     const variantId = device.variant?.variant_id ?? device.variant?.id ?? null;
     const storeId = store?.id ?? null;
-    const storeName = store?.store ?? store?.store_name ?? null;
 
     // record a product view for trending metrics (best-effort)
     try {
@@ -1643,18 +1642,9 @@ const Smartphones = () => {
 
     addToHistory?.({ id: device.id, model: device.model, variantId, storeId });
 
-    // Generate SEO-friendly slug-based URL
+    // Generate clean SEO URL (avoid variant/store query params in detail URLs)
     const productSlug = generateSlug(device.model || device.name || device.id);
-    const params = new URLSearchParams();
-    if (variantId) params.set("variantId", String(variantId));
-    if (storeId) params.set("storeId", String(storeId));
-    if (storeName) params.set("storeName", String(storeName));
-
-    navigate(
-      `/smartphones/${productSlug}${
-        params.toString() ? "?" + params.toString() : ""
-      }`,
-    );
+    navigate(`/smartphones/${productSlug}-price-in-india`);
   };
 
   const getCompareProductId = (device) => {

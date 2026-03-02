@@ -589,7 +589,7 @@ const TrendingSection = () => {
           : FaMobileAlt;
 
   return (
-    <div className="px-2 lg:px-4 mx-auto bg-white max-w-6xl rounded-xl mb-5 w-full m-0 overflow-hidden pt-5 sm:pt-10">
+    <div className="px-2 lg:px-4 mx-auto bg-white max-w-6xl  mb-5 w-full m-0 overflow-hidden pt-5 sm:pt-10">
       {/* Header Section */}
       <div className="mb-6 px-2">
         <div className="flex items-center gap-2 mb-2">
@@ -683,24 +683,17 @@ const TrendingSection = () => {
               Filter by brand, features, and more
             </p>
           </div>
-          <button
-            onClick={handleViewAll}
-            className="text-sm text-red-600 hover:text-red-800 font-medium flex items-center gap-1"
-          >
-            View all
-            <FaArrowRight className="w-3 h-3" />
-          </button>
         </div>
       </div>
 
-      {/* Products Grid - Single Row (Max 5 visible on desktop) */}
-      <div className="flex md:grid md:grid-cols-5 overflow-x-auto md:overflow-visible gap-3 lg:gap-4 hide-scrollbar no-scrollbar scroll-smooth pb-6">
+      {/* Products Row - Horizontal scroll with fixed-size cards */}
+      <div className="flex overflow-x-auto gap-4 lg:gap-5 hide-scrollbar no-scrollbar scroll-smooth pb-6">
         {loadingTrending
           ? // Skeleton Loaders
             Array.from({ length: 8 }).map((_, i) => (
               <div
                 key={`skeleton-${i}`}
-                className="min-w-[120px] sm:min-w-[160px] lg:min-w-[200px] shrink-0 animate-pulse"
+                className="w-[220px] h-[200px] shrink-0 animate-pulse"
               >
                 <div className="rounded-2xl bg-white p-3 shadow-sm">
                   <div className="bg-gray-200 rounded-xl w-full h-24 sm:h-32 lg:h-40 mb-3"></div>
@@ -712,22 +705,22 @@ const TrendingSection = () => {
               </div>
             ))
           : // Actual Products
-            currentDevices.slice(0, 5).map((device, i) => (
+            currentDevices.map((device, i) => (
               <div
                 key={`${device.id || "noid"}-${i}`}
                 onClick={() => handleDeviceClick(device)}
-                className="group min-w-[220px] sm:min-w-[260px] md:min-w-0 cursor-pointer transition-all duration-200"
+                className="group shrink-0 cursor-pointer transition-all duration-200"
               >
-                <div className="relative rounded-2xl bg-white  p-3 sm:p-4 transition-all duration-200 group-hover:shadow-lg group-hover:shadow-slate-200 group-hover:-translate-y-0.5">
-                  <div className="flex flex-col gap-3">
+                <div className="relative h-full w-32 rounded-lg overflow-hidden p-2 transition-all duration-300  overflow-hidden transition-all duration-200  group-hover:-translate-y-0.5">
+                  <div className="flex h-full flex-col gap-2">
                     {/* Image */}
                     <div className="relative w-full flex-shrink-0">
-                      <div className="h-28 sm:h-32 w-full rounded-2xl overflow-hidden bg-gray-100 flex items-center justify-center">
+                      <div className="mx-auto h-28 sm:h-32 w-28 rounded-md shadow-md border border-gray-100 overflow-hidden bg-gray-100 flex items-center justify-center">
                         {device.image ? (
                           <img
                             src={device.image}
                             alt={device.name}
-                            className="max-h-full w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+                            className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-105"
                             onError={(e) => {
                               e.target.style.display = "none";
                             }}
@@ -750,36 +743,16 @@ const TrendingSection = () => {
                     {/* Info */}
                     <div className="flex-1 min-w-0 text-left">
                       {/* Brand - Top Left */}
-                      <p className="text-[10px] sm:text-xs uppercase text-purple-600 font-semibold tracking-widest">
-                        {device.brand || "Brand"}
-                      </p>
+
                       {/* Title */}
-                      <h3
-                        className={`mt-1 text-sm sm:text-base font-semibold text-gray-900 leading-snug line-clamp-2 group-hover:text-red-600 transition-colors duration-200 ${
-                          device.ram || device.storage
-                            ? "min-h-[2rem] md:min-h-[2.5rem]"
-                            : "min-h-[2.5rem] md:min-h-[3rem]"
-                        }`}
+                      <h6
+                        className={`mt-1 text-sm sm:text-base font-semibold text-gray-900 leading-snug line-clamp-2 group-hover:text-purple-600 transition-colors duration-200 
+                            `}
                       >
                         {device.name}
-                      </h3>
-                      {(device.ram || device.storage) && (
-                        <p className="mt-0.5 text-[11px] sm:text-xs text-gray-500 leading-snug whitespace-normal break-words">
-                          {[
-                            compactMemoryLabel(device.ram, "RAM"),
-                            compactMemoryLabel(device.storage, "ROM"),
-                          ]
-                            .filter(Boolean)
-                            .join(" | ")}
-                        </p>
-                      )}
+                      </h6>
+
                       {/* Price */}
-                      <div className="mt-2 flex items-center gap-1.5 text-[11px] sm:text-xs text-gray-500 leading-none">
-                        <span>From</span>
-                        <span className="text-base sm:text-lg font-bold text-green-600">
-                          {device.price || "N/A"}
-                        </span>
-                      </div>
                     </div>
                   </div>
                 </div>

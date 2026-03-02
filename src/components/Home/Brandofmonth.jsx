@@ -139,7 +139,7 @@ const MobileFeaturesFinder = () => {
   };
 
   return (
-    <div className="px-2 lg:px-4 mx-auto bg-white max-w-6xl w-full m-5 rounded-lg overflow-hidden pt-5 sm:pt-10">
+    <div className="px-2 lg:px-4 mx-auto bg-white max-w-6xl w-full m-5  overflow-hidden pt-5 sm:pt-10">
       {/* Header Section */}
       <div className="mb-6 px-2">
         <div className="flex items-center gap-2 mb-2">

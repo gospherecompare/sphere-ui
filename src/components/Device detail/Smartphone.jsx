@@ -56,6 +56,7 @@ import { normalizeGroupKey } from "../../utils/groupScoreStats";
 import ScoreGroupTable from "../ui/ScoreGroupTable";
 
 const token = Cookies.get("arenak");
+const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
 
 const normalizeScore100 = (value) => {
   const n = Number(value);
@@ -148,6 +149,23 @@ const MobileDetailCard = () => {
 
   const params = useParams();
   const location = useLocation();
+  const normalizeSeoSlug = useCallback((slugValue) => {
+    const slug = String(slugValue || "")
+      .toLowerCase()
+      .trim();
+    if (!slug) return "";
+    if (slug.endsWith(SMARTPHONE_SEO_SUFFIX)) {
+      return slug.slice(0, -SMARTPHONE_SEO_SUFFIX.length).replace(/-+$/g, "");
+    }
+    return slug;
+  }, []);
+  const toSeoDetailSlug = useCallback(
+    (slugValue) => {
+      const base = normalizeSeoSlug(slugValue);
+      return base ? `${base}${SMARTPHONE_SEO_SUFFIX}` : "";
+    },
+    [normalizeSeoSlug],
+  );
   const query = new URLSearchParams(location.search);
   const model = query.get("model");
   let id = query.get("id");
@@ -159,21 +177,25 @@ const MobileDetailCard = () => {
 
   // Extract slug from route params (SEO-friendly slug-based URL)
   const routeSlug = params.slug || null;
+  const routeBaseSlug = useMemo(() => normalizeSeoSlug(routeSlug), [
+    normalizeSeoSlug,
+    routeSlug,
+  ]);
 
   // Convert slug to searchable model name
-  const modelFromSlug = routeSlug ? extractNameFromSlug(routeSlug) : null;
+  const modelFromSlug = routeBaseSlug ? extractNameFromSlug(routeBaseSlug) : null;
   const searchModel = model || modelFromSlug;
 
   // Try to find device locally by slug match first
   const findDeviceBySlug = useCallback(
     (slug) => {
       if (!slug || !smartphone) return null;
-      const searchSlug = generateSlug(slug);
+      const searchSlug = generateSlug(normalizeSeoSlug(slug));
       return (Array.isArray(smartphone) ? smartphone : [smartphone]).find(
         (d) => generateSlug(d.name || d.model || "") === searchSlug,
       );
     },
-    [smartphone],
+    [smartphone, normalizeSeoSlug],
   );
   useEffect(() => {
     // If an explicit numeric id is present, fetch that exact device.
@@ -207,26 +229,38 @@ const MobileDetailCard = () => {
     const mobileDataLocal = selectedDevice?.smartphones?.[0] || selectedDevice;
     if (!mobileDataLocal || !routeSlug) return;
 
-    const canonicalSlug = generateSlug(
+    const canonicalBaseSlug = generateSlug(
       mobileDataLocal.name ||
         mobileDataLocal.model ||
         mobileDataLocal.brand ||
         "",
     );
+    const canonicalSeoSlug = toSeoDetailSlug(canonicalBaseSlug);
+    if (!canonicalSeoSlug) return;
 
-    // If current slug doesn't match canonical slug, replace URL with canonical one
-    if (canonicalSlug && routeSlug !== canonicalSlug) {
-      const desiredPath = `/smartphones/${canonicalSlug}`;
-      const currentPath = window.location.pathname;
-      if (currentPath !== desiredPath) {
-        navigate(desiredPath + (location.search || ""), { replace: true });
-      }
+    const desiredPath = `/smartphones/${canonicalSeoSlug}`;
+    const nextSearchParams = new URLSearchParams(location.search || "");
+    // Clean noisy variant/store query params from detail URL for SEO.
+    [
+      "variantId",
+      "variant_id",
+      "storeId",
+      "store_id",
+      "storeName",
+      "store",
+    ].forEach((key) => nextSearchParams.delete(key));
+    const nextSearch = nextSearchParams.toString();
+    const desiredUrl = `${desiredPath}${nextSearch ? `?${nextSearch}` : ""}`;
+    const currentUrl = `${window.location.pathname}${window.location.search}`;
+
+    if (currentUrl !== desiredUrl) {
+      navigate(desiredUrl, { replace: true });
     }
-  }, [selectedDevice, routeSlug, navigate, location.search]);
+  }, [selectedDevice, routeSlug, toSeoDetailSlug, navigate, location.search]);
 
   // Prefer a locally-resolved device (by slug) before falling back to
   // `selectedDevice` which may have been set via other flows.
-  const localResolved = routeSlug ? findDeviceBySlug(routeSlug) : null;
+  const localResolved = routeSlug ? findDeviceBySlug(routeBaseSlug) : null;
   // Normalize incoming device object into a shape the UI expects.
   const detectAiPhone = (d) => {
     if (!d) return false;
@@ -1692,7 +1726,7 @@ Price: ${price}
     try {
       const slug = generateSlug(mobileData?.name || mobileData?.model || "");
       if (!slug) return window.location.href;
-      const path = `/smartphones/${slug}`;
+      const path = `/smartphones/${toSeoDetailSlug(slug) || slug}`;
       return window.location.origin + path;
     } catch (e) {
       return window.location.href;
