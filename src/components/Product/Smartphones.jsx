@@ -59,6 +59,9 @@ import {
 // Enhanced Image Carousel - Simplified without counts/indicators
 const ImageCarousel = ({ images = [] }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const imageFrameClass =
+    "h-36 w-24 sm:h-40 sm:w-28 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center";
+  const imageClass = "h-full w-full object-contain p-2";
 
   useEffect(() => {
     setCurrentIndex(0);
@@ -77,12 +80,14 @@ const ImageCarousel = ({ images = [] }) => {
   // If no images or single image, show static image
   if (!images || images.length === 0) {
     return (
-      <div className="relative w-full h-full flex items-center justify-center rounded-lg bg-white">
-        <div className="text-center px-3">
-          <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-200">
-            <FaMobileAlt className="text-gray-400 text-sm" />
+      <div className="relative flex h-full w-full items-center justify-center">
+        <div className={imageFrameClass}>
+          <div className="text-center px-3">
+            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-200">
+              <FaMobileAlt className="text-gray-400 text-sm" />
+            </div>
+            <span className="text-xs text-gray-500">No image</span>
           </div>
-          <span className="text-xs text-gray-500">No image</span>
         </div>
       </div>
     );
@@ -91,28 +96,27 @@ const ImageCarousel = ({ images = [] }) => {
   // Single image case
   if (images.length === 1) {
     return (
-      <div className="relative w-full h-full">
-        <img
-          src={images[0]}
-          alt="product"
-          className="w-full h-full object-contain rounded-lg"
-          loading="lazy"
-        />
+      <div className="flex h-full w-full items-center justify-center">
+        <div className={imageFrameClass}>
+          <img src={images[0]} alt="product" className={imageClass} loading="lazy" />
+        </div>
       </div>
     );
   }
 
   // Multiple images case - simplified without indicators
   return (
-    <div className="relative w-full h-full group">
+    <div className="relative h-full w-full group">
       {/* Main Image */}
-      <div className="w-full h-full flex items-center justify-center">
-        <img
-          src={images[currentIndex]}
-          alt={`product-view-${currentIndex + 1}`}
-          className="w-auto h-auto max-w-full max-h-full object-contain rounded-lg"
-          loading="lazy"
-        />
+      <div className="flex h-full w-full items-center justify-center">
+        <div className={imageFrameClass}>
+          <img
+            src={images[currentIndex]}
+            alt={`product-view-${currentIndex + 1}`}
+            className={imageClass}
+            loading="lazy"
+          />
+        </div>
       </div>
 
       {/* Navigation Arrows (only show on hover for mobile, always for desktop) */}
@@ -1362,27 +1366,27 @@ const Smartphones = () => {
     return text.length > 180 ? `${text.slice(0, 177)}...` : text;
   };
 
-  let seoTitle = `Smartphones ${currentYear} - Specs, Prices & Reviews | Hook`;
+  let seoTitle = `Smartphones ${currentYear} - Specs, Prices & Reviews | Hooks`;
   let seoDescription = sanitizeDescription(
-    "Browse the latest smartphones with detailed specs, prices, reviews, and comparisons on Hook.",
+    "Browse the latest smartphones with detailed specs, prices, reviews, and comparisons on Hooks.",
   );
 
   if (isSingleSmartphonePath) {
-    seoTitle = `Smartphones ${currentYear} - Compare Specs, Prices & Reviews | Hook`;
+    seoTitle = `Smartphones ${currentYear} - Compare Specs, Prices & Reviews | Hooks`;
     seoDescription =
-      "Compare the latest smartphones on Hook. Explore detailed specifications, prices, reviews, and side-by-side comparisons before you buy.";
+      "Compare the latest smartphones on Hooks. Explore detailed specifications, prices, reviews, and side-by-side comparisons before you buy.";
   } else if (isNewFilterPath) {
-    seoTitle = `Latest Smartphones ${currentYear} - New Launches & Prices | Hook`;
+    seoTitle = `Latest Smartphones ${currentYear} - New Launches & Prices | Hooks`;
     seoDescription =
-      "Discover newly launched smartphones with updated prices, full specifications, and reviews. Stay updated with the latest mobile releases on Hook.";
+      "Discover newly launched smartphones with updated prices, full specifications, and reviews. Stay updated with the latest mobile releases on Hooks.";
   } else if (priceFilter) {
-    seoTitle = `Best Smartphones ${priceFilter.label} in ${currentYear} - Reviews, Specs & Deals | Hook`;
+    seoTitle = `Best Smartphones ${priceFilter.label} in ${currentYear} - Reviews, Specs & Deals | Hooks`;
     seoDescription = `Explore the best smartphones ${priceFilter.label.toLowerCase()} with detailed specs, latest prices, reviews, and comparisons to choose the right phone for your budget.`;
   } else if (currentBrandObj) {
-    seoTitle = `${currentBrandObj.name} Smartphones ${currentYear} - Models, Prices & Specs | Hook`;
+    seoTitle = `${currentBrandObj.name} Smartphones ${currentYear} - Models, Prices & Specs | Hooks`;
     seoDescription = sanitizeDescription(
       currentBrandObj.description ||
-        `Explore ${currentBrandObj.name} smartphones on Hook. Compare models, check prices, specifications, reviews, and find the best phone for your needs.`,
+        `Explore ${currentBrandObj.name} smartphones on Hooks. Compare models, check prices, specifications, reviews, and find the best phone for your needs.`,
     );
   }
 
@@ -1409,19 +1413,19 @@ const Smartphones = () => {
     const qp = new URLSearchParams(search || "");
     return Boolean(
       normalizedFilterSlug ||
-        qp.get("brand") ||
-        qp.get("network") ||
-        qp.get("ram") ||
-        qp.get("processor") ||
-        qp.get("refreshRate") ||
-        qp.get("priceMin") ||
-        qp.get("minPrice") ||
-        qp.get("min") ||
-        qp.get("min_price") ||
-        qp.get("priceMax") ||
-        qp.get("maxPrice") ||
-        qp.get("max") ||
-        qp.get("max_price"),
+      qp.get("brand") ||
+      qp.get("network") ||
+      qp.get("ram") ||
+      qp.get("processor") ||
+      qp.get("refreshRate") ||
+      qp.get("priceMin") ||
+      qp.get("minPrice") ||
+      qp.get("min") ||
+      qp.get("min_price") ||
+      qp.get("priceMax") ||
+      qp.get("maxPrice") ||
+      qp.get("max") ||
+      qp.get("max_price"),
     );
   }, [search, normalizedFilterSlug]);
 
@@ -1466,13 +1470,13 @@ const Smartphones = () => {
     const refreshArr = toArray(refreshParam);
     const hasExplicitUrlFilters = Boolean(
       brandParam ||
-        rawMin ||
-        rawMax ||
-        ramParam ||
-        networkParam ||
-        processorParam ||
-        refreshParam ||
-        priceFilter,
+      rawMin ||
+      rawMax ||
+      ramParam ||
+      networkParam ||
+      processorParam ||
+      refreshParam ||
+      priceFilter,
     );
 
     // Helper to resolve a brand param (slug or name) to the display brand name
@@ -3291,7 +3295,10 @@ const Smartphones = () => {
                         </div>
                         <div className="absolute left-1.5 top-1.5 z-10 pointer-events-none">
                           <CircularScoreBadge
-                            score={device.overall_score_display ?? device.overall_score}
+                            score={
+                              device.overall_score_display ??
+                              device.overall_score
+                            }
                             size={42}
                           />
                         </div>
@@ -3407,7 +3414,9 @@ const Smartphones = () => {
                                 if (display) parts.push(display);
                                 if (processor) parts.push(processor);
 
-                                const summary = parts.filter(Boolean).join(" | ");
+                                const summary = parts
+                                  .filter(Boolean)
+                                  .join(" | ");
 
                                 return (
                                   <>
@@ -3442,7 +3451,9 @@ const Smartphones = () => {
                                 return (
                                   <a
                                     href={brandStoreUrl || "#"}
-                                    target={brandStoreUrl ? "_blank" : undefined}
+                                    target={
+                                      brandStoreUrl ? "_blank" : undefined
+                                    }
                                     rel={
                                       brandStoreUrl
                                         ? "noopener noreferrer"
@@ -4228,7 +4239,3 @@ const Smartphones = () => {
 };
 
 export default Smartphones;
-
-
-
-

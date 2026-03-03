@@ -2,6 +2,7 @@
 import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDevice } from "../../hooks/useDevice";
+import useRevealAnimation from "../../hooks/useRevealAnimation";
 import {
   FaMobileAlt,
   FaWifi,
@@ -17,6 +18,7 @@ const BRAND_PLACEHOLDER_LOGO =
 const PopularBrands = () => {
   const [activeBrand, setActiveBrand] = useState("all");
   const navigate = useNavigate();
+  const isLoaded = useRevealAnimation();
 
   const deviceCtx = useDevice();
   const allBrands = (deviceCtx && deviceCtx.brands) || [];
@@ -228,18 +230,20 @@ const PopularBrands = () => {
   };
 
   return (
-    <div className="px-2 lg:px-4 mx-auto bg-white max-w-6xl w-full m-5 rounded-lg overflow-hidden pt-8 sm:pt-12">
+    <div
+      className={`px-2 lg:px-4 mx-auto bg-white max-w-6xl w-full m-5 overflow-hidden pt-8 sm:pt-12 transition-all duration-700 ${
+        isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+      }`}
+    >
       {/* Header Section */}
-      <div className="mb-2 px-2">
+      <div className="mb-1 px-2">
         <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">
           Explore by{" "}
           <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent">
             Brand
           </span>
         </h2>
-        <p className="text-sm text-gray-600">
-          Explore Phones by Key Features
-        </p>
+        <p className="text-sm text-gray-600">Explore Phones by Key Features</p>
       </div>
 
       {/* Category Tabs - Single Row */}
@@ -247,57 +251,20 @@ const PopularBrands = () => {
       {/* Individual Brands - Single Row */}
       {uniqueBrands.length > 0 && (
         <>
-          <div className="mb-6 px-2">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="text-left">
-                <h4 className="text-lg font-semibold text-gray-900">
-                  All Brands
-                </h4>
-                <p className="text-gray-600 text-sm">
-                  Can't decide?{" "}
-                  <span className="font-semibold text-gray-900">
-                    Explore all brands
-                  </span>
-                </p>
-                <p className="text-gray-400 text-xs mt-1">
-                  Filter by category, features, and more
-                </p>
-              </div>
-              <button
-                onClick={() => navigate("/brands")}
-                className="text-sm text-purple-600 hover:text-red-800 font-medium flex items-center gap-1"
-              >
-                View all
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
-
           <div className="flex overflow-x-auto gap-3 lg:gap-4 hide-scrollbar no-scrollbar scroll-smooth pb-6 pt-2">
-            {uniqueBrands.map((brand) => {
+            {uniqueBrands.map((brand, index) => {
               const isActive = activeBrand === brand.id;
 
               return (
                 <button
                   key={brand.id}
                   onClick={() => handleBrandClick(brand.id, brand)}
-                  className={`flex flex-col items-center p-3 lg:p-4 transition-all duration-300 min-w-[80px] lg:min-w-[90px] shrink-0 group ${
+                  className={`flex flex-col items-center p-3 lg:p-4 transition-all duration-500 min-w-[80px] lg:min-w-[90px] shrink-0 group ${
                     isActive
                       ? "text-gray-900 transform -translate-y-1"
                       : "text-gray-600 hover:text-gray-900 hover:transform hover:scale-105"
-                  }`}
+                  } ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
+                  style={{ transitionDelay: `${index * 35}ms` }}
                 >
                   {/* Icon Container */}
                   <div
@@ -351,7 +318,7 @@ const PopularBrands = () => {
           </div>
         </>
       )}
-      </div>
+    </div>
   );
 };
 

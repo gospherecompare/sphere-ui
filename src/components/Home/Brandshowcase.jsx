@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import React, { useEffect, useState } from "react";
 import { FaExchangeAlt, FaArrowRight, FaMobileAlt } from "react-icons/fa";
+import useRevealAnimation from "../../hooks/useRevealAnimation";
 
 const PopularComparisons = ({
   data: initialData = [],
@@ -9,6 +10,7 @@ const PopularComparisons = ({
 }) => {
   const [data, setData] = useState(initialData || []);
   const isFlat = variant === "flat";
+  const isLoaded = useRevealAnimation();
 
   useEffect(() => {
     let cancelled = false;
@@ -42,14 +44,13 @@ const PopularComparisons = ({
 
   return (
     <div
-      className={`px-4 lg:px-4 mx-auto bg-white max-w-6xl w-full m-0 overflow-hidden pt-5 sm:pt-10 ${
-        isFlat ? "" : "rounded-lg"
-      } ${className}`}
+      className={`px-4 lg:px-4 mx-auto bg-white max-w-6xl w-full m-0 overflow-hidden pt-5 sm:pt-10 transition-all duration-700 ${
+        isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+      } ${isFlat && ""} ${className}`}
     >
       {/* Header Section */}
       <div className="mb-5">
         <div className="flex items-center gap-2 mb-2">
-          <FaExchangeAlt className="text-purple-500 text-lg" />
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
             Top{" "}
             <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent">
@@ -63,13 +64,16 @@ const PopularComparisons = ({
         </p>
       </div>
 
-      {/* Comparisons Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-3 lg:gap-4 pb-6">
+      {/* Comparisons Row */}
+      <div className="flex overflow-x-auto no-scrollbar hide-scrollbar gap-3 sm:gap-3 lg:gap-4 pb-6">
         {data.slice(0, 24).map((item, index) => (
           <Link
             key={`${item.left_id}-${item.right_id}-${index}`}
             to={`/compare?devices=${item.left_id}:0,${item.right_id}:0`}
-            className="group transition-all duration-300 hover:transform hover:-translate-y-1"
+            className={`group w-[320px] sm:w-[360px] md:w-[420px] shrink-0 transition-all duration-500 hover:transform hover:-translate-y-1 ${
+              isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+            }`}
+            style={{ transitionDelay: `${index * 40}ms` }}
           >
             {/* Comparison Card */}
             <div
@@ -91,7 +95,7 @@ const PopularComparisons = ({
                         <img
                           src={item.left_image}
                           alt={item.left_name}
-                          className="h-full w-full object-contain"
+                          className="h-full w-full object-contain bg-gray-100 p-1"
                           loading="lazy"
                           onError={(e) => {
                             e.currentTarget.style.display = "none";
@@ -132,7 +136,7 @@ const PopularComparisons = ({
                         <img
                           src={item.right_image}
                           alt={item.right_name}
-                          className="h-full w-full object-contain"
+                          className="h-full w-full object-contain bg-gray-100 p-1"
                           loading="lazy"
                           onError={(e) => {
                             e.currentTarget.style.display = "none";

@@ -3,6 +3,7 @@ import React, { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { FaMobileAlt } from "react-icons/fa";
 import { useDevice } from "../../hooks/useDevice";
+import useRevealAnimation from "../../hooks/useRevealAnimation";
 import {
   computePopularSmartphoneFeatures,
   SMARTPHONE_FEATURE_CATALOG,
@@ -23,6 +24,7 @@ const MobileFeaturesFinder = () => {
   const [popularFeatureOrder, setPopularFeatureOrder] = useState([]);
   const [popularFeatureOrderLoaded, setPopularFeatureOrderLoaded] =
     useState(false);
+  const isLoaded = useRevealAnimation();
 
   React.useEffect(() => {
     let cancelled = false;
@@ -139,11 +141,14 @@ const MobileFeaturesFinder = () => {
   };
 
   return (
-    <div className="px-2 lg:px-4 mx-auto bg-white max-w-6xl w-full m-5  overflow-hidden pt-5 sm:pt-10">
+    <div
+      className={`px-2 lg:px-4 mx-auto bg-white max-w-6xl w-full m-5 overflow-hidden pt-5 sm:pt-10 transition-all duration-700 ${
+        isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+      }`}
+    >
       {/* Header Section */}
       <div className="mb-6 px-2">
         <div className="flex items-center gap-2 mb-2">
-          <FaMobileAlt className="text-purple-500 text-lg" />
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
             Mobiles by{" "}
             <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent">
@@ -166,7 +171,7 @@ const MobileFeaturesFinder = () => {
     hide-scrollbar no-scrollbar scroll-smooth
   "
       >
-        {popularFeatures.map((feature) => {
+        {popularFeatures.map((feature, index) => {
           const isActive = activeFeature === feature.id;
           const Icon = feature.icon;
 
@@ -174,11 +179,12 @@ const MobileFeaturesFinder = () => {
             <button
               key={feature.id}
               onClick={() => handleFeatureClick(feature.id)}
-              className={`flex flex-col items-center p-2 transition-all duration-300 min-w-[100px] lg:min-w-[120px] shrink-0 group ${
+              className={`flex flex-col items-center p-2 transition-all duration-500 min-w-[100px] lg:min-w-[120px] shrink-0 group ${
                 isActive
                   ? "text-gray-900 transform -translate-y-1"
                   : "text-gray-600 hover:text-gray-900 hover:transform hover:scale-105"
-              }`}
+              } ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
+              style={{ transitionDelay: `${index * 45}ms` }}
             >
               {/* Icon Container */}
               <div

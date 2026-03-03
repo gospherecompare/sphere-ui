@@ -8,9 +8,9 @@ const Terms = () => {
 
   const sections = [
     {
-      title: "Using Hook",
+      title: "Using Hooks",
       body:
-        "Hook is for personal, lawful use only. Do not misuse the site, interfere with services, or reverse-engineer our code. Accounts must contain accurate information.",
+        "Hooks is for personal, lawful use only. Do not misuse the site, interfere with services, or reverse-engineer our code. Accounts must contain accurate information.",
     },
     {
       title: "Content and accuracy",
@@ -20,12 +20,12 @@ const Terms = () => {
     {
       title: "Limitations",
       body:
-        "Hook provides guidance, not a warranty. To the extent the law allows, we disclaim implied warranties and limit liability to the amount you paid us (usually zero).",
+        "Hooks provides guidance, not a warranty. To the extent the law allows, we disclaim implied warranties and limit liability to the amount you paid us (usually zero).",
     },
     {
       title: "User submissions",
       body:
-        "If you share feedback or suggestions, you grant Hook a non-exclusive right to use them to improve the product. We will not publish your name without consent.",
+        "If you share feedback or suggestions, you grant Hooks a non-exclusive right to use them to improve the product. We will not publish your name without consent.",
     },
     {
       title: "Governing law",
@@ -42,10 +42,10 @@ const Terms = () => {
             Terms
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 leading-tight">
-            Straightforward terms for using Hook
+            Straightforward terms for using Hooks
           </h1>
           <p className="text-base sm:text-lg text-gray-700 leading-relaxed">
-            These terms avoid boilerplate and focus on how Hook actually operates.
+            These terms avoid boilerplate and focus on how Hooks actually operates.
             Please read them before browsing, comparing products, or creating an
             account.
           </p>

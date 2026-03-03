@@ -2504,25 +2504,25 @@ const TVs = () => {
     return text.length > 180 ? `${text.slice(0, 177)}...` : text;
   };
 
-  let seoTitle = `Best TVs ${currentYear} - Compare Smart TVs, Prices & Specs | Hook`;
+  let seoTitle = `Best TVs ${currentYear} - Compare Smart TVs, Prices & Specs | Hooks`;
   let seoDescription =
-    "Browse the latest TVs with detailed display, audio, smart features, and price comparisons on Hook.";
+    "Browse the latest TVs with detailed display, audio, smart features, and price comparisons on Hooks.";
 
   if (filter === "trending") {
-    seoTitle = `Trending TVs ${currentYear} - Most Popular Smart TVs & Prices | Hook`;
+    seoTitle = `Trending TVs ${currentYear} - Most Popular Smart TVs & Prices | Hooks`;
     seoDescription =
-      "Explore trending TVs with rising demand, key specifications, and latest prices to find the right smart TV on Hook.";
+      "Explore trending TVs with rising demand, key specifications, and latest prices to find the right smart TV on Hooks.";
   } else if (filter === "new") {
-    seoTitle = `Latest TVs ${currentYear} - New Smart TV Launches & Prices | Hook`;
+    seoTitle = `Latest TVs ${currentYear} - New Smart TV Launches & Prices | Hooks`;
     seoDescription =
-      "Discover newly launched TVs with updated specifications, panel details, refresh rates, and best store prices on Hook.";
+      "Discover newly launched TVs with updated specifications, panel details, refresh rates, and best store prices on Hooks.";
   }
 
   if (currentBrandObj) {
-    seoTitle = `${currentBrandObj.name} TVs ${currentYear} - Models, Prices & Specs | Hook`;
+    seoTitle = `${currentBrandObj.name} TVs ${currentYear} - Models, Prices & Specs | Hooks`;
     seoDescription = sanitizeDescription(
       currentBrandObj.description ||
-        `Compare ${currentBrandObj.name} TVs with detailed specifications, latest prices, and top store offers on Hook.`,
+        `Compare ${currentBrandObj.name} TVs with detailed specifications, latest prices, and top store offers on Hooks.`,
     );
   }
 

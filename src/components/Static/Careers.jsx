@@ -913,27 +913,27 @@ const Careers = () => {
   return (
     <main className="min-h-screen bg-slate-100">
       <Helmet>
-        <title>Careers at Hook | Join Hooks Team</title>
+        <title>Careers at Hooks | Join Hooks Team</title>
         <meta
           name="description"
           content="Join Hooks Team. Apply for Frontend, Backend, Content Developer, and Fullstack roles through a simple 4-step career application process."
         />
         <meta
           name="keywords"
-          content="Hook careers, jobs at Hook, frontend developer jobs, backend developer jobs, fullstack developer jobs, content developer jobs, apply jobs India"
+          content="Hooks careers, jobs at Hooks, frontend developer jobs, backend developer jobs, fullstack developer jobs, content developer jobs, apply jobs India"
         />
-        <meta property="og:title" content="Careers at Hook | Join Hooks Team" />
+        <meta property="og:title" content="Careers at Hooks | Join Hooks Team" />
         <meta
           property="og:description"
-          content="Apply for Frontend, Backend, Content Developer, and Fullstack roles at Hook."
+          content="Apply for Frontend, Backend, Content Developer, and Fullstack roles at Hooks."
         />
         <meta
           name="twitter:title"
-          content="Careers at Hook | Join Hooks Team"
+          content="Careers at Hooks | Join Hooks Team"
         />
         <meta
           name="twitter:description"
-          content="Apply for Frontend, Backend, Content Developer, and Fullstack roles at Hook."
+          content="Apply for Frontend, Backend, Content Developer, and Fullstack roles at Hooks."
         />
         <meta name="robots" content="index, follow" />
       </Helmet>
@@ -1326,7 +1326,7 @@ const Careers = () => {
             {step === 3 ? (
               <div className="space-y-4">
                 <QuestionTextArea
-                  question="Why do you want to join Hook?"
+                  question="Why do you want to join Hooks?"
                   name="coverLetter"
                   value={formData.coverLetter}
                   onChange={handleChange}

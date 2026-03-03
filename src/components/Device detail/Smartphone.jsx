@@ -1532,7 +1532,7 @@ const MobileDetailCard = () => {
       : "";
     const priceSuffix = priceText ? `. ${priceText}.` : ".";
 
-    return `${identity}${highlightText}${priceSuffix} Compare prices, variants, and detailed specs on Hook.`;
+    return `${identity}${highlightText}${priceSuffix} Compare prices, variants, and detailed specs on Hooks.`;
   };
 
   const getCompactProcessorLabel = (raw) => {
@@ -2387,33 +2387,20 @@ Price: ${price}
 
         if (pairs.length >= 2) {
           return (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[460px] border border-gray-200 text-xs sm:text-sm">
-                <thead className="bg-gray-50">
-                  <tr>
-                    {pairs.map(([field]) => (
-                      <th
-                        key={field}
-                        className="px-2 sm:px-3 py-1.5 sm:py-2 text-left text-[11px] sm:text-xs font-semibold text-gray-700 border-b border-gray-200 whitespace-nowrap"
-                      >
-                        {field}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="bg-white">
-                    {pairs.map(([field, fieldValue]) => (
-                      <td
-                        key={`${field}-${fieldValue}`}
-                        className="px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-gray-900 border-t border-gray-200 whitespace-nowrap align-top"
-                      >
-                        {fieldValue}
-                      </td>
-                    ))}
-                  </tr>
-                </tbody>
-              </table>
+            <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
+              {pairs.map(([field, fieldValue]) => (
+                <div
+                  key={`${field}-${fieldValue}`}
+                  className="border border-slate-200 bg-white px-2 py-1.5"
+                >
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-600">
+                    {field}
+                  </div>
+                  <div className="mt-0.5 text-[12px] leading-snug text-slate-900 break-words">
+                    {fieldValue}
+                  </div>
+                </div>
+              ))}
             </div>
           );
         }
@@ -2423,24 +2410,13 @@ Price: ${price}
     };
 
     return (
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[360px] sm:min-w-full divide-y divide-gray-200 shadow-none">
-          <tbody className="bg-white">
-            {uniqueRows.map(([label, value], idx) => (
-              <tr
-                key={idx}
-                className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
-              >
-                <td className="px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-gray-600 w-[34%] align-top">
-                  {label}
-                </td>
-                <td className="px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm text-gray-900 align-top">
-                  {renderCameraValueCell(value)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="divide-y divide-slate-200 bg-white">
+        {uniqueRows.map(([label, value], idx) => (
+          <section key={idx} className="py-3 first:pt-0 last:pb-0">
+            <h5 className="mb-2 text-sm font-semibold text-slate-800">{label}</h5>
+            <div className="text-sm text-slate-900">{renderCameraValueCell(value)}</div>
+          </section>
+        ))}
       </div>
     );
   };
@@ -2461,26 +2437,24 @@ Price: ${price}
     );
 
     return (
-      <div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[360px] sm:min-w-full divide-y divide-gray-200 shadow-none">
-            <tbody className="bg-white">
-              {entries.map(([key, value], idx) => (
-                <tr
-                  key={key}
-                  className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                >
-                  <td className="px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-gray-600 w-[34%] align-top">
-                    {toNormalCase(key)}
-                  </td>
-                  <td className="px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm text-gray-900 align-top">
-                    {formatSpecValue(value, key)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <div className="overflow-x-auto rounded-md border border-slate-200">
+        <table className="w-full min-w-[360px] sm:min-w-full shadow-none">
+          <tbody className="divide-y divide-slate-200 bg-white">
+            {entries.map(([key, value], idx) => (
+              <tr
+                key={key}
+                className={`transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"} hover:bg-violet-50/30`}
+              >
+                <td className="w-[32%] border-r border-slate-200 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-slate-600 align-top">
+                  {toNormalCase(key)}
+                </td>
+                <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm text-slate-900 align-top">
+                  {formatSpecValue(value, key)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     );
   };
@@ -2551,7 +2525,7 @@ Price: ${price}
                 >
                   <div className="mb-3 flex items-center justify-between gap-2">
                     <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
-                      <FaInfoCircle className="text-sm text-violet-500" />
+                      <FaInfoCircle className="text-sm text-violet-400" />
                       General
                     </h4>
                     <div className="flex items-center gap-1.5">
@@ -2573,7 +2547,7 @@ Price: ${price}
                             ? "Hide General benchmark"
                             : "Show General benchmark"
                         }
-                        className="inline-flex h-6 w-6 items-center justify-center text-violet-700 hover:text-violet-800"
+                        className="inline-flex h-6 w-6 items-center justify-center text-violet-400 hover:text-violet-500"
                       >
                         {specSectionBenchOpen.general ? (
                           <FaChevronUp size={10} />
@@ -2593,9 +2567,9 @@ Price: ${price}
                     showHeader={false}
                     isOpen={Boolean(specSectionBenchOpen.general)}
                   />
-                  <div className="overflow-hidden rounded-lg">
+                  <div className="overflow-hidden rounded-md border border-slate-200">
                     <table className="min-w-full">
-                      <tbody className="divide-y divide-slate-100 bg-white">
+                      <tbody className="divide-y divide-slate-200 bg-white">
                         {[
                           { label: "Brand", value: mobileData.brand },
                           { label: "Model", value: mobileData.model },
@@ -2649,14 +2623,12 @@ Price: ${price}
                           .map((item, idx) => (
                             <tr
                               key={idx}
-                              className={
-                                idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"
-                              }
+                              className={`transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"} hover:bg-violet-50/30`}
                             >
-                              <td className="w-1/3 px-3 py-2.5 text-[13px] font-medium text-slate-600 sm:px-4 md:px-5 align-top">
+                              <td className="w-[32%] border-r border-slate-200 px-3 py-2.5 text-[13px] font-medium text-slate-600 sm:px-4 md:px-5 align-top">
                                 {item.label}
                               </td>
-                              <td className="w-2/3 px-3 py-2.5 text-[13px] text-slate-900 sm:px-4 md:px-5">
+                              <td className="w-[68%] px-3 py-2.5 text-[13px] text-slate-900 sm:px-4 md:px-5">
                                 {formatSpecValue(item.value, item.label)}
                               </td>
                             </tr>
@@ -2674,7 +2646,7 @@ Price: ${price}
                   >
                     <div className="mb-3 flex items-center justify-between gap-2">
                       <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
-                        <FaExpand className="text-purple-500" />
+                        <FaExpand className="text-purple-400" />
                         Display
                       </h4>
                       <div className="flex items-center gap-1.5">
@@ -2693,7 +2665,7 @@ Price: ${price}
                               ? "Hide Display benchmark"
                               : "Show Display benchmark"
                           }
-                          className="inline-flex h-6 w-6 items-center justify-center text-violet-700 hover:text-violet-800"
+                          className="inline-flex h-6 w-6 items-center justify-center text-violet-400 hover:text-violet-500"
                         >
                           {specSectionBenchOpen.display ? (
                             <FaChevronUp size={10} />
@@ -2748,7 +2720,7 @@ Price: ${price}
                               ? "Hide Performance benchmark"
                               : "Show Performance benchmark"
                           }
-                          className="inline-flex h-6 w-6 items-center justify-center text-violet-700 hover:text-violet-800"
+                          className="inline-flex h-6 w-6 items-center justify-center text-violet-400 hover:text-violet-500"
                         >
                           {specSectionBenchOpen.performance ? (
                             <FaChevronUp size={10} />
@@ -2768,9 +2740,9 @@ Price: ${price}
                       showHeader={false}
                       isOpen={Boolean(specSectionBenchOpen.performance)}
                     />
-                    <div className="overflow-hidden rounded-lg">
+                    <div className="overflow-hidden rounded-md border border-slate-200">
                       <table className="min-w-full">
-                        <tbody className="divide-y divide-slate-100 bg-white">
+                        <tbody className="divide-y divide-slate-200 bg-white">
                           {dedupeSpecEntries(
                             Object.entries(performanceData || {}).filter(
                               ([k, v]) =>
@@ -2782,14 +2754,12 @@ Price: ${price}
                             .map(([key, value], idx) => (
                               <tr
                                 key={key}
-                                className={
-                                  idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"
-                                }
+                                className={`transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"} hover:bg-violet-50/30`}
                               >
-                                <td className="w-1/3 px-3 py-2.5 text-[13px] font-medium text-slate-600 sm:px-4 md:px-5 align-top">
+                                <td className="w-[32%] border-r border-slate-200 px-3 py-2.5 text-[13px] font-medium text-slate-600 sm:px-4 md:px-5 align-top">
                                   {toNormalCase(key)}
                                 </td>
-                                <td className="w-2/3 px-3 py-2.5 text-[13px] text-slate-900 sm:px-4 md:px-5">
+                                <td className="w-[68%] px-3 py-2.5 text-[13px] text-slate-900 sm:px-4 md:px-5">
                                   {formatSpecValue(value, key)}
                                 </td>
                               </tr>
@@ -2808,7 +2778,7 @@ Price: ${price}
                   >
                     <div className="mb-3 flex items-center justify-between gap-2">
                       <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
-                        <FaCamera className="text-purple-500" />
+                        <FaCamera className="text-purple-400" />
                         Camera
                       </h4>
                       <div className="flex items-center gap-1.5">
@@ -2827,7 +2797,7 @@ Price: ${price}
                               ? "Hide Camera benchmark"
                               : "Show Camera benchmark"
                           }
-                          className="inline-flex h-6 w-6 items-center justify-center text-violet-700 hover:text-violet-800"
+                          className="inline-flex h-6 w-6 items-center justify-center text-violet-400 hover:text-violet-500"
                         >
                           {specSectionBenchOpen.camera ? (
                             <FaChevronUp size={10} />
@@ -2879,7 +2849,7 @@ Price: ${price}
                               ? "Hide Battery benchmark"
                               : "Show Battery benchmark"
                           }
-                          className="inline-flex h-6 w-6 items-center justify-center text-violet-700 hover:text-violet-800"
+                          className="inline-flex h-6 w-6 items-center justify-center text-violet-400 hover:text-violet-500"
                         >
                           {specSectionBenchOpen.battery ? (
                             <FaChevronUp size={10} />
@@ -2899,9 +2869,9 @@ Price: ${price}
                       showHeader={false}
                       isOpen={Boolean(specSectionBenchOpen.battery)}
                     />
-                    <div className="overflow-hidden rounded-lg">
+                    <div className="overflow-hidden rounded-md border border-slate-200">
                       <table className="min-w-full">
-                        <tbody className="divide-y divide-slate-100 bg-white">
+                        <tbody className="divide-y divide-slate-200 bg-white">
                           {dedupeSpecEntries(
                             Object.entries(batteryData || {}).filter(
                               ([k, v]) =>
@@ -2913,14 +2883,12 @@ Price: ${price}
                             .map(([key, value], idx) => (
                               <tr
                                 key={key}
-                                className={
-                                  idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"
-                                }
+                                className={`transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"} hover:bg-violet-50/30`}
                               >
-                                <td className="w-1/3 px-3 py-2.5 text-[13px] font-medium text-slate-600 sm:px-4 md:px-5 align-top">
+                                <td className="w-[32%] border-r border-slate-200 px-3 py-2.5 text-[13px] font-medium text-slate-600 sm:px-4 md:px-5 align-top">
                                   {toNormalCase(key)}
                                 </td>
-                                <td className="w-2/3 px-3 py-2.5 text-[13px] text-slate-900 sm:px-4 md:px-5">
+                                <td className="w-[68%] px-3 py-2.5 text-[13px] text-slate-900 sm:px-4 md:px-5">
                                   {[
                                     "battery_capacity_mah",
                                     "battery_capacity",
@@ -2944,7 +2912,7 @@ Price: ${price}
                   >
                     <div className="mb-3 flex items-center justify-between gap-2">
                       <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
-                        <FaWifi className="text-purple-500" />
+                        <FaWifi className="text-purple-400" />
                         Connectivity
                       </h4>
                       <div className="flex items-center gap-1.5">
@@ -2963,7 +2931,7 @@ Price: ${price}
                               ? "Hide Connectivity benchmark"
                               : "Show Connectivity benchmark"
                           }
-                          className="inline-flex h-6 w-6 items-center justify-center text-violet-700 hover:text-violet-800"
+                          className="inline-flex h-6 w-6 items-center justify-center text-violet-400 hover:text-violet-500"
                         >
                           {specSectionBenchOpen.connectivity ? (
                             <FaChevronUp size={10} />
@@ -2983,9 +2951,9 @@ Price: ${price}
                       showHeader={false}
                       isOpen={Boolean(specSectionBenchOpen.connectivity)}
                     />
-                    <div className="overflow-hidden rounded-lg">
+                    <div className="overflow-hidden rounded-md border border-slate-200">
                       <table className="min-w-full">
-                        <tbody className="divide-y divide-slate-100 bg-white">
+                        <tbody className="divide-y divide-slate-200 bg-white">
                           {dedupeSpecEntries(
                             Object.entries(connectivityData || {}).filter(
                               ([k, v]) =>
@@ -2997,14 +2965,12 @@ Price: ${price}
                             .map(([key, value], idx) => (
                               <tr
                                 key={key}
-                                className={
-                                  idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"
-                                }
+                                className={`transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"} hover:bg-violet-50/30`}
                               >
-                                <td className="w-1/3 px-3 py-2.5 text-[13px] font-medium text-slate-600 sm:px-4 md:px-5 align-top">
+                                <td className="w-[32%] border-r border-slate-200 px-3 py-2.5 text-[13px] font-medium text-slate-600 sm:px-4 md:px-5 align-top">
                                   {toNormalCase(key)}
                                 </td>
-                                <td className="w-2/3 px-3 py-2.5 text-[13px] text-slate-900 sm:px-4 md:px-5">
+                                <td className="w-[68%] px-3 py-2.5 text-[13px] text-slate-900 sm:px-4 md:px-5">
                                   {formatSpecValue(value, key)}
                                 </td>
                               </tr>
@@ -3042,7 +3008,7 @@ Price: ${price}
                               ? "Hide Network benchmark"
                               : "Show Network benchmark"
                           }
-                          className="inline-flex h-6 w-6 items-center justify-center text-violet-700 hover:text-violet-800"
+                          className="inline-flex h-6 w-6 items-center justify-center text-violet-400 hover:text-violet-500"
                         >
                           {specSectionBenchOpen.network ? (
                             <FaChevronUp size={10} />
@@ -3146,7 +3112,7 @@ Price: ${price}
           <div className="bg-white rounded-lg p-4">
             <div className="mb-4 flex items-center justify-between gap-2">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <FaCamera className="text-purple-500" />
+                <FaCamera className="text-purple-400" />
                 Camera
               </h3>
               <SpecScoreBadge score={getSectionScore("camera")} size={38} />
@@ -3185,7 +3151,7 @@ Price: ${price}
           <div className="bg-white rounded-lg p-4">
             <div className="mb-4 flex items-center justify-between gap-2">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <FaWifi className="text-purple-500" />
+                <FaWifi className="text-purple-400" />
                 Connectivity
               </h3>
               <SpecScoreBadge score={getSectionScore("network")} size={38} />
@@ -3411,6 +3377,75 @@ Price: ${price}
         return `${tone} section-level hardware profile.`;
     }
   };
+
+  const normalizePointText = (value) => {
+    if (!hasContent(value)) return null;
+    const text = String(formatSpecValue(value, ""))
+      .replace(/\s+/g, " ")
+      .trim();
+    return hasContent(text) ? text : null;
+  };
+
+  const toUniquePoints = (values = []) => {
+    const seen = new Set();
+    return values
+      .map((value) => normalizePointText(value))
+      .filter((value) => {
+        if (!hasContent(value)) return false;
+        const key = String(value).toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+  };
+
+  const formatMemoryPoint = (value, label) => {
+    const text = normalizePointText(value);
+    if (!text) return null;
+
+    let out = text.replace(/(\d)\s*(gb|mb|tb)\b/gi, "$1 $2");
+    if (/^\d+(\.\d+)?$/i.test(out)) out = `${out} GB`;
+
+    return new RegExp(`\\b${label}\\b`, "i").test(out)
+      ? out
+      : `${out} ${label}`;
+  };
+
+  const withPrefix = (value, prefix) => {
+    const text = normalizePointText(value);
+    if (!text) return null;
+    return new RegExp(`^${prefix}\\b`, "i").test(text)
+      ? text
+      : `${prefix}: ${text}`;
+  };
+
+  const formatRefreshRatePoint = (value) => {
+    const text = normalizePointText(value);
+    if (!text) return null;
+    if (/refresh rate/i.test(text)) return text;
+    if (/hz/i.test(text)) return `${text} refresh rate`;
+    return `Refresh rate: ${text}`;
+  };
+
+  const performanceRamPoint = formatMemoryPoint(
+    currentVariant?.ram || mobileData?.performance?.ram,
+    "RAM",
+  );
+  const performanceStoragePoint = formatMemoryPoint(
+    currentVariant?.storage ||
+      mobileData?.performance?.storage ||
+      mobileData?.performance?.ROM_storage,
+    "Storage",
+  );
+
+  const frontCameraModePoint = frontCamera?.focus
+    ? withPrefix(frontCamera.focus, "Focus")
+    : frontCamera?.autofocus
+      ? withPrefix(frontCamera.autofocus, "Autofocus")
+      : frontCamera?.type
+        ? withPrefix(frontCamera.type, "Type")
+        : null;
+
   const infoKeySections = [
     {
       key: "performance",
@@ -3421,11 +3456,12 @@ Price: ${price}
         "performance",
         getSectionScore("performance"),
       ),
-      points: [
+      points: toUniquePoints([
         mobileData?.performance?.processor || mobileData?.processor,
-        mobileData?.performance?.cpu_clock_speed,
-        mobileData?.performance?.ram,
-      ].filter((value) => hasContent(value)),
+        withPrefix(mobileData?.performance?.cpu_clock_speed, "Clock speed"),
+        performanceRamPoint,
+        performanceStoragePoint,
+      ]),
     },
     {
       key: "display",
@@ -3433,15 +3469,13 @@ Price: ${price}
       title: "Display",
       score: getSectionScore("display"),
       description: getSectionDescription("display", getSectionScore("display")),
-      points: [
+      points: toUniquePoints([
         [mobileData?.display?.size, mobileData?.display?.panel]
           .filter(Boolean)
           .join(" | "),
-        mobileData?.display?.resolution,
-        mobileData?.display?.refresh_rate
-          ? `${mobileData.display.refresh_rate} refresh rate`
-          : null,
-      ].filter((value) => hasContent(value)),
+        withPrefix(mobileData?.display?.resolution, "Resolution"),
+        formatRefreshRatePoint(mobileData?.display?.refresh_rate),
+      ]),
     },
     {
       key: "camera",
@@ -3449,7 +3483,7 @@ Price: ${price}
       title: "Rear Camera",
       score: getSectionScore("camera"),
       description: getSectionDescription("camera", getSectionScore("camera")),
-      points: [
+      points: toUniquePoints([
         getMainCameraMp(mobileData) != null
           ? `${getMainCameraMp(mobileData)} MP main camera`
           : rearMainCamera?.resolution,
@@ -3460,7 +3494,7 @@ Price: ${price}
           ? `${rearTeleCamera.resolution} telephoto`
           : null,
         rearVideoSummary ? `Video: ${rearVideoSummary}` : null,
-      ].filter((value) => hasContent(value)),
+      ]),
     },
     {
       key: "camera-front",
@@ -3468,11 +3502,11 @@ Price: ${price}
       title: "Front Camera",
       score: getSectionScore("camera"),
       description: getSectionDescription("camera-front", getSectionScore("camera")),
-      points: [
+      points: toUniquePoints([
         frontCamera?.resolution ? `${frontCamera.resolution} selfie camera` : null,
-        frontCamera?.focus || frontCamera?.autofocus || frontCamera?.type,
+        frontCameraModePoint,
         frontVideoSummary ? `Video: ${frontVideoSummary}` : null,
-      ].filter((value) => hasContent(value)),
+      ]),
     },
     {
       key: "battery",
@@ -3480,13 +3514,16 @@ Price: ${price}
       title: "Battery",
       score: getSectionScore("battery"),
       description: getSectionDescription("battery", getSectionScore("battery")),
-      points: [
+      points: toUniquePoints([
         getBatteryCapacityMah(mobileData) != null
           ? `${getBatteryCapacityMah(mobileData)} mAh`
           : getBatteryCapacityRaw(mobileData),
-        mobileData?.battery?.charging_power || mobileData?.battery?.fast_charging,
-        mobileData?.battery?.battery_type,
-      ].filter((value) => hasContent(value)),
+        withPrefix(
+          mobileData?.battery?.charging_power || mobileData?.battery?.fast_charging,
+          "Charging",
+        ),
+        withPrefix(mobileData?.battery?.battery_type, "Type"),
+      ]),
     },
   ].filter((section) => section.points.length > 0);
 
@@ -3553,14 +3590,14 @@ Price: ${price}
                 onClick={shareToFacebook}
                 className="w-full flex items-center gap-3 p-3 bg-purple-50 hover:bg-purple-100 rounded-lg text-purple-700 font-medium"
               >
-                <FaFacebook className="text-xl" />
+                <FaFacebook className="text-xl text-purple-400" />
                 Share on Facebook
               </button>
               <button
                 onClick={shareToTwitter}
                 className="w-full flex items-center gap-3 p-3 bg-purple-50 hover:bg-purple-100 rounded-lg text-purple-400 font-medium"
               >
-                <FaTwitter className="text-xl" />
+                <FaTwitter className="text-xl text-purple-400" />
                 Share on Twitter
               </button>
               <button
@@ -3595,10 +3632,10 @@ Price: ${price}
               <h1 className="text-xl font-extrabold tracking-tight mb-1 text-gray-900 leading-tight">
                 {headerTitle}
               </h1>
-              <p className="text-purple-700 text-sm font-medium flex items-center gap-2">
+              <p className="text-purple-700 text-sm font-medium flex flex-wrap items-center gap-2">
                 {currentVariantLabel ? <span>{currentVariantLabel}</span> : null}
                 {mobileData?.isAiPhone ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 px-2 py-0.5 text-[10px] font-semibold text-white ring-1 ring-white/30">
+                  <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-r from-purple-50 to-blue-100 px-2 py-0.5 text-[10px] font-semibold leading-none text-purple-700 ring-1 ring-purple-200">
                     <span
                       className="inline-flex items-center justify-center w-3 h-3"
                       aria-hidden="true"
@@ -3606,7 +3643,7 @@ Price: ${price}
                       <svg viewBox="0 0 64 64" className="w-3 h-3">
                         <path
                           d="M32 2C34.5 14.5 40 20 52 22C40 24 34.5 29.5 32 42C29.5 29.5 24 24 12 22C24 20 29.5 14.5 32 2Z"
-                          fill="#2196F3"
+                          fill="red"
                         />
                         <path
                           d="M50 34C51.5 41.5 55 45 62 46C55 47 51.5 50.5 50 58C48.5 50.5 45 47 38 46C45 45 48.5 41.5 50 34Z"
@@ -3635,8 +3672,8 @@ Price: ${price}
                 <FaHeart
                   className={`text-lg ${
                     isFavorite
-                      ? "text-violet-600 fill-current"
-                      : "text-violet-500"
+                      ? "text-violet-400 fill-current"
+                      : "text-violet-400"
                   }`}
                 />
               </button>
@@ -3644,7 +3681,7 @@ Price: ${price}
                 onClick={handleShare}
                 className="p-2 rounded-full hover:bg-gray-100"
               >
-                <FaShareAlt className="text-lg text-violet-600" />
+                <FaShareAlt className="text-lg text-violet-400" />
               </button>
             </div>
           </div>
@@ -3710,13 +3747,24 @@ Price: ${price}
               <button
                 key={tab.id}
                 onClick={() => setActivePrimaryTab(tab.id)}
-                className={`px-4 py-3 font-semibold text-xs uppercase tracking-wide whitespace-nowrap border-b-2 transition-colors duration-200 flex-shrink-0 focus-visible:outline-none ${
+                className={`relative px-4 py-3 font-semibold text-xs uppercase tracking-wide whitespace-nowrap transition-colors duration-200 flex-shrink-0 focus-visible:outline-none ${
                   activePrimaryTab === tab.id
-                    ? "border-slate-300 text-slate-800 bg-white"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
+                    ? "bg-white"
+                    : "text-gray-500 hover:text-gray-700"
                 }`}
               >
-                {tab.label}
+                <span
+                  className={
+                    activePrimaryTab === tab.id
+                      ? "bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent"
+                      : ""
+                  }
+                >
+                  {tab.label}
+                </span>
+                {activePrimaryTab === tab.id ? (
+                  <span className="pointer-events-none absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600" />
+                ) : null}
               </button>
             ))}
           </div>
@@ -3757,8 +3805,8 @@ Price: ${price}
                   <FaHeart
                     className={`${
                       isFavorite
-                        ? "text-violet-600 fill-current"
-                        : "text-violet-500"
+                        ? "text-violet-400 fill-current"
+                        : "text-violet-400"
                     }`}
                   />
                 </button>
@@ -3766,7 +3814,7 @@ Price: ${price}
                   onClick={handleShare}
                   className="p-2 bg-white rounded-full shadow-md hover:shadow-lg"
                 >
-                  <FaShare className="text-violet-600" />
+                  <FaShare className="text-violet-400" />
                 </button>
               </div>
             </div>
@@ -3804,7 +3852,7 @@ Price: ${price}
                 onClick={handleShare}
                 className="flex-1 flex items-center justify-center gap-2 py-3 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg font-medium"
               >
-                <FaShareAlt />
+                <FaShareAlt className="text-purple-400" />
                 <span>Share</span>
               </button>
             </div>
@@ -3822,7 +3870,7 @@ Price: ${price}
                       aria-pressed={selectedVariant === index}
                       className={`relative p-2.5 rounded-xl border-2 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 ${
                         selectedVariant === index
-                          ? "border-violet-600 bg-violet-50 ring-2 ring-violet-200 shadow-sm"
+                          ? "border-violet-600 bg-violet-50 shadow-sm"
                           : "border-slate-200 bg-white hover:border-violet-300 hover:bg-violet-50/40"
                       }`}
                     >
@@ -3866,7 +3914,7 @@ Price: ${price}
                       <span>{currentVariantLabel}</span>
                     ) : null}
                     {mobileData?.isAiPhone ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-purple-50 to-blue-100 px-2 py-0.5 text-[10px] font-semibold text-purple-700 ring-1 ring-purple-200">
+                      <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-r from-purple-50 to-blue-100 px-2 py-0.5 text-[10px] font-semibold leading-none text-purple-700 ring-1 ring-purple-200">
                         <span
                           className="inline-flex items-center justify-center w-3 h-3"
                           aria-hidden="true"
@@ -3904,8 +3952,8 @@ Price: ${price}
                     <FaHeart
                       className={`text-xl ${
                         isFavorite
-                          ? "text-violet-600 fill-current"
-                          : "text-violet-500"
+                          ? "text-violet-400 fill-current"
+                          : "text-violet-400"
                       }`}
                     />
                   </button>
@@ -3914,7 +3962,7 @@ Price: ${price}
                     className="p-2 rounded-full hover:bg-gray-100"
                     title="Share"
                   >
-                    <FaShareAlt className="text-xl text-violet-600" />
+                    <FaShareAlt className="text-xl text-violet-400" />
                   </button>
                   {/* Copy link removed â€” share-only */}
                 </div>
@@ -3940,7 +3988,7 @@ Price: ${price}
               <div className="mb-5 mt-5">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                    <FaStore className="text-purple-500" />
+                    <FaStore className="text-purple-400" />
                     Available at
                   </h3>
                   {sortedStores.length > 3 && (
@@ -3950,7 +3998,7 @@ Price: ${price}
                     >
                       {showAllStores ? "Show Less" : "View All"}
                       <FaChevronDown
-                        className={`text-xs transition-transform ${
+                        className={`text-xs text-purple-400 transition-transform ${
                           showAllStores ? "rotate-180" : ""
                         }`}
                       />
@@ -4001,22 +4049,29 @@ Price: ${price}
                                 ₹ {formatPrice(store.price)}
                               </div>
                             </div>
-                            <a
-                              href={hasStoreUrl ? store.url : undefined}
-                              target="_blank"
-                              rel="noopener noreferrer nofollow"
-                              onClick={(e) => {
-                                if (!hasStoreUrl) e.preventDefault();
-                              }}
-                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs transition-all duration-200 ${
-                                hasStoreUrl
-                                  ? "bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-sm hover:shadow-md"
-                                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                              }`}
-                            >
-                              <FaExternalLinkAlt className="text-xs" />
-                              {hasStoreUrl ? "Buy Now" : "Unavailable"}
-                            </a>
+                            {hasStoreUrl ? (
+                              <a
+                                href={store.url}
+                                target="_blank"
+                                rel="noopener noreferrer nofollow"
+                                className="inline-flex rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 p-[1px] transition-all duration-200 hover:shadow-md"
+                              >
+                                <span className="inline-flex items-center gap-1.5 rounded-[7px] bg-white px-3 py-1.5 text-xs font-semibold">
+                                  <FaExternalLinkAlt className="text-[11px] text-violet-400" />
+                                  <span className="bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
+                                    Buy Now
+                                  </span>
+                                </span>
+                              </a>
+                            ) : (
+                              <span
+                                aria-disabled="true"
+                                className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg bg-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-500"
+                              >
+                                <FaExternalLinkAlt className="text-xs" />
+                                Unavailable
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -4027,32 +4082,42 @@ Price: ${price}
             )}
 
             {infoKeySections.length > 0 ? (
-              <div className="mt-4 bg-white">
-                <div className="px-0 py-1 flex items-center justify-between gap-2">
-                  <h3 className="text-sm font-semibold text-gray-900">Key Specs</h3>
+              <div className="mt-5 rounded-xl bg-white p-3 sm:p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-900">Key Specs</h3>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      Quick section-wise summary for daily usage.
+                    </p>
+                  </div>
                   {hasContent(infoOsSummary) ? (
-                    <span className="text-[11px] font-medium text-gray-600">
+                    <span className="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-medium text-violet-700">
                       {formatSpecValue(infoOsSummary, "OS")}
                     </span>
                   ) : null}
                 </div>
-                <div className="space-y-3">
+                <div className="mt-3 space-y-3">
                   {infoKeySections.map((section) => {
                     const isBenchOpen = Boolean(infoKeySpecOpen[section.key]);
                     return (
-                      <div key={section.key} className="py-2">
-                        <div className="flex items-center justify-between gap-2">
+                      <div
+                        key={section.key}
+                        className="rounded-md border border-slate-200 bg-white p-3 transition-colors duration-200 hover:border-violet-200"
+                      >
+                        <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <h4 className="text-sm font-semibold text-gray-900">
-                              {section.title}
-                            </h4>
+                            <div className="flex items-center">
+                              <h4 className="text-base font-semibold text-slate-900">
+                                {section.title}
+                              </h4>
+                            </div>
                             {hasContent(section.description) ? (
-                              <p className="mt-0.5 text-xs text-slate-500">
+                              <p className="mt-1 text-xs leading-relaxed text-slate-500">
                                 {section.description}
                               </p>
                             ) : null}
                           </div>
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex shrink-0 items-center gap-1.5">
                             <SpecScoreBadge score={section.score} size={32} />
                             <button
                               type="button"
@@ -4068,7 +4133,7 @@ Price: ${price}
                                   ? `Hide ${section.title} benchmark`
                                   : `Show ${section.title} benchmark`
                               }
-                              className="inline-flex h-7 w-7 items-center justify-center text-violet-700 hover:text-violet-800"
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-violet-400 ring-1 ring-slate-200 transition-colors hover:text-violet-500"
                             >
                               {isBenchOpen ? (
                                 <FaChevronUp size={10} />
@@ -4078,9 +4143,15 @@ Price: ${price}
                             </button>
                           </div>
                         </div>
-                        <ul className="mt-2 list-disc pl-4 space-y-1 text-sm text-gray-800 marker:text-gray-400">
+                        <ul className="mt-2.5 space-y-1.5">
                           {section.points.map((point, idx) => (
-                            <li key={idx}>{formatSpecValue(point, section.title)}</li>
+                            <li
+                              key={idx}
+                              className="flex items-start gap-2 text-[14px] text-slate-800"
+                            >
+                              <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-slate-400" />
+                              <span>{formatSpecValue(point, section.title)}</span>
+                            </li>
                           ))}
                         </ul>
                         <ScoreGroupTable
@@ -4115,14 +4186,31 @@ Price: ${price}
                   <button
                     key={tab.id}
                     onClick={() => handleTabClick(tab.id)}
-                    className={`flex items-center gap-2 px-4 py-3 font-medium text-sm whitespace-nowrap border-b-2 transition-colors duration-200 flex-shrink-0 focus-visible:outline-none ${
+                    className={`group relative flex items-center gap-2 px-4 py-3 font-medium text-sm whitespace-nowrap transition-colors duration-200 flex-shrink-0 focus-visible:outline-none ${
                       activeTab === tab.id
-                        ? "border-slate-300 text-slate-700 bg-slate-50"
-                        : "border-transparent text-gray-500 hover:text-gray-700"
+                        ? "bg-white"
+                        : "text-gray-500 hover:text-gray-700"
                     }`}
                   >
-                    <IconComponent className="text-sm" />
-                    {tab.label}
+                    <IconComponent
+                      className={`text-sm ${
+                        activeTab === tab.id
+                          ? "text-violet-400"
+                          : "text-gray-500 group-hover:text-gray-700"
+                      }`}
+                    />
+                    <span
+                      className={
+                        activeTab === tab.id
+                          ? "bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent"
+                          : ""
+                      }
+                    >
+                      {tab.label}
+                    </span>
+                    {activeTab === tab.id ? (
+                      <span className="pointer-events-none absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600" />
+                    ) : null}
                   </button>
                 );
               })}

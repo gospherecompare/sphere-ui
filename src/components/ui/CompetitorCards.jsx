@@ -387,7 +387,7 @@ const CompetitorCard = ({
     normalizeText(competitor?.reason).replace(/\s*\|\s*/g, " • ") ||
     "Close match in similar price and performance segment.";
   const buyFrom =
-    competitor?.best_store_name || competitor?.brand_name || "Hook";
+    competitor?.best_store_name || competitor?.brand_name || "Hooks";
 
   return (
     <article className="group rounded-md relative min-w-[212px] max-w-[254px] border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition">

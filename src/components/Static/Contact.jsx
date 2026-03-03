@@ -33,7 +33,7 @@ const Contact = () => {
             We respond with real humans
           </h1>
           <p className="text-base sm:text-lg text-gray-700 leading-relaxed">
-            Reach out and you will hear from someone on the Hook team - no bots
+            Reach out and you will hear from someone on the Hooks team - no bots
             sending canned replies. We aim to respond within one business day.
           </p>
         </section>

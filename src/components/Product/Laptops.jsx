@@ -1549,25 +1549,25 @@ const Laptops = () => {
     return text.length > 180 ? `${text.slice(0, 177)}...` : text;
   };
 
-  let seoTitle = `Best Laptops ${currentYear} - Compare Prices, Specs & Deals | Hook`;
+  let seoTitle = `Best Laptops ${currentYear} - Compare Prices, Specs & Deals | Hooks`;
   let seoDescription =
-    "Browse the latest laptops with full specifications, prices, and feature comparisons on Hook.";
+    "Browse the latest laptops with full specifications, prices, and feature comparisons on Hooks.";
 
   if (filter === "trending") {
-    seoTitle = `Trending Laptops ${currentYear} - Most Popular Models & Prices | Hook`;
+    seoTitle = `Trending Laptops ${currentYear} - Most Popular Models & Prices | Hooks`;
     seoDescription =
-      "Explore trending laptops with rising buyer interest, latest prices, and key specs to find the best option quickly on Hook.";
+      "Explore trending laptops with rising buyer interest, latest prices, and key specs to find the best option quickly on Hooks.";
   } else if (filter === "new") {
-    seoTitle = `Latest Laptops ${currentYear} - New Launches, Specs & Prices | Hook`;
+    seoTitle = `Latest Laptops ${currentYear} - New Launches, Specs & Prices | Hooks`;
     seoDescription =
-      "Discover newly launched laptops with updated prices, processor details, RAM and storage options, and full spec breakdowns on Hook.";
+      "Discover newly launched laptops with updated prices, processor details, RAM and storage options, and full spec breakdowns on Hooks.";
   }
 
   if (currentBrandObj) {
-    seoTitle = `${currentBrandObj.name} Laptops ${currentYear} - Models, Prices & Specs | Hook`;
+    seoTitle = `${currentBrandObj.name} Laptops ${currentYear} - Models, Prices & Specs | Hooks`;
     seoDescription = sanitizeDescription(
       currentBrandObj.description ||
-        `Compare ${currentBrandObj.name} laptops with detailed specifications, latest prices, and top deals on Hook.`,
+        `Compare ${currentBrandObj.name} laptops with detailed specifications, latest prices, and top deals on Hooks.`,
     );
   }
 

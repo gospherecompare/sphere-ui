@@ -15,7 +15,7 @@ const NotFound = () => {
         <meta name="robots" content="noindex, nofollow" />
         <meta
           name="description"
-          content="The page you are looking for was not found. Explore smartphones, laptops, TVs, and trending products on Hook."
+          content="The page you are looking for was not found. Explore smartphones, laptops, TVs, and trending products on Hooks."
         />
       </Helmet>
 

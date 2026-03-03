@@ -20,7 +20,7 @@ const PrivacyPolicy = () => {
     {
       title: "Sharing",
       body:
-        "We share data only with service providers that help us run Hook (hosting, analytics, email). They follow contractual confidentiality requirements and cannot use your data for their own marketing.",
+        "We share data only with service providers that help us run Hooks (hosting, analytics, email). They follow contractual confidentiality requirements and cannot use your data for their own marketing.",
     },
     {
       title: "Retention",

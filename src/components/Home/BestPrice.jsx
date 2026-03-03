@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { generateSlug } from "../../utils/slugGenerator";
+import useRevealAnimation from "../../hooks/useRevealAnimation";
 import {
   FaFire,
   FaMobileAlt,
@@ -10,6 +11,68 @@ import {
   FaWifi,
   FaArrowRight,
 } from "react-icons/fa";
+
+const normalizeScore100 = (value) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  if (n <= 1) return Math.max(0, Math.min(100, n * 100));
+  if (n <= 10) return Math.max(0, Math.min(100, n * 10));
+  return Math.max(0, Math.min(100, n));
+};
+
+const mapScoreToDisplayBand = (score, minTarget = 80, maxTarget = 98) => {
+  const normalized = normalizeScore100(score);
+  if (normalized == null) return null;
+  const mapped = minTarget + (normalized / 100) * (maxTarget - minTarget);
+  return Number(mapped.toFixed(1));
+};
+
+const pickScoreValue = (...values) => {
+  for (const value of values) {
+    const n = Number(value);
+    if (Number.isFinite(n)) return n;
+  }
+  return null;
+};
+
+const getRowDisplayScore = (row) => {
+  const displayScore = pickScoreValue(
+    row?.overall_score_display,
+    row?.overallScoreDisplay,
+    row?.overall_score_v2_display_80_98,
+    row?.overallScoreV2Display8098,
+    row?.spec_score_v2_display_80_98,
+    row?.specScoreV2Display8098,
+  );
+  if (displayScore != null) return Number(displayScore.toFixed(1));
+
+  const rawScore = pickScoreValue(
+    row?.overall_score_v2,
+    row?.overallScoreV2,
+    row?.spec_score_v2,
+    row?.specScoreV2,
+    row?.overall_score,
+    row?.overallScore,
+    row?.spec_score,
+    row?.specScore,
+    row?.hook_score,
+    row?.hookScore,
+  );
+  return mapScoreToDisplayBand(rawScore);
+};
+
+const TrendSpecScoreBadge = ({ score }) => {
+  const value = Number.isFinite(Number(score)) ? Number(score) : null;
+  const label = value != null ? `${value.toFixed(1)}%` : "--";
+  return (
+    <div className="inline-flex flex-col items-center justify-center rounded-md border border-violet-200 bg-violet-50/95 px-1.5 py-1 leading-none">
+      <span className="text-[10px] font-bold text-violet-700">{label}</span>
+      <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide text-violet-600">
+        Spec
+      </span>
+    </div>
+  );
+};
 
 const toText = (value) => {
   if (value === null || value === undefined) return null;
@@ -388,6 +451,7 @@ const TrendingSection = () => {
   const [currentDevices, setCurrentDevices] = useState([]);
   const [loadingTrending, setLoadingTrending] = useState(false);
   const navigate = useNavigate();
+  const isLoaded = useRevealAnimation();
 
   // Trending categories
   const categories = [
@@ -414,14 +478,6 @@ const TrendingSection = () => {
       activeGradient: "from-blue-600 via-purple-500 to-blue-600",
       inactiveColor: "text-gray-400",
       count: 124,
-    },
-    {
-      id: "networking",
-      name: "Networking",
-      icon: <FaWifi />,
-      activeGradient: "from-blue-600 via-purple-500 to-blue-600",
-      inactiveColor: "text-gray-400",
-      count: 67,
     },
   ];
 
@@ -466,6 +522,7 @@ const TrendingSection = () => {
             ram: normalizeMemoryValue(specs.ram),
             storage: normalizeMemoryValue(specs.storage),
             image: getRowImage(row),
+            score: getRowDisplayScore(row),
             _rowIndex: index,
             _priceNumber: basePrice,
           };
@@ -489,6 +546,7 @@ const TrendingSection = () => {
                   ? row._priceNumber
                   : null,
               _minPriceStr: row.price,
+              _score: row.score,
             });
             return;
           }
@@ -499,6 +557,12 @@ const TrendingSection = () => {
           if (!existing.image && row.image) existing.image = row.image;
           if (!existing.brand && row.brand) existing.brand = row.brand;
           if (!existing.name && row.name) existing.name = row.name;
+          if (
+            Number.isFinite(row.score) &&
+            (!Number.isFinite(existing._score) || row.score > existing._score)
+          ) {
+            existing._score = row.score;
+          }
 
           if (row._priceNumber !== null && row._priceNumber !== undefined) {
             if (
@@ -532,6 +596,7 @@ const TrendingSection = () => {
               ram: combinedRam,
               storage: combinedStorage,
               image: item.image,
+              score: Number.isFinite(item._score) ? item._score : null,
             };
           })
           .slice(0, 15);
@@ -589,11 +654,14 @@ const TrendingSection = () => {
           : FaMobileAlt;
 
   return (
-    <div className="px-2 lg:px-4 mx-auto bg-white max-w-6xl  mb-5 w-full m-0 overflow-hidden pt-5 sm:pt-10">
+    <div
+      className={`px-2 lg:px-4 mx-auto bg-white max-w-6xl mb-5 w-full m-0 overflow-hidden pt-5 sm:pt-10 transition-all duration-700 ${
+        isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+      }`}
+    >
       {/* Header Section */}
       <div className="mb-6 px-2">
         <div className="flex items-center gap-2 mb-2">
-          <FaFire className="text-red-500 text-lg" />
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
             Top Trending{" "}
             <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent">
@@ -607,19 +675,20 @@ const TrendingSection = () => {
       </div>
 
       {/* Category Tabs - Single Row */}
-      <div className="flex overflow-x-auto gap-2 lg:gap-3 hide-scrollbar no-scrollbar scroll-smooth mb-8">
-        {categories.map((category) => {
+      <div className="flex overflow-x-auto gap-2 lg:gap-3 hide-scrollbar no-scrollbar scroll-smooth mb-1">
+        {categories.map((category, index) => {
           const isActive = activeCategory === category.id;
 
           return (
             <button
               key={category.id}
               onClick={() => setActiveCategory(category.id)}
-              className={`flex flex-col items-center p-3 lg:p-4 transition-all duration-300 min-w-[90px] lg:min-w-[110px] shrink-0 group ${
+              className={`flex flex-col items-center p-3 lg:p-4 transition-all duration-500 min-w-[90px] lg:min-w-[110px] shrink-0 group ${
                 isActive
                   ? "text-gray-900 transform -translate-y-1"
                   : "text-gray-600 hover:text-gray-900 hover:transform hover:scale-105"
-              }`}
+              } ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
+              style={{ transitionDelay: `${index * 55}ms` }}
             >
               {/* Icon Container */}
               <div
@@ -709,12 +778,20 @@ const TrendingSection = () => {
               <div
                 key={`${device.id || "noid"}-${i}`}
                 onClick={() => handleDeviceClick(device)}
-                className="group shrink-0 cursor-pointer transition-all duration-200"
+                className={`group shrink-0 cursor-pointer transition-all duration-500 ${
+                  isLoaded
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 translate-y-2"
+                }`}
+                style={{ transitionDelay: `${i * 45}ms` }}
               >
                 <div className="relative h-full w-32 rounded-lg overflow-hidden p-2 transition-all duration-300  overflow-hidden transition-all duration-200  group-hover:-translate-y-0.5">
                   <div className="flex h-full flex-col gap-2">
                     {/* Image */}
                     <div className="relative w-full flex-shrink-0">
+                      <div className="absolute left-1 top-1 z-10 pointer-events-none">
+                        <TrendSpecScoreBadge score={device.score} />
+                      </div>
                       <div className="mx-auto h-28 sm:h-32 w-28 rounded-md shadow-md border border-gray-100 overflow-hidden bg-gray-100 flex items-center justify-center">
                         {device.image ? (
                           <img

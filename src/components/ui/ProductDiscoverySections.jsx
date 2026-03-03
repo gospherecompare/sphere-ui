@@ -150,7 +150,7 @@ const renderSectionTitle = (title = "") => {
 const renderSectionSubtitle = (title = "") => {
   const value = normalizeText(title).toLowerCase();
   if (value === "smart popular links") {
-    return "Quick shortcuts users explore most on Hook.";
+    return "Quick shortcuts users explore most on Hooks.";
   }
   if (value === "latest launches") {
     return "Freshly launched devices you can compare right now.";

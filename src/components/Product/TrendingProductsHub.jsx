@@ -818,7 +818,7 @@ const TrendingProductsHub = () => {
     navigate(`${p.detailPath}/${slug}${params.toString() ? `?${params.toString()}` : ""}`);
   };
 
-  const seoTitle = `${config.metaTitle} | Hook`;
+  const seoTitle = `${config.metaTitle} | Hooks`;
   const seoDescription = config.metaDescription;
   const seoKeywords = config.metaKeywords;
   const canonicalPath = `/trending/${activeCategory}`;
@@ -841,7 +841,7 @@ const TrendingProductsHub = () => {
         <link rel="canonical" href={canonicalUrl} />
 
         <meta property="og:type" content="website" />
-        <meta property="og:site_name" content="Hook" />
+        <meta property="og:site_name" content="Hooks" />
         <meta property="og:title" content={seoTitle} />
         <meta property="og:description" content={seoDescription} />
         <meta property="og:url" content={canonicalUrl} />

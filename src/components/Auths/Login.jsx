@@ -341,7 +341,7 @@ const Login = ({
 
         <div>
           <h3 className="text-xl font-semibold text-gray-900">Welcome back</h3>
-          <p className="mt-1 text-sm text-gray-500">Sign in to Hook</p>
+          <p className="mt-1 text-sm text-gray-500">Sign in to Hooks</p>
         </div>
       </div>
 

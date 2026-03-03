@@ -183,10 +183,10 @@ const Footer = () => {
           {/* Support */}
         </div>
 
-        {/* Hook - Separate Row with Border Divider + Newsletter */}
+        {/* Hooks - Separate Row with Border Divider + Newsletter */}
         <div className="border-t border-gray-700 py-8 sm:py-10 px-0">
           <h4 className="text-sm font-bold mb-6 text-white uppercase tracking-wide">
-            Hook
+            Hooks
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 items-center">
             <div className="grid grid-cols-2 sm:grid-cols-6 gap-4">
@@ -288,7 +288,7 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8">
           {/* Copyright */}
           <div className="text-gray-400 text-xs sm:text-sm text-center md:text-left">
-            &copy; {new Date().getFullYear()} Hook. All rights reserved.
+            &copy; {new Date().getFullYear()} Hooks. All rights reserved.
           </div>
 
           {/* Social Media */}

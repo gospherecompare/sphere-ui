@@ -35,7 +35,7 @@ const HeroSection = () => {
 
           {/* Subtitle */}
           <p className="text-[13px] text-base sm:text-lg lg:text-xl mb-6 sm:mb-8 text-gray-700 leading-relaxed max-w-2xl mx-auto lg:mx-0 ">
-            Hook helps you explore smartphones, TVs, laptops, wearables, and
+            Hooks helps you explore smartphones, TVs, laptops, wearables, and
             other electronics with accurate specifications, clean comparison
             tools, and fast device updates — all in one place.
           </p>

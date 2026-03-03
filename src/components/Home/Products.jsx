@@ -2,12 +2,8 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import "../../styles/hideScrollbar.css";
-import {
-  FaMobileAlt,
-  FaLaptop,
-  FaTv,
-  FaStream,
-} from "react-icons/fa";
+import { FaMobileAlt, FaLaptop, FaTv, FaStream } from "react-icons/fa";
+import useRevealAnimation from "../../hooks/useRevealAnimation";
 
 const TOP_CATEGORIES = [
   {
@@ -71,6 +67,7 @@ const getActiveCategoryFromLocation = (pathname) => {
 
 const ProductsNav = () => {
   const { pathname } = useLocation();
+  const isLoaded = useRevealAnimation();
 
   const activeCategoryId = React.useMemo(
     () => getActiveCategoryFromLocation(pathname),
@@ -78,10 +75,13 @@ const ProductsNav = () => {
   );
 
   return (
-    <section className="mx-auto max-w-6xl mb-5 w-full bg-white rounded-lg overflow-hidden px-2 lg:px-4 pt-4 sm:pt-6 pb-3 sm:pb-4 lg:mt-3 mt-4 sm:mt-0">
-      <div className="mb-4">
+    <section
+      className={`mx-auto max-w-6xl mb-5 w-full bg-white overflow-hidden px-4 lg:px-4 pt-4 sm:pt-6 pb-3 sm:pb-4 lg:mt-3 mt-4 sm:mt-0 transition-all duration-700 ${
+        isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+      }`}
+    >
+      <div className="mb-1">
         <div className="flex items-center gap-2 mb-2">
-          <FaStream className="text-purple-500 text-lg" />
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
             Browse by{" "}
             <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent">
@@ -102,7 +102,7 @@ const ProductsNav = () => {
           hide-scrollbar no-scrollbar scroll-smooth
         "
       >
-        {TOP_CATEGORIES.map((category) => {
+        {TOP_CATEGORIES.map((category, index) => {
           const isActive = activeCategoryId === category.id;
           const to = category.to;
 
@@ -112,11 +112,12 @@ const ProductsNav = () => {
               to={to}
               title={`Browse ${category.name}`}
               aria-label={`Browse ${category.name}`}
-              className={`flex flex-col items-center p-3 lg:p-4 transition-all duration-300 min-w-[80px] lg:min-w-[100px] shrink-0 group ${
+              className={`flex flex-col items-center p-3 lg:p-4 transition-all duration-500 min-w-[80px] lg:min-w-[100px] shrink-0 group ${
                 isActive
                   ? "text-gray-900 transform -translate-y-1"
                   : "text-gray-600 hover:text-gray-900 hover:transform hover:scale-105"
-              }`}
+              } ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
+              style={{ transitionDelay: `${index * 60}ms` }}
             >
               {/* Icon Container */}
               <div

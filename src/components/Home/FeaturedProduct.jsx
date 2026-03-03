@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaRupeeSign, FaArrowRight, FaFilter } from "react-icons/fa";
+import useRevealAnimation from "../../hooks/useRevealAnimation";
 
 const priceRanges = [
   {
@@ -74,6 +75,7 @@ const MobilePriceFinder = () => {
   const navigate = useNavigate();
   const [activePrice, setActivePrice] = useState();
   const [hoveredPrice, setHoveredPrice] = useState(null);
+  const isLoaded = useRevealAnimation();
 
   const handleClick = (price, gradient, slug) => {
     setActivePrice(price);
@@ -81,13 +83,14 @@ const MobilePriceFinder = () => {
   };
 
   return (
-    <div className="px-4 lg:px-6 mx-auto bg-white max-w-6xl mb-8 w-full overflow-hidden py-8 sm:py-10 rounded-lg ">
+    <div
+      className={`px-4 lg:px-4 mx-auto bg-white max-w-6xl mb-8 w-full overflow-hidden py-8 sm:py-10 transition-all duration-700 ${
+        isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+      }`}
+    >
       {/* Header Section */}
-      <div className="mb-8 px-2">
+      <div className="mb-1 px-2">
         <div className="flex items-center gap-3 mb-3">
-          <div className="p-2">
-            <FaFilter className="text-purple-500 text-lg" />
-          </div>
           <div>
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
               Best Smartphones by{" "}
@@ -108,7 +111,7 @@ const MobilePriceFinder = () => {
       {/* Price Buttons Grid */}
       <div className="relative">
         <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 gap-3 px-2">
-          {priceRanges.map((item) => {
+          {priceRanges.map((item, index) => {
             const isActive = activePrice === item.value;
             const isHovered = hoveredPrice === item.value;
 
@@ -120,11 +123,16 @@ const MobilePriceFinder = () => {
                 }
                 onMouseEnter={() => setHoveredPrice(item.value)}
                 onMouseLeave={() => setHoveredPrice(null)}
-                className={`relative overflow-hidden group transition-all duration-300 bg-gray-50 ${
+                className={`relative overflow-hidden group transition-all duration-500 bg-gray-50 ${
                   isActive
                     ? "transform -translate-y-1 "
                     : " hover:shadow-xl hover:-translate-y-0.5 "
-                } rounded-xl`}
+                } rounded-xl ${
+                  isLoaded
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 translate-y-3"
+                }`}
+                style={{ transitionDelay: `${index * 45}ms` }}
               >
                 {/* Background Gradient */}
                 <div
@@ -184,7 +192,7 @@ const MobilePriceFinder = () => {
       </div>
 
       {/* Footer CTA */}
-      <div className="mt-8 pt-6 border-t border-gray-100">
+      <div className="mt-4 pt-2 border-t border-gray-200">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
           <div className="text-center sm:text-left">
             <p className="text-gray-600 text-sm">
@@ -200,10 +208,16 @@ const MobilePriceFinder = () => {
 
           <button
             onClick={() => navigate("/smartphones")}
-            className="group flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 text-white rounded-full hover:from-purple-600 hover:to-red-600 transition-all duration-300 shadow-lg hover:shadow-xl hover:gap-3"
+            className={`group rounded-full bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 p-[1px] transition-all duration-500 hover:shadow-xl ${
+              isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+            }`}
           >
-            <span className="font-semibold">View All Phones</span>
-            <FaArrowRight className="transition-transform duration-300 group-hover:translate-x-1" />
+            <span className="flex items-center gap-2 rounded-full bg-white px-6 py-3 transition-all duration-300 group-hover:gap-3">
+              <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text font-semibold text-transparent">
+                View All Phones
+              </span>
+              <FaArrowRight className="text-purple-400 transition-transform duration-300 group-hover:translate-x-1" />
+            </span>
           </button>
         </div>
       </div>
