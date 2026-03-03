@@ -806,6 +806,378 @@ const MobileCompare = () => {
     return formatSpecValue(value, specKey);
   };
 
+  const renderCameraComparisonValue = (value, specKey) => {
+    if (value == null || value === "" || value === "N/A") return "N/A";
+
+    const CAMERA_FIELD_ALIASES = {
+      fov: "FOV",
+      ois: "OIS",
+      eis: "EIS",
+      af: "Autofocus",
+      autofocus: "Autofocus",
+      focus: "Focus",
+      lens: "Lens",
+      lenses: "Lens",
+      aperture: "Aperture",
+      pixel: "Pixel Size",
+      pixelsize: "Pixel Size",
+      resolution: "Resolution",
+      megapixel: "Resolution",
+      megapixels: "Resolution",
+      sensor: "Sensor",
+      sensorsize: "Sensor",
+      focallength: "Focal Length",
+      macrodistance: "Macro Distance",
+      stabilization: "Stabilization",
+      features: "Features",
+      flash: "Flash",
+    };
+
+    const CAMERA_FIELD_ORDER = [
+      "Resolution",
+      "Sensor",
+      "Aperture",
+      "Pixel Size",
+      "OIS",
+      "EIS",
+      "Autofocus",
+      "Focus",
+      "FOV",
+      "Focal Length",
+      "Lens",
+      "Macro Distance",
+      "Stabilization",
+      "Flash",
+      "Features",
+    ];
+
+    const CAMERA_SECTION_ORDER = [
+      "Main Camera",
+      "Rear Camera",
+      "Ultra Wide Camera",
+      "Telephoto Camera",
+      "Periscope Camera",
+      "Depth Camera",
+      "Macro Camera",
+      "Front Camera",
+      "Rear Video",
+      "Video Recording",
+      "Camera Features",
+      "Features",
+    ];
+
+    const getFieldOrderIndex = (field) => {
+      const index = CAMERA_FIELD_ORDER.indexOf(field);
+      return index === -1 ? 999 : index;
+    };
+
+    const normalizeFieldToken = (token) =>
+      String(token || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
+
+    const normalizeCameraField = (raw) => {
+      const token = String(raw || "").trim();
+      if (!token) return "";
+      const compact = normalizeFieldToken(token);
+      const aliased = CAMERA_FIELD_ALIASES[compact];
+      if (aliased) return aliased;
+      if (compact === "hdr") return "HDR";
+      return toNormalCase(token);
+    };
+
+    const dedupeAndSortPairs = (pairs) => {
+      const map = new Map();
+      (pairs || []).forEach(([field, fieldValue]) => {
+        if (!field || !fieldValue) return;
+        const normalizedField = normalizeCameraField(field);
+        const normalizedValue = String(fieldValue).trim();
+        if (!normalizedField || !normalizedValue) return;
+        if (map.has(normalizedField)) {
+          const existing = map.get(normalizedField);
+          if (!existing.includes(normalizedValue)) {
+            map.set(normalizedField, `${existing} | ${normalizedValue}`);
+          }
+          return;
+        }
+        map.set(normalizedField, normalizedValue);
+      });
+
+      return Array.from(map.entries()).sort((a, b) => {
+        const orderDiff = getFieldOrderIndex(a[0]) - getFieldOrderIndex(b[0]);
+        if (orderDiff !== 0) return orderDiff;
+        return a[0].localeCompare(b[0]);
+      });
+    };
+
+    const sortSections = (sections) =>
+      [...(sections || [])].sort((a, b) => {
+        const aLabel = a?.label || "";
+        const bLabel = b?.label || "";
+        const aIndex = CAMERA_SECTION_ORDER.indexOf(aLabel);
+        const bIndex = CAMERA_SECTION_ORDER.indexOf(bLabel);
+        const left = aIndex === -1 ? 999 : aIndex;
+        const right = bIndex === -1 ? 999 : bIndex;
+        if (left !== right) return left - right;
+        return aLabel.localeCompare(bLabel);
+      });
+
+    const FEATURE_ITEM_LIMIT = 10;
+    const featureKey = String(specKey || "").toLowerCase();
+    const isFeatureLikeSpec =
+      featureKey.includes("feature") || featureKey.includes("mode");
+
+    const normalizeFeatureItem = (rawItem) => {
+      const item = String(rawItem || "")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (!item) return "";
+
+      const supportedMatch = item.match(/^(.*?):\s*(yes|true|supported)$/i);
+      if (supportedMatch?.[1]) {
+        return toNormalCase(supportedMatch[1].trim());
+      }
+
+      if (/^(na|n\/a|null|undefined|not specified)$/i.test(item)) return "";
+
+      return item.length > 48 ? `${item.slice(0, 45)}...` : item;
+    };
+
+    const toFeatureItems = (input) => {
+      const flatText = String(formatSpecValue(input, specKey, 1) || "").trim();
+      if (!flatText || flatText === "N/A") return [];
+
+      return Array.from(
+        new Set(
+          flatText
+            .replace(/\r?\n/g, ",")
+            .replace(/\|/g, ",")
+            .replace(/;/g, ",")
+            .split(",")
+            .map((token) => normalizeFeatureItem(token))
+            .filter(Boolean),
+        ),
+      );
+    };
+
+    const toPairsFromText = (text) => {
+      const normalized = String(text || "")
+        .replace(/\r?\n/g, " | ")
+        .replace(/;/g, " | ")
+        .replace(/,\s+(?=[A-Za-z][A-Za-z0-9 ()/+.-]{1,32}\s*:)/g, " | ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if (!normalized || !normalized.includes(":")) return [];
+
+      return normalized
+        .split("|")
+        .map((part) => part.trim())
+        .filter(Boolean)
+        .map((part) => {
+          const separatorIndex = part.indexOf(":");
+          if (separatorIndex === -1) return null;
+          const field = normalizeCameraField(part.slice(0, separatorIndex));
+          const fieldValue = part.slice(separatorIndex + 1).trim();
+          if (!field || !fieldValue) return null;
+          return [field, fieldValue];
+        })
+        .filter(Boolean);
+    };
+
+    const sectionRegex =
+      /(Main Camera|Rear Camera|Ultra Wide Camera|Front Camera|Telephoto Camera|Periscope Camera|Macro Camera|Depth Camera|Rear Video|Video Recording|Camera Features|Features)\s*:/gi;
+
+    const toSectionsFromText = (text) => {
+      const source = String(text || "").trim();
+      if (!source) return [];
+
+      const matches = Array.from(source.matchAll(sectionRegex));
+      if (matches.length < 2) return [];
+
+      return matches
+        .map((match, index) => {
+          const start = (match.index ?? 0) + match[0].length;
+          const end =
+            index + 1 < matches.length
+              ? matches[index + 1].index ?? source.length
+              : source.length;
+          const sectionLabel = normalizeCameraField(match[1]);
+          const body = source.slice(start, end).trim();
+          const pairs = toPairsFromText(body);
+          return { label: sectionLabel, pairs, text: body };
+        })
+        .filter((section) => hasRenderableValue(section.text));
+    };
+
+    const toSectionsFromObject = (obj, label = null) => {
+      if (!obj || typeof obj !== "object" || Array.isArray(obj)) return [];
+
+      const primitivePairs = [];
+      const nestedSections = [];
+
+      Object.entries(obj).forEach(([nestedKey, nestedValue]) => {
+        if (!hasRenderableValue(nestedValue)) return;
+
+        if (
+          nestedValue &&
+          typeof nestedValue === "object" &&
+          !Array.isArray(nestedValue)
+        ) {
+          nestedSections.push(
+            ...toSectionsFromObject(
+              nestedValue,
+              normalizeCameraField(nestedKey),
+            ),
+          );
+          return;
+        }
+
+        const formatted = formatSpecValue(nestedValue, nestedKey, 1);
+        if (!formatted || formatted === "N/A") return;
+        primitivePairs.push([normalizeCameraField(nestedKey), formatted]);
+      });
+
+      const sections = [];
+      if (primitivePairs.length) {
+        sections.push({ label, pairs: primitivePairs, text: "" });
+      }
+      if (nestedSections.length) {
+        sections.push(...nestedSections);
+      }
+      return sections;
+    };
+
+    const renderPairsTable = (pairs, keyPrefix) => {
+      if (!Array.isArray(pairs) || pairs.length === 0) return null;
+
+      const normalizedPairs = dedupeAndSortPairs(pairs);
+      if (normalizedPairs.length === 0) return null;
+
+      const visiblePairs = normalizedPairs.slice(0, 8);
+      const hiddenCount = normalizedPairs.length - visiblePairs.length;
+
+      return (
+        <div className="bg-white">
+          <table className="w-full">
+            <tbody className="divide-y divide-slate-100">
+              {visiblePairs.map(([field, fieldValue], index) => (
+                <tr key={`${keyPrefix}-${field}-${index}`}>
+                  <td className="w-[42%] px-2 py-1.5 text-[11px] font-semibold text-slate-600">
+                    {field}
+                  </td>
+                  <td className="px-2 py-1.5 text-[11px] text-slate-900 break-words">
+                    {fieldValue}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {hiddenCount > 0 ? (
+            <p className="px-2 pt-1 text-[10px] font-medium text-slate-500">
+              +{hiddenCount} more details
+            </p>
+          ) : null}
+        </div>
+      );
+    };
+
+    const renderSectionList = (sections, keyPrefix) => (
+      <div className="space-y-2">
+        {sortSections(sections).map((section, index) => (
+          <div key={`${keyPrefix}-section-${index}`} className="space-y-1">
+            {section.label ? (
+              <p className="text-[11px] font-semibold text-slate-700">
+                {section.label}
+              </p>
+            ) : null}
+            {section.pairs?.length ? (
+              renderPairsTable(section.pairs, `${keyPrefix}-${index}`)
+            ) : (
+              <p className="text-[12px] leading-5 text-slate-800">
+                {section.text}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+
+    if (typeof value === "object" && !Array.isArray(value)) {
+      const objectSections = toSectionsFromObject(value);
+      if (objectSections.length > 0) {
+        return renderSectionList(objectSections, `${specKey}-object`);
+      }
+    }
+
+    if (Array.isArray(value)) {
+      const entries = value
+        .map((item) => String(formatSpecValue(item, specKey, 1) || "").trim())
+        .filter((item) => item && item !== "N/A");
+      if (entries.length === 0) return "N/A";
+      return (
+        <div className="space-y-1">
+          {entries.map((entry, index) => (
+            <p
+              key={`${specKey}-array-${index}`}
+              className="text-[12px] leading-5 text-slate-800"
+            >
+              {entry}
+            </p>
+          ))}
+        </div>
+      );
+    }
+
+    const text = String(formatSpecValue(value, specKey) || "").trim();
+    if (!text || text === "N/A") return "N/A";
+
+    if (isFeatureLikeSpec) {
+      const featureItems = toFeatureItems(value);
+      if (featureItems.length > 0) {
+        const visibleItems = featureItems.slice(0, FEATURE_ITEM_LIMIT);
+        const hiddenCount = featureItems.length - visibleItems.length;
+
+        return (
+          <div className="space-y-1.5">
+            <p className="text-[11px] font-medium text-slate-500">
+              {featureItems.length} features
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {visibleItems.map((item, index) => (
+                <span
+                  key={`${specKey}-feature-${index}`}
+                  className="inline-flex items-center border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] leading-4 text-slate-700"
+                >
+                  {item}
+                </span>
+              ))}
+              {hiddenCount > 0 ? (
+                <span className="inline-flex items-center border border-violet-200 bg-violet-50 px-2 py-0.5 text-[11px] font-medium leading-4 text-violet-600">
+                  +{hiddenCount} more
+                </span>
+              ) : null}
+            </div>
+          </div>
+        );
+      }
+    }
+
+    const textSections = toSectionsFromText(text);
+    if (textSections.length > 0) {
+      return renderSectionList(textSections, `${specKey}-text-sections`);
+    }
+
+    const textPairs = toPairsFromText(text);
+    if (textPairs.length >= 2) {
+      return renderPairsTable(textPairs, `${specKey}-text-pairs`);
+    }
+
+    return (
+      <p className="text-[12px] leading-5 text-slate-800 break-words">{text}</p>
+    );
+  };
+
   const hasRenderableValue = (value) => {
     if (value == null || value === false) return false;
     if (typeof value === "string") {
@@ -1658,6 +2030,107 @@ const MobileCompare = () => {
       return device.images[0];
     return "";
   };
+
+  const normalizeScore100 = (value) => {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return null;
+    if (n <= 1) return Math.max(0, Math.min(100, n * 100));
+    if (n <= 10) return Math.max(0, Math.min(100, n * 10));
+    return Math.max(0, Math.min(100, n));
+  };
+
+  const pickScore100 = (...values) => {
+    for (const value of values) {
+      const normalized = normalizeScore100(value);
+      if (normalized != null) return normalized;
+    }
+    return null;
+  };
+
+  const getDeviceSpecScore = (device) => {
+    if (!device) return null;
+
+    const normalizeScoreSource = (value) =>
+      String(value || "")
+        .trim()
+        .toLowerCase();
+    const resolvePersistedScore = (value, source) => {
+      const normalized = normalizeScore100(value);
+      if (normalized == null) return null;
+
+      const sourceKey = normalizeScoreSource(source);
+      if (sourceKey && sourceKey.includes("fallback")) {
+        return null;
+      }
+
+      return normalized;
+    };
+
+    const specScoreV2Source =
+      device?.spec_score_v2_source ?? device?.specScoreV2Source;
+    const overallScoreV2Source =
+      device?.overall_score_v2_source ?? device?.overallScoreV2Source;
+    const specScoreSource = device?.spec_score_source ?? device?.specScoreSource;
+    const overallScoreSource =
+      device?.overall_score_source ?? device?.overallScoreSource;
+
+    const persistedSpecScore = pickScore100(
+      resolvePersistedScore(device?.spec_score_v2, specScoreV2Source),
+      resolvePersistedScore(device?.specScoreV2, specScoreV2Source),
+      resolvePersistedScore(device?.spec_score, specScoreSource),
+      resolvePersistedScore(device?.specScore, specScoreSource),
+    );
+
+    const persistedOverallScore = pickScore100(
+      resolvePersistedScore(device?.overall_score_v2, overallScoreV2Source),
+      resolvePersistedScore(device?.overallScoreV2, overallScoreV2Source),
+      resolvePersistedScore(device?.overall_score, overallScoreSource),
+      resolvePersistedScore(device?.overallScore, overallScoreSource),
+      resolvePersistedScore(device?.scores?.overall_score, overallScoreSource),
+      resolvePersistedScore(device?.scores?.overall, overallScoreSource),
+    );
+
+    const persistedOverallScoreDisplay = pickScore100(
+      resolvePersistedScore(
+        device?.overall_score_v2_display_80_98,
+        overallScoreV2Source,
+      ),
+      resolvePersistedScore(
+        device?.overallScoreV2Display8098,
+        overallScoreV2Source,
+      ),
+      resolvePersistedScore(
+        device?.spec_score_v2_display_80_98,
+        specScoreV2Source,
+      ),
+      resolvePersistedScore(device?.specScoreV2Display8098, specScoreV2Source),
+    );
+
+    const derivedOverall = pickScore100(persistedOverallScore, persistedSpecScore);
+    const scoreFromDevice = pickScore100(persistedOverallScoreDisplay, derivedOverall);
+    if (scoreFromDevice != null) return Number(scoreFromDevice.toFixed(1));
+
+    const rankingKeys = [
+      device?.id,
+      device?.productId,
+      device?.product_id,
+      getResolvedProductId(device),
+    ]
+      .filter((entry) => entry != null)
+      .map((entry) => String(entry));
+
+    for (const key of rankingKeys) {
+      const parsed = pickScore100(rankingByDeviceId?.[key]?.totalScore);
+      if (parsed != null) return parsed;
+    }
+
+    return null;
+  };
+
+  const formatSpecScoreLabel = (score) => {
+    if (score == null || !Number.isFinite(score)) return null;
+    return `${score.toFixed(1)}%`;
+  };
   const getCardSummary = (device, variant) => {
     const performance = mergeSpecObjects(
       device?.performance,
@@ -2058,6 +2531,7 @@ const MobileCompare = () => {
                 variants.length > 0 && variants[rawVariantIndex]
                   ? rawVariantIndex
                   : 0;
+              const specScore = getDeviceSpecScore(device);
               const summaryText = getCardSummary(
                 device,
                 selectedVariant || variants[safeVariantIndex] || null,
@@ -2088,7 +2562,20 @@ const MobileCompare = () => {
                   {/* Content */}
                   <div className="flex flex-1 flex-col p-3 pt-8">
                     <div className="flex items-start gap-3">
-                      <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-xl bg-slate-100">
+                      <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-xl bg-slate-100">
+                        {specScore != null ? (
+                          <div
+                            className="absolute left-1 top-1 z-10 inline-flex flex-col items-center justify-center rounded-2xl border border-violet-200 bg-violet-50/95 px-2 py-1.5 leading-none"
+                            style={{ minWidth: "44px" }}
+                          >
+                            <span className="text-[11px] font-bold text-violet-700">
+                              {formatSpecScoreLabel(specScore)}
+                            </span>
+                            <span className="text-[8px] font-semibold uppercase tracking-wide text-violet-600">
+                              Spec
+                            </span>
+                          </div>
+                        ) : null}
                         <img
                           src={getPrimaryImage(device) || null}
                           alt={device.name}
@@ -2288,6 +2775,7 @@ const MobileCompare = () => {
                       const variant = it.variant;
                       const vi = it.variantIndex ?? 0;
                       const showAiTag = hasAiFeatures(base);
+                      const specScore = getDeviceSpecScore(base);
                       const summaryText = getCardSummary(base, variant);
                       const signalLabel = getCardSignalLabel(base);
                       const baseId =
@@ -2307,7 +2795,20 @@ const MobileCompare = () => {
                           className="text-left rounded-none p-4 hover:bg-gray-50 hover:border-purple-200 transition-all duration-200 group"
                         >
                           <div className="flex items-start gap-3">
-                            <div className="w-24 h-24 p-1 bg-gray-100 rounded-md flex-shrink-0 group-hover:scale-105 transition-transform duration-200">
+                            <div className="relative w-24 h-24 p-1 bg-gray-100 rounded-md flex-shrink-0 group-hover:scale-105 transition-transform duration-200">
+                              {specScore != null ? (
+                                <div
+                                  className="absolute left-1 top-1 z-10 inline-flex flex-col items-center justify-center rounded-2xl border border-violet-200 bg-violet-50/95 px-2 py-1.5 leading-none"
+                                  style={{ minWidth: "44px" }}
+                                >
+                                  <span className="text-[11px] font-bold text-violet-700">
+                                    {formatSpecScoreLabel(specScore)}
+                                  </span>
+                                  <span className="text-[8px] font-semibold uppercase tracking-wide text-violet-600">
+                                    Spec
+                                  </span>
+                                </div>
+                              ) : null}
                               <img
                                 src={getPrimaryImage(base) || null}
                                 alt={base.name}
@@ -2574,10 +3075,15 @@ const MobileCompare = () => {
                                       value === "N/A";
                                     const renderedValue = isEmpty
                                       ? null
-                                      : renderStructuredSpecValue(
-                                          value,
-                                          specKey,
-                                        );
+                                      : section.id === "camera"
+                                        ? renderCameraComparisonValue(
+                                            value,
+                                            specKey,
+                                          )
+                                        : renderStructuredSpecValue(
+                                            value,
+                                            specKey,
+                                          );
                                     const shouldRenderNaIcon =
                                       isEmpty || renderedValue === "N/A";
 
