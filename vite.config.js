@@ -15,6 +15,7 @@ const __dirname = path.dirname(__filename);
 const SITE_ORIGIN = "https://tryhook.shop";
 const API_BASE_URL = "https://api.apisphere.in/api";
 const MAX_DETAIL_ROUTES_PER_CATEGORY = 200;
+const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
 const CURRENT_YEAR = new Date().getFullYear();
 const BUDGET_PHONE_KEYWORDS =
   "budget phones under 10000, budget phones under 15000, budget phones under 20000, budget phones under 30000, budget phones under 50000";
@@ -71,6 +72,28 @@ const normalizePath = (routePath = "/") => {
   return routePath;
 };
 
+const stripSmartphoneSeoSuffix = (slug = "") => {
+  const value = String(slug || "").toLowerCase().trim();
+  if (!value) return "";
+  if (value.endsWith(SMARTPHONE_SEO_SUFFIX)) {
+    return value.slice(0, -SMARTPHONE_SEO_SUFFIX.length).replace(/-+$/g, "");
+  }
+  return value;
+};
+
+const toSmartphoneSeoSlug = (slug = "") => {
+  const base = stripSmartphoneSeoSuffix(slug);
+  return base ? `${base}${SMARTPHONE_SEO_SUFFIX}` : "";
+};
+
+const ensureSmartphoneSeoDetailPath = (path = "") => {
+  if (!path.startsWith("/smartphones/")) return path;
+  const tail = path.slice("/smartphones/".length);
+  if (!tail || tail.includes("/")) return path;
+  const seoSlug = toSmartphoneSeoSlug(tail);
+  return seoSlug ? `/smartphones/${seoSlug}` : path;
+};
+
 const toReadableTitleFromSlug = (slug = "") => {
   const normalized = (() => {
     try {
@@ -90,11 +113,14 @@ const toReadableTitleFromSlug = (slug = "") => {
     .join(" ");
 };
 
-const extractDetailSlugName = (path, prefix) => {
+const extractDetailSlugName = (path, prefix, normalizeTail) => {
   if (!path.startsWith(prefix)) return "";
   const tail = path.slice(prefix.length);
   if (!tail || tail.includes("/")) return "";
-  return toReadableTitleFromSlug(tail);
+  const normalizedTail =
+    typeof normalizeTail === "function" ? normalizeTail(tail) : tail;
+  if (!normalizedTail) return "";
+  return toReadableTitleFromSlug(normalizedTail);
 };
 
 const toSlug = (value = "") =>
@@ -125,16 +151,24 @@ const toCanonicalPath = (rawPath) => {
   }
   if (pathName === "/mobiles") return "/smartphones";
   if (pathName.startsWith("/products/mobiles")) {
-    return pathName.replace("/products/mobiles", "/smartphones");
+    return ensureSmartphoneSeoDetailPath(
+      pathName.replace("/products/mobiles", "/smartphones"),
+    );
   }
   if (pathName.startsWith("/devices/mobiles")) {
-    return pathName.replace("/devices/mobiles", "/smartphones");
+    return ensureSmartphoneSeoDetailPath(
+      pathName.replace("/devices/mobiles", "/smartphones"),
+    );
   }
   if (pathName.startsWith("/products/smartphones")) {
-    return pathName.replace("/products/smartphones", "/smartphones");
+    return ensureSmartphoneSeoDetailPath(
+      pathName.replace("/products/smartphones", "/smartphones"),
+    );
   }
   if (pathName.startsWith("/devices/smartphones")) {
-    return pathName.replace("/devices/smartphones", "/smartphones");
+    return ensureSmartphoneSeoDetailPath(
+      pathName.replace("/devices/smartphones", "/smartphones"),
+    );
   }
   if (pathName.startsWith("/products/laptops")) {
     return pathName.replace("/products/laptops", "/laptops");
@@ -170,7 +204,7 @@ const toCanonicalPath = (rawPath) => {
   if (pathName.startsWith("/devices/networking")) {
     return pathName.replace("/devices/networking", "/networking");
   }
-  return pathName;
+  return ensureSmartphoneSeoDetailPath(pathName);
 };
 
 const routesFromSitemap = () => {
@@ -239,6 +273,7 @@ const fetchDetailRoutesFromApi = async () => {
       preferredKeys: ["smartphones"],
       basePath: "/smartphones",
       getName: (item) => item?.name || item?.model || item?.product_name,
+      toDetailSlug: (slug) => toSmartphoneSeoSlug(slug),
     },
     {
       endpoint: `${API_BASE_URL}/laptops`,
@@ -283,9 +318,13 @@ const fetchDetailRoutesFromApi = async () => {
     let addedCount = 0;
 
     for (const row of rows) {
-      const slug = toSlug(source.getName(row));
-      if (!slug) continue;
-      routes.push(`${source.basePath}/${slug}`);
+      const baseSlug = toSlug(source.getName(row));
+      if (!baseSlug) continue;
+      const detailSlug = source.toDetailSlug
+        ? source.toDetailSlug(baseSlug, row)
+        : baseSlug;
+      if (!detailSlug) continue;
+      routes.push(`${source.basePath}/${detailSlug}`);
       addedCount += 1;
       if (addedCount >= MAX_DETAIL_ROUTES_PER_CATEGORY) break;
     }
@@ -294,12 +333,23 @@ const fetchDetailRoutesFromApi = async () => {
   const aliasRoutes = routes.flatMap((routePath) => {
     if (routePath.startsWith("/smartphones/")) {
       const slug = routePath.slice("/smartphones/".length);
-      return [
+      const baseSlug = stripSmartphoneSeoSuffix(slug);
+      const aliases = [
         `/products/smartphones/${slug}`,
         `/products/mobiles/${slug}`,
         `/devices/smartphones/${slug}`,
         `/devices/mobiles/${slug}`,
       ];
+      if (baseSlug && baseSlug !== slug) {
+        aliases.push(
+          `/smartphones/${baseSlug}`,
+          `/products/smartphones/${baseSlug}`,
+          `/products/mobiles/${baseSlug}`,
+          `/devices/smartphones/${baseSlug}`,
+          `/devices/mobiles/${baseSlug}`,
+        );
+      }
+      return aliases;
     }
 
     if (routePath.startsWith("/laptops/")) {
@@ -341,11 +391,68 @@ const getPrerenderRoutes = async () => {
   return [...new Set(["/", ...STATIC_PRERENDER_ROUTES, ...sitemapRoutes, ...detailRoutes])];
 };
 
+const NOINDEX_SITEMAP_PATHS = new Set([
+  "/login",
+  "/signup",
+  "/account",
+  "/wishlist",
+]);
+
+const shouldIncludeInSitemap = (routePath = "/") => {
+  const normalized = normalizePath(routePath);
+  if (!normalized) return false;
+  return !NOINDEX_SITEMAP_PATHS.has(normalized);
+};
+
+const buildSitemapXml = (routes = []) => {
+  const today = new Date().toISOString().slice(0, 10);
+  const canonicalRoutes = [...new Set(
+    routes
+      .map((routePath) => toCanonicalPath(routePath))
+      .map((routePath) => normalizePath(routePath))
+      .filter((routePath) => shouldIncludeInSitemap(routePath)),
+  )];
+
+  canonicalRoutes.sort((a, b) => {
+    if (a === "/") return -1;
+    if (b === "/") return 1;
+    return a.localeCompare(b);
+  });
+
+  const urls = canonicalRoutes
+    .map((routePath) => {
+      const loc = routePath === "/" ? SITE_ORIGIN : `${SITE_ORIGIN}${routePath}`;
+      const isDetailPage =
+        routePath.startsWith("/smartphones/") ||
+        routePath.startsWith("/laptops/") ||
+        routePath.startsWith("/tvs/") ||
+        routePath.startsWith("/networking/") ||
+        routePath.startsWith("/blogs/");
+      const priority = routePath === "/" ? "1.0" : isDetailPage ? "0.8" : "0.7";
+      return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>${priority}</priority>\n  </url>`;
+    })
+    .join("\n");
+
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
+};
+
+const createSitemapPlugin = (routes = []) => ({
+  name: "hook-generate-sitemap",
+  apply: "build",
+  closeBundle() {
+    const outputPath = path.join(__dirname, "dist", "sitemap.xml");
+    const xml = buildSitemapXml(routes);
+    fs.writeFileSync(outputPath, xml, "utf8");
+    console.log(`[sitemap] Generated ${outputPath}`);
+  },
+});
+
 const resolveSeo = (routePath) => {
   const canonicalPath = toCanonicalPath(routePath);
   const smartphoneDetailName = extractDetailSlugName(
     canonicalPath,
     "/smartphones/",
+    stripSmartphoneSeoSuffix,
   );
   const laptopDetailName = extractDetailSlugName(canonicalPath, "/laptops/");
   const tvDetailName = extractDetailSlugName(canonicalPath, "/tvs/");
@@ -607,6 +714,7 @@ export default defineConfig(async () => {
           return renderedRoute;
         },
       }),
+      createSitemapPlugin(prerenderRoutes),
     ],
     server: {
       port: 3000,

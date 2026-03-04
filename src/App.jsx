@@ -38,6 +38,7 @@ import AccountManagement from "./components/AccountManagement";
 
 const SITE_ORIGIN = "https://tryhook.shop";
 const CURRENT_YEAR = new Date().getFullYear();
+const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
 const DEFAULT_SEO_DESCRIPTION =
   "Compare smartphones, laptops, TVs, and networking devices with specs, variants, pricing insights, and trend signals on Hooks.";
 const BUDGET_PHONE_KEYWORDS =
@@ -50,6 +51,28 @@ const normalizeSeoPath = (pathname) => {
     return pathname.slice(0, -1);
   }
   return pathname;
+};
+
+const stripSmartphoneSeoSuffix = (slug = "") => {
+  const value = String(slug || "").toLowerCase().trim();
+  if (!value) return "";
+  if (value.endsWith(SMARTPHONE_SEO_SUFFIX)) {
+    return value.slice(0, -SMARTPHONE_SEO_SUFFIX.length).replace(/-+$/g, "");
+  }
+  return value;
+};
+
+const toSmartphoneSeoSlug = (slug = "") => {
+  const base = stripSmartphoneSeoSuffix(slug);
+  return base ? `${base}${SMARTPHONE_SEO_SUFFIX}` : "";
+};
+
+const ensureSmartphoneSeoDetailPath = (path = "") => {
+  if (!path.startsWith("/smartphones/")) return path;
+  const tail = path.slice("/smartphones/".length);
+  if (!tail || tail.includes("/")) return path;
+  const seoSlug = toSmartphoneSeoSlug(tail);
+  return seoSlug ? `/smartphones/${seoSlug}` : path;
 };
 
 const toCanonicalPath = (path) => {
@@ -72,16 +95,24 @@ const toCanonicalPath = (path) => {
 
   if (path === "/mobiles") return "/smartphones";
   if (path.startsWith("/products/mobiles")) {
-    return path.replace("/products/mobiles", "/smartphones");
+    return ensureSmartphoneSeoDetailPath(
+      path.replace("/products/mobiles", "/smartphones"),
+    );
   }
   if (path.startsWith("/devices/mobiles")) {
-    return path.replace("/devices/mobiles", "/smartphones");
+    return ensureSmartphoneSeoDetailPath(
+      path.replace("/devices/mobiles", "/smartphones"),
+    );
   }
   if (path.startsWith("/products/smartphones")) {
-    return path.replace("/products/smartphones", "/smartphones");
+    return ensureSmartphoneSeoDetailPath(
+      path.replace("/products/smartphones", "/smartphones"),
+    );
   }
   if (path.startsWith("/devices/smartphones")) {
-    return path.replace("/devices/smartphones", "/smartphones");
+    return ensureSmartphoneSeoDetailPath(
+      path.replace("/devices/smartphones", "/smartphones"),
+    );
   }
 
   if (path.startsWith("/products/laptops")) {
@@ -121,7 +152,7 @@ const toCanonicalPath = (path) => {
     return path.replace("/devices/networking", "/networking");
   }
 
-  return path;
+  return ensureSmartphoneSeoDetailPath(path);
 };
 
 const toReadableTitleFromSlug = (slug = "") => {
@@ -142,11 +173,14 @@ const toReadableTitleFromSlug = (slug = "") => {
     .join(" ");
 };
 
-const extractDetailSlugName = (path, prefix) => {
+const extractDetailSlugName = (path, prefix, normalizeTail) => {
   if (!path.startsWith(prefix)) return "";
   const tail = path.slice(prefix.length);
   if (!tail || tail.includes("/")) return "";
-  return toReadableTitleFromSlug(tail);
+  const normalizedTail =
+    typeof normalizeTail === "function" ? normalizeTail(tail) : tail;
+  if (!normalizedTail) return "";
+  return toReadableTitleFromSlug(normalizedTail);
 };
 
 const resolveSeoMeta = (pathname) => {
@@ -155,6 +189,7 @@ const resolveSeoMeta = (pathname) => {
   const smartphoneDetailName = extractDetailSlugName(
     canonicalPath,
     "/smartphones/",
+    stripSmartphoneSeoSuffix,
   );
   const laptopDetailName = extractDetailSlugName(canonicalPath, "/laptops/");
   const tvDetailName = extractDetailSlugName(canonicalPath, "/tvs/");

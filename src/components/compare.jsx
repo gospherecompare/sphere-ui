@@ -1000,7 +1000,7 @@ const MobileCompare = () => {
           const start = (match.index ?? 0) + match[0].length;
           const end =
             index + 1 < matches.length
-              ? matches[index + 1].index ?? source.length
+              ? (matches[index + 1].index ?? source.length)
               : source.length;
           const sectionLabel = normalizeCameraField(match[1]);
           const body = source.slice(start, end).trim();
@@ -2070,7 +2070,8 @@ const MobileCompare = () => {
       device?.spec_score_v2_source ?? device?.specScoreV2Source;
     const overallScoreV2Source =
       device?.overall_score_v2_source ?? device?.overallScoreV2Source;
-    const specScoreSource = device?.spec_score_source ?? device?.specScoreSource;
+    const specScoreSource =
+      device?.spec_score_source ?? device?.specScoreSource;
     const overallScoreSource =
       device?.overall_score_source ?? device?.overallScoreSource;
 
@@ -2106,8 +2107,14 @@ const MobileCompare = () => {
       resolvePersistedScore(device?.specScoreV2Display8098, specScoreV2Source),
     );
 
-    const derivedOverall = pickScore100(persistedOverallScore, persistedSpecScore);
-    const scoreFromDevice = pickScore100(persistedOverallScoreDisplay, derivedOverall);
+    const derivedOverall = pickScore100(
+      persistedOverallScore,
+      persistedSpecScore,
+    );
+    const scoreFromDevice = pickScore100(
+      persistedOverallScoreDisplay,
+      derivedOverall,
+    );
     if (scoreFromDevice != null) return Number(scoreFromDevice.toFixed(1));
 
     const rankingKeys = [
@@ -2433,7 +2440,7 @@ const MobileCompare = () => {
 
       <div className="max-w-6xl mx-auto p-4 sm:p-6 md:p-8 lg:p-10 bg-white">
         {/* Hero Section */}
-        <div className="mb-8 text-center">
+        <div className="mb-1 text-center">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
             Device Comparison
           </h1>
@@ -2636,7 +2643,7 @@ const MobileCompare = () => {
                 onClick={() => setShowSearch(true)}
                 className="group relative flex min-h-[120px] h-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-white p-6 text-center transition-all duration-200 hover:border-purple-300 hover:bg-slate-50"
               >
-                <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-purple-600 shadow-sm transition-transform duration-200 group-hover:scale-105">
+                <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-purple-600  transition-transform duration-200 group-hover:scale-105">
                   <Plus className="h-5 w-5 text-white" />
                 </div>
                 <div className="text-base font-semibold text-slate-900">
@@ -2909,7 +2916,7 @@ const MobileCompare = () => {
             className="space-y-6 animate-in fade-in duration-500"
           >
             {/* Detailed Comparison Header (smartphone-style: no tabs) */}
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="rounded-2xl border border-slate-200 bg-white">
               <div className="px-4 py-4 sm:px-5">
                 <div className="flex items-center justify-between gap-3">
                   <div>
