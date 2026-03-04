@@ -345,6 +345,7 @@ const resolveSeoMeta = (pathname) => {
 
 const RouteSeoFallback = () => {
   const { pathname } = useLocation();
+  if (pathname.startsWith("/compare")) return null;
   const seo = resolveSeoMeta(pathname);
   const canonicalUrl = `${SITE_ORIGIN}${seo.canonicalPath}`;
 

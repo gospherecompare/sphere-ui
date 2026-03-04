@@ -167,6 +167,30 @@ const stringifyCompareDevicesParam = (entries = []) =>
     .map((entry) => `${entry.baseId}:${normalizeVariantIndex(entry.variantIndex)}`)
     .join(",");
 
+const upsertMetaTag = (selector, attributes) => {
+  if (typeof document === "undefined") return;
+  let tag = document.head.querySelector(selector);
+  if (!tag) {
+    tag = document.createElement("meta");
+    document.head.appendChild(tag);
+  }
+  Object.entries(attributes || {}).forEach(([key, value]) => {
+    if (value == null) return;
+    tag.setAttribute(key, String(value));
+  });
+};
+
+const upsertCanonicalLink = (href) => {
+  if (typeof document === "undefined" || !href) return;
+  let link = document.head.querySelector('link[rel="canonical"]');
+  if (!link) {
+    link = document.createElement("link");
+    link.setAttribute("rel", "canonical");
+    document.head.appendChild(link);
+  }
+  link.setAttribute("href", href);
+};
+
 const getResolvedProductId = (device) =>
   device?.productId ||
   device?.product_id ||
@@ -299,6 +323,40 @@ const MobileCompare = () => {
     () => `${SITE_ORIGIN}${canonicalComparePath}`,
     [canonicalComparePath],
   );
+
+  useEffect(() => {
+    const currentParams = new URLSearchParams(location.search);
+    const currentDevicesParam = stringifyCompareDevicesParam(
+      parseCompareDevicesParam(currentParams.get("devices")),
+    );
+
+    const nextParams = new URLSearchParams(location.search);
+    if (canonicalDevicesParam) nextParams.set("devices", canonicalDevicesParam);
+    else nextParams.delete("devices");
+
+    const compareType = getResolvedProductType(activeDevices?.[0]);
+    if (compareType) nextParams.set("type", String(compareType));
+    else nextParams.delete("type");
+
+    const nextSearch = nextParams.toString();
+    const nextUrl = `${location.pathname}${nextSearch ? `?${nextSearch}` : ""}`;
+    const currentUrl = `${location.pathname}${location.search}`;
+
+    const hasDeviceParamChanged = currentDevicesParam !== canonicalDevicesParam;
+    const hasTypeChanged =
+      String(currentParams.get("type") || "") !== String(compareType || "");
+
+    if (!hasDeviceParamChanged && !hasTypeChanged) return;
+    if (nextUrl === currentUrl) return;
+
+    navigate(nextUrl, { replace: true });
+  }, [
+    activeDevices,
+    canonicalDevicesParam,
+    location.pathname,
+    location.search,
+    navigate,
+  ]);
 
   // If navigation state provides an initialProduct, use it immediately
   useEffect(() => {
@@ -2077,9 +2135,7 @@ const MobileCompare = () => {
 
         if (descParam) setSharedDescription(String(descParam));
 
-        if ((toAdd || devicesParam) && addedAny) {
-          navigate(location.pathname, { replace: true });
-        }
+        // Keep `devices` in the URL so SEO/share metadata can stay in sync.
       } catch (err) {
         // ignore
       }
@@ -2380,6 +2436,7 @@ const MobileCompare = () => {
     setSelectedDevices([]);
     setComparedDevices([]);
     setIsComparing(false);
+    navigate(location.pathname, { replace: true });
   };
 
   const buildShareUrl = () => {
@@ -2515,20 +2572,63 @@ const MobileCompare = () => {
         ? "Compare selected devices side by side with detailed specifications, prices, performance, and feature differences to choose the right one."
       : "Compare smartphones, laptops, and more with detailed specifications, prices, performance, and key features side by side to find the right device for your needs.";
 
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    document.title = metaTitle;
+    upsertMetaTag('meta[name="description"]', {
+      name: "description",
+      content: metaDescription,
+    });
+    upsertMetaTag('meta[property="og:title"]', {
+      property: "og:title",
+      content: metaTitle,
+    });
+    upsertMetaTag('meta[property="og:description"]', {
+      property: "og:description",
+      content: metaDescription,
+    });
+    upsertMetaTag('meta[property="og:url"]', {
+      property: "og:url",
+      content: canonicalCompareUrl,
+    });
+    upsertMetaTag('meta[name="twitter:title"]', {
+      name: "twitter:title",
+      content: metaTitle,
+    });
+    upsertMetaTag('meta[name="twitter:description"]', {
+      name: "twitter:description",
+      content: metaDescription,
+    });
+    upsertMetaTag('meta[name="twitter:url"]', {
+      name: "twitter:url",
+      content: canonicalCompareUrl,
+    });
+    upsertCanonicalLink(canonicalCompareUrl);
+  }, [canonicalCompareUrl, metaDescription, metaTitle]);
+
   return (
     <div className="min-h-screen ">
       <Helmet prioritizeSeoTags>
-        <title>{metaTitle}</title>
-        <meta name="description" content={metaDescription} />
-        <link rel="canonical" href={canonicalCompareUrl} />
-        <meta property="og:type" content="website" />
-        <meta property="og:title" content={metaTitle} />
-        <meta property="og:description" content={metaDescription} />
-        <meta property="og:url" content={canonicalCompareUrl} />
-        <meta name="twitter:card" content="summary" />
-        <meta name="twitter:title" content={metaTitle} />
-        <meta name="twitter:description" content={metaDescription} />
-        <meta name="twitter:url" content={canonicalCompareUrl} />
+        <title key="compare-title">{metaTitle}</title>
+        <meta key="compare-description" name="description" content={metaDescription} />
+        <link key="compare-canonical" rel="canonical" href={canonicalCompareUrl} />
+        <meta key="compare-og-type" property="og:type" content="website" />
+        <meta key="compare-og-title" property="og:title" content={metaTitle} />
+        <meta
+          key="compare-og-description"
+          property="og:description"
+          content={metaDescription}
+        />
+        <meta key="compare-og-url" property="og:url" content={canonicalCompareUrl} />
+        <meta key="compare-twitter-card" name="twitter:card" content="summary" />
+        <meta key="compare-twitter-title" name="twitter:title" content={metaTitle} />
+        <meta
+          key="compare-twitter-description"
+          name="twitter:description"
+          content={metaDescription}
+        />
+        <meta key="compare-twitter-url" name="twitter:url" content={canonicalCompareUrl} />
       </Helmet>
       {/* Floating Header */}
       <div className="top-0 z-40 bg-white  max-w-6xl mx-auto sm:p-6 md:p-8 lg:p-10">
