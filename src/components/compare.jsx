@@ -100,6 +100,72 @@ const SECTIONS = [
 
 const MAX_DEVICES = 4;
 const MIN_DEVICES = 2;
+const SITE_ORIGIN = "https://tryhook.shop";
+
+const normalizeVariantIndex = (value) => {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
+};
+
+const isDigitsOnly = (value = "") => /^\d+$/.test(String(value || "").trim());
+
+const dedupeCompareEntries = (entries = []) => {
+  const seen = new Set();
+  const output = [];
+  for (const entry of entries) {
+    const baseId = String(entry?.baseId || "").trim();
+    if (!baseId) continue;
+    const variantIndex = normalizeVariantIndex(entry?.variantIndex ?? 0);
+    const key = `${baseId}:${variantIndex}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    output.push({ baseId, variantIndex });
+  }
+  return output;
+};
+
+const parseCompareDevicesParam = (value = "") => {
+  if (!value) return [];
+  const parts = String(value)
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  const entries = parts.map((part) => {
+    const [baseIdRaw, variantRaw] = part.split(":");
+    const baseId = String(baseIdRaw || "").trim();
+    if (!baseId) return null;
+    return {
+      baseId,
+      variantIndex: normalizeVariantIndex(variantRaw ?? 0),
+    };
+  });
+
+  return dedupeCompareEntries(entries.filter(Boolean));
+};
+
+const sortCompareEntries = (left, right) => {
+  const leftId = String(left?.baseId || "");
+  const rightId = String(right?.baseId || "");
+
+  if (isDigitsOnly(leftId) && isDigitsOnly(rightId)) {
+    const diff = Number(leftId) - Number(rightId);
+    if (diff !== 0) return diff;
+  } else {
+    const diff = leftId.localeCompare(rightId);
+    if (diff !== 0) return diff;
+  }
+
+  return (
+    normalizeVariantIndex(left?.variantIndex) -
+    normalizeVariantIndex(right?.variantIndex)
+  );
+};
+
+const stringifyCompareDevicesParam = (entries = []) =>
+  dedupeCompareEntries(entries)
+    .map((entry) => `${entry.baseId}:${normalizeVariantIndex(entry.variantIndex)}`)
+    .join(",");
 
 const getResolvedProductId = (device) =>
   device?.productId ||
@@ -176,6 +242,63 @@ const MobileCompare = () => {
     ? comparedDevices.length + selectedDevices.length
     : selectedDevices.length;
   const remainingSlots = Math.max(0, MAX_DEVICES - usedSlots);
+
+  const queryDeviceEntries = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return parseCompareDevicesParam(params.get("devices"));
+  }, [location.search]);
+
+  const activeCompareEntries = useMemo(() => {
+    if (activeDevices.length > 0) {
+      const entries = activeDevices
+        .map((device) => {
+          const baseIdRaw =
+            device?.baseId ??
+            device?.productId ??
+            device?.product_id ??
+            device?.id ??
+            device?.model ??
+            "";
+          const baseId = String(baseIdRaw || "").trim();
+          if (!baseId) return null;
+
+          const variantIndex = normalizeVariantIndex(
+            variantSelection[device.id] ?? device.selectedVariantIndex ?? 0,
+          );
+
+          return { baseId, variantIndex };
+        })
+        .filter(Boolean);
+
+      return dedupeCompareEntries(entries);
+    }
+
+    return queryDeviceEntries;
+  }, [activeDevices, queryDeviceEntries, variantSelection]);
+
+  const canonicalCompareEntries = useMemo(() => {
+    const entries = [...activeCompareEntries];
+    entries.sort(sortCompareEntries);
+    return entries;
+  }, [activeCompareEntries]);
+
+  const canonicalDevicesParam = useMemo(
+    () => stringifyCompareDevicesParam(canonicalCompareEntries),
+    [canonicalCompareEntries],
+  );
+
+  const canonicalComparePath = useMemo(() => {
+    const basePath = location.pathname || "/compare";
+    if (!canonicalDevicesParam) return basePath;
+    const params = new URLSearchParams();
+    params.set("devices", canonicalDevicesParam);
+    return `${basePath}?${params.toString()}`;
+  }, [location.pathname, canonicalDevicesParam]);
+
+  const canonicalCompareUrl = useMemo(
+    () => `${SITE_ORIGIN}${canonicalComparePath}`,
+    [canonicalComparePath],
+  );
 
   // If navigation state provides an initialProduct, use it immediately
   useEffect(() => {
@@ -2260,17 +2383,7 @@ const MobileCompare = () => {
   };
 
   const buildShareUrl = () => {
-    // Build devices param as baseId:variantIndex entries
-    const devicesParam = activeDevices
-      .map((d) => {
-        const baseId =
-          d.baseId ?? d.productId ?? d.product_id ?? d.id ?? d.model ?? "";
-        const variantIndex =
-          variantSelection[d.id] ?? d.selectedVariantIndex ?? 0;
-        return baseId ? `${baseId}:${variantIndex}` : "";
-      })
-      .filter(Boolean)
-      .join(",");
+    const devicesParam = stringifyCompareDevicesParam(activeCompareEntries);
 
     // Build a human-friendly description from content (overview processor + price), truncated
     const overviewDesc = activeDevices
@@ -2292,15 +2405,16 @@ const MobileCompare = () => {
 
     const params = new URLSearchParams();
     if (devicesParam) params.set("devices", devicesParam);
+    const compareType = getResolvedProductType(activeDevices[0]);
+    if (compareType) params.set("type", String(compareType));
     if (desc) params.set("desc", desc);
 
-    const url = new URL(window.location.href);
-    url.pathname = location.pathname;
-    url.search = params.toString();
-    url.hash = "";
+    const basePath = location.pathname || "/compare";
+    const query = params.toString();
+    const url = `${SITE_ORIGIN}${basePath}${query ? `?${query}` : ""}`;
 
     return {
-      url: url.toString(),
+      url,
       desc,
     };
   };
@@ -2358,38 +2472,63 @@ const MobileCompare = () => {
     }
   };
 
+  const querySelectedNames = useMemo(() => {
+    if (!queryDeviceEntries.length || !Array.isArray(availableDevices)) return [];
+
+    const nameByProductId = new Map();
+    (availableDevices || []).forEach((device) => {
+      const productId = getResolvedProductId(device);
+      const key = String(productId || "").trim();
+      const name = device?.name || device?.model || device?.title || "";
+      if (!key || !name || nameByProductId.has(key)) return;
+      nameByProductId.set(key, name);
+    });
+
+    return queryDeviceEntries
+      .map((entry) => nameByProductId.get(String(entry.baseId || "")))
+      .filter(Boolean);
+  }, [queryDeviceEntries, availableDevices]);
+
   const selectedNames = activeDevices.map((d) => d.name).filter(Boolean);
+  const seoSelectedNames =
+    selectedNames.length > 0 ? selectedNames : querySelectedNames;
 
   const comparisonNames =
-    selectedNames.length > 0
-      ? selectedNames.slice(0, MAX_DEVICES).join(" vs ")
-      : "Device Comparison";
+    seoSelectedNames.length > 0
+      ? seoSelectedNames.slice(0, MAX_DEVICES).join(" vs ")
+      : canonicalCompareEntries.length > 0
+        ? `Selected ${canonicalCompareEntries.length} Devices`
+        : "Device Comparison";
 
   const currentYear = new Date().getFullYear();
   const metaTitle =
-    selectedNames.length > 0
+    seoSelectedNames.length > 0
       ? `${comparisonNames} | Compare Specs, Prices & Features ${currentYear}`
+      : canonicalCompareEntries.length > 0
+        ? `Compare Selected Devices | Specs, Prices & Features ${currentYear}`
       : `Device Comparison | Compare Specs, Prices & Features ${currentYear}`;
 
   const metaDescription =
-    selectedNames.length > 0
+    seoSelectedNames.length > 0
       ? `Compare ${comparisonNames} with detailed specifications, prices, performance, and key features side by side to find the right device for your needs.`
+      : canonicalCompareEntries.length > 0
+        ? "Compare selected devices side by side with detailed specifications, prices, performance, and feature differences to choose the right one."
       : "Compare smartphones, laptops, and more with detailed specifications, prices, performance, and key features side by side to find the right device for your needs.";
 
   return (
     <div className="min-h-screen ">
-      <Helmet>
+      <Helmet prioritizeSeoTags>
         <title>{metaTitle}</title>
         <meta name="description" content={metaDescription} />
+        <link rel="canonical" href={canonicalCompareUrl} />
         <meta property="og:type" content="website" />
         <meta property="og:title" content={metaTitle} />
         <meta property="og:description" content={metaDescription} />
-        {typeof window !== "undefined" && (
-          <meta property="og:url" content={window.location.href} />
-        )}
+        <meta property="og:url" content={canonicalCompareUrl} />
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:title" content={metaTitle} />
         <meta name="twitter:description" content={metaDescription} />
+        <meta name="twitter:url" content={canonicalCompareUrl} />
       </Helmet>
       {/* Floating Header */}
       <div className="top-0 z-40 bg-white  max-w-6xl mx-auto sm:p-6 md:p-8 lg:p-10">
