@@ -61,6 +61,7 @@ import {
   FaShoppingCart,
   FaChevronRight,
   FaChevronDown,
+  FaInfoCircle,
   FaMapMarkerAlt,
   FaPhoneAlt,
   FaTag,
@@ -448,8 +449,7 @@ const Header = () => {
           ? v.storePrices
           : [];
       storePrices.forEach((sp) => {
-        const row =
-          sp && typeof sp === "object" ? sp : toObjectIfNeeded(sp);
+        const row = sp && typeof sp === "object" ? sp : toObjectIfNeeded(sp);
         addPrice(row.price ?? row.amount);
       });
     });
@@ -548,8 +548,13 @@ const Header = () => {
           item?.storage?.size ||
           item?.storage_capacity,
       );
-    } else if (productType.includes("tv") || productType.includes("appliance")) {
-      const keySpecs = toObjectIfNeeded(item?.key_specs_json || item?.key_specs);
+    } else if (
+      productType.includes("tv") ||
+      productType.includes("appliance")
+    ) {
+      const keySpecs = toObjectIfNeeded(
+        item?.key_specs_json || item?.key_specs,
+      );
       const displayJson = toObjectIfNeeded(item?.display_json || item?.display);
       const specs = toObjectIfNeeded(item?.specifications);
       pushFeature(
@@ -604,10 +609,19 @@ const Header = () => {
 
   const toSearchSuggestion = (item, fallbackType) => {
     if (!item || typeof item !== "object") return null;
-    const name = readFirstText(item.name, item.model, item.model_number, item.title);
+    const name = readFirstText(
+      item.name,
+      item.model,
+      item.model_number,
+      item.title,
+    );
     if (!name) return null;
     const model = readFirstText(item.model, item.model_number, item.name);
-    const brandName = readFirstText(item.brand_name, item.brand, item.brandName);
+    const brandName = readFirstText(
+      item.brand_name,
+      item.brand,
+      item.brandName,
+    );
     const productType = readFirstText(
       item.product_type,
       item.productType,
@@ -629,9 +643,14 @@ const Header = () => {
     const id = item.id ?? item.product_id ?? item.productId ?? null;
 
     const searchableText = normalizeText(
-      [name, model, brandName, productType, ...variantTypes, ...keyFeatures].join(
-        " ",
-      ),
+      [
+        name,
+        model,
+        brandName,
+        productType,
+        ...variantTypes,
+        ...keyFeatures,
+      ].join(" "),
     );
 
     return {
@@ -1099,7 +1118,7 @@ const Header = () => {
               {announcements.map((announcement, index) => (
                 <div key={index} className="inline-flex items-center space-x-3">
                   <span>{announcement.icon}</span>
-                  <span className="text-sm font-medium">
+                  <span className="text-[13px] font-medium">
                     {announcement.text}
                   </span>
                 </div>
@@ -1655,7 +1674,7 @@ const Header = () => {
                               <div className="text-gray-400 text-5xl mb-3">
                                 🔍
                               </div>
-                              <p className="text-sm font-medium text-gray-900 mb-1">
+                              <p className="text-[13px] font-medium text-gray-900 mb-1">
                                 No products found
                               </p>
                               <p className="text-xs text-gray-500">
@@ -1714,7 +1733,7 @@ const Header = () => {
 
                             {/* Text Content */}
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium text-gray-900 truncate leading-snug">
+                              <div className="text-[13px] font-medium text-gray-900 truncate leading-snug">
                                 <HighlightText
                                   text={sugg.name}
                                   query={searchQuery}
@@ -1898,7 +1917,7 @@ const Header = () => {
                     </div>
                   ) : searchSuggestions.length === 0 ? (
                     <div className="w-full text-center py-10 px-4">
-                      <p className="text-sm font-medium text-gray-900 mb-1">
+                      <p className="text-[13px] font-medium text-gray-900 mb-1">
                         No products found
                       </p>
                       <p className="text-xs text-gray-500">
@@ -2083,176 +2102,289 @@ const Header = () => {
   };
 
   // Mobile Menu Drawer
-  const MobileMenuDrawer = () => (
-    <>
-      {isMenuOpen && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black/40 z-40 lg:hidden"
-            onClick={() => setIsMenuOpen(false)}
-          />
+  const MobileMenuDrawer = () => {
+    const mobileCategories = categoriesWithBrands.filter((category) => {
+      const routeKey = mapProductTypeToRoute(category.id);
+      return ["smartphones", "laptops", "tvs"].includes(routeKey);
+    });
 
-          {/* Drawer */}
-          <div
-            className={`fixed top-0 left-0 bottom-0 w-80 bg-white z-50 transform transition-transform duration-300 lg:hidden shadow-2xl ring-1 ring-black/5 ${
-              isMenuOpen ? "translate-x-0" : "-translate-x-full"
-            }`}
-          >
-            <div className="flex flex-col h-full">
-              {/* Drawer Header */}
-              <div className="bg-white border-b border-gray-200">
-                <div className="p-4">
-                  <div className="flex items-center justify-between">
-                    <HookLogo className="h-9 w-auto text-gray-900" />
-                    <button
-                      type="button"
-                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-                      onClick={() => setIsMenuOpen(false)}
-                      aria-label="Close menu"
-                    >
-                      <FaTimes className="w-5 h-5 text-gray-600" />
-                    </button>
-                  </div>
+    const quickLinks = [
+      { label: "Home", link: "/", icon: <FaHome className="w-4 h-4" /> },
+      {
+        label: "Compare",
+        link: "/compare",
+        icon: <Scale className="w-4 h-4" />,
+      },
+      ...(isLoggedIn
+        ? [
+            {
+              label: "Wishlist",
+              link: "/wishlist",
+              icon: <FaHeart className="w-4 h-4" />,
+            },
+          ]
+        : []),
+    ];
+    const discoverLinks = [
+      {
+        label: "Trending Now",
+        link: "/trending",
+        icon: <FaBolt className="w-4 h-4" />,
+      },
+      {
+        label: "New Launches",
+        link: "/smartphones?sort=newest",
+        icon: <FaCalendarAlt className="w-4 h-4" />,
+      },
+      {
+        label: "Latest Updates",
+        link: "/blogs",
+        icon: <FaTag className="w-4 h-4" />,
+      },
+    ];
+    const helpLinks = [
+      {
+        label: "About",
+        link: "/about",
+        icon: <FaInfoCircle className="w-4 h-4" />,
+      },
+      {
+        label: "Contact",
+        link: "/contact",
+        icon: <FaHandsHelping className="w-4 h-4" />,
+      },
+      {
+        label: "Privacy",
+        link: "/privacy-policy",
+        icon: <FaShieldAlt className="w-4 h-4" />,
+      },
+      {
+        label: "Terms",
+        link: "/terms",
+        icon: <FaAlignJustify className="w-4 h-4" />,
+      },
+    ];
+    const userInitial = String(userName || "H")
+      .trim()
+      .charAt(0)
+      .toUpperCase();
 
-                  {isLoggedIn ? (
-                    <div className="mt-4 flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
-                        <FaUser className="w-4 h-4 text-gray-700" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-semibold text-gray-900 truncate">
-                          {userName}
-                        </div>
-                        <div className="text-xs text-gray-500 truncate">
-                          {userEmail}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="mt-4 text-sm text-gray-600">
-                      <Link
-                        to="/login"
-                        onClick={() => setIsMenuOpen(false)}
-                        className="font-semibold text-gray-900 hover:text-purple-700 transition-colors"
-                      >
-                        Login
-                      </Link>
-                      <span className="mx-1 text-gray-400">/</span>
-                      <Link
-                        to="/signup"
-                        onClick={() => setIsMenuOpen(false)}
-                        className="font-semibold text-gray-900 hover:text-purple-700 transition-colors"
-                      >
-                        Signup
-                      </Link>
-                    </p>
-                  )}
-                </div>
-              </div>
+    return (
+      <>
+        {isMenuOpen && (
+          <>
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 z-40 bg-black/45 backdrop-blur-[1px] lg:hidden"
+              onClick={() => setIsMenuOpen(false)}
+            />
 
-              {/* Drawer Content */}
-              <div className="flex-1 overflow-y-auto">
-                {/* Quick Links */}
-                <div className="p-4">
-                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                    Quick Links
-                  </h4>
-                  <div className="space-y-1">
-                    <button
-                      type="button"
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors text-gray-900"
-                      onClick={() => {
-                        navigate("/");
-                        setIsMenuOpen(false);
-                      }}
-                    >
-                      <FaHome className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm font-medium">Home</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors text-gray-900"
-                      onClick={() => {
-                        navigate("/compare");
-                        setIsMenuOpen(false);
-                      }}
-                    >
-                      <Scale className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm font-medium">Compare</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors text-gray-900"
-                      onClick={() => {
-                        navigate("/wishlist");
-                        setIsMenuOpen(false);
-                      }}
-                    >
-                      <FaHeart className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm font-medium">Wishlist</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Categories */}
-                <div className="px-4 pb-4">
-                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                    Categories
-                  </h4>
-                  <div className="divide-y divide-gray-200 rounded-lg border border-gray-200 overflow-hidden">
-                    {categoriesWithBrands.map((category) => (
+            {/* Drawer */}
+            <div
+              className={`fixed inset-y-0 left-0 z-50 w-[320px] max-w-[86vw] transform overflow-hidden rounded-r-2xl bg-white shadow-2xl ring-1 ring-black/5 transition-transform duration-300 lg:hidden ${
+                isMenuOpen ? "translate-x-0" : "-translate-x-full"
+              }`}
+            >
+              <div className="flex h-full flex-col">
+                {/* Drawer Header */}
+                <div className="bg-gradient-to-br from-blue-500 via-indigo-500 to-violet-500">
+                  <div className="p-4 pb-5 text-white">
+                    <div className="flex items-center justify-between">
                       <button
-                        key={category.id}
                         type="button"
-                        className="w-full flex items-center justify-between px-3 py-2.5 bg-white hover:bg-gray-50 transition-colors group"
                         onClick={() => {
-                          const route = `/${mapProductTypeToRoute(
-                            category.id,
-                          )}`;
-                          navigate(route || "/");
+                          navigate("/");
                           setIsMenuOpen(false);
                         }}
+                        className="rounded-md p-1 hover:bg-white/15"
+                        aria-label="Go to home"
                       >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <span className="text-gray-500 group-hover:text-purple-600 transition-colors">
-                            {category.icon}
-                          </span>
-                          <span className="text-sm font-medium text-gray-900 truncate">
-                            {category.name}
-                          </span>
-                        </div>
-                        <FaChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-700 transition-colors" />
+                        <HookLogo className="h-8 w-auto text-white" />
                       </button>
-                    ))}
+                      <button
+                        type="button"
+                        className="rounded-lg p-2 transition-colors duration-200 hover:bg-white/15"
+                        onClick={() => setIsMenuOpen(false)}
+                        aria-label="Close menu"
+                      >
+                        <FaTimes className="h-5 w-5 text-white" />
+                      </button>
+                    </div>
+
+                    {isLoggedIn ? (
+                      <div className="mt-4 rounded-xl bg-white/10 p-3 backdrop-blur-[2px]">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-sm font-bold text-indigo-700">
+                            {userInitial}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-sm font-semibold text-white">
+                              {userName}
+                            </div>
+                            <div className="truncate text-xs text-blue-100">
+                              {userEmail}
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            handleLogout();
+                            setIsMenuOpen(false);
+                          }}
+                          type="button"
+                          className="mt-3 w-full rounded-lg bg-white/15 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/25"
+                        >
+                          Logout
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="mt-4 rounded-xl bg-white/10 p-3 backdrop-blur-[2px]">
+                        <p className="text-sm font-semibold text-white">
+                          Welcome to Hooks
+                        </p>
+                        <p className="mt-1 text-xs text-blue-100">
+                          Login to save wishlist and comparisons.
+                        </p>
+                        <div className="mt-3 flex items-center gap-2">
+                          <Link
+                            to="/login"
+                            onClick={() => setIsMenuOpen(false)}
+                            className="inline-flex flex-1 items-center justify-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-indigo-700"
+                          >
+                            Login
+                          </Link>
+                          <Link
+                            to="/signup"
+                            onClick={() => setIsMenuOpen(false)}
+                            className="inline-flex flex-1 items-center justify-center rounded-lg bg-white/15 px-3 py-2 text-sm font-semibold text-white"
+                          >
+                            Signup
+                          </Link>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Logout / Today's Deals */}
-                <div className="p-4 border-t border-gray-200 space-y-3">
-                  {isLoggedIn ? (
-                    <button
-                      onClick={() => {
-                        handleLogout();
-                        setIsMenuOpen(false);
-                      }}
-                      type="button"
-                      className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-semibold text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
-                    >
-                      <FaTimes className="text-lg" />
-                      <span>Logout</span>
-                    </button>
-                  ) : null}
+                {/* Drawer Content */}
+                <div className="flex-1 space-y-4 overflow-y-auto bg-white px-4 py-4">
+                  <div>
+                    <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                      Navigation
+                    </h4>
+                    <div className="space-y-1">
+                      {quickLinks.map((item) => (
+                        <button
+                          key={item.label}
+                          type="button"
+                          className="group flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-gray-900 transition-colors hover:bg-slate-50"
+                          onClick={() => {
+                            navigate(item.link);
+                            setIsMenuOpen(false);
+                          }}
+                        >
+                          <span className="flex items-center gap-3">
+                            <span className="text-slate-500">{item.icon}</span>
+                            <span className="text-[13px] font-medium">
+                              {item.label}
+                            </span>
+                          </span>
+                          <FaChevronRight className="h-4 w-4 text-slate-400 transition-colors group-hover:text-slate-700" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                      Discover
+                    </h4>
+                    <div className="space-y-1">
+                      {discoverLinks.map((item) => (
+                        <button
+                          key={item.label}
+                          type="button"
+                          className="group flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-gray-900 transition-colors hover:bg-slate-50"
+                          onClick={() => {
+                            navigate(item.link);
+                            setIsMenuOpen(false);
+                          }}
+                        >
+                          <span className="flex items-center gap-3">
+                            <span className="text-slate-500">{item.icon}</span>
+                            <span className="text-[13px] font-medium">
+                              {item.label}
+                            </span>
+                          </span>
+                          <FaChevronRight className="h-4 w-4 text-slate-400 transition-colors group-hover:text-slate-700" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                      Categories
+                    </h4>
+                    <div className="space-y-1">
+                      {mobileCategories.map((category) => (
+                        <button
+                          key={category.id}
+                          type="button"
+                          className="group flex w-full items-center justify-between rounded-lg px-3 py-2.5 transition-colors hover:bg-slate-50"
+                          onClick={() => {
+                            const route = `/${mapProductTypeToRoute(
+                              category.id,
+                            )}`;
+                            navigate(route || "/");
+                            setIsMenuOpen(false);
+                          }}
+                        >
+                          <div className="flex min-w-0 items-center gap-3">
+                            <span className="text-slate-500 transition-colors group-hover:text-violet-600">
+                              {category.icon}
+                            </span>
+                            <span className="truncate text-[13px] font-medium text-gray-900">
+                              {category.name}
+                            </span>
+                          </div>
+                          <FaChevronRight className="h-4 w-4 text-gray-400 transition-colors group-hover:text-gray-700" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                      Help
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {helpLinks.map((item) => (
+                        <button
+                          key={item.label}
+                          type="button"
+                          className="group flex items-center gap-2 rounded-lg bg-white px-2.5 py-2 text-left transition-colors hover:bg-slate-50"
+                          onClick={() => {
+                            navigate(item.link);
+                            setIsMenuOpen(false);
+                          }}
+                        >
+                          <span className="text-slate-500">{item.icon}</span>
+                          <span className="truncate text-[11px] font-medium text-slate-700">
+                            {item.label}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </>
-      )}
-    </>
-  );
+          </>
+        )}
+      </>
+    );
+  };
 
   // Quick Navigation Tabs - Mobile Only
   const QuickNavTabs = () => {
@@ -2260,14 +2392,13 @@ const Header = () => {
       { label: "Mobiles", link: "/smartphones", icon: <FaMobileAlt /> },
       { label: "Laptops", link: "/laptops", icon: <FaLaptop /> },
       { label: "TVs", link: "/tvs", icon: <FaTv /> },
-      { label: "Networking", link: "/networking", icon: <FaPlug /> },
     ];
 
     return (
       <div className="bg-white border-b border-gray-200 lg:hidden">
         <div className="max-w-6xl mx-auto px-2 sm:px-4">
           <div className="overflow-x-auto no-scrollbar">
-            <nav className="flex gap-6 py-2 min-w-max">
+            <nav className="flex gap-6 py-2 pl-2 sm:pl-3 min-w-max">
               {navTabs.map((tab, index) => {
                 const isActive =
                   location.pathname === tab.link ||
@@ -2277,7 +2408,7 @@ const Header = () => {
                   <Link
                     key={index}
                     to={tab.link}
-                    className={`flex items-center gap-2 px-1 pb-2 border-b-2 transition-colors duration-200 font-medium text-sm sm:text-base whitespace-nowrap flex-shrink-0 ${
+                    className={`flex items-center gap-2 px-1 border-b-2 transition-colors duration-200 font-medium text-sm sm:text-base whitespace-nowrap flex-shrink-0 ${
                       isActive
                         ? "text-purple-700 border-purple-600"
                         : "text-gray-600 border-transparent hover:text-gray-900"
@@ -2313,7 +2444,10 @@ const Header = () => {
       <MobileMenuDrawer />
 
       {/* Spacer for fixed header (mobile only) */}
-      <div className="md:hidden" style={{ height: `${mobileHeaderHeight}px` }} />
+      <div
+        className="md:hidden"
+        style={{ height: `${mobileHeaderHeight}px` }}
+      />
 
       <QuickNavTabs />
     </>

@@ -8,24 +8,75 @@ const API_BASE = (
 
 const normalizeText = (value) => String(value || "").trim();
 
-const toPhonePath = (item) => {
-  const slug = normalizeText(item?.slug);
-  if (slug) return `/smartphones/${slug}`;
-  const id = Number(item?.id);
-  if (Number.isInteger(id) && id > 0) return `/smartphones?id=${id}`;
-  return "/smartphones";
+const normalizeEntityType = (value) => {
+  const raw = normalizeText(value).toLowerCase();
+  if (!raw) return "smartphones";
+  if (raw.includes("tv")) return "tvs";
+  if (raw.includes("laptop")) return "laptops";
+  if (raw.includes("network")) return "networking";
+  return "smartphones";
 };
 
-const normalizeDiscoveryPath = (rawPath) => {
+const getEntityConfig = (entityType) => {
+  const type = normalizeEntityType(entityType);
+  if (type === "tvs") {
+    return {
+      type,
+      basePath: "/tvs",
+      pluralTitle: "TVs",
+      singularTitle: "TV",
+      itemNounLower: "tv",
+      brandSuffix: "TVs",
+      defaultPriceLabel: "Under \u20B950,000",
+      secondaryPopularLabel: "Latest {brand} TVs",
+      secondaryPopularPath: (brand) => `/tvs?brand=${brand}&sort=newest`,
+    };
+  }
+
+  if (type === "laptops") {
+    return {
+      type,
+      basePath: "/laptops",
+      pluralTitle: "Laptops",
+      singularTitle: "Laptop",
+      itemNounLower: "laptop",
+      brandSuffix: "Laptops",
+      defaultPriceLabel: "Under \u20B950,000",
+      secondaryPopularLabel: "{brand} Gaming Laptops",
+      secondaryPopularPath: (brand) => `/laptops?brand=${brand}&category=gaming`,
+    };
+  }
+
+  return {
+    type: "smartphones",
+    basePath: "/smartphones",
+    pluralTitle: "Phones",
+    singularTitle: "Phone",
+    itemNounLower: "smartphone",
+    brandSuffix: "Mobiles",
+    defaultPriceLabel: "Under \u20B920,000",
+    secondaryPopularLabel: "{brand} 5G Phones",
+    secondaryPopularPath: (brand) => `/smartphones?brand=${brand}&network=5G`,
+  };
+};
+
+const toProductPath = (item, entityType = "smartphones") => {
+  const config = getEntityConfig(entityType);
+  const slug = normalizeText(item?.slug);
+  if (slug) return `${config.basePath}/${slug}`;
+  const id = Number(item?.id);
+  if (Number.isInteger(id) && id > 0) return `${config.basePath}?id=${id}`;
+  return config.basePath;
+};
+
+const normalizeDiscoveryPath = (rawPath, entityType = "smartphones") => {
+  const config = getEntityConfig(entityType);
   const pathValue = normalizeText(rawPath);
-  if (!pathValue) return "/smartphones";
+  if (!pathValue) return config.basePath;
 
   try {
     const url = new URL(pathValue, "https://hook.local");
-    if (
-      url.pathname === "/smartphones" &&
-      url.searchParams.get("sort") === "latest"
-    ) {
+    if (url.searchParams.get("sort") === "latest") {
       url.searchParams.set("sort", "newest");
     }
     return `${url.pathname}${url.search}${url.hash}`;
@@ -59,7 +110,7 @@ const formatMonthTag = (value) => {
   return date.toLocaleDateString("en-IN", { month: "short", year: "numeric" });
 };
 
-const formatCountTag = (value, noun = "phones") => {
+const formatCountTag = (value, noun = "items") => {
   const count = Number(value);
   if (!Number.isFinite(count) || count <= 0) return "";
   const normalizedNoun =
@@ -147,13 +198,13 @@ const renderSectionTitle = (title = "") => {
   );
 };
 
-const renderSectionSubtitle = (title = "") => {
+const renderSectionSubtitle = (title = "", itemNounLower = "devices") => {
   const value = normalizeText(title).toLowerCase();
   if (value === "smart popular links") {
     return "Quick shortcuts users explore most on Hooks.";
   }
   if (value === "latest launches") {
-    return "Freshly launched devices you can compare right now.";
+    return `Freshly launched ${itemNounLower}s you can compare right now.`;
   }
   if (value === "by price") {
     return "Jump into budget-wise picks without extra filters.";
@@ -161,7 +212,13 @@ const renderSectionSubtitle = (title = "") => {
   return "Curated links to help you discover faster.";
 };
 
-const LinkListBlock = ({ title = "", items = [], withVisual = false }) => {
+const LinkListBlock = ({
+  title = "",
+  items = [],
+  withVisual = false,
+  entityType = "smartphones",
+  itemNounLower = "device",
+}) => {
   if (!Array.isArray(items) || items.length === 0) return null;
 
   return (
@@ -172,7 +229,7 @@ const LinkListBlock = ({ title = "", items = [], withVisual = false }) => {
             {renderSectionTitle(title)}
           </h4>
           <p className="mt-1 text-xs text-slate-500">
-            {renderSectionSubtitle(title)}
+            {renderSectionSubtitle(title, itemNounLower)}
           </p>
         </div>
       ) : null}
@@ -186,7 +243,7 @@ const LinkListBlock = ({ title = "", items = [], withVisual = false }) => {
           return (
             <Link
               key={`${item.path || item.label || "item"}-${index}`}
-              to={normalizeDiscoveryPath(item.path || "/smartphones")}
+              to={normalizeDiscoveryPath(item.path || "", entityType)}
               aria-label={item.label || "Explore"}
               className="group flex items-center justify-between gap-3 px-3 py-2.5 text-sm text-slate-700 transition-all duration-200 ease-out hover:bg-slate-50/70 focus-visible:bg-slate-50/70"
             >
@@ -243,7 +300,14 @@ const LinkListBlock = ({ title = "", items = [], withVisual = false }) => {
   );
 };
 
-const TopBrandsBlock = ({ items = [], viewAllPath = "/smartphones" }) => {
+const TopBrandsBlock = ({
+  items = [],
+  viewAllPath = "/smartphones",
+  entityType = "smartphones",
+  titleText = "Brand",
+  subtitleText = "Explore products by key features",
+  trimMobilesSuffix = true,
+}) => {
   if (!Array.isArray(items) || items.length === 0) return null;
 
   return (
@@ -251,14 +315,14 @@ const TopBrandsBlock = ({ items = [], viewAllPath = "/smartphones" }) => {
       <div className="flex items-start justify-between gap-2 bg-white px-3 py-2.5">
         <div>
           <h4 className="text-lg font-semibold text-slate-900">
-            Explore by <span className="text-violet-600">Brand</span>
+            Explore by <span className="text-violet-600">{titleText}</span>
           </h4>
           <p className="mt-1 text-sm text-slate-600">
-            Explore Phones by Key Features
+            {subtitleText}
           </p>
         </div>
         <Link
-          to={normalizeDiscoveryPath(viewAllPath)}
+          to={normalizeDiscoveryPath(viewAllPath, entityType)}
           className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-violet-700 transition-colors duration-200 ease-out hover:text-violet-800"
         >
           View all
@@ -272,14 +336,15 @@ const TopBrandsBlock = ({ items = [], viewAllPath = "/smartphones" }) => {
         <div className="no-scrollbar overflow-x-auto px-3 py-3 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex min-w-max items-start gap-5 pr-2">
             {items.map((item, index) => {
-              const brandName = normalizeText(
-                item?.name || item?.label,
-              ).replace(/\s+Mobiles$/i, "");
+              const rawBrandName = normalizeText(item?.name || item?.label);
+              const brandName = trimMobilesSuffix
+                ? rawBrandName.replace(/\s+Mobiles$/i, "")
+                : rawBrandName;
 
               return (
                 <Link
                   key={`${item.path || brandName || "brand"}-${index}`}
-                  to={normalizeDiscoveryPath(item.path || "/smartphones")}
+                  to={normalizeDiscoveryPath(item.path || "", entityType)}
                   className="group flex w-[72px] shrink-0 flex-col items-center gap-2 text-center"
                 >
                   <BrandLogo
@@ -302,6 +367,7 @@ const TopBrandsBlock = ({ items = [], viewAllPath = "/smartphones" }) => {
 const ProductDiscoverySections = ({
   productId,
   currentBrand = "",
+  entityType = "smartphones",
   className = "",
 }) => {
   const [loading, setLoading] = useState(false);
@@ -322,8 +388,13 @@ const ProductDiscoverySections = ({
       setLoading(true);
       setError("");
       try {
+        const queryEntity = encodeURIComponent(
+          normalizeEntityType(entityType),
+        );
         const response = await fetch(
-          `${API_BASE}/api/public/product/${encodeURIComponent(pid)}/discovery`,
+          `${API_BASE}/api/public/product/${encodeURIComponent(
+            pid,
+          )}/discovery?entity_type=${queryEntity}`,
           { signal: controller.signal },
         );
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -345,7 +416,12 @@ const ProductDiscoverySections = ({
       cancelled = true;
       controller.abort();
     };
-  }, [productId]);
+  }, [productId, entityType]);
+
+  const entityConfig = useMemo(
+    () => getEntityConfig(entityType),
+    [entityType],
+  );
 
   const { newFromBrand, latestReleases, budgetSegments, brandHub, smartDiscoveries } =
     useMemo(() => {
@@ -371,22 +447,28 @@ const ProductDiscoverySections = ({
 
   const popularLinks = useMemo(() => {
     const links = [];
+    const encodedBrand = brandName ? encodeURIComponent(brandName) : "";
+
     if (brandName) {
-      const encoded = encodeURIComponent(brandName);
       links.push({
-        label: `All ${brandName} Phones`,
-        path: normalizeDiscoveryPath(`/smartphones?brand=${encoded}`),
-      });
-      links.push({
-        label: `${brandName} 5G Phones`,
+        label: `All ${brandName} ${entityConfig.pluralTitle}`,
         path: normalizeDiscoveryPath(
-          `/smartphones?brand=${encoded}&network=5G`,
+          `${entityConfig.basePath}?brand=${encodedBrand}`,
+          entityConfig.type,
         ),
       });
       links.push({
-        label: `${brandName} Phones Under \u20B920,000`,
+        label: entityConfig.secondaryPopularLabel.replace("{brand}", brandName),
         path: normalizeDiscoveryPath(
-          `/smartphones/filter/under-20000?brand=${encoded}`,
+          entityConfig.secondaryPopularPath(encodedBrand),
+          entityConfig.type,
+        ),
+      });
+      links.push({
+        label: `${brandName} ${entityConfig.pluralTitle} ${entityConfig.defaultPriceLabel}`,
+        path: normalizeDiscoveryPath(
+          `${entityConfig.basePath}?brand=${encodedBrand}`,
+          entityConfig.type,
         ),
       });
     }
@@ -399,30 +481,36 @@ const ProductDiscoverySections = ({
       const key = `${label}|${path}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      links.push({ label, path: normalizeDiscoveryPath(path) });
+      links.push({ label, path: normalizeDiscoveryPath(path, entityConfig.type) });
     }
 
-    if (!links.some((item) => item.path === "/smartphones")) {
-      links.push({ label: "All Smartphones", path: "/smartphones" });
+    if (!links.some((item) => item.path === entityConfig.basePath)) {
+      links.push({
+        label: `All ${entityConfig.pluralTitle}`,
+        path: entityConfig.basePath,
+      });
     }
 
     return links.slice(0, 5);
-  }, [brandName, smartDiscoveries]);
+  }, [brandName, smartDiscoveries, entityConfig]);
 
   const byPriceLinks = useMemo(() => {
     const links = budgetSegments.slice(0, 4).map((segment) => ({
-      label: `Best Phones ${fixCurrencyText(segment?.label)}`,
-      path: normalizeDiscoveryPath(segment?.path || "/smartphones"),
-      badge: formatCountTag(segment?.product_count),
+      label: `Best ${entityConfig.pluralTitle} ${fixCurrencyText(segment?.label)}`,
+      path: normalizeDiscoveryPath(
+        segment?.path || entityConfig.basePath,
+        entityConfig.type,
+      ),
+      badge: formatCountTag(segment?.product_count, entityConfig.pluralTitle.toLowerCase()),
     }));
 
     links.push({
-      label: "Best Phones in Any Price Range",
-      path: "/smartphones",
+      label: `Best ${entityConfig.pluralTitle} in Any Price Range`,
+      path: entityConfig.basePath,
     });
 
     return links.slice(0, 5);
-  }, [budgetSegments]);
+  }, [budgetSegments, entityConfig]);
 
   const latestLaunchLinks = useMemo(
     () =>
@@ -433,13 +521,18 @@ const ProductDiscoverySections = ({
 
         return {
           label: normalizeText(item?.name) || "Latest Phone",
-          path: normalizeDiscoveryPath(toPhonePath(item)),
+          path: normalizeDiscoveryPath(
+            toProductPath(item, entityConfig.type),
+            entityConfig.type,
+          ),
           image_url: normalizeText(item?.image_url),
-          subtitle: brand ? `${brand} smartphone` : "Newly launched smartphone",
+          subtitle: brand
+            ? `${brand} ${entityConfig.itemNounLower}`
+            : `Newly launched ${entityConfig.itemNounLower}`,
           meta: [priceTag, monthTag].filter(Boolean).join(" \u2022 ") || "New launch",
         };
       }),
-    [latestReleases],
+    [latestReleases, entityConfig],
   );
 
   const topBrandLinks = useMemo(
@@ -451,15 +544,16 @@ const ProductDiscoverySections = ({
           if (!labelBrand) return null;
           return {
             name: labelBrand,
-            label: `${labelBrand} Mobiles`,
+            label: `${labelBrand} ${entityConfig.brandSuffix}`,
             path: normalizeDiscoveryPath(
-              `/smartphones?brand=${encodeURIComponent(labelBrand)}`,
+              `${entityConfig.basePath}?brand=${encodeURIComponent(labelBrand)}`,
+              entityConfig.type,
             ),
             logo_url: normalizeText(item?.logo_url),
           };
         })
         .filter(Boolean),
-    [brandHub],
+    [brandHub, entityConfig],
   );
 
   const hasContent =
@@ -500,12 +594,26 @@ const ProductDiscoverySections = ({
             title="Latest Launches"
             items={latestLaunchLinks}
             withVisual
+            entityType={entityConfig.type}
+            itemNounLower={entityConfig.itemNounLower}
           />
         </div>
 
         <div className="space-y-4">
-          <LinkListBlock title="By Price" items={byPriceLinks} />
-          <TopBrandsBlock items={topBrandLinks} viewAllPath="/smartphones" />
+          <LinkListBlock
+            title="By Price"
+            items={byPriceLinks}
+            entityType={entityConfig.type}
+            itemNounLower={entityConfig.itemNounLower}
+          />
+          <TopBrandsBlock
+            items={topBrandLinks}
+            viewAllPath={entityConfig.basePath}
+            entityType={entityConfig.type}
+            titleText="Brand"
+            subtitleText={`Explore ${entityConfig.pluralTitle} by key features`}
+            trimMobilesSuffix={entityConfig.type === "smartphones"}
+          />
         </div>
       </div>
     </section>

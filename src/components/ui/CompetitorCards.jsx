@@ -331,6 +331,7 @@ const SpecScoreBadge = ({ score }) => {
 const CompetitorCard = ({
   competitor,
   baseProductName,
+  productLabel = "Device",
   expanded = false,
   onExpandAll,
   onCollapseSelf,
@@ -470,7 +471,7 @@ const CompetitorCard = ({
 
         <div className="mt-auto border-t border-slate-200 bg-white px-3 py-3 text-center">
           <p className="truncate text-[12px] font-semibold text-slate-700">
-            {baseProductName || "This Phone"}
+            {baseProductName || `This ${productLabel}`}
           </p>
           <div className="my-1 border border-purple-700 inline-flex h-6 w-6 items-center justify-center rounded-full  text-[10px] font-bold text-purple-700">
             VS
@@ -541,6 +542,9 @@ const CompetitorCards = ({
   maxCards = 6,
   recentLaunchesLimit = 3,
   showRecentLaunches = false,
+  productBasePath = "/smartphones",
+  productLabel = "Device",
+  entityType = "smartphones",
   className = "",
 }) => {
   const navigate = useNavigate();
@@ -562,10 +566,11 @@ const CompetitorCards = ({
       setLoading(true);
       setError("");
       try {
+        const queryEntity = encodeURIComponent(String(entityType || "smartphones"));
         const response = await fetch(
           `${API_BASE}/api/public/product/${encodeURIComponent(
             pid,
-          )}/competitors`,
+          )}/competitors?entity_type=${queryEntity}`,
         );
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
@@ -590,7 +595,7 @@ const CompetitorCards = ({
     return () => {
       cancelled = true;
     };
-  }, [productId]);
+  }, [productId, entityType]);
 
   const competitors = useMemo(() => {
     const raw = Array.isArray(payload?.competitors) ? payload.competitors : [];
@@ -697,12 +702,13 @@ const CompetitorCards = ({
   const handleOpenRecentProduct = (item) => {
     const id = Number(item?.id);
     const slug = toSlug(item?.name);
+    const basePath = String(productBasePath || "/smartphones").replace(/\/$/, "");
     if (slug) {
-      navigate(`/smartphones/${slug}`);
+      navigate(`${basePath}/${slug}`);
       return;
     }
     if (Number.isInteger(id) && id > 0) {
-      navigate(`/smartphones?id=${id}`);
+      navigate(`${basePath}?id=${id}`);
     }
   };
 
@@ -797,6 +803,7 @@ const CompetitorCards = ({
                 key={String(competitor.id)}
                 competitor={competitor}
                 baseProductName={productName}
+                productLabel={productLabel}
                 expanded={expandAll && !collapsedMap[String(competitor.id)]}
                 onExpandAll={handleExpandAll}
                 onCollapseSelf={handleCollapseSingle}
