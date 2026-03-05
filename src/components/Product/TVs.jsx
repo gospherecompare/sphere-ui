@@ -888,35 +888,26 @@ const TVs = () => {
       const n = Number(value);
       return Number.isFinite(n) ? n : null;
     };
-    const pickScoreValue = (...values) => {
-      for (const value of values) {
-        const resolved = toFiniteNumber(value);
-        if (resolved !== null && resolved > 0) return resolved;
-      }
-      for (const value of values) {
-        const resolved = toFiniteNumber(value);
-        if (resolved !== null) return resolved;
-      }
-      return null;
-    };
-    const overallScoreRaw = pickScoreValue(
-      apiDevice.overall_score_v2,
-      apiDevice.overallScoreV2,
-      apiDevice.spec_score_v2,
-      apiDevice.specScoreV2,
-      apiDevice.overall_score,
-      apiDevice.overallScore,
-      apiDevice.spec_score,
-      apiDevice.specScore,
-      apiDevice.hook_score,
-      apiDevice.hookScore,
-      profileResult.score,
+    const overallScoreRaw = toFiniteNumber(
+      apiDevice.spec_score_v2 ??
+        apiDevice.specScoreV2 ??
+        apiDevice.overall_score_v2 ??
+        apiDevice.overallScoreV2 ??
+        apiDevice.spec_score ??
+        apiDevice.specScore ??
+        apiDevice.overall_score ??
+        apiDevice.overallScore ??
+        profileResult.score,
     );
-    const overallScoreDisplay = pickScoreValue(
-      apiDevice.overall_score_v2_display_80_98,
-      apiDevice.overallScoreV2Display8098,
-      apiDevice.spec_score_v2_display_80_98,
-      apiDevice.specScoreV2Display8098,
+    const overallScoreDisplay = toFiniteNumber(
+      apiDevice.spec_score_v2_display_80_98 ??
+        apiDevice.specScoreV2Display8098 ??
+        apiDevice.overall_score_v2_display_80_98 ??
+        apiDevice.overallScoreV2Display8098 ??
+        apiDevice.spec_score_display ??
+        apiDevice.specScoreDisplay ??
+        apiDevice.overall_score_display ??
+        apiDevice.overallScoreDisplay,
     );
 
     const screenSize = firstNonEmpty(
@@ -3254,7 +3245,7 @@ const TVs = () => {
                               <p className="text-[11px] font-semibold text-gray-500 mb-1.5">
                                 Available Sizes
                               </p>
-                              <div className="flex flex-wrap gap-1.5">
+                              <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                                 {device.variants.map((variant, variantIndex) => {
                                   const label = firstNonEmpty(
                                     variant?.screen_size,
@@ -3279,7 +3270,7 @@ const TVs = () => {
                                       onClick={(event) =>
                                         handleSelectTvSize(device, variant, event)
                                       }
-                                      className={`px-2.5 py-1 rounded-full border text-[11px] font-semibold transition-colors ${
+                                      className={`shrink-0 px-2.5 py-1 rounded-full border text-[11px] font-semibold transition-colors ${
                                         isSelected
                                           ? "bg-purple-600 text-white border-purple-600"
                                           : "bg-white text-gray-700 border-gray-300 hover:border-purple-300 hover:text-purple-700"

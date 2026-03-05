@@ -3,15 +3,18 @@ import { Helmet } from "react-helmet-async";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   FaCalendarAlt,
+  FaExternalLinkAlt,
   FaFilter,
   FaLaptop,
   FaMobileAlt,
   FaSearch,
+  FaStore,
   FaTv,
   FaTimes,
 } from "react-icons/fa";
 import Spinner from "../ui/Spinner";
 import useDevice from "../../hooks/useDevice";
+import useStoreLogos from "../../hooks/useStoreLogos";
 import { generateSlug } from "../../utils/slugGenerator";
 import {
   computePopularSmartphoneFeatures,
@@ -122,9 +125,66 @@ const num = (v) => {
   return Number.isFinite(n) ? n : null;
 };
 
+const clampScore100 = (value) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  if (n <= 1) return Math.max(0, Math.min(100, n * 100));
+  if (n <= 10) return Math.max(0, Math.min(100, n * 10));
+  return Math.max(0, Math.min(100, n));
+};
+
+const mapScoreToDisplayBand = (score, minTarget = 80, maxTarget = 98) => {
+  const normalized = clampScore100(score);
+  if (normalized == null) return null;
+  const mapped = minTarget + (normalized / 100) * (maxTarget - minTarget);
+  return Number(mapped.toFixed(1));
+};
+
+const resolveSpecScore = (row) => {
+  const source = row && typeof row === "object" ? row : {};
+  const toFiniteNumber = (value) => {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  };
+
+  const overallScoreRaw = toFiniteNumber(
+    source.spec_score_v2 ??
+      source.specScoreV2 ??
+      source.overall_score_v2 ??
+      source.overallScoreV2 ??
+      source.spec_score ??
+      source.specScore ??
+      source.overall_score ??
+      source.overallScore ??
+      source.field_profile?.score ??
+      source.fieldProfile?.score,
+  );
+
+  const overallScoreDisplay = toFiniteNumber(
+    source.spec_score_v2_display_80_98 ??
+      source.specScoreV2Display8098 ??
+      source.overall_score_v2_display_80_98 ??
+      source.overallScoreV2Display8098 ??
+      source.spec_score_display ??
+      source.specScoreDisplay ??
+      source.overall_score_display ??
+      source.overallScoreDisplay,
+  );
+
+  return overallScoreDisplay != null
+    ? overallScoreDisplay
+    : mapScoreToDisplayBand(overallScoreRaw);
+};
+
 const priceLabel = (v) => {
   const n = num(v);
   return n === null ? "Price not available" : `${RUPEE}${Math.round(n).toLocaleString("en-IN")}`;
+};
+
+const formatStorePriceDisplay = (v) => {
+  const n = num(v);
+  if (n === null) return "Price not available";
+  return `${RUPEE} ${Math.round(n).toLocaleString("en-IN")}`;
 };
 
 const arr = (v) => (Array.isArray(v) ? v : []);
@@ -239,6 +299,9 @@ const dateLabel = (v) => {
 const ImageCarousel = ({ images = [], fallbackIcon: FallbackIcon = FaMobileAlt }) => {
   const safeImages = arr(images).filter(Boolean);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const imageFrameClass =
+    "h-36 w-24 sm:h-40 sm:w-28 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center";
+  const imageClass = "h-full w-full object-contain p-2";
 
   useEffect(() => {
     setCurrentIndex(0);
@@ -246,12 +309,14 @@ const ImageCarousel = ({ images = [], fallbackIcon: FallbackIcon = FaMobileAlt }
 
   if (!safeImages.length) {
     return (
-      <div className="relative w-full h-full flex items-center justify-center rounded-lg bg-white">
-        <div className="text-center px-3">
-          <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-200">
-            <FallbackIcon className="text-gray-400 text-sm" />
+      <div className="relative flex h-full w-full items-center justify-center">
+        <div className={imageFrameClass}>
+          <div className="text-center px-3">
+            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-200">
+              <FallbackIcon className="text-gray-400 text-sm" />
+            </div>
+            <span className="text-xs text-gray-500">No image</span>
           </div>
-          <span className="text-xs text-gray-500">No image</span>
         </div>
       </div>
     );
@@ -259,13 +324,10 @@ const ImageCarousel = ({ images = [], fallbackIcon: FallbackIcon = FaMobileAlt }
 
   if (safeImages.length === 1) {
     return (
-      <div className="relative w-full h-full">
-        <img
-          src={safeImages[0]}
-          alt="product"
-          className="w-full h-full object-contain rounded-lg"
-          loading="lazy"
-        />
+      <div className="flex h-full w-full items-center justify-center">
+        <div className={imageFrameClass}>
+          <img src={safeImages[0]} alt="product" className={imageClass} loading="lazy" />
+        </div>
       </div>
     );
   }
@@ -281,14 +343,16 @@ const ImageCarousel = ({ images = [], fallbackIcon: FallbackIcon = FaMobileAlt }
   };
 
   return (
-    <div className="relative w-full h-full group">
-      <div className="w-full h-full flex items-center justify-center">
-        <img
-          src={safeImages[currentIndex]}
-          alt={`product-view-${currentIndex + 1}`}
-          className="w-auto h-auto max-w-full max-h-full object-contain rounded-lg"
-          loading="lazy"
-        />
+    <div className="relative h-full w-full group">
+      <div className="flex h-full w-full items-center justify-center">
+        <div className={imageFrameClass}>
+          <img
+            src={safeImages[currentIndex]}
+            alt={`product-view-${currentIndex + 1}`}
+            className={imageClass}
+            loading="lazy"
+          />
+        </div>
       </div>
       <div className="absolute inset-0 flex items-center justify-between p-1 pointer-events-none">
         <button
@@ -314,11 +378,33 @@ const ImageCarousel = ({ images = [], fallbackIcon: FallbackIcon = FaMobileAlt }
   );
 };
 
+const SpecScoreBadge = ({ score }) => {
+  const normalized = clampScore100(score);
+  const label = normalized != null ? `${normalized.toFixed(1)}%` : "--";
+
+  return (
+    <div
+      className="inline-flex flex-col items-center justify-center rounded-md border border-violet-200 bg-violet-50/95 px-1.5 py-1 leading-none"
+      aria-label={
+        normalized != null
+          ? `Spec score ${normalized.toFixed(1)} percent`
+          : "Spec score unavailable"
+      }
+    >
+      <span className="text-[11px] font-bold text-violet-700">{label}</span>
+      <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide text-violet-600">
+        Spec
+      </span>
+    </div>
+  );
+};
+
 const buildProduct = (row, cat, index) => {
   const variants = getVariants(row);
   const stores = getStorePrices(row, variants);
   const lowest = stores[0]?.price ?? num(row.price ?? row.base_price);
   const images = getImages(row, cat);
+  const specScore = resolveSpecScore(row);
 
   if (cat === "laptops") {
     const basic = obj(row.basic_info || row.basic_info_json);
@@ -351,6 +437,7 @@ const buildProduct = (row, cat, index) => {
       filterMeta: { ram, storage: rom, screen, resolution },
       detailPath: CATEGORIES.laptops.detailPath,
       variantId: variants[0]?.id ?? null,
+      specScore,
       featurePayload: {
         specs: {
           cpu: processor,
@@ -395,6 +482,7 @@ const buildProduct = (row, cat, index) => {
       filterMeta: { ram: "", storage: "", screen, resolution },
       detailPath: CATEGORIES.tvs.detailPath,
       variantId: variants[0]?.id ?? null,
+      specScore,
       featurePayload: {
         specs: {
           screenSize: screen,
@@ -433,6 +521,7 @@ const buildProduct = (row, cat, index) => {
     filterMeta: { ram, storage, screen: "", resolution: "" },
     detailPath: CATEGORIES.smartphones.detailPath,
     variantId: variants[0]?.id ?? null,
+    specScore,
     featurePayload: row,
   };
 };
@@ -466,6 +555,9 @@ const mergeProducts = (items) => {
       existing.priceText = item.priceText;
       existing.variantId = item.variantId || existing.variantId;
       existing.specLine = item.specLine || existing.specLine;
+    }
+    if (existing.specScore == null && item.specScore != null) {
+      existing.specScore = item.specScore;
     }
     if (!existing.image && item.image) existing.image = item.image;
     if ((!existing.images || !existing.images.length) && arr(item.images).length) {
@@ -585,6 +677,7 @@ const TrendingProductsHub = () => {
   const navigate = useNavigate();
   const { category } = useParams();
   const deviceStore = useDevice();
+  const { getStoreLogo, getLogo, getStore } = useStoreLogos();
 
   const activeCategory = ALIASES[String(category || "").toLowerCase()] || "smartphones";
   const config = CATEGORIES[activeCategory];
@@ -1301,8 +1394,7 @@ const TrendingProductsHub = () => {
         </div>
 
         <div className="flex-1">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Available {config.label}</h2>
+          <div className="flex items-center justify-end mb-4">
             <p className="text-sm text-gray-500">Showing {visible.length} of {products.length} options</p>
           </div>
 
@@ -1312,7 +1404,49 @@ const TrendingProductsHub = () => {
           {!loading && !error && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:[&>*:nth-child(2n)]:border-l md:[&>*:nth-child(2n)]:border-gray-200 md:[&>*:nth-child(2n)]:pl-6 md:[&>*:nth-child(2n+1)]:pr-6">
               {visible.map((p) => {
-                const storeLink = p.stores.find((s) => s.url)?.url || `https://www.google.com/search?q=${encodeURIComponent(`${p.brand || ""} official store`)}`;
+                const dedupedStoreMap = new Map();
+                arr(p.stores).forEach((s) => {
+                  const storeName =
+                    text(s?.store || s?.store_name || s?.storeName || s?.name) ||
+                    "Online Store";
+                  const key = storeName.toLowerCase();
+                  const candidate = {
+                    store: storeName,
+                    store_name: text(
+                      s?.store_name || s?.store || s?.storeName || s?.name,
+                    ),
+                    storeName: text(
+                      s?.storeName || s?.store || s?.store_name || s?.name,
+                    ),
+                    price: num(s?.price),
+                    url: text(s?.url),
+                    storeObj: s?.storeObj || null,
+                    logo: text(s?.logo),
+                  };
+                  const existing = dedupedStoreMap.get(key);
+                  if (!existing) {
+                    dedupedStoreMap.set(key, candidate);
+                    return;
+                  }
+                  const currentPrice = num(existing.price);
+                  const nextPrice = num(candidate.price);
+                  if (
+                    nextPrice != null &&
+                    (currentPrice == null || nextPrice < currentPrice)
+                  ) {
+                    dedupedStoreMap.set(key, { ...existing, ...candidate });
+                    return;
+                  }
+                  if (!existing.url && candidate.url) existing.url = candidate.url;
+                  if (!existing.logo && candidate.logo) existing.logo = candidate.logo;
+                });
+                const availableStores = Array.from(dedupedStoreMap.values()).sort(
+                  (a, b) =>
+                    (num(a.price) ?? Number.MAX_SAFE_INTEGER) -
+                    (num(b.price) ?? Number.MAX_SAFE_INTEGER),
+                );
+                const brandStoreUrl =
+                  availableStores.find((s) => text(s?.url))?.url || null;
                 const releasedOn = dateLabel(p.release);
                 return (
                   <article
@@ -1329,6 +1463,11 @@ const TrendingProductsHub = () => {
                               fallbackIcon={HeroIcon}
                             />
                           </div>
+                          {p.specScore != null ? (
+                            <div className="absolute left-1.5 top-1.5 z-10 pointer-events-none">
+                              <SpecScoreBadge score={p.specScore} />
+                            </div>
+                          ) : null}
                           <div
                             onClick={(event) => event.stopPropagation()}
                             className="absolute top-2 right-2 z-10 rounded-md transition-all duration-200 cursor-pointer"
@@ -1343,36 +1482,58 @@ const TrendingProductsHub = () => {
                           </div>
                         </div>
 
-                        <div className="min-w-0">
+                        <div className="flex-1 min-w-0">
                           {activeCategory === "tvs" ? (
-                            <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-700 mb-1">
-                              {p.brand || "Brand"}
-                            </span>
+                            <div className="mb-2">
+                              <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-700 mb-1">
+                                {p.brand || "Brand"}
+                              </span>
+                              <h5 className="font-bold text-gray-900 text-[15px] leading-5 whitespace-normal break-normal">
+                                {p.name}
+                              </h5>
+                              {p.specLine ? (
+                                <p className="mt-1 text-[12px] text-gray-600 leading-5 whitespace-normal break-normal">
+                                  {p.specLine}
+                                </p>
+                              ) : null}
+                            </div>
                           ) : (
-                            <span className="text-xs font-semibold text-purple-700">{p.brand || "Brand"}</span>
+                            <div className="mb-2">
+                              <div className="flex items-center gap-2 mb-1 md:flex-nowrap">
+                                <span className="text-xs font-semibold text-purple-700">
+                                  {p.brand || "Brand"}
+                                </span>
+                              </div>
+                              <h5 className="font-bold text-gray-900 text-[15px] leading-5 whitespace-normal break-normal">
+                                {p.name}
+                              </h5>
+                              {p.specLine ? (
+                                <p className="mt-1 text-[12px] text-gray-600 leading-5 whitespace-normal break-normal">
+                                  {p.specLine}
+                                </p>
+                              ) : null}
+                            </div>
                           )}
-                          <h3 className="font-bold text-gray-900 text-[15px] leading-5 mb-1">
-                            {p.name}
-                          </h3>
-                          {p.specLine ? (
-                            <p className="text-[12px] text-gray-600 leading-5 mb-2 whitespace-normal break-normal">
-                              {p.specLine}
-                            </p>
-                          ) : null}
-                          {p.brand ? (
-                            <a
-                              href={storeLink}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="inline-block w-full mb-1 text-[12px] font-medium leading-snug whitespace-nowrap overflow-hidden text-ellipsis text-blue-700 hover:text-blue-800 hover:underline"
-                            >
-                              Visit the {p.brand} Store
-                            </a>
-                          ) : null}
-
                           {activeCategory === "laptops" ? (
                             <p className="text-sm text-gray-500">Starting from</p>
+                          ) : null}
+                          {activeCategory === "smartphones" && p.brand ? (
+                            <a
+                              href={brandStoreUrl || "#"}
+                              target={brandStoreUrl ? "_blank" : undefined}
+                              rel={brandStoreUrl ? "noopener noreferrer" : undefined}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (!brandStoreUrl) e.preventDefault();
+                              }}
+                              className={`inline-block w-full mb-1 text-[12px] font-medium leading-snug whitespace-nowrap overflow-hidden text-ellipsis ${
+                                brandStoreUrl
+                                  ? "text-blue-700 hover:text-blue-800 hover:underline"
+                                  : "text-blue-700 cursor-default"
+                              }`}
+                            >
+                              {`Visit the ${p.brand} Store`}
+                            </a>
                           ) : null}
                           <div className="text-lg font-bold text-green-600">
                             {p.priceText}
@@ -1380,10 +1541,100 @@ const TrendingProductsHub = () => {
                         </div>
                       </div>
 
-                      {releasedOn && activeCategory === "smartphones" ? (
-                        <div className="mt-3 flex items-center gap-2 text-xs text-gray-600">
-                          <FaCalendarAlt className="text-gray-400" />
-                          <span>Released: {releasedOn}</span>
+                      {(availableStores.length > 0 ||
+                        (activeCategory === "smartphones" && releasedOn)) ? (
+                        <div
+                          className="mt-3 sm:mt-4 md:mt-5 pt-3 sm:pt-4 md:pt-5 border-t border-indigo-100"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {availableStores.length > 0 ? (
+                            <div className="mb-4">
+                              <div className="flex items-center justify-between gap-2 mb-3">
+                                <h4 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
+                                  <FaStore className="text-green-500" />
+                                  Available At
+                                </h4>
+                              </div>
+                              <div className="space-y-2">
+                                {availableStores
+                                  .slice(0, 3)
+                                  .map((store, storeIdx) => {
+                                    const storeObj =
+                                      store.storeObj ||
+                                      (getStore
+                                        ? getStore(
+                                            store.store ||
+                                              store.store_name ||
+                                              store.storeName ||
+                                              "",
+                                          )
+                                        : null);
+                                    const storeNameCandidate =
+                                      store.store ||
+                                      store.store_name ||
+                                      store.storeName ||
+                                      storeObj?.name ||
+                                      "Online Store";
+                                    const logoSrc =
+                                      store.logo ||
+                                      (getStoreLogo
+                                        ? getStoreLogo(storeNameCandidate)
+                                        : getLogo(storeNameCandidate));
+                                    return (
+                                      <div
+                                        key={`${p.key}-store-${storeIdx}`}
+                                        className="flex items-center justify-between text-sm bg-gradient-to-br from-purple-50 to-blue-50 px-3 py-2 rounded-lg"
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          {logoSrc ? (
+                                            <img
+                                              src={logoSrc}
+                                              alt={storeObj?.name || store.store}
+                                              className="w-6 h-6 object-contain"
+                                              loading="lazy"
+                                            />
+                                          ) : (
+                                            <FaStore className="text-gray-400" />
+                                          )}
+                                          <span className="font-medium text-gray-900 capitalize">
+                                            {storeNameCandidate}
+                                          </span>
+                                        </div>
+                                        <div className="font-bold text-green-600">
+                                          {formatStorePriceDisplay(store.price)}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          {store.url ? (
+                                            <a
+                                              href={store.url}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              onClick={(e) => e.stopPropagation()}
+                                              className="text-purple-600 hover:text-blue-800 text-xs font-medium flex items-center gap-1"
+                                            >
+                                              Buy Now
+                                              <FaExternalLinkAlt className="text-xs opacity-80" />
+                                            </a>
+                                          ) : null}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                {availableStores.length > 3 ? (
+                                  <div className="text-center text-xs text-gray-500">
+                                    +{availableStores.length - 3} more stores
+                                  </div>
+                                ) : null}
+                              </div>
+                            </div>
+                          ) : null}
+
+                          {releasedOn ? (
+                            <div className="flex items-center gap-2 text-xs text-gray-600 mb-4">
+                              <FaCalendarAlt className="text-gray-400" />
+                              <span>Released: {releasedOn}</span>
+                            </div>
+                          ) : null}
                         </div>
                       ) : null}
                     </div>

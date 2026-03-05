@@ -826,23 +826,25 @@ const Smartphones = () => {
     const isAiPhone = detectAiPhone();
 
     const overallScoreRaw = toNumber(
-      apiDevice.overall_score_v2 ??
-        apiDevice.overallScoreV2 ??
-        apiDevice.spec_score_v2 ??
+      apiDevice.spec_score_v2 ??
         apiDevice.specScoreV2 ??
-        apiDevice.overall_score ??
-        apiDevice.overallScore ??
+        apiDevice.overall_score_v2 ??
+        apiDevice.overallScoreV2 ??
         apiDevice.spec_score ??
         apiDevice.specScore ??
-        apiDevice.hook_score ??
-        apiDevice.hookScore ??
+        apiDevice.overall_score ??
+        apiDevice.overallScore ??
         profileResult.score,
     );
     const overallScoreDisplay = toNumber(
-      apiDevice.overall_score_v2_display_80_98 ??
+      apiDevice.spec_score_v2_display_80_98 ??
+        apiDevice.specScoreV2Display8098 ??
+        apiDevice.overall_score_v2_display_80_98 ??
         apiDevice.overallScoreV2Display8098 ??
-        apiDevice.spec_score_v2_display_80_98 ??
-        apiDevice.specScoreV2Display8098,
+        apiDevice.spec_score_display ??
+        apiDevice.specScoreDisplay ??
+        apiDevice.overall_score_display ??
+        apiDevice.overallScoreDisplay,
     );
 
     return {
@@ -867,6 +869,7 @@ const Smartphones = () => {
         "",
       ),
       hook_score: toNumber(apiDevice.hook_score ?? apiDevice.hookScore),
+      spec_score: overallScoreRaw,
       overall_score: overallScoreRaw,
       overall_score_display:
         overallScoreDisplay != null

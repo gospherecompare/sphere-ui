@@ -604,23 +604,25 @@ const Laptops = () => {
       return Number.isFinite(n) ? n : null;
     };
     const overallScoreRaw = toFiniteNumber(
-      raw.overall_score_v2 ??
-        raw.overallScoreV2 ??
-        raw.spec_score_v2 ??
+      raw.spec_score_v2 ??
         raw.specScoreV2 ??
-        raw.overall_score ??
-        raw.overallScore ??
+        raw.overall_score_v2 ??
+        raw.overallScoreV2 ??
         raw.spec_score ??
         raw.specScore ??
-        raw.hook_score ??
-        raw.hookScore ??
+        raw.overall_score ??
+        raw.overallScore ??
         profileResult.score,
     );
     const overallScoreDisplay = toFiniteNumber(
-      raw.overall_score_v2_display_80_98 ??
+      raw.spec_score_v2_display_80_98 ??
+        raw.specScoreV2Display8098 ??
+        raw.overall_score_v2_display_80_98 ??
         raw.overallScoreV2Display8098 ??
-        raw.spec_score_v2_display_80_98 ??
-        raw.specScoreV2Display8098,
+        raw.spec_score_display ??
+        raw.specScoreDisplay ??
+        raw.overall_score_display ??
+        raw.overallScoreDisplay,
     );
     const trendScore = toFiniteNumber(
       raw.trend_score ?? raw.trending_score ?? raw.trendScore,
@@ -689,6 +691,7 @@ const Laptops = () => {
           : "",
       image: images[0] || "",
       images,
+      spec_score: overallScoreRaw,
       specs: {
         cpu: processorName || `${cpuBrand} ${cpuModel}`.trim(),
         cpuBrand,
