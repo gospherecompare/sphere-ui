@@ -2,16 +2,40 @@ import React, { useMemo, useState } from "react";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { computeGroupScoreSnapshot } from "../../utils/groupScoreStats";
 
-const formatPercent = (value) => {
-  if (!Number.isFinite(value)) return "--";
-  return `${value.toFixed(0)}%`;
+const toScoreBand = (value) => {
+  if (!Number.isFinite(value)) return { label: "Unrated", level: 0 };
+  if (value >= 95) return { label: "Excellent", level: 5 };
+  if (value >= 91) return { label: "Very Good", level: 4 };
+  if (value >= 87) return { label: "Good", level: 3 };
+  if (value >= 83) return { label: "Average", level: 2 };
+  return { label: "Basic", level: 1 };
 };
 
-const ScorePill = ({ value }) => (
-  <span className="inline-flex min-w-[62px] items-center justify-center rounded-[20px] border border-violet-200 bg-violet-50 px-2 py-1 text-[11px] font-semibold text-violet-700">
-    {formatPercent(value)}
-  </span>
-);
+const ScorePill = ({ value }) => {
+  const band = toScoreBand(value);
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span className="inline-flex min-w-[74px] items-center justify-center rounded-[20px] border border-violet-200 bg-violet-50 px-2 py-1 text-[11px] font-semibold text-violet-700">
+        {band.label}
+      </span>
+      <span className="inline-flex items-center gap-1" aria-hidden="true">
+        {Array.from({ length: 5 }).map((_, index) => {
+          const active = index < band.level;
+          return (
+            <span
+              key={index}
+              className={`h-2.5 w-7 rounded-full border ${
+                active
+                  ? "border-violet-300 bg-violet-400"
+                  : "border-violet-200 bg-white"
+              }`}
+            />
+          );
+        })}
+      </span>
+    </span>
+  );
+};
 
 const ScoreGroupTable = ({
   currentScore,
@@ -19,7 +43,7 @@ const ScoreGroupTable = ({
   groupLabel = "All Devices",
   minScore = 80,
   maxScore = 98,
-  scoreLabel = "Spec Score",
+  scoreLabel = "Rating",
   labels = {},
   className = "",
   defaultOpen = false,

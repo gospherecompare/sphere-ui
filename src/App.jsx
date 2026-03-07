@@ -198,7 +198,7 @@ const resolveSeoMeta = (pathname) => {
   const rules = [
     {
       test: (p) => p === "/",
-      title: "Compare Smartphones, Laptops, TVs & More in India | Hooks",
+      title: "Tech Reviews: Compare Smartphones, Laptops & TVs in India | Hooks",
       description:
         "Explore and compare smartphones, laptops, TVs, and networking devices with clear specs, pricing, and trend insights.",
       keywords: `hooks, best gadget comparison site, mobile price comparison india, compare laptops smartphones tvs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, latest laptops in india ${CURRENT_YEAR}, latest smart tvs in india ${CURRENT_YEAR}, new launch and trending gadgets, top selling gadgets india, compare specs`,

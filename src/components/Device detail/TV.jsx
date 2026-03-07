@@ -1,4 +1,4 @@
-﻿// src/components/TVDetailCard.jsx
+// src/components/TVDetailCard.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import useDevice from "../../hooks/useDevice";
@@ -2023,28 +2023,157 @@ const TVDetailCard = () => {
     const hasMeasurement = expandedRows.some((row) => row.hasMeasurement);
 
     if (hasMeasurement) {
+      const groupedBySize = expandedRows.reduce((acc, row) => {
+        const sizeKey = row.size || "-";
+        if (!acc[sizeKey]) acc[sizeKey] = [];
+        acc[sizeKey].push(row);
+        return acc;
+      }, {});
+
+      const groupedRows = Object.entries(groupedBySize).map(
+        ([size, items]) => ({
+          size,
+          items,
+        }),
+      );
+
       return (
-        <div className="border border-gray-200 overflow-x-auto">
-          <table className="w-full min-w-[640px] text-[11px] sm:text-xs">
+        <div className="rounded-md">
+          <div className="space-y-2 sm:hidden">
+            {groupedRows.map(({ size, items }) => (
+              <div key={size} className="px-2.5 py-2 text-[11px]">
+                <div className="font-semibold text-gray-800 break-words">{size}</div>
+                <div className="mt-1.5 space-y-1.5">
+                  {items.map((item, itemIndex) => (
+                    <div
+                      key={`${size}-${itemIndex}`}
+                      className="rounded-md bg-gray-50 px-2 py-1.5"
+                    >
+                      {item.type && item.type !== "-" ? (
+                        <div className="font-medium text-gray-700 break-words">
+                          {item.type}
+                        </div>
+                      ) : null}
+                      <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-1 text-gray-700">
+                        {item.width && item.width !== "-" ? (
+                          <div>
+                            <span className="font-medium text-gray-500">
+                              Width:{" "}
+                            </span>
+                            <span className="break-words">{item.width}</span>
+                          </div>
+                        ) : null}
+                        {item.height && item.height !== "-" ? (
+                          <div>
+                            <span className="font-medium text-gray-500">
+                              Height:{" "}
+                            </span>
+                            <span className="break-words">{item.height}</span>
+                          </div>
+                        ) : null}
+                        {item.length && item.length !== "-" ? (
+                          <div>
+                            <span className="font-medium text-gray-500">
+                              Length:{" "}
+                            </span>
+                            <span className="break-words">{item.length}</span>
+                          </div>
+                        ) : null}
+                        {item.others && item.others !== "-" ? (
+                          <div className="col-span-2">
+                            <span className="font-medium text-gray-500">
+                              Others:{" "}
+                            </span>
+                            <span className="break-words">{item.others}</span>
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="hidden sm:block">
+            <table className="w-full table-fixed text-[11px] sm:text-xs">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left font-semibold text-gray-700">
+                    Size
+                  </th>
+                  <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left font-semibold text-gray-700">
+                    Type
+                  </th>
+                  <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left font-semibold text-gray-700">
+                    Width
+                  </th>
+                  <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left font-semibold text-gray-700">
+                    Height
+                  </th>
+                  <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left font-semibold text-gray-700">
+                    Length
+                  </th>
+                  <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left font-semibold text-gray-700">
+                    Others
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {expandedRows.map((row, index) => (
+                  <tr
+                    key={`${row.size}-${index}`}
+                    className="odd:bg-white even:bg-gray-50"
+                  >
+                    <td className="px-2 sm:px-3 py-1.5 sm:py-2 font-semibold text-gray-700 align-top break-words">
+                      {row.size}
+                    </td>
+                    <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900 align-top break-words">
+                      {row.hasMeasurement ? row.type : "-"}
+                    </td>
+                    <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900 align-top break-words">
+                      {row.hasMeasurement ? row.width : "-"}
+                    </td>
+                    <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900 align-top break-words">
+                      {row.hasMeasurement ? row.height : "-"}
+                    </td>
+                    <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900 align-top break-words">
+                      {row.hasMeasurement ? row.length : "-"}
+                    </td>
+                    <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900 align-top break-words">
+                      {row.hasMeasurement ? row.others : row.value}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="rounded-md">
+        <div className="space-y-2 sm:hidden">
+          {expandedRows.map((row, index) => (
+            <div key={`${row.size}-${index}`} className="px-2.5 py-2">
+              <div className="text-[11px] font-semibold text-gray-700 break-words">
+                {row.size}
+              </div>
+              <div className="mt-0.5 text-xs text-gray-900 break-words">
+                {row.value || "-"}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="hidden sm:block">
+          <table className="w-full table-fixed text-xs sm:text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left font-semibold text-gray-700 border-b border-gray-200 whitespace-nowrap">
+                <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left font-semibold text-gray-700 w-[100px]">
                   Size
                 </th>
-                <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left font-semibold text-gray-700 border-b border-gray-200 whitespace-nowrap">
-                  Type
-                </th>
-                <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left font-semibold text-gray-700 border-b border-gray-200 whitespace-nowrap">
-                  Width
-                </th>
-                <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left font-semibold text-gray-700 border-b border-gray-200 whitespace-nowrap">
-                  Height
-                </th>
-                <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left font-semibold text-gray-700 border-b border-gray-200 whitespace-nowrap">
-                  Length
-                </th>
-                <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left font-semibold text-gray-700 border-b border-gray-200 whitespace-nowrap">
-                  Others
+                <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left font-semibold text-gray-700">
+                  Value
                 </th>
               </tr>
             </thead>
@@ -2054,61 +2183,17 @@ const TVDetailCard = () => {
                   key={`${row.size}-${index}`}
                   className="odd:bg-white even:bg-gray-50"
                 >
-                  <td className="px-2 sm:px-3 py-1.5 sm:py-2 font-semibold text-gray-700 border-b border-gray-100 whitespace-nowrap align-top">
+                  <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-xs font-semibold text-gray-700 align-top break-words">
                     {row.size}
                   </td>
-                  <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900 border-b border-gray-100 whitespace-nowrap align-top">
-                    {row.hasMeasurement ? row.type : "-"}
-                  </td>
-                  <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900 border-b border-gray-100 whitespace-nowrap align-top">
-                    {row.hasMeasurement ? row.width : "-"}
-                  </td>
-                  <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900 border-b border-gray-100 whitespace-nowrap align-top">
-                    {row.hasMeasurement ? row.height : "-"}
-                  </td>
-                  <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900 border-b border-gray-100 whitespace-nowrap align-top">
-                    {row.hasMeasurement ? row.length : "-"}
-                  </td>
-                  <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900 border-b border-gray-100 align-top">
-                    {row.hasMeasurement ? row.others : row.value}
+                  <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-gray-900 align-top break-words">
+                    {row.value || "-"}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      );
-    }
-
-    return (
-      <div className="border border-gray-200 overflow-x-auto">
-        <table className="w-full min-w-[320px] text-xs sm:text-sm">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left font-semibold text-gray-700 border-b border-gray-200 w-[100px] whitespace-nowrap">
-                Size
-              </th>
-              <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left font-semibold text-gray-700 border-b border-gray-200 whitespace-nowrap">
-                Value
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {expandedRows.map((row, index) => (
-              <tr
-                key={`${row.size}-${index}`}
-                className="odd:bg-white even:bg-gray-50"
-              >
-                <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-xs font-semibold text-gray-700 whitespace-nowrap border-b border-gray-100 align-top">
-                  {row.size}
-                </td>
-                <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-gray-900 border-b border-gray-100 align-top">
-                  {row.value || "-"}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
     );
   };
@@ -2151,34 +2236,41 @@ const TVDetailCard = () => {
     }
 
     return (
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[360px] sm:min-w-full divide-y divide-gray-200 shadow-none">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-3 sm:px-6 py-2.5 sm:py-3 text-left text-[11px] sm:text-xs font-semibold uppercase tracking-wide text-gray-600 w-[34%]">
-                Specification
-              </th>
-              <th className="px-3 sm:px-6 py-2.5 sm:py-3 text-left text-[11px] sm:text-xs font-semibold uppercase tracking-wide text-gray-600">
-                Value
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white">
-            {rows.map(([key, value], idx) => (
-              <tr
-                key={key}
-                className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
-              >
-                <td className="px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-gray-600 w-[34%] align-top">
-                  {toNormalCase(key)}
-                </td>
-                <td className="px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm text-gray-900 align-top">
-                  {renderSpecValue(value)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="rounded-md">
+        <div className="space-y-2 sm:hidden">
+          {rows.map(([key, value], idx) => (
+            <div
+              key={key}
+              className={`${idx % 2 === 0 ? "bg-white" : "bg-gray-50"} px-2.5 py-2`}
+            >
+              <div className="text-[11px] font-semibold text-gray-600 break-words">
+                {toNormalCase(key)}
+              </div>
+              <div className="mt-1 text-xs text-gray-900 break-words whitespace-normal">
+                {renderSpecValue(value)}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="hidden sm:block">
+          <table className="w-full table-fixed shadow-none">
+            <tbody className="bg-white">
+              {rows.map(([key, value], idx) => (
+                <tr
+                  key={key}
+                  className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                >
+                  <td className="px-2.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-gray-600 w-[34%] align-top break-words">
+                    {toNormalCase(key)}
+                  </td>
+                  <td className="px-2.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm text-gray-900 align-top break-words whitespace-normal">
+                    {renderSpecValue(value)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     );
   };
@@ -2238,7 +2330,7 @@ const TVDetailCard = () => {
     if (isTvProduct) {
       return (
         <div id="tv-specifications" className="space-y-6">
-          <div className="bg-white rounded-lg p-6">
+          <div className="bg-white rounded-lg p-3 sm:p-4">
             <div className="mb-6 flex items-center justify-between gap-2">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <FaMicrochip className={currentColor.text} />
@@ -2255,7 +2347,7 @@ const TVDetailCard = () => {
           {hasContent(
             applianceData.key_specs_json || applianceData.specifications,
           ) && (
-            <div id="tv-display" className="bg-white rounded-lg p-6">
+            <div id="tv-display" className="bg-white rounded-lg p-3 sm:p-4">
               <div className="mb-6 flex items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FaTv className={currentColor.text} />
@@ -2272,7 +2364,7 @@ const TVDetailCard = () => {
           )}
 
           {hasContent(applianceData.video_engine_json) && (
-            <div id="tv-video_engine" className="bg-white rounded-lg p-6">
+            <div id="tv-video_engine" className="bg-white rounded-lg p-3 sm:p-4">
               <div className="mb-6 flex items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FaChartBar className={currentColor.text} />
@@ -2288,7 +2380,7 @@ const TVDetailCard = () => {
           )}
 
           {hasContent(applianceData.audio_json) && (
-            <div id="tv-audio" className="bg-white rounded-lg p-6">
+            <div id="tv-audio" className="bg-white rounded-lg p-3 sm:p-4">
               <div className="mb-6 flex items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FaVolumeUp className={currentColor.text} />
@@ -2301,7 +2393,7 @@ const TVDetailCard = () => {
           )}
 
           {hasContent(applianceData.smart_tv_json) && (
-            <div id="tv-smart_tv" className="bg-white rounded-lg p-6">
+            <div id="tv-smart_tv" className="bg-white rounded-lg p-3 sm:p-4">
               <div className="mb-6 flex items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FaBolt className={currentColor.text} />
@@ -2314,7 +2406,7 @@ const TVDetailCard = () => {
           )}
 
           {hasContent(applianceData.connectivity_json) && (
-            <div id="tv-connectivity" className="bg-white rounded-lg p-6">
+            <div id="tv-connectivity" className="bg-white rounded-lg p-3 sm:p-4">
               <div className="mb-6 flex items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FaWifi className={currentColor.text} />
@@ -2330,7 +2422,7 @@ const TVDetailCard = () => {
           )}
 
           {hasContent(applianceData.ports_json) && (
-            <div id="tv-ports" className="bg-white rounded-lg p-6">
+            <div id="tv-ports" className="bg-white rounded-lg p-3 sm:p-4">
               <div className="mb-6 flex items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FaPlug className={currentColor.text} />
@@ -2343,7 +2435,7 @@ const TVDetailCard = () => {
           )}
 
           {hasContent(applianceData.gaming_json) && (
-            <div id="tv-gaming" className="bg-white rounded-lg p-6">
+            <div id="tv-gaming" className="bg-white rounded-lg p-3 sm:p-4">
               <div className="mb-6 flex items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FaGamepad className={currentColor.text} />
@@ -2356,7 +2448,7 @@ const TVDetailCard = () => {
           )}
 
           {hasContent(applianceData.power_json) && (
-            <div id="tv-power" className="bg-white rounded-lg p-6">
+            <div id="tv-power" className="bg-white rounded-lg p-3 sm:p-4">
               <div className="mb-6 flex items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FaBatteryFull className={currentColor.text} />
@@ -2373,7 +2465,7 @@ const TVDetailCard = () => {
               applianceData.dimensions_json ||
               applianceData.physical_details,
           ) && (
-            <div id="tv-physical_details" className="bg-white rounded-lg p-6">
+            <div id="tv-physical_details" className="bg-white rounded-lg p-3 sm:p-4">
               <div className="mb-6 flex items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FaRuler className={currentColor.text} />
@@ -2393,7 +2485,7 @@ const TVDetailCard = () => {
           )}
 
           {hasContent(applianceData.product_details_json) && (
-            <div id="tv-product_details" className="bg-white rounded-lg p-6">
+            <div id="tv-product_details" className="bg-white rounded-lg p-3 sm:p-4">
               <div className="mb-6 flex items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FaInfoCircle className={currentColor.text} />
@@ -2409,7 +2501,7 @@ const TVDetailCard = () => {
           )}
 
           {hasContent(applianceData.in_the_box_json) && (
-            <div id="tv-in_the_box" className="bg-white rounded-lg p-6">
+            <div id="tv-in_the_box" className="bg-white rounded-lg p-3 sm:p-4">
               <div className="mb-6 flex items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FaShoppingCart className={currentColor.text} />
@@ -2427,7 +2519,7 @@ const TVDetailCard = () => {
           {hasContent(
             applianceData.warranty_json || applianceData.warranty,
           ) && (
-            <div id="tv-warranty" className="bg-white rounded-lg p-6">
+            <div id="tv-warranty" className="bg-white rounded-lg p-3 sm:p-4">
               <div className="mb-6 flex items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FaShieldAlt className={currentColor.text} />
@@ -2446,7 +2538,7 @@ const TVDetailCard = () => {
 
     return (
       <div id="tv-specifications" className="space-y-6">
-        <div className="bg-white rounded-lg p-6">
+        <div className="bg-white rounded-lg p-3 sm:p-4">
           <div className="mb-6 flex items-center justify-between gap-2">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
               <FaMicrochip className={currentColor.text} />
@@ -2460,7 +2552,7 @@ const TVDetailCard = () => {
           {renderSpecTable(applianceData.specifications || generalSection)}
         </div>
         {hasContent(applianceData.features) && (
-          <div id="tv-features" className="bg-white rounded-lg p-6">
+          <div id="tv-features" className="bg-white rounded-lg p-3 sm:p-4">
             <div className="mb-6 flex items-center justify-between gap-2">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <FaBolt className={currentColor.text} />
@@ -2472,7 +2564,7 @@ const TVDetailCard = () => {
           </div>
         )}
         {hasContent(applianceData.performance) && (
-          <div id="tv-performance" className="bg-white rounded-lg p-6">
+          <div id="tv-performance" className="bg-white rounded-lg p-3 sm:p-4">
             <div className="mb-6 flex items-center justify-between gap-2">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <FaChartBar className={currentColor.text} />
@@ -2487,7 +2579,7 @@ const TVDetailCard = () => {
           </div>
         )}
         {hasContent(applianceData.physical_details) && (
-          <div id="tv-physical_details" className="bg-white rounded-lg p-6">
+          <div id="tv-physical_details" className="bg-white rounded-lg p-3 sm:p-4">
             <div className="mb-6 flex items-center justify-between gap-2">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <FaRuler className={currentColor.text} />
@@ -2502,7 +2594,7 @@ const TVDetailCard = () => {
           </div>
         )}
         {hasContent(applianceData.warranty) && (
-          <div id="tv-warranty" className="bg-white rounded-lg p-6">
+          <div id="tv-warranty" className="bg-white rounded-lg p-3 sm:p-4">
             <div className="mb-6 flex items-center justify-between gap-2">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <FaShieldAlt className={currentColor.text} />
@@ -2774,22 +2866,6 @@ const TVDetailCard = () => {
         {/* Popular Comparisons */}
         {popularComparisonTargets.length > 0 && (
           <div className="px-4 pt-4 pb-1">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-sm font-semibold text-gray-900">
-                Popular comparisons
-              </h2>
-              <button
-                type="button"
-                onClick={() =>
-                  navigate("/compare", {
-                    state: { initialProduct: applianceData },
-                  })
-                }
-                className="text-xs font-semibold text-purple-700 hover:text-purple-800"
-              >
-                Open compare
-              </button>
-            </div>
             <div className="flex gap-3 overflow-x-auto no-scrollbar pb-3">
               {popularComparisonTargets.map((d) => {
                 const otherId = d?.id ?? d?.product_id ?? d?.productId ?? null;
@@ -3159,9 +3235,9 @@ const TVDetailCard = () => {
 
         {activePrimaryTab === "info" ? (
           <div className="border-t border-slate-200">
-            <div className="p-2 sm:p-3">
+            <div className="p-0 sm:p-2">
               <div className="bg-white p-3 sm:p-4">
-                <div className="mb-3 flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                <div className="mb-3 flex items-center justify-between gap-2 pb-2">
                   <div>
                     <h3 className="text-lg font-semibold text-slate-900">
                       Key Specs
@@ -3234,7 +3310,7 @@ const TVDetailCard = () => {
               })}
             </div>
 
-            <div className="p-2 sm:p-3">{renderTabContent()}</div>
+            <div className="p-0 sm:p-2">{renderTabContent()}</div>
           </div>
         ) : null}
       </div>
@@ -3243,3 +3319,4 @@ const TVDetailCard = () => {
 };
 
 export default TVDetailCard;
+

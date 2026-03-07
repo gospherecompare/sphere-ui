@@ -66,6 +66,15 @@ const normalizeScore100 = (value) => {
   return Math.max(0, Math.min(100, n));
 };
 
+const toScoreBand = (value) => {
+  if (!Number.isFinite(value)) return { label: "Unrated", level: 0 };
+  if (value >= 95) return { label: "Excellent", level: 5 };
+  if (value >= 91) return { label: "Very Good", level: 4 };
+  if (value >= 87) return { label: "Good", level: 3 };
+  if (value >= 83) return { label: "Average", level: 2 };
+  return { label: "Basic", level: 1 };
+};
+
 const SpecScoreBadge = ({
   score,
   size = 42,
@@ -79,23 +88,23 @@ const SpecScoreBadge = ({
       : zeroFallback
         ? 0
         : null;
-  const percentage = percentageRaw;
-  const label = percentage != null ? `${percentage.toFixed(1)}%` : "--";
+  const band = toScoreBand(percentageRaw);
+  const label = band.label;
   const compact = size <= 34;
 
   if (showSpecLabel) {
     return (
       <div
         className="inline-flex flex-col items-center justify-center rounded-2xl border border-violet-200 bg-violet-50/95 px-2 py-1.5 leading-none"
-        style={{ minWidth: `${Math.max(44, Math.round(size * 1.2))}px` }}
+        style={{ minWidth: `${Math.max(64, Math.round(size * 1.8))}px` }}
         aria-label={
-          percentage != null
-            ? `Overall score ${percentage.toFixed(1)} percent`
-            : "Overall score unavailable"
+          Number.isFinite(percentageRaw)
+            ? `Overall rating ${label}`
+            : "Overall rating unavailable"
         }
       >
         <span
-          className={`${compact ? "text-[11px]" : "text-[12px]"} font-bold text-violet-700`}
+          className={`${compact ? "text-[9px]" : "text-[10px]"} font-bold text-violet-700`}
         >
           <span>{label}</span>
         </span>
@@ -108,16 +117,33 @@ const SpecScoreBadge = ({
 
   return (
     <div
-      className="relative inline-flex items-center rounded-[26px] border border-violet-200 bg-violet-50/95 pl-7 pr-3 py-2 leading-none"
-      style={{ minWidth: `${Math.max(88, Math.round(size * 1.9))}px` }}
+      className="inline-flex items-center gap-2 leading-none"
+      style={{ minWidth: `${Math.max(108, Math.round(size * 2.85))}px` }}
       aria-label={
-        percentage != null
-          ? `Overall score ${percentage.toFixed(1)} percent`
-          : "Overall score unavailable"
+        Number.isFinite(percentageRaw)
+          ? `Overall rating ${label}`
+          : "Overall rating unavailable"
       }
     >
-      <span className={`${compact ? "text-[11px]" : "text-[12px]"} font-bold text-violet-700`}>
+      <span
+        className={`${compact ? "text-[10px]" : "text-[11px]"} inline-flex min-w-[68px] items-center justify-center rounded-[20px] border border-violet-200 bg-violet-50 px-2 py-1 font-semibold text-violet-700`}
+      >
         {label}
+      </span>
+      <span className="inline-flex items-center gap-1" aria-hidden="true">
+        {Array.from({ length: 5 }).map((_, index) => {
+          const active = index < band.level;
+          return (
+            <span
+              key={index}
+              className={`${compact ? "h-2 w-4" : "h-2.5 w-5"} rounded-full border ${
+                active
+                  ? "border-violet-300 bg-violet-400"
+                  : "border-violet-200 bg-white"
+              }`}
+            />
+          );
+        })}
       </span>
     </div>
   );

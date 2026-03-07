@@ -2170,22 +2170,6 @@ const LaptopDetailCard = () => {
         {/* Popular Comparisons */}
         {popularComparisonTargets.length > 0 && (
           <div className="px-4 pt-4 pb-1">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-sm font-semibold text-gray-900">
-                Popular comparisons
-              </h2>
-              <button
-                type="button"
-                onClick={() =>
-                  navigate("/compare", {
-                    state: { initialProduct: laptopData },
-                  })
-                }
-                className="text-xs font-semibold text-purple-700 hover:text-purple-800"
-              >
-                Open compare
-              </button>
-            </div>
             <div className="flex gap-3 overflow-x-auto no-scrollbar pb-3">
               {popularComparisonTargets.map((d) => {
                 const otherId = d?.id ?? d?.product_id ?? d?.productId ?? null;
