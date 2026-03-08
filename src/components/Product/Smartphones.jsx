@@ -48,7 +48,7 @@ import Spinner from "../ui/Spinner";
 import Breadcrumbs from "../Breadcrumbs";
 import { generateSlug } from "../../utils/slugGenerator";
 import normalizeProduct from "../../utils/normalizeProduct";
-import { getHookBadge } from "../../utils/hookScore";
+import { getHookBadge as getHookssBadge } from "../../utils/hookScore";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
 import {
@@ -98,7 +98,12 @@ const ImageCarousel = ({ images = [] }) => {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <div className={imageFrameClass}>
-          <img src={images[0]} alt="product" className={imageClass} loading="lazy" />
+          <img
+            src={images[0]}
+            alt="product"
+            className={imageClass}
+            loading="lazy"
+          />
         </div>
       </div>
     );
@@ -348,6 +353,192 @@ const Smartphones = () => {
     return numeric > 0 ? `₹ ${numeric.toLocaleString()}` : "";
   };
 
+  const parseDateValue = (value) => {
+    if (!value) return null;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  };
+
+  const normalizeStoreKey = (value) =>
+    String(value || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "");
+
+  const isPrebookingStore = (storePrice, launchDate = null) => {
+    if (!storePrice) return false;
+    if (storePrice.is_prebooking === true) return true;
+    const storeStatusText = String(
+      storePrice.availability_status ??
+        storePrice.availabilityStatus ??
+        storePrice.sale_status ??
+        storePrice.saleStatus ??
+        "",
+    )
+      .trim()
+      .toLowerCase();
+    if (
+      /(pre(book|order)|upcoming|coming\s*soon|not[\s_-]*started|pre[\s-]*sale)/i.test(
+        storeStatusText,
+      )
+    ) {
+      return true;
+    }
+
+    const ctaText = String(storePrice.cta_label || "").trim();
+    if (/^pre(book|order)$/i.test(ctaText)) return true;
+
+    const saleStart =
+      storePrice.sale_start_date ??
+      storePrice.sale_date ??
+      storePrice.saleStartDate ??
+      null;
+    const saleDate = parseDateValue(saleStart);
+    if (saleDate && saleDate > new Date()) return true;
+
+    const launch = parseDateValue(launchDate);
+    if (launch && launch > new Date()) return true;
+
+    return false;
+  };
+
+  const sortStoreRows = (stores = []) =>
+    [...stores].sort(
+      (a, b) => extractNumericPrice(a?.price) - extractNumericPrice(b?.price),
+    );
+
+  const getOfficialBrandStoreUrl = (stores, brandName, brandWebsite = null) => {
+    const brandKey = normalizeStoreKey(brandName);
+    const normalizedBrandWebsite = String(brandWebsite || "").trim();
+
+    if (brandKey) {
+      const matchingStore = (Array.isArray(stores) ? stores : []).find(
+        (store) => {
+          const storeName = normalizeStoreKey(
+            store?.display_store_name ||
+              store?.store ||
+              store?.store_name ||
+              store?.storeName,
+          );
+          if (!storeName || !String(store?.url || "").trim()) return false;
+
+          return (
+            storeName === brandKey ||
+            storeName.includes(`${brandKey}store`) ||
+            storeName.includes(`${brandKey}official`) ||
+            storeName.includes(`official${brandKey}`)
+          );
+        },
+      );
+      if (matchingStore?.url) return matchingStore.url;
+    }
+
+    return normalizedBrandWebsite || null;
+  };
+
+  const getAvailabilityState = (
+    stores,
+    brandName,
+    brandWebsite = null,
+    launchDate = null,
+    brandLogo = null,
+    saleStartDate = null,
+    deviceIsPrebooking = false,
+  ) => {
+    const now = new Date();
+    const launch = parseDateValue(launchDate);
+    const saleStart = parseDateValue(saleStartDate);
+    const forcePrebooking =
+      deviceIsPrebooking ||
+      Boolean(
+        (saleStart && saleStart > now) ||
+        (!saleStart && launch && launch > now),
+      );
+
+    const normalizedStores = (Array.isArray(stores) ? stores : []).map(
+      (store) => {
+        const prebooking =
+          forcePrebooking ||
+          isPrebookingStore(store, saleStartDate || launchDate);
+        return {
+          ...store,
+          is_prebooking: prebooking || store?.is_prebooking === true,
+          cta_label:
+            store?.cta_label ||
+            (prebooking || store?.is_prebooking === true
+              ? "Preorder"
+              : "Buy Now"),
+        };
+      },
+    );
+
+    if (normalizedStores.length === 0) {
+      return { stores: [], hiddenCount: 0, mode: "none" };
+    }
+
+    const hasStoreUrl = (value) => Boolean(String(value || "").trim());
+    const liveStores = sortStoreRows(
+      normalizedStores.filter(
+        (store) => !store.is_prebooking && hasStoreUrl(store?.url),
+      ),
+    );
+    if (liveStores.length > 0) {
+      return {
+        stores: liveStores,
+        hiddenCount: Math.max(liveStores.length - 3, 0),
+        mode: "live",
+      };
+    }
+
+    const inferredPrebookingStores = normalizedStores.every(
+      (store) => !hasStoreUrl(store?.url),
+    )
+      ? normalizedStores.map((store) => ({
+          ...store,
+          is_prebooking: true,
+          cta_label: "Preorder",
+        }))
+      : normalizedStores.filter((store) => store.is_prebooking);
+
+    const prebookingStores = sortStoreRows(inferredPrebookingStores);
+    if (prebookingStores.length === 0) {
+      return {
+        stores: sortStoreRows(normalizedStores),
+        hiddenCount: Math.max(normalizedStores.length - 3, 0),
+        mode: "fallback",
+      };
+    }
+
+    const primary = prebookingStores[0];
+    const officialStoreUrl = getOfficialBrandStoreUrl(
+      prebookingStores,
+      brandName,
+      brandWebsite,
+    );
+    const cleanBrandLabel = String(brandName || "")
+      .trim()
+      .replace(/\s+store$/i, "")
+      .trim();
+    const brandStoreLabel = cleanBrandLabel || "Brand";
+
+    return {
+      stores: [
+        {
+          ...primary,
+          display_store_name: brandStoreLabel,
+          store: brandStoreLabel,
+          store_name: brandStoreLabel,
+          storeName: brandStoreLabel,
+          logo: brandLogo || null,
+          url: officialStoreUrl || "",
+          cta_label: "Preorder",
+          is_prebooking: true,
+        },
+      ],
+      hiddenCount: Math.max(prebookingStores.length - 1, 0),
+      mode: "prebooking",
+    };
+  };
+
   // Map API response to device format
   const mapApiToDevice = (apiDevice, idx) => {
     const asText = (v) => {
@@ -402,14 +593,31 @@ const Smartphones = () => {
               const storeName =
                 sp.store_name || sp.store || sp.storeName || sp.storeName;
               return {
+                ...sp,
                 id: sp.id,
                 variant_id: v.id,
                 store: storeName,
+                store_name: storeName,
+                storeName: storeName,
+                display_store_name:
+                  sp.display_store_name || sp.displayStoreName || storeName,
                 storeObj: getStore ? getStore(storeName) : null,
                 // do not persist logo here — resolve at render time via getLogo()
                 price: sp.price,
                 url: sp.url || sp.url_link || sp.link,
                 last_updated: sp.last_updated || sp.lastUpdated,
+                cta_label: sp.cta_label || sp.ctaLabel || null,
+                availability_status:
+                  sp.availability_status || sp.availabilityStatus || null,
+                sale_start_date:
+                  sp.sale_start_date ||
+                  sp.saleStartDate ||
+                  sp.sale_date ||
+                  null,
+                sale_date: sp.sale_date || sp.saleDate || null,
+                is_prebooking:
+                  sp.is_prebooking === true || sp.isPrebooking === true,
+                logo: sp.logo || sp.store_logo || sp.storeLogo || null,
               };
             })
           : [];
@@ -435,12 +643,26 @@ const Smartphones = () => {
           const storeName =
             sp.store_name || sp.store || sp.storeName || "Store";
           return {
+            ...sp,
             id: sp.id,
             store: storeName,
+            store_name: storeName,
+            storeName: storeName,
+            display_store_name:
+              sp.display_store_name || sp.displayStoreName || storeName,
             storeObj: getStore ? getStore(storeName) : null,
             // resolve logo at render time via getLogo(storeName)
             price: sp.price,
-            url: sp.url,
+            url: sp.url || sp.url_link || sp.link,
+            cta_label: sp.cta_label || sp.ctaLabel || null,
+            availability_status:
+              sp.availability_status || sp.availabilityStatus || null,
+            sale_start_date:
+              sp.sale_start_date || sp.saleStartDate || sp.sale_date || null,
+            sale_date: sp.sale_date || sp.saleDate || null,
+            is_prebooking:
+              sp.is_prebooking === true || sp.isPrebooking === true,
+            logo: sp.logo || sp.store_logo || sp.storeLogo || null,
           };
         });
       }
@@ -868,7 +1090,42 @@ const Smartphones = () => {
         toString(apiDevice.brand),
         "",
       ),
-      hook_score: toNumber(apiDevice.hook_score ?? apiDevice.hookScore),
+      brandLogo: pick(
+        toString(apiDevice.brand_logo),
+        toString(apiDevice.brandLogo),
+        toString(apiDevice.brand_image),
+        toString(apiDevice.brandImage),
+        "",
+      ),
+      brandWebsite: pick(
+        toString(apiDevice.brand_website),
+        toString(apiDevice.brandWebsite),
+        toString(apiDevice.brand_url),
+        toString(apiDevice.brandUrl),
+        "",
+      ),
+      saleStartDate: pick(
+        toString(apiDevice.sale_start_date),
+        toString(apiDevice.saleStartDate),
+        toString(apiDevice.sale_date),
+        toString(apiDevice.saleDate),
+        toString(apiDevice.first_sale_date),
+        toString(apiDevice.firstSaleDate),
+        "",
+      ),
+      is_prebooking:
+        apiDevice.is_prebooking === true ||
+        apiDevice.isPrebooking === true ||
+        /(pre(book|order)|upcoming|coming\s*soon|not[\s_-]*started|pre[\s-]*sale)/i.test(
+          String(
+            apiDevice.availability_status ??
+              apiDevice.availabilityStatus ??
+              apiDevice.sale_status ??
+              apiDevice.saleStatus ??
+              "",
+          ).trim(),
+        ),
+      Hookss_score: toNumber(apiDevice.Hookss_score ?? apiDevice.HookssScore),
       spec_score: overallScoreRaw,
       overall_score: overallScoreRaw,
       overall_score_display:
@@ -880,8 +1137,8 @@ const Smartphones = () => {
         apiDevice.trend_velocity ?? apiDevice.trendVelocity,
       ),
       freshness: toNumber(apiDevice.freshness),
-      hook_calculated_at:
-        apiDevice.hook_calculated_at ?? apiDevice.hookCalculatedAt ?? null,
+      Hookss_calculated_at:
+        apiDevice.Hookss_calculated_at ?? apiDevice.HookssCalculatedAt ?? null,
       price: numericPrice > 0 ? `₹${numericPrice.toLocaleString()}` : "",
       numericPrice: numericPrice,
       rating: parseFloat(apiDevice.rating) || 0,
@@ -982,12 +1239,25 @@ const Smartphones = () => {
       const mappedVariantStores = rawVariantStorePrices.map((sp) => {
         const storeName = sp.store_name || sp.store || sp.storeName || "Store";
         return {
+          ...sp,
           id: sp.id,
           store: storeName,
+          store_name: storeName,
+          storeName: storeName,
+          display_store_name:
+            sp.display_store_name || sp.displayStoreName || storeName,
           storeObj: getStore ? getStore(storeName) : null,
           // leave logo resolution to render-time via getLogo(store)
           price: sp.price,
-          url: sp.url,
+          url: sp.url || sp.url_link || sp.link,
+          cta_label: sp.cta_label || sp.ctaLabel || null,
+          availability_status:
+            sp.availability_status || sp.availabilityStatus || null,
+          sale_start_date:
+            sp.sale_start_date || sp.saleStartDate || sp.sale_date || null,
+          sale_date: sp.sale_date || sp.saleDate || null,
+          is_prebooking: sp.is_prebooking === true || sp.isPrebooking === true,
+          logo: sp.logo || sp.store_logo || sp.storeLogo || null,
         };
       });
 
@@ -1031,6 +1301,22 @@ const Smartphones = () => {
 
       // Card title in strict format: {device name} | {variant RAM} / {variant Storage} | {price or N/A}
       const cardTitle = `${device.name || device.model || "Unnamed"} | ${variantRam || ""} / ${variantStorage || ""} | ${priceDisplay}`;
+      const variantSaleStartDate =
+        v.sale_start_date ||
+        v.saleStartDate ||
+        v.sale_date ||
+        v.saleDate ||
+        v.first_sale_date ||
+        v.firstSaleDate ||
+        device.saleStartDate ||
+        null;
+      const variantIsPrebooking =
+        v.is_prebooking === true ||
+        v.isPrebooking === true ||
+        String(
+          v.availability_status || v.availabilityStatus || "",
+        ).toLowerCase() === "prebooking" ||
+        device.is_prebooking === true;
 
       return {
         // keep device-level info but override ram/storage/price and add cardTitle
@@ -1048,6 +1334,8 @@ const Smartphones = () => {
         storePrices: storePricesToExpose,
         price: priceDisplay,
         numericPrice: resolvedNumericPrice,
+        saleStartDate: variantSaleStartDate,
+        is_prebooking: variantIsPrebooking,
         cardTitle,
       };
     });
@@ -1369,27 +1657,27 @@ const Smartphones = () => {
     return text.length > 180 ? `${text.slice(0, 177)}...` : text;
   };
 
-  let seoTitle = `Smartphones ${currentYear} - Specs, Prices & Reviews | Hooks`;
+  let seoTitle = `Smartphones ${currentYear} - Specs, Prices & Reviews | Hooksss`;
   let seoDescription = sanitizeDescription(
-    "Browse the latest smartphones with detailed specs, prices, reviews, and comparisons on Hooks.",
+    "Browse the latest smartphones with detailed specs, prices, reviews, and comparisons on Hooksss.",
   );
 
   if (isSingleSmartphonePath) {
-    seoTitle = `Smartphones ${currentYear} - Compare Specs, Prices & Reviews | Hooks`;
+    seoTitle = `Smartphones ${currentYear} - Compare Specs, Prices & Reviews | Hooksss`;
     seoDescription =
-      "Compare the latest smartphones on Hooks. Explore detailed specifications, prices, reviews, and side-by-side comparisons before you buy.";
+      "Compare the latest smartphones on Hooksss. Explore detailed specifications, prices, reviews, and side-by-side comparisons before you buy.";
   } else if (isNewFilterPath) {
-    seoTitle = `Latest Smartphones ${currentYear} - New Launches & Prices | Hooks`;
+    seoTitle = `Latest Smartphones ${currentYear} - New Launches & Prices | Hooksss`;
     seoDescription =
-      "Discover newly launched smartphones with updated prices, full specifications, and reviews. Stay updated with the latest mobile releases on Hooks.";
+      "Discover newly launched smartphones with updated prices, full specifications, and reviews. Stay updated with the latest mobile releases on Hooksss.";
   } else if (priceFilter) {
-    seoTitle = `Best Smartphones ${priceFilter.label} in ${currentYear} - Reviews, Specs & Deals | Hooks`;
+    seoTitle = `Best Smartphones ${priceFilter.label} in ${currentYear} - Reviews, Specs & Deals | Hooksss`;
     seoDescription = `Explore the best smartphones ${priceFilter.label.toLowerCase()} with detailed specs, latest prices, reviews, and comparisons to choose the right phone for your budget.`;
   } else if (currentBrandObj) {
-    seoTitle = `${currentBrandObj.name} Smartphones ${currentYear} - Models, Prices & Specs | Hooks`;
+    seoTitle = `${currentBrandObj.name} Smartphones ${currentYear} - Models, Prices & Specs | Hooksss`;
     seoDescription = sanitizeDescription(
       currentBrandObj.description ||
-        `Explore ${currentBrandObj.name} smartphones on Hooks. Compare models, check prices, specifications, reviews, and find the best phone for your needs.`,
+        `Explore ${currentBrandObj.name} smartphones on Hooksss. Compare models, check prices, specifications, reviews, and find the best phone for your needs.`,
     );
   }
 
@@ -1406,7 +1694,7 @@ const Smartphones = () => {
       ? `BEST SMARTPHONE ${priceFilter.label.toUpperCase()}`
       : "SMARTPHONE COLLECTION";
 
-  // Defer render check until after all hooks are declared to keep hook order stable
+  // Defer render check until after all Hooksss are declared to keep Hookss order stable
   const noDataAndNotLoading =
     (!smartphonesForList ||
       (Array.isArray(smartphonesForList) && smartphonesForList.length === 0)) &&
@@ -3341,7 +3629,7 @@ const Smartphones = () => {
                                   </span>
                                 ) : null}
                                 {(() => {
-                                  const badge = getHookBadge(device);
+                                  const badge = getHookssBadge(device);
                                   if (!badge) return null;
                                   return (
                                     <span
@@ -3444,8 +3732,17 @@ const Smartphones = () => {
                           <div className="flex items-end justify-between">
                             <div>
                               {(() => {
+                                const availabilityState = getAvailabilityState(
+                                  device.storePrices || [],
+                                  device.brand,
+                                  device.brandWebsite || null,
+                                  device.launchDate || null,
+                                  device.brandLogo || null,
+                                  device.saleStartDate || null,
+                                  device.is_prebooking === true,
+                                );
                                 const brandStoreUrl =
-                                  (device.storePrices || []).find(
+                                  availabilityState.stores?.find(
                                     (sp) =>
                                       typeof sp?.url === "string" &&
                                       sp.url.trim().length > 0,
@@ -3520,89 +3817,138 @@ const Smartphones = () => {
                       {/* Detailed Specifications */}
 
                       {/* Store Availability */}
-                      {device.storePrices && device.storePrices.length > 0 && (
-                        <div className="mb-4">
-                          <div className="flex items-center justify-between gap-2 mb-3">
-                            <h4 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
-                              <FaStore className="text-green-500" />
-                              Available At
-                            </h4>
-                          </div>
-                          <div className="space-y-2">
-                            {device.storePrices
-                              .slice(0, 3)
-                              .map((storePrice, i) => {
-                                const storeObj =
-                                  storePrice.storeObj ||
-                                  (getStore
-                                    ? getStore(
-                                        storePrice.store ||
-                                          storePrice.store_name ||
-                                          storePrice.storeName ||
-                                          "",
-                                      )
-                                    : null);
-                                const storeNameCandidate =
-                                  storePrice.store ||
-                                  storePrice.store_name ||
-                                  storePrice.storeName ||
-                                  storeObj?.name ||
-                                  "";
-                                const logoSrc =
-                                  storePrice.logo ||
-                                  (getStoreLogo
-                                    ? getStoreLogo(storeNameCandidate)
-                                    : getLogo(storeNameCandidate));
+                      {(() => {
+                        const availabilityState = getAvailabilityState(
+                          device.storePrices || [],
+                          device.brand,
+                          device.brandWebsite || null,
+                          device.launchDate || null,
+                          device.brandLogo || null,
+                          device.saleStartDate || null,
+                          device.is_prebooking === true,
+                        );
+                        const availableStoreRows =
+                          availabilityState.stores || [];
+                        if (availableStoreRows.length === 0) return null;
 
-                                return (
-                                  <div
-                                    key={`${
-                                      device.id ?? device.model ?? ""
-                                    }-store-${i}`}
-                                    className="flex items-center justify-between text-sm bg-gradient-to-br from-purple-50 to-blue-50 px-3 py-2 rounded-lg"
-                                  >
-                                    <div className="flex items-center gap-2">
-                                      {logoSrc ? (
-                                        <img
-                                          src={logoSrc}
-                                          alt={
-                                            storeObj?.name || storePrice.store
-                                          }
-                                          className="w-6 h-6 object-contain"
-                                        />
-                                      ) : (
-                                        <FaStore className="text-gray-400" />
-                                      )}
-                                      <span className="font-medium text-gray-900 capitalize">
-                                        {storePrice.store || "Online Store"}
-                                      </span>
+                        return (
+                          <div className="mb-4">
+                            <div className="flex items-center justify-between gap-2 mb-3">
+                              <h4 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
+                                <FaStore className="text-green-500" />
+                                Available At
+                              </h4>
+                            </div>
+                            <div className="space-y-2">
+                              {availableStoreRows
+                                .slice(0, 3)
+                                .map((storePrice, i) => {
+                                  const storeObj =
+                                    storePrice.storeObj ||
+                                    (getStore
+                                      ? getStore(
+                                          storePrice.store ||
+                                            storePrice.store_name ||
+                                            storePrice.storeName ||
+                                            "",
+                                        )
+                                      : null);
+                                  const storeNameCandidate =
+                                    storePrice.display_store_name ||
+                                    storePrice.store ||
+                                    storePrice.store_name ||
+                                    storePrice.storeName ||
+                                    storeObj?.name ||
+                                    "";
+                                  const ctaText =
+                                    storePrice.cta_label || "Buy Now";
+                                  const isPreorderCta =
+                                    storePrice.is_prebooking === true ||
+                                    /^pre(book|order)$/i.test(
+                                      String(ctaText).trim(),
+                                    );
+                                  const logoSrc =
+                                    storePrice.logo ||
+                                    (isPreorderCta
+                                      ? device.brandLogo || null
+                                      : getStoreLogo
+                                        ? getStoreLogo(storeNameCandidate)
+                                        : getLogo(storeNameCandidate));
+
+                                  return (
+                                    <div
+                                      key={`${
+                                        device.id ?? device.model ?? ""
+                                      }-store-${i}`}
+                                      className="flex min-h-[46px] items-center justify-between gap-2 text-sm bg-gradient-to-br from-purple-50 to-blue-50 px-3 py-2 rounded-lg"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        {logoSrc ? (
+                                          <div className="h-7 w-7 shrink-0 rounded-md border border-slate-100 bg-white flex items-center justify-center p-1">
+                                            <img
+                                              src={logoSrc}
+                                              alt={
+                                                storeObj?.name ||
+                                                storePrice.store
+                                              }
+                                              className="h-full w-full object-contain"
+                                            />
+                                          </div>
+                                        ) : (
+                                          <div className="h-7 w-7 shrink-0 rounded-md border border-slate-100 bg-white flex items-center justify-center">
+                                            <FaStore className="text-gray-400 text-xs" />
+                                          </div>
+                                        )}
+                                        <span className="font-medium text-gray-900 capitalize">
+                                          {storeNameCandidate || "Online Store"}
+                                        </span>
+                                      </div>
+                                      <div className="font-bold text-green-600">
+                                        {formatPriceDisplay(storePrice.price)}
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        {storePrice.url ? (
+                                          <a
+                                            href={storePrice.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="text-purple-600 hover:text-blue-800 text-xs font-medium flex items-center gap-1"
+                                          >
+                                            {ctaText}
+                                            {isPreorderCta ? (
+                                              <FaShoppingBag className="text-xs opacity-80" />
+                                            ) : (
+                                              <FaExternalLinkAlt className="text-xs opacity-80" />
+                                            )}
+                                          </a>
+                                        ) : (
+                                          <span
+                                            className={`text-xs font-medium inline-flex items-center gap-1 ${
+                                              isPreorderCta
+                                                ? "text-purple-600"
+                                                : "text-gray-400"
+                                            }`}
+                                          >
+                                            {isPreorderCta ? (
+                                              <FaShoppingBag className="text-xs opacity-80" />
+                                            ) : null}
+                                            {ctaText || "Unavailable"}
+                                          </span>
+                                        )}
+                                      </div>
                                     </div>
-                                    <div className="font-bold text-green-600">
-                                      {formatPriceDisplay(storePrice.price)}
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <a
-                                        href={storePrice.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        onClick={(e) => e.stopPropagation()}
-                                        className="text-purple-600 hover:text-blue-800 text-xs font-medium flex items-center gap-1"
-                                      >
-                                        Buy Now
-                                        <FaExternalLinkAlt className="text-xs opacity-80" />
-                                      </a>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            {device.storePrices.length > 3 && (
-                              <div className="text-center text-xs text-gray-500">
-                                +{device.storePrices.length - 3} more stores
-                              </div>
-                            )}
+                                  );
+                                })}
+                              {availabilityState.hiddenCount > 0 && (
+                                <div className="text-center text-xs text-gray-500">
+                                  +{availabilityState.hiddenCount} more stores
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        );
+                      })()}
 
                       {/* Launch Date */}
                       {(() => {

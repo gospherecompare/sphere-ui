@@ -1,0 +1,8 @@
+/* client/src/styles/hideScrollbar.css */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

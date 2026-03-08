@@ -7,6 +7,7 @@ import {
   FaFilter,
   FaLaptop,
   FaMobileAlt,
+  FaShoppingBag,
   FaSearch,
   FaStore,
   FaTv,
@@ -204,6 +205,12 @@ const mapStorePrice = (sp) => {
     storeName: first(s.store_name, s.store, s.storeName, "Store"),
     price: num(s.price),
     url: first(s.url, s.link),
+    saleStartDate: first(s.sale_start_date, s.sale_date, s.saleStartDate),
+    isPrebooking: s.is_prebooking === true,
+    isLive: s.is_live === true,
+    availabilityStatus: first(s.availability_status),
+    ctaLabel: first(s.cta_label),
+    logo: first(s.logo),
   };
 };
 
@@ -261,6 +268,150 @@ const getStorePrices = (row, variants) => {
   });
   dedup.sort((a, b) => (a.price ?? Number.MAX_SAFE_INTEGER) - (b.price ?? Number.MAX_SAFE_INTEGER));
   return dedup;
+};
+
+const getIndiaDateOnly = () => {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const tokens = {};
+  parts.forEach((part) => {
+    if (part.type !== "literal") tokens[part.type] = part.value;
+  });
+  return `${tokens.year}-${tokens.month}-${tokens.day}`;
+};
+
+const normalizeDateOnly = (value) => {
+  if (!value) return null;
+  const raw = String(value).trim();
+  if (!raw) return null;
+  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString().slice(0, 10);
+};
+
+const formatSaleStartLabel = (value) => {
+  const normalized = normalizeDateOnly(value);
+  if (!normalized) return "";
+  const date = new Date(`${normalized}T00:00:00+05:30`);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const isPrebookingStore = (store, launchDate = null) => {
+  if (store?.isPrebooking === true) return true;
+  if (store?.availabilityStatus === "prebooking") return true;
+  if (/^pre(book|order)$/i.test(String(store?.ctaLabel || "").trim()))
+    return true;
+  const saleStartDate = normalizeDateOnly(store?.saleStartDate);
+  if (saleStartDate) {
+    return saleStartDate > getIndiaDateOnly();
+  }
+  if (!saleStartDate) {
+    const hasBuyLink = Boolean(String(store?.url || "").trim());
+    if (!hasBuyLink) return true;
+    const normalizedLaunchDate = normalizeDateOnly(launchDate);
+    return Boolean(
+      normalizedLaunchDate && normalizedLaunchDate >= getIndiaDateOnly(),
+    );
+  }
+  return false;
+};
+
+const normalizeStoreKey = (value) =>
+  String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+
+const getOfficialBrandStoreUrl = (stores, brandName, brandWebsite = null) => {
+  if (typeof brandWebsite === "string" && brandWebsite.trim()) {
+    return brandWebsite.trim();
+  }
+  const brandKey = normalizeStoreKey(brandName);
+  if (!brandKey) return null;
+
+  return (
+    arr(stores).find((store) => {
+      const storeName = normalizeStoreKey(
+        store?.storeName || store?.store || store?.store_name,
+      );
+      if (!store?.url || !storeName) return false;
+      return (
+        storeName === brandKey ||
+        storeName.includes(`${brandKey}store`) ||
+        storeName.includes(`${brandKey}official`) ||
+        storeName.includes(`official${brandKey}`)
+      );
+    })?.url || null
+  );
+};
+
+const getAvailabilityRows = (
+  stores,
+  brandName,
+  brandLogo,
+  brandWebsite = null,
+  launchDate = null,
+) => {
+  const normalizedStores = arr(stores).map((store) => {
+    const saleStartDate = normalizeDateOnly(store?.saleStartDate);
+    const prebooking = isPrebookingStore(store, launchDate);
+    return {
+      ...store,
+      saleStartDate,
+      isPrebooking: prebooking,
+      isLive: !prebooking,
+      ctaLabel: prebooking ? "Preorder" : store?.ctaLabel || "Buy Now",
+    };
+  });
+
+  const liveStores = normalizedStores.filter((store) => !store.isPrebooking);
+  liveStores.sort(
+    (a, b) => (a.price ?? Number.MAX_SAFE_INTEGER) - (b.price ?? Number.MAX_SAFE_INTEGER),
+  );
+  if (liveStores.length > 0) {
+    return { mode: "live", stores: liveStores, hiddenCount: 0 };
+  }
+
+  const prebookingStores = normalizedStores.filter((store) => store.isPrebooking);
+  prebookingStores.sort(
+    (a, b) => (a.price ?? Number.MAX_SAFE_INTEGER) - (b.price ?? Number.MAX_SAFE_INTEGER),
+  );
+  if (prebookingStores.length === 0) {
+    return { mode: "live", stores: normalizedStores, hiddenCount: 0 };
+  }
+
+  const primaryPrebooking = prebookingStores[0];
+  const officialBrandUrl = getOfficialBrandStoreUrl(
+    normalizedStores,
+    brandName,
+    brandWebsite,
+  );
+  return {
+    mode: "prebooking",
+    stores: [
+      {
+        ...primaryPrebooking,
+        storeName: brandName || primaryPrebooking.storeName || "Brand Store",
+        logo: brandLogo || primaryPrebooking.logo || null,
+        url: officialBrandUrl || null,
+        ctaLabel: "Preorder",
+        availabilityNote: primaryPrebooking.saleStartDate
+          ? `Sale starts ${formatSaleStartLabel(primaryPrebooking.saleStartDate)}`
+          : "",
+      },
+    ],
+    hiddenCount: 0,
+  };
 };
 
 const cameraLabel = (row) => {
@@ -509,6 +660,8 @@ const buildProduct = (row, cat, index) => {
     id: row.product_id ?? row.id ?? null,
     name: first(row.name, row.product_name, row.model, "Smartphone"),
     brand: first(row.brand_name, row.brand),
+    brand_logo: first(row.brand_logo, row.brandLogo),
+    brand_website: first(row.brand_website, row.brandWebsite),
     image: images[0] || "",
     images,
     stores,
@@ -558,6 +711,10 @@ const mergeProducts = (items) => {
     }
     if (existing.specScore == null && item.specScore != null) {
       existing.specScore = item.specScore;
+    }
+    if (!existing.brand_logo && item.brand_logo) existing.brand_logo = item.brand_logo;
+    if (!existing.brand_website && item.brand_website) {
+      existing.brand_website = item.brand_website;
     }
     if (!existing.image && item.image) existing.image = item.image;
     if ((!existing.images || !existing.images.length) && arr(item.images).length) {
@@ -1422,6 +1579,16 @@ const TrendingProductsHub = () => {
                     url: text(s?.url),
                     storeObj: s?.storeObj || null,
                     logo: text(s?.logo),
+                    saleStartDate: text(
+                      s?.saleStartDate || s?.sale_start_date || s?.sale_date,
+                    ),
+                    isPrebooking:
+                      s?.isPrebooking === true || s?.is_prebooking === true,
+                    isLive: s?.isLive === true || s?.is_live === true,
+                    availabilityStatus: text(
+                      s?.availabilityStatus || s?.availability_status,
+                    ),
+                    ctaLabel: text(s?.ctaLabel || s?.cta_label),
                   };
                   const existing = dedupedStoreMap.get(key);
                   if (!existing) {
@@ -1439,14 +1606,40 @@ const TrendingProductsHub = () => {
                   }
                   if (!existing.url && candidate.url) existing.url = candidate.url;
                   if (!existing.logo && candidate.logo) existing.logo = candidate.logo;
+                  if (!existing.saleStartDate && candidate.saleStartDate) {
+                    existing.saleStartDate = candidate.saleStartDate;
+                  }
+                  if (!existing.ctaLabel && candidate.ctaLabel) {
+                    existing.ctaLabel = candidate.ctaLabel;
+                  }
                 });
                 const availableStores = Array.from(dedupedStoreMap.values()).sort(
                   (a, b) =>
                     (num(a.price) ?? Number.MAX_SAFE_INTEGER) -
                     (num(b.price) ?? Number.MAX_SAFE_INTEGER),
                 );
+                const availabilityState =
+                  activeCategory === "smartphones"
+                    ? getAvailabilityRows(
+                        availableStores,
+                        p.brand,
+                        p.brand_logo || p.brandLogo || null,
+                        p.brand_website || p.brandWebsite || null,
+                        p.release || null,
+                      )
+                    : { mode: "live", stores: availableStores, hiddenCount: 0 };
+                const renderedStores = availabilityState.stores || [];
                 const brandStoreUrl =
-                  availableStores.find((s) => text(s?.url))?.url || null;
+                  availabilityState.mode === "prebooking"
+                    ? renderedStores.find((s) => text(s?.url))?.url || null
+                    : renderedStores.find((s) => text(s?.url))?.url ||
+                      availableStores.find((s) => text(s?.url))?.url ||
+                      null;
+                const resolvedPriceText =
+                  activeCategory === "smartphones" &&
+                  renderedStores[0]?.price != null
+                    ? formatStorePriceDisplay(renderedStores[0].price)
+                    : p.priceText;
                 const releasedOn = dateLabel(p.release);
                 return (
                   <article
@@ -1536,18 +1729,18 @@ const TrendingProductsHub = () => {
                             </a>
                           ) : null}
                           <div className="text-lg font-bold text-green-600">
-                            {p.priceText}
+                            {resolvedPriceText}
                           </div>
                         </div>
                       </div>
 
-                      {(availableStores.length > 0 ||
+                      {(renderedStores.length > 0 ||
                         (activeCategory === "smartphones" && releasedOn)) ? (
                         <div
                           className="mt-3 sm:mt-4 md:mt-5 pt-3 sm:pt-4 md:pt-5 border-t border-indigo-100"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          {availableStores.length > 0 ? (
+                          {renderedStores.length > 0 ? (
                             <div className="mb-4">
                               <div className="flex items-center justify-between gap-2 mb-3">
                                 <h4 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
@@ -1556,7 +1749,7 @@ const TrendingProductsHub = () => {
                                 </h4>
                               </div>
                               <div className="space-y-2">
-                                {availableStores
+                                {renderedStores
                                   .slice(0, 3)
                                   .map((store, storeIdx) => {
                                     const storeObj =
@@ -1570,6 +1763,7 @@ const TrendingProductsHub = () => {
                                           )
                                         : null);
                                     const storeNameCandidate =
+                                      store.display_store_name ||
                                       store.store ||
                                       store.store_name ||
                                       store.storeName ||
@@ -1577,9 +1771,15 @@ const TrendingProductsHub = () => {
                                       "Online Store";
                                     const logoSrc =
                                       store.logo ||
-                                      (getStoreLogo
-                                        ? getStoreLogo(storeNameCandidate)
-                                        : getLogo(storeNameCandidate));
+                                      (store.isPrebooking
+                                        ? p.brand_logo || p.brandLogo || null
+                                        : getStoreLogo
+                                          ? getStoreLogo(storeNameCandidate)
+                                          : getLogo(storeNameCandidate));
+                                    const ctaText = store.ctaLabel || "Buy Now";
+                                    const isPreorderCta = /^pre(book|order)$/i.test(
+                                      String(ctaText).trim(),
+                                    );
                                     return (
                                       <div
                                         key={`${p.key}-store-${storeIdx}`}
@@ -1587,12 +1787,24 @@ const TrendingProductsHub = () => {
                                       >
                                         <div className="flex items-center gap-2">
                                           {logoSrc ? (
-                                            <img
-                                              src={logoSrc}
-                                              alt={storeObj?.name || store.store}
-                                              className="w-6 h-6 object-contain"
-                                              loading="lazy"
-                                            />
+                                            <div
+                                              className={
+                                                isPreorderCta
+                                                  ? "w-10 h-10 rounded-2xl bg-slate-100 shadow-sm flex items-center justify-center p-2"
+                                                  : ""
+                                              }
+                                            >
+                                              <img
+                                                src={logoSrc}
+                                                alt={storeObj?.name || store.store}
+                                                className={
+                                                  isPreorderCta
+                                                    ? "w-full h-full object-contain"
+                                                    : "w-6 h-6 object-contain"
+                                                }
+                                                loading="lazy"
+                                              />
+                                            </div>
                                           ) : (
                                             <FaStore className="text-gray-400" />
                                           )}
@@ -1612,17 +1824,39 @@ const TrendingProductsHub = () => {
                                               onClick={(e) => e.stopPropagation()}
                                               className="text-purple-600 hover:text-blue-800 text-xs font-medium flex items-center gap-1"
                                             >
-                                              Buy Now
-                                              <FaExternalLinkAlt className="text-xs opacity-80" />
+                                              {ctaText}
+                                              {isPreorderCta ? (
+                                                <FaShoppingBag className="text-xs opacity-80" />
+                                              ) : (
+                                                <FaExternalLinkAlt className="text-xs opacity-80" />
+                                              )}
                                             </a>
+                                          ) : (
+                                            <span
+                                              className={`text-xs font-medium inline-flex items-center gap-1 ${
+                                                isPreorderCta
+                                                  ? "text-purple-600"
+                                                  : "text-gray-400"
+                                              }`}
+                                            >
+                                              {isPreorderCta ? (
+                                                <FaShoppingBag className="text-xs opacity-80" />
+                                              ) : null}
+                                              {ctaText || "Unavailable"}
+                                            </span>
+                                          )}
+                                          {store.availabilityNote ? (
+                                            <span className="text-[11px] text-gray-500">
+                                              {store.availabilityNote}
+                                            </span>
                                           ) : null}
                                         </div>
                                       </div>
                                     );
                                   })}
-                                {availableStores.length > 3 ? (
+                                {availabilityState.hiddenCount > 0 ? (
                                   <div className="text-center text-xs text-gray-500">
-                                    +{availableStores.length - 3} more stores
+                                    +{availabilityState.hiddenCount} more stores
                                   </div>
                                 ) : null}
                               </div>
