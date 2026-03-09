@@ -5,9 +5,9 @@ const About = () => {
   useTitle({ page: "About" });
 
   return (
-    <main className="min-h-screen bg-white max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-14 space-y-10">
-        <section className="rounded-2xl bg-white/80 backdrop-blur  p-6 sm:p-8 space-y-4">
+    <main className="min-h-screen bg-white max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-1">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-1 space-y-10">
+        <section className="rounded-2xl bg-white/80 backdrop-blur  p-1 sm:p-8 space-y-4">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-purple-600/10 to-blue-600/10 text-xs font-semibold text-purple-700 uppercase tracking-[0.16em]">
             About Hooks
           </div>
@@ -24,9 +24,10 @@ const About = () => {
               The modern consumer faces an overwhelming number of choices across
               smartphones, laptops, networking products, and home appliances.
               Specifications vary widely, pricing changes frequently, and
-              meaningful comparisons are often difficult to find. Hooks addresses
-              this challenge by presenting structured, transparent, and
-              data-driven product information in a clear and accessible format.
+              meaningful comparisons are often difficult to find. Hooks
+              addresses this challenge by presenting structured, transparent,
+              and data-driven product information in a clear and accessible
+              format.
             </p>
             <p>
               Our platform aggregates detailed specifications, pricing variants,
@@ -43,56 +44,6 @@ const About = () => {
               trade-offs, and make well-informed decisions.
             </p>
           </div>
-        </section>
-
-        <section className="p-5 sm:p-6 rounded-xl bg-white  space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">Our Focus</h2>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {[
-              "Comprehensive product specifications",
-              "Side-by-side comparisons",
-              "Pricing and variant analysis",
-              "Trending and most-compared products",
-              "Clear categorization across device types",
-            ].map((item) => (
-              <div
-                key={item}
-                className="flex items-center gap-3 rounded-lg  px-4 py-3 text-sm sm:text-base text-gray-800"
-              >
-                <span className="inline-block w-2 h-2 rounded-full bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600" />
-                <span>{item}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="grid gap-6 sm:grid-cols-3">
-          {[
-            {
-              title: "Our Mission",
-              body: "To simplify complex technology choices by delivering accurate, transparent, and structured product comparisons.",
-            },
-            {
-              title: "Our Vision",
-              body: "To become a trusted reference platform for technology research and product evaluation.",
-            },
-            {
-              title: "Commitment to Transparency",
-              body: "Hooks is built with a strong emphasis on data integrity, performance, and user experience. Content is presented objectively, without promotional bias, enabling users to rely on Hooks as a dependable research resource.",
-            },
-          ].map((item) => (
-            <div
-              key={item.title}
-              className="p-5 sm:p-6 rounded-xl bg-white flex flex-col gap-3"
-            >
-              <h3 className="text-lg font-semibold text-gray-900">
-                {item.title}
-              </h3>
-              <p className="text-gray-700 text-sm sm:text-base leading-relaxed">
-                {item.body}
-              </p>
-            </div>
-          ))}
         </section>
       </div>
     </main>

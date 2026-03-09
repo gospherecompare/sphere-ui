@@ -43,7 +43,7 @@ import {
 } from "react-icons/fa";
 import "../styles/hideScrollbar.css";
 import useDevice from "../hooks/useDevice";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import normalizeProduct from "../utils/normalizeProduct";
 import { Helmet } from "react-helmet-async";
 
@@ -142,6 +142,29 @@ const parseCompareDevicesParam = (value = "") => {
   });
 
   return dedupeCompareEntries(entries.filter(Boolean));
+};
+
+const decodeRouteSegment = (value = "") => {
+  try {
+    return decodeURIComponent(String(value || ""));
+  } catch {
+    return String(value || "");
+  }
+};
+
+const toCompareSlug = (value = "") =>
+  decodeRouteSegment(value)
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/-price-in-india$/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+
+const buildSeoComparePath = (leftName, rightName) => {
+  const leftSlug = toCompareSlug(leftName);
+  const rightSlug = toCompareSlug(rightName);
+  if (!leftSlug || !rightSlug || leftSlug === rightSlug) return "";
+  return `/compare/${leftSlug}-vs-${rightSlug}`;
 };
 
 const sortCompareEntries = (left, right) => {
@@ -254,12 +277,13 @@ const MobileCompare = () => {
   const {
     devices: availableDevices = [],
     loading,
-    fetchDevice,
     getDevice,
     setDevice,
   } = useDevice();
   const location = useLocation();
   const navigate = useNavigate();
+  const { leftSlug = "", rightSlug = "" } = useParams();
+  const isSeoCompareRoute = Boolean(leftSlug && rightSlug);
 
   const activeDevices = isComparing ? comparedDevices : selectedDevices;
   const usedSlots = isComparing
@@ -267,10 +291,84 @@ const MobileCompare = () => {
     : selectedDevices.length;
   const remainingSlots = Math.max(0, MAX_DEVICES - usedSlots);
 
+  const productLookupById = useMemo(() => {
+    const lookup = new Map();
+    (availableDevices || []).forEach((device) => {
+      const resolvedId = String(getResolvedProductId(device) || "").trim();
+      if (!resolvedId || lookup.has(resolvedId)) return;
+      lookup.set(resolvedId, {
+        id: resolvedId,
+        name: device?.name || device?.model || device?.title || "",
+        type: getResolvedProductType(device) || "",
+      });
+    });
+    return lookup;
+  }, [availableDevices]);
+
+  const routeDeviceEntries = useMemo(() => {
+    const normalizedLeftSlug = toCompareSlug(leftSlug);
+    const normalizedRightSlug = toCompareSlug(rightSlug);
+    if (
+      !normalizedLeftSlug ||
+      !normalizedRightSlug ||
+      !Array.isArray(availableDevices) ||
+      availableDevices.length === 0
+    ) {
+      return [];
+    }
+
+    const getDeviceSlug = (device) =>
+      toCompareSlug(device?.name || device?.model || device?.title || "");
+    const leftMatches = availableDevices.filter(
+      (device) => getDeviceSlug(device) === normalizedLeftSlug,
+    );
+    const rightMatches = availableDevices.filter(
+      (device) => getDeviceSlug(device) === normalizedRightSlug,
+    );
+
+    if (leftMatches.length === 0 || rightMatches.length === 0) {
+      return [];
+    }
+
+    let matchedLeft = null;
+    let matchedRight = null;
+    for (const leftDevice of leftMatches) {
+      const leftId = String(getResolvedProductId(leftDevice) || "").trim();
+      const leftType = String(getResolvedProductType(leftDevice) || "")
+        .trim()
+        .toLowerCase();
+      if (!leftId || !leftType) continue;
+
+      const rightDevice = rightMatches.find((candidate) => {
+        const rightId = String(getResolvedProductId(candidate) || "").trim();
+        const rightType = String(getResolvedProductType(candidate) || "")
+          .trim()
+          .toLowerCase();
+        return rightId && rightType && rightId !== leftId && rightType === leftType;
+      });
+
+      if (rightDevice) {
+        matchedLeft = leftDevice;
+        matchedRight = rightDevice;
+        break;
+      }
+    }
+
+    if (!matchedLeft || !matchedRight) return [];
+
+    return dedupeCompareEntries([
+      { baseId: String(getResolvedProductId(matchedLeft)), variantIndex: 0 },
+      { baseId: String(getResolvedProductId(matchedRight)), variantIndex: 0 },
+    ]);
+  }, [availableDevices, leftSlug, rightSlug]);
+
   const queryDeviceEntries = useMemo(() => {
     const params = new URLSearchParams(location.search);
-    return parseCompareDevicesParam(params.get("devices"));
-  }, [location.search]);
+    const fromQuery = parseCompareDevicesParam(params.get("devices"));
+    if (fromQuery.length > 0) return fromQuery;
+    if (routeDeviceEntries.length > 0) return routeDeviceEntries;
+    return [];
+  }, [routeDeviceEntries, location.search]);
 
   const activeCompareEntries = useMemo(() => {
     if (activeDevices.length > 0) {
@@ -311,13 +409,35 @@ const MobileCompare = () => {
     [canonicalCompareEntries],
   );
 
+  const canonicalCompareSlugPath = useMemo(() => {
+    if (canonicalCompareEntries.length !== 2) return "";
+    const resolveName = (entry) => {
+      const baseId = String(entry?.baseId || "").trim();
+      if (!baseId) return "";
+      const fromActive = activeDevices.find(
+        (device) => String(getResolvedProductId(device) || "").trim() === baseId,
+      );
+      if (fromActive?.name) return fromActive.name;
+      return productLookupById.get(baseId)?.name || "";
+    };
+
+    const [leftEntry, rightEntry] = canonicalCompareEntries;
+    return buildSeoComparePath(resolveName(leftEntry), resolveName(rightEntry));
+  }, [activeDevices, canonicalCompareEntries, productLookupById]);
+
   const canonicalComparePath = useMemo(() => {
-    const basePath = location.pathname || "/compare";
-    if (!canonicalDevicesParam) return basePath;
+    const useDevicesQueryParam =
+      !canonicalCompareSlugPath ||
+      canonicalCompareEntries.length !== 2 ||
+      canonicalCompareEntries.some(
+        (entry) => normalizeVariantIndex(entry?.variantIndex ?? 0) !== 0,
+      );
+    const basePath = canonicalCompareSlugPath || "/compare";
+    if (!useDevicesQueryParam || !canonicalDevicesParam) return basePath;
     const params = new URLSearchParams();
     params.set("devices", canonicalDevicesParam);
     return `${basePath}?${params.toString()}`;
-  }, [location.pathname, canonicalDevicesParam]);
+  }, [canonicalCompareEntries, canonicalCompareSlugPath, canonicalDevicesParam]);
 
   const canonicalCompareUrl = useMemo(
     () => `${SITE_ORIGIN}${canonicalComparePath}`,
@@ -325,37 +445,66 @@ const MobileCompare = () => {
   );
 
   useEffect(() => {
+    if (
+      isSeoCompareRoute &&
+      availableDevices.length === 0 &&
+      routeDeviceEntries.length === 0
+    ) {
+      return;
+    }
+
     const currentParams = new URLSearchParams(location.search);
     const currentDevicesParam = stringifyCompareDevicesParam(
       parseCompareDevicesParam(currentParams.get("devices")),
     );
+    const useDevicesQueryParam =
+      !canonicalCompareSlugPath ||
+      canonicalCompareEntries.length !== 2 ||
+      canonicalCompareEntries.some(
+        (entry) => normalizeVariantIndex(entry?.variantIndex ?? 0) !== 0,
+      );
 
     const nextParams = new URLSearchParams(location.search);
-    if (canonicalDevicesParam) nextParams.set("devices", canonicalDevicesParam);
-    else nextParams.delete("devices");
+    if (useDevicesQueryParam && canonicalDevicesParam) {
+      nextParams.set("devices", canonicalDevicesParam);
+    } else {
+      nextParams.delete("devices");
+    }
 
     const compareType = getResolvedProductType(activeDevices?.[0]);
-    if (compareType) nextParams.set("type", String(compareType));
-    else nextParams.delete("type");
+    if (useDevicesQueryParam && compareType) {
+      nextParams.set("type", String(compareType));
+    } else {
+      nextParams.delete("type");
+    }
 
+    const targetPath = canonicalCompareSlugPath || "/compare";
     const nextSearch = nextParams.toString();
-    const nextUrl = `${location.pathname}${nextSearch ? `?${nextSearch}` : ""}`;
+    const nextUrl = `${targetPath}${nextSearch ? `?${nextSearch}` : ""}`;
     const currentUrl = `${location.pathname}${location.search}`;
 
-    const hasDeviceParamChanged = currentDevicesParam !== canonicalDevicesParam;
+    const expectedDevicesParam = useDevicesQueryParam ? canonicalDevicesParam : "";
+    const expectedType = useDevicesQueryParam ? String(compareType || "") : "";
+    const hasDeviceParamChanged = currentDevicesParam !== expectedDevicesParam;
     const hasTypeChanged =
-      String(currentParams.get("type") || "") !== String(compareType || "");
+      String(currentParams.get("type") || "") !== expectedType;
+    const hasPathChanged = String(location.pathname || "") !== targetPath;
 
-    if (!hasDeviceParamChanged && !hasTypeChanged) return;
+    if (!hasPathChanged && !hasDeviceParamChanged && !hasTypeChanged) return;
     if (nextUrl === currentUrl) return;
 
     navigate(nextUrl, { replace: true });
   }, [
     activeDevices,
+    availableDevices.length,
+    canonicalCompareEntries,
+    canonicalCompareSlugPath,
     canonicalDevicesParam,
+    isSeoCompareRoute,
     location.pathname,
     location.search,
     navigate,
+    routeDeviceEntries.length,
   ]);
 
   // If navigation state provides an initialProduct, use it immediately
@@ -2017,9 +2166,10 @@ const MobileCompare = () => {
         const devicesParam = params.get("devices");
         const forcedType = params.get("type");
         const descParam = params.get("desc");
+        const routeEntries = Array.isArray(routeDeviceEntries)
+          ? routeDeviceEntries
+          : [];
 
-        const getProductType = (d) =>
-          d?.productType || d?.deviceType || d?.product_type || null;
         const getProductId = (d) =>
           d?.productId ?? d?.id ?? d?.product_id ?? null;
 
@@ -2132,6 +2282,16 @@ const MobileCompare = () => {
               addedAny;
           }
         }
+        if (!toAdd && !devicesParam && routeEntries.length > 0) {
+          for (const entry of routeEntries) {
+            addedAny =
+              (await resolveAndAdd(
+                entry.baseId,
+                null,
+                normalizeVariantIndex(entry.variantIndex ?? 0),
+              )) || addedAny;
+          }
+        }
 
         if (descParam) setSharedDescription(String(descParam));
 
@@ -2143,9 +2303,7 @@ const MobileCompare = () => {
   }, [
     location.search,
     availableDevices,
-    navigate,
-    location.pathname,
-    fetchDevice,
+    routeDeviceEntries,
     getDevice,
     setDevice,
   ]);
@@ -2436,11 +2594,17 @@ const MobileCompare = () => {
     setSelectedDevices([]);
     setComparedDevices([]);
     setIsComparing(false);
-    navigate(location.pathname, { replace: true });
+    navigate("/compare", { replace: true });
   };
 
   const buildShareUrl = () => {
     const devicesParam = stringifyCompareDevicesParam(activeCompareEntries);
+    const useDevicesQueryParam =
+      !canonicalCompareSlugPath ||
+      activeCompareEntries.length !== 2 ||
+      activeCompareEntries.some(
+        (entry) => normalizeVariantIndex(entry?.variantIndex ?? 0) !== 0,
+      );
 
     // Build a human-friendly description from content (overview processor + price), truncated
     const overviewDesc = activeDevices
@@ -2461,12 +2625,16 @@ const MobileCompare = () => {
         : overviewDesc;
 
     const params = new URLSearchParams();
-    if (devicesParam) params.set("devices", devicesParam);
+    if (useDevicesQueryParam && devicesParam) {
+      params.set("devices", devicesParam);
+    }
     const compareType = getResolvedProductType(activeDevices[0]);
-    if (compareType) params.set("type", String(compareType));
+    if (useDevicesQueryParam && compareType) {
+      params.set("type", String(compareType));
+    }
     if (desc) params.set("desc", desc);
 
-    const basePath = location.pathname || "/compare";
+    const basePath = canonicalCompareSlugPath || "/compare";
     const query = params.toString();
     const url = `${SITE_ORIGIN}${basePath}${query ? `?${query}` : ""}`;
 

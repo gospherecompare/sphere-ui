@@ -216,14 +216,6 @@ const Footer = () => {
               </div>
               <div>
                 <Link
-                  to="/blogs"
-                  className="hover:text-purple-400 transition-colors duration-200 text-gray-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 rounded"
-                >
-                  Blogs
-                </Link>
-              </div>
-              <div>
-                <Link
                   to="/privacy-policy"
                   className="hover:text-purple-400 transition-colors duration-200 text-gray-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 rounded"
                 >

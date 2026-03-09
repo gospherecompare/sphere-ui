@@ -1098,6 +1098,8 @@ const Smartphones = () => {
         "",
       ),
       brandWebsite: pick(
+        toString(apiDevice.official_preorder_url),
+        toString(apiDevice.officialPreorderUrl),
         toString(apiDevice.brand_website),
         toString(apiDevice.brandWebsite),
         toString(apiDevice.brand_url),
@@ -1125,7 +1127,12 @@ const Smartphones = () => {
               "",
           ).trim(),
         ),
-      Hookss_score: toNumber(apiDevice.Hookss_score ?? apiDevice.HookssScore),
+      Hookss_score: toNumber(
+        apiDevice.Hookss_score ??
+          apiDevice.HookssScore ??
+          apiDevice.hook_score ??
+          apiDevice.hookScore,
+      ),
       spec_score: overallScoreRaw,
       overall_score: overallScoreRaw,
       overall_score_display:
@@ -1138,7 +1145,11 @@ const Smartphones = () => {
       ),
       freshness: toNumber(apiDevice.freshness),
       Hookss_calculated_at:
-        apiDevice.Hookss_calculated_at ?? apiDevice.HookssCalculatedAt ?? null,
+        apiDevice.Hookss_calculated_at ??
+        apiDevice.HookssCalculatedAt ??
+        apiDevice.hook_calculated_at ??
+        apiDevice.hookCalculatedAt ??
+        null,
       price: numericPrice > 0 ? `₹${numericPrice.toLocaleString()}` : "",
       numericPrice: numericPrice,
       rating: parseFloat(apiDevice.rating) || 0,

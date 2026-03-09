@@ -15,6 +15,7 @@ const __dirname = path.dirname(__filename);
 const SITE_ORIGIN = "https://tryhook.shop";
 const API_BASE_URL = "https://api.apisphere.in/api";
 const MAX_DETAIL_ROUTES_PER_CATEGORY = 200;
+const MAX_COMPARE_ROUTES = 300;
 const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
 const CURRENT_YEAR = new Date().getFullYear();
 const BUDGET_PHONE_KEYWORDS =
@@ -121,6 +122,15 @@ const extractDetailSlugName = (path, prefix, normalizeTail) => {
     typeof normalizeTail === "function" ? normalizeTail(tail) : tail;
   if (!normalizedTail) return "";
   return toReadableTitleFromSlug(normalizedTail);
+};
+
+const extractComparePairNames = (path) => {
+  const match = String(path || "").match(/^\/compare\/([^/]+)-vs-([^/]+)$/i);
+  if (!match) return null;
+  const left = toReadableTitleFromSlug(match[1]);
+  const right = toReadableTitleFromSlug(match[2]);
+  if (!left || !right) return null;
+  return { left, right };
 };
 
 const toSlug = (value = "") =>
@@ -385,10 +395,44 @@ const fetchDetailRoutesFromApi = async () => {
   return [...new Set([...routes, ...aliasRoutes])];
 };
 
+const fetchCompareRoutesFromApi = async () => {
+  const rows = await fetchApiRows(
+    `${API_BASE_URL}/public/trending/most-compared`,
+    ["mostCompared"],
+  );
+  const routes = [];
+
+  for (const row of rows) {
+    if (routes.length >= MAX_COMPARE_ROUTES) break;
+    const leftType = String(row?.product_type || "").trim().toLowerCase();
+    const rightType = String(row?.compared_product_type || "")
+      .trim()
+      .toLowerCase();
+    if (leftType && rightType && leftType !== rightType) continue;
+    const leftSlug = toSlug(row?.product_name || row?.left_product_name || "");
+    const rightSlug = toSlug(
+      row?.compared_product_name || row?.right_product_name || "",
+    );
+    if (!leftSlug || !rightSlug || leftSlug === rightSlug) continue;
+    routes.push(`/compare/${leftSlug}-vs-${rightSlug}`);
+  }
+
+  return [...new Set(routes)];
+};
+
 const getPrerenderRoutes = async () => {
   const sitemapRoutes = routesFromSitemap();
   const detailRoutes = await fetchDetailRoutesFromApi();
-  return [...new Set(["/", ...STATIC_PRERENDER_ROUTES, ...sitemapRoutes, ...detailRoutes])];
+  const compareRoutes = await fetchCompareRoutesFromApi();
+  return [
+    ...new Set([
+      "/",
+      ...STATIC_PRERENDER_ROUTES,
+      ...sitemapRoutes,
+      ...detailRoutes,
+      ...compareRoutes,
+    ]),
+  ];
 };
 
 const NOINDEX_SITEMAP_PATHS = new Set([
@@ -457,6 +501,7 @@ const resolveSeo = (routePath) => {
   const laptopDetailName = extractDetailSlugName(canonicalPath, "/laptops/");
   const tvDetailName = extractDetailSlugName(canonicalPath, "/tvs/");
   const blogDetailName = extractDetailSlugName(canonicalPath, "/blogs/");
+  const comparePair = extractComparePairNames(canonicalPath);
   const rules = [
     {
       test: (p) => p === "/",
@@ -532,11 +577,15 @@ const resolveSeo = (routePath) => {
     },
     {
       test: (p) => p.startsWith("/compare"),
-      title: "Device Comparison - Side by Side Specs & Prices | Hook",
-      description:
-        "Compare devices side by side with full specs, pricing, and feature differences to make faster buying decisions.",
-      keywords:
-        "device comparison, compare smartphones laptops tvs, compare smartphone tv laptops, compare spec online, compare prices india, side by side comparison, best gadget comparison site",
+      title: comparePair
+        ? `${comparePair.left} vs ${comparePair.right}: Specs, Price & Feature Comparison | Hook`
+        : "Device Comparison - Side by Side Specs & Prices | Hook",
+      description: comparePair
+        ? `Compare ${comparePair.left} and ${comparePair.right} side by side with full specifications, pricing, and feature differences on Hook.`
+        : "Compare devices side by side with full specs, pricing, and feature differences to make faster buying decisions.",
+      keywords: comparePair
+        ? `${comparePair.left.toLowerCase()} vs ${comparePair.right.toLowerCase()}, ${comparePair.left.toLowerCase()} comparison, ${comparePair.right.toLowerCase()} comparison, compare devices india, side by side comparison`
+        : "device comparison, compare smartphones laptops tvs, compare smartphone tv laptops, compare spec online, compare prices india, side by side comparison, best gadget comparison site",
     },
     {
       test: (p) => p.startsWith("/trending"),
