@@ -206,7 +206,9 @@ export const fetchSmartphones = createAsyncThunk(
   // Accept an optional options object: { feature }
   async (opts = {}, { rejectWithValue }) => {
     try {
-      const res = await fetch("https://api.apisphere.in/api/smartphones");
+      const res = await fetch("https://api.apisphere.in/api/smartphones", {
+        cache: "no-store",
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
@@ -277,6 +279,13 @@ export const fetchSmartphones = createAsyncThunk(
       return rejectWithValue(err.message || String(err));
     }
   },
+  {
+    condition: (opts, { getState }) => {
+      if (opts && opts.force === true) return true;
+      const state = getState();
+      return !state?.device?.loading && !state?.device?.loaded;
+    },
+  },
 );
 
 // Trending smartphones (DB-driven)
@@ -286,6 +295,7 @@ export const fetchTrendingSmartphones = createAsyncThunk(
     try {
       const res = await fetch(
         "https://api.apisphere.in/api/public/trending/smartphones",
+        { cache: "no-store" },
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
@@ -356,6 +366,7 @@ export const fetchNewLaunchSmartphones = createAsyncThunk(
     try {
       const res = await fetch(
         "https://api.apisphere.in/api/public/new/smartphones",
+        { cache: "no-store" },
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
@@ -418,9 +429,11 @@ export const fetchNewLaunchSmartphones = createAsyncThunk(
 
 export const fetchNetworking = createAsyncThunk(
   "device/fetchNetworking",
-  async (_, { rejectWithValue }) => {
+  async (opts = {}, { rejectWithValue }) => {
     try {
-      const res = await fetch("https://api.apisphere.in/api/networking");
+      const res = await fetch("https://api.apisphere.in/api/networking", {
+        cache: "no-store",
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
       const arr = Array.isArray(body)
@@ -437,6 +450,15 @@ export const fetchNetworking = createAsyncThunk(
       return rejectWithValue(err.message || String(err));
     }
   },
+  {
+    condition: (opts, { getState }) => {
+      if (opts && opts.force === true) return true;
+      const state = getState();
+      return (
+        !state?.device?.networkingLoading && !state?.device?.networkingLoaded
+      );
+    },
+  },
 );
 
 // Trending networking
@@ -446,6 +468,7 @@ export const fetchTrendingNetworking = createAsyncThunk(
     try {
       const res = await fetch(
         "https://api.apisphere.in/api/public/trending/networking",
+        { cache: "no-store" },
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
@@ -472,6 +495,7 @@ export const fetchNewLaunchNetworking = createAsyncThunk(
     try {
       const res = await fetch(
         "https://api.apisphere.in/api/public/new/networking",
+        { cache: "no-store" },
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
@@ -493,9 +517,11 @@ export const fetchNewLaunchNetworking = createAsyncThunk(
 
 export const fetchLaptops = createAsyncThunk(
   "device/fetchLaptops",
-  async (_, { rejectWithValue }) => {
+  async (opts = {}, { rejectWithValue }) => {
     try {
-      const res = await fetch("https://api.apisphere.in/api/laptops");
+      const res = await fetch("https://api.apisphere.in/api/laptops", {
+        cache: "no-store",
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
       const arr = Array.isArray(body)
@@ -619,6 +645,13 @@ export const fetchLaptops = createAsyncThunk(
       return rejectWithValue(err.message || String(err));
     }
   },
+  {
+    condition: (opts, { getState }) => {
+      if (opts && opts.force === true) return true;
+      const state = getState();
+      return !state?.device?.laptopsLoading && !state?.device?.laptopsLoaded;
+    },
+  },
 );
 
 // Trending laptops
@@ -628,6 +661,7 @@ export const fetchTrendingLaptops = createAsyncThunk(
     try {
       const res = await fetch(
         "https://api.apisphere.in/api/public/trending/laptops",
+        { cache: "no-store" },
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
@@ -656,6 +690,7 @@ export const fetchNewLaunchLaptops = createAsyncThunk(
     try {
       const res = await fetch(
         "https://api.apisphere.in/api/public/new/laptops",
+        { cache: "no-store" },
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
@@ -677,9 +712,11 @@ export const fetchNewLaunchLaptops = createAsyncThunk(
 
 export const fetchHomeAppliances = createAsyncThunk(
   "device/fetchHomeAppliances",
-  async (_, { rejectWithValue }) => {
+  async (opts = {}, { rejectWithValue }) => {
     try {
-      const res = await fetch("https://api.apisphere.in/api/tvs");
+      const res = await fetch("https://api.apisphere.in/api/tvs", {
+        cache: "no-store",
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
       const arr = Array.isArray(body)
@@ -696,6 +733,16 @@ export const fetchHomeAppliances = createAsyncThunk(
       return rejectWithValue(err.message || String(err));
     }
   },
+  {
+    condition: (opts, { getState }) => {
+      if (opts && opts.force === true) return true;
+      const state = getState();
+      return (
+        !state?.device?.homeAppliancesLoading &&
+        !state?.device?.homeAppliancesLoaded
+      );
+    },
+  },
 );
 
 // Trending home appliances
@@ -705,6 +752,7 @@ export const fetchTrendingHomeAppliances = createAsyncThunk(
     try {
       const res = await fetch(
         "https://api.apisphere.in/api/public/trending/tvs",
+        { cache: "no-store" },
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
@@ -729,7 +777,9 @@ export const fetchNewLaunchHomeAppliances = createAsyncThunk(
   "device/fetchNewLaunchHomeAppliances",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch("https://api.apisphere.in/api/public/new/tvs");
+      const res = await fetch("https://api.apisphere.in/api/public/new/tvs", {
+        cache: "no-store",
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
       const arr = Array.isArray(body)
@@ -752,11 +802,15 @@ export const fetchBrands = createAsyncThunk(
   "device/fetchBrands",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch("https://api.apisphere.in/api/brand");
+      const res = await fetch("https://api.apisphere.in/api/brand", {
+        cache: "no-store",
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const arr = Array.isArray(data)
         ? data
+        : Array.isArray(data.brands)
+          ? data.brands
         : Array.isArray(data.data)
           ? data.data
           : Array.isArray(data.rows)
@@ -853,6 +907,7 @@ export const fetchCategories = createAsyncThunk(
       // Use the public categories endpoint (no auth) to avoid 401 on public site
       const res = await fetch("https://api.apisphere.in/api/category", {
         method: "GET",
+        cache: "no-store",
         headers: {
           "Content-Type": "application/json",
         },
@@ -926,6 +981,7 @@ export const fetchSmartphone = createAsyncThunk(
           `https://api.apisphere.in/api/public/product/${encodeURIComponent(
             identifier,
           )}`,
+          { cache: "no-store" },
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const body = await res.json();
@@ -1127,6 +1183,7 @@ const deviceSlice = createSlice({
       })
       .addCase(fetchSmartphones.rejected, (state, action) => {
         state.loading = false;
+        state.loaded = true;
         state.error =
           action.payload || action.error?.message || String(action.error);
       })
@@ -1201,6 +1258,7 @@ const deviceSlice = createSlice({
       })
       .addCase(fetchNetworking.rejected, (state, action) => {
         state.networkingLoading = false;
+        state.networkingLoaded = true;
         state.error =
           action.payload || action.error?.message || String(action.error);
       });
@@ -1245,6 +1303,7 @@ const deviceSlice = createSlice({
       })
       .addCase(fetchHomeAppliances.rejected, (state, action) => {
         state.homeAppliancesLoading = false;
+        state.homeAppliancesLoaded = true;
         state.error =
           action.payload || action.error?.message || String(action.error);
       });
@@ -1289,6 +1348,7 @@ const deviceSlice = createSlice({
       })
       .addCase(fetchLaptops.rejected, (state, action) => {
         state.laptopsLoading = false;
+        state.laptopsLoaded = true;
         state.error =
           action.payload || action.error?.message || String(action.error);
       });

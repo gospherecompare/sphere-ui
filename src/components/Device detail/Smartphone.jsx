@@ -49,7 +49,6 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { smartphoneMeta } from "../../constants/meta";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
-import { getHookBadge } from "../../utils/hookScore";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
 import { normalizeGroupKey } from "../../utils/groupScoreStats";
@@ -708,7 +707,6 @@ const MobileDetailCard = () => {
       ),
     [localResolved, selectedDevice],
   );
-  const hookBadge = useMemo(() => getHookBadge(mobileData), [mobileData]);
   const pickScore100 = useCallback((...values) => {
     for (const value of values) {
       const normalized = normalizeScore100(value);
@@ -3833,14 +3831,6 @@ Price: ${price}
                     <span>AI Phone</span>
                   </span>
                 ) : null}
-                {hookBadge ? (
-                  <span
-                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 whitespace-nowrap ${hookBadge.className}`}
-                    title={hookBadge.title}
-                  >
-                    {hookBadge.label}
-                  </span>
-                ) : null}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -4110,14 +4100,6 @@ Price: ${price}
                           </svg>
                         </span>
                         <span>AI Phone</span>
-                      </span>
-                    ) : null}
-                    {hookBadge ? (
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 whitespace-nowrap ${hookBadge.className}`}
-                        title={hookBadge.title}
-                      >
-                        {hookBadge.label}
                       </span>
                     ) : null}
                   </h4>

@@ -14,9 +14,52 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const SITE_ORIGIN = "https://tryhook.shop";
 const API_BASE_URL = "https://api.apisphere.in/api";
+const API_ORIGIN = "https://api.apisphere.in";
 const MAX_DETAIL_ROUTES_PER_CATEGORY = 200;
 const MAX_COMPARE_ROUTES = 300;
 const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
+const PRELOAD_CANONICAL_PATHS = new Set([
+  "/",
+  "/smartphones",
+  "/laptops",
+  "/tvs",
+  "/networking",
+  "/trending/smartphones",
+  "/trending/laptops",
+  "/trending/tvs",
+]);
+const PRELOAD_API_ENDPOINTS = [
+  `${API_BASE_URL}/smartphones`,
+  `${API_BASE_URL}/networking`,
+  `${API_BASE_URL}/laptops`,
+  `${API_BASE_URL}/tvs`,
+  `${API_BASE_URL}/brand`,
+  `${API_BASE_URL}/category`,
+  `${API_BASE_URL}/public/trending/smartphones?limit=15`,
+  `${API_BASE_URL}/public/trending/smartphones?limit=120`,
+  `${API_BASE_URL}/public/trending/laptops?limit=15`,
+  `${API_BASE_URL}/public/trending/laptops?limit=120`,
+  `${API_BASE_URL}/public/trending/tvs?limit=15`,
+  `${API_BASE_URL}/public/trending/tvs?limit=120`,
+  `${API_BASE_URL}/public/trending/networking?limit=15`,
+  `${API_BASE_URL}/public/trending/most-compared`,
+  `${API_BASE_URL}/public/popular-features?deviceType=smartphone&days=7&limit=16`,
+  `${API_BASE_URL}/public/popular-features?deviceType=laptop&days=7&limit=16`,
+  `${API_BASE_URL}/public/popular-features?deviceType=notebook&days=7&limit=16`,
+  `${API_BASE_URL}/public/popular-features?deviceType=tv&days=7&limit=16`,
+  `${API_BASE_URL}/public/popular-features?deviceType=television&days=7&limit=16`,
+  `${API_BASE_URL}/public/popular-features?deviceType=home-appliance&days=7&limit=16`,
+  `${API_BASE_URL}/public/online-stores`,
+];
+const PRELOAD_STRIP_KEY_PATTERNS = [
+  /_source$/i,
+  /_raw$/i,
+  /^field_profile$/i,
+  /^hook_rank_score$/i,
+  /^spec_score_price$/i,
+  /^spec_score_price_band$/i,
+  /^spec_score_feature_coverage$/i,
+];
 const CURRENT_YEAR = new Date().getFullYear();
 const BUDGET_PHONE_KEYWORDS =
   "budget phones under 10000, budget phones under 15000, budget phones under 20000, budget phones under 30000, budget phones under 50000";
@@ -274,6 +317,54 @@ const fetchApiRows = async (endpoint, preferredKeys = []) => {
     );
     return [];
   }
+};
+
+const fetchApiBody = async (endpoint) => {
+  if (typeof fetch !== "function") return null;
+  try {
+    const response = await fetch(endpoint);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.warn(
+      `[prerender] Failed to fetch preloaded payload from ${endpoint}: ${error?.message || error}`,
+    );
+    return null;
+  }
+};
+
+const shouldStripPreloadKey = (key = "") =>
+  PRELOAD_STRIP_KEY_PATTERNS.some((pattern) => pattern.test(String(key)));
+
+const sanitizePreloadValue = (value) => {
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizePreloadValue(item));
+  }
+  if (!value || typeof value !== "object") return value;
+
+  const next = {};
+  for (const [key, child] of Object.entries(value)) {
+    if (shouldStripPreloadKey(key)) continue;
+    next[key] = sanitizePreloadValue(child);
+  }
+  return next;
+};
+
+const fetchPreloadedApiPayload = async () => {
+  const byUrl = {};
+  for (const endpoint of PRELOAD_API_ENDPOINTS) {
+    const body = await fetchApiBody(endpoint);
+    if (body != null) byUrl[endpoint] = sanitizePreloadValue(body);
+  }
+  if (Object.keys(byUrl).length === 0) return null;
+  return {
+    version: 1,
+    generatedAt: new Date().toISOString(),
+    apiOrigin: API_ORIGIN,
+    byUrl,
+  };
 };
 
 const fetchDetailRoutesFromApi = async () => {
@@ -668,6 +759,19 @@ const escapeHtml = (value = "") =>
 const replaceMetaTag = (html, regex, tag) =>
   regex.test(html) ? html.replace(regex, tag) : html.replace("</head>", `${tag}\n</head>`);
 
+const escapeInlineJson = (value) =>
+  JSON.stringify(value)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026");
+
+const injectPreloadedPayload = (html, payload) => {
+  if (!payload) return html;
+  if (html.includes('id="hook-prerender-data"')) return html;
+  const scriptTag = `<script id="hook-prerender-data">window.__HOOKS_PRERENDER_DATA__=${escapeInlineJson(payload)};</script>`;
+  return html.replace("</head>", `${scriptTag}\n</head>`);
+};
+
 const applySeoToHtml = (html, routePath) => {
   const seo = resolveSeo(routePath);
   const canonicalUrl = `${SITE_ORIGIN}${seo.canonicalPath}`;
@@ -735,6 +839,9 @@ const applySeoToHtml = (html, routePath) => {
 
 export default defineConfig(async () => {
   const prerenderRoutes = await getPrerenderRoutes();
+  const preloadedApiPayload = await fetchPreloadedApiPayload();
+  const shouldInjectPreloadedPayload = (routePath) =>
+    PRELOAD_CANONICAL_PATHS.has(toCanonicalPath(routePath || "/"));
 
   return {
     plugins: [
@@ -756,10 +863,12 @@ export default defineConfig(async () => {
         }),
         postProcess(renderedRoute) {
           renderedRoute.route = renderedRoute.originalRoute || renderedRoute.route;
-          renderedRoute.html = applySeoToHtml(
-            renderedRoute.html || "",
-            renderedRoute.route || "/",
-          );
+          const routePath = renderedRoute.route || "/";
+          let nextHtml = applySeoToHtml(renderedRoute.html || "", routePath);
+          if (shouldInjectPreloadedPayload(routePath)) {
+            nextHtml = injectPreloadedPayload(nextHtml, preloadedApiPayload);
+          }
+          renderedRoute.html = nextHtml;
           return renderedRoute;
         },
       }),

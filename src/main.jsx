@@ -6,6 +6,11 @@ import App from "./App.jsx";
 import { Provider } from "react-redux";
 import { store } from "./store";
 import { HelmetProvider } from "react-helmet-async";
+import { installApiAliasFetch } from "./utils/installApiAliasFetch";
+import { installPreloadedFetchInterceptor } from "./utils/installPreloadedFetch";
+
+installApiAliasFetch();
+installPreloadedFetchInterceptor();
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>

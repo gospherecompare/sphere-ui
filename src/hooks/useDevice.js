@@ -17,6 +17,15 @@ import {
   fetchSmartphone,
 } from "../store/deviceSlice";
 
+const inFlightInitialLoads = {
+  smartphones: false,
+  networking: false,
+  laptops: false,
+  tvs: false,
+  brands: false,
+  categories: false,
+};
+
 export function useDevice() {
   const dispatch = useDispatch();
   const state = useSelector((s) => s.device || {});
@@ -25,15 +34,66 @@ export function useDevice() {
   // dependencies so the effect won't be re-run unexpectedly and will only
   // dispatch actions when a resource is actually missing.
   useEffect(() => {
-    if (!state.loaded && !state.loading) dispatch(fetchSmartphones());
-    if (!state.networkingLoaded && !state.networkingLoading)
-      dispatch(fetchNetworking());
-    if (!state.laptopsLoaded && !state.laptopsLoading) dispatch(fetchLaptops());
-    if (!state.homeAppliancesLoaded && !state.homeAppliancesLoading)
-      dispatch(fetchHomeAppliances());
-    if (!state.brandsLoaded && !state.brandsLoading) dispatch(fetchBrands());
-    if (!state.categoriesLoaded && !state.categoriesLoading)
-      dispatch(fetchCategories());
+    if (
+      !state.loaded &&
+      !state.loading &&
+      !inFlightInitialLoads.smartphones
+    ) {
+      inFlightInitialLoads.smartphones = true;
+      Promise.resolve(dispatch(fetchSmartphones())).finally(() => {
+        inFlightInitialLoads.smartphones = false;
+      });
+    }
+    if (
+      !state.networkingLoaded &&
+      !state.networkingLoading &&
+      !inFlightInitialLoads.networking
+    ) {
+      inFlightInitialLoads.networking = true;
+      Promise.resolve(dispatch(fetchNetworking())).finally(() => {
+        inFlightInitialLoads.networking = false;
+      });
+    }
+    if (
+      !state.laptopsLoaded &&
+      !state.laptopsLoading &&
+      !inFlightInitialLoads.laptops
+    ) {
+      inFlightInitialLoads.laptops = true;
+      Promise.resolve(dispatch(fetchLaptops())).finally(() => {
+        inFlightInitialLoads.laptops = false;
+      });
+    }
+    if (
+      !state.homeAppliancesLoaded &&
+      !state.homeAppliancesLoading &&
+      !inFlightInitialLoads.tvs
+    ) {
+      inFlightInitialLoads.tvs = true;
+      Promise.resolve(dispatch(fetchHomeAppliances())).finally(() => {
+        inFlightInitialLoads.tvs = false;
+      });
+    }
+    if (
+      !state.brandsLoaded &&
+      !state.brandsLoading &&
+      !inFlightInitialLoads.brands
+    ) {
+      inFlightInitialLoads.brands = true;
+      Promise.resolve(dispatch(fetchBrands())).finally(() => {
+        inFlightInitialLoads.brands = false;
+      });
+    }
+    if (
+      !state.categoriesLoaded &&
+      !state.categoriesLoading &&
+      !inFlightInitialLoads.categories
+    ) {
+      inFlightInitialLoads.categories = true;
+      Promise.resolve(dispatch(fetchCategories())).finally(() => {
+        inFlightInitialLoads.categories = false;
+      });
+    }
   }, [
     dispatch,
     state.loaded,
@@ -129,22 +189,22 @@ export function useDevice() {
     [dispatch],
   );
   const refreshDevices = useCallback(
-    () => dispatch(fetchSmartphones()),
+    () => dispatch(fetchSmartphones({ force: true })),
     [dispatch],
   );
 
   const refreshNetworking = useCallback(
-    () => dispatch(fetchNetworking()),
+    () => dispatch(fetchNetworking({ force: true })),
     [dispatch],
   );
 
   const refreshHomeAppliances = useCallback(
-    () => dispatch(fetchHomeAppliances()),
+    () => dispatch(fetchHomeAppliances({ force: true })),
     [dispatch],
   );
 
   const refreshLaptops = useCallback(
-    () => dispatch(fetchLaptops()),
+    () => dispatch(fetchLaptops({ force: true })),
     [dispatch],
   );
 

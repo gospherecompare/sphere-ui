@@ -48,7 +48,6 @@ import Spinner from "../ui/Spinner";
 import Breadcrumbs from "../Breadcrumbs";
 import { generateSlug } from "../../utils/slugGenerator";
 import normalizeProduct from "../../utils/normalizeProduct";
-import { getHookBadge as getHookssBadge } from "../../utils/hookScore";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
 import {
@@ -207,6 +206,8 @@ const CircularScoreBadge = ({ score, size = 62 }) => {
   );
 };
 
+const API_ASSET_ORIGIN = "https://api.apisphere.in";
+
 const Smartphones = () => {
   // Add animation styles
   const animationStyles = `
@@ -363,6 +364,18 @@ const Smartphones = () => {
     String(value || "")
       .toLowerCase()
       .replace(/[^a-z0-9]/g, "");
+
+  const normalizeAssetUrl = (value) => {
+    const raw = String(value || "").trim();
+    if (!raw) return null;
+    if (/^(https?:|data:|blob:)/i.test(raw)) return raw;
+    if (raw.startsWith("//")) return `https:${raw}`;
+    if (raw.startsWith("/")) return `${API_ASSET_ORIGIN}${raw}`;
+    if (/^(uploads|assets|images)\//i.test(raw)) {
+      return `${API_ASSET_ORIGIN}/${raw.replace(/^\/+/, "")}`;
+    }
+    return raw;
+  };
 
   const isPrebookingStore = (storePrice, launchDate = null) => {
     if (!storePrice) return false;
@@ -528,7 +541,7 @@ const Smartphones = () => {
           store: brandStoreLabel,
           store_name: brandStoreLabel,
           storeName: brandStoreLabel,
-          logo: brandLogo || null,
+          logo: normalizeAssetUrl(brandLogo || null),
           url: officialStoreUrl || "",
           cta_label: "Preorder",
           is_prebooking: true,
@@ -617,7 +630,9 @@ const Smartphones = () => {
                 sale_date: sp.sale_date || sp.saleDate || null,
                 is_prebooking:
                   sp.is_prebooking === true || sp.isPrebooking === true,
-                logo: sp.logo || sp.store_logo || sp.storeLogo || null,
+                logo: normalizeAssetUrl(
+                  sp.logo || sp.store_logo || sp.storeLogo || null,
+                ),
               };
             })
           : [];
@@ -662,7 +677,9 @@ const Smartphones = () => {
             sale_date: sp.sale_date || sp.saleDate || null,
             is_prebooking:
               sp.is_prebooking === true || sp.isPrebooking === true,
-            logo: sp.logo || sp.store_logo || sp.storeLogo || null,
+            logo: normalizeAssetUrl(
+              sp.logo || sp.store_logo || sp.storeLogo || null,
+            ),
           };
         });
       }
@@ -1090,12 +1107,19 @@ const Smartphones = () => {
         toString(apiDevice.brand),
         "",
       ),
-      brandLogo: pick(
-        toString(apiDevice.brand_logo),
-        toString(apiDevice.brandLogo),
-        toString(apiDevice.brand_image),
-        toString(apiDevice.brandImage),
-        "",
+      brandLogo: normalizeAssetUrl(
+        pick(
+          toString(apiDevice.brand_logo),
+          toString(apiDevice.brandLogo),
+          toString(apiDevice.brand_image),
+          toString(apiDevice.brandImage),
+          toString(apiDevice.brand_logo_url),
+          toString(apiDevice.brandLogoUrl),
+          toString(apiDevice.logo_url),
+          toString(apiDevice.logo),
+          toString(apiDevice.brand?.logo),
+          "",
+        ),
       ),
       brandWebsite: pick(
         toString(apiDevice.official_preorder_url),
@@ -1268,7 +1292,9 @@ const Smartphones = () => {
             sp.sale_start_date || sp.saleStartDate || sp.sale_date || null,
           sale_date: sp.sale_date || sp.saleDate || null,
           is_prebooking: sp.is_prebooking === true || sp.isPrebooking === true,
-          logo: sp.logo || sp.store_logo || sp.storeLogo || null,
+          logo: normalizeAssetUrl(
+            sp.logo || sp.store_logo || sp.storeLogo || null,
+          ),
         };
       });
 
@@ -3639,18 +3665,6 @@ const Smartphones = () => {
                                     <span>AI Phone</span>
                                   </span>
                                 ) : null}
-                                {(() => {
-                                  const badge = getHookssBadge(device);
-                                  if (!badge) return null;
-                                  return (
-                                    <span
-                                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 whitespace-nowrap ${badge.className}`}
-                                      title={badge.title}
-                                    >
-                                      {badge.label}
-                                    </span>
-                                  );
-                                })()}
                               </div>
                             </div>
                             <div className="leading-snug">
@@ -3878,13 +3892,14 @@ const Smartphones = () => {
                                     /^pre(book|order)$/i.test(
                                       String(ctaText).trim(),
                                     );
-                                  const logoSrc =
+                                  const rawLogoSrc =
                                     storePrice.logo ||
                                     (isPreorderCta
                                       ? device.brandLogo || null
                                       : getStoreLogo
                                         ? getStoreLogo(storeNameCandidate)
                                         : getLogo(storeNameCandidate));
+                                  const logoSrc = normalizeAssetUrl(rawLogoSrc);
 
                                   return (
                                     <div
