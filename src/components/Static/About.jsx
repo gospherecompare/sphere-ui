@@ -5,7 +5,7 @@ const About = () => {
   useTitle({ page: "About" });
 
   return (
-    <main className="min-h-screen bg-white max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-1">
+    <main className="min-h-screen bg-white max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-1">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-1 space-y-10">
         <section className="rounded-2xl bg-white/80 backdrop-blur  p-1 sm:p-8 space-y-4">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-purple-600/10 to-blue-600/10 text-xs font-semibold text-purple-700 uppercase tracking-[0.16em]">

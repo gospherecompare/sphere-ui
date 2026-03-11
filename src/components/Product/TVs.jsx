@@ -269,7 +269,9 @@ const TVs = () => {
   };
 
   const buildStoreSearchUrl = (storeName, query) => {
-    const normalizedStore = String(storeName || "").toLowerCase().trim();
+    const normalizedStore = String(storeName || "")
+      .toLowerCase()
+      .trim();
     const normalizedQuery = String(query || "").trim();
     if (!normalizedStore || !normalizedQuery) return "";
     if (normalizedStore.includes("base price")) return "";
@@ -605,7 +607,9 @@ const TVs = () => {
   };
 
   const normalizeTvStoreRows = (storeRows, fallbackKeyPrefix = "tv-store") => {
-    const rows = (Array.isArray(storeRows) ? storeRows : toArrayIfNeeded(storeRows))
+    const rows = (
+      Array.isArray(storeRows) ? storeRows : toArrayIfNeeded(storeRows)
+    )
       .map((row, rowIndex) => {
         const storeName = firstNonEmpty(
           row?.store_name,
@@ -651,7 +655,9 @@ const TVs = () => {
       if (pa !== null && pb !== null && pa !== pb) return pa - pb;
       if (pa !== null && pb === null) return -1;
       if (pa === null && pb !== null) return 1;
-      return String(a.store_name || "").localeCompare(String(b.store_name || ""));
+      return String(a.store_name || "").localeCompare(
+        String(b.store_name || ""),
+      );
     });
   };
 
@@ -809,17 +815,18 @@ const TVs = () => {
     });
 
     const aggregatedVariantStores = variants.flatMap((v) => {
-      const prices = normalizeTvStoreRows(v.store_prices, `${v.variant_id}-agg`).map(
-        (sp, spIdx) => ({
-          id: sp.id || `${v.variant_id}-${spIdx}`,
-          variant_id: v.variant_id,
-          store: sp.store_name || sp.store || "Store",
-          price: sp.price,
-          url: sp.url,
-          offer_text: sp.offer_text,
-          delivery_info: sp.delivery_info,
-        }),
-      );
+      const prices = normalizeTvStoreRows(
+        v.store_prices,
+        `${v.variant_id}-agg`,
+      ).map((sp, spIdx) => ({
+        id: sp.id || `${v.variant_id}-${spIdx}`,
+        variant_id: v.variant_id,
+        store: sp.store_name || sp.store || "Store",
+        price: sp.price,
+        url: sp.url,
+        offer_text: sp.offer_text,
+        delivery_info: sp.delivery_info,
+      }));
       if (prices.length === 0 && v.base_price) {
         return [
           {
@@ -1248,8 +1255,7 @@ const TVs = () => {
     );
 
     const mappedVariantStores = rawVariantStorePrices.map((sp, spIdx) => {
-      const storeName =
-        sp.store_name || sp.store || sp.storeName || "Store";
+      const storeName = sp.store_name || sp.store || sp.storeName || "Store";
       const storeObj = getStore ? getStore(storeName) : null;
       const logo =
         (getStoreLogo ? getStoreLogo(storeName) : null) ||
@@ -1354,7 +1360,8 @@ const TVs = () => {
     );
     const variantSummary = firstNonEmpty(variant?.specification_summary);
     const variantSummaryIsSize =
-      normalizeLooseKey(variantSummary) === normalizeLooseKey(resolvedScreenSize);
+      normalizeLooseKey(variantSummary) ===
+      normalizeLooseKey(resolvedScreenSize);
     const usableVariantSummary = variantSummaryIsSize ? "" : variantSummary;
     const resolvedResolution = firstNonEmpty(
       variant?.resolution,
@@ -1367,14 +1374,20 @@ const TVs = () => {
     const resolvedRefreshRate = firstNonEmpty(
       variant?.refresh_rate,
       variant?.attributes?.refresh_rate,
-      extractVariantSpecificValue(device.specs?.refreshRate, resolvedScreenSize),
+      extractVariantSpecificValue(
+        device.specs?.refreshRate,
+        resolvedScreenSize,
+      ),
       device.specs?.refreshRate,
     );
     const resolvedPanelType = firstNonEmpty(
       variant?.panel_type,
       variant?.display_type,
       variant?.attributes?.panel_type,
-      extractVariantSpecificValue(device.specs?.displayType, resolvedScreenSize),
+      extractVariantSpecificValue(
+        device.specs?.displayType,
+        resolvedScreenSize,
+      ),
       device.specs?.displayType,
       device.specs?.type,
     );
@@ -1456,7 +1469,9 @@ const TVs = () => {
         .map((store) => extractNumericPrice(store?.price))
         .filter((price) => price > 0);
       if (candidateStorePrices.length) return Math.min(...candidateStorePrices);
-      return extractNumericPrice(variant?.base_price) || Number.POSITIVE_INFINITY;
+      return (
+        extractNumericPrice(variant?.base_price) || Number.POSITIVE_INFINITY
+      );
     };
 
     const uniqueVariantMap = new Map();
@@ -1525,7 +1540,11 @@ const TVs = () => {
       variants: dedupedVariants,
       availableSizes: dedupedVariants
         .map((variant) =>
-          firstNonEmpty(variant?.screen_size, variant?.size, variant?.variant_key),
+          firstNonEmpty(
+            variant?.screen_size,
+            variant?.size,
+            variant?.variant_key,
+          ),
         )
         .filter(Boolean),
     };
@@ -2536,7 +2555,7 @@ const TVs = () => {
         <meta name="twitter:description" content={seoDescription} />
       </Helmet>
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto p-4 sm:p-6 md:p-8 lg:p-10 bg-white">
+      <div className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8 lg:p-10 bg-white">
         {/* Hero Section - Professional Styling */}
         <div className="mb-8 sm:mb-10 lg:mb-12">
           {/* Badge */}
@@ -3113,7 +3132,7 @@ const TVs = () => {
             {/* BannerSlot disabled (incomplete). */}
 
             {/* Products Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6 auto-rows-fr md:[&>*:nth-child(2n)]:border-l md:[&>*:nth-child(2n)]:border-gray-200 md:[&>*:nth-child(2n)]:pl-6 md:[&>*:nth-child(2n+1)]:pr-6">
+            <div className="grid grid-cols-1 gap-4 sm:gap-5 md:gap-6 auto-rows-fr">
               {sortedVariants.map((device, idx) => (
                 <div
                   key={`${device.id}-${idx}`}
@@ -3130,7 +3149,10 @@ const TVs = () => {
                         </div>
                         <div className="absolute left-1.5 top-1.5 z-10 pointer-events-none">
                           <CircularScoreBadge
-                            score={device.overall_score_display ?? device.overall_score}
+                            score={
+                              device.overall_score_display ??
+                              device.overall_score
+                            }
                             size={42}
                           />
                         </div>
@@ -3214,8 +3236,7 @@ const TVs = () => {
                                     screenSize,
                                   ),
                                   device.specs?.displayType,
-                                  device.specs?.type ||
-                                  "",
+                                  device.specs?.type || "",
                                 ),
                               ).trim();
                               const operatingSystem = String(
@@ -3248,40 +3269,45 @@ const TVs = () => {
                                 Available Sizes
                               </p>
                               <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                                {device.variants.map((variant, variantIndex) => {
-                                  const label = firstNonEmpty(
-                                    variant?.screen_size,
-                                    variant?.size,
-                                    variant?.variant_key,
-                                  );
-                                  if (!label) return null;
-                                  const variantId = getTvVariantIdentity(
-                                    variant,
-                                    variantIndex,
-                                  );
-                                  const activeVariantId = getTvVariantIdentity(
-                                    device.variant,
-                                    0,
-                                  );
-                                  const isSelected = activeVariantId === variantId;
+                                {device.variants.map(
+                                  (variant, variantIndex) => {
+                                    const label = firstNonEmpty(
+                                      variant?.screen_size,
+                                      variant?.size,
+                                      variant?.variant_key,
+                                    );
+                                    if (!label) return null;
+                                    const variantId = getTvVariantIdentity(
+                                      variant,
+                                      variantIndex,
+                                    );
+                                    const activeVariantId =
+                                      getTvVariantIdentity(device.variant, 0);
+                                    const isSelected =
+                                      activeVariantId === variantId;
 
-                                  return (
-                                    <button
-                                      key={`${device.id}-size-${variantId}`}
-                                      type="button"
-                                      onClick={(event) =>
-                                        handleSelectTvSize(device, variant, event)
-                                      }
-                                      className={`shrink-0 px-2.5 py-1 rounded-full border text-[11px] font-semibold transition-colors ${
-                                        isSelected
-                                          ? "bg-purple-600 text-white border-purple-600"
-                                          : "bg-white text-gray-700 border-gray-300 hover:border-purple-300 hover:text-purple-700"
-                                      }`}
-                                    >
-                                      {label}
-                                    </button>
-                                  );
-                                })}
+                                    return (
+                                      <button
+                                        key={`${device.id}-size-${variantId}`}
+                                        type="button"
+                                        onClick={(event) =>
+                                          handleSelectTvSize(
+                                            device,
+                                            variant,
+                                            event,
+                                          )
+                                        }
+                                        className={`shrink-0 px-2.5 py-1 rounded-full border text-[11px] font-semibold transition-colors ${
+                                          isSelected
+                                            ? "bg-purple-600 text-white border-purple-600"
+                                            : "bg-white text-gray-700 border-gray-300 hover:border-purple-300 hover:text-purple-700"
+                                        }`}
+                                      >
+                                        {label}
+                                      </button>
+                                    );
+                                  },
+                                )}
                               </div>
                             </div>
                           )}
@@ -3291,9 +3317,7 @@ const TVs = () => {
                           <div className="flex items-center justify-between">
                             <div>
                               {(() => {
-                                const firstStoreUrl = (
-                                  device.storePrices || []
-                                )
+                                const firstStoreUrl = (device.storePrices || [])
                                   .map((sp) =>
                                     getStoreVisitUrl(
                                       sp?.url,
@@ -3313,7 +3337,9 @@ const TVs = () => {
                                 return (
                                   <a
                                     href={firstStoreUrl || "#"}
-                                    target={firstStoreUrl ? "_blank" : undefined}
+                                    target={
+                                      firstStoreUrl ? "_blank" : undefined
+                                    }
                                     rel={
                                       firstStoreUrl
                                         ? "noopener noreferrer"
@@ -3339,13 +3365,11 @@ const TVs = () => {
                             </div>
                           </div>
                         </div>
-
                       </div>
                     </div>
 
                     {/* Expanded Details */}
                     <div className="mt-3 sm:mt-4 md:mt-5 pt-3 sm:pt-4 md:pt-5">
-
                       {/* Store Availability */}
                       {device.storePrices && device.storePrices.length > 0 && (
                         <div className="mb-4">
@@ -3404,14 +3428,18 @@ const TVs = () => {
                                       {logoSrc ? (
                                         <img
                                           src={logoSrc}
-                                          alt={storeObj?.name || storePrice.store}
+                                          alt={
+                                            storeObj?.name || storePrice.store
+                                          }
                                           className="w-6 h-6 object-contain"
                                         />
                                       ) : (
                                         <FaStore className="text-gray-400" />
                                       )}
                                       <span className="font-medium text-gray-900 capitalize">
-                                        {storePrice.store || storeObj?.name || "Online Store"}
+                                        {storePrice.store ||
+                                          storeObj?.name ||
+                                          "Online Store"}
                                       </span>
                                     </div>
                                     <div className="font-bold text-green-600">
@@ -3912,4 +3940,3 @@ const TVs = () => {
 };
 
 export default TVs;
-

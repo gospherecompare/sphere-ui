@@ -51,7 +51,8 @@ const CATEGORIES = {
       "Browse trending smartphones with detailed specs, latest prices, and best online deals.",
     metaKeywords:
       "trending smartphones, smartphone prices in india, best smartphones, smartphone specs, latest phone deals",
-    searchPlaceholder: "Search smartphones by brand, model, or specifications...",
+    searchPlaceholder:
+      "Search smartphones by brand, model, or specifications...",
   },
   laptops: {
     id: "laptops",
@@ -68,7 +69,8 @@ const CATEGORIES = {
       "Compare trending laptops by processor, RAM, storage, display, and latest offers.",
     metaKeywords:
       "trending laptops, laptop prices in india, best laptops, laptop specs, latest laptop deals",
-    searchPlaceholder: "Search laptops by brand, model, processor, or memory...",
+    searchPlaceholder:
+      "Search laptops by brand, model, processor, or memory...",
   },
   tvs: {
     id: "tvs",
@@ -85,7 +87,8 @@ const CATEGORIES = {
       "Browse trending TVs with detailed specifications, latest prices, and direct buy links.",
     metaKeywords:
       "trending tvs, smart tv prices in india, best 4k tv, tv specs, latest tv deals",
-    searchPlaceholder: "Search TVs by brand, model, screen size, or panel type...",
+    searchPlaceholder:
+      "Search TVs by brand, model, screen size, or panel type...",
   },
 };
 
@@ -107,7 +110,8 @@ const text = (v) => {
   const t = String(v).trim().replace(/\s+/g, " ");
   if (!t) return "";
   const lc = t.toLowerCase();
-  if (lc === "null" || lc === "undefined" || lc === "na" || lc === "n/a") return "";
+  if (lc === "null" || lc === "undefined" || lc === "na" || lc === "n/a")
+    return "";
   return t;
 };
 
@@ -179,7 +183,9 @@ const resolveSpecScore = (row) => {
 
 const priceLabel = (v) => {
   const n = num(v);
-  return n === null ? "Price not available" : `${RUPEE}${Math.round(n).toLocaleString("en-IN")}`;
+  return n === null
+    ? "Price not available"
+    : `${RUPEE}${Math.round(n).toLocaleString("en-IN")}`;
 };
 
 const formatStorePriceDisplay = (v) => {
@@ -194,8 +200,10 @@ const obj = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : {});
 const getRows = (payload, cat) => {
   if (Array.isArray(payload)) return payload;
   if (Array.isArray(payload?.trending)) return payload.trending;
-  if (cat === "smartphones") return arr(payload?.smartphones || payload?.data || payload?.rows);
-  if (cat === "laptops") return arr(payload?.laptops || payload?.data || payload?.rows);
+  if (cat === "smartphones")
+    return arr(payload?.smartphones || payload?.data || payload?.rows);
+  if (cat === "laptops")
+    return arr(payload?.laptops || payload?.data || payload?.rows);
   return arr(payload?.tvs || payload?.data || payload?.rows);
 };
 
@@ -217,16 +225,15 @@ const mapStorePrice = (sp) => {
 const getVariants = (row) => {
   const meta = obj(row.metadata || row.metadata_json);
   const sections = obj(meta.spec_sections);
-  const variants =
-    arr(row.variants).length
-      ? row.variants
-      : arr(row.variants_json).length
-        ? row.variants_json
-        : arr(meta.variants).length
-          ? meta.variants
-          : arr(meta.variants_json).length
-            ? meta.variants_json
-            : arr(sections.variants_json);
+  const variants = arr(row.variants).length
+    ? row.variants
+    : arr(row.variants_json).length
+      ? row.variants_json
+      : arr(meta.variants).length
+        ? meta.variants
+        : arr(meta.variants_json).length
+          ? meta.variants_json
+          : arr(sections.variants_json);
   return arr(variants).map((v, i) => {
     const parsed = obj(v);
     return {
@@ -243,10 +250,17 @@ const getImages = (row, cat) => {
   if (cat === "laptops") {
     const meta = obj(row.metadata || row.metadata_json);
     const sections = obj(meta.spec_sections);
-    return arr(row.images || meta.images || sections.images_json).map(text).filter(Boolean);
+    return arr(row.images || meta.images || sections.images_json)
+      .map(text)
+      .filter(Boolean);
   }
-  if (cat === "tvs") return arr(row.images_json || row.images).map(text).filter(Boolean);
-  return arr(row.images || row.images_json).map(text).filter(Boolean);
+  if (cat === "tvs")
+    return arr(row.images_json || row.images)
+      .map(text)
+      .filter(Boolean);
+  return arr(row.images || row.images_json)
+    .map(text)
+    .filter(Boolean);
 };
 
 const getStorePrices = (row, variants) => {
@@ -256,7 +270,8 @@ const getStorePrices = (row, variants) => {
   ].filter((s) => s.storeName);
   if (!list.length) {
     const top = num(row.price ?? row.base_price ?? row.starting_price);
-    if (top !== null) list.push({ storeName: "Online Store", price: top, url: "" });
+    if (top !== null)
+      list.push({ storeName: "Online Store", price: top, url: "" });
   }
   const seen = new Set();
   const dedup = [];
@@ -266,7 +281,11 @@ const getStorePrices = (row, variants) => {
     seen.add(key);
     dedup.push(s);
   });
-  dedup.sort((a, b) => (a.price ?? Number.MAX_SAFE_INTEGER) - (b.price ?? Number.MAX_SAFE_INTEGER));
+  dedup.sort(
+    (a, b) =>
+      (a.price ?? Number.MAX_SAFE_INTEGER) -
+      (b.price ?? Number.MAX_SAFE_INTEGER),
+  );
   return dedup;
 };
 
@@ -376,15 +395,21 @@ const getAvailabilityRows = (
 
   const liveStores = normalizedStores.filter((store) => !store.isPrebooking);
   liveStores.sort(
-    (a, b) => (a.price ?? Number.MAX_SAFE_INTEGER) - (b.price ?? Number.MAX_SAFE_INTEGER),
+    (a, b) =>
+      (a.price ?? Number.MAX_SAFE_INTEGER) -
+      (b.price ?? Number.MAX_SAFE_INTEGER),
   );
   if (liveStores.length > 0) {
     return { mode: "live", stores: liveStores, hiddenCount: 0 };
   }
 
-  const prebookingStores = normalizedStores.filter((store) => store.isPrebooking);
+  const prebookingStores = normalizedStores.filter(
+    (store) => store.isPrebooking,
+  );
   prebookingStores.sort(
-    (a, b) => (a.price ?? Number.MAX_SAFE_INTEGER) - (b.price ?? Number.MAX_SAFE_INTEGER),
+    (a, b) =>
+      (a.price ?? Number.MAX_SAFE_INTEGER) -
+      (b.price ?? Number.MAX_SAFE_INTEGER),
   );
   if (prebookingStores.length === 0) {
     return { mode: "live", stores: normalizedStores, hiddenCount: 0 };
@@ -425,12 +450,18 @@ const cameraLabel = (row) => {
   push(camera.main_camera_megapixels);
   push(camera.rear_camera_megapixels);
   Object.values(rear).forEach((lens) => push(obj(lens).resolution));
-  return candidates.length ? `${Math.max(...candidates)} MP Camera` : first(camera.resolution);
+  return candidates.length
+    ? `${Math.max(...candidates)} MP Camera`
+    : first(camera.resolution);
 };
 
 const batteryLabel = (row) => {
   const battery = obj(row.battery);
-  const cap = first(battery.capacity, battery.battery_capacity, row.battery_capacity);
+  const cap = first(
+    battery.capacity,
+    battery.battery_capacity,
+    row.battery_capacity,
+  );
   if (!cap) return "";
   const n = num(cap);
   if (n === null) return cap;
@@ -444,10 +475,17 @@ const dateLabel = (v) => {
   if (Number.isNaN(d.getTime())) return "";
   // Avoid rendering placeholder epoch-style dates from invalid/null-like values.
   if (d.getUTCFullYear() <= 1971) return "";
-  return d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  return d.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 };
 
-const ImageCarousel = ({ images = [], fallbackIcon: FallbackIcon = FaMobileAlt }) => {
+const ImageCarousel = ({
+  images = [],
+  fallbackIcon: FallbackIcon = FaMobileAlt,
+}) => {
   const safeImages = arr(images).filter(Boolean);
   const [currentIndex, setCurrentIndex] = useState(0);
   const imageFrameClass =
@@ -477,7 +515,12 @@ const ImageCarousel = ({ images = [], fallbackIcon: FallbackIcon = FaMobileAlt }
     return (
       <div className="flex h-full w-full items-center justify-center">
         <div className={imageFrameClass}>
-          <img src={safeImages[0]} alt="product" className={imageClass} loading="lazy" />
+          <img
+            src={safeImages[0]}
+            alt="product"
+            className={imageClass}
+            loading="lazy"
+          />
         </div>
       </div>
     );
@@ -490,7 +533,9 @@ const ImageCarousel = ({ images = [], fallbackIcon: FallbackIcon = FaMobileAlt }
 
   const showPrev = (event) => {
     event.stopPropagation();
-    setCurrentIndex((prev) => (prev - 1 + safeImages.length) % safeImages.length);
+    setCurrentIndex(
+      (prev) => (prev - 1 + safeImages.length) % safeImages.length,
+    );
   };
 
   return (
@@ -511,8 +556,18 @@ const ImageCarousel = ({ images = [], fallbackIcon: FallbackIcon = FaMobileAlt }
           className="pointer-events-auto opacity-0 group-hover:opacity-100 md:opacity-100 bg-black/30 hover:bg-black/50 text-white p-1.5 rounded-full transition-all duration-200 transform -translate-x-1"
           aria-label="Previous image"
         >
-          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          <svg
+            className="w-3 h-3"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
         </button>
         <button
@@ -520,8 +575,18 @@ const ImageCarousel = ({ images = [], fallbackIcon: FallbackIcon = FaMobileAlt }
           className="pointer-events-auto opacity-0 group-hover:opacity-100 md:opacity-100 bg-black/30 hover:bg-black/50 text-white p-1.5 rounded-full transition-all duration-200 transform translate-x-1"
           aria-label="Next image"
         >
-          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          <svg
+            className="w-3 h-3"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5l7 7-7 7"
+            />
           </svg>
         </button>
       </div>
@@ -567,14 +632,24 @@ const buildProduct = (row, cat, index) => {
     const rom = first(storage.capacity, variants[0]?.storage);
     const screen = first(display.display_size, display.size_cm);
     const resolution = first(display.resolution);
-    const processor = first(performance.processor_name, performance.processor, performance.cpu);
+    const processor = first(
+      performance.processor_name,
+      performance.processor,
+      performance.cpu,
+    );
     const normalizedRam = text(ram).replace(/\s+RAM$/i, "");
     const normalizedStorage = text(rom).replace(/\s+(STORAGE|ROM)$/i, "");
     const normalizedScreen = first(screen, resolution);
     return {
       key: row.product_id ?? row.id ?? `${cat}-${index}`,
       id: row.product_id ?? row.id ?? null,
-      name: first(row.name, basic.product_name, row.model, basic.model, "Laptop"),
+      name: first(
+        row.name,
+        basic.product_name,
+        row.model,
+        basic.model,
+        "Laptop",
+      ),
       brand: first(row.brand_name, basic.brand_name, basic.brand),
       image: images[0] || "",
       images,
@@ -595,10 +670,15 @@ const buildProduct = (row, cat, index) => {
           cpuBrand: processor,
           ram,
           storage: rom,
-          display: [screen, resolution, first(display.refresh_rate)].filter(Boolean).join(" | "),
+          display: [screen, resolution, first(display.refresh_rate)]
+            .filter(Boolean)
+            .join(" | "),
           refreshRate: first(display.refresh_rate),
           graphics: first(performance.gpu),
-          battery: first(obj(row.battery).battery_type, obj(row.battery).battery_life),
+          battery: first(
+            obj(row.battery).battery_type,
+            obj(row.battery).battery_life,
+          ),
           weight: first(obj(row.physical).weight),
         },
         variants: variants.map((v) => ({ ram: v.ram, storage: v.storage })),
@@ -628,8 +708,14 @@ const buildProduct = (row, cat, index) => {
       stores,
       price: lowest,
       priceText: priceLabel(lowest),
-      release: first(obj(row.basic_info_json).launch_year, row.launch_year, row.created_at),
-      specLine: [screen, resolution, refresh, panel, os || sound].filter(Boolean).join(" | "),
+      release: first(
+        obj(row.basic_info_json).launch_year,
+        row.launch_year,
+        row.created_at,
+      ),
+      specLine: [screen, resolution, refresh, panel, os || sound]
+        .filter(Boolean)
+        .join(" | "),
       filterMeta: { ram: "", storage: "", screen, resolution },
       detailPath: CATEGORIES.tvs.detailPath,
       variantId: variants[0]?.id ?? null,
@@ -643,7 +729,10 @@ const buildProduct = (row, cat, index) => {
           type: first(row.category),
           hdr: arr(keySpecs.hdr_support).join(" "),
           audioOutput: sound,
-          operatingSystem: first(keySpecs.operating_system, smart.operating_system),
+          operatingSystem: first(
+            keySpecs.operating_system,
+            smart.operating_system,
+          ),
           wifi: first(connectivity.wifi),
           refreshRate: refresh,
         },
@@ -668,7 +757,14 @@ const buildProduct = (row, cat, index) => {
     price: lowest,
     priceText: priceLabel(lowest),
     release: first(row.launch_date, row.created_at),
-    specLine: [ram, storage, cameraLabel(row), batteryLabel(row), first(display.size), first(performance.processor)]
+    specLine: [
+      ram,
+      storage,
+      cameraLabel(row),
+      batteryLabel(row),
+      first(display.size),
+      first(performance.processor),
+    ]
       .filter(Boolean)
       .join(" | "),
     filterMeta: { ram, storage, screen: "", resolution: "" },
@@ -690,7 +786,9 @@ const mergeProducts = (items) => {
       deduped.push(store);
     });
     deduped.sort(
-      (a, b) => (a.price ?? Number.MAX_SAFE_INTEGER) - (b.price ?? Number.MAX_SAFE_INTEGER),
+      (a, b) =>
+        (a.price ?? Number.MAX_SAFE_INTEGER) -
+        (b.price ?? Number.MAX_SAFE_INTEGER),
     );
     return deduped;
   };
@@ -703,7 +801,10 @@ const mergeProducts = (items) => {
       return;
     }
     const existing = map.get(key);
-    if (num(item.price) !== null && (num(existing.price) === null || num(item.price) < num(existing.price))) {
+    if (
+      num(item.price) !== null &&
+      (num(existing.price) === null || num(item.price) < num(existing.price))
+    ) {
       existing.price = item.price;
       existing.priceText = item.priceText;
       existing.variantId = item.variantId || existing.variantId;
@@ -712,12 +813,16 @@ const mergeProducts = (items) => {
     if (existing.specScore == null && item.specScore != null) {
       existing.specScore = item.specScore;
     }
-    if (!existing.brand_logo && item.brand_logo) existing.brand_logo = item.brand_logo;
+    if (!existing.brand_logo && item.brand_logo)
+      existing.brand_logo = item.brand_logo;
     if (!existing.brand_website && item.brand_website) {
       existing.brand_website = item.brand_website;
     }
     if (!existing.image && item.image) existing.image = item.image;
-    if ((!existing.images || !existing.images.length) && arr(item.images).length) {
+    if (
+      (!existing.images || !existing.images.length) &&
+      arr(item.images).length
+    ) {
       existing.images = item.images;
     }
     existing.stores = dedupeStores([...existing.stores, ...item.stores]);
@@ -787,7 +892,10 @@ const enrichRowWithCatalog = (row, catalogItem) => {
     merged.metadata = { ...catalogMeta, ...rowMeta };
     const catalogSpecSections = obj(catalogMeta.spec_sections);
     const rowSpecSections = obj(rowMeta.spec_sections);
-    if (Object.keys(catalogSpecSections).length || Object.keys(rowSpecSections).length) {
+    if (
+      Object.keys(catalogSpecSections).length ||
+      Object.keys(rowSpecSections).length
+    ) {
       merged.metadata.spec_sections = {
         ...catalogSpecSections,
         ...rowSpecSections,
@@ -824,7 +932,10 @@ const enrichRowWithCatalog = (row, catalogItem) => {
   );
   if (images.length) merged.images = images;
 
-  const storePrices = pickFirstArray(row.store_prices, catalogItem.store_prices);
+  const storePrices = pickFirstArray(
+    row.store_prices,
+    catalogItem.store_prices,
+  );
   if (storePrices.length) merged.store_prices = storePrices;
 
   return merged;
@@ -836,7 +947,8 @@ const TrendingProductsHub = () => {
   const deviceStore = useDevice();
   const { getStoreLogo, getLogo, getStore } = useStoreLogos();
 
-  const activeCategory = ALIASES[String(category || "").toLowerCase()] || "smartphones";
+  const activeCategory =
+    ALIASES[String(category || "").toLowerCase()] || "smartphones";
   const config = CATEGORIES[activeCategory];
   const HeroIcon = config.icon;
 
@@ -855,7 +967,8 @@ const TrendingProductsHub = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   const smartphoneCatalog = useMemo(() => {
-    if (arr(deviceStore?.smartphoneAll).length) return deviceStore.smartphoneAll;
+    if (arr(deviceStore?.smartphoneAll).length)
+      return deviceStore.smartphoneAll;
     return arr(deviceStore?.smartphone);
   }, [deviceStore?.smartphoneAll, deviceStore?.smartphone]);
 
@@ -938,35 +1051,58 @@ const TrendingProductsHub = () => {
       return enrichRowWithCatalog(row, catalogItem);
     });
     return mergeProducts(
-      enrichedRows.map((row, index) => buildProduct(row, activeCategory, index)),
+      enrichedRows.map((row, index) =>
+        buildProduct(row, activeCategory, index),
+      ),
     );
   }, [rawRows, activeCategory, catalogLookup]);
 
   const popularFeatures = useMemo(() => {
     if (activeCategory === "laptops") {
-      return computePopularLaptopFeatures(products.map((p) => p.featurePayload), { limit: 16 });
+      return computePopularLaptopFeatures(
+        products.map((p) => p.featurePayload),
+        { limit: 16 },
+      );
     }
     if (activeCategory === "tvs") {
-      return computePopularTvFeatures(products.map((p) => p.featurePayload), { limit: 16 });
+      return computePopularTvFeatures(
+        products.map((p) => p.featurePayload),
+        { limit: 16 },
+      );
     }
-    return computePopularSmartphoneFeatures(products.map((p) => p.featurePayload), { limit: 16 });
+    return computePopularSmartphoneFeatures(
+      products.map((p) => p.featurePayload),
+      { limit: 16 },
+    );
   }, [products, activeCategory]);
 
   const visible = useMemo(() => {
     const q = text(search).toLowerCase();
     const byFeature = (p) => {
       if (!selectedFeature) return true;
-      if (activeCategory === "laptops") return matchesLaptopFeature(p.featurePayload, selectedFeature);
-      if (activeCategory === "tvs") return matchesTvFeature(p.featurePayload, selectedFeature);
-      const def = SMARTPHONE_FEATURE_CATALOG.find((f) => f.id === selectedFeature);
+      if (activeCategory === "laptops")
+        return matchesLaptopFeature(p.featurePayload, selectedFeature);
+      if (activeCategory === "tvs")
+        return matchesTvFeature(p.featurePayload, selectedFeature);
+      const def = SMARTPHONE_FEATURE_CATALOG.find(
+        (f) => f.id === selectedFeature,
+      );
       return def ? Boolean(def.match(p.featurePayload)) : true;
     };
     const filtered = products.filter((p) => {
-      if (selectedBrands.length && !selectedBrands.includes(text(p.brand))) return false;
-      if (selectedRam.length && !selectedRam.includes(text(p.filterMeta?.ram))) return false;
-      if (selectedStorage.length && !selectedStorage.includes(text(p.filterMeta?.storage)))
+      if (selectedBrands.length && !selectedBrands.includes(text(p.brand)))
         return false;
-      if (selectedScreen.length && !selectedScreen.includes(text(p.filterMeta?.screen)))
+      if (selectedRam.length && !selectedRam.includes(text(p.filterMeta?.ram)))
+        return false;
+      if (
+        selectedStorage.length &&
+        !selectedStorage.includes(text(p.filterMeta?.storage))
+      )
+        return false;
+      if (
+        selectedScreen.length &&
+        !selectedScreen.includes(text(p.filterMeta?.screen))
+      )
         return false;
       if (
         selectedResolution.length &&
@@ -974,17 +1110,35 @@ const TrendingProductsHub = () => {
       )
         return false;
       if (!byFeature(p)) return false;
-      if (q && !`${p.name} ${p.brand} ${p.specLine}`.toLowerCase().includes(q)) return false;
+      if (q && !`${p.name} ${p.brand} ${p.specLine}`.toLowerCase().includes(q))
+        return false;
       return true;
     });
     const sorted = [...filtered];
-    if (sortBy === "price-low") sorted.sort((a, b) => (a.price ?? Number.MAX_SAFE_INTEGER) - (b.price ?? Number.MAX_SAFE_INTEGER));
-    else if (sortBy === "price-high") sorted.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
-    else if (sortBy === "newest") sorted.sort((a, b) => new Date(b.release).getTime() - new Date(a.release).getTime());
+    if (sortBy === "price-low")
+      sorted.sort(
+        (a, b) =>
+          (a.price ?? Number.MAX_SAFE_INTEGER) -
+          (b.price ?? Number.MAX_SAFE_INTEGER),
+      );
+    else if (sortBy === "price-high")
+      sorted.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
+    else if (sortBy === "newest")
+      sorted.sort(
+        (a, b) => new Date(b.release).getTime() - new Date(a.release).getTime(),
+      );
     else if (selectedFeature && activeCategory === "laptops") {
-      sorted.sort((a, b) => (getLaptopFeatureSortValue(b.featurePayload, selectedFeature) ?? -1) - (getLaptopFeatureSortValue(a.featurePayload, selectedFeature) ?? -1));
+      sorted.sort(
+        (a, b) =>
+          (getLaptopFeatureSortValue(b.featurePayload, selectedFeature) ?? -1) -
+          (getLaptopFeatureSortValue(a.featurePayload, selectedFeature) ?? -1),
+      );
     } else if (selectedFeature && activeCategory === "tvs") {
-      sorted.sort((a, b) => (getTvFeatureSortValue(b.featurePayload, selectedFeature) ?? -1) - (getTvFeatureSortValue(a.featurePayload, selectedFeature) ?? -1));
+      sorted.sort(
+        (a, b) =>
+          (getTvFeatureSortValue(b.featurePayload, selectedFeature) ?? -1) -
+          (getTvFeatureSortValue(a.featurePayload, selectedFeature) ?? -1),
+      );
     }
     return sorted;
   }, [
@@ -1001,7 +1155,10 @@ const TrendingProductsHub = () => {
   ]);
 
   const brands = useMemo(
-    () => Array.from(new Set(products.map((p) => text(p.brand)).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
+    () =>
+      Array.from(
+        new Set(products.map((p) => text(p.brand)).filter(Boolean)),
+      ).sort((a, b) => a.localeCompare(b)),
     [products],
   );
 
@@ -1013,32 +1170,38 @@ const TrendingProductsHub = () => {
 
   const ramOptions = useMemo(
     () =>
-      Array.from(new Set(products.map((p) => text(p.filterMeta?.ram)).filter(Boolean))).sort(
-        (a, b) => (num(a) || 0) - (num(b) || 0),
-      ),
+      Array.from(
+        new Set(products.map((p) => text(p.filterMeta?.ram)).filter(Boolean)),
+      ).sort((a, b) => (num(a) || 0) - (num(b) || 0)),
     [products],
   );
 
   const storageOptions = useMemo(
     () =>
       Array.from(
-        new Set(products.map((p) => text(p.filterMeta?.storage)).filter(Boolean)),
+        new Set(
+          products.map((p) => text(p.filterMeta?.storage)).filter(Boolean),
+        ),
       ).sort((a, b) => (num(a) || 0) - (num(b) || 0)),
     [products],
   );
 
   const screenOptions = useMemo(
     () =>
-      Array.from(new Set(products.map((p) => text(p.filterMeta?.screen)).filter(Boolean))).sort(
-        (a, b) => (num(a) || 0) - (num(b) || 0),
-      ),
+      Array.from(
+        new Set(
+          products.map((p) => text(p.filterMeta?.screen)).filter(Boolean),
+        ),
+      ).sort((a, b) => (num(a) || 0) - (num(b) || 0)),
     [products],
   );
 
   const resolutionOptions = useMemo(
     () =>
       Array.from(
-        new Set(products.map((p) => text(p.filterMeta?.resolution)).filter(Boolean)),
+        new Set(
+          products.map((p) => text(p.filterMeta?.resolution)).filter(Boolean),
+        ),
       ).sort((a, b) => a.localeCompare(b)),
     [products],
   );
@@ -1065,7 +1228,9 @@ const TrendingProductsHub = () => {
     const params = new URLSearchParams();
     if (p.id != null) params.set("id", String(p.id));
     if (p.variantId != null) params.set("variantId", String(p.variantId));
-    navigate(`${p.detailPath}/${slug}${params.toString() ? `?${params.toString()}` : ""}`);
+    navigate(
+      `${p.detailPath}/${slug}${params.toString() ? `?${params.toString()}` : ""}`,
+    );
   };
 
   const seoTitle = `${config.metaTitle} | Hooks`;
@@ -1082,7 +1247,7 @@ const TrendingProductsHub = () => {
   );
 
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-6 md:p-8 lg:p-10 bg-white">
+    <div className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8 lg:p-10 bg-white">
       <Helmet>
         <title>{seoTitle}</title>
         <meta name="description" content={seoDescription} />
@@ -1112,7 +1277,9 @@ const TrendingProductsHub = () => {
               key={c.id}
               onClick={() => navigate(`/trending/${c.id}`)}
               className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold border transition-colors whitespace-nowrap ${
-                active ? "bg-purple-600 text-white border-purple-600" : "bg-white text-gray-700 border-gray-200 hover:border-purple-300 hover:text-purple-700"
+                active
+                  ? "bg-purple-600 text-white border-purple-600"
+                  : "bg-white text-gray-700 border-gray-200 hover:border-purple-300 hover:text-purple-700"
               }`}
             >
               <Icon className="text-sm" />
@@ -1125,20 +1292,33 @@ const TrendingProductsHub = () => {
       <div className="mb-8">
         <div className="inline-flex items-center gap-2 bg-purple-50 px-3 py-1.5 rounded-full border border-purple-100 mb-4">
           <HeroIcon className="text-purple-600 text-sm" />
-          <span className="text-xs sm:text-sm font-semibold text-purple-800">{config.badge}</span>
+          <span className="text-xs sm:text-sm font-semibold text-purple-800">
+            {config.badge}
+          </span>
         </div>
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 leading-tight">{config.title}</h1>
-        <p className="text-base sm:text-lg text-gray-700 leading-relaxed max-w-3xl">{config.description}</p>
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 leading-tight">
+          {config.title}
+        </h1>
+        <p className="text-base sm:text-lg text-gray-700 leading-relaxed max-w-3xl">
+          {config.description}
+        </p>
       </div>
 
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <FaFilter className="text-purple-600" />
-            <h3 className="text-sm sm:text-base font-semibold text-gray-900">Popular Features</h3>
+            <h3 className="text-sm sm:text-base font-semibold text-gray-900">
+              Popular Features
+            </h3>
           </div>
           {selectedFeature ? (
-            <button onClick={() => setSelectedFeature("")} className="text-xs sm:text-sm text-purple-700 hover:text-purple-900 font-semibold">Clear</button>
+            <button
+              onClick={() => setSelectedFeature("")}
+              className="text-xs sm:text-sm text-purple-700 hover:text-purple-900 font-semibold"
+            >
+              Clear
+            </button>
           ) : null}
         </div>
         <div className="flex gap-2.5 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -1150,10 +1330,20 @@ const TrendingProductsHub = () => {
                 key={feature.id}
                 onClick={() => setSelectedFeature(active ? "" : feature.id)}
                 className={`flex items-center gap-2 px-3 py-2 rounded-full border text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors ${
-                  active ? "bg-purple-600 text-white border-purple-600" : "bg-white text-gray-700 border-gray-200 hover:border-purple-300 hover:text-purple-700"
+                  active
+                    ? "bg-purple-600 text-white border-purple-600"
+                    : "bg-white text-gray-700 border-gray-200 hover:border-purple-300 hover:text-purple-700"
                 }`}
               >
-                {Icon ? <Icon className={active ? "text-white text-base" : "text-purple-600 text-base"} /> : null}
+                {Icon ? (
+                  <Icon
+                    className={
+                      active
+                        ? "text-white text-base"
+                        : "text-purple-600 text-base"
+                    }
+                  />
+                ) : null}
                 <span>{feature.name}</span>
               </button>
             );
@@ -1243,7 +1433,8 @@ const TrendingProductsHub = () => {
         {activeFilterCount > 0 && (
           <div className="lg:hidden flex items-center justify-between p-3 bg-purple-50 rounded-xl border border-purple-200">
             <span className="text-sm font-medium text-purple-800">
-              {activeFilterCount} filter{activeFilterCount > 1 ? "s" : ""} applied
+              {activeFilterCount} filter{activeFilterCount > 1 ? "s" : ""}{" "}
+              applied
             </span>
             <button
               onClick={clearAllFilters}
@@ -1350,7 +1541,8 @@ const TrendingProductsHub = () => {
               </div>
             </div>
 
-            {(activeCategory === "smartphones" || activeCategory === "laptops") && (
+            {(activeCategory === "smartphones" ||
+              activeCategory === "laptops") && (
               <>
                 {ramOptions.length > 0 && (
                   <div className="mb-6 sm:mb-7 lg:mb-8">
@@ -1552,20 +1744,31 @@ const TrendingProductsHub = () => {
 
         <div className="flex-1">
           <div className="flex items-center justify-end mb-4">
-            <p className="text-sm text-gray-500">Showing {visible.length} of {products.length} options</p>
+            <p className="text-sm text-gray-500">
+              Showing {visible.length} of {products.length} options
+            </p>
           </div>
 
-          {loading ? <div className="py-20 flex items-center justify-center"><Spinner /></div> : null}
-          {!loading && error ? <div className="rounded-xl border border-red-200 bg-red-50 text-red-700 px-4 py-3 text-sm">{error}</div> : null}
+          {loading ? (
+            <div className="py-20 flex items-center justify-center">
+              <Spinner />
+            </div>
+          ) : null}
+          {!loading && error ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 text-red-700 px-4 py-3 text-sm">
+              {error}
+            </div>
+          ) : null}
 
           {!loading && !error && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:[&>*:nth-child(2n)]:border-l md:[&>*:nth-child(2n)]:border-gray-200 md:[&>*:nth-child(2n)]:pl-6 md:[&>*:nth-child(2n+1)]:pr-6">
+            <div className="grid grid-cols-1 gap-5">
               {visible.map((p) => {
                 const dedupedStoreMap = new Map();
                 arr(p.stores).forEach((s) => {
                   const storeName =
-                    text(s?.store || s?.store_name || s?.storeName || s?.name) ||
-                    "Online Store";
+                    text(
+                      s?.store || s?.store_name || s?.storeName || s?.name,
+                    ) || "Online Store";
                   const key = storeName.toLowerCase();
                   const candidate = {
                     store: storeName,
@@ -1604,8 +1807,10 @@ const TrendingProductsHub = () => {
                     dedupedStoreMap.set(key, { ...existing, ...candidate });
                     return;
                   }
-                  if (!existing.url && candidate.url) existing.url = candidate.url;
-                  if (!existing.logo && candidate.logo) existing.logo = candidate.logo;
+                  if (!existing.url && candidate.url)
+                    existing.url = candidate.url;
+                  if (!existing.logo && candidate.logo)
+                    existing.logo = candidate.logo;
                   if (!existing.saleStartDate && candidate.saleStartDate) {
                     existing.saleStartDate = candidate.saleStartDate;
                   }
@@ -1613,7 +1818,9 @@ const TrendingProductsHub = () => {
                     existing.ctaLabel = candidate.ctaLabel;
                   }
                 });
-                const availableStores = Array.from(dedupedStoreMap.values()).sort(
+                const availableStores = Array.from(
+                  dedupedStoreMap.values(),
+                ).sort(
                   (a, b) =>
                     (num(a.price) ?? Number.MAX_SAFE_INTEGER) -
                     (num(b.price) ?? Number.MAX_SAFE_INTEGER),
@@ -1652,7 +1859,13 @@ const TrendingProductsHub = () => {
                         <div className="relative flex-shrink-0 w-full h-36 sm:h-48 rounded-2xl overflow-hidden group bg-white">
                           <div className="w-full h-full flex items-center justify-center p-1.5 sm:p-2">
                             <ImageCarousel
-                              images={arr(p.images).length ? p.images : p.image ? [p.image] : []}
+                              images={
+                                arr(p.images).length
+                                  ? p.images
+                                  : p.image
+                                    ? [p.image]
+                                    : []
+                              }
                               fallbackIcon={HeroIcon}
                             />
                           </div>
@@ -1708,13 +1921,19 @@ const TrendingProductsHub = () => {
                             </div>
                           )}
                           {activeCategory === "laptops" ? (
-                            <p className="text-sm text-gray-500">Starting from</p>
+                            <p className="text-sm text-gray-500">
+                              Starting from
+                            </p>
                           ) : null}
                           {activeCategory === "smartphones" && p.brand ? (
                             <a
                               href={brandStoreUrl || "#"}
                               target={brandStoreUrl ? "_blank" : undefined}
-                              rel={brandStoreUrl ? "noopener noreferrer" : undefined}
+                              rel={
+                                brandStoreUrl
+                                  ? "noopener noreferrer"
+                                  : undefined
+                              }
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (!brandStoreUrl) e.preventDefault();
@@ -1734,8 +1953,8 @@ const TrendingProductsHub = () => {
                         </div>
                       </div>
 
-                      {(renderedStores.length > 0 ||
-                        (activeCategory === "smartphones" && releasedOn)) ? (
+                      {renderedStores.length > 0 ||
+                      (activeCategory === "smartphones" && releasedOn) ? (
                         <div
                           className="mt-3 sm:mt-4 md:mt-5 pt-3 sm:pt-4 md:pt-5 border-t border-indigo-100"
                           onClick={(e) => e.stopPropagation()}
@@ -1777,9 +1996,10 @@ const TrendingProductsHub = () => {
                                           ? getStoreLogo(storeNameCandidate)
                                           : getLogo(storeNameCandidate));
                                     const ctaText = store.ctaLabel || "Buy Now";
-                                    const isPreorderCta = /^pre(book|order)$/i.test(
-                                      String(ctaText).trim(),
-                                    );
+                                    const isPreorderCta =
+                                      /^pre(book|order)$/i.test(
+                                        String(ctaText).trim(),
+                                      );
                                     return (
                                       <div
                                         key={`${p.key}-store-${storeIdx}`}
@@ -1796,7 +2016,9 @@ const TrendingProductsHub = () => {
                                             >
                                               <img
                                                 src={logoSrc}
-                                                alt={storeObj?.name || store.store}
+                                                alt={
+                                                  storeObj?.name || store.store
+                                                }
                                                 className={
                                                   isPreorderCta
                                                     ? "w-full h-full object-contain"
@@ -1821,7 +2043,9 @@ const TrendingProductsHub = () => {
                                               href={store.url}
                                               target="_blank"
                                               rel="noopener noreferrer"
-                                              onClick={(e) => e.stopPropagation()}
+                                              onClick={(e) =>
+                                                e.stopPropagation()
+                                              }
                                               className="text-purple-600 hover:text-blue-800 text-xs font-medium flex items-center gap-1"
                                             >
                                               {ctaText}
@@ -1890,7 +2114,9 @@ const TrendingProductsHub = () => {
           <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[90vh] overflow-hidden flex flex-col">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <div>
-                <h3 className="text-xl font-bold text-gray-900">Refine Search</h3>
+                <h3 className="text-xl font-bold text-gray-900">
+                  Refine Search
+                </h3>
                 <p className="text-sm text-gray-500">
                   Narrow down {config.label.toLowerCase()} by specifications
                 </p>
@@ -1923,7 +2149,9 @@ const TrendingProductsHub = () => {
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h4 className="font-bold text-gray-900 text-base">Brands</h4>
+                    <h4 className="font-bold text-gray-900 text-base">
+                      Brands
+                    </h4>
                     <p className="text-xs text-gray-500 mt-1">
                       Select devices by manufacturer
                     </p>
@@ -1960,7 +2188,9 @@ const TrendingProductsHub = () => {
                         }
                         className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-2 focus:ring-purple-500 focus:ring-offset-1"
                       />
-                      <span className="text-gray-700 font-medium flex-1">{brand}</span>
+                      <span className="text-gray-700 font-medium flex-1">
+                        {brand}
+                      </span>
                       <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
                         {products.filter((p) => text(p.brand) === brand).length}
                       </div>
@@ -1974,13 +2204,16 @@ const TrendingProductsHub = () => {
                 </div>
               </div>
 
-              {(activeCategory === "smartphones" || activeCategory === "laptops") && (
+              {(activeCategory === "smartphones" ||
+                activeCategory === "laptops") && (
                 <>
                   {ramOptions.length > 0 && (
                     <div>
                       <div className="flex items-center justify-between mb-4">
                         <div>
-                          <h4 className="font-bold text-gray-900 text-base">Memory (RAM)</h4>
+                          <h4 className="font-bold text-gray-900 text-base">
+                            Memory (RAM)
+                          </h4>
                           <p className="text-xs text-gray-500 mt-1">
                             Multitasking performance
                           </p>
@@ -2022,7 +2255,9 @@ const TrendingProductsHub = () => {
                     <div>
                       <div className="flex items-center justify-between mb-4">
                         <div>
-                          <h4 className="font-bold text-gray-900 text-base">Storage Capacity</h4>
+                          <h4 className="font-bold text-gray-900 text-base">
+                            Storage Capacity
+                          </h4>
                           <p className="text-xs text-gray-500 mt-1">
                             Apps and media space
                           </p>
@@ -2068,7 +2303,9 @@ const TrendingProductsHub = () => {
                     <div>
                       <div className="flex items-center justify-between mb-4">
                         <div>
-                          <h4 className="font-bold text-gray-900 text-base">Screen Size</h4>
+                          <h4 className="font-bold text-gray-900 text-base">
+                            Screen Size
+                          </h4>
                           <p className="text-xs text-gray-500 mt-1">
                             Select preferred display size
                           </p>
@@ -2117,7 +2354,9 @@ const TrendingProductsHub = () => {
                     <div>
                       <div className="flex items-center justify-between mb-4">
                         <div>
-                          <h4 className="font-bold text-gray-900 text-base">Resolution</h4>
+                          <h4 className="font-bold text-gray-900 text-base">
+                            Resolution
+                          </h4>
                           <p className="text-xs text-gray-500 mt-1">
                             Filter by panel resolution
                           </p>
@@ -2142,7 +2381,9 @@ const TrendingProductsHub = () => {
                               onChange={() =>
                                 setSelectedResolution((prev) =>
                                   prev.includes(resolution)
-                                    ? prev.filter((value) => value !== resolution)
+                                    ? prev.filter(
+                                        (value) => value !== resolution,
+                                      )
                                     : [...prev, resolution],
                                 )
                               }

@@ -187,7 +187,9 @@ const sortCompareEntries = (left, right) => {
 
 const stringifyCompareDevicesParam = (entries = []) =>
   dedupeCompareEntries(entries)
-    .map((entry) => `${entry.baseId}:${normalizeVariantIndex(entry.variantIndex)}`)
+    .map(
+      (entry) => `${entry.baseId}:${normalizeVariantIndex(entry.variantIndex)}`,
+    )
     .join(",");
 
 const upsertMetaTag = (selector, attributes) => {
@@ -344,7 +346,9 @@ const MobileCompare = () => {
         const rightType = String(getResolvedProductType(candidate) || "")
           .trim()
           .toLowerCase();
-        return rightId && rightType && rightId !== leftId && rightType === leftType;
+        return (
+          rightId && rightType && rightId !== leftId && rightType === leftType
+        );
       });
 
       if (rightDevice) {
@@ -415,7 +419,8 @@ const MobileCompare = () => {
       const baseId = String(entry?.baseId || "").trim();
       if (!baseId) return "";
       const fromActive = activeDevices.find(
-        (device) => String(getResolvedProductId(device) || "").trim() === baseId,
+        (device) =>
+          String(getResolvedProductId(device) || "").trim() === baseId,
       );
       if (fromActive?.name) return fromActive.name;
       return productLookupById.get(baseId)?.name || "";
@@ -437,7 +442,11 @@ const MobileCompare = () => {
     const params = new URLSearchParams();
     params.set("devices", canonicalDevicesParam);
     return `${basePath}?${params.toString()}`;
-  }, [canonicalCompareEntries, canonicalCompareSlugPath, canonicalDevicesParam]);
+  }, [
+    canonicalCompareEntries,
+    canonicalCompareSlugPath,
+    canonicalDevicesParam,
+  ]);
 
   const canonicalCompareUrl = useMemo(
     () => `${SITE_ORIGIN}${canonicalComparePath}`,
@@ -483,7 +492,9 @@ const MobileCompare = () => {
     const nextUrl = `${targetPath}${nextSearch ? `?${nextSearch}` : ""}`;
     const currentUrl = `${location.pathname}${location.search}`;
 
-    const expectedDevicesParam = useDevicesQueryParam ? canonicalDevicesParam : "";
+    const expectedDevicesParam = useDevicesQueryParam
+      ? canonicalDevicesParam
+      : "";
     const expectedType = useDevicesQueryParam ? String(compareType || "") : "";
     const hasDeviceParamChanged = currentDevicesParam !== expectedDevicesParam;
     const hasTypeChanged =
@@ -2698,7 +2709,8 @@ const MobileCompare = () => {
   };
 
   const querySelectedNames = useMemo(() => {
-    if (!queryDeviceEntries.length || !Array.isArray(availableDevices)) return [];
+    if (!queryDeviceEntries.length || !Array.isArray(availableDevices))
+      return [];
 
     const nameByProductId = new Map();
     (availableDevices || []).forEach((device) => {
@@ -2731,14 +2743,14 @@ const MobileCompare = () => {
       ? `${comparisonNames} | Compare Specs, Prices & Features ${currentYear}`
       : canonicalCompareEntries.length > 0
         ? `Compare Selected Devices | Specs, Prices & Features ${currentYear}`
-      : `Device Comparison | Compare Specs, Prices & Features ${currentYear}`;
+        : `Device Comparison | Compare Specs, Prices & Features ${currentYear}`;
 
   const metaDescription =
     seoSelectedNames.length > 0
       ? `Compare ${comparisonNames} with detailed specifications, prices, performance, and key features side by side to find the right device for your needs.`
       : canonicalCompareEntries.length > 0
         ? "Compare selected devices side by side with detailed specifications, prices, performance, and feature differences to choose the right one."
-      : "Compare smartphones, laptops, and more with detailed specifications, prices, performance, and key features side by side to find the right device for your needs.";
+        : "Compare smartphones, laptops, and more with detailed specifications, prices, performance, and key features side by side to find the right device for your needs.";
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -2779,8 +2791,16 @@ const MobileCompare = () => {
     <div className="min-h-screen ">
       <Helmet prioritizeSeoTags>
         <title key="compare-title">{metaTitle}</title>
-        <meta key="compare-description" name="description" content={metaDescription} />
-        <link key="compare-canonical" rel="canonical" href={canonicalCompareUrl} />
+        <meta
+          key="compare-description"
+          name="description"
+          content={metaDescription}
+        />
+        <link
+          key="compare-canonical"
+          rel="canonical"
+          href={canonicalCompareUrl}
+        />
         <meta key="compare-og-type" property="og:type" content="website" />
         <meta key="compare-og-title" property="og:title" content={metaTitle} />
         <meta
@@ -2788,18 +2808,34 @@ const MobileCompare = () => {
           property="og:description"
           content={metaDescription}
         />
-        <meta key="compare-og-url" property="og:url" content={canonicalCompareUrl} />
-        <meta key="compare-twitter-card" name="twitter:card" content="summary" />
-        <meta key="compare-twitter-title" name="twitter:title" content={metaTitle} />
+        <meta
+          key="compare-og-url"
+          property="og:url"
+          content={canonicalCompareUrl}
+        />
+        <meta
+          key="compare-twitter-card"
+          name="twitter:card"
+          content="summary"
+        />
+        <meta
+          key="compare-twitter-title"
+          name="twitter:title"
+          content={metaTitle}
+        />
         <meta
           key="compare-twitter-description"
           name="twitter:description"
           content={metaDescription}
         />
-        <meta key="compare-twitter-url" name="twitter:url" content={canonicalCompareUrl} />
+        <meta
+          key="compare-twitter-url"
+          name="twitter:url"
+          content={canonicalCompareUrl}
+        />
       </Helmet>
       {/* Floating Header */}
-      <div className="top-0 z-40 bg-white  max-w-6xl mx-auto sm:p-6 md:p-8 lg:p-10">
+      <div className="top-0 z-40 bg-white  max-w-4xl mx-auto sm:p-6 md:p-8 lg:p-10">
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -2845,7 +2881,7 @@ const MobileCompare = () => {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto p-4 sm:p-6 md:p-8 lg:p-10 bg-white">
+      <div className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8 lg:p-10 bg-white">
         {/* Hero Section */}
         <div className="mb-1 text-center">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">

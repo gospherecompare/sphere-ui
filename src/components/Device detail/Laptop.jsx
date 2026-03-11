@@ -251,7 +251,10 @@ const LaptopDetailCard = () => {
         existingSpecs.processor_generation,
       ),
       cpu_cores:
-        performance.cores ?? performance.cpu_cores ?? existingSpecs.cpu_cores ?? "",
+        performance.cores ??
+        performance.cpu_cores ??
+        existingSpecs.cpu_cores ??
+        "",
       cpu_threads:
         performance.threads ??
         performance.cpu_threads ??
@@ -286,7 +289,10 @@ const LaptopDetailCard = () => {
         existingSpecs.refresh_rate,
       ),
       brightness: pickFirstString(display.brightness, existingSpecs.brightness),
-      color_gamut: pickFirstString(display.color_gamut, existingSpecs.color_gamut),
+      color_gamut: pickFirstString(
+        display.color_gamut,
+        existingSpecs.color_gamut,
+      ),
       touch_screen:
         display.touchscreen ??
         display.touch_support ??
@@ -299,8 +305,16 @@ const LaptopDetailCard = () => {
         variants[0]?.ram,
         existingSpecs.ram,
       ),
-      ram_type: pickFirstString(memory.ram_type, memory.type, existingSpecs.ram_type),
-      ram_speed: pickFirstString(memory.ram_speed, memory.speed, existingSpecs.ram_speed),
+      ram_type: pickFirstString(
+        memory.ram_type,
+        memory.type,
+        existingSpecs.ram_type,
+      ),
+      ram_speed: pickFirstString(
+        memory.ram_speed,
+        memory.speed,
+        existingSpecs.ram_speed,
+      ),
       ram_upgradable:
         memory.expandable ??
         memory.ram_expandable ??
@@ -347,18 +361,27 @@ const LaptopDetailCard = () => {
         connectivity.wireless,
         existingSpecs.wifi,
       ),
-      bluetooth: pickFirstString(connectivity.bluetooth, existingSpecs.bluetooth),
+      bluetooth: pickFirstString(
+        connectivity.bluetooth,
+        existingSpecs.bluetooth,
+      ),
       usb_ports: pickFirstString(
         ports.ports_description,
         existingSpecs.usb_ports,
       ),
       hdmi: ports.hdmi ?? existingSpecs.hdmi ?? "",
       audio_jack:
-        ports.audio_combo_jack ?? ports.audio_jack ?? existingSpecs.audio_jack ?? "",
+        ports.audio_combo_jack ??
+        ports.audio_jack ??
+        existingSpecs.audio_jack ??
+        "",
       sd_card_reader:
         ports.sd_card_reader ?? existingSpecs.sd_card_reader ?? "",
       thunderbolt:
-        ports.thunderbolt_4 ?? ports.thunderbolt ?? existingSpecs.thunderbolt ?? "",
+        ports.thunderbolt_4 ??
+        ports.thunderbolt ??
+        existingSpecs.thunderbolt ??
+        "",
       weight: pickFirstString(physical.weight, existingSpecs.weight),
       thickness: pickFirstString(
         physical.thickness,
@@ -405,7 +428,12 @@ const LaptopDetailCard = () => {
         l.productName ||
         "",
       model_number:
-        l.model_number || l.model || basicInfo.model || basicInfo.sku || l.sku || "",
+        l.model_number ||
+        l.model ||
+        basicInfo.model ||
+        basicInfo.sku ||
+        l.sku ||
+        "",
       brand:
         l.brand ||
         l.brand_name ||
@@ -904,7 +932,9 @@ const LaptopDetailCard = () => {
   };
   const scoreGroupData = (() => {
     const sourceList = Array.isArray(laptops) ? laptops : [];
-    const normalizedList = sourceList.map((item) => normalizeLaptop(item)).filter(Boolean);
+    const normalizedList = sourceList
+      .map((item) => normalizeLaptop(item))
+      .filter(Boolean);
     if (!laptopData || normalizedList.length === 0) {
       return { label: "All Laptops", byKey: {} };
     }
@@ -918,15 +948,19 @@ const LaptopDetailCard = () => {
     );
     const sameGroup = normalizedList.filter(
       (item) =>
-        normalizeGroupKey(item?.category || item?.product_type || categoryParam, "laptop") ===
-        currentGroupKey,
+        normalizeGroupKey(
+          item?.category || item?.product_type || categoryParam,
+          "laptop",
+        ) === currentGroupKey,
     );
     const scopedList = sameGroup.length > 0 ? sameGroup : normalizedList;
     const byKey = {};
     const scoreKeys = ["overall", ...Object.keys(sectionScores)];
 
     scopedList.forEach((item) => {
-      const itemId = String(item?.id ?? item?.product_id ?? item?.productId ?? "");
+      const itemId = String(
+        item?.id ?? item?.product_id ?? item?.productId ?? "",
+      );
       if (itemId && currentId && itemId === currentId) return;
       scoreKeys.forEach((key) => {
         const value = getLaptopSectionScoreForGroup(item, key);
@@ -937,7 +971,11 @@ const LaptopDetailCard = () => {
     });
 
     return {
-      label: laptopData?.category || laptopData?.product_type || categoryParam || "All Laptops",
+      label:
+        laptopData?.category ||
+        laptopData?.product_type ||
+        categoryParam ||
+        "All Laptops",
       byKey,
     };
   })();
@@ -1496,10 +1534,7 @@ const LaptopDetailCard = () => {
 
     const entries = Object.entries(data).filter(
       ([key, value]) =>
-        value !== "" &&
-        value != null &&
-        value !== false &&
-        !isScoreKey(key),
+        value !== "" && value != null && value !== false && !isScoreKey(key),
     );
 
     if (entries.length === 0) {
@@ -1533,7 +1568,10 @@ const LaptopDetailCard = () => {
           <table className="min-w-full divide-y divide-gray-100 shadow-none">
             <tbody className="bg-white">
               {displayEntries.map(([key, value], idx) => (
-                <tr key={key} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                <tr
+                  key={key}
+                  className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                >
                   <td className="px-6 py-2 text-sm font-medium text-gray-600 w-1/3 align-top">
                     {toNormalCase(key)}
                   </td>
@@ -1678,7 +1716,9 @@ const LaptopDetailCard = () => {
     }
   };
 
-  const availableTabs = tabs.filter((tab) => hasSectionData(getSectionData(tab.id)));
+  const availableTabs = tabs.filter((tab) =>
+    hasSectionData(getSectionData(tab.id)),
+  );
 
   useEffect(() => {
     if (!availableTabs || availableTabs.length === 0) return;
@@ -1774,7 +1814,10 @@ const LaptopDetailCard = () => {
                     <FaExpand className="text-green-500" />
                     Display
                   </h4>
-                  <SpecScoreBadge score={getSectionScore("display")} size={38} />
+                  <SpecScoreBadge
+                    score={getSectionScore("display")}
+                    size={38}
+                  />
                 </div>
                 <ScoreGroupTable
                   currentScore={getSectionScore("display")}
@@ -1821,7 +1864,10 @@ const LaptopDetailCard = () => {
                     <FaBatteryFull className="text-blue-500" />
                     Battery
                   </h4>
-                  <SpecScoreBadge score={getSectionScore("battery")} size={38} />
+                  <SpecScoreBadge
+                    score={getSectionScore("battery")}
+                    size={38}
+                  />
                 </div>
                 <ScoreGroupTable
                   currentScore={getSectionScore("battery")}
@@ -1890,7 +1936,10 @@ const LaptopDetailCard = () => {
                     <FaWindows className="text-purple-500" />
                     Software & Warranty
                   </h4>
-                  <SpecScoreBadge score={getSectionScore("software")} size={38} />
+                  <SpecScoreBadge
+                    score={getSectionScore("software")}
+                    size={38}
+                  />
                 </div>
                 <ScoreGroupTable
                   currentScore={getSectionScore("software")}
@@ -1925,7 +1974,7 @@ const LaptopDetailCard = () => {
 
   if (!loading && !laptopData) {
     return (
-      <div className="max-w-6xl mx-auto p-4">
+      <div className="max-w-4xl mx-auto p-4">
         <div className="bg-white rounded-xl p-12 text-center border border-gray-200">
           <div className="text-gray-300 text-5xl mb-4 flex justify-center">
             <FaLaptop />
@@ -1975,7 +2024,11 @@ const LaptopDetailCard = () => {
       laptopData?.specifications?.display ||
       "",
   );
-  const headerDescriptor = [headerType, headerProcessor, headerDisplay && `${headerDisplay} Display`]
+  const headerDescriptor = [
+    headerType,
+    headerProcessor,
+    headerDisplay && `${headerDisplay} Display`,
+  ]
     .filter(Boolean)
     .join(" | ");
   const headerModelSubtitle =
@@ -2031,7 +2084,7 @@ const LaptopDetailCard = () => {
   const metaImage = laptopData?.images?.[0] || null;
 
   return (
-    <div className="px-2 lg:px-4 mx-auto max-w-6xl w-full bg-white">
+    <div className="px-2 lg:px-4 mx-auto max-w-4xl w-full bg-white">
       <Helmet>
         <title>{metaTitleWithDate}</title>
         <meta name="description" content={metaDescription} />
@@ -2173,7 +2226,8 @@ const LaptopDetailCard = () => {
             <div className="flex gap-3 overflow-x-auto no-scrollbar pb-3">
               {popularComparisonTargets.map((d) => {
                 const otherId = d?.id ?? d?.product_id ?? d?.productId ?? null;
-                const otherName = d?.product_name || d?.name || d?.model || "Laptop";
+                const otherName =
+                  d?.product_name || d?.name || d?.model || "Laptop";
                 const otherImg = d?.images?.[0] || d?.image || "";
 
                 return (
@@ -2348,7 +2402,11 @@ const LaptopDetailCard = () => {
                   },
                 ].map((item) => {
                   const rawValue = laptopData.specifications[item.key];
-                  if (rawValue === undefined || rawValue === null || rawValue === "")
+                  if (
+                    rawValue === undefined ||
+                    rawValue === null ||
+                    rawValue === ""
+                  )
                     return null;
                   const normalizedValue =
                     typeof item.format === "function"
@@ -2597,9 +2655,7 @@ const LaptopDetailCard = () => {
 
             {/* OS Badge */}
             {laptopData.specifications?.operating_system && (
-              <div
-                className="hidden lg:flex items-center gap-3 mb-6 px-4 py-3 rounded-xl bg-white border border-slate-200"
-              >
+              <div className="hidden lg:flex items-center gap-3 mb-6 px-4 py-3 rounded-xl bg-white border border-slate-200">
                 <span
                   className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${currentColor.light}`}
                 >
@@ -2641,7 +2697,6 @@ const LaptopDetailCard = () => {
           </div>
 
           <div className="p-4">{renderTabContent()}</div>
-
         </div>
       </div>
     </div>
@@ -2649,4 +2704,3 @@ const LaptopDetailCard = () => {
 };
 
 export default LaptopDetailCard;
-

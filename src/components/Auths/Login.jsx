@@ -479,10 +479,10 @@ const Login = ({
 
   if (asPage) {
     return (
-      <div className="min-h-screen bg-white max-w-6xl mx-auto">
+      <div className="min-h-screen bg-white max-w-4xl mx-auto">
         {/* Header Back Button */}
 
-        <div className="max-w-6xl mx-auto px-4 py-10">
+        <div className="max-w-4xl mx-auto px-4 py-10">
           <div className="flex items-center justify-center">
             <div className="w-full max-w-md">{content}</div>
           </div>

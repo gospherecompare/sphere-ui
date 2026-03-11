@@ -1,5 +1,11 @@
 ﻿// src/components/MobileDetailCard.jsx
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import CompetitorCards from "../ui/CompetitorCards";
 import ProductDiscoverySections from "../ui/ProductDiscoverySections";
 import { useDevice } from "../../hooks/useDevice";
@@ -202,13 +208,15 @@ const MobileDetailCard = () => {
 
   // Extract slug from route params (SEO-friendly slug-based URL)
   const routeSlug = params.slug || null;
-  const routeBaseSlug = useMemo(() => normalizeSeoSlug(routeSlug), [
-    normalizeSeoSlug,
-    routeSlug,
-  ]);
+  const routeBaseSlug = useMemo(
+    () => normalizeSeoSlug(routeSlug),
+    [normalizeSeoSlug, routeSlug],
+  );
 
   // Convert slug to searchable model name
-  const modelFromSlug = routeBaseSlug ? extractNameFromSlug(routeBaseSlug) : null;
+  const modelFromSlug = routeBaseSlug
+    ? extractNameFromSlug(routeBaseSlug)
+    : null;
   const searchModel = model || modelFromSlug;
 
   // Try to find device locally by slug match first
@@ -692,7 +700,11 @@ const MobileDetailCard = () => {
       deviceFieldProfiles,
     );
     out.field_profile = profileResult;
-    if (out.spec_score == null && out.overall_score == null && out.hook_score == null) {
+    if (
+      out.spec_score == null &&
+      out.overall_score == null &&
+      out.hook_score == null
+    ) {
       out.spec_score = profileResult.score;
       out.overall_score = profileResult.score;
     }
@@ -771,7 +783,10 @@ const MobileDetailCard = () => {
         resolvePersistedScore(deviceData.specScore, specScoreSource),
       );
       const persistedOverallScore = pickScore100(
-        resolvePersistedScore(deviceData.overall_score_v2, overallScoreV2Source),
+        resolvePersistedScore(
+          deviceData.overall_score_v2,
+          overallScoreV2Source,
+        ),
         resolvePersistedScore(deviceData.overallScoreV2, overallScoreV2Source),
         resolvePersistedScore(deviceData.overall_score, overallScoreSource),
         resolvePersistedScore(deviceData.overallScore, overallScoreSource),
@@ -886,7 +901,10 @@ const MobileDetailCard = () => {
         allowProfileOverallFallback ? deviceData.field_profile?.score : null,
         allowSectionAverageFallback ? sectionAverage : null,
       );
-      const overallDisplay = pickScore100(persistedOverallScoreDisplay, overall);
+      const overallDisplay = pickScore100(
+        persistedOverallScoreDisplay,
+        overall,
+      );
 
       return {
         overall,
@@ -914,7 +932,9 @@ const MobileDetailCard = () => {
   const getSectionScore = useCallback(
     (key) => {
       if (!key || key === "overall") return scoreSummary.overall;
-      const matched = scoreSummary.sections.find((section) => section.key === key);
+      const matched = scoreSummary.sections.find(
+        (section) => section.key === key,
+      );
       return matched?.score ?? scoreSummary.overall;
     },
     [scoreSummary],
@@ -924,7 +944,9 @@ const MobileDetailCard = () => {
       if (!key || key === "overall") {
         return scoreSummary.overallDisplay ?? scoreSummary.overall;
       }
-      const matched = scoreSummary.sections.find((section) => section.key === key);
+      const matched = scoreSummary.sections.find(
+        (section) => section.key === key,
+      );
       return matched?.score ?? scoreSummary.overall;
     },
     [scoreSummary],
@@ -943,7 +965,9 @@ const MobileDetailCard = () => {
       if (Number.isFinite(parsed) && parsed > 0) return parsed;
     }
 
-    const variants = Array.isArray(deviceData?.variants) ? deviceData.variants : [];
+    const variants = Array.isArray(deviceData?.variants)
+      ? deviceData.variants
+      : [];
     const prices = [];
     variants.forEach((variant) => {
       const base = Number(variant?.base_price);
@@ -986,15 +1010,20 @@ const MobileDetailCard = () => {
     );
     const sameGroup = allDevices.filter(
       (item) =>
-        normalizeGroupKey(item?.category || item?.product_type, "smartphone") ===
-        currentGroupKey,
+        normalizeGroupKey(
+          item?.category || item?.product_type,
+          "smartphone",
+        ) === currentGroupKey,
     );
     const scopedDevices = sameGroup.length > 0 ? sameGroup : allDevices;
-    const currentPriceBand = getPriceBandLabel(resolveDeviceBenchmarkPrice(mobileData));
+    const currentPriceBand = getPriceBandLabel(
+      resolveDeviceBenchmarkPrice(mobileData),
+    );
     const samePriceBandDevices = currentPriceBand
       ? scopedDevices.filter(
           (item) =>
-            getPriceBandLabel(resolveDeviceBenchmarkPrice(item)) === currentPriceBand,
+            getPriceBandLabel(resolveDeviceBenchmarkPrice(item)) ===
+            currentPriceBand,
         )
       : [];
     const benchmarkPool =
@@ -1010,7 +1039,8 @@ const MobileDetailCard = () => {
         allowSectionAverageFallback: true,
         allowFallbackPersistedScores: false,
       });
-      if (Number.isFinite(summary?.overall)) byKey.overall.push(summary.overall);
+      if (Number.isFinite(summary?.overall))
+        byKey.overall.push(summary.overall);
       (summary?.sections || []).forEach((section) => {
         if (!Number.isFinite(section?.score)) return;
         if (!byKey[section.key]) byKey[section.key] = [];
@@ -1049,7 +1079,8 @@ const MobileDetailCard = () => {
   const showInitialLoading = loading && !mobileData;
 
   const variants = useMemo(
-    () => mobileData?.variants ?? (mobileData?.variant ? [mobileData.variant] : []),
+    () =>
+      mobileData?.variants ?? (mobileData?.variant ? [mobileData.variant] : []),
     [mobileData],
   );
   const variantsSignature = useMemo(
@@ -1075,7 +1106,11 @@ const MobileDetailCard = () => {
   useEffect(() => {
     if (!variants || variants.length === 0) return;
     const productKey = String(
-      mobileData?.id ?? mobileData?.product_id ?? routeSlug ?? searchModel ?? "",
+      mobileData?.id ??
+        mobileData?.product_id ??
+        routeSlug ??
+        searchModel ??
+        "",
     );
     const initKey = [
       productKey,
@@ -1100,7 +1135,11 @@ const MobileDetailCard = () => {
       if (idx >= 0) nextVariantIndex = idx;
     }
     // If ram/storage params provided, prefer matching variant
-    if (nextVariantIndex < 0 && (ramParam || storageParam) && variants.length > 0) {
+    if (
+      nextVariantIndex < 0 &&
+      (ramParam || storageParam) &&
+      variants.length > 0
+    ) {
       const idx = variants.findIndex((v) => {
         const ramOk = ramParam
           ? String(v.ram).toLowerCase() === String(ramParam).toLowerCase()
@@ -1119,7 +1158,12 @@ const MobileDetailCard = () => {
     }
 
     // If store name provided, try to find store id from variant stores
-    if (nextVariantIndex < 0 && storeNameParam && variants.length > 0 && !storeQuery) {
+    if (
+      nextVariantIndex < 0 &&
+      storeNameParam &&
+      variants.length > 0 &&
+      !storeQuery
+    ) {
       for (let i = 0; i < variants.length; i++) {
         const v = variants[i];
         const sp = (v.store_prices || []).find(
@@ -1332,9 +1376,7 @@ const MobileDetailCard = () => {
     const normalizedStores = (Array.isArray(stores) ? stores : []).map(
       (store) => {
         const saleStartDate = normalizeDateOnly(
-          store?.sale_start_date ??
-            store?.sale_date ??
-            store?.saleStartDate,
+          store?.sale_start_date ?? store?.sale_date ?? store?.saleStartDate,
         );
         const prebooking = isPrebookingStore(store, launchDate);
         return {
@@ -1350,8 +1392,10 @@ const MobileDetailCard = () => {
     const sortedLiveStores = normalizedStores
       .filter((store) => !store.is_prebooking)
       .sort((a, b) => {
-        const priceA = parseInt(String(a?.price ?? "").replace(/[^0-9]/g, "")) || Infinity;
-        const priceB = parseInt(String(b?.price ?? "").replace(/[^0-9]/g, "")) || Infinity;
+        const priceA =
+          parseInt(String(a?.price ?? "").replace(/[^0-9]/g, "")) || Infinity;
+        const priceB =
+          parseInt(String(b?.price ?? "").replace(/[^0-9]/g, "")) || Infinity;
         return priceA - priceB;
       });
     if (sortedLiveStores.length > 0) {
@@ -1361,8 +1405,10 @@ const MobileDetailCard = () => {
     const sortedPrebookingStores = normalizedStores
       .filter((store) => store.is_prebooking)
       .sort((a, b) => {
-        const priceA = parseInt(String(a?.price ?? "").replace(/[^0-9]/g, "")) || Infinity;
-        const priceB = parseInt(String(b?.price ?? "").replace(/[^0-9]/g, "")) || Infinity;
+        const priceA =
+          parseInt(String(a?.price ?? "").replace(/[^0-9]/g, "")) || Infinity;
+        const priceB =
+          parseInt(String(b?.price ?? "").replace(/[^0-9]/g, "")) || Infinity;
         return priceA - priceB;
       });
 
@@ -1491,7 +1537,9 @@ const MobileDetailCard = () => {
     if (token === "battery" && looksLikeMah) return "batterycapacity";
 
     // Main camera aliases (including computed MP field).
-    if (["maincamera", "maincameramegapixels", "primarycamera"].includes(token)) {
+    if (
+      ["maincamera", "maincameramegapixels", "primarycamera"].includes(token)
+    ) {
       return "maincamera";
     }
 
@@ -1722,7 +1770,9 @@ const MobileDetailCard = () => {
   };
 
   const getCompactProcessorLabel = (raw) => {
-    const text = String(raw || "").replace(/\s+/g, " ").trim();
+    const text = String(raw || "")
+      .replace(/\s+/g, " ")
+      .trim();
     if (!text) return "";
 
     const dimensity = text.match(/Dimensity\s+\d+\w*(?:[-\s]?Ultra)?/i);
@@ -1746,7 +1796,9 @@ const MobileDetailCard = () => {
   };
 
   const getCompactDisplayLabel = (raw) => {
-    const text = String(raw || "").replace(/\s+/g, " ").trim();
+    const text = String(raw || "")
+      .replace(/\s+/g, " ")
+      .trim();
     if (!text) return "";
     const match = text.match(/(\d+(?:\.\d+)?)\s*(?:inch|inches|in|")/i);
     if (match) return `${match[1]}"`;
@@ -1764,7 +1816,10 @@ const MobileDetailCard = () => {
     mobileData?.brand || mobileData?.brand_name || "",
     mobileData?.brand_logo || mobileData?.brandLogo || null,
     mobileData?.brand_website || mobileData?.brandWebsite || null,
-    mobileData?.launch_date || mobileData?.launchDate || mobileData?.created_at || null,
+    mobileData?.launch_date ||
+      mobileData?.launchDate ||
+      mobileData?.created_at ||
+      null,
   );
   const sortedStores = storeAvailabilityState.stores || [];
   const displayedStores = showAllStores
@@ -1857,10 +1912,9 @@ const MobileDetailCard = () => {
       mobileData?.batteryCapacity ||
       mobileData?.specs?.battery ||
       "Battery info not available";
-    const batteryText =
-      String(battery).toLowerCase().includes("mah")
-        ? String(battery)
-        : `${battery}mAh`;
+    const batteryText = String(battery).toLowerCase().includes("mah")
+      ? String(battery)
+      : `${battery}mAh`;
     const price = currentVariant?.base_price
       ? `₹${formatPrice(currentVariant.base_price)}`
       : "Price not available";
@@ -2185,7 +2239,8 @@ Price: ${price}
     const connectivityData =
       mobileData?.connectivity || mobileData?.connectivity_json;
     const networkData = mobileData?.network || mobileData?.network_json;
-    const multimediaData = mobileData?.multimedia || mobileData?.multimedia_json;
+    const multimediaData =
+      mobileData?.multimedia || mobileData?.multimedia_json;
 
     switch (tabId) {
       case "specifications":
@@ -2271,9 +2326,7 @@ Price: ${price}
     }
     const entries = Object.entries(data).filter(
       ([key, value]) =>
-        hasContent(value) &&
-        key !== "sphere_rating" &&
-        !isScoreKey(key),
+        hasContent(value) && key !== "sphere_rating" && !isScoreKey(key),
     );
 
     if (entries.length === 0) {
@@ -2332,8 +2385,7 @@ Price: ${price}
 
           {groupedEntries.map(([gkey, group]) => {
             const subEntries = Object.entries(group).filter(
-              ([k, v]) =>
-                hasContent(v) && !isScoreKey(k),
+              ([k, v]) => hasContent(v) && !isScoreKey(k),
             );
             if (subEntries.length === 0) return null;
             return (
@@ -2420,9 +2472,7 @@ Price: ${price}
         .replace(/[^a-z0-9]/g, "");
 
       if (
-        ["main", "maincamera", "wide", "primary", "primarycamera"].includes(
-          key,
-        )
+        ["main", "maincamera", "wide", "primary", "primarycamera"].includes(key)
       ) {
         return "Main Camera";
       }
@@ -2448,7 +2498,8 @@ Price: ${price}
       if (key === "videorecording") return "Video Recording";
       if (key === "aifeatures") return "AI Features";
       if (key === "camerafeatures") return "Camera Features";
-      if (key === "rearcameraphotographyfeatures") return "Photography Features";
+      if (key === "rearcameraphotographyfeatures")
+        return "Photography Features";
       return toNormalCase(rawKey);
     };
 
@@ -2590,8 +2641,12 @@ Price: ${price}
       <div className="divide-y divide-slate-200 bg-white">
         {uniqueRows.map(([label, value], idx) => (
           <section key={idx} className="py-3 first:pt-0 last:pb-0">
-            <h5 className="mb-2 text-sm font-semibold text-slate-800">{label}</h5>
-            <div className="text-sm text-slate-900">{renderCameraValueCell(value)}</div>
+            <h5 className="mb-2 text-sm font-semibold text-slate-800">
+              {label}
+            </h5>
+            <div className="text-sm text-slate-900">
+              {renderCameraValueCell(value)}
+            </div>
           </section>
         ))}
       </div>
@@ -2695,19 +2750,140 @@ Price: ${price}
           <div id="spec-specifications" className="space-y-4">
             {/* Specs Sections */}
             <div className="space-y-4">
-                {/* General Section */}
+              {/* General Section */}
+              <div
+                id="spec-general"
+                className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
+              >
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
+                    <FaInfoCircle className="text-sm text-violet-400" />
+                    General
+                  </h4>
+                  <div className="flex items-center gap-1.5">
+                    <SpecScoreBadge
+                      score={sectionScoreDisplay("overall")}
+                      size={38}
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSpecSectionBenchOpen((prev) => ({
+                          ...prev,
+                          general: !prev.general,
+                        }))
+                      }
+                      aria-expanded={Boolean(specSectionBenchOpen.general)}
+                      aria-label={
+                        specSectionBenchOpen.general
+                          ? "Hide General benchmark"
+                          : "Show General benchmark"
+                      }
+                      className="inline-flex h-6 w-6 items-center justify-center text-violet-400 hover:text-violet-500"
+                    >
+                      {specSectionBenchOpen.general ? (
+                        <FaChevronUp size={10} />
+                      ) : (
+                        <FaChevronDown size={10} />
+                      )}
+                    </button>
+                  </div>
+                </div>
+                <ScoreGroupTable
+                  currentScore={sectionScore("overall")}
+                  peerScores={getGroupPeerScores("overall")}
+                  groupLabel={scoreGroupData.label}
+                  minScore={0}
+                  maxScore={100}
+                  className="mb-3"
+                  showHeader={false}
+                  isOpen={Boolean(specSectionBenchOpen.general)}
+                />
+                <div className="overflow-hidden rounded-md border border-slate-200">
+                  <table className="min-w-full">
+                    <tbody className="divide-y divide-slate-200 bg-white">
+                      {[
+                        { label: "Brand", value: mobileData.brand },
+                        { label: "Model", value: mobileData.model },
+                        { label: "Segment", value: mobileData.category },
+                        {
+                          label: "Release Date",
+                          value: formatDateForDisplay(
+                            mobileData.launch_date || mobileData.launchDate,
+                          ),
+                        },
+                        {
+                          label: "Operating System",
+                          value:
+                            mobileData.performance?.operating_system ||
+                            mobileData.performance?.os ||
+                            "N/A",
+                        },
+                        {
+                          label: "Custom UI",
+                          value: mobileData.ui || "Stock",
+                        },
+                        {
+                          label: "Colors",
+                          value: Array.isArray(mobileData.colors)
+                            ? mobileData.colors.join(", ")
+                            : mobileData.build_design?.colors || "N/A",
+                        },
+                        {
+                          label: "Sim Type",
+                          value:
+                            mobileData.network?.sim_type ||
+                            mobileData.sim ||
+                            "Dual Sim",
+                        },
+                        {
+                          label: "Weight",
+                          value: (() => {
+                            const w = mobileData.build_design?.weight;
+                            if (!w) return "N/A";
+                            const ws = String(w).trim();
+                            return /\bg\b/i.test(ws) ? ws : `${ws} g`;
+                          })(),
+                        },
+                      ]
+                        .filter(
+                          (it) =>
+                            it.value !== undefined &&
+                            it.value !== null &&
+                            it.value !== "",
+                        )
+                        .map((item, idx) => (
+                          <tr
+                            key={idx}
+                            className={`transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"} hover:bg-violet-50/30`}
+                          >
+                            <td className="w-[32%] border-r border-slate-200 px-3 py-2.5 text-[13px] font-medium text-slate-600 sm:px-4 md:px-5 align-top">
+                              {item.label}
+                            </td>
+                            <td className="w-[68%] px-3 py-2.5 text-[13px] text-slate-900 sm:px-4 md:px-5">
+                              {formatSpecValue(item.value, item.label)}
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Display Section */}
+              {hasContent(displayData) && (
                 <div
-                  id="spec-general"
+                  id="spec-display"
                   className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
                 >
                   <div className="mb-3 flex items-center justify-between gap-2">
                     <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
-                      <FaInfoCircle className="text-sm text-violet-400" />
-                      General
+                      <FaExpand className="text-purple-400" />
+                      Display
                     </h4>
                     <div className="flex items-center gap-1.5">
                       <SpecScoreBadge
-                        score={sectionScoreDisplay("overall")}
+                        score={sectionScore("display")}
                         size={38}
                       />
                       <button
@@ -2715,18 +2891,18 @@ Price: ${price}
                         onClick={() =>
                           setSpecSectionBenchOpen((prev) => ({
                             ...prev,
-                            general: !prev.general,
+                            display: !prev.display,
                           }))
                         }
-                        aria-expanded={Boolean(specSectionBenchOpen.general)}
+                        aria-expanded={Boolean(specSectionBenchOpen.display)}
                         aria-label={
-                          specSectionBenchOpen.general
-                            ? "Hide General benchmark"
-                            : "Show General benchmark"
+                          specSectionBenchOpen.display
+                            ? "Hide Display benchmark"
+                            : "Show Display benchmark"
                         }
                         className="inline-flex h-6 w-6 items-center justify-center text-violet-400 hover:text-violet-500"
                       >
-                        {specSectionBenchOpen.general ? (
+                        {specSectionBenchOpen.display ? (
                           <FaChevronUp size={10} />
                         ) : (
                           <FaChevronDown size={10} />
@@ -2735,522 +2911,417 @@ Price: ${price}
                     </div>
                   </div>
                   <ScoreGroupTable
-                    currentScore={sectionScore("overall")}
-                    peerScores={getGroupPeerScores("overall")}
+                    currentScore={sectionScore("display")}
+                    peerScores={getGroupPeerScores("display")}
                     groupLabel={scoreGroupData.label}
                     minScore={0}
                     maxScore={100}
                     className="mb-3"
                     showHeader={false}
-                    isOpen={Boolean(specSectionBenchOpen.general)}
+                    isOpen={Boolean(specSectionBenchOpen.display)}
+                  />
+
+                  {renderDisplayTable(displayData)}
+                </div>
+              )}
+
+              {/* Performance Section */}
+              {hasContent(performanceData) && (
+                <div
+                  id="spec-performance"
+                  className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
+                >
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
+                      <FaBolt className="text-yellow-500" />
+                      Performance
+                    </h4>
+                    <div className="flex items-center gap-1.5">
+                      <SpecScoreBadge
+                        score={sectionScore("performance")}
+                        size={38}
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSpecSectionBenchOpen((prev) => ({
+                            ...prev,
+                            performance: !prev.performance,
+                          }))
+                        }
+                        aria-expanded={Boolean(
+                          specSectionBenchOpen.performance,
+                        )}
+                        aria-label={
+                          specSectionBenchOpen.performance
+                            ? "Hide Performance benchmark"
+                            : "Show Performance benchmark"
+                        }
+                        className="inline-flex h-6 w-6 items-center justify-center text-violet-400 hover:text-violet-500"
+                      >
+                        {specSectionBenchOpen.performance ? (
+                          <FaChevronUp size={10} />
+                        ) : (
+                          <FaChevronDown size={10} />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                  <ScoreGroupTable
+                    currentScore={sectionScore("performance")}
+                    peerScores={getGroupPeerScores("performance")}
+                    groupLabel={scoreGroupData.label}
+                    minScore={0}
+                    maxScore={100}
+                    className="mb-3"
+                    showHeader={false}
+                    isOpen={Boolean(specSectionBenchOpen.performance)}
                   />
                   <div className="overflow-hidden rounded-md border border-slate-200">
                     <table className="min-w-full">
                       <tbody className="divide-y divide-slate-200 bg-white">
-                        {[
-                          { label: "Brand", value: mobileData.brand },
-                          { label: "Model", value: mobileData.model },
-                          { label: "Segment", value: mobileData.category },
-                          {
-                            label: "Release Date",
-                            value: formatDateForDisplay(
-                              mobileData.launch_date || mobileData.launchDate,
-                            ),
-                          },
-                          {
-                            label: "Operating System",
-                            value:
-                              mobileData.performance?.operating_system ||
-                              mobileData.performance?.os ||
-                              "N/A",
-                          },
-                          {
-                            label: "Custom UI",
-                            value: mobileData.ui || "Stock",
-                          },
-                          {
-                            label: "Colors",
-                            value: Array.isArray(mobileData.colors)
-                              ? mobileData.colors.join(", ")
-                              : mobileData.build_design?.colors || "N/A",
-                          },
-                          {
-                            label: "Sim Type",
-                            value:
-                              mobileData.network?.sim_type ||
-                              mobileData.sim ||
-                              "Dual Sim",
-                          },
-                          {
-                            label: "Weight",
-                            value: (() => {
-                              const w = mobileData.build_design?.weight;
-                              if (!w) return "N/A";
-                              const ws = String(w).trim();
-                              return /\bg\b/i.test(ws) ? ws : `${ws} g`;
-                            })(),
-                          },
-                        ]
-                          .filter(
-                            (it) =>
-                              it.value !== undefined &&
-                              it.value !== null &&
-                              it.value !== "",
-                          )
-                          .map((item, idx) => (
-                            <tr
-                              key={idx}
-                              className={`transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"} hover:bg-violet-50/30`}
-                            >
-                              <td className="w-[32%] border-r border-slate-200 px-3 py-2.5 text-[13px] font-medium text-slate-600 sm:px-4 md:px-5 align-top">
-                                {item.label}
-                              </td>
-                              <td className="w-[68%] px-3 py-2.5 text-[13px] text-slate-900 sm:px-4 md:px-5">
-                                {formatSpecValue(item.value, item.label)}
-                              </td>
-                            </tr>
-                          ))}
+                        {dedupeSpecEntries(
+                          Object.entries(performanceData || {}).filter(
+                            ([k, v]) =>
+                              hasContent(v) &&
+                              !["sphere_rating", "ai_features"].includes(k) &&
+                              !isScoreKey(k),
+                          ),
+                        ).map(([key, value], idx) => (
+                          <tr
+                            key={key}
+                            className={`transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"} hover:bg-violet-50/30`}
+                          >
+                            <td className="w-[32%] border-r border-slate-200 px-3 py-2.5 text-[13px] font-medium text-slate-600 sm:px-4 md:px-5 align-top">
+                              {toNormalCase(key)}
+                            </td>
+                            <td className="w-[68%] px-3 py-2.5 text-[13px] text-slate-900 sm:px-4 md:px-5">
+                              {formatSpecValue(value, key)}
+                            </td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
                   </div>
                 </div>
+              )}
 
-                {/* Display Section */}
-                {hasContent(displayData) && (
-                  <div
-                    id="spec-display"
-                    className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
-                  >
-                    <div className="mb-3 flex items-center justify-between gap-2">
-                      <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
-                        <FaExpand className="text-purple-400" />
-                        Display
-                      </h4>
-                      <div className="flex items-center gap-1.5">
-                        <SpecScoreBadge score={sectionScore("display")} size={38} />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setSpecSectionBenchOpen((prev) => ({
-                              ...prev,
-                              display: !prev.display,
-                            }))
-                          }
-                          aria-expanded={Boolean(specSectionBenchOpen.display)}
-                          aria-label={
-                            specSectionBenchOpen.display
-                              ? "Hide Display benchmark"
-                              : "Show Display benchmark"
-                          }
-                          className="inline-flex h-6 w-6 items-center justify-center text-violet-400 hover:text-violet-500"
-                        >
-                          {specSectionBenchOpen.display ? (
-                            <FaChevronUp size={10} />
-                          ) : (
-                            <FaChevronDown size={10} />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                    <ScoreGroupTable
-                      currentScore={sectionScore("display")}
-                      peerScores={getGroupPeerScores("display")}
-                      groupLabel={scoreGroupData.label}
-                      minScore={0}
-                      maxScore={100}
-                      className="mb-3"
-                      showHeader={false}
-                      isOpen={Boolean(specSectionBenchOpen.display)}
-                    />
-
-                    {renderDisplayTable(displayData)}
-                  </div>
-                )}
-
-                {/* Performance Section */}
-                {hasContent(performanceData) && (
-                  <div
-                    id="spec-performance"
-                    className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
-                  >
-                    <div className="mb-3 flex items-center justify-between gap-2">
-                      <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
-                        <FaBolt className="text-yellow-500" />
-                        Performance
-                      </h4>
-                      <div className="flex items-center gap-1.5">
-                        <SpecScoreBadge
-                          score={sectionScore("performance")}
-                          size={38}
-                        />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setSpecSectionBenchOpen((prev) => ({
-                              ...prev,
-                              performance: !prev.performance,
-                            }))
-                          }
-                          aria-expanded={Boolean(specSectionBenchOpen.performance)}
-                          aria-label={
-                            specSectionBenchOpen.performance
-                              ? "Hide Performance benchmark"
-                              : "Show Performance benchmark"
-                          }
-                          className="inline-flex h-6 w-6 items-center justify-center text-violet-400 hover:text-violet-500"
-                        >
-                          {specSectionBenchOpen.performance ? (
-                            <FaChevronUp size={10} />
-                          ) : (
-                            <FaChevronDown size={10} />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                    <ScoreGroupTable
-                      currentScore={sectionScore("performance")}
-                      peerScores={getGroupPeerScores("performance")}
-                      groupLabel={scoreGroupData.label}
-                      minScore={0}
-                      maxScore={100}
-                      className="mb-3"
-                      showHeader={false}
-                      isOpen={Boolean(specSectionBenchOpen.performance)}
-                    />
-                    <div className="overflow-hidden rounded-md border border-slate-200">
-                      <table className="min-w-full">
-                        <tbody className="divide-y divide-slate-200 bg-white">
-                          {dedupeSpecEntries(
-                            Object.entries(performanceData || {}).filter(
-                              ([k, v]) =>
-                                hasContent(v) &&
-                                !["sphere_rating", "ai_features"].includes(k) &&
-                                !isScoreKey(k),
-                            ),
-                          )
-                            .map(([key, value], idx) => (
-                              <tr
-                                key={key}
-                                className={`transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"} hover:bg-violet-50/30`}
-                              >
-                                <td className="w-[32%] border-r border-slate-200 px-3 py-2.5 text-[13px] font-medium text-slate-600 sm:px-4 md:px-5 align-top">
-                                  {toNormalCase(key)}
-                                </td>
-                                <td className="w-[68%] px-3 py-2.5 text-[13px] text-slate-900 sm:px-4 md:px-5">
-                                  {formatSpecValue(value, key)}
-                                </td>
-                              </tr>
-                            ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-
-                {/* Camera Section - Using nested object structure */}
-                {hasContent(cameraData) && (
-                  <div
-                    id="spec-camera"
-                    className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
-                  >
-                    <div className="mb-3 flex items-center justify-between gap-2">
-                      <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
-                        <FaCamera className="text-purple-400" />
-                        Camera
-                      </h4>
-                      <div className="flex items-center gap-1.5">
-                        <SpecScoreBadge score={sectionScore("camera")} size={38} />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setSpecSectionBenchOpen((prev) => ({
-                              ...prev,
-                              camera: !prev.camera,
-                            }))
-                          }
-                          aria-expanded={Boolean(specSectionBenchOpen.camera)}
-                          aria-label={
-                            specSectionBenchOpen.camera
-                              ? "Hide Camera benchmark"
-                              : "Show Camera benchmark"
-                          }
-                          className="inline-flex h-6 w-6 items-center justify-center text-violet-400 hover:text-violet-500"
-                        >
-                          {specSectionBenchOpen.camera ? (
-                            <FaChevronUp size={10} />
-                          ) : (
-                            <FaChevronDown size={10} />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                    <ScoreGroupTable
-                      currentScore={sectionScore("camera")}
-                      peerScores={getGroupPeerScores("camera")}
-                      groupLabel={scoreGroupData.label}
-                      minScore={0}
-                      maxScore={100}
-                      className="mb-3"
-                      showHeader={false}
-                      isOpen={Boolean(specSectionBenchOpen.camera)}
-                    />
-
-                    {renderCameraTable(cameraData)}
-                  </div>
-                )}
-
-                {/* Battery Section */}
-                {hasContent(batteryData) && (
-                  <div
-                    id="spec-battery"
-                    className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
-                  >
-                    <div className="mb-3 flex items-center justify-between gap-2">
-                      <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
-                        <FaBatteryFull className="text-green-500" />
-                        Battery
-                      </h4>
-                      <div className="flex items-center gap-1.5">
-                        <SpecScoreBadge score={sectionScore("battery")} size={38} />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setSpecSectionBenchOpen((prev) => ({
-                              ...prev,
-                              battery: !prev.battery,
-                            }))
-                          }
-                          aria-expanded={Boolean(specSectionBenchOpen.battery)}
-                          aria-label={
-                            specSectionBenchOpen.battery
-                              ? "Hide Battery benchmark"
-                              : "Show Battery benchmark"
-                          }
-                          className="inline-flex h-6 w-6 items-center justify-center text-violet-400 hover:text-violet-500"
-                        >
-                          {specSectionBenchOpen.battery ? (
-                            <FaChevronUp size={10} />
-                          ) : (
-                            <FaChevronDown size={10} />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                    <ScoreGroupTable
-                      currentScore={sectionScore("battery")}
-                      peerScores={getGroupPeerScores("battery")}
-                      groupLabel={scoreGroupData.label}
-                      minScore={0}
-                      maxScore={100}
-                      className="mb-3"
-                      showHeader={false}
-                      isOpen={Boolean(specSectionBenchOpen.battery)}
-                    />
-                    <div className="overflow-hidden rounded-md border border-slate-200">
-                      <table className="min-w-full">
-                        <tbody className="divide-y divide-slate-200 bg-white">
-                          {dedupeSpecEntries(
-                            Object.entries(batteryData || {}).filter(
-                              ([k, v]) =>
-                                hasContent(v) &&
-                                !/ai[_-]?features?/i.test(k) &&
-                                !isScoreKey(k),
-                            ),
-                          )
-                            .map(([key, value], idx) => (
-                              <tr
-                                key={key}
-                                className={`transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"} hover:bg-violet-50/30`}
-                              >
-                                <td className="w-[32%] border-r border-slate-200 px-3 py-2.5 text-[13px] font-medium text-slate-600 sm:px-4 md:px-5 align-top">
-                                  {toNormalCase(key)}
-                                </td>
-                                <td className="w-[68%] px-3 py-2.5 text-[13px] text-slate-900 sm:px-4 md:px-5">
-                                  {[
-                                    "battery_capacity_mah",
-                                    "battery_capacity",
-                                  ].includes(key)
-                                    ? `${value} mAh`
-                                    : formatSpecValue(value, key)}
-                                </td>
-                              </tr>
-                            ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-
-                {/* Connectivity Section */}
-                {hasContent(connectivityData) && (
-                  <div
-                    id="spec-connectivity"
-                    className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
-                  >
-                    <div className="mb-3 flex items-center justify-between gap-2">
-                      <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
-                        <FaWifi className="text-purple-400" />
-                        Connectivity
-                      </h4>
-                      <div className="flex items-center gap-1.5">
-                        <SpecScoreBadge score={sectionScore("network")} size={38} />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setSpecSectionBenchOpen((prev) => ({
-                              ...prev,
-                              connectivity: !prev.connectivity,
-                            }))
-                          }
-                          aria-expanded={Boolean(specSectionBenchOpen.connectivity)}
-                          aria-label={
-                            specSectionBenchOpen.connectivity
-                              ? "Hide Connectivity benchmark"
-                              : "Show Connectivity benchmark"
-                          }
-                          className="inline-flex h-6 w-6 items-center justify-center text-violet-400 hover:text-violet-500"
-                        >
-                          {specSectionBenchOpen.connectivity ? (
-                            <FaChevronUp size={10} />
-                          ) : (
-                            <FaChevronDown size={10} />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                    <ScoreGroupTable
-                      currentScore={sectionScore("network")}
-                      peerScores={getGroupPeerScores("network")}
-                      groupLabel={scoreGroupData.label}
-                      minScore={0}
-                      maxScore={100}
-                      className="mb-3"
-                      showHeader={false}
-                      isOpen={Boolean(specSectionBenchOpen.connectivity)}
-                    />
-                    <div className="overflow-hidden rounded-md border border-slate-200">
-                      <table className="min-w-full">
-                        <tbody className="divide-y divide-slate-200 bg-white">
-                          {dedupeSpecEntries(
-                            Object.entries(connectivityData || {}).filter(
-                              ([k, v]) =>
-                                hasContent(v) &&
-                                !/ai[_-]?features?/i.test(k) &&
-                                !isScoreKey(k),
-                            ),
-                          )
-                            .map(([key, value], idx) => (
-                              <tr
-                                key={key}
-                                className={`transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"} hover:bg-violet-50/30`}
-                              >
-                                <td className="w-[32%] border-r border-slate-200 px-3 py-2.5 text-[13px] font-medium text-slate-600 sm:px-4 md:px-5 align-top">
-                                  {toNormalCase(key)}
-                                </td>
-                                <td className="w-[68%] px-3 py-2.5 text-[13px] text-slate-900 sm:px-4 md:px-5">
-                                  {formatSpecValue(value, key)}
-                                </td>
-                              </tr>
-                            ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-
-                {/* Network Section */}
-                {hasContent(networkData) && (
-                  <div
-                    id="spec-network"
-                    className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
-                  >
-                    <div className="mb-3 flex items-center justify-between gap-2">
-                      <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
-                        <FaWifi className="text-indigo-500" />
-                        Network
-                      </h4>
-                      <div className="flex items-center gap-1.5">
-                        <SpecScoreBadge score={sectionScore("network")} size={38} />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setSpecSectionBenchOpen((prev) => ({
-                              ...prev,
-                              network: !prev.network,
-                            }))
-                          }
-                          aria-expanded={Boolean(specSectionBenchOpen.network)}
-                          aria-label={
-                            specSectionBenchOpen.network
-                              ? "Hide Network benchmark"
-                              : "Show Network benchmark"
-                          }
-                          className="inline-flex h-6 w-6 items-center justify-center text-violet-400 hover:text-violet-500"
-                        >
-                          {specSectionBenchOpen.network ? (
-                            <FaChevronUp size={10} />
-                          ) : (
-                            <FaChevronDown size={10} />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                    <ScoreGroupTable
-                      currentScore={sectionScore("network")}
-                      peerScores={getGroupPeerScores("network")}
-                      groupLabel={scoreGroupData.label}
-                      minScore={0}
-                      maxScore={100}
-                      className="mb-3"
-                      showHeader={false}
-                      isOpen={Boolean(specSectionBenchOpen.network)}
-                    />
-                    {renderSpecTable(networkData)}
-                  </div>
-                )}
-
-                {/* Audio Section */}
-                {hasContent(audioData) && (
-                  <div
-                    id="spec-audio"
-                    className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
-                  >
-                    <div className="mb-3 flex items-center justify-between gap-2">
-                      <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
-                        <FaVolumeUp className="text-pink-500" />
-                        Audio
-                      </h4>
+              {/* Camera Section - Using nested object structure */}
+              {hasContent(cameraData) && (
+                <div
+                  id="spec-camera"
+                  className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
+                >
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
+                      <FaCamera className="text-purple-400" />
+                      Camera
+                    </h4>
+                    <div className="flex items-center gap-1.5">
                       <SpecScoreBadge
-                        score={sectionScoreDisplay("overall")}
+                        score={sectionScore("camera")}
                         size={38}
                       />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSpecSectionBenchOpen((prev) => ({
+                            ...prev,
+                            camera: !prev.camera,
+                          }))
+                        }
+                        aria-expanded={Boolean(specSectionBenchOpen.camera)}
+                        aria-label={
+                          specSectionBenchOpen.camera
+                            ? "Hide Camera benchmark"
+                            : "Show Camera benchmark"
+                        }
+                        className="inline-flex h-6 w-6 items-center justify-center text-violet-400 hover:text-violet-500"
+                      >
+                        {specSectionBenchOpen.camera ? (
+                          <FaChevronUp size={10} />
+                        ) : (
+                          <FaChevronDown size={10} />
+                        )}
+                      </button>
                     </div>
-                    {renderSpecTable(audioData)}
                   </div>
-                )}
+                  <ScoreGroupTable
+                    currentScore={sectionScore("camera")}
+                    peerScores={getGroupPeerScores("camera")}
+                    groupLabel={scoreGroupData.label}
+                    minScore={0}
+                    maxScore={100}
+                    className="mb-3"
+                    showHeader={false}
+                    isOpen={Boolean(specSectionBenchOpen.camera)}
+                  />
 
-                {/* Sensors Section */}
-                {hasContent(sensorsData) && (
-                  <div
-                    id="spec-sensors"
-                    className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
-                  >
-                    <div className="mb-3 flex items-center justify-between gap-2">
-                      <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
-                        <FaShieldAlt className="text-teal-500" />
-                        Sensors
-                      </h4>
+                  {renderCameraTable(cameraData)}
+                </div>
+              )}
+
+              {/* Battery Section */}
+              {hasContent(batteryData) && (
+                <div
+                  id="spec-battery"
+                  className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
+                >
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
+                      <FaBatteryFull className="text-green-500" />
+                      Battery
+                    </h4>
+                    <div className="flex items-center gap-1.5">
                       <SpecScoreBadge
-                        score={sectionScoreDisplay("overall")}
+                        score={sectionScore("battery")}
                         size={38}
                       />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSpecSectionBenchOpen((prev) => ({
+                            ...prev,
+                            battery: !prev.battery,
+                          }))
+                        }
+                        aria-expanded={Boolean(specSectionBenchOpen.battery)}
+                        aria-label={
+                          specSectionBenchOpen.battery
+                            ? "Hide Battery benchmark"
+                            : "Show Battery benchmark"
+                        }
+                        className="inline-flex h-6 w-6 items-center justify-center text-violet-400 hover:text-violet-500"
+                      >
+                        {specSectionBenchOpen.battery ? (
+                          <FaChevronUp size={10} />
+                        ) : (
+                          <FaChevronDown size={10} />
+                        )}
+                      </button>
                     </div>
-                    {renderSpecTable(sensorsData)}
                   </div>
-                )}
+                  <ScoreGroupTable
+                    currentScore={sectionScore("battery")}
+                    peerScores={getGroupPeerScores("battery")}
+                    groupLabel={scoreGroupData.label}
+                    minScore={0}
+                    maxScore={100}
+                    className="mb-3"
+                    showHeader={false}
+                    isOpen={Boolean(specSectionBenchOpen.battery)}
+                  />
+                  <div className="overflow-hidden rounded-md border border-slate-200">
+                    <table className="min-w-full">
+                      <tbody className="divide-y divide-slate-200 bg-white">
+                        {dedupeSpecEntries(
+                          Object.entries(batteryData || {}).filter(
+                            ([k, v]) =>
+                              hasContent(v) &&
+                              !/ai[_-]?features?/i.test(k) &&
+                              !isScoreKey(k),
+                          ),
+                        ).map(([key, value], idx) => (
+                          <tr
+                            key={key}
+                            className={`transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"} hover:bg-violet-50/30`}
+                          >
+                            <td className="w-[32%] border-r border-slate-200 px-3 py-2.5 text-[13px] font-medium text-slate-600 sm:px-4 md:px-5 align-top">
+                              {toNormalCase(key)}
+                            </td>
+                            <td className="w-[68%] px-3 py-2.5 text-[13px] text-slate-900 sm:px-4 md:px-5">
+                              {[
+                                "battery_capacity_mah",
+                                "battery_capacity",
+                              ].includes(key)
+                                ? `${value} mAh`
+                                : formatSpecValue(value, key)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
-                {/* Available colors removed */}
-                {/* Price Comparison Call to Action */}
+              {/* Connectivity Section */}
+              {hasContent(connectivityData) && (
+                <div
+                  id="spec-connectivity"
+                  className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
+                >
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
+                      <FaWifi className="text-purple-400" />
+                      Connectivity
+                    </h4>
+                    <div className="flex items-center gap-1.5">
+                      <SpecScoreBadge
+                        score={sectionScore("network")}
+                        size={38}
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSpecSectionBenchOpen((prev) => ({
+                            ...prev,
+                            connectivity: !prev.connectivity,
+                          }))
+                        }
+                        aria-expanded={Boolean(
+                          specSectionBenchOpen.connectivity,
+                        )}
+                        aria-label={
+                          specSectionBenchOpen.connectivity
+                            ? "Hide Connectivity benchmark"
+                            : "Show Connectivity benchmark"
+                        }
+                        className="inline-flex h-6 w-6 items-center justify-center text-violet-400 hover:text-violet-500"
+                      >
+                        {specSectionBenchOpen.connectivity ? (
+                          <FaChevronUp size={10} />
+                        ) : (
+                          <FaChevronDown size={10} />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                  <ScoreGroupTable
+                    currentScore={sectionScore("network")}
+                    peerScores={getGroupPeerScores("network")}
+                    groupLabel={scoreGroupData.label}
+                    minScore={0}
+                    maxScore={100}
+                    className="mb-3"
+                    showHeader={false}
+                    isOpen={Boolean(specSectionBenchOpen.connectivity)}
+                  />
+                  <div className="overflow-hidden rounded-md border border-slate-200">
+                    <table className="min-w-full">
+                      <tbody className="divide-y divide-slate-200 bg-white">
+                        {dedupeSpecEntries(
+                          Object.entries(connectivityData || {}).filter(
+                            ([k, v]) =>
+                              hasContent(v) &&
+                              !/ai[_-]?features?/i.test(k) &&
+                              !isScoreKey(k),
+                          ),
+                        ).map(([key, value], idx) => (
+                          <tr
+                            key={key}
+                            className={`transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"} hover:bg-violet-50/30`}
+                          >
+                            <td className="w-[32%] border-r border-slate-200 px-3 py-2.5 text-[13px] font-medium text-slate-600 sm:px-4 md:px-5 align-top">
+                              {toNormalCase(key)}
+                            </td>
+                            <td className="w-[68%] px-3 py-2.5 text-[13px] text-slate-900 sm:px-4 md:px-5">
+                              {formatSpecValue(value, key)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Network Section */}
+              {hasContent(networkData) && (
+                <div
+                  id="spec-network"
+                  className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
+                >
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
+                      <FaWifi className="text-indigo-500" />
+                      Network
+                    </h4>
+                    <div className="flex items-center gap-1.5">
+                      <SpecScoreBadge
+                        score={sectionScore("network")}
+                        size={38}
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSpecSectionBenchOpen((prev) => ({
+                            ...prev,
+                            network: !prev.network,
+                          }))
+                        }
+                        aria-expanded={Boolean(specSectionBenchOpen.network)}
+                        aria-label={
+                          specSectionBenchOpen.network
+                            ? "Hide Network benchmark"
+                            : "Show Network benchmark"
+                        }
+                        className="inline-flex h-6 w-6 items-center justify-center text-violet-400 hover:text-violet-500"
+                      >
+                        {specSectionBenchOpen.network ? (
+                          <FaChevronUp size={10} />
+                        ) : (
+                          <FaChevronDown size={10} />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                  <ScoreGroupTable
+                    currentScore={sectionScore("network")}
+                    peerScores={getGroupPeerScores("network")}
+                    groupLabel={scoreGroupData.label}
+                    minScore={0}
+                    maxScore={100}
+                    className="mb-3"
+                    showHeader={false}
+                    isOpen={Boolean(specSectionBenchOpen.network)}
+                  />
+                  {renderSpecTable(networkData)}
+                </div>
+              )}
+
+              {/* Audio Section */}
+              {hasContent(audioData) && (
+                <div
+                  id="spec-audio"
+                  className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
+                >
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
+                      <FaVolumeUp className="text-pink-500" />
+                      Audio
+                    </h4>
+                    <SpecScoreBadge
+                      score={sectionScoreDisplay("overall")}
+                      size={38}
+                    />
+                  </div>
+                  {renderSpecTable(audioData)}
+                </div>
+              )}
+
+              {/* Sensors Section */}
+              {hasContent(sensorsData) && (
+                <div
+                  id="spec-sensors"
+                  className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
+                >
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
+                      <FaShieldAlt className="text-teal-500" />
+                      Sensors
+                    </h4>
+                    <SpecScoreBadge
+                      score={sectionScoreDisplay("overall")}
+                      size={38}
+                    />
+                  </div>
+                  {renderSpecTable(sensorsData)}
+                </div>
+              )}
+
+              {/* Available colors removed */}
+              {/* Price Comparison Call to Action */}
             </div>
           </div>
         );
@@ -3278,7 +3349,10 @@ Price: ${price}
                 <FaBolt className="text-yellow-500" />
                 Performance
               </h3>
-              <SpecScoreBadge score={getSectionScore("performance")} size={38} />
+              <SpecScoreBadge
+                score={getSectionScore("performance")}
+                size={38}
+              />
             </div>
             {renderSpecTable(mobileData.performance)}
           </div>
@@ -3312,17 +3386,16 @@ Price: ${price}
           </div>
         );
 
-      case "connectivity":
-        {
-          const connectivityData = toSectionTableData(
-            mobileData.connectivity || mobileData.connectivity_json,
-            "connectivity",
-          );
-          const networkData = toSectionTableData(
-            mobileData.network || mobileData.network_json,
-            "network",
-          );
-          const portsData = toSectionTableData(mobileData.ports, "ports");
+      case "connectivity": {
+        const connectivityData = toSectionTableData(
+          mobileData.connectivity || mobileData.connectivity_json,
+          "connectivity",
+        );
+        const networkData = toSectionTableData(
+          mobileData.network || mobileData.network_json,
+          "network",
+        );
+        const portsData = toSectionTableData(mobileData.ports, "ports");
 
         return (
           <div className="bg-white rounded-lg p-4">
@@ -3333,12 +3406,17 @@ Price: ${price}
               </h3>
               <SpecScoreBadge score={getSectionScore("network")} size={38} />
             </div>
-            {hasContent(connectivityData) ? renderSpecTable(connectivityData) : null}
+            {hasContent(connectivityData)
+              ? renderSpecTable(connectivityData)
+              : null}
             {hasContent(networkData) ? (
               <div className="mt-5">
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <h4 className="font-semibold text-gray-800">Network</h4>
-                  <SpecScoreBadge score={getSectionScore("network")} size={34} />
+                  <SpecScoreBadge
+                    score={getSectionScore("network")}
+                    size={34}
+                  />
                 </div>
                 {renderSpecTable(networkData)}
               </div>
@@ -3347,23 +3425,25 @@ Price: ${price}
               <div className="mt-5">
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <h4 className="font-semibold text-gray-800">Ports</h4>
-                  <SpecScoreBadge score={getSectionScoreDisplay("overall")} size={34} />
+                  <SpecScoreBadge
+                    score={getSectionScoreDisplay("overall")}
+                    size={34}
+                  />
                 </div>
                 {renderSpecTable(portsData)}
               </div>
             ) : null}
           </div>
         );
-        }
+      }
 
-      case "multimedia":
-        {
-          const audioData = toSectionTableData(mobileData.audio, "audio");
-          const multimediaData = toSectionTableData(
-            mobileData.multimedia || mobileData.multimedia_json,
-            "multimedia",
-          );
-          const sensorsData = toSectionTableData(mobileData.sensors, "sensors");
+      case "multimedia": {
+        const audioData = toSectionTableData(mobileData.audio, "audio");
+        const multimediaData = toSectionTableData(
+          mobileData.multimedia || mobileData.multimedia_json,
+          "multimedia",
+        );
+        const sensorsData = toSectionTableData(mobileData.sensors, "sensors");
 
         return (
           <div className="bg-white rounded-lg p-4">
@@ -3372,14 +3452,22 @@ Price: ${price}
                 <FaFilm className="text-indigo-500" />
                 Multimedia
               </h3>
-              <SpecScoreBadge score={getSectionScoreDisplay("overall")} size={38} />
+              <SpecScoreBadge
+                score={getSectionScoreDisplay("overall")}
+                size={38}
+              />
             </div>
-            {hasContent(multimediaData) ? renderSpecTable(multimediaData) : null}
+            {hasContent(multimediaData)
+              ? renderSpecTable(multimediaData)
+              : null}
             {hasContent(audioData) ? (
               <div className="mt-5">
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <h4 className="font-semibold text-gray-800">Audio</h4>
-                  <SpecScoreBadge score={getSectionScoreDisplay("overall")} size={34} />
+                  <SpecScoreBadge
+                    score={getSectionScoreDisplay("overall")}
+                    size={34}
+                  />
                 </div>
                 {renderSpecTable(audioData)}
               </div>
@@ -3388,14 +3476,17 @@ Price: ${price}
               <div className="mt-5">
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <h4 className="font-semibold text-gray-800">Sensors</h4>
-                  <SpecScoreBadge score={getSectionScoreDisplay("overall")} size={34} />
+                  <SpecScoreBadge
+                    score={getSectionScoreDisplay("overall")}
+                    size={34}
+                  />
                 </div>
                 {renderSpecTable(sensorsData)}
               </div>
             ) : null}
           </div>
         );
-        }
+      }
 
       case "build_design":
         return (
@@ -3405,7 +3496,10 @@ Price: ${price}
                 <FaMobile className="text-indigo-500" />
                 Build & Design
               </h3>
-              <SpecScoreBadge score={getSectionScoreDisplay("overall")} size={38} />
+              <SpecScoreBadge
+                score={getSectionScoreDisplay("overall")}
+                size={38}
+              />
             </div>
             {renderSpecTable(mobileData.build_design)}
           </div>
@@ -3424,7 +3518,7 @@ Price: ${price}
 
   if (loading && !mobileData) {
     return (
-      <div className="max-w-6xl mx-auto p-8">
+      <div className="max-w-4xl mx-auto p-8">
         <div className="bg-white rounded-lg p-8 text-center">
           <Spinner />
           <div className="text-sm text-gray-500 mt-3">Please waitâ€¦</div>
@@ -3435,7 +3529,7 @@ Price: ${price}
 
   if (!loading && !mobileData) {
     return (
-      <div className="max-w-6xl mx-auto p-4">
+      <div className="max-w-4xl mx-auto p-4">
         <div className="bg-white rounded-lg p-8 text-center">
           <div className="text-gray-400 text-6xl mb-4">ðŸ“±</div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -3557,9 +3651,7 @@ Price: ${price}
 
   const normalizePointText = (value) => {
     if (!hasContent(value)) return null;
-    const text = String(formatSpecValue(value, ""))
-      .replace(/\s+/g, " ")
-      .trim();
+    const text = String(formatSpecValue(value, "")).replace(/\s+/g, " ").trim();
     return hasContent(text) ? text : null;
   };
 
@@ -3678,9 +3770,14 @@ Price: ${price}
       scoreKey: "camera",
       title: "Front Camera",
       score: getSectionScore("camera"),
-      description: getSectionDescription("camera-front", getSectionScore("camera")),
+      description: getSectionDescription(
+        "camera-front",
+        getSectionScore("camera"),
+      ),
       points: toUniquePoints([
-        frontCamera?.resolution ? `${frontCamera.resolution} selfie camera` : null,
+        frontCamera?.resolution
+          ? `${frontCamera.resolution} selfie camera`
+          : null,
         frontCameraModePoint,
         frontVideoSummary ? `Video: ${frontVideoSummary}` : null,
       ]),
@@ -3696,7 +3793,8 @@ Price: ${price}
           ? `${getBatteryCapacityMah(mobileData)} mAh`
           : getBatteryCapacityRaw(mobileData),
         withPrefix(
-          mobileData?.battery?.charging_power || mobileData?.battery?.fast_charging,
+          mobileData?.battery?.charging_power ||
+            mobileData?.battery?.fast_charging,
           "Charging",
         ),
         withPrefix(mobileData?.battery?.battery_type, "Type"),
@@ -3707,7 +3805,7 @@ Price: ${price}
   // If initial loading state (no mobileData yet), render spinner now
   if (showInitialLoading) {
     return (
-      <div className="max-w-6xl mx-auto p-8">
+      <div className="max-w-4xl mx-auto p-8">
         <div className="bg-white rounded-lg p-8 text-center">
           <Spinner />
           <div className="text-sm text-gray-500 mt-3">Please waitâ€¦</div>
@@ -3717,7 +3815,7 @@ Price: ${price}
   }
 
   return (
-    <div className="px-2 lg:px-4 mx-auto bg-white max-w-6xl w-full m-0 overflow-hidden">
+    <div className="px-2 lg:px-4 mx-auto bg-white max-w-4xl w-full m-0 overflow-hidden">
       <Helmet>
         <title>{metaTitleWithDate}</title>
         <meta name="description" content={metaDescription} />
@@ -3734,7 +3832,7 @@ Price: ${price}
         {ogImage && <meta name="twitter:image" content={ogImage} />}
       </Helmet>
       {isSharedLink && (
-        <div className="max-w-6xl mx-auto px-4">
+        <div className="max-w-4xl mx-auto px-4">
           <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded">
             Shared link detected â€” showing the shared product details.
           </div>
@@ -3810,7 +3908,9 @@ Price: ${price}
                 {headerTitle}
               </h1>
               <p className="text-purple-700 text-sm font-medium flex flex-wrap items-center gap-2">
-                {currentVariantLabel ? <span>{currentVariantLabel}</span> : null}
+                {currentVariantLabel ? (
+                  <span>{currentVariantLabel}</span>
+                ) : null}
                 {mobileData?.isAiPhone ? (
                   <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-r from-purple-50 to-blue-100 px-2 py-0.5 text-[10px] font-semibold leading-none text-purple-700 ring-1 ring-purple-200">
                     <span
@@ -3940,442 +4040,457 @@ Price: ${price}
         </div>
 
         {activePrimaryTab === "info" ? (
-        <>
-        <div className="flex flex-col lg:flex-row">
-          {/* Images Section */}
-          <div className="lg:w-2/5 p-4 border-b lg:border-b-0 lg:border-r border-slate-200">
-            {/* Main Image */}
-            <div className="bg-gray-100 rounded-lg p-6 mb-4 relative">
-              <div className="absolute left-2 top-2 z-10 pointer-events-none">
-                <SpecScoreBadge
-                  score={scoreSummary.overallDisplay ?? scoreSummary.overall}
-                  size={40}
-                  showSpecLabel
-                  zeroFallback
-                />
-              </div>
-              <img
-                src={
-                  mobileData.images?.[activeImage] || "/placeholder-image.jpg"
-                }
-                alt={mobileData.name}
-                className="w-full h-48 object-contain"
-                onError={(e) => {
-                  e.target.src =
-                    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23f3f4f6'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='14' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E";
-                }}
-              />
-              {/* Action buttons on image */}
-              <div className="absolute top-2 right-2 flex flex-col gap-2">
-                <button
-                  onClick={toggleFavorite}
-                  className="p-2 bg-white rounded-full shadow-md hover:shadow-lg"
-                >
-                  <FaHeart
-                    className={`${
-                      isFavorite
-                        ? "text-violet-400 fill-current"
-                        : "text-violet-400"
-                    }`}
+          <>
+            <div className="flex flex-col lg:flex-row">
+              {/* Images Section */}
+              <div className="lg:w-2/5 p-4 border-b lg:border-b-0 lg:border-r border-slate-200">
+                {/* Main Image */}
+                <div className="bg-gray-100 rounded-lg p-6 mb-4 relative">
+                  <div className="absolute left-2 top-2 z-10 pointer-events-none">
+                    <SpecScoreBadge
+                      score={
+                        scoreSummary.overallDisplay ?? scoreSummary.overall
+                      }
+                      size={40}
+                      showSpecLabel
+                      zeroFallback
+                    />
+                  </div>
+                  <img
+                    src={
+                      mobileData.images?.[activeImage] ||
+                      "/placeholder-image.jpg"
+                    }
+                    alt={mobileData.name}
+                    className="w-full h-48 object-contain"
+                    onError={(e) => {
+                      e.target.src =
+                        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23f3f4f6'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='14' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E";
+                    }}
                   />
-                </button>
-                <button
-                  onClick={handleShare}
-                  className="p-2 bg-white rounded-full shadow-md hover:shadow-lg"
-                >
-                  <FaShare className="text-violet-400" />
-                </button>
-              </div>
-            </div>
-
-            {/* Thumbnails */}
-            {mobileData.images && mobileData.images.length > 1 && (
-              <div className="flex gap-2 mb-6 overflow-x-auto no-scrollbar">
-                {mobileData.images.map((image, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setActiveImage(index)}
-                    className={`flex-shrink-0 w-16 h-16 rounded-lg p-1 border-1 transition-all duration-200 ${
-                      activeImage === index
-                        ? "bg-gray-100 rounded-lg border-slate-300"
-                        : "border-slate-200 hover:border-slate-300"
-                    }`}
-                  >
-                    <img
-                      src={image}
-                      alt={`${mobileData.name} view ${index + 1}`}
-                      className="w-full h-full object-contain"
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* color section */}
-
-            {/* Variant selection */}
-
-            {/* Share and Copy Link Buttons - Mobile */}
-            <div className="lg:hidden flex gap-2 mb-4">
-              <button
-                onClick={handleShare}
-                className="flex-1 flex items-center justify-center gap-2 py-3 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg font-medium"
-              >
-                <FaShareAlt className="text-purple-400" />
-                <span>Share</span>
-              </button>
-            </div>
-
-            {variants && variants.length > 0 && (
-              <div className="mb-6">
-                <h4 className="text-sm font-semibold text-gray-800 mb-2">
-                  Available Variants
-                </h4>
-                <div className="grid grid-cols-2 gap-2.5">
-                  {variants.map((variant, index) => (
+                  {/* Action buttons on image */}
+                  <div className="absolute top-2 right-2 flex flex-col gap-2">
                     <button
-                      key={variant.variant_id ?? variant.id ?? index}
-                      onClick={() => setSelectedVariant(index)}
-                      aria-pressed={selectedVariant === index}
-                      className={`relative p-2.5 rounded-xl border-2 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 ${
-                        selectedVariant === index
-                          ? "border-violet-600 bg-violet-50 shadow-sm"
-                          : "border-slate-200 bg-white hover:border-violet-300 hover:bg-violet-50/40"
-                      }`}
+                      onClick={toggleFavorite}
+                      className="p-2 bg-white rounded-full shadow-md hover:shadow-lg"
                     >
-                      {selectedVariant === index ? (
-                        <span className="absolute top-2 right-2 inline-flex items-center justify-center w-4 h-4 rounded-full bg-violet-600 text-white">
-                          <FaCheck className="text-[9px]" />
-                        </span>
-                      ) : null}
-                      <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-                        <FaMemory className="text-gray-600 text-sm" />
-                        <span className="leading-tight">
-                          {variant.ram} / {variant.storage}
-                        </span>
-                      </div>
-                      <div className="mt-1 text-sm font-bold text-green-600">
-                        ₹{formatPrice(variant.base_price)}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Details Section - Right Side */}
-          <div className="lg:w-3/5 p-4">
-            {/* Desktop Header */}
-            <div className="hidden lg:block mb-6">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  {headerDescriptor ? (
-                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500 mb-1">
-                      {headerDescriptor}
-                    </p>
-                  ) : null}
-                  <h1 className="text-2xl font-extrabold tracking-tight mb-2">
-                    {headerTitle}
-                  </h1>
-                  <h4 className="text-purple-700 mb-3 font-medium text-sm flex items-center gap-2">
-                    {currentVariantLabel ? (
-                      <span>{currentVariantLabel}</span>
-                    ) : null}
-                    {mobileData?.isAiPhone ? (
-                      <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-r from-purple-50 to-blue-100 px-2 py-0.5 text-[10px] font-semibold leading-none text-purple-700 ring-1 ring-purple-200">
-                        <span
-                          className="inline-flex items-center justify-center w-3 h-3"
-                          aria-hidden="true"
-                        >
-                          <svg viewBox="0 0 64 64" className="w-3 h-3">
-                            <path
-                              d="M32 2C34.5 14.5 40 20 52 22C40 24 34.5 29.5 32 42C29.5 29.5 24 24 12 22C24 20 29.5 14.5 32 2Z"
-                              fill="red"
-                            />
-                            <path
-                              d="M50 34C51.5 41.5 55 45 62 46C55 47 51.5 50.5 50 58C48.5 50.5 45 47 38 46C45 45 48.5 41.5 50 34Z"
-                              fill="#7E57C2"
-                            />
-                          </svg>
-                        </span>
-                        <span>AI Phone</span>
-                      </span>
-                    ) : null}
-                  </h4>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={toggleFavorite}
-                    className="p-2 rounded-full hover:bg-gray-100"
-                    title="Add to favorites"
-                  >
-                    <FaHeart
-                      className={`text-xl ${
-                        isFavorite
-                          ? "text-violet-400 fill-current"
-                          : "text-violet-400"
-                      }`}
-                    />
-                  </button>
-                  <button
-                    onClick={handleShare}
-                    className="p-2 rounded-full hover:bg-gray-100"
-                    title="Share"
-                  >
-                    <FaShareAlt className="text-xl text-violet-400" />
-                  </button>
-                  {/* Copy link removed â€” share-only */}
-                </div>
-              </div>
-              <div className="flex items-center gap-3 mb-6">
-                {currentVariant && (
-                  <>
-                    <span className="text-3xl font-bold text-green-600">
-                      ₹ {formatPrice(currentVariant.base_price)}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      ({currentVariant.ram} / {currentVariant.storage} )
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Ratings Card removed from details column â€” rendered below tabs */}
-
-            {/* Store Prices Section */}
-            {sortedStores.length > 0 && (
-              <div className="mb-5 mt-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                    <FaStore className="text-purple-400" />
-                    Available at
-                  </h3>
-                  {storeAvailabilityState.mode === "live" &&
-                    sortedStores.length > 3 && (
-                    <button
-                      onClick={() => setShowAllStores(!showAllStores)}
-                      className="text-purple-600 text-sm font-medium flex items-center gap-1"
-                    >
-                      {showAllStores ? "Show Less" : "View All"}
-                      <FaChevronDown
-                        className={`text-xs text-purple-400 transition-transform ${
-                          showAllStores ? "rotate-180" : ""
+                      <FaHeart
+                        className={`${
+                          isFavorite
+                            ? "text-violet-400 fill-current"
+                            : "text-violet-400"
                         }`}
                       />
                     </button>
-                  )}
+                    <button
+                      onClick={handleShare}
+                      className="p-2 bg-white rounded-full shadow-md hover:shadow-lg"
+                    >
+                      <FaShare className="text-violet-400" />
+                    </button>
+                  </div>
                 </div>
 
-                <div className="space-y-3">
-                  {displayedStores.map((store, index) => {
-                    const isActive = String(store.id) === String(activeStoreId);
-                    const hasStoreUrl = Boolean(store.url);
-                    const logoSrc = store.is_prebooking
-                      ? store.brand_logo ||
-                        mobileData?.brand_logo ||
-                        mobileData?.brandLogo ||
-                        getLogo("")
-                      : getLogo(store.store_name);
-                    const storeTitle =
-                      store.display_store_name ||
-                      store.store_name ||
-                      mobileData?.brand ||
-                      "Store";
-                    const ctaText = store.cta_label || "Buy Now";
-                    const isPreorderCta = /^pre(book|order)$/i.test(
-                      String(ctaText).trim(),
-                    );
-                    return (
-                      <div
-                        key={store.id || index}
-                        className={`bg-white border rounded-xl p-2.5 transition-all duration-200 ${
-                          isActive
-                            ? "border-violet-500 ring-2 ring-violet-200 shadow-sm bg-violet-50/40"
-                            : "border-slate-200 hover:border-slate-300 hover:shadow-sm"
+                {/* Thumbnails */}
+                {mobileData.images && mobileData.images.length > 1 && (
+                  <div className="flex gap-2 mb-6 overflow-x-auto no-scrollbar">
+                    {mobileData.images.map((image, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setActiveImage(index)}
+                        className={`flex-shrink-0 w-16 h-16 rounded-lg p-1 border-1 transition-all duration-200 ${
+                          activeImage === index
+                            ? "bg-gray-100 rounded-lg border-slate-300"
+                            : "border-slate-200 hover:border-slate-300"
                         }`}
                       >
-                        <div className="flex items-center justify-between">
-                          {/* Store Info */}
-                          <div className="flex items-center gap-2.5 flex-1">
-                            <div
-                              className={`bg-gray-100 flex items-center justify-center p-2 shadow-sm ${
-                                isPreorderCta
-                                  ? "w-11 h-11 rounded-2xl"
-                                  : "w-10 h-10 rounded-lg"
-                              }`}
-                            >
-                              <img
-                                src={logoSrc}
-                                alt={storeTitle}
-                                className="w-full h-full object-contain"
-                                onError={(e) => {
-                                  e.target.src = getLogo("");
-                                }}
-                              />
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="font-bold text-gray-900 text-sm capitalize">
-                                {storeTitle}
-                              </h4>
-                              {store.availability_note ? (
-                                <p className="text-[11px] text-gray-500">
-                                  {store.availability_note}
-                                </p>
-                              ) : (
-                                <p className="text-[11px] text-gray-500">
-                                  {store.variantRam} / {store.variantStorage}
-                                </p>
-                              )}
-                            </div>
-                          </div>
+                        <img
+                          src={image}
+                          alt={`${mobileData.name} view ${index + 1}`}
+                          className="w-full h-full object-contain"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
 
-                          {/* Price & CTA */}
-                          <div className="flex items-center gap-3">
-                            <div className="text-right">
-                              <div className="text-sm font-bold text-green-600">
-                                ₹ {formatPrice(store.price)}
+                {/* color section */}
+
+                {/* Variant selection */}
+
+                {/* Share and Copy Link Buttons - Mobile */}
+                <div className="lg:hidden flex gap-2 mb-4">
+                  <button
+                    onClick={handleShare}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg font-medium"
+                  >
+                    <FaShareAlt className="text-purple-400" />
+                    <span>Share</span>
+                  </button>
+                </div>
+
+                {variants && variants.length > 0 && (
+                  <div className="mb-6">
+                    <h4 className="text-sm font-semibold text-gray-800 mb-2">
+                      Available Variants
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      {variants.map((variant, index) => (
+                        <button
+                          key={variant.variant_id ?? variant.id ?? index}
+                          onClick={() => setSelectedVariant(index)}
+                          aria-pressed={selectedVariant === index}
+                          className={`relative p-2.5 rounded-xl border-2 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 ${
+                            selectedVariant === index
+                              ? "border-violet-600 bg-violet-50 shadow-sm"
+                              : "border-slate-200 bg-white hover:border-violet-300 hover:bg-violet-50/40"
+                          }`}
+                        >
+                          {selectedVariant === index ? (
+                            <span className="absolute top-2 right-2 inline-flex items-center justify-center w-4 h-4 rounded-full bg-violet-600 text-white">
+                              <FaCheck className="text-[9px]" />
+                            </span>
+                          ) : null}
+                          <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                            <FaMemory className="text-gray-600 text-sm" />
+                            <span className="leading-tight">
+                              {variant.ram} / {variant.storage}
+                            </span>
+                          </div>
+                          <div className="mt-1 text-sm font-bold text-green-600">
+                            ₹{formatPrice(variant.base_price)}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Details Section - Right Side */}
+              <div className="lg:w-3/5 p-4">
+                {/* Desktop Header */}
+                <div className="hidden lg:block mb-6">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      {headerDescriptor ? (
+                        <p className="text-xs font-medium uppercase tracking-wide text-slate-500 mb-1">
+                          {headerDescriptor}
+                        </p>
+                      ) : null}
+                      <h1 className="text-2xl font-extrabold tracking-tight mb-2">
+                        {headerTitle}
+                      </h1>
+                      <h4 className="text-purple-700 mb-3 font-medium text-sm flex items-center gap-2">
+                        {currentVariantLabel ? (
+                          <span>{currentVariantLabel}</span>
+                        ) : null}
+                        {mobileData?.isAiPhone ? (
+                          <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-r from-purple-50 to-blue-100 px-2 py-0.5 text-[10px] font-semibold leading-none text-purple-700 ring-1 ring-purple-200">
+                            <span
+                              className="inline-flex items-center justify-center w-3 h-3"
+                              aria-hidden="true"
+                            >
+                              <svg viewBox="0 0 64 64" className="w-3 h-3">
+                                <path
+                                  d="M32 2C34.5 14.5 40 20 52 22C40 24 34.5 29.5 32 42C29.5 29.5 24 24 12 22C24 20 29.5 14.5 32 2Z"
+                                  fill="red"
+                                />
+                                <path
+                                  d="M50 34C51.5 41.5 55 45 62 46C55 47 51.5 50.5 50 58C48.5 50.5 45 47 38 46C45 45 48.5 41.5 50 34Z"
+                                  fill="#7E57C2"
+                                />
+                              </svg>
+                            </span>
+                            <span>AI Phone</span>
+                          </span>
+                        ) : null}
+                      </h4>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={toggleFavorite}
+                        className="p-2 rounded-full hover:bg-gray-100"
+                        title="Add to favorites"
+                      >
+                        <FaHeart
+                          className={`text-xl ${
+                            isFavorite
+                              ? "text-violet-400 fill-current"
+                              : "text-violet-400"
+                          }`}
+                        />
+                      </button>
+                      <button
+                        onClick={handleShare}
+                        className="p-2 rounded-full hover:bg-gray-100"
+                        title="Share"
+                      >
+                        <FaShareAlt className="text-xl text-violet-400" />
+                      </button>
+                      {/* Copy link removed â€” share-only */}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 mb-6">
+                    {currentVariant && (
+                      <>
+                        <span className="text-3xl font-bold text-green-600">
+                          ₹ {formatPrice(currentVariant.base_price)}
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          ({currentVariant.ram} / {currentVariant.storage} )
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Ratings Card removed from details column â€” rendered below tabs */}
+
+                {/* Store Prices Section */}
+                {sortedStores.length > 0 && (
+                  <div className="mb-5 mt-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                        <FaStore className="text-purple-400" />
+                        Available at
+                      </h3>
+                      {storeAvailabilityState.mode === "live" &&
+                        sortedStores.length > 3 && (
+                          <button
+                            onClick={() => setShowAllStores(!showAllStores)}
+                            className="text-purple-600 text-sm font-medium flex items-center gap-1"
+                          >
+                            {showAllStores ? "Show Less" : "View All"}
+                            <FaChevronDown
+                              className={`text-xs text-purple-400 transition-transform ${
+                                showAllStores ? "rotate-180" : ""
+                              }`}
+                            />
+                          </button>
+                        )}
+                    </div>
+
+                    <div className="space-y-3">
+                      {displayedStores.map((store, index) => {
+                        const isActive =
+                          String(store.id) === String(activeStoreId);
+                        const hasStoreUrl = Boolean(store.url);
+                        const logoSrc = store.is_prebooking
+                          ? store.brand_logo ||
+                            mobileData?.brand_logo ||
+                            mobileData?.brandLogo ||
+                            getLogo("")
+                          : getLogo(store.store_name);
+                        const storeTitle =
+                          store.display_store_name ||
+                          store.store_name ||
+                          mobileData?.brand ||
+                          "Store";
+                        const ctaText = store.cta_label || "Buy Now";
+                        const isPreorderCta = /^pre(book|order)$/i.test(
+                          String(ctaText).trim(),
+                        );
+                        return (
+                          <div
+                            key={store.id || index}
+                            className={`bg-white border rounded-xl p-2.5 transition-all duration-200 ${
+                              isActive
+                                ? "border-violet-500 ring-2 ring-violet-200 shadow-sm bg-violet-50/40"
+                                : "border-slate-200 hover:border-slate-300 hover:shadow-sm"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              {/* Store Info */}
+                              <div className="flex items-center gap-2.5 flex-1">
+                                <div
+                                  className={`bg-gray-100 flex items-center justify-center p-2 shadow-sm ${
+                                    isPreorderCta
+                                      ? "w-11 h-11 rounded-2xl"
+                                      : "w-10 h-10 rounded-lg"
+                                  }`}
+                                >
+                                  <img
+                                    src={logoSrc}
+                                    alt={storeTitle}
+                                    className="w-full h-full object-contain"
+                                    onError={(e) => {
+                                      e.target.src = getLogo("");
+                                    }}
+                                  />
+                                </div>
+                                <div className="flex-1">
+                                  <h4 className="font-bold text-gray-900 text-sm capitalize">
+                                    {storeTitle}
+                                  </h4>
+                                  {store.availability_note ? (
+                                    <p className="text-[11px] text-gray-500">
+                                      {store.availability_note}
+                                    </p>
+                                  ) : (
+                                    <p className="text-[11px] text-gray-500">
+                                      {store.variantRam} /{" "}
+                                      {store.variantStorage}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Price & CTA */}
+                              <div className="flex items-center gap-3">
+                                <div className="text-right">
+                                  <div className="text-sm font-bold text-green-600">
+                                    ₹ {formatPrice(store.price)}
+                                  </div>
+                                </div>
+                                {hasStoreUrl ? (
+                                  <a
+                                    href={store.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer nofollow"
+                                    className="inline-flex rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 p-[1px] transition-all duration-200 hover:shadow-md"
+                                  >
+                                    <span className="inline-flex items-center gap-1.5 rounded-[7px] bg-white px-3 py-1.5 text-xs font-semibold">
+                                      {isPreorderCta ? (
+                                        <FaShoppingCart className="text-[11px] text-violet-400" />
+                                      ) : (
+                                        <FaExternalLinkAlt className="text-[11px] text-violet-400" />
+                                      )}
+                                      <span className="bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
+                                        {ctaText}
+                                      </span>
+                                    </span>
+                                  </a>
+                                ) : (
+                                  <span
+                                    aria-disabled="true"
+                                    className={`inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold ${
+                                      isPreorderCta
+                                        ? "bg-violet-100 text-violet-700"
+                                        : "bg-gray-200 text-gray-500"
+                                    }`}
+                                  >
+                                    {isPreorderCta ? (
+                                      <FaShoppingCart className="text-xs" />
+                                    ) : (
+                                      <FaExternalLinkAlt className="text-xs" />
+                                    )}
+                                    {isPreorderCta ? ctaText : "Unavailable"}
+                                  </span>
+                                )}
                               </div>
                             </div>
-                            {hasStoreUrl ? (
-                              <a
-                                href={store.url}
-                                target="_blank"
-                                rel="noopener noreferrer nofollow"
-                                className="inline-flex rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 p-[1px] transition-all duration-200 hover:shadow-md"
-                              >
-                                <span className="inline-flex items-center gap-1.5 rounded-[7px] bg-white px-3 py-1.5 text-xs font-semibold">
-                                  {isPreorderCta ? (
-                                    <FaShoppingCart className="text-[11px] text-violet-400" />
-                                  ) : (
-                                    <FaExternalLinkAlt className="text-[11px] text-violet-400" />
-                                  )}
-                                  <span className="bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
-                                    {ctaText}
-                                  </span>
-                                </span>
-                              </a>
-                            ) : (
-                              <span
-                                aria-disabled="true"
-                                className={`inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold ${
-                                  isPreorderCta
-                                    ? "bg-violet-100 text-violet-700"
-                                    : "bg-gray-200 text-gray-500"
-                                }`}
-                              >
-                                {isPreorderCta ? (
-                                  <FaShoppingCart className="text-xs" />
-                                ) : (
-                                  <FaExternalLinkAlt className="text-xs" />
-                                )}
-                                {isPreorderCta ? ctaText : "Unavailable"}
-                              </span>
-                            )}
                           </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {infoKeySections.length > 0 ? (
-              <div className="mt-5 rounded-xl bg-white p-3 sm:p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
-                  <div>
-                    <h3 className="text-lg font-semibold text-slate-900">Key Specs</h3>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      Quick section-wise summary for daily usage.
-                    </p>
+                        );
+                      })}
+                    </div>
                   </div>
-                  {hasContent(infoOsSummary) ? (
-                    <span className="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-medium text-violet-700">
-                      {formatSpecValue(infoOsSummary, "OS")}
-                    </span>
-                  ) : null}
-                </div>
-                <div className="mt-3 space-y-3">
-                  {infoKeySections.map((section) => {
-                    const isBenchOpen = Boolean(infoKeySpecOpen[section.key]);
-                    return (
-                      <div
-                        key={section.key}
-                        className="rounded-md border border-slate-200 bg-white p-3 transition-colors duration-200 hover:border-violet-200"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <div className="flex items-center">
-                              <h4 className="text-base font-semibold text-slate-900">
-                                {section.title}
-                              </h4>
-                            </div>
-                            {hasContent(section.description) ? (
-                              <p className="mt-1 text-xs leading-relaxed text-slate-500">
-                                {section.description}
-                              </p>
-                            ) : null}
-                          </div>
-                          <div className="flex shrink-0 items-center gap-1.5">
-                            <SpecScoreBadge score={section.score} size={32} />
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setInfoKeySpecOpen((prev) => ({
-                                  ...prev,
-                                  [section.key]: !prev[section.key],
-                                }))
-                              }
-                              aria-expanded={isBenchOpen}
-                              aria-label={
-                                isBenchOpen
-                                  ? `Hide ${section.title} benchmark`
-                                  : `Show ${section.title} benchmark`
-                              }
-                              className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-violet-400 ring-1 ring-slate-200 transition-colors hover:text-violet-500"
-                            >
-                              {isBenchOpen ? (
-                                <FaChevronUp size={10} />
-                              ) : (
-                                <FaChevronDown size={10} />
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                        <ul className="mt-2.5 space-y-1.5">
-                          {section.points.map((point, idx) => (
-                            <li
-                              key={idx}
-                              className="flex items-start gap-2 text-[14px] text-slate-800"
-                            >
-                              <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-slate-400" />
-                              <span>{formatSpecValue(point, section.title)}</span>
-                            </li>
-                          ))}
-                        </ul>
-                        <ScoreGroupTable
-                          currentScore={section.score}
-                          peerScores={getGroupPeerScores(section.scoreKey || section.key)}
-                          groupLabel={scoreGroupData.label}
-                          minScore={0}
-                          maxScore={100}
-                          className="mt-2"
-                          defaultOpen={false}
-                          showHeader={false}
-                          isOpen={isBenchOpen}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : null}
+                )}
 
-          </div>
-        </div>
-        </>
+                {infoKeySections.length > 0 ? (
+                  <div className="mt-5 rounded-xl bg-white p-3 sm:p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                      <div>
+                        <h3 className="text-lg font-semibold text-slate-900">
+                          Key Specs
+                        </h3>
+                        <p className="mt-0.5 text-xs text-slate-500">
+                          Quick section-wise summary for daily usage.
+                        </p>
+                      </div>
+                      {hasContent(infoOsSummary) ? (
+                        <span className="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-medium text-violet-700">
+                          {formatSpecValue(infoOsSummary, "OS")}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="mt-3 space-y-3">
+                      {infoKeySections.map((section) => {
+                        const isBenchOpen = Boolean(
+                          infoKeySpecOpen[section.key],
+                        );
+                        return (
+                          <div
+                            key={section.key}
+                            className="rounded-md border border-slate-200 bg-white p-3 transition-colors duration-200 hover:border-violet-200"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <div className="flex items-center">
+                                  <h4 className="text-base font-semibold text-slate-900">
+                                    {section.title}
+                                  </h4>
+                                </div>
+                                {hasContent(section.description) ? (
+                                  <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                                    {section.description}
+                                  </p>
+                                ) : null}
+                              </div>
+                              <div className="flex shrink-0 items-center gap-1.5">
+                                <SpecScoreBadge
+                                  score={section.score}
+                                  size={32}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setInfoKeySpecOpen((prev) => ({
+                                      ...prev,
+                                      [section.key]: !prev[section.key],
+                                    }))
+                                  }
+                                  aria-expanded={isBenchOpen}
+                                  aria-label={
+                                    isBenchOpen
+                                      ? `Hide ${section.title} benchmark`
+                                      : `Show ${section.title} benchmark`
+                                  }
+                                  className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-violet-400 ring-1 ring-slate-200 transition-colors hover:text-violet-500"
+                                >
+                                  {isBenchOpen ? (
+                                    <FaChevronUp size={10} />
+                                  ) : (
+                                    <FaChevronDown size={10} />
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                            <ul className="mt-2.5 space-y-1.5">
+                              {section.points.map((point, idx) => (
+                                <li
+                                  key={idx}
+                                  className="flex items-start gap-2 text-[14px] text-slate-800"
+                                >
+                                  <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-slate-400" />
+                                  <span>
+                                    {formatSpecValue(point, section.title)}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                            <ScoreGroupTable
+                              currentScore={section.score}
+                              peerScores={getGroupPeerScores(
+                                section.scoreKey || section.key,
+                              )}
+                              groupLabel={scoreGroupData.label}
+                              minScore={0}
+                              maxScore={100}
+                              className="mt-2"
+                              defaultOpen={false}
+                              showHeader={false}
+                              isOpen={isBenchOpen}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </>
         ) : null}
 
         {activePrimaryTab === "specs" ? (
@@ -4428,16 +4543,20 @@ Price: ${price}
                   ? `Competitors For ${mobileData.name}`
                   : "Top Competitors"
               }
-              productName={mobileData?.name || mobileData?.model || "This Device"}
-            productId={currentProductId}
-            onCompare={handlePopularCompare}
-            fallbackCompetitors={popularComparisonTargets}
-            currentBrand={mobileData?.brand || ""}
-            currentPrice={currentVariant?.base_price ?? mobileData?.price ?? null}
-            maxCards={6}
-          />
-        </div>
-      ) : null}
+              productName={
+                mobileData?.name || mobileData?.model || "This Device"
+              }
+              productId={currentProductId}
+              onCompare={handlePopularCompare}
+              fallbackCompetitors={popularComparisonTargets}
+              currentBrand={mobileData?.brand || ""}
+              currentPrice={
+                currentVariant?.base_price ?? mobileData?.price ?? null
+              }
+              maxCards={6}
+            />
+          </div>
+        ) : null}
       </div>
       {activePrimaryTab === "info" ? (
         <div className="w-full bg-white">
@@ -4452,7 +4571,9 @@ Price: ${price}
             onCompare={handlePopularCompare}
             fallbackCompetitors={popularComparisonTargets}
             currentBrand={mobileData?.brand || ""}
-            currentPrice={currentVariant?.base_price ?? mobileData?.price ?? null}
+            currentPrice={
+              currentVariant?.base_price ?? mobileData?.price ?? null
+            }
             maxCards={4}
             className="w-full"
           />
@@ -4468,8 +4589,3 @@ Price: ${price}
 };
 
 export default MobileDetailCard;
-
-
-
-
-

@@ -421,7 +421,7 @@ const Wishlist = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-white py-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           {/* Loading Header Skeleton */}
           <div className="mb-8">
             <div className="h-8 bg-gray-200 rounded-lg w-48 mb-2 animate-pulse"></div>
@@ -469,7 +469,7 @@ const Wishlist = () => {
         />
       </Helmet>
 
-      <div className="max-w-6xl mx-auto min-h-screen bg-white py-6 sm:py-8 lg:py-12 px-3 sm:px-4 lg:px-8">
+      <div className="max-w-4xl mx-auto min-h-screen bg-white py-6 sm:py-8 lg:py-12 px-3 sm:px-4 lg:px-8">
         <div className="">
           {/* Error Message */}
           {error && (

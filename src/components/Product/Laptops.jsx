@@ -531,7 +531,10 @@ const Laptops = () => {
       display.panel,
       profileDisplay.panel_type,
     );
-    const resolution = pickFirstString(display.resolution, profileDisplay.resolution);
+    const resolution = pickFirstString(
+      display.resolution,
+      profileDisplay.resolution,
+    );
     const refreshRate = pickFirstString(
       display.refresh_rate,
       profileDisplay.refresh_rate,
@@ -637,7 +640,7 @@ const Laptops = () => {
       ) ?? 0;
     const trendDelta =
       toFiniteNumber(raw.trend_delta ?? raw.trendDelta) ??
-      (trendViews7d - trendViewsPrev7d);
+      trendViews7d - trendViewsPrev7d;
     const trendVelocity = toFiniteNumber(
       raw.trend_velocity ?? raw.velocity ?? raw.trendVelocity,
     );
@@ -733,7 +736,9 @@ const Laptops = () => {
         color: colorOptions.join(" / ") || pickFirstString(physical.color),
         ports: pickFirstString(
           ports.ports_description,
-          Array.isArray(connectivity.ports) ? connectivity.ports.join(", ") : "",
+          Array.isArray(connectivity.ports)
+            ? connectivity.ports.join(", ")
+            : "",
         ),
         wifi: pickFirstString(connectivity.wifi, connectivity.wireless),
         warranty: pickFirstString(
@@ -885,7 +890,9 @@ const Laptops = () => {
     }
 
     if (normalizedFeature && !base.some((f) => f.id === normalizedFeature)) {
-      const def = LAPTOP_FEATURE_CATALOG.find((f) => f.id === normalizedFeature);
+      const def = LAPTOP_FEATURE_CATALOG.find(
+        (f) => f.id === normalizedFeature,
+      );
       if (def) base = [{ ...def, count: 0 }, ...base];
     }
 
@@ -1589,7 +1596,7 @@ const Laptops = () => {
       {/* Page Header */}
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto p-4 sm:p-6 md:p-8 lg:p-10 bg-white">
+      <div className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8 lg:p-10 bg-white">
         <div className="mb-8 sm:mb-10 lg:mb-12">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 bg-purple-50 backdrop-blur-sm px-3 py-1.5 rounded-full border border-purple-100 mb-4 sm:mb-6">
@@ -2244,7 +2251,7 @@ const Laptops = () => {
             {/* BannerSlot disabled (incomplete). */}
 
             {/* Products Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6 auto-rows-fr md:[&>*:nth-child(2n)]:border-l md:[&>*:nth-child(2n)]:border-gray-200 md:[&>*:nth-child(2n)]:pl-6 md:[&>*:nth-child(2n+1)]:pr-6">
+          <div className="grid grid-cols-1 gap-4 sm:gap-5 md:gap-6 auto-rows-fr">
               {sortedVariants.map((device, idx) => (
                 <div
                   key={`${device.id ?? device.model ?? ""}-${idx}`}
@@ -2265,7 +2272,10 @@ const Laptops = () => {
                         </div>
                         <div className="absolute left-1.5 top-1.5 z-10 pointer-events-none">
                           <CircularScoreBadge
-                            score={device.overall_score_display ?? device.overall_score}
+                            score={
+                              device.overall_score_display ??
+                              device.overall_score
+                            }
                             size={42}
                           />
                         </div>
@@ -2356,7 +2366,9 @@ const Laptops = () => {
 
                                 if (cpu) parts.push(cpu);
 
-                                const summary = parts.filter(Boolean).join(" | ");
+                                const summary = parts
+                                  .filter(Boolean)
+                                  .join(" | ");
 
                                 return (
                                   <>
@@ -2395,7 +2407,9 @@ const Laptops = () => {
                                 return (
                                   <a
                                     href={brandStoreUrl || "#"}
-                                    target={brandStoreUrl ? "_blank" : undefined}
+                                    target={
+                                      brandStoreUrl ? "_blank" : undefined
+                                    }
                                     rel={
                                       brandStoreUrl
                                         ? "noopener noreferrer"
@@ -2429,7 +2443,8 @@ const Laptops = () => {
                               >
                                 {device.price}
                               </div>
-                              {(filter === "trending" || device.trendViews7d > 0) && (
+                              {(filter === "trending" ||
+                                device.trendViews7d > 0) && (
                                 <div className="text-[11px] text-gray-500 mt-0.5">
                                   {device.trendDelta > 0
                                     ? `+${device.trendDelta} views vs last 7d`

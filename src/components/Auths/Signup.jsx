@@ -27,10 +27,10 @@ import Cookies from "js-cookie";
 // Stable Wrapper component moved to top-level to avoid remounting children
 const Wrapper = ({ children, asPage, onClose }) =>
   asPage ? (
-    <div className="min-h-screen bg-white max-w-6xl mx-auto">
+    <div className="min-h-screen bg-white max-w-4xl mx-auto">
       {/* Header Back Button */}
 
-      <div className="max-w-6xl mx-auto px-4 py-10">
+      <div className="max-w-4xl mx-auto px-4 py-10">
         <div className="flex items-center justify-center">
           <div className="w-full max-w-xl">{children}</div>
         </div>

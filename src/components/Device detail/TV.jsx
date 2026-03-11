@@ -1,4 +1,4 @@
-// src/components/TVDetailCard.jsx
+﻿// src/components/TVDetailCard.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import useDevice from "../../hooks/useDevice";
@@ -2042,7 +2042,9 @@ const TVDetailCard = () => {
           <div className="space-y-2 sm:hidden">
             {groupedRows.map(({ size, items }) => (
               <div key={size} className="px-2.5 py-2 text-[11px]">
-                <div className="font-semibold text-gray-800 break-words">{size}</div>
+                <div className="font-semibold text-gray-800 break-words">
+                  {size}
+                </div>
                 <div className="mt-1.5 space-y-1.5">
                   {items.map((item, itemIndex) => (
                     <div
@@ -2364,7 +2366,10 @@ const TVDetailCard = () => {
           )}
 
           {hasContent(applianceData.video_engine_json) && (
-            <div id="tv-video_engine" className="bg-white rounded-lg p-3 sm:p-4">
+            <div
+              id="tv-video_engine"
+              className="bg-white rounded-lg p-3 sm:p-4"
+            >
               <div className="mb-6 flex items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FaChartBar className={currentColor.text} />
@@ -2406,7 +2411,10 @@ const TVDetailCard = () => {
           )}
 
           {hasContent(applianceData.connectivity_json) && (
-            <div id="tv-connectivity" className="bg-white rounded-lg p-3 sm:p-4">
+            <div
+              id="tv-connectivity"
+              className="bg-white rounded-lg p-3 sm:p-4"
+            >
               <div className="mb-6 flex items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FaWifi className={currentColor.text} />
@@ -2465,7 +2473,10 @@ const TVDetailCard = () => {
               applianceData.dimensions_json ||
               applianceData.physical_details,
           ) && (
-            <div id="tv-physical_details" className="bg-white rounded-lg p-3 sm:p-4">
+            <div
+              id="tv-physical_details"
+              className="bg-white rounded-lg p-3 sm:p-4"
+            >
               <div className="mb-6 flex items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FaRuler className={currentColor.text} />
@@ -2485,7 +2496,10 @@ const TVDetailCard = () => {
           )}
 
           {hasContent(applianceData.product_details_json) && (
-            <div id="tv-product_details" className="bg-white rounded-lg p-3 sm:p-4">
+            <div
+              id="tv-product_details"
+              className="bg-white rounded-lg p-3 sm:p-4"
+            >
               <div className="mb-6 flex items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FaInfoCircle className={currentColor.text} />
@@ -2579,7 +2593,10 @@ const TVDetailCard = () => {
           </div>
         )}
         {hasContent(applianceData.physical_details) && (
-          <div id="tv-physical_details" className="bg-white rounded-lg p-3 sm:p-4">
+          <div
+            id="tv-physical_details"
+            className="bg-white rounded-lg p-3 sm:p-4"
+          >
             <div className="mb-6 flex items-center justify-between gap-2">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <FaRuler className={currentColor.text} />
@@ -2627,7 +2644,7 @@ const TVDetailCard = () => {
 
   if (!loading && !applianceData) {
     return (
-      <div className="px-2 lg:px-4 mx-auto max-w-6xl w-full p-4">
+      <div className="px-2 lg:px-4 mx-auto max-w-4xl w-full p-4">
         <div className="bg-white  p-12 text-center border border-gray-200">
           <div className="text-gray-400 text-6xl mb-4">TV</div>
           <h3 className="text-2xl font-semibold text-gray-900 mb-3">
@@ -2717,7 +2734,7 @@ const TVDetailCard = () => {
   const metaImage = applianceData?.images?.[0] || null;
 
   return (
-    <div className="px-2 lg:px-4 mx-auto max-w-6xl w-full bg-white">
+    <div className="px-2 lg:px-4 mx-auto max-w-4xl w-full bg-white">
       <Helmet>
         <title>{metaTitleWithDate}</title>
         <meta name="description" content={metaDescription} />
@@ -3319,4 +3336,3 @@ const TVDetailCard = () => {
 };
 
 export default TVDetailCard;
-

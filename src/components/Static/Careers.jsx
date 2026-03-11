@@ -945,7 +945,7 @@ const Careers = () => {
         <meta name="robots" content="index, follow" />
       </Helmet>
 
-      <div className="mx-auto max-w-6xl bg-white px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+      <div className="mx-auto max-w-4xl bg-white px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
         <div className=" bg-white p-4 sm:p-6">
           <p className="inline-flex rounded-md bg-blue-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-blue-700">
             Hiring Process
@@ -959,18 +959,17 @@ const Careers = () => {
           </p>
 
           <div className="mt-6">
-            <div className="flex items-start justify-between gap-2">
+            <div className="flex items-start justify-between gap-1 sm:gap-2">
               {STEPS.map((item, index) => {
                 const isActive = step === index;
                 const isDone = step > index;
-                const labelClass = isActive || isDone
-                  ? "text-blue-700"
-                  : "text-slate-400";
+                const labelClass =
+                  isActive || isDone ? "text-blue-700" : "text-slate-400";
 
                 return (
                   <div key={item.title} className="flex-1 px-1 text-center">
                     <p
-                      className={`mx-auto max-w-[140px] text-[11px] font-semibold uppercase tracking-wide leading-tight ${labelClass}`}
+                      className={`mx-auto max-w-[80px] text-[10px] font-semibold uppercase tracking-wide leading-tight sm:max-w-[140px] sm:text-[11px] ${labelClass}`}
                     >
                       {item.subtitle}
                     </p>
@@ -980,10 +979,10 @@ const Careers = () => {
             </div>
 
             <div className="relative mt-3 flex items-center justify-between">
-              <div className="pointer-events-none absolute inset-0 flex items-center px-3.5">
-                <div className="relative h-1 w-full rounded-full bg-slate-200">
+              <div className="pointer-events-none absolute inset-0 flex items-center px-2 sm:px-3.5">
+                <div className="relative h-0.5 w-full rounded-full bg-slate-200 sm:h-1">
                   <div
-                    className="absolute left-0 top-0 h-1 rounded-full bg-blue-600"
+                    className="absolute left-0 top-0 h-0.5 rounded-full bg-blue-600 sm:h-1"
                     style={{
                       width: `${Math.min(
                         100,
@@ -1006,7 +1005,7 @@ const Careers = () => {
                 return (
                   <div
                     key={item.title}
-                    className={`relative z-10 flex h-7 w-7 items-center justify-center rounded-full border-2 transition ${
+                    className={`relative z-10 flex h-5 w-5 items-center justify-center rounded-full border-2 transition sm:h-7 sm:w-7 ${
                       isDone
                         ? "border-blue-600 bg-blue-600 text-white"
                         : isActive
@@ -1018,7 +1017,7 @@ const Careers = () => {
                     {isDone ? (
                       <svg
                         viewBox="0 0 24 24"
-                        className="h-4 w-4"
+                        className="h-3 w-3 sm:h-4 sm:w-4"
                         fill="none"
                         xmlns="http://www.w3.org/2000/svg"
                         aria-hidden="true"
