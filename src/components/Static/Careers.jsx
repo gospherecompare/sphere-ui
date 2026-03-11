@@ -577,7 +577,9 @@ const QuestionDate = ({
                     <option
                       key={monthLabel}
                       value={monthIndex}
-                      disabled={!canViewMonth(viewDate.getFullYear(), monthIndex)}
+                      disabled={
+                        !canViewMonth(viewDate.getFullYear(), monthIndex)
+                      }
                     >
                       {monthLabel}
                     </option>
@@ -668,7 +670,9 @@ const QuestionDate = ({
 
             <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-200 pt-2">
               <div className="text-[11px] font-medium text-slate-500">
-                {displayValue ? `Selected: ${displayValue}` : "No date selected"}
+                {displayValue
+                  ? `Selected: ${displayValue}`
+                  : "No date selected"}
               </div>
               <div className="flex items-center gap-1.5">
                 <button
@@ -922,7 +926,10 @@ const Careers = () => {
           name="keywords"
           content="Hooks careers, jobs at Hooks, frontend developer jobs, backend developer jobs, fullstack developer jobs, content developer jobs, apply jobs India"
         />
-        <meta property="og:title" content="Careers at Hooks | Join Hooks Team" />
+        <meta
+          property="og:title"
+          content="Careers at Hooks | Join Hooks Team"
+        />
         <meta
           property="og:description"
           content="Apply for Frontend, Backend, Content Developer, and Fullstack roles at Hooks."
@@ -939,7 +946,7 @@ const Careers = () => {
       </Helmet>
 
       <div className="mx-auto max-w-6xl bg-white px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
+        <div className=" bg-white p-4 sm:p-6">
           <p className="inline-flex rounded-md bg-blue-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-blue-700">
             Hiring Process
           </p>
@@ -951,31 +958,84 @@ const Careers = () => {
             apply for current openings.
           </p>
 
-          <div className="mt-6 flex gap-2 overflow-x-auto pb-1 no-scrollbar sm:grid sm:grid-cols-2 sm:gap-3 sm:overflow-visible sm:pb-0 lg:grid-cols-4">
-            {STEPS.map((item, index) => {
-              const isActive = step === index;
-              const isDone = step > index;
+          <div className="mt-6">
+            <div className="flex items-start justify-between gap-2">
+              {STEPS.map((item, index) => {
+                const isActive = step === index;
+                const isDone = step > index;
+                const labelClass = isActive || isDone
+                  ? "text-blue-700"
+                  : "text-slate-400";
 
-              return (
-                <div
-                  key={item.title}
-                  className={`min-w-[150px] shrink-0 rounded-lg border px-3 py-2.5 sm:min-w-0 sm:px-4 sm:py-3 ${
-                    isActive
-                      ? "border-blue-500 bg-blue-50"
-                      : isDone
-                        ? "border-emerald-300 bg-emerald-50"
-                        : "border-slate-200 bg-white"
-                  }`}
-                >
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                    {item.title}
-                  </p>
-                  <p className="mt-1 text-xs font-semibold text-slate-800 sm:text-sm">
-                    {item.subtitle}
-                  </p>
+                return (
+                  <div key={item.title} className="flex-1 px-1 text-center">
+                    <p
+                      className={`mx-auto max-w-[140px] text-[11px] font-semibold uppercase tracking-wide leading-tight ${labelClass}`}
+                    >
+                      {item.subtitle}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="relative mt-3 flex items-center justify-between">
+              <div className="pointer-events-none absolute inset-0 flex items-center px-3.5">
+                <div className="relative h-1 w-full rounded-full bg-slate-200">
+                  <div
+                    className="absolute left-0 top-0 h-1 rounded-full bg-blue-600"
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        Math.max(
+                          0,
+                          STEPS.length > 1
+                            ? (step / (STEPS.length - 1)) * 100
+                            : 0,
+                        ),
+                      )}%`,
+                    }}
+                  />
                 </div>
-              );
-            })}
+              </div>
+
+              {STEPS.map((item, index) => {
+                const isActive = step === index;
+                const isDone = step > index;
+
+                return (
+                  <div
+                    key={item.title}
+                    className={`relative z-10 flex h-7 w-7 items-center justify-center rounded-full border-2 transition ${
+                      isDone
+                        ? "border-blue-600 bg-blue-600 text-white"
+                        : isActive
+                          ? "border-blue-600 bg-white text-blue-600"
+                          : "border-slate-200 bg-white text-slate-300"
+                    }`}
+                    aria-label={item.title}
+                  >
+                    {isDone ? (
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="h-4 w-4"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M5 12.5L9.5 17L19 7.5"
+                          stroke="currentColor"
+                          strokeWidth="2.4"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">

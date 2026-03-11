@@ -43,6 +43,7 @@ import {
 } from "../../store/deviceSlice";
 import Brandofmonth from "../Home/Brandofmonth";
 import ProductNav from "../Home/Products";
+// BannerSlot disabled until completed.
 import useStoreLogos from "../../hooks/useStoreLogos";
 import Spinner from "../ui/Spinner";
 import Breadcrumbs from "../Breadcrumbs";
@@ -3043,7 +3044,9 @@ const Smartphones = () => {
       {/* Page Header with Descriptive Content */}
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto p-4 sm:p-6 md:p-8 lg:p-10 bg-white">
+      <div className="max-w-4xl mx-auto">
+        <div className="relative">
+          <div className="bg-white px-2 lg:px-4 py-4 sm:py-6 md:py-8 lg:py-10">
         {/* Hero Section - Professional Styling */}
         <div className="mb-6 sm:mb-8 md:mb-10 lg:mb-12">
           {/* Badge */}
@@ -3264,7 +3267,7 @@ const Smartphones = () => {
 
         <div className="flex flex-col lg:flex-row gap-4 sm:gap-5 md:gap-6">
           {/* Desktop Filter Sidebar */}
-          <div className="hidden lg:block lg:w-80 flex-shrink-0">
+          <div className="hidden lg:block lg:w-64 flex-shrink-0">
             <div className="p-4 md:p-5 lg:p-6 sticky top-6">
               {/* Filters Header */}
               <div
@@ -3599,9 +3602,10 @@ const Smartphones = () => {
           {/* Products List - Right */}
           <div className="flex-1">
             {/* Results Summary */}
+            {/* BannerSlot disabled (incomplete). */}
 
             {/* Products Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6 auto-rows-fr md:[&>*:nth-child(2n)]:border-l md:[&>*:nth-child(2n)]:border-gray-200 md:[&>*:nth-child(2n)]:pl-6 md:[&>*:nth-child(2n+1)]:pr-6">
+            <div className="grid grid-cols-1 gap-4 sm:gap-5 md:gap-6 auto-rows-fr">
               {sortedVariants.map((device, _idx) => (
                 <div
                   key={`${device.id ?? device.model ?? ""}-${_idx}`}
@@ -4583,6 +4587,8 @@ const Smartphones = () => {
             </div>
           </div>
         )}
+          </div>
+        </div>
       </div>
 
       {/* Help Section */}

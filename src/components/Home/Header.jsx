@@ -1835,7 +1835,7 @@ const Header = () => {
         </div>
 
         {/* Mobile Search Input Row */}
-        <div className="px-4 py-3 max-w-6xl mx-auto">
+        <div className="px-4 py-3 max-w-4xl mx-auto">
           <div className="relative">
             {/* Search Icon */}
 
@@ -2396,7 +2396,7 @@ const Header = () => {
 
     return (
       <div className="bg-white border-b border-gray-200 lg:hidden">
-        <div className="max-w-6xl mx-auto px-2 sm:px-4">
+        <div className="max-w-4xl mx-auto px-2 sm:px-4">
           <div className="overflow-x-auto no-scrollbar">
             <nav className="flex gap-6 py-2 pl-2 sm:pl-3 min-w-max">
               {navTabs.map((tab, index) => {

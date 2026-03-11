@@ -76,7 +76,7 @@ const ProductsNav = () => {
 
   return (
     <section
-      className={`mx-auto max-w-6xl mb-5 w-full bg-white overflow-hidden px-4 lg:px-4 pt-4 sm:pt-6 pb-3 sm:pb-4 lg:mt-3 mt-4 sm:mt-0 transition-all duration-700 ${
+      className={`mx-auto max-w-4xl mb-5 w-full bg-white overflow-hidden px-4 lg:px-6 pt-4 sm:pt-6 sm:pb-4 lg:mt-3 mt-2 sm:mt-0 transition-all duration-700 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >

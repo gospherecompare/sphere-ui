@@ -84,7 +84,7 @@ const MobilePriceFinder = () => {
 
   return (
     <div
-      className={`px-4 lg:px-4 mx-auto bg-white max-w-6xl mb-8 w-full overflow-hidden py-8 sm:py-10 transition-all duration-700 ${
+      className={`px-4 lg:px-4 mx-auto bg-white max-w-4xl mb-8 w-full overflow-hidden py-8 sm:py-10 transition-all duration-700 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >

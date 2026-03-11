@@ -48,6 +48,7 @@ import {
   fetchNewLaunchHomeAppliances,
 } from "../../store/deviceSlice";
 import useDevice from "../../hooks/useDevice";
+// BannerSlot disabled until completed.
 import normalizeProduct from "../../utils/normalizeProduct";
 import {
   computePopularTvFeatures,
@@ -3109,6 +3110,7 @@ const TVs = () => {
           {/* Products List - Right */}
           <div className="flex-1">
             {/* Results Summary */}
+            {/* BannerSlot disabled (incomplete). */}
 
             {/* Products Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6 auto-rows-fr md:[&>*:nth-child(2n)]:border-l md:[&>*:nth-child(2n)]:border-gray-200 md:[&>*:nth-child(2n)]:pl-6 md:[&>*:nth-child(2n+1)]:pr-6">

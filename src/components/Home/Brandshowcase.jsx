@@ -44,7 +44,7 @@ const PopularComparisons = ({
 
   return (
     <div
-      className={`px-4 lg:px-4 mx-auto bg-white max-w-6xl w-full m-0 overflow-hidden pt-5 sm:pt-10 transition-all duration-700 ${
+      className={`px-4 lg:px-4 mx-auto bg-white max-w-4xl w-full m-0 overflow-hidden pt-5 sm:pt-10 transition-all duration-700 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       } ${isFlat && ""} ${className}`}
     >

@@ -11,6 +11,7 @@ import TVs from "./components/Product/TVs";
 import TrendingProductsHub from "./components/Product/TrendingProductsHub";
 import DeviceComparison from "./components/compare";
 import Breadcrumbs from "./components/Breadcrumbs";
+// BannerSlot disabled until completed.
 import About from "./components/Static/About";
 import Careers from "./components/Static/Careers";
 import Contact from "./components/Static/Contact";
@@ -54,7 +55,9 @@ const normalizeSeoPath = (pathname) => {
 };
 
 const stripSmartphoneSeoSuffix = (slug = "") => {
-  const value = String(slug || "").toLowerCase().trim();
+  const value = String(slug || "")
+    .toLowerCase()
+    .trim();
   if (!value) return "";
   if (value.endsWith(SMARTPHONE_SEO_SUFFIX)) {
     return value.slice(0, -SMARTPHONE_SEO_SUFFIX.length).replace(/-+$/g, "");
@@ -198,7 +201,8 @@ const resolveSeoMeta = (pathname) => {
   const rules = [
     {
       test: (p) => p === "/",
-      title: "Tech Reviews: Compare Smartphones, Laptops & TVs in India | Hooks",
+      title:
+        "Tech Reviews: Compare Smartphones, Laptops & TVs in India | Hooks",
       description:
         "Explore and compare smartphones, laptops, TVs, and networking devices with clear specs, pricing, and trend insights.",
       keywords: `hooks, best gadget comparison site, mobile price comparison india, compare laptops smartphones tvs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, latest laptops in india ${CURRENT_YEAR}, latest smart tvs in india ${CURRENT_YEAR}, new launch and trending gadgets, top selling gadgets india, compare specs`,
@@ -325,7 +329,8 @@ const resolveSeoMeta = (pathname) => {
         p.startsWith("/login") ||
         p.startsWith("/signup"),
       title: "Hooks Account",
-      description: "Secure account pages for your Hooks profile and saved data.",
+      description:
+        "Secure account pages for your Hooks profile and saved data.",
       keywords: "hooks account, user account, login, signup, wishlist",
       robots: "noindex, nofollow",
     },
@@ -417,8 +422,16 @@ function App() {
       <RouteSeoFallback />
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100">
         <Header />
+        <div className="">
+          <div className="mx-auto max-w-4xl w-full overflow-hidden mt-3  px-4 sm:px-0 transition-all duration-700">
+            {/* BannerSlot disabled (incomplete). */}
+          </div>
+        </div>
         <ScrollToTop />
         <Breadcrumbs />
+        <aside className="hidden xl:block absolute right-45 top-20 h-40 z-30 w-[170px]">
+          {/* BannerSlot disabled (incomplete). */}
+        </aside>
         <Routes>
           {/* Home */}
           <Route path="/" element={<Home />} />
@@ -537,7 +550,10 @@ function App() {
           />
 
           {/* Comparison */}
-          <Route path="/compare/:leftSlug-vs-:rightSlug" element={<DeviceComparison />} />
+          <Route
+            path="/compare/:leftSlug-vs-:rightSlug"
+            element={<DeviceComparison />}
+          />
           <Route path="/compare" element={<DeviceComparison />} />
 
           {/* Placeholder routes for footer links (can be implemented later) */}
@@ -552,7 +568,9 @@ function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
+      {/* BannerSlot disabled (incomplete). */}
       <Footer />
+      {/* BannerSlot disabled (incomplete). */}
     </Router>
   );
 }

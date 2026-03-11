@@ -38,6 +38,7 @@ import useStoreLogos from "../../hooks/useStoreLogos";
 import Spinner from "../ui/Spinner";
 import useTitle from "../../hooks/useTitle";
 import useDevice from "../../hooks/useDevice";
+// BannerSlot disabled until completed.
 import { generateSlug } from "../../utils/slugGenerator";
 import normalizeProduct from "../../utils/normalizeProduct";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
@@ -2240,6 +2241,7 @@ const Laptops = () => {
           {/* Products List - Right */}
           <div className="flex-1">
             {/* Results Summary */}
+            {/* BannerSlot disabled (incomplete). */}
 
             {/* Products Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6 auto-rows-fr md:[&>*:nth-child(2n)]:border-l md:[&>*:nth-child(2n)]:border-gray-200 md:[&>*:nth-child(2n)]:pl-6 md:[&>*:nth-child(2n+1)]:pr-6">

@@ -231,7 +231,7 @@ const PopularBrands = () => {
 
   return (
     <div
-      className={`px-2 lg:px-4 mx-auto bg-white max-w-6xl w-full m-5 overflow-hidden pt-8 sm:pt-12 transition-all duration-700 ${
+      className={`px-2 lg:px-4 mx-auto bg-white max-w-4xl w-full m-5 overflow-hidden pt-8 sm:pt-12 transition-all duration-700 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
