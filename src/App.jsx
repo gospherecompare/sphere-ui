@@ -550,10 +550,7 @@ function App() {
           />
 
           {/* Comparison */}
-          <Route
-            path="/compare/:leftSlug-vs-:rightSlug"
-            element={<DeviceComparison />}
-          />
+          <Route path="/compare/:compareSlug" element={<DeviceComparison />} />
           <Route path="/compare" element={<DeviceComparison />} />
 
           {/* Placeholder routes for footer links (can be implemented later) */}

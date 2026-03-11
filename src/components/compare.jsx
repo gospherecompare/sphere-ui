@@ -284,8 +284,11 @@ const MobileCompare = () => {
   } = useDevice();
   const location = useLocation();
   const navigate = useNavigate();
-  const { leftSlug = "", rightSlug = "" } = useParams();
-  const isSeoCompareRoute = Boolean(leftSlug && rightSlug);
+  const { leftSlug = "", rightSlug = "", compareSlug = "" } = useParams();
+  const [compareLeft, compareRight] = String(compareSlug || "").split("-vs-");
+  const resolvedLeftSlug = leftSlug || compareLeft || "";
+  const resolvedRightSlug = rightSlug || compareRight || "";
+  const isSeoCompareRoute = Boolean(resolvedLeftSlug && resolvedRightSlug);
 
   const activeDevices = isComparing ? comparedDevices : selectedDevices;
   const usedSlots = isComparing
@@ -308,8 +311,8 @@ const MobileCompare = () => {
   }, [availableDevices]);
 
   const routeDeviceEntries = useMemo(() => {
-    const normalizedLeftSlug = toCompareSlug(leftSlug);
-    const normalizedRightSlug = toCompareSlug(rightSlug);
+    const normalizedLeftSlug = toCompareSlug(resolvedLeftSlug);
+    const normalizedRightSlug = toCompareSlug(resolvedRightSlug);
     if (
       !normalizedLeftSlug ||
       !normalizedRightSlug ||
@@ -364,7 +367,7 @@ const MobileCompare = () => {
       { baseId: String(getResolvedProductId(matchedLeft)), variantIndex: 0 },
       { baseId: String(getResolvedProductId(matchedRight)), variantIndex: 0 },
     ]);
-  }, [availableDevices, leftSlug, rightSlug]);
+  }, [availableDevices, resolvedLeftSlug, resolvedRightSlug]);
 
   const queryDeviceEntries = useMemo(() => {
     const params = new URLSearchParams(location.search);
