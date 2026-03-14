@@ -61,10 +61,6 @@ const priceRanges = [
     color: "bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600",
     icon: "💎",
   },
-<<<<<<< HEAD
-=======
-
->>>>>>> 2d6d409b22f52ef486f573c9bb5a1996392d2f41
 ];
 
 const MobilePriceFinder = () => {
