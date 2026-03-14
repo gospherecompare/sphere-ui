@@ -201,7 +201,73 @@ const getRowLaunchDate = (row) =>
     row?.basic_info?.release_date,
   );
 
+const getRowSaleStartDate = (row) =>
+  firstText(
+    row?.sale_start_date,
+    row?.saleStartDate,
+    row?.sale_start,
+    row?.saleStart,
+    row?.first_sale_date,
+    row?.firstSaleDate,
+    row?.available_from,
+    row?.availableFrom,
+  );
+
+const getStoreSaleStartDate = (store) =>
+  firstText(
+    store?.sale_start_date,
+    store?.saleStartDate,
+    store?.sale_date,
+    store?.saleDate,
+    store?.available_from,
+    store?.availableFrom,
+  );
+
+const hasSaleStartDate = (row) => {
+  const raw = getRowSaleStartDate(row);
+  if (!raw) return false;
+  return Boolean(parseDateValue(raw) || String(raw).trim());
+};
+
+const hasNestedSaleStartDate = (row) => {
+  const directStores = Array.isArray(row?.store_prices)
+    ? row.store_prices
+    : Array.isArray(row?.storePrices)
+      ? row.storePrices
+      : [];
+  if (directStores.some((store) => getStoreSaleStartDate(store))) return true;
+
+  const variants = Array.isArray(row?.variants)
+    ? row.variants
+    : Array.isArray(row?.variant)
+      ? row.variant
+      : Array.isArray(row?.variants_json)
+        ? row.variants_json
+        : [];
+  for (const variant of variants) {
+    if (
+      firstText(
+        variant?.sale_start_date,
+        variant?.saleStartDate,
+        variant?.sale_date,
+        variant?.saleDate,
+      )
+    ) {
+      return true;
+    }
+    const stores = Array.isArray(variant?.store_prices)
+      ? variant.store_prices
+      : Array.isArray(variant?.storePrices)
+        ? variant.storePrices
+        : [];
+    if (stores.some((store) => getStoreSaleStartDate(store))) return true;
+  }
+  return false;
+};
+
 const getRowLaunchStatus = (row) => {
+  if (hasSaleStartDate(row) || hasNestedSaleStartDate(row)) return "released";
+
   const override = normalizeLaunchStatus(
     firstText(
       row?.launch_status_override,
@@ -227,6 +293,8 @@ const getRowLaunchStatus = (row) => {
 };
 
 const isUpcomingRow = (row) => {
+  if (hasSaleStartDate(row) || hasNestedSaleStartDate(row)) return false;
+
   const status = getRowLaunchStatus(row);
   if (status) return status !== "released";
 
