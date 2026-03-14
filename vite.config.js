@@ -584,8 +584,10 @@ const createSitemapPlugin = (routes = []) => ({
   name: "hook-generate-sitemap",
   apply: "build",
   closeBundle() {
-    const outputPath = path.join(__dirname, "dist", "sitemap.xml");
+    const outputDir = path.join(__dirname, "dist");
+    const outputPath = path.join(outputDir, "sitemap.xml");
     const xml = buildSitemapXml(routes);
+    fs.mkdirSync(outputDir, { recursive: true });
     fs.writeFileSync(outputPath, xml, "utf8");
     console.log(`[sitemap] Generated ${outputPath}`);
   },
