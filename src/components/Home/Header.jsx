@@ -47,7 +47,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import Cookies from "js-cookie";
 import { useDevice } from "../../hooks/useDevice";
-import { Scale } from "lucide-react";
 import { createProductPath, generateSlug } from "../../utils/slugGenerator";
 import HookLogo from "../ui/HookLogo";
 
@@ -97,6 +96,7 @@ import {
   FaAlignJustify,
   FaStream,
   FaTimes,
+  FaBalanceScale,
 } from "react-icons/fa";
 
 const Header = () => {
@@ -122,6 +122,7 @@ const Header = () => {
   const searchRef = useRef(null);
   const searchInputRef = useRef(null);
   const mobileHeaderRef = useRef(null);
+  const headerRef = useRef(null);
   const inputWasFocusedRef = useRef(false);
   const suppressRestoreRef = useRef(false);
   const deviceCtx = useDevice();
@@ -184,22 +185,43 @@ const Header = () => {
 
   // Keep the mobile spacer in sync with actual fixed header height.
   useEffect(() => {
-    const updateMobileHeaderHeight = () => {
-      if (typeof window === "undefined") return;
+  const updateMobileHeaderHeight = () => {
+    if (typeof window === "undefined") return;
 
-      if (window.innerWidth >= 768) {
-        setMobileHeaderHeight(0);
-        return;
+    const width = window.innerWidth;
+    const isMobile = width < 768;
+    const measuredMobile = Math.ceil(
+      mobileHeaderRef.current?.getBoundingClientRect().height || 0,
+    );
+    const measuredDesktop = Math.ceil(
+      headerRef.current?.getBoundingClientRect().height || 0,
+    );
+
+    if (isMobile) {
+      if (measuredMobile > 0) {
+        setMobileHeaderHeight(measuredMobile);
+        document.documentElement.style.setProperty(
+          "--mobile-header-height",
+          `${measuredMobile}px`,
+        );
       }
-
-      const measuredHeight = Math.ceil(
-        mobileHeaderRef.current?.getBoundingClientRect().height || 0,
+      document.documentElement.style.setProperty(
+        "--desktop-header-height",
+        "0px",
       );
+      return;
+    }
 
-      if (measuredHeight > 0) {
-        setMobileHeaderHeight(measuredHeight);
-      }
-    };
+    setMobileHeaderHeight(0);
+    document.documentElement.style.setProperty(
+      "--mobile-header-height",
+      "0px",
+    );
+    document.documentElement.style.setProperty(
+      "--desktop-header-height",
+      `${measuredDesktop}px`,
+    );
+  };
 
     updateMobileHeaderHeight();
     window.addEventListener("resize", updateMobileHeaderHeight);
@@ -1821,7 +1843,7 @@ const Header = () => {
               className="p-2.5 rounded-lg hover:bg-gray-100 transition-all duration-200 text-gray-600 hover:text-gray-900"
               aria-label="Compare"
             >
-              <Scale className="w-5 h-5" />
+              <FaBalanceScale className="w-5 h-5" />
             </Link>
 
             <button
@@ -2113,7 +2135,7 @@ const Header = () => {
       {
         label: "Compare",
         link: "/compare",
-        icon: <Scale className="w-4 h-4" />,
+        icon: <FaBalanceScale className="w-4 h-4" />,
       },
       ...(isLoggedIn
         ? [
@@ -2436,7 +2458,10 @@ const Header = () => {
     <>
       <SearchModal />
 
-      <header className="fixed top-0 left-0 right-0 z-40 bg-white lg:sticky lg:z-40">
+      <header
+        ref={headerRef}
+        className="fixed top-0 left-0 right-0 z-40 bg-white lg:sticky lg:z-40"
+      >
         <MainHeader />
         <CategoryNavBar />
       </header>

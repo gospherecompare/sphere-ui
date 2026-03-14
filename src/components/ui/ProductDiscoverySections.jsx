@@ -43,7 +43,8 @@ const getEntityConfig = (entityType) => {
       brandSuffix: "Laptops",
       defaultPriceLabel: "Under \u20B950,000",
       secondaryPopularLabel: "{brand} Gaming Laptops",
-      secondaryPopularPath: (brand) => `/laptops?brand=${brand}&category=gaming`,
+      secondaryPopularPath: (brand) =>
+        `/laptops?brand=${brand}&category=gaming`,
     };
   }
 
@@ -225,16 +226,16 @@ const LinkListBlock = ({
     <div className="overflow-hidden bg-white">
       {title ? (
         <div className="px-3 py-2.5">
-          <h4 className="text-sm font-semibold text-slate-900">
+          <h4 className="text-base font-semibold text-slate-900">
             {renderSectionTitle(title)}
           </h4>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-sm text-slate-500">
             {renderSectionSubtitle(title, itemNounLower)}
           </p>
         </div>
       ) : null}
 
-      <div className="divide-y divide-slate-100 bg-white">
+      <div className="bg-white">
         {items.map((item, index) => {
           const subtitle = normalizeText(item?.subtitle);
           const meta = normalizeText(item?.meta);
@@ -245,8 +246,12 @@ const LinkListBlock = ({
               key={`${item.path || item.label || "item"}-${index}`}
               to={normalizeDiscoveryPath(item.path || "", entityType)}
               aria-label={item.label || "Explore"}
-              className="group flex items-center justify-between gap-3 px-3 py-2.5 text-sm text-slate-700 transition-all duration-200 ease-out hover:bg-slate-50/70 focus-visible:bg-slate-50/70"
+              className="group flex items-center gap-2 px-3 py-2.5 text-sm text-slate-700 no-underline transition-all duration-200 ease-out hover:bg-slate-50/70 hover:no-underline focus-visible:bg-slate-50/70"
             >
+              {withVisual ? null : (
+                <FaChevronRight className="text-[11px] text-gray-500 transition-all duration-200 ease-out group-hover:translate-x-0.5 group-hover:text-violet-700" />
+              )}
+
               <span className="flex min-w-0 items-center gap-2.5">
                 {withVisual ? (
                   <RowVisual
@@ -268,7 +273,9 @@ const LinkListBlock = ({
 
                   {withVisual || subtitle || meta ? (
                     <span className="mt-0.5 flex items-center gap-1.5 text-[11px] text-slate-500 transition-colors duration-200 ease-out">
-                      {subtitle ? <span className="truncate">{subtitle}</span> : null}
+                      {subtitle ? (
+                        <span className="truncate">{subtitle}</span>
+                      ) : null}
                       {meta ? (
                         <>
                           {subtitle ? (
@@ -284,14 +291,11 @@ const LinkListBlock = ({
                 </span>
               </span>
 
-              <span className="flex shrink-0 items-center gap-2">
-                {badge ? (
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 transition-colors duration-200 ease-out">
-                    {badge}
-                  </span>
-                ) : null}
-                <FaChevronRight className="text-[11px] text-violet-500 transition-all duration-200 ease-out group-hover:translate-x-0.5 group-hover:text-violet-700" />
-              </span>
+              {badge ? (
+                <span className="ml-auto rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 transition-colors duration-200 ease-out">
+                  {badge}
+                </span>
+              ) : null}
             </Link>
           );
         })}
@@ -317,9 +321,7 @@ const TopBrandsBlock = ({
           <h4 className="text-lg font-semibold text-slate-900">
             Explore by <span className="text-violet-600">{titleText}</span>
           </h4>
-          <p className="mt-1 text-sm text-slate-600">
-            {subtitleText}
-          </p>
+          <p className="mt-1 text-sm text-slate-600">{subtitleText}</p>
         </div>
         <Link
           to={normalizeDiscoveryPath(viewAllPath, entityType)}
@@ -388,9 +390,7 @@ const ProductDiscoverySections = ({
       setLoading(true);
       setError("");
       try {
-        const queryEntity = encodeURIComponent(
-          normalizeEntityType(entityType),
-        );
+        const queryEntity = encodeURIComponent(normalizeEntityType(entityType));
         const response = await fetch(
           `${API_BASE}/api/public/product/${encodeURIComponent(
             pid,
@@ -418,30 +418,32 @@ const ProductDiscoverySections = ({
     };
   }, [productId, entityType]);
 
-  const entityConfig = useMemo(
-    () => getEntityConfig(entityType),
-    [entityType],
-  );
+  const entityConfig = useMemo(() => getEntityConfig(entityType), [entityType]);
 
-  const { newFromBrand, latestReleases, budgetSegments, brandHub, smartDiscoveries } =
-    useMemo(() => {
-      const sections = payload?.sections || {};
-      return {
-        newFromBrand: Array.isArray(sections.new_from_brand)
-          ? sections.new_from_brand
-          : [],
-        latestReleases: Array.isArray(sections.latest_releases)
-          ? sections.latest_releases
-          : [],
-        budgetSegments: Array.isArray(sections.budget_segments)
-          ? sections.budget_segments
-          : [],
-        brandHub: Array.isArray(sections.brand_hub) ? sections.brand_hub : [],
-        smartDiscoveries: Array.isArray(sections.smart_discoveries)
-          ? sections.smart_discoveries
-          : [],
-      };
-    }, [payload]);
+  const {
+    newFromBrand,
+    latestReleases,
+    budgetSegments,
+    brandHub,
+    smartDiscoveries,
+  } = useMemo(() => {
+    const sections = payload?.sections || {};
+    return {
+      newFromBrand: Array.isArray(sections.new_from_brand)
+        ? sections.new_from_brand
+        : [],
+      latestReleases: Array.isArray(sections.latest_releases)
+        ? sections.latest_releases
+        : [],
+      budgetSegments: Array.isArray(sections.budget_segments)
+        ? sections.budget_segments
+        : [],
+      brandHub: Array.isArray(sections.brand_hub) ? sections.brand_hub : [],
+      smartDiscoveries: Array.isArray(sections.smart_discoveries)
+        ? sections.smart_discoveries
+        : [],
+    };
+  }, [payload]);
 
   const brandName = normalizeText(payload?.brand_name || currentBrand);
 
@@ -481,7 +483,10 @@ const ProductDiscoverySections = ({
       const key = `${label}|${path}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      links.push({ label, path: normalizeDiscoveryPath(path, entityConfig.type) });
+      links.push({
+        label,
+        path: normalizeDiscoveryPath(path, entityConfig.type),
+      });
     }
 
     if (!links.some((item) => item.path === entityConfig.basePath)) {
@@ -501,7 +506,10 @@ const ProductDiscoverySections = ({
         segment?.path || entityConfig.basePath,
         entityConfig.type,
       ),
-      badge: formatCountTag(segment?.product_count, entityConfig.pluralTitle.toLowerCase()),
+      badge: formatCountTag(
+        segment?.product_count,
+        entityConfig.pluralTitle.toLowerCase(),
+      ),
     }));
 
     links.push({
@@ -529,7 +537,9 @@ const ProductDiscoverySections = ({
           subtitle: brand
             ? `${brand} ${entityConfig.itemNounLower}`
             : `Newly launched ${entityConfig.itemNounLower}`,
-          meta: [priceTag, monthTag].filter(Boolean).join(" \u2022 ") || "New launch",
+          meta:
+            [priceTag, monthTag].filter(Boolean).join(" \u2022 ") ||
+            "New launch",
         };
       }),
     [latestReleases, entityConfig],

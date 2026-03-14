@@ -7,22 +7,55 @@ const API_ALIAS_RULES = [
   { from: /^\/api\/tvs$/i, to: "/api/gateway/catalog/vision" },
   { from: /^\/api\/brand$/i, to: "/api/gateway/meta/label" },
   { from: /^\/api\/category$/i, to: "/api/gateway/meta/group" },
-  { from: /^\/api\/public\/online-stores$/i, to: "/api/gateway/channel/stores" },
-  { from: /^\/api\/public\/popular-features$/i, to: "/api/gateway/insight/features" },
-  { from: /^\/api\/public\/trending\/smartphones$/i, to: "/api/gateway/pulse/handset" },
-  { from: /^\/api\/public\/trending\/laptops$/i, to: "/api/gateway/pulse/compute" },
+  {
+    from: /^\/api\/public\/online-stores$/i,
+    to: "/api/gateway/channel/stores",
+  },
+  {
+    from: /^\/api\/public\/popular-features$/i,
+    to: "/api/gateway/insight/features",
+  },
+  {
+    from: /^\/api\/public\/trending\/smartphones$/i,
+    to: "/api/gateway/pulse/handset",
+  },
+  {
+    from: /^\/api\/public\/trending\/laptops$/i,
+    to: "/api/gateway/pulse/compute",
+  },
   { from: /^\/api\/public\/trending\/tvs$/i, to: "/api/gateway/pulse/vision" },
-  { from: /^\/api\/public\/trending\/networking$/i, to: "/api/gateway/pulse/network-grid" },
-  { from: /^\/api\/public\/trending\/most-compared$/i, to: "/api/gateway/pulse/duel" },
+  {
+    from: /^\/api\/public\/trending\/networking$/i,
+    to: "/api/gateway/pulse/network-grid",
+  },
+  {
+    from: /^\/api\/public\/trending\/most-compared$/i,
+    to: "/api/gateway/pulse/duel",
+  },
   { from: /^\/api\/public\/trending\/all$/i, to: "/api/gateway/pulse/all" },
-  { from: /^\/api\/public\/new\/smartphones$/i, to: "/api/gateway/release/handset" },
-  { from: /^\/api\/public\/new\/laptops$/i, to: "/api/gateway/release/compute" },
+  {
+    from: /^\/api\/public\/new\/smartphones$/i,
+    to: "/api/gateway/release/handset",
+  },
+  {
+    from: /^\/api\/public\/new\/laptops$/i,
+    to: "/api/gateway/release/compute",
+  },
   { from: /^\/api\/public\/new\/tvs$/i, to: "/api/gateway/release/vision" },
-  { from: /^\/api\/public\/new\/networking$/i, to: "/api/gateway/release/network-grid" },
+  {
+    from: /^\/api\/public\/new\/networking$/i,
+    to: "/api/gateway/release/network-grid",
+  },
   { from: /^\/api\/public\/feature-click$/i, to: "/api/gateway/event/feature" },
   { from: /^\/api\/public\/compare$/i, to: "/api/gateway/compare/log" },
-  { from: /^\/api\/public\/compare\/scores$/i, to: "/api/gateway/compare/score" },
-  { from: /^\/api\/public\/compare\/resolve$/i, to: "/api/gateway/compare/resolve" },
+  {
+    from: /^\/api\/public\/compare\/scores$/i,
+    to: "/api/gateway/compare/score",
+  },
+  {
+    from: /^\/api\/public\/compare\/resolve$/i,
+    to: "/api/gateway/compare/resolve",
+  },
   { from: /^\/api\/search$/i, to: "/api/gateway/query/finder" },
   { from: /^\/api\/public\/blogs$/i, to: "/api/gateway/journal/posts" },
   {

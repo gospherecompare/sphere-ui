@@ -19,5 +19,5 @@ createRoot(document.getElementById("root")).render(
         <App />
       </HelmetProvider>
     </Provider>
-  </StrictMode>
+  </StrictMode>,
 );

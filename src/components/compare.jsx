@@ -1,44 +1,30 @@
 // src/components/MobileCompare.jsx
 import React, { useState, useMemo, useEffect } from "react";
 import {
-  Search,
-  X,
-  Cpu,
-  Camera,
-  Battery,
-  Wifi,
-  Music,
-  Smartphone,
-  Monitor,
-  MemoryStick,
-  Zap,
-  Headphones,
-  ChevronRight,
-  Plus,
-  Trash2,
-  BarChart3,
-  Star,
-  ChevronLeft,
-  ChevronRight as RightArrow,
-  Smartphone as PhoneIcon,
-  Sparkles,
-  Filter,
-  Share2,
-  AlertCircle,
-  Package,
-  HardDrive,
-  DollarSign,
-  Info,
-} from "lucide-react";
-import {
   FaBatteryFull,
   FaBolt,
   FaCamera,
+  FaChartBar,
+  FaChevronLeft,
+  FaChevronRight,
+  FaDesktop,
+  FaExclamationCircle,
+  FaFilter,
+  FaHeadphones,
+  FaInfoCircle,
+  FaMagic,
+  FaMicrochip,
   FaMobileAlt,
+  FaPage4,
+  FaPlus,
   FaRobot,
+  FaSearch,
+  FaShareAlt,
   FaSignal,
+  FaStar,
   FaTachometerAlt,
   FaTimes,
+  FaTrash,
   FaWifi,
 } from "react-icons/fa";
 import "../styles/hideScrollbar.css";
@@ -46,6 +32,28 @@ import useDevice from "../hooks/useDevice";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import normalizeProduct from "../utils/normalizeProduct";
 import { Helmet } from "react-helmet-async";
+
+const Search = FaSearch;
+const X = FaTimes;
+const Cpu = FaMicrochip;
+const Camera = FaCamera;
+const Battery = FaBatteryFull;
+const Wifi = FaWifi;
+const Smartphone = FaMobileAlt;
+const Monitor = FaDesktop;
+const Zap = FaBolt;
+const Headphones = FaHeadphones;
+const ChevronRight = FaChevronRight;
+const Plus = FaPlus;
+const Trash2 = FaTrash;
+const BarChart3 = FaChartBar;
+const Star = FaStar;
+const ChevronLeft = FaChevronLeft;
+const Sparkles = FaMagic;
+const Filter = FaFilter;
+const Share2 = FaShareAlt;
+const AlertCircle = FaExclamationCircle;
+const Info = FaInfoCircle;
 
 const SECTIONS = [
   {
@@ -3382,7 +3390,7 @@ const MobileCompare = () => {
                         onClick={() => setShowSearch(true)}
                         className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:border-violet-300 hover:bg-violet-50"
                       >
-                        <Plus className="h-3.5 w-3.5" />
+                        <FaPlus className="h-3.5 w-3.5" />
                         Add Device
                       </button>
                     ) : null}
@@ -3623,7 +3631,7 @@ const MobileCompare = () => {
               </button>
               <button
                 onClick={() => navigate("/smartphones")}
-                className="p-3 bg-purple-600 border border-purple-600 rounded-xl hover:bg-purple-700 transition-all duration-200 flex items-center justify-center gap-2 text-white"
+                className="p-3  border border-purple-600 rounded-xl hover:bg-purple-700 transition-all duration-200 flex items-center justify-center gap-2 text-white"
               >
                 <Plus className="h-4 w-4" />
                 <span className="font-medium text-sm">Browse More</span>

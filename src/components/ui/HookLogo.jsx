@@ -20,9 +20,10 @@ export default function HookLogo({
       {title ? <title>{title}</title> : null}
 
       <defs>
-        <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#3B82F6" />
-          <stop offset="100%" stopColor="#8B5CF6" />
+        <linearGradient id={gradientId} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#8B5CF6" />
+          <stop offset="60%" stopColor="#8B5CF6" />
+          <stop offset="100%" stopColor="#3B82F6" />
         </linearGradient>
       </defs>
 
@@ -51,11 +52,11 @@ export default function HookLogo({
         x="110"
         y="60"
         dominantBaseline="middle"
-        fontFamily="Poppins, Inter, Arial, sans-serif"
+        fontFamily='"Climate Crisis", Poppins, Inter, Arial, sans-serif'
         fontSize="50"
         fontWeight="800"
-        letterSpacing="2"
-        fill="#111"
+        letterSpacing="6"
+        fill={`url(#${gradientId})`}
       >
         {brandName}
       </text>

@@ -63,8 +63,7 @@ const PRELOAD_STRIP_KEY_PATTERNS = [
 const CURRENT_YEAR = new Date().getFullYear();
 const BUDGET_PHONE_KEYWORDS =
   "budget phones under 10000, budget phones under 15000, budget phones under 20000, budget phones under 30000, budget phones under 50000";
-const DEFAULT_SEO_KEYWORDS =
-  `hook, best gadget comparison site, mobile price comparison india, moblie price comparison india, compare laptops smartphones tvs, compare smartphone tv laptops, compare specs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch phones, trending phone in india, most popular mobiles, top selling gadgets india, 5g phones in india, ai phones in india, ${BUDGET_PHONE_KEYWORDS}, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, gaming laptops india, student laptops india, laptop comparison india, vacuum cooler laptop and phone, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000, smart tv comparison india`;
+const DEFAULT_SEO_KEYWORDS = `hook, best gadget comparison site, mobile price comparison india, moblie price comparison india, compare laptops smartphones tvs, compare smartphone tv laptops, compare specs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch phones, trending phone in india, most popular mobiles, top selling gadgets india, 5g phones in india, ai phones in india, ${BUDGET_PHONE_KEYWORDS}, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, gaming laptops india, student laptops india, laptop comparison india, vacuum cooler laptop and phone, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000, smart tv comparison india`;
 const STATIC_PRERENDER_ROUTES = [
   "/",
   "/career",
@@ -117,7 +116,9 @@ const normalizePath = (routePath = "/") => {
 };
 
 const stripSmartphoneSeoSuffix = (slug = "") => {
-  const value = String(slug || "").toLowerCase().trim();
+  const value = String(slug || "")
+    .toLowerCase()
+    .trim();
   if (!value) return "";
   if (value.endsWith(SMARTPHONE_SEO_SUFFIX)) {
     return value.slice(0, -SMARTPHONE_SEO_SUFFIX.length).replace(/-+$/g, "");
@@ -196,7 +197,8 @@ const toCanonicalPath = (rawPath) => {
   if (pathName === "/trending/smartphone") return "/trending/smartphones";
   if (pathName === "/trending/laptop") return "/trending/laptops";
   if (pathName === "/trending/tv") return "/trending/tvs";
-  if (pathName === "/products" || pathName === "/products/mobiles") return "/smartphones";
+  if (pathName === "/products" || pathName === "/products/mobiles")
+    return "/smartphones";
   if (pathName === "/devices") return "/smartphones";
   if (pathName === "/laptop") return "/laptops";
   if (pathName.startsWith("/laptop/")) {
@@ -282,7 +284,9 @@ const routesFromSitemap = () => {
 
     return parsed;
   } catch (err) {
-    console.warn("[prerender] Failed to read sitemap routes, using static route list only.");
+    console.warn(
+      "[prerender] Failed to read sitemap routes, using static route list only.",
+    );
     return [];
   }
 };
@@ -495,7 +499,9 @@ const fetchCompareRoutesFromApi = async () => {
 
   for (const row of rows) {
     if (routes.length >= MAX_COMPARE_ROUTES) break;
-    const leftType = String(row?.product_type || "").trim().toLowerCase();
+    const leftType = String(row?.product_type || "")
+      .trim()
+      .toLowerCase();
     const rightType = String(row?.compared_product_type || "")
       .trim()
       .toLowerCase();
@@ -541,12 +547,14 @@ const shouldIncludeInSitemap = (routePath = "/") => {
 
 const buildSitemapXml = (routes = []) => {
   const today = new Date().toISOString().slice(0, 10);
-  const canonicalRoutes = [...new Set(
-    routes
-      .map((routePath) => toCanonicalPath(routePath))
-      .map((routePath) => normalizePath(routePath))
-      .filter((routePath) => shouldIncludeInSitemap(routePath)),
-  )];
+  const canonicalRoutes = [
+    ...new Set(
+      routes
+        .map((routePath) => toCanonicalPath(routePath))
+        .map((routePath) => normalizePath(routePath))
+        .filter((routePath) => shouldIncludeInSitemap(routePath)),
+    ),
+  ];
 
   canonicalRoutes.sort((a, b) => {
     if (a === "/") return -1;
@@ -556,7 +564,8 @@ const buildSitemapXml = (routes = []) => {
 
   const urls = canonicalRoutes
     .map((routePath) => {
-      const loc = routePath === "/" ? SITE_ORIGIN : `${SITE_ORIGIN}${routePath}`;
+      const loc =
+        routePath === "/" ? SITE_ORIGIN : `${SITE_ORIGIN}${routePath}`;
       const isDetailPage =
         routePath.startsWith("/smartphones/") ||
         routePath.startsWith("/laptops/") ||
@@ -596,11 +605,11 @@ const resolveSeo = (routePath) => {
   const rules = [
     {
       test: (p) => p === "/",
-      title: "Tech Reviews: Compare Smartphones, Laptops & TVs in India | Hooks",
+      title:
+        "Tech Reviews: Compare Smartphones, Laptops & TVs in India | Hooks",
       description:
         "Explore and compare smartphones, laptops, TVs, and networking devices with clear specs, pricing, and trend insights.",
-      keywords:
-        `hook, best gadget comparison site, mobile price comparison india, compare laptops smartphones tvs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, latest laptops in india ${CURRENT_YEAR}, latest smart tvs in india ${CURRENT_YEAR}, new launch and trending gadgets, top selling gadgets india, compare specs`,
+      keywords: `hook, best gadget comparison site, mobile price comparison india, compare laptops smartphones tvs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, latest laptops in india ${CURRENT_YEAR}, latest smart tvs in india ${CURRENT_YEAR}, new launch and trending gadgets, top selling gadgets india, compare specs`,
     },
     {
       test: () => Boolean(smartphoneDetailName),
@@ -631,24 +640,21 @@ const resolveSeo = (routePath) => {
       title: "Smartphones - Compare Prices, Specs & Variants | Hook",
       description:
         "Compare smartphones by price, RAM/ROM variants, camera, battery, and performance. Find trending and latest mobile launches on Hook.",
-      keywords:
-        `smartphones, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch mobiles, trending phone in india, most popular mobiles, mobile price comparison india, moblie price comparison india, compare smartphone specs, compare smartphone prices, 5g phones in india, ai phone, ai budget phone, ${BUDGET_PHONE_KEYWORDS}`,
+      keywords: `smartphones, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch mobiles, trending phone in india, most popular mobiles, mobile price comparison india, moblie price comparison india, compare smartphone specs, compare smartphone prices, 5g phones in india, ai phone, ai budget phone, ${BUDGET_PHONE_KEYWORDS}`,
     },
     {
       test: (p) => p.startsWith("/laptops"),
       title: "Laptops - Compare Models, Prices & Specifications | Hook",
       description:
         "Discover and compare laptops by processor, RAM, storage, display, and price. View current deals and top laptop picks on Hook.",
-      keywords:
-        `laptops, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, compare laptops india, laptop comparison site, laptop compare specs, gaming laptops india, student laptops india, productivity laptops, vacuum cooler laptop and phone`,
+      keywords: `laptops, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, compare laptops india, laptop comparison site, laptop compare specs, gaming laptops india, student laptops india, productivity laptops, vacuum cooler laptop and phone`,
     },
     {
       test: (p) => p.startsWith("/tvs"),
       title: "TVs - Compare Screen Sizes, Specs & Prices | Hook",
       description:
         "Compare TVs across 43, 55, 65, and larger screen sizes with full specifications, variant pricing, and store availability on Hook.",
-      keywords:
-        `tvs, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, smart tv comparison india, compare tv prices india, compare tv specs, 43 inch tv, 55 inch tv, 65 inch tv, 75 inch tv, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000`,
+      keywords: `tvs, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, smart tv comparison india, compare tv prices india, compare tv specs, 43 inch tv, 55 inch tv, 65 inch tv, 75 inch tv, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000`,
     },
     {
       test: (p) => p.startsWith("/networking"),
@@ -683,8 +689,7 @@ const resolveSeo = (routePath) => {
       title: "Trending Devices - Smartphones, Laptops & TVs | Hook",
       description:
         "Track trending smartphones, laptops, and TVs based on momentum and user interest to spot what is hot right now.",
-      keywords:
-        `trending smartphones india, trending laptops india, trending tvs india, trending phone in india, most popular mobiles, top selling gadgets india, new launch and trending devices, latest smartphones in india ${CURRENT_YEAR}`,
+      keywords: `trending smartphones india, trending laptops india, trending tvs india, trending phone in india, most popular mobiles, top selling gadgets india, new launch and trending devices, latest smartphones in india ${CURRENT_YEAR}`,
     },
     {
       test: (p) => p.startsWith("/careers"),
@@ -715,7 +720,8 @@ const resolveSeo = (routePath) => {
       title: "Privacy Policy | Hook",
       description:
         "Read Hook privacy policy to understand what data we collect, why we collect it, and how you can control your information.",
-      keywords: "privacy policy, data privacy, hook policy, personal data rights",
+      keywords:
+        "privacy policy, data privacy, hook policy, personal data rights",
     },
     {
       test: (p) => p.startsWith("/terms"),
@@ -757,7 +763,9 @@ const escapeHtml = (value = "") =>
     .replace(/>/g, "&gt;");
 
 const replaceMetaTag = (html, regex, tag) =>
-  regex.test(html) ? html.replace(regex, tag) : html.replace("</head>", `${tag}\n</head>`);
+  regex.test(html)
+    ? html.replace(regex, tag)
+    : html.replace("</head>", `${tag}\n</head>`);
 
 const escapeInlineJson = (value) =>
   JSON.stringify(value)
@@ -779,7 +787,10 @@ const applySeoToHtml = (html, routePath) => {
   const isAliasRoute = normalizedRoute !== seo.canonicalPath;
   let next = html;
 
-  next = next.replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeHtml(seo.title)}</title>`);
+  next = next.replace(
+    /<title>[\s\S]*?<\/title>/i,
+    `<title>${escapeHtml(seo.title)}</title>`,
+  );
   next = replaceMetaTag(
     next,
     /<meta\s+name=["']robots["'][^>]*>/i,
@@ -862,7 +873,8 @@ export default defineConfig(async () => {
           },
         }),
         postProcess(renderedRoute) {
-          renderedRoute.route = renderedRoute.originalRoute || renderedRoute.route;
+          renderedRoute.route =
+            renderedRoute.originalRoute || renderedRoute.route;
           const routePath = renderedRoute.route || "/";
           let nextHtml = applySeoToHtml(renderedRoute.html || "", routePath);
           if (shouldInjectPreloadedPayload(routePath)) {

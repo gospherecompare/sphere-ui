@@ -4,6 +4,14 @@ import {
   FaArrowUp,
   FaCheck,
   FaChevronRight,
+  FaPlusSquare,
+  FaTimesCircle,
+  FaBalanceScale,
+  FaThumbsDown,
+  FaThumbsUp,
+  FaCheckDouble,
+  FaAdjust,
+  FaCheckCircle,
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
@@ -295,22 +303,23 @@ const buildExtendedInsights = (competitor) => {
 const insightMeta = (type) => {
   if (type === "advantage") {
     return {
-      Icon: FaArrowUp,
+      Icon: FaThumbsUp,
       iconClass: "text-emerald-600",
     };
   }
+
   if (type === "disadvantage") {
     return {
-      Icon: FaArrowDown,
+      Icon: FaThumbsDown,
       iconClass: "text-rose-600",
     };
   }
+
   return {
-    Icon: FaCheck,
-    iconClass: "text-slate-500",
+    Icon: FaCheckCircle,
+    iconClass: "text-purple-600",
   };
 };
-
 const SpecScoreBadge = ({ score }) => {
   const normalized = normalizeScore100(score);
   const value = normalized != null ? Number(normalized.toFixed(1)) : null;
@@ -319,7 +328,11 @@ const SpecScoreBadge = ({ score }) => {
   return (
     <div
       className="inline-flex flex-col rounded-sm border border-violet-200 bg-violet-50 px-1.5 py-1 text-violet-700"
-      aria-label={value != null ? `Spec score ${value.toFixed(1)} percent` : "Spec score unavailable"}
+      aria-label={
+        value != null
+          ? `Spec score ${value.toFixed(1)} percent`
+          : "Spec score unavailable"
+      }
     >
       <span className="text-[11px] font-extrabold leading-none">{label}</span>
       <span className="text-[8px] font-semibold leading-none mt-0.5">Spec</span>
@@ -391,7 +404,7 @@ const CompetitorCard = ({
     competitor?.best_store_name || competitor?.brand_name || "Hooks";
 
   return (
-    <article className="group rounded-md relative min-w-[212px] max-w-[254px] border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition">
+    <article className="group relative w-[240px] max-w-[260px] shrink-0 shadow-md border border-gray-50 bg-white rounded-sm transition">
       <div className="absolute left-2 top-2 z-10">
         <SpecScoreBadge score={score} />
       </div>
@@ -420,19 +433,16 @@ const CompetitorCard = ({
           <p className=" text-[16px] font-extrabold text-green-600">
             {formatPrice(competitor?.price)}
           </p>
-          <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-slate-500">
+          <p className="mt-1 line-clamp-2 text-[12px] leading-snug text-slate-600">
             {descriptor}
           </p>
         </div>
 
-        <div className="border-t border-slate-200 bg-white p-3">
+        <div className=" bg-white p-3">
           <div className="mb-2 flex items-center justify-between gap-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-600">
               Quick Comparison
             </p>
-            <span className="text-[10px] font-medium text-slate-400">
-              {insights.length} points
-            </span>
           </div>
 
           <ul className="space-y-1.5">
@@ -444,9 +454,9 @@ const CompetitorCard = ({
                   className="flex items-start gap-2 px-1 py-1"
                 >
                   <meta.Icon
-                    className={`mt-0.5 shrink-0 text-[10px] ${meta.iconClass}`}
+                    className={`mt-0.5 shrink-0 text-[12px] ${meta.iconClass}`}
                   />
-                  <span className="text-[12px] leading-snug text-slate-700">
+                  <span className="text-[12px] leading-snug  font-semibold text-slate-500">
                     {item.text}
                   </span>
                 </li>
@@ -469,7 +479,7 @@ const CompetitorCard = ({
           </button>
         </div>
 
-        <div className="mt-auto border-t border-slate-200 bg-white px-3 py-3 text-center">
+        <div className="mt-auto  bg-white px-3 py-3 text-center">
           <p className="truncate text-[12px] font-semibold text-slate-700">
             {baseProductName || `This ${productLabel}`}
           </p>
@@ -566,7 +576,9 @@ const CompetitorCards = ({
       setLoading(true);
       setError("");
       try {
-        const queryEntity = encodeURIComponent(String(entityType || "smartphones"));
+        const queryEntity = encodeURIComponent(
+          String(entityType || "smartphones"),
+        );
         const response = await fetch(
           `${API_BASE}/api/public/product/${encodeURIComponent(
             pid,
@@ -600,14 +612,41 @@ const CompetitorCards = ({
   const competitors = useMemo(() => {
     const raw = Array.isArray(payload?.competitors) ? payload.competitors : [];
     const fromApi = raw.filter((row) => Number(row?.id) > 0);
-    if (fromApi.length > 0) return fromApi;
-    return buildFallbackCompetitorRows({
+    const fallbackRows = buildFallbackCompetitorRows({
       productId,
       fallbackCompetitors,
       currentBrand,
       currentPrice,
     });
-  }, [payload, productId, fallbackCompetitors, currentBrand, currentPrice]);
+    const limit = Number.isFinite(Number(maxCards))
+      ? Math.max(1, Math.floor(Number(maxCards)))
+      : 6;
+
+    if (fromApi.length === 0) return fallbackRows;
+    if (fromApi.length >= limit || fallbackRows.length === 0) return fromApi;
+
+    const seen = new Set(
+      fromApi
+        .map((row) => Number(row?.id))
+        .filter((id) => Number.isFinite(id) && id > 0),
+    );
+    const merged = [...fromApi];
+    for (const row of fallbackRows) {
+      const rid = Number(row?.id);
+      if (Number.isFinite(rid) && rid > 0 && seen.has(rid)) continue;
+      merged.push(row);
+      if (Number.isFinite(rid) && rid > 0) seen.add(rid);
+      if (merged.length >= limit) break;
+    }
+    return merged;
+  }, [
+    payload,
+    productId,
+    fallbackCompetitors,
+    currentBrand,
+    currentPrice,
+    maxCards,
+  ]);
 
   const limitedCompetitors = useMemo(() => {
     const limit = Number.isFinite(Number(maxCards))
@@ -702,7 +741,10 @@ const CompetitorCards = ({
   const handleOpenRecentProduct = (item) => {
     const id = Number(item?.id);
     const slug = toSlug(item?.name);
-    const basePath = String(productBasePath || "/smartphones").replace(/\/$/, "");
+    const basePath = String(productBasePath || "/smartphones").replace(
+      /\/$/,
+      "",
+    );
     if (slug) {
       navigate(`${basePath}/${slug}`);
       return;

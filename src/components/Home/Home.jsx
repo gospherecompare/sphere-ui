@@ -1,6 +1,8 @@
 import React from "react";
 import useTitle from "../../hooks/useTitle";
 import BestPriceSection from "./BestPrice";
+import UpcomingSmartphones from "./UpcomingSmartphones";
+import RecommendedSmartphones from "./RecommendedSmartphones";
 import PopularComparisons from "./Brandshowcase";
 import FeaturedProduct from "./FeaturedProduct";
 import HeroSection from "./Herosection";
@@ -18,6 +20,8 @@ const Home = () => {
       <Brandofmonth />
       <FeaturedProduct />
       <PopularBrands />
+      <UpcomingSmartphones />
+      <RecommendedSmartphones />
       <BestPriceSection />
       <PopularComparisons />
     </div>

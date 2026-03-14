@@ -663,14 +663,15 @@ const TrendingSection = () => {
       <div className="mb-6 px-2">
         <div className="flex items-center gap-2 mb-2">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-            Top Trending{" "}
+            Top Picks{" "}
             <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent">
-              Smartphones & Gadgets
+              By Hooks
             </span>
           </h2>
         </div>
         <p className="text-sm text-gray-600">
-          Explore trending smartphones, laptops, TVs, and networking devices
+          Explore top smartphones, laptops, and TVs based on performance, price,
+          and trends.
         </p>
       </div>
 
@@ -738,19 +739,8 @@ const TrendingSection = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="text-left">
             <h3 className="text-lg font-semibold text-gray-900">
-              Trending Now
+              Popular Picks
             </h3>
-            <p className="text-gray-600 text-sm">
-              Can't decide?{" "}
-              <span className="font-semibold text-gray-900">
-                {activeCategory === "appliance"
-                  ? "Explore all TVs"
-                  : "Explore all smartphones"}
-              </span>
-            </p>
-            <p className="text-gray-400 text-xs mt-1">
-              Filter by brand, features, and more
-            </p>
           </div>
         </div>
       </div>

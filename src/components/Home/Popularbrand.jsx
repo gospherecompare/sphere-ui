@@ -268,7 +268,7 @@ const PopularBrands = () => {
                 >
                   {/* Icon Container */}
                   <div
-                    className={`w-10 h-10 lg:w-12 lg:h-12 flex items-center justify-center rounded-xl p-2 transition-all duration-300 mb-2 ${
+                    className={`w-10 h-10 lg:w-12 lg:h-12 flex items-center justify-center rounded-xl p-2 transition-all duration-300 mb-2 shadow-md ${
                       isActive
                         ? `bg-gradient-to-br ${brand.activeGradient} shadow-lg shadow-red-200/50`
                         : "bg-gray-100 group-hover:bg-gray-200 group-hover:shadow-md"
