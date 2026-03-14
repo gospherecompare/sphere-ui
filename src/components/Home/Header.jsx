@@ -96,7 +96,11 @@ import {
   FaAlignJustify,
   FaStream,
   FaTimes,
+<<<<<<< HEAD
   FaBalanceScale,
+=======
+  FaBriefcase,
+>>>>>>> 2d6d409b22f52ef486f573c9bb5a1996392d2f41
 } from "react-icons/fa";
 
 const Header = () => {
@@ -2179,6 +2183,12 @@ const Header = () => {
         label: "Privacy",
         link: "/privacy-policy",
         icon: <FaShieldAlt className="w-4 h-4" />,
+      },
+      {
+        label:"Career",
+        link:"/careers",
+        icon:<FaBriefcase className="w-4 h-4" />,
+    
       },
       {
         label: "Terms",
