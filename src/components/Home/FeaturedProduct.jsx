@@ -62,9 +62,9 @@ const priceRanges = [
     icon: "💎",
   },
   {
-    label: "Above ₹50,000",
+    label: "Above ₹60,000",
     value: "above",
-    slug: "above-50000",
+    slug: "above-60000",
     gradient: "from-blue-600 via-purple-500 to-blue-600",
     color: "bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600",
     icon: "👑",
