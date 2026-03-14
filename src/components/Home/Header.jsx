@@ -2159,6 +2159,12 @@ const Header = () => {
         icon: <FaShieldAlt className="w-4 h-4" />,
       },
       {
+        label:"Career",
+        link:"/careers",
+        icon:<FaBriefcase className="w-4 h-4" />,
+    
+      },
+      {
         label: "Terms",
         link: "/terms",
         icon: <FaAlignJustify className="w-4 h-4" />,
