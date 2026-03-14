@@ -97,6 +97,7 @@ import {
   FaAlignJustify,
   FaStream,
   FaTimes,
+  FaBriefcase,
 } from "react-icons/fa";
 
 const Header = () => {
