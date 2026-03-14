@@ -61,14 +61,7 @@ const priceRanges = [
     color: "bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600",
     icon: "💎",
   },
-  {
-    label: "Above ₹60,000",
-    value: "above",
-    slug: "above-60000",
-    gradient: "from-blue-600 via-purple-500 to-blue-600",
-    color: "bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600",
-    icon: "👑",
-  },
+
 ];
 
 const MobilePriceFinder = () => {
