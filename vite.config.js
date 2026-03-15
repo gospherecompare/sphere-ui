@@ -691,21 +691,27 @@ const resolveSeo = (routePath) => {
       title:
         smartphoneFilterSlug === "new"
           ? `Latest Smartphones ${CURRENT_YEAR} - New Launches & Prices | Hooks`
-          : `Best Smartphones ${smartphoneFilterMeta.label} in ${CURRENT_YEAR} - Reviews, Specs & Deals | Hooks`,
+          : `Best Smartphones ${smartphoneFilterMeta?.label} in ${CURRENT_YEAR} - Reviews, Specs & Deals | Hooks`,
       description:
         smartphoneFilterSlug === "new"
-          ? "Discover newly launched smartphones with updated prices, full specifications, and reviews. Stay updated with the latest mobile releases on Hook."
-          : `Explore the best smartphones ${smartphoneFilterMeta.label.toLowerCase()} with detailed specs, latest prices, reviews, and comparisons to choose the right phone for your budget.`,
+          ? "Discover newly launched smartphones with updated prices, full specifications, and reviews. Stay updated with the latest mobile releases on Hooks."
+          : `Explore the best smartphones ${String(
+              smartphoneFilterMeta?.label || "",
+            ).toLowerCase()} with detailed specs, latest prices, reviews, and comparisons to choose the right phone for your budget.`,
       keywords:
         smartphoneFilterSlug === "new"
           ? `latest smartphones ${CURRENT_YEAR}, new launch mobiles, upcoming phones india, smartphone releases`
-          : `smartphones ${smartphoneFilterMeta.label.toLowerCase()}, best smartphones ${smartphoneFilterMeta.label.toLowerCase()}, mobile price comparison india, compare smartphone specs, ${BUDGET_PHONE_KEYWORDS}`,
+          : `smartphones ${String(
+              smartphoneFilterMeta?.label || "",
+            ).toLowerCase()}, best smartphones ${String(
+              smartphoneFilterMeta?.label || "",
+            ).toLowerCase()}, mobile price comparison india, compare smartphone specs, ${BUDGET_PHONE_KEYWORDS}`,
     },
     {
       test: (p) => p.startsWith("/smartphones"),
       title: "Smartphones - Compare Prices, Specs & Variants | Hooks",
       description:
-        "Compare smartphones by price, RAM/ROM variants, camera, battery, and performance. Find trending and latest mobile launches on Hook.",
+        "Compare smartphones by price, RAM/ROM variants, camera, battery, and performance. Find trending and latest mobile launches on Hooks.",
       keywords: `smartphones, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch mobiles, trending phone in india, most popular mobiles, mobile price comparison india, moblie price comparison india, compare smartphone specs, compare smartphone prices, 5g phones in india, ai phone, ai budget phone, ${BUDGET_PHONE_KEYWORDS}`,
     },
     {

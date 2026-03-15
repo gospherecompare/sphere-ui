@@ -286,15 +286,21 @@ const resolveSeoMeta = (pathname) => {
       title:
         smartphoneFilterSlug === "new"
           ? `Latest Smartphones ${CURRENT_YEAR} - New Launches & Prices | Hooks`
-          : `Best Smartphones ${smartphoneFilterMeta.label} in ${CURRENT_YEAR} - Reviews, Specs & Deals | Hooks`,
+          : `Best Smartphones ${smartphoneFilterMeta?.label} in ${CURRENT_YEAR} - Reviews, Specs & Deals | Hooks`,
       description:
         smartphoneFilterSlug === "new"
           ? "Discover newly launched smartphones with updated prices, full specifications, and reviews. Stay updated with the latest mobile releases on Hooks."
-          : `Explore the best smartphones ${smartphoneFilterMeta.label.toLowerCase()} with detailed specs, latest prices, reviews, and comparisons to choose the right phone for your budget.`,
+          : `Explore the best smartphones ${String(
+              smartphoneFilterMeta?.label || "",
+            ).toLowerCase()} with detailed specs, latest prices, reviews, and comparisons to choose the right phone for your budget.`,
       keywords:
         smartphoneFilterSlug === "new"
           ? `latest smartphones ${CURRENT_YEAR}, new launch mobiles, upcoming phones india, smartphone releases`
-          : `smartphones ${smartphoneFilterMeta.label.toLowerCase()}, best smartphones ${smartphoneFilterMeta.label.toLowerCase()}, mobile price comparison india, compare smartphone specs, ${BUDGET_PHONE_KEYWORDS}`,
+          : `smartphones ${String(
+              smartphoneFilterMeta?.label || "",
+            ).toLowerCase()}, best smartphones ${String(
+              smartphoneFilterMeta?.label || "",
+            ).toLowerCase()}, mobile price comparison india, compare smartphone specs, ${BUDGET_PHONE_KEYWORDS}`,
     },
     {
       test: (p) => p.startsWith("/smartphones") || p === "/mobiles",
