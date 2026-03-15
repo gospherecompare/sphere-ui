@@ -23,8 +23,23 @@ export const generateSlug = (name) => {
  * @returns {string} - Complete URL path
  */
 export const createProductPath = (category, productName) => {
+  const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
+  const normalizedCategory = String(category || "")
+    .replace(/^\/+|\/+$/g, "")
+    .toLowerCase();
+  const isSmartphoneCategory =
+    normalizedCategory === "smartphones" ||
+    normalizedCategory === "smartphone" ||
+    normalizedCategory === "mobiles" ||
+    normalizedCategory === "mobile";
+  const baseCategory = normalizedCategory || "smartphones";
   const slug = generateSlug(productName);
-  return `/${category}/${slug}`;
+  if (!slug) return `/${baseCategory}`;
+  if (isSmartphoneCategory) {
+    const baseSlug = slug.replace(new RegExp(`${SMARTPHONE_SEO_SUFFIX}$`, "i"), "");
+    return `/smartphones/${baseSlug}${SMARTPHONE_SEO_SUFFIX}`;
+  }
+  return `/${baseCategory}/${slug}`;
 };
 
 /**

@@ -39,8 +39,21 @@ import Wishlist from "./components/Wishlist";
 import AccountManagement from "./components/AccountManagement";
 
 const SITE_ORIGIN = "https://tryhook.shop";
+const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/hook-logo.svg`;
 const CURRENT_YEAR = new Date().getFullYear();
 const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
+const SMARTPHONE_LIST_SLUGS = new Set(["upcoming"]);
+const SMARTPHONE_FILTER_SEO = {
+  "under-10000": { label: "Under ₹10,000" },
+  "under-15000": { label: "Under ₹15,000" },
+  "under-20000": { label: "Under ₹20,000" },
+  "under-25000": { label: "Under ₹25,000" },
+  "under-30000": { label: "Under ₹30,000" },
+  "under-40000": { label: "Under ₹40,000" },
+  "under-50000": { label: "Under ₹50,000" },
+  "above-50000": { label: "Above ₹50,000" },
+  new: { label: "Latest" },
+};
 const DEFAULT_SEO_DESCRIPTION =
   "Compare smartphones, laptops, TVs, and networking devices with specs, variants, pricing insights, and trend signals on Hooks.";
 const BUDGET_PHONE_KEYWORDS =
@@ -75,11 +88,23 @@ const ensureSmartphoneSeoDetailPath = (path = "") => {
   if (!path.startsWith("/smartphones/")) return path;
   const tail = path.slice("/smartphones/".length);
   if (!tail || tail.includes("/")) return path;
+  if (SMARTPHONE_LIST_SLUGS.has(tail.toLowerCase())) return path;
   const seoSlug = toSmartphoneSeoSlug(tail);
   return seoSlug ? `/smartphones/${seoSlug}` : path;
 };
 
 const toCanonicalPath = (path) => {
+  if (path === "/smartphones/upcoming") return "/smartphones/upcoming";
+  if (path.startsWith("/smartphones/filter/upcoming"))
+    return "/smartphones/upcoming";
+  if (path.startsWith("/products/smartphones/upcoming"))
+    return "/smartphones/upcoming";
+  if (path.startsWith("/devices/smartphones/upcoming"))
+    return "/smartphones/upcoming";
+  if (path.startsWith("/products/mobiles/upcoming"))
+    return "/smartphones/upcoming";
+  if (path.startsWith("/devices/mobiles/upcoming"))
+    return "/smartphones/upcoming";
   if (path === "/career") return "/careers";
   if (path === "/blog") return "/blogs";
   if (path.startsWith("/blog/")) {
@@ -190,14 +215,30 @@ const extractDetailSlugName = (path, prefix, normalizeTail) => {
 const resolveSeoMeta = (pathname) => {
   const path = normalizeSeoPath(pathname);
   const canonicalPath = toCanonicalPath(path);
-  const smartphoneDetailName = extractDetailSlugName(
-    canonicalPath,
-    "/smartphones/",
-    stripSmartphoneSeoSuffix,
-  );
+  const smartphoneDetailName = (() => {
+    const name = extractDetailSlugName(
+      canonicalPath,
+      "/smartphones/",
+      stripSmartphoneSeoSuffix,
+    );
+    const tail = canonicalPath.startsWith("/smartphones/")
+      ? canonicalPath.slice("/smartphones/".length)
+      : "";
+    if (SMARTPHONE_LIST_SLUGS.has(tail.toLowerCase())) return "";
+    return name;
+  })();
   const laptopDetailName = extractDetailSlugName(canonicalPath, "/laptops/");
   const tvDetailName = extractDetailSlugName(canonicalPath, "/tvs/");
   const blogDetailName = extractDetailSlugName(canonicalPath, "/blogs/");
+  const smartphoneFilterSlug = (() => {
+    const match = canonicalPath.match(/^\/smartphones\/filter\/([^/]+)$/i);
+    if (!match) return "";
+    return String(match[1] || "").toLowerCase();
+  })();
+  const smartphoneFilterMeta =
+    smartphoneFilterSlug && SMARTPHONE_FILTER_SEO[smartphoneFilterSlug]
+      ? SMARTPHONE_FILTER_SEO[smartphoneFilterSlug]
+      : null;
 
   const rules = [
     {
@@ -231,6 +272,29 @@ const resolveSeoMeta = (pathname) => {
       title: `${blogDetailName} | Hooks Blog`,
       description: `Read ${blogDetailName} and more product insights, specifications, and buying guidance on Hooks.`,
       keywords: `${blogDetailName.toLowerCase()}, hooks blog, gadget blog, product insights`,
+    },
+    {
+      test: (p) => p === "/smartphones/upcoming",
+      title: `Upcoming Smartphones ${CURRENT_YEAR} - Expected Launches & Preorders | Hooks`,
+      description:
+        "Track upcoming smartphones, expected launch timelines, and preorder-ready devices to plan your next upgrade.",
+      keywords:
+        `upcoming smartphones ${CURRENT_YEAR}, preorder phones, expected launch mobiles, new launch phones, smartphones launch calendar india`,
+    },
+    {
+      test: () => Boolean(smartphoneFilterMeta),
+      title:
+        smartphoneFilterSlug === "new"
+          ? `Latest Smartphones ${CURRENT_YEAR} - New Launches & Prices | Hooks`
+          : `Best Smartphones ${smartphoneFilterMeta.label} in ${CURRENT_YEAR} - Reviews, Specs & Deals | Hooks`,
+      description:
+        smartphoneFilterSlug === "new"
+          ? "Discover newly launched smartphones with updated prices, full specifications, and reviews. Stay updated with the latest mobile releases on Hooks."
+          : `Explore the best smartphones ${smartphoneFilterMeta.label.toLowerCase()} with detailed specs, latest prices, reviews, and comparisons to choose the right phone for your budget.`,
+      keywords:
+        smartphoneFilterSlug === "new"
+          ? `latest smartphones ${CURRENT_YEAR}, new launch mobiles, upcoming phones india, smartphone releases`
+          : `smartphones ${smartphoneFilterMeta.label.toLowerCase()}, best smartphones ${smartphoneFilterMeta.label.toLowerCase()}, mobile price comparison india, compare smartphone specs, ${BUDGET_PHONE_KEYWORDS}`,
     },
     {
       test: (p) => p.startsWith("/smartphones") || p === "/mobiles",
@@ -366,9 +430,11 @@ const RouteSeoFallback = () => {
       <meta property="og:title" content={seo.title} />
       <meta property="og:description" content={seo.description} />
       <meta property="og:url" content={canonicalUrl} />
+      <meta property="og:image" content={DEFAULT_OG_IMAGE} />
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={seo.title} />
       <meta name="twitter:description" content={seo.description} />
+      <meta name="twitter:image" content={DEFAULT_OG_IMAGE} />
     </Helmet>
   );
 };

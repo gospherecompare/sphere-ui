@@ -1,7 +1,7 @@
 // src/components/Home/UpcomingSmartphones.jsx
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { generateSlug } from "../../utils/slugGenerator";
+import { createProductPath } from "../../utils/slugGenerator";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
 import { FaMobileAlt } from "react-icons/fa";
 
@@ -362,14 +362,17 @@ const UpcomingSmartphones = () => {
     };
   }, []);
 
-  const handleDeviceClick = (device) => {
-    const basePath = "/smartphones";
+  const getDevicePath = (device) => {
     const rawName = device.name || String(device.id || "device");
-    const slug = generateSlug(rawName || String(device.id || "device"));
+    const basePath = createProductPath("smartphones", rawName);
     const params = new URLSearchParams();
     if (device.id) params.set("id", String(device.id));
     const qs = params.toString();
-    navigate(`${basePath}/${slug}${qs ? `?${qs}` : ""}`);
+    return `${basePath}${qs ? `?${qs}` : ""}`;
+  };
+
+  const handleDeviceClick = (device) => {
+    navigate(getDevicePath(device));
   };
 
   return (
@@ -469,7 +472,13 @@ const UpcomingSmartphones = () => {
                     {/* Info */}
                     <div className="flex-1 min-w-0 text-left">
                       <h6 className="mt-1 text-sm sm:text-base font-semibold text-gray-900 leading-snug line-clamp-2 group-hover:text-purple-600 transition-colors duration-200">
-                        {device.name}
+                        <Link
+                          to={getDevicePath(device)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex"
+                        >
+                          {device.name}
+                        </Link>
                       </h6>
                       {device.launchLabel || device.launchStatus ? (
                         <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-gray-500">

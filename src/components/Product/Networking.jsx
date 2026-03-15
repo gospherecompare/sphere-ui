@@ -930,29 +930,108 @@ const Networking = () => {
     return <IconComponent className="text-sm" />;
   };
 
+  const seoTitle = currentBrandObj
+    ? `${currentBrandObj.name} Networking Devices - SmartArena`
+    : "Networking Devices - SmartArena";
+  const seoDescription =
+    currentBrandObj?.description ||
+    "Discover routers, modems, switches, mesh systems and extenders on SmartArena.";
+
+  const siteOrigin =
+    typeof window !== "undefined" && window.location?.origin
+      ? window.location.origin
+      : "https://tryhook.shop";
+
+  const toAbsoluteUrl = (value) => {
+    if (!value) return "";
+    if (/^(https?:|data:|blob:)/i.test(value)) return value;
+    if (String(value).startsWith("//")) return `https:${value}`;
+    return String(value).startsWith("/")
+      ? `${siteOrigin}${value}`
+      : `${siteOrigin}/${value}`;
+  };
+
+  const listOgImage = useMemo(() => {
+    const firstWithImage = sortedVariants.find((device) =>
+      Array.isArray(device?.images) ? device.images.find(Boolean) : false,
+    );
+    const raw =
+      firstWithImage?.images?.find(Boolean) ||
+      firstWithImage?.image ||
+      "";
+    return toAbsoluteUrl(raw);
+  }, [sortedVariants, siteOrigin]);
+
+  const itemListJsonLd = useMemo(() => {
+    if (!sortedVariants?.length) return null;
+    const items = sortedVariants
+      .slice(0, 24)
+      .map((device, index) => {
+        const name = device?.name || device?.model || "";
+        if (!name) return null;
+        const slug = generateSlug(
+          device?.model || device?.name || device?.id || "",
+        );
+        if (!slug) return null;
+        const url = `${siteOrigin}/networking/${slug}`;
+        const image = toAbsoluteUrl(
+          device?.images?.find(Boolean) || device?.image || "",
+        );
+        const item = {
+          "@type": "Product",
+          name,
+          url,
+        };
+        if (image) item.image = image;
+        if (device?.brand) {
+          item.brand = { "@type": "Brand", name: device.brand };
+        }
+        return {
+          "@type": "ListItem",
+          position: index + 1,
+          item,
+        };
+      })
+      .filter(Boolean);
+    if (!items.length) return null;
+    return JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      name: seoTitle,
+      itemListOrder: "https://schema.org/ItemListOrderAscending",
+      numberOfItems: items.length,
+      itemListElement: items,
+    });
+  }, [sortedVariants, siteOrigin, seoTitle]);
+
   return (
     <div className="min-h-screen ">
       <style>{animationStyles}</style>
-      {currentBrandObj ? (
-        <Helmet>
-          <title>{`${currentBrandObj.name} Networking Devices - SmartArena`}</title>
+      <Helmet>
+        <title>{seoTitle}</title>
+        <meta name="description" content={seoDescription} />
+        <meta property="og:title" content={seoTitle} />
+        <meta property="og:description" content={seoDescription} />
+        {listOgImage ? (
           <meta
-            name="description"
-            content={
-              currentBrandObj.description ||
-              `Explore ${currentBrandObj.name} networking devices, routers, modems and mesh systems on SmartArena.`
-            }
+            key="networking-og-image"
+            property="og:image"
+            content={listOgImage}
           />
-        </Helmet>
-      ) : (
-        <Helmet>
-          <title>Networking Devices - SmartArena</title>
+        ) : null}
+        <meta name="twitter:title" content={seoTitle} />
+        <meta name="twitter:description" content={seoDescription} />
+        {listOgImage ? (
           <meta
-            name="description"
-            content={`Discover routers, modems, switches, mesh systems and extenders on SmartArena.`}
+            key="networking-twitter-image"
+            name="twitter:image"
+            content={listOgImage}
           />
-        </Helmet>
-      )}
+        ) : null}
+        {itemListJsonLd ? (
+          <script type="application/ld+json">{itemListJsonLd}</script>
+        ) : null}
+      </Helmet>
       {/* Main Content */}
       <div className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8 lg:p-10 bg-white">
         {/* Hero Section - Professional Styling */}

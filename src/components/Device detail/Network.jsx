@@ -1,5 +1,5 @@
 // src/components/NetworkingDetailCard.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import useDevice from "../../hooks/useDevice";
 import Cookies from "js-cookie";
@@ -1374,32 +1374,112 @@ const NetworkingDetailCard = () => {
     );
   }
 
+  const metaTitle = networkingMeta.title({
+    name: deviceData?.name || deviceData?.model || "",
+    deviceType:
+      deviceData?.device_type ||
+      deviceData?.deviceType ||
+      deviceData?.product_type ||
+      "",
+  });
+  const metaDescription = networkingMeta.description({
+    name: deviceData?.name || deviceData?.model || "",
+    deviceType:
+      deviceData?.device_type ||
+      deviceData?.deviceType ||
+      deviceData?.product_type ||
+      "",
+    brand: deviceData?.brand || deviceData?.brand_name || "",
+  });
+  const canonicalUrl = getCanonicalUrl();
+  const metaImage = deviceData?.images?.[0] || deviceData?.image || null;
+  const toAbsoluteUrl = (url) => {
+    if (!url) return "";
+    if (/^https?:\/\//i.test(url)) return url;
+    if (typeof window === "undefined") return url;
+    const origin = window.location.origin;
+    if (!origin) return url;
+    return url.startsWith("/") ? `${origin}${url}` : `${origin}/${url}`;
+  };
+  const ogImage = toAbsoluteUrl(metaImage);
+  const extractNumericPrice = (value) => {
+    if (value == null) return null;
+    const cleaned = String(value).replace(/[^0-9]/g, "");
+    if (!cleaned) return null;
+    const num = parseInt(cleaned, 10);
+    return Number.isFinite(num) && num > 0 ? num : null;
+  };
+  const productJsonLd = useMemo(() => {
+    if (!deviceData) return null;
+    const name = metaTitle || deviceData?.name || deviceData?.model || "Device";
+    const url =
+      canonicalUrl ||
+      (typeof window !== "undefined" ? window.location.href : "");
+    const brandName =
+      deviceData?.brand || deviceData?.brand_name || deviceData?.manufacturer;
+    const imageCandidates = [
+      metaImage,
+      ...(Array.isArray(deviceData?.images) ? deviceData.images : []),
+    ]
+      .filter(Boolean)
+      .map(toAbsoluteUrl)
+      .filter(Boolean);
+    const images = Array.from(new Set(imageCandidates));
+    const priceValue = extractNumericPrice(
+      deviceData?.price ??
+        deviceData?.base_price ??
+        deviceData?.variants?.[0]?.base_price ??
+        null,
+    );
+    const offers =
+      priceValue != null
+        ? {
+            "@type": "Offer",
+            priceCurrency: "INR",
+            price: priceValue,
+            availability: "https://schema.org/InStock",
+            url,
+            itemCondition: "https://schema.org/NewCondition",
+          }
+        : null;
+    const schema = {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name,
+      description: metaDescription,
+      url,
+    };
+    if (images.length) schema.image = images;
+    if (brandName) schema.brand = { "@type": "Brand", name: brandName };
+    const sku =
+      deviceData?.model || deviceData?.id || deviceData?.product_id || null;
+    if (sku) schema.sku = String(sku);
+    if (offers) schema.offers = offers;
+    return JSON.stringify(schema);
+  }, [deviceData, metaTitle, metaDescription, canonicalUrl, metaImage]);
+
   return (
     <div className="max-w-8xl mx-auto bg-white">
       {/* SEO Helmet */}
       <Helmet>
-        <title>
-          {networkingMeta.title({
-            name: deviceData?.name || deviceData?.model || "",
-            deviceType:
-              deviceData?.device_type ||
-              deviceData?.deviceType ||
-              deviceData?.product_type ||
-              "",
-          })}
-        </title>
+        <title>{metaTitle}</title>
+        <meta name="description" content={metaDescription} />
+        {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+        <meta property="og:type" content="product" />
+        <meta property="og:title" content={metaTitle} />
+        <meta property="og:description" content={metaDescription} />
+        {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
+        {ogImage && <meta property="og:image" content={ogImage} />}
         <meta
-          name="description"
-          content={networkingMeta.description({
-            name: deviceData?.name || deviceData?.model || "",
-            deviceType:
-              deviceData?.device_type ||
-              deviceData?.deviceType ||
-              deviceData?.product_type ||
-              "",
-            brand: deviceData?.brand || deviceData?.brand_name || "",
-          })}
+          name="twitter:card"
+          content={ogImage ? "summary_large_image" : "summary"}
         />
+        <meta name="twitter:title" content={metaTitle} />
+        <meta name="twitter:description" content={metaDescription} />
+        {ogImage && <meta name="twitter:image" content={ogImage} />}
+        {productJsonLd ? (
+          <script type="application/ld+json">{productJsonLd}</script>
+        ) : null}
       </Helmet>
       {/* Share Menu Modal */}
       {showShareMenu && (

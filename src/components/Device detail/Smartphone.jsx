@@ -3394,6 +3394,79 @@ Price: ${price}
     ? mobileData.images[0]
     : null;
   const ogImage = toAbsoluteUrl(primaryImage);
+  const extractNumericPrice = (value) => {
+    if (value == null) return null;
+    const cleaned = String(value).replace(/[^0-9]/g, "");
+    if (!cleaned) return null;
+    const num = parseInt(cleaned, 10);
+    return Number.isFinite(num) && num > 0 ? num : null;
+  };
+  const productJsonLd = useMemo(() => {
+    if (!mobileData) return null;
+    const name = metaTitle || mobileData?.name || mobileData?.model || "";
+    if (!name) return null;
+    const url =
+      canonicalUrl ||
+      (typeof window !== "undefined" ? window.location.href : "");
+    const brandName =
+      mobileData?.brand ||
+      mobileData?.brand_name ||
+      mobileData?.manufacturer ||
+      "";
+    const imageCandidates = [
+      primaryImage,
+      ...(Array.isArray(mobileData?.images) ? mobileData.images : []),
+      mobileData?.image,
+      mobileData?.image_url,
+    ]
+      .filter(Boolean)
+      .map(toAbsoluteUrl)
+      .filter(Boolean);
+    const images = Array.from(new Set(imageCandidates));
+    const priceValue = extractNumericPrice(
+      currentVariant?.base_price ??
+        mobileData?.price ??
+        mobileData?.base_price ??
+        null,
+    );
+    const availability =
+      launchStatus === "preorder" || launchStatus === "upcoming"
+        ? "https://schema.org/PreOrder"
+        : "https://schema.org/InStock";
+    const offers =
+      priceValue != null
+        ? {
+            "@type": "Offer",
+            priceCurrency: "INR",
+            price: priceValue,
+            availability,
+            url,
+            itemCondition: "https://schema.org/NewCondition",
+          }
+        : null;
+    const schema = {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name,
+      description: metaDescription,
+      url,
+    };
+    if (images.length) schema.image = images;
+    if (brandName) schema.brand = { "@type": "Brand", name: brandName };
+    const sku =
+      mobileData?.model || mobileData?.id || mobileData?.product_id || null;
+    if (sku) schema.sku = String(sku);
+    if (offers) schema.offers = offers;
+    return JSON.stringify(schema);
+  }, [
+    mobileData,
+    metaTitle,
+    metaDescription,
+    canonicalUrl,
+    currentVariant,
+    launchStatus,
+    primaryImage,
+  ]);
   const infoOsSummary =
     mobileData?.performance?.operating_system ||
     mobileData?.performance?.os ||
@@ -3652,6 +3725,9 @@ Price: ${price}
         <meta name="twitter:title" content={metaTitle} />
         <meta name="twitter:description" content={metaDescription} />
         {ogImage && <meta name="twitter:image" content={ogImage} />}
+        {productJsonLd ? (
+          <script type="application/ld+json">{productJsonLd}</script>
+        ) : null}
       </Helmet>
       {isSharedLink && (
         <div className="max-w-4xl mx-auto px-4">

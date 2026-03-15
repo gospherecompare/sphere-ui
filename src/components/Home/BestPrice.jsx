@@ -1,7 +1,7 @@
 // src/components/TrendingSection.jsx
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { generateSlug } from "../../utils/slugGenerator";
+import { Link, useNavigate } from "react-router-dom";
+import { createProductPath } from "../../utils/slugGenerator";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
 import {
   FaFire,
@@ -616,22 +616,26 @@ const TrendingSection = () => {
     };
   }, [activeCategory]);
 
-  const handleDeviceClick = (device) => {
+  const getDevicePath = (device) => {
     const routeMap = {
-      smartphone: "/smartphones",
-      laptop: "/laptops",
-      appliance: "/tvs",
-      networking: "/networking",
+      smartphone: "smartphones",
+      laptop: "laptops",
+      appliance: "tvs",
+      networking: "networking",
     };
-    const basePath = routeMap[activeCategory] || "/smartphones";
+    const category = routeMap[activeCategory] || "smartphones";
     const rawName =
       device.name || device.model || device.product_name || device.brand || "";
-    const slug = generateSlug(rawName || String(device.id || "device"));
+    const basePath = createProductPath(category, rawName);
     const params = new URLSearchParams();
     if (device.id) params.set("id", String(device.id));
     if (device.variantId) params.set("variantId", String(device.variantId));
     const qs = params.toString();
-    navigate(`${basePath}/${slug}${qs ? `?${qs}` : ""}`);
+    return `${basePath}${qs ? `?${qs}` : ""}`;
+  };
+
+  const handleDeviceClick = (device) => {
+    navigate(getDevicePath(device));
   };
 
   const handleViewAll = () => {
@@ -782,8 +786,8 @@ const TrendingSection = () => {
                       <div className="absolute left-1 top-1 z-10 pointer-events-none">
                         <TrendSpecScoreBadge score={device.score} />
                       </div>
-                      <div className="mx-auto h-28 sm:h-32 w-28 rounded-md shadow-md border border-gray-100 overflow-hidden bg-gray-100 flex items-center justify-center">
-                        {device.image ? (
+                    <div className="mx-auto h-28 sm:h-32 w-28 rounded-md shadow-md border border-gray-100 overflow-hidden bg-gray-100 flex items-center justify-center">
+                      {device.image ? (
                           <img
                             src={device.image}
                             alt={device.name}
@@ -816,7 +820,13 @@ const TrendingSection = () => {
                         className={`mt-1 text-sm sm:text-base font-semibold text-gray-900 leading-snug line-clamp-2 group-hover:text-purple-600 transition-colors duration-200 
                             `}
                       >
-                        {device.name}
+                        <Link
+                          to={getDevicePath(device)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex"
+                        >
+                          {device.name}
+                        </Link>
                       </h6>
 
                       {/* Price */}

@@ -2732,6 +2732,80 @@ const TVDetailCard = () => {
   });
   const canonicalUrl = getCanonicalUrl();
   const metaImage = applianceData?.images?.[0] || null;
+  const toAbsoluteUrl = (url) => {
+    if (!url) return "";
+    if (/^https?:\/\//i.test(url)) return url;
+    if (typeof window === "undefined") return url;
+    const origin = window.location.origin;
+    if (!origin) return url;
+    return url.startsWith("/") ? `${origin}${url}` : `${origin}/${url}`;
+  };
+  const ogImage = toAbsoluteUrl(metaImage);
+  const extractNumericPrice = (value) => {
+    if (value == null) return null;
+    const cleaned = String(value).replace(/[^0-9]/g, "");
+    if (!cleaned) return null;
+    const num = parseInt(cleaned, 10);
+    return Number.isFinite(num) && num > 0 ? num : null;
+  };
+  const productJsonLd = useMemo(() => {
+    if (!applianceData) return null;
+    const name = metaTitle || metaName || "TV";
+    const url =
+      canonicalUrl ||
+      (typeof window !== "undefined" ? window.location.href : "");
+    const brandName =
+      applianceData?.brand || applianceData?.brand_name || metaBrand || "";
+    const imageCandidates = [
+      metaImage,
+      ...(Array.isArray(applianceData?.images) ? applianceData.images : []),
+    ]
+      .filter(Boolean)
+      .map(toAbsoluteUrl)
+      .filter(Boolean);
+    const images = Array.from(new Set(imageCandidates));
+    const priceValue = extractNumericPrice(
+      applianceData?.price ??
+        applianceData?.base_price ??
+        applianceData?.variants?.[0]?.base_price ??
+        null,
+    );
+    const offers =
+      priceValue != null
+        ? {
+            "@type": "Offer",
+            priceCurrency: "INR",
+            price: priceValue,
+            availability: "https://schema.org/InStock",
+            url,
+            itemCondition: "https://schema.org/NewCondition",
+          }
+        : null;
+    const schema = {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name,
+      description: metaDescription,
+      url,
+    };
+    if (images.length) schema.image = images;
+    if (brandName) schema.brand = { "@type": "Brand", name: brandName };
+    const sku =
+      applianceData?.model ||
+      applianceData?.id ||
+      applianceData?.product_id ||
+      null;
+    if (sku) schema.sku = String(sku);
+    if (offers) schema.offers = offers;
+    return JSON.stringify(schema);
+  }, [
+    applianceData,
+    metaTitle,
+    metaDescription,
+    canonicalUrl,
+    metaImage,
+    metaBrand,
+  ]);
 
   return (
     <div className="px-2 lg:px-4 mx-auto max-w-4xl w-full bg-white">
@@ -2743,14 +2817,17 @@ const TVDetailCard = () => {
         <meta property="og:title" content={metaTitle} />
         <meta property="og:description" content={metaDescription} />
         {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
-        {metaImage && <meta property="og:image" content={metaImage} />}
+        {ogImage && <meta property="og:image" content={ogImage} />}
         <meta
           name="twitter:card"
-          content={metaImage ? "summary_large_image" : "summary"}
+          content={ogImage ? "summary_large_image" : "summary"}
         />
         <meta name="twitter:title" content={metaTitle} />
         <meta name="twitter:description" content={metaDescription} />
-        {metaImage && <meta name="twitter:image" content={metaImage} />}
+        {ogImage && <meta name="twitter:image" content={ogImage} />}
+        {productJsonLd ? (
+          <script type="application/ld+json">{productJsonLd}</script>
+        ) : null}
       </Helmet>
       {/* Share Menu Modal */}
       {showShareMenu && (

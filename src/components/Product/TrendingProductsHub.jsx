@@ -1228,8 +1228,12 @@ const TrendingProductsHub = () => {
     const params = new URLSearchParams();
     if (p.id != null) params.set("id", String(p.id));
     if (p.variantId != null) params.set("variantId", String(p.variantId));
+    const isSmartphone = p.detailPath === "/smartphones";
+    const detailPath = isSmartphone
+      ? `/smartphones/${slug}-price-in-india`
+      : `${p.detailPath}/${slug}`;
     navigate(
-      `${p.detailPath}/${slug}${params.toString() ? `?${params.toString()}` : ""}`,
+      `${detailPath}${params.toString() ? `?${params.toString()}` : ""}`,
     );
   };
 

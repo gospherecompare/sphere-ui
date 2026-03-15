@@ -1761,31 +1761,31 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     return text.length > 180 ? `${text.slice(0, 177)}...` : text;
   };
 
-  let seoTitle = `Smartphones ${currentYear} - Specs, Prices & Reviews | Hooksss`;
+  let seoTitle = `Smartphones ${currentYear} - Specs, Prices & Reviews | Hooks`;
   let seoDescription = sanitizeDescription(
-    "Browse the latest smartphones with detailed specs, prices, reviews, and comparisons on Hooksss.",
+    "Browse the latest smartphones with detailed specs, prices, reviews, and comparisons on Hooks.",
   );
 
   if (isUpcomingView) {
-    seoTitle = `Upcoming Smartphones ${currentYear} - Expected Launches & Preorders | Hooksss`;
+    seoTitle = `Upcoming Smartphones ${currentYear} - Expected Launches & Preorders | Hooks`;
     seoDescription =
       "Track upcoming smartphones, expected launch timelines, and preorder-ready devices to plan your next upgrade.";
   } else if (isSingleSmartphonePath) {
-    seoTitle = `Smartphones ${currentYear} - Compare Specs, Prices & Reviews | Hooksss`;
+    seoTitle = `Smartphones ${currentYear} - Compare Specs, Prices & Reviews | Hooks`;
     seoDescription =
-      "Compare the latest smartphones on Hooksss. Explore detailed specifications, prices, reviews, and side-by-side comparisons before you buy.";
+      "Compare the latest smartphones on Hooks. Explore detailed specifications, prices, reviews, and side-by-side comparisons before you buy.";
   } else if (isNewFilterPath) {
-    seoTitle = `Latest Smartphones ${currentYear} - New Launches & Prices | Hooksss`;
+    seoTitle = `Latest Smartphones ${currentYear} - New Launches & Prices | Hooks`;
     seoDescription =
-      "Discover newly launched smartphones with updated prices, full specifications, and reviews. Stay updated with the latest mobile releases on Hooksss.";
+      "Discover newly launched smartphones with updated prices, full specifications, and reviews. Stay updated with the latest mobile releases on Hooks.";
   } else if (priceFilter) {
-    seoTitle = `Best Smartphones ${priceFilter.label} in ${currentYear} - Reviews, Specs & Deals | Hooksss`;
+    seoTitle = `Best Smartphones ${priceFilter.label} in ${currentYear} - Reviews, Specs & Deals | Hooks`;
     seoDescription = `Explore the best smartphones ${priceFilter.label.toLowerCase()} with detailed specs, latest prices, reviews, and comparisons to choose the right phone for your budget.`;
   } else if (currentBrandObj) {
-    seoTitle = `${currentBrandObj.name} Smartphones ${currentYear} - Models, Prices & Specs | Hooksss`;
+    seoTitle = `${currentBrandObj.name} Smartphones ${currentYear} - Models, Prices & Specs | Hooks`;
     seoDescription = sanitizeDescription(
       currentBrandObj.description ||
-        `Explore ${currentBrandObj.name} smartphones on Hooksss. Compare models, check prices, specifications, reviews, and find the best phone for your needs.`,
+        `Explore ${currentBrandObj.name} smartphones on Hooks. Compare models, check prices, specifications, reviews, and find the best phone for your needs.`,
     );
   }
 
@@ -1810,7 +1810,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     ? "Track devices expected to launch soon, compare early specs, and bookmark upcoming releases."
     : "Discover detailed specifications, compare models, and find the best deals on the latest smartphones. Use our advanced filters to narrow down your search from our curated collection of premium devices.";
 
-  // Defer render check until after all Hooksss are declared to keep Hookss order stable
+  // Defer render check until after all Hooks are declared to keep Hooks order stable
   const noDataAndNotLoading =
     (!smartphonesForList ||
       (Array.isArray(smartphonesForList) && smartphonesForList.length === 0)) &&
@@ -3108,6 +3108,74 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     navigate(`/smartphones${next ? `?${next}` : ""}`);
   };
 
+  const siteOrigin =
+    typeof window !== "undefined" && window.location?.origin
+      ? window.location.origin
+      : "https://tryhook.shop";
+
+  const toAbsoluteUrl = (value) => {
+    const raw = normalizeAssetUrl(value);
+    if (!raw) return "";
+    if (/^(https?:|data:|blob:)/i.test(raw)) return raw;
+    if (raw.startsWith("//")) return `https:${raw}`;
+    return raw.startsWith("/") ? `${siteOrigin}${raw}` : `${siteOrigin}/${raw}`;
+  };
+
+  const listOgImage = useMemo(() => {
+    const firstWithImage = sortedVariants.find((device) =>
+      Array.isArray(device?.images) ? device.images.find(Boolean) : false,
+    );
+    const raw =
+      firstWithImage?.images?.find(Boolean) ||
+      firstWithImage?.image ||
+      "";
+    const abs = toAbsoluteUrl(raw);
+    return abs || "";
+  }, [sortedVariants, siteOrigin]);
+
+  const itemListJsonLd = useMemo(() => {
+    if (!sortedVariants?.length) return null;
+    const items = sortedVariants
+      .slice(0, 24)
+      .map((device, index) => {
+        const name = device?.name || device?.model || "";
+        if (!name) return null;
+        const slug = generateSlug(
+          device?.model || device?.name || device?.id || "",
+        );
+        if (!slug) return null;
+        const url = `${siteOrigin}/smartphones/${slug}-price-in-india`;
+        const image = toAbsoluteUrl(
+          device?.images?.find(Boolean) || device?.image || "",
+        );
+        const item = {
+          "@type": "Product",
+          name,
+          url,
+        };
+        if (image) item.image = image;
+        if (device?.brand) {
+          item.brand = { "@type": "Brand", name: device.brand };
+        }
+        return {
+          "@type": "ListItem",
+          position: index + 1,
+          item,
+        };
+      })
+      .filter(Boolean);
+
+    if (!items.length) return null;
+    return JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      name: seoTitle,
+      itemListOrder: "https://schema.org/ItemListOrderAscending",
+      numberOfItems: items.length,
+      itemListElement: items,
+    });
+  }, [sortedVariants, siteOrigin, seoTitle]);
+
   return (
     <div className="min-h-screen  ">
       <style>{animationStyles}</style>
@@ -3116,8 +3184,25 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         <meta name="description" content={seoDescription} />
         <meta property="og:title" content={seoTitle} />
         <meta property="og:description" content={seoDescription} />
+        {listOgImage ? (
+          <meta
+            key="smartphones-og-image"
+            property="og:image"
+            content={listOgImage}
+          />
+        ) : null}
         <meta name="twitter:title" content={seoTitle} />
         <meta name="twitter:description" content={seoDescription} />
+        {listOgImage ? (
+          <meta
+            key="smartphones-twitter-image"
+            name="twitter:image"
+            content={listOgImage}
+          />
+        ) : null}
+        {itemListJsonLd ? (
+          <script type="application/ld+json">{itemListJsonLd}</script>
+        ) : null}
       </Helmet>
       {/* Page Header with Descriptive Content */}
 
