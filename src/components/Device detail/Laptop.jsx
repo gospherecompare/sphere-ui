@@ -2098,7 +2098,7 @@ const LaptopDetailCard = () => {
     const num = parseInt(cleaned, 10);
     return Number.isFinite(num) && num > 0 ? num : null;
   };
-  const productJsonLd = useMemo(() => {
+  const productJsonLd = (() => {
     if (!laptopData) return null;
     const name = metaTitle || metaNameWithBrand || "Laptop";
     const url =
@@ -2145,14 +2145,7 @@ const LaptopDetailCard = () => {
     if (sku) schema.sku = String(sku);
     if (offers) schema.offers = offers;
     return JSON.stringify(schema);
-  }, [
-    laptopData,
-    metaTitle,
-    metaDescription,
-    canonicalUrl,
-    metaImage,
-    metaBrand,
-  ]);
+  })();
 
   return (
     <div className="px-2 lg:px-4 mx-auto max-w-4xl w-full bg-white">

@@ -1,5 +1,5 @@
 // src/components/NetworkingDetailCard.jsx
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import useDevice from "../../hooks/useDevice";
 import Cookies from "js-cookie";
@@ -1409,7 +1409,7 @@ const NetworkingDetailCard = () => {
     const num = parseInt(cleaned, 10);
     return Number.isFinite(num) && num > 0 ? num : null;
   };
-  const productJsonLd = useMemo(() => {
+  const productJsonLd = (() => {
     if (!deviceData) return null;
     const name = metaTitle || deviceData?.name || deviceData?.model || "Device";
     const url =
@@ -1456,7 +1456,7 @@ const NetworkingDetailCard = () => {
     if (sku) schema.sku = String(sku);
     if (offers) schema.offers = offers;
     return JSON.stringify(schema);
-  }, [deviceData, metaTitle, metaDescription, canonicalUrl, metaImage]);
+  })();
 
   return (
     <div className="max-w-8xl mx-auto bg-white">

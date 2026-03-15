@@ -3063,8 +3063,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
   // Expand/collapse removed: details are always shown by default.
 
-  if (noDataAndNotLoading) return null;
-
   const trackFeatureClick = (featureId) => {
     try {
       const url = "https://api.apisphere.in/api/public/feature-click";
@@ -3175,6 +3173,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       itemListElement: items,
     });
   }, [sortedVariants, siteOrigin, seoTitle]);
+
+  if (noDataAndNotLoading) return null;
 
   return (
     <div className="min-h-screen  ">
