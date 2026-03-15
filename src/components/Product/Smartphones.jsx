@@ -27,6 +27,7 @@ import {
   FaChevronRight,
   FaExternalLinkAlt,
   FaExchangeAlt,
+  FaPlus,
 } from "react-icons/fa";
 import { useDevice } from "../../hooks/useDevice";
 import {
@@ -125,7 +126,7 @@ const ImageCarousel = ({ images = [] }) => {
                   className={`h-1.5 rounded-full transition-all duration-200 ${
                     currentIndex === index
                       ? "w-5 bg-violet-500"
-                      : "w-1.5 bg-slate-500/70"
+                      : "w-1.5 bg-gray-300 hover:bg-gray-400"
                   }`}
                 />
               ))}
@@ -177,7 +178,7 @@ const CircularScoreBadge = ({ score, size = 62 }) => {
 
 const API_ASSET_ORIGIN = "https://api.apisphere.in";
 
-const Smartphones = () => {
+const Smartphones = ({ onlyUpcoming = false } = {}) => {
   // Add animation styles
   const animationStyles = `
     @keyframes slideUp {
@@ -199,8 +200,16 @@ const Smartphones = () => {
   const deviceFieldProfiles = useDeviceFieldProfiles();
   const { smartphone, smartphoneAll } = deviceContext || {};
   const [params] = useSearchParams();
+  const { filterSlug } = useParams();
   const filter = params.get("filter");
   const feature = params.get("feature");
+  const normalizedFilterSlug = String(filterSlug || "")
+    .trim()
+    .toLowerCase();
+  const isUpcomingView =
+    Boolean(onlyUpcoming) ||
+    normalizedFilterSlug === "upcoming" ||
+    String(filter || "").toLowerCase() === "upcoming";
   const normalizedFeature = feature
     ? feature.toString().toLowerCase().replace(/\s+/g, "-")
     : null;
@@ -329,6 +338,18 @@ const Smartphones = () => {
     return Number.isNaN(parsed.getTime()) ? null : parsed;
   };
 
+  const normalizeLaunchStatus = (value) => {
+    if (!value) return null;
+    const text = String(value).trim().toLowerCase();
+    if (!text) return null;
+    if (/(pre[-\s]?order|pre[-\s]?book)/i.test(text)) return "preorder";
+    if (/(upcoming|coming soon|expected|launching soon|rumored)/i.test(text))
+      return "upcoming";
+    if (/(released|available|launched|out now|on sale)/i.test(text))
+      return "released";
+    return null;
+  };
+
   const normalizeStoreKey = (value) =>
     String(value || "")
       .toLowerCase()
@@ -381,6 +402,72 @@ const Smartphones = () => {
     if (launch && launch > new Date()) return true;
 
     return false;
+  };
+
+  const hasSaleStartDate = (device) => {
+    if (!device) return false;
+    if (device.saleStartDate && String(device.saleStartDate).trim())
+      return true;
+    const storePrices = Array.isArray(device.storePrices)
+      ? device.storePrices
+      : [];
+    return storePrices.some((sp) =>
+      Boolean(
+        sp?.sale_start_date ||
+        sp?.saleStartDate ||
+        sp?.sale_date ||
+        sp?.saleDate,
+      ),
+    );
+  };
+
+  const isUpcomingDevice = (device) => {
+    if (!device) return false;
+    if (hasSaleStartDate(device)) return false;
+
+    const status = normalizeLaunchStatus(device.launchStatusOverride);
+    if (status) return status !== "released";
+
+    if (device.officialPreorderUrl) return true;
+
+    const launch = parseDateValue(device.launchDate);
+    if (launch && launch > new Date()) return true;
+
+    if (device.is_prebooking) return true;
+
+    const storePrices = Array.isArray(device.storePrices)
+      ? device.storePrices
+      : [];
+    if (
+      storePrices.some((store) => isPrebookingStore(store, device.launchDate))
+    )
+      return true;
+
+    return false;
+  };
+
+  const getUpcomingBadge = (device) => {
+    if (!device) return null;
+    if (!isUpcomingDevice(device)) return null;
+
+    const status = normalizeLaunchStatus(device.launchStatusOverride);
+    if (status === "preorder") return "Preorder";
+    if (status === "upcoming") return "Upcoming";
+    if (status === "released") return null;
+
+    if (device.officialPreorderUrl) return "Preorder";
+    if (device.is_prebooking) return "Preorder";
+
+    const storePrices = Array.isArray(device.storePrices)
+      ? device.storePrices
+      : [];
+    if (
+      storePrices.some((store) => isPrebookingStore(store, device.launchDate))
+    ) {
+      return "Preorder";
+    }
+
+    return "Upcoming";
   };
 
   const sortStoreRows = (stores = []) =>
@@ -1099,6 +1186,18 @@ const Smartphones = () => {
         toString(apiDevice.brandUrl),
         "",
       ),
+      officialPreorderUrl: pick(
+        toString(apiDevice.official_preorder_url),
+        toString(apiDevice.officialPreorderUrl),
+        "",
+      ),
+      launchStatusOverride: pick(
+        toString(apiDevice.launch_status_override),
+        toString(apiDevice.launchStatusOverride),
+        toString(apiDevice.launch_status),
+        toString(apiDevice.launchStatus),
+        "",
+      ),
       saleStartDate: pick(
         toString(apiDevice.sale_start_date),
         toString(apiDevice.saleStartDate),
@@ -1213,13 +1312,16 @@ const Smartphones = () => {
   };
 
   // Transform API data to devices array
-  const devices = (smartphonesForList || []).map((device, i) =>
+  const baseDevices = (smartphonesForList || []).map((device, i) =>
     mapApiToDevice(device, i),
   );
+  const devices = isUpcomingView
+    ? baseDevices.filter((device) => isUpcomingDevice(device))
+    : baseDevices;
 
   // Aggregate all variants across smartphones (supports variants array or singular variant)
-  const allVariants = (smartphonesForList || []).flatMap((s) =>
-    Array.isArray(s?.variants) ? s.variants : [],
+  const allVariants = devices.flatMap((device) =>
+    Array.isArray(device?.variants) ? device.variants : [],
   );
 
   // Build variant-level cards so each variant (ram/storage) gets its own card
@@ -1633,15 +1735,11 @@ const Smartphones = () => {
   } = deviceContext || {};
   const navigate = useNavigate();
   const location = useLocation();
-  const { filterSlug } = useParams();
   const { search } = location;
   const pathname = String(location?.pathname || "").toLowerCase();
   const isSingleSmartphonePath = pathname === "/smartphone";
   const isNewFilterPath = pathname === "/smartphones" && filter === "new";
   const currentYear = new Date().getFullYear();
-  const normalizedFilterSlug = String(filterSlug || "")
-    .trim()
-    .toLowerCase();
 
   const priceFilterMap = {
     "under-10000": { min: 0, max: 10000, label: "Under ₹10,000" },
@@ -1668,7 +1766,11 @@ const Smartphones = () => {
     "Browse the latest smartphones with detailed specs, prices, reviews, and comparisons on Hooksss.",
   );
 
-  if (isSingleSmartphonePath) {
+  if (isUpcomingView) {
+    seoTitle = `Upcoming Smartphones ${currentYear} - Expected Launches & Preorders | Hooksss`;
+    seoDescription =
+      "Track upcoming smartphones, expected launch timelines, and preorder-ready devices to plan your next upgrade.";
+  } else if (isSingleSmartphonePath) {
     seoTitle = `Smartphones ${currentYear} - Compare Specs, Prices & Reviews | Hooksss`;
     seoDescription =
       "Compare the latest smartphones on Hooksss. Explore detailed specifications, prices, reviews, and side-by-side comparisons before you buy.";
@@ -1694,11 +1796,19 @@ const Smartphones = () => {
         .toLowerCase()
         .includes("newlaunch")) ||
     (params && params.get("filter") === "new");
-  const headerLabel = isNewLaunchHeading
-    ? "LATEST COLLECTION"
-    : priceFilter
-      ? `BEST SMARTPHONE ${priceFilter.label.toUpperCase()}`
-      : "SMARTPHONE COLLECTION";
+  const headerLabel = isUpcomingView
+    ? "UPCOMING SMARTPHONES"
+    : isNewLaunchHeading
+      ? "LATEST COLLECTION"
+      : priceFilter
+        ? `BEST SMARTPHONE ${priceFilter.label.toUpperCase()}`
+        : "SMARTPHONE COLLECTION";
+  const heroTitlePrefix = isUpcomingView
+    ? "Explore Upcoming"
+    : "Explore Premium";
+  const heroSubtitleText = isUpcomingView
+    ? "Track devices expected to launch soon, compare early specs, and bookmark upcoming releases."
+    : "Discover detailed specifications, compare models, and find the best deals on the latest smartphones. Use our advanced filters to narrow down your search from our curated collection of premium devices.";
 
   // Defer render check until after all Hooksss are declared to keep Hookss order stable
   const noDataAndNotLoading =
@@ -3027,7 +3137,7 @@ const Smartphones = () => {
 
               {/* Main Heading - Gradient Text */}
               <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl xl:text-5xl font-bold mb-2 sm:mb-3 md:mb-4 lg:mb-6 leading-tight">
-                Explore Premium{" "}
+                {heroTitlePrefix}{" "}
                 <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent">
                   Smartphones
                 </span>
@@ -3035,10 +3145,7 @@ const Smartphones = () => {
 
               {/* Subtitle */}
               <h4 className="text-base sm:text-lg md:text-lg lg:text-xl mb-4 sm:mb-6 md:mb-8 text-gray-700 leading-relaxed max-w-3xl">
-                Discover detailed specifications, compare models, and find the
-                best deals on the latest smartphones. Use our advanced filters
-                to narrow down your search from our curated collection of
-                premium devices.
+                {heroSubtitleText}
               </h4>
             </div>
 
@@ -3239,7 +3346,7 @@ const Smartphones = () => {
 
             <div className="flex flex-col lg:flex-row gap-4 sm:gap-5 md:gap-6">
               {/* Desktop Filter Sidebar */}
-              <div className="hidden lg:block lg:w-64 flex-shrink-0">
+              <div className="hidden lg:block lg:w-72 xl:w-80 flex-shrink-0">
                 <div className="p-4 md:p-5 lg:p-6 sticky top-6">
                   {/* Filters Header */}
                   <div
@@ -3587,182 +3694,221 @@ const Smartphones = () => {
                 {/* BannerSlot disabled (incomplete). */}
 
                 {/* Products Grid */}
-                <div className="grid grid-cols-1 gap-4 sm:gap-5 md:gap-6 auto-rows-fr">
-                  {sortedVariants.map((device, _idx) => (
-                    <div
-                      key={`${device.id ?? device.model ?? ""}-${_idx}`}
-                      onClick={(e) => handleView(device, e)}
-                      className={`h-full smooth-transition fade-in-up overflow-hidden rounded-2xl bg-white cursor-pointer transition-all duration-200 md:rounded-none md:bg-white ${
-                        isCompareSelected(device)
-                          ? "ring-2 ring-purple-300 bg-purple-50"
-                          : ""
-                      }`}
-                    >
-                      {/* Mobile Optimized Card Layout */}
-                      <div className="p-3 sm:p-4 md:p-5 lg:p-4 pt-4 sm:pt-5 md:pt-6 transition-all duration-300">
-                        {/* Top Row: Image and Basic Info */}
-                        <div className="grid grid-cols-[minmax(0,8.5rem)_minmax(0,1fr)] sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)] gap-3 w-full items-start">
-                          {/* Product Image with score + compare overlays */}
-                          <div className="relative flex-shrink-0 w-full h-36 sm:h-48 rounded-2xl overflow-hidden group bg-white">
-                            <div className="w-full h-full flex items-center justify-center p-1.5 sm:p-2">
-                              <ImageCarousel images={device.images} />
-                            </div>
-                            <div className="absolute left-1.5 top-1.5 z-10 pointer-events-none">
-                              <CircularScoreBadge
-                                score={
-                                  device.overall_score_display ??
-                                  device.overall_score
-                                }
-                                size={42}
-                              />
-                            </div>
-                          </div>
+                <div
+                  className={`grid grid-cols-1 gap-4 sm:gap-5 md:gap-6 ${
+                    isUpcomingView ? "" : "auto-rows-fr"
+                  }`}
+                >
+                  {sortedVariants.map((device, _idx) => {
+                    const availabilityState = getAvailabilityState(
+                      device.storePrices || [],
+                      device.brand,
+                      device.brandWebsite || null,
+                      device.launchDate || null,
+                      device.brandLogo || null,
+                      device.saleStartDate || null,
+                      device.is_prebooking === true,
+                    );
+                    const availableStoreRows = availabilityState.stores || [];
+                    const hasStoreRows = availableStoreRows.length > 0;
+                    const launchDateParsed = device.launchDate
+                      ? new Date(device.launchDate)
+                      : null;
+                    const hasLaunchDate =
+                      launchDateParsed &&
+                      !Number.isNaN(launchDateParsed.getTime());
+                    const showReleaseDate = !isUpcomingView && hasLaunchDate;
+                    const showTopDivider = hasStoreRows || showReleaseDate;
+                    const upcomingBadge = isUpcomingView
+                      ? getUpcomingBadge(device)
+                      : null;
+                    const brandStoreUrl =
+                      availabilityState.stores?.find(
+                        (sp) =>
+                          typeof sp?.url === "string" &&
+                          sp.url.trim().length > 0,
+                      )?.url || null;
 
-                          {/* Basic Info */}
-                          <div className="flex-1 min-w-0">
-                            {/* Brand and Model */}
-                            <div className="mb-2">
-                              <div>
-                                <div className="flex items-center gap-2 mb-1 md:flex-nowrap">
-                                  <div className="flex min-w-0 items-center gap-2 flex-wrap">
-                                    <span className="text-xs font-semibold text-purple-700">
-                                      {device.brand}
-                                    </span>
-                                    {device.specs?.isAiPhone ? (
-                                      <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-purple-50 to-blue-100 px-2 py-0.5 text-[10px] font-semibold text-purple-700 ring-1 ring-purple-200 whitespace-nowrap">
-                                        <span
-                                          className="inline-flex items-center justify-center w-3 h-3"
-                                          aria-hidden="true"
-                                        >
-                                          <svg
-                                            viewBox="0 0 64 64"
-                                            className="w-3 h-3"
-                                          >
-                                            <path
-                                              d="M32 2C34.5 14.5 40 20 52 22C40 24 34.5 29.5 32 42C29.5 29.5 24 24 12 22C24 20 29.5 14.5 32 2Z"
-                                              fill="red"
-                                            />
-                                            <path
-                                              d="M50 34C51.5 41.5 55 45 62 46C55 47 51.5 50.5 50 58C48.5 50.5 45 47 38 46C45 45 48.5 41.5 50 34Z"
-                                              fill="#7E57C2"
-                                            />
-                                          </svg>
-                                        </span>
-                                        <span>AI Phone</span>
+                    return (
+                      <div
+                        key={`${device.id ?? device.model ?? ""}-${_idx}`}
+                        onClick={(e) => handleView(device, e)}
+                        className={`h-full w-full max-w-[880px] md:max-w-[1040px] lg:max-w-[1120px] mx-auto smooth-transition fade-in-up overflow-hidden rounded-2xl bg-white cursor-pointer transition-all duration-200 md:rounded-none md:bg-white ${
+                          isCompareSelected(device)
+                            ? "ring-2 ring-purple-300 bg-purple-50"
+                            : ""
+                        }`}
+                      >
+                        {/* Mobile Optimized Card Layout */}
+                        <div className="p-3 sm:p-4 md:p-5 lg:p-4 pt-4 sm:pt-5 md:pt-6 transition-all duration-300">
+                          {/* Top Row: Image and Basic Info */}
+                          <div className="grid grid-cols-[minmax(0,8.5rem)_minmax(0,1fr)] sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)] gap-3 w-full items-start">
+                            {/* Product Image with score + compare overlays */}
+                            <div className="relative flex-shrink-0 w-full h-36 sm:h-48 rounded-2xl overflow-hidden group bg-white">
+                              <div className="w-full h-full flex items-center justify-center p-1.5 sm:p-2">
+                                <ImageCarousel images={device.images} />
+                              </div>
+                              <div className="absolute left-1.5 top-1.5 z-10 pointer-events-none">
+                                <CircularScoreBadge
+                                  score={
+                                    device.overall_score_display ??
+                                    device.overall_score
+                                  }
+                                  size={42}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Basic Info */}
+                            <div className="flex-1 min-w-0">
+                              {/* Brand and Model */}
+                              <div className="mb-2">
+                                <div>
+                                  <div className="flex items-center gap-2 mb-1 md:flex-nowrap">
+                                    <div className="flex min-w-0 items-center gap-2 flex-wrap">
+                                      <span className="text-xs font-semibold text-purple-700">
+                                        {device.brand}
                                       </span>
-                                    ) : null}
+                                      {device.specs?.isAiPhone ? (
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-purple-50 to-blue-100 px-2 py-0.5 text-[10px] font-semibold text-purple-700 ring-1 ring-purple-200 whitespace-nowrap">
+                                          <span
+                                            className="inline-flex items-center justify-center w-3 h-3"
+                                            aria-hidden="true"
+                                          >
+                                            <svg
+                                              viewBox="0 0 64 64"
+                                              className="w-3 h-3"
+                                            >
+                                              <path
+                                                d="M32 2C34.5 14.5 40 20 52 22C40 24 34.5 29.5 32 42C29.5 29.5 24 24 12 22C24 20 29.5 14.5 32 2Z"
+                                                fill="red"
+                                              />
+                                              <path
+                                                d="M50 34C51.5 41.5 55 45 62 46C55 47 51.5 50.5 50 58C48.5 50.5 45 47 38 46C45 45 48.5 41.5 50 34Z"
+                                                fill="#7E57C2"
+                                              />
+                                            </svg>
+                                          </span>
+                                          <span>AI Phone</span>
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                  <div className="leading-snug">
+                                    {(() => {
+                                      const name =
+                                        device.name || device.model || "";
+                                      const ram = String(
+                                        device.specs?.ram ?? "",
+                                      ).trim();
+                                      const storage = (
+                                        device.specs?.storage ?? ""
+                                      ).trim();
+                                      const display = String(
+                                        device.specs?.display ?? "",
+                                      ).trim();
+                                      const processor = String(
+                                        device.specs?.processor ?? "",
+                                      ).trim();
+                                      const rearCameraMp =
+                                        getRearCameraMp(device);
+                                      const rearCameraRaw = String(
+                                        device.specs?.rearCameraResolution ??
+                                          "",
+                                      ).trim();
+                                      const batteryMah = getBatteryMah(device);
+                                      const batteryRaw = String(
+                                        device.specs?.battery ?? "",
+                                      ).trim();
+
+                                      const parts = [];
+
+                                      if (ram) {
+                                        const ramLabel =
+                                          ram.toLowerCase().includes("gb") ||
+                                          ram.toLowerCase().includes("tb")
+                                            ? ram
+                                            : `${ram} RAM`;
+                                        parts.push(ramLabel);
+                                      }
+                                      if (storage) {
+                                        const storageLabel =
+                                          storage
+                                            .toLowerCase()
+                                            .includes("gb") ||
+                                          storage.toLowerCase().includes("tb")
+                                            ? storage
+                                            : `${storage} Storage`;
+                                        parts.push(storageLabel);
+                                      }
+                                      if (rearCameraMp) {
+                                        parts.push(`${rearCameraMp} MP Camera`);
+                                      } else if (rearCameraRaw) {
+                                        parts.push(
+                                          /camera/i.test(rearCameraRaw)
+                                            ? rearCameraRaw
+                                            : `${rearCameraRaw} Camera`,
+                                        );
+                                      }
+                                      if (batteryMah) {
+                                        parts.push(`${batteryMah} mAh Battery`);
+                                      } else if (batteryRaw) {
+                                        parts.push(
+                                          /battery/i.test(batteryRaw)
+                                            ? batteryRaw
+                                            : `${batteryRaw} Battery`,
+                                        );
+                                      }
+                                      if (display) parts.push(display);
+                                      if (processor) parts.push(processor);
+
+                                      const summary = parts
+                                        .filter(Boolean)
+                                        .join(" | ");
+
+                                      return (
+                                        <>
+                                          <h5 className="font-bold text-gray-900 text-[15px] leading-5 whitespace-normal break-normal">
+                                            {name}
+                                          </h5>
+                                          {summary ? (
+                                            <p className="mt-1 text-[12px] text-gray-600 leading-5 whitespace-normal break-normal">
+                                              {summary}
+                                            </p>
+                                          ) : null}
+                                          {isUpcomingView && upcomingBadge ? (
+                                            <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
+                                              <span className="font-semibold text-purple-700">
+                                                {upcomingBadge}
+                                              </span>
+                                              {hasLaunchDate ? (
+                                                <span className="text-gray-500">
+                                                  Expected:{" "}
+                                                  {launchDateParsed.toLocaleDateString(
+                                                    "en-US",
+                                                    {
+                                                      year: "numeric",
+                                                      month: "long",
+                                                      day: "numeric",
+                                                    },
+                                                  )}
+                                                </span>
+                                              ) : null}
+                                            </div>
+                                          ) : null}
+                                        </>
+                                      );
+                                    })()}
                                   </div>
                                 </div>
-                                <div className="leading-snug">
-                                  {(() => {
-                                    const name =
-                                      device.name || device.model || "";
-                                    const ram = String(
-                                      device.specs?.ram ?? "",
-                                    ).trim();
-                                    const storage = (
-                                      device.specs?.storage ?? ""
-                                    ).trim();
-                                    const display = String(
-                                      device.specs?.display ?? "",
-                                    ).trim();
-                                    const processor = String(
-                                      device.specs?.processor ?? "",
-                                    ).trim();
-                                    const rearCameraMp =
-                                      getRearCameraMp(device);
-                                    const rearCameraRaw = String(
-                                      device.specs?.rearCameraResolution ?? "",
-                                    ).trim();
-                                    const batteryMah = getBatteryMah(device);
-                                    const batteryRaw = String(
-                                      device.specs?.battery ?? "",
-                                    ).trim();
-
-                                    const parts = [];
-
-                                    if (ram) {
-                                      const ramLabel =
-                                        ram.toLowerCase().includes("gb") ||
-                                        ram.toLowerCase().includes("tb")
-                                          ? ram
-                                          : `${ram} RAM`;
-                                      parts.push(ramLabel);
-                                    }
-                                    if (storage) {
-                                      const storageLabel =
-                                        storage.toLowerCase().includes("gb") ||
-                                        storage.toLowerCase().includes("tb")
-                                          ? storage
-                                          : `${storage} Storage`;
-                                      parts.push(storageLabel);
-                                    }
-                                    if (rearCameraMp) {
-                                      parts.push(`${rearCameraMp} MP Camera`);
-                                    } else if (rearCameraRaw) {
-                                      parts.push(
-                                        /camera/i.test(rearCameraRaw)
-                                          ? rearCameraRaw
-                                          : `${rearCameraRaw} Camera`,
-                                      );
-                                    }
-                                    if (batteryMah) {
-                                      parts.push(`${batteryMah} mAh Battery`);
-                                    } else if (batteryRaw) {
-                                      parts.push(
-                                        /battery/i.test(batteryRaw)
-                                          ? batteryRaw
-                                          : `${batteryRaw} Battery`,
-                                      );
-                                    }
-                                    if (display) parts.push(display);
-                                    if (processor) parts.push(processor);
-
-                                    const summary = parts
-                                      .filter(Boolean)
-                                      .join(" | ");
-
-                                    return (
-                                      <>
-                                        <h5 className="font-bold text-gray-900 text-[15px] leading-5 whitespace-normal break-normal">
-                                          {name}
-                                        </h5>
-                                        {summary ? (
-                                          <p className="mt-1 text-[12px] text-gray-600 leading-5 whitespace-normal break-normal">
-                                            {summary}
-                                          </p>
-                                        ) : null}
-                                      </>
-                                    );
-                                  })()}
-                                </div>
+                                {/* Details always expanded - removed toggle button */}
                               </div>
-                              {/* Details always expanded - removed toggle button */}
-                            </div>
 
-                            {/* Price and Rating */}
-                            <div className="mb-3">
-                              <div className="flex items-end justify-between">
-                                <div>
-                                  {(() => {
-                                    const availabilityState =
-                                      getAvailabilityState(
-                                        device.storePrices || [],
-                                        device.brand,
-                                        device.brandWebsite || null,
-                                        device.launchDate || null,
-                                        device.brandLogo || null,
-                                        device.saleStartDate || null,
-                                        device.is_prebooking === true,
-                                      );
-                                    const brandStoreUrl =
-                                      availabilityState.stores?.find(
-                                        (sp) =>
-                                          typeof sp?.url === "string" &&
-                                          sp.url.trim().length > 0,
-                                      )?.url || null;
-                                    if (!device.brand) return null;
-                                    return (
+                              {/* Price and Rating */}
+                              <div className="mb-3">
+                                <div className="flex items-end justify-between">
+                                  <div>
+                                    {device.brand ? (
                                       <a
                                         href={brandStoreUrl || "#"}
                                         target={
@@ -3786,72 +3932,62 @@ const Smartphones = () => {
                                       >
                                         {`Visit the ${device.brand} Store`}
                                       </a>
-                                    );
-                                  })()}
-                                  <div className="text-lg font-bold text-green-600">
-                                    {device.price}
+                                    ) : null}
+                                    <div className="text-lg font-bold text-green-600">
+                                      {device.price}
+                                    </div>
                                   </div>
-                                </div>
-                                <div
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="inline-flex items-center justify-center ml-1"
-                                  title={
-                                    !isCompareSelected(device) &&
-                                    compareItems.length >= MAX_COMPARE_ITEMS
-                                      ? `You can compare up to ${MAX_COMPARE_ITEMS} devices`
-                                      : "Add to compare"
-                                  }
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={isCompareSelected(device)}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleCompareToggle(device, e);
+                                    }}
                                     disabled={
                                       !isCompareSelected(device) &&
                                       compareItems.length >= MAX_COMPARE_ITEMS
                                     }
-                                    onClick={(e) => e.stopPropagation()}
-                                    onChange={(e) => {
-                                      e.stopPropagation();
-                                      handleCompareToggle(device, e);
-                                    }}
-                                    className={`h-3 w-3 accent-violet-600 ${
+                                    title={
+                                      !isCompareSelected(device) &&
+                                      compareItems.length >= MAX_COMPARE_ITEMS
+                                        ? `You can compare up to ${MAX_COMPARE_ITEMS} devices`
+                                        : "Add to compare"
+                                    }
+                                    className={`ml-1 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold transition-all duration-200 ${
+                                      isCompareSelected(device)
+                                        ? "border-purple-600 bg-purple-600 text-white"
+                                        : "border-purple-200 text-purple-700 hover:border-purple-300 hover:bg-purple-50"
+                                    } ${
                                       !isCompareSelected(device) &&
                                       compareItems.length >= MAX_COMPARE_ITEMS
                                         ? "cursor-not-allowed opacity-60"
                                         : "cursor-pointer"
                                     }`}
-                                    aria-label="Compare product"
-                                  />
+                                  >
+                                    <FaPlus className="text-[10px]" />
+                                    Compare
+                                  </button>
                                 </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                        {/* Expanded Details */}
-                        <div className="mt-3 sm:mt-4 md:mt-5 pt-3 sm:pt-4 md:pt-5 border-t border-indigo-100">
-                          {/* Detailed Specifications */}
+                          {/* Expanded Details */}
+                          <div
+                            className={
+                              showTopDivider
+                                ? "mt-3 sm:mt-4 md:mt-5 pt-3 sm:pt-4 md:pt-5 border-t border-gray-200"
+                                : "mt-0 pt-0 border-t-0"
+                            }
+                          >
+                            {/* Detailed Specifications */}
 
-                          {/* Store Availability */}
-                          {(() => {
-                            const availabilityState = getAvailabilityState(
-                              device.storePrices || [],
-                              device.brand,
-                              device.brandWebsite || null,
-                              device.launchDate || null,
-                              device.brandLogo || null,
-                              device.saleStartDate || null,
-                              device.is_prebooking === true,
-                            );
-                            const availableStoreRows =
-                              availabilityState.stores || [];
-                            if (availableStoreRows.length === 0) return null;
-
-                            return (
+                            {/* Store Availability */}
+                            {hasStoreRows ? (
                               <div className="mb-4">
                                 <div className="flex items-center justify-between gap-2 mb-3">
                                   <h4 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
                                     <FaStore className="text-green-500" />
-                                    Available At
+                                    Check Price On
                                   </h4>
                                 </div>
                                 <div className="space-y-2">
@@ -3970,37 +4106,35 @@ const Smartphones = () => {
                                   )}
                                 </div>
                               </div>
-                            );
-                          })()}
+                            ) : null}
 
-                          {/* Launch Date */}
-                          {(() => {
-                            if (!device.launchDate) return null;
-                            const parsed = new Date(device.launchDate);
-                            if (Number.isNaN(parsed.getTime())) return null;
-                            return (
+                            {/* Launch Date */}
+                            {showReleaseDate ? (
                               <div className="flex items-center gap-2 text-xs text-gray-600 mb-4">
                                 <FaCalendarAlt className="text-gray-400" />
                                 <span>
                                   Released:{" "}
-                                  {parsed.toLocaleDateString("en-US", {
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                  })}
+                                  {launchDateParsed.toLocaleDateString(
+                                    "en-US",
+                                    {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                    },
+                                  )}
                                 </span>
                               </div>
-                            );
-                          })()}
-                        </div>
+                            ) : null}
+                          </div>
 
-                        {/* Action Buttons */}
-                        <div className="flex gap-2 mt-4 items-center">
-                          <div className="flex-1"></div>
+                          {/* Action Buttons */}
+                          <div className="flex gap-2 mt-4 items-center">
+                            <div className="flex-1"></div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Floating Compare Bar - Appears when 2+ items selected */}

@@ -5,6 +5,7 @@ import ScrollToTop from "./components/ScrollToTop";
 import Footer from "./components/Home/Footer";
 import Home from "./components/Home/Home";
 import Smartphones from "./components/Product/Smartphones";
+import UpcomingSmartphonesList from "./components/Product/UpcomingSmartphonesList";
 import Laptops from "./components/Product/Laptops";
 import Networking from "./components/Product/Networking";
 import TVs from "./components/Product/TVs";
@@ -447,6 +448,10 @@ function App() {
 
           {/* Product Listings - SEO friendly category paths */}
           <Route path="/smartphones" element={<Smartphones />} />
+          <Route
+            path="/smartphones/upcoming"
+            element={<UpcomingSmartphonesList />}
+          />
           <Route
             path="/smartphones/filter/:filterSlug"
             element={<Smartphones />}

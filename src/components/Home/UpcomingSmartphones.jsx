@@ -1,6 +1,6 @@
 // src/components/Home/UpcomingSmartphones.jsx
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { generateSlug } from "../../utils/slugGenerator";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
 import { FaMobileAlt } from "react-icons/fa";
@@ -304,9 +304,9 @@ const isUpcomingRow = (row) => {
   const statusText = firstText(row?.status, row?.availability, row?.badge, raw);
   return Boolean(
     statusText &&
-      /(upcoming|coming soon|expected|pre[-\s]?book|pre[-\s]?order)/i.test(
-        statusText,
-      ),
+    /(upcoming|coming soon|expected|pre[-\s]?book|pre[-\s]?order)/i.test(
+      statusText,
+    ),
   );
 };
 
@@ -380,13 +380,19 @@ const UpcomingSmartphones = () => {
     >
       {/* Header Section */}
       <div className="mb-6 px-2">
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center justify-between gap-3 mb-2">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
             Upcoming{" "}
-            <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent font-bold">
               Smartphones
             </span>
           </h2>
+          <Link
+            to="/smartphones/upcoming"
+            className="text-xs sm:text-sm font-semibold text-purple-700 hover:text-purple-900"
+          >
+            View all
+          </Link>
         </div>
         <p className="text-sm text-gray-600">
           Keep track of devices expected to launch soon.
@@ -437,7 +443,7 @@ const UpcomingSmartphones = () => {
                           <TrendSpecScoreBadge score={device.score} />
                         </div>
                       ) : null}
-                      <div className="mx-auto h-28 sm:h-32 w-28 rounded-md shadow-md border border-gray-100 overflow-hidden bg-gray-100 flex items-center justify-center">
+                      <div className="mx-auto h-28 sm:h-32 w-28 rounded-md shadow-md  overflow-hidden bg-gray-100 flex items-center justify-center">
                         {device.image ? (
                           <img
                             src={device.image}
@@ -469,11 +475,6 @@ const UpcomingSmartphones = () => {
                         <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-gray-500">
                           {device.launchLabel ? (
                             <span>Expected {device.launchLabel}</span>
-                          ) : null}
-                          {device.launchStatus ? (
-                            <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600">
-                              {formatLaunchStatusLabel(device.launchStatus)}
-                            </span>
                           ) : null}
                         </div>
                       ) : null}

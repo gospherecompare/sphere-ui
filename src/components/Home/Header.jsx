@@ -186,43 +186,43 @@ const Header = () => {
 
   // Keep the mobile spacer in sync with actual fixed header height.
   useEffect(() => {
-  const updateMobileHeaderHeight = () => {
-    if (typeof window === "undefined") return;
+    const updateMobileHeaderHeight = () => {
+      if (typeof window === "undefined") return;
 
-    const width = window.innerWidth;
-    const isMobile = width < 768;
-    const measuredMobile = Math.ceil(
-      mobileHeaderRef.current?.getBoundingClientRect().height || 0,
-    );
-    const measuredDesktop = Math.ceil(
-      headerRef.current?.getBoundingClientRect().height || 0,
-    );
+      const width = window.innerWidth;
+      const isMobile = width < 768;
+      const measuredMobile = Math.ceil(
+        mobileHeaderRef.current?.getBoundingClientRect().height || 0,
+      );
+      const measuredDesktop = Math.ceil(
+        headerRef.current?.getBoundingClientRect().height || 0,
+      );
 
-    if (isMobile) {
-      if (measuredMobile > 0) {
-        setMobileHeaderHeight(measuredMobile);
+      if (isMobile) {
+        if (measuredMobile > 0) {
+          setMobileHeaderHeight(measuredMobile);
+          document.documentElement.style.setProperty(
+            "--mobile-header-height",
+            `${measuredMobile}px`,
+          );
+        }
         document.documentElement.style.setProperty(
-          "--mobile-header-height",
-          `${measuredMobile}px`,
+          "--desktop-header-height",
+          "0px",
         );
+        return;
       }
+
+      setMobileHeaderHeight(0);
       document.documentElement.style.setProperty(
-        "--desktop-header-height",
+        "--mobile-header-height",
         "0px",
       );
-      return;
-    }
-
-    setMobileHeaderHeight(0);
-    document.documentElement.style.setProperty(
-      "--mobile-header-height",
-      "0px",
-    );
-    document.documentElement.style.setProperty(
-      "--desktop-header-height",
-      `${measuredDesktop}px`,
-    );
-  };
+      document.documentElement.style.setProperty(
+        "--desktop-header-height",
+        `${measuredDesktop}px`,
+      );
+    };
 
     updateMobileHeaderHeight();
     window.addEventListener("resize", updateMobileHeaderHeight);
@@ -953,8 +953,9 @@ const Header = () => {
       // Column 1 – Browse
       subcategories: [
         { name: "All Smartphones" },
-        { name: "New Launches" },
-        { name: "Trending Phones" },
+        { name: "Latest Releases" },
+        { name: "Upcoming Phones" },
+        { name: "Top Phones" },
         { name: "Compare Phones" },
       ],
       // Column 2 – By Price (mapped into popularProducts column)
@@ -981,8 +982,8 @@ const Header = () => {
       // Column 1 – Browse
       subcategories: [
         { name: "All Laptops" },
-        { name: "New Launches" },
-        { name: "Trending Laptops" },
+        { name: "Latest Releases" },
+        { name: "Top Laptops" },
         { name: "Compare Laptops" },
       ],
       // Column 2 – By Use Case (mapped into popularProducts column)
@@ -1008,8 +1009,8 @@ const Header = () => {
       // Column 1 – Categories
       subcategories: [
         { name: "All TVs" },
-        { name: "New Launches" },
-        { name: "Trending TVs" },
+        { name: "Latest Releases" },
+        { name: "Top TVs" },
         { name: "Compare TVs" },
       ],
       // Column 2 – By Type (mapped into popularProducts column)
@@ -1084,8 +1085,9 @@ const Header = () => {
 
   // Top navigation links
   const directLinks = [
-    { name: "Trending", link: "/trending" },
-    { name: "New Launches", link: "/smartphones?filter=new" },
+    { name: "Top Picks", link: "/trending" },
+    { name: "Latest Releases", link: "/smartphones?filter=new" },
+    { name: "Upcoming Phones", link: "/smartphones/upcoming" },
     { name: "Compare", link: "/compare" },
   ];
 
@@ -1457,7 +1459,7 @@ const Header = () => {
     const discoverItems = [
       { label: "All Products", link: "/all-products", icon: <FaTag /> },
       { label: "Best Deals", link: "/deals", icon: <FaBolt /> },
-      { label: "New Launches", link: "/new-launches", icon: <FaStar /> },
+      { label: "Latest Releases", link: "/new-launches", icon: <FaStar /> },
       { label: "Top Brands", link: "/brands", icon: <FaStore /> },
     ];
 
@@ -1839,14 +1841,6 @@ const Header = () => {
 
           {/* Right Icons: Compare + Menu */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            <Link
-              to="/compare"
-              className="p-2.5 rounded-lg hover:bg-gray-100 transition-all duration-200 text-gray-600 hover:text-gray-900"
-              aria-label="Compare"
-            >
-              <FaBalanceScale className="w-5 h-5" />
-            </Link>
-
             <button
               className="p-2.5 rounded-lg hover:bg-gray-100 transition-all duration-200 flex-shrink-0 text-gray-600 hover:text-gray-900"
               onClick={() => setIsMenuOpen(true)}
@@ -1862,7 +1856,7 @@ const Header = () => {
           <div className="relative">
             {/* Search Icon */}
 
-            <FaSearch className="fa fa-search absolute left-3 top-1/2 -translate-y-1/2 text-purple-400 pointer-events-none" />
+            <FaSearch className="fa fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
 
             <input
               type="text"
@@ -1907,7 +1901,7 @@ const Header = () => {
               ref={searchRef}
               className="flex-1 min-w-[240px] max-w-2xl lg:max-w-3xl xl:max-w-[900px] mx-2 sm:mx-6 relative search-input-wrapper"
             >
-              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-400 pointer-events-none" />
+              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               <input
                 ref={searchInputRef}
                 type="text"
@@ -2150,12 +2144,17 @@ const Header = () => {
     ];
     const discoverLinks = [
       {
-        label: "Trending Now",
+        label: "Top Picks",
         link: "/trending",
         icon: <FaBolt className="w-4 h-4" />,
       },
       {
-        label: "New Launches",
+        label: "Upcoming Phones",
+        link: "/smartphones/upcoming",
+        icon: <FaCalendarAlt className="w-4 h-4" />,
+      },
+      {
+        label: "Latest Releases",
         link: "/smartphones?sort=newest",
         icon: <FaCalendarAlt className="w-4 h-4" />,
       },
@@ -2182,10 +2181,9 @@ const Header = () => {
         icon: <FaShieldAlt className="w-4 h-4" />,
       },
       {
-        label:"Career",
-        link:"/careers",
-        icon:<FaBriefcase className="w-4 h-4" />,
-    
+        label: "Career",
+        link: "/careers",
+        icon: <FaBriefcase className="w-4 h-4" />,
       },
       {
         label: "Terms",

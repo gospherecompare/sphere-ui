@@ -112,13 +112,7 @@ const rewriteApiPath = (pathname = "") => {
 const isAliasEligible = (url) => {
   if (!url || typeof url !== "object") return false;
   if (!String(url.pathname || "").startsWith("/api/")) return false;
-  const host = String(url.hostname || "").toLowerCase();
-  return (
-    url.origin === window.location.origin ||
-    host === "api.apisphere.in" ||
-    host === "localhost" ||
-    host === "127.0.0.1"
-  );
+  return url.origin === window.location.origin;
 };
 
 export const installApiAliasFetch = () => {
