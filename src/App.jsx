@@ -419,11 +419,36 @@ const resolveSeoMeta = (pathname) => {
   };
 };
 
+const shouldInjectWebPageSchema = (canonicalPath = "", robots = "") => {
+  if (String(robots).toLowerCase().includes("noindex")) return false;
+  if (canonicalPath === "/") return false;
+  if (canonicalPath.startsWith("/smartphones")) return false;
+  if (canonicalPath.startsWith("/laptops")) return false;
+  if (canonicalPath.startsWith("/tvs")) return false;
+  if (canonicalPath.startsWith("/networking")) return false;
+  if (canonicalPath.startsWith("/trending")) return false;
+  if (canonicalPath.startsWith("/compare")) return false;
+  return true;
+};
+
 const RouteSeoFallback = () => {
   const { pathname } = useLocation();
   if (pathname.startsWith("/compare")) return null;
   const seo = resolveSeoMeta(pathname);
   const canonicalUrl = `${SITE_ORIGIN}${seo.canonicalPath}`;
+  const includeWebPageSchema = shouldInjectWebPageSchema(
+    seo.canonicalPath,
+    seo.robots,
+  );
+  const webPageJsonLd = includeWebPageSchema
+    ? JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        name: seo.title,
+        url: canonicalUrl,
+        description: seo.description,
+      })
+    : "";
 
   return (
     <Helmet prioritizeSeoTags>
@@ -441,6 +466,9 @@ const RouteSeoFallback = () => {
       <meta name="twitter:title" content={seo.title} />
       <meta name="twitter:description" content={seo.description} />
       <meta name="twitter:image" content={DEFAULT_OG_IMAGE} />
+      {includeWebPageSchema && (
+        <script type="application/ld+json">{webPageJsonLd}</script>
+      )}
     </Helmet>
   );
 };
