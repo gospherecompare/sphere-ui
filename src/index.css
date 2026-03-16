@@ -38,6 +38,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.condiment-regular {
+  font-family: "Condiment", cursive;
+  font-weight: 400;
+  font-style: normal;
+}
+
 /* =========================
    TEXT ELEMENTS
 ========================= */

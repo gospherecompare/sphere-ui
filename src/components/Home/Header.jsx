@@ -48,7 +48,6 @@ import { useNavigate, Link, useLocation } from "react-router-dom";
 import Cookies from "js-cookie";
 import { useDevice } from "../../hooks/useDevice";
 import { createProductPath, generateSlug } from "../../utils/slugGenerator";
-import HookLogo from "../ui/HookLogo";
 
 // Icons - matching Vijay Sales style
 import {
@@ -1835,8 +1834,15 @@ const Header = () => {
         {/* Mobile Top Row: Logo (left) | Icons (right) */}
         <div className="flex items-center justify-between px-4 py-3 gap-3">
           {/* Logo (mobile) */}
-          <Link to="/" className="flex items-center min-w-0">
-            <HookLogo className="block h-8 w-auto max-w-[180px] text-gray-900 sm:h-9 sm:max-w-[220px]" />
+          <Link to="/" className="flex items-center min-w-0 gap-2">
+            <img
+              src="/favicon.svg"
+              alt="Hooks"
+              className="block h-8 w-8 text-gray-900 sm:h-9 sm:w-9"
+            />
+            <span className="condiment-regular text-[18px] leading-none tracking-wide text-transparent bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text sm:text-[20px]">
+              Hooks
+            </span>
           </Link>
 
           {/* Right Icons: Compare + Menu */}
@@ -1892,8 +1898,15 @@ const Header = () => {
         <div className="max-w-7xl mx-auto px-3 sm:px-6">
           <div className="flex items-center justify-between gap-2 sm:gap-8">
             {/* Logo */}
-            <Link to="/" className="flex items-center flex-shrink-0">
-              <HookLogo className="block h-9 w-auto text-gray-900 lg:h-10" />
+            <Link to="/" className="flex items-center flex-shrink-0 gap-2">
+              <img
+                src="/favicon.svg"
+                alt="Hooks"
+                className="block h-9 w-9 text-gray-900 lg:h-10 lg:w-10"
+              />
+              <span className="condiment-regular text-[26px] leading-none tracking-wide text-transparent bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text lg:text-[24px]">
+                Hooks
+              </span>
             </Link>
 
             {/* Desktop Search Bar - Professional Style */}
@@ -2226,7 +2239,16 @@ const Header = () => {
                         className="rounded-md p-1 hover:bg-white/15"
                         aria-label="Go to home"
                       >
-                        <HookLogo className="h-8 w-auto text-white" />
+                        <div className="flex items-center gap-2">
+                          <img
+                            src="/favicon.svg"
+                            alt="Hooks"
+                            className="h-8 w-8"
+                          />
+                          <span className="condiment-regular text-[18px] leading-none tracking-wide text-white">
+                            Hooks
+                          </span>
+                        </div>
                       </button>
                       <button
                         type="button"

@@ -1,4 +1,4 @@
-import React, { useId } from "react";
+import React from "react";
 
 export default function HookLogo({
   className,
@@ -6,60 +6,14 @@ export default function HookLogo({
   "aria-label": ariaLabel = "HOOKS",
   brandName = "HOOKS",
 }) {
-  const reactId = useId();
-  const gradientId = `device-gradient-${reactId.replace(/:/g, "")}`;
+  const altText = ariaLabel || title || brandName || "HOOKS";
 
   return (
-    <svg
-      viewBox="0 0 520 120"
-      preserveAspectRatio="xMinYMid meet"
-      role="img"
-      aria-label={ariaLabel}
+    <img
+      src="/hook-logo.svg"
+      alt={altText}
+      title={title}
       className={className}
-    >
-      {title ? <title>{title}</title> : null}
-
-      <defs>
-        <linearGradient id={gradientId} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#8B5CF6" />
-          <stop offset="60%" stopColor="#8B5CF6" />
-          <stop offset="100%" stopColor="#3B82F6" />
-        </linearGradient>
-      </defs>
-
-      <rect
-        x="20"
-        y="30"
-        width="28"
-        height="60"
-        rx="8"
-        stroke={`url(#${gradientId})`}
-        strokeWidth="4"
-        fill="none"
-      />
-      <rect
-        x="60"
-        y="30"
-        width="28"
-        height="60"
-        rx="8"
-        stroke={`url(#${gradientId})`}
-        strokeWidth="4"
-        fill="none"
-      />
-
-      <text
-        x="110"
-        y="60"
-        dominantBaseline="middle"
-        fontFamily='"Climate Crisis", Poppins, Inter, Arial, sans-serif'
-        fontSize="50"
-        fontWeight="800"
-        letterSpacing="6"
-        fill={`url(#${gradientId})`}
-      >
-        {brandName}
-      </text>
-    </svg>
+    />
   );
 }
