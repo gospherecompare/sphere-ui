@@ -1604,9 +1604,7 @@ const Laptops = () => {
       Array.isArray(device?.images) ? device.images.find(Boolean) : false,
     );
     const raw =
-      firstWithImage?.images?.find(Boolean) ||
-      firstWithImage?.image ||
-      "";
+      firstWithImage?.images?.find(Boolean) || firstWithImage?.image || "";
     return toAbsoluteUrl(raw);
   }, [sortedVariants, siteOrigin]);
 
@@ -1679,11 +1677,18 @@ const Laptops = () => {
   return (
     <div className="min-h-screen">
       <style>{animationStyles}</style>
-      <Helmet>
+      <Helmet prioritizeSeoTags>
         <title>{seoTitle}</title>
         <meta name="description" content={seoDescription} />
+
+        {/* Canonical URL - CRITICAL for SEO per route */}
+        <link rel="canonical" href={listSchemaUrl} />
+
+        {/* Open Graph */}
+        <meta property="og:type" content="website" />
         <meta property="og:title" content={seoTitle} />
         <meta property="og:description" content={seoDescription} />
+        <meta property="og:url" content={listSchemaUrl} />
         {listOgImage ? (
           <meta
             key="laptops-og-image"
@@ -1691,6 +1696,9 @@ const Laptops = () => {
             content={listOgImage}
           />
         ) : null}
+
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={seoTitle} />
         <meta name="twitter:description" content={seoDescription} />
         {listOgImage ? (
@@ -1700,6 +1708,8 @@ const Laptops = () => {
             content={listOgImage}
           />
         ) : null}
+
+        {/* Structured Data - ItemList schema for filtering/listing pages */}
         {itemListJsonLd ? (
           <script type="application/ld+json">{itemListJsonLd}</script>
         ) : null}
@@ -2362,7 +2372,7 @@ const Laptops = () => {
             {/* BannerSlot disabled (incomplete). */}
 
             {/* Products Grid */}
-          <div className="grid grid-cols-1 gap-4 sm:gap-5 md:gap-6 auto-rows-fr">
+            <div className="grid grid-cols-1 gap-4 sm:gap-5 md:gap-6 auto-rows-fr">
               {sortedVariants.map((device, idx) => (
                 <div
                   key={`${device.id ?? device.model ?? ""}-${idx}`}

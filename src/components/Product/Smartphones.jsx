@@ -3168,9 +3168,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       Array.isArray(device?.images) ? device.images.find(Boolean) : false,
     );
     const raw =
-      firstWithImage?.images?.find(Boolean) ||
-      firstWithImage?.image ||
-      "";
+      firstWithImage?.images?.find(Boolean) || firstWithImage?.image || "";
     const abs = toAbsoluteUrl(raw);
     return abs || "";
   }, [sortedVariants, siteOrigin]);
@@ -3251,11 +3249,18 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   return (
     <div className="min-h-screen  ">
       <style>{animationStyles}</style>
-      <Helmet>
+      <Helmet prioritizeSeoTags>
         <title>{seoTitle}</title>
         <meta name="description" content={seoDescription} />
+
+        {/* Canonical URL - CRITICAL for SEO per route */}
+        <link rel="canonical" href={listSchemaUrl} />
+
+        {/* Open Graph */}
+        <meta property="og:type" content="website" />
         <meta property="og:title" content={seoTitle} />
         <meta property="og:description" content={seoDescription} />
+        <meta property="og:url" content={listSchemaUrl} />
         {listOgImage ? (
           <meta
             key="smartphones-og-image"
@@ -3263,6 +3268,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
             content={listOgImage}
           />
         ) : null}
+
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={seoTitle} />
         <meta name="twitter:description" content={seoDescription} />
         {listOgImage ? (
@@ -3272,6 +3280,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
             content={listOgImage}
           />
         ) : null}
+
+        {/* Structured Data - ItemList schema for filtering/listing pages */}
         {itemListJsonLd ? (
           <script type="application/ld+json">{itemListJsonLd}</script>
         ) : null}
