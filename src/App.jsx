@@ -278,8 +278,7 @@ const resolveSeoMeta = (pathname) => {
       title: `Upcoming Smartphones ${CURRENT_YEAR} - Expected Launches & Preorders | Hooks`,
       description:
         "Track upcoming smartphones, expected launch timelines, and preorder-ready devices to plan your next upgrade.",
-      keywords:
-        `upcoming smartphones ${CURRENT_YEAR}, preorder phones, expected launch mobiles, new launch phones, smartphones launch calendar india`,
+      keywords: `upcoming smartphones ${CURRENT_YEAR}, preorder phones, expected launch mobiles, new launch phones, smartphones launch calendar india`,
     },
     {
       test: () => Boolean(smartphoneFilterMeta),
@@ -518,11 +517,10 @@ function App() {
     );
   };
 
-
   return (
     <Router>
       <RouteSeoFallback />
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-blue-100">
         <Header />
         <div className="">
           <div className="mx-auto max-w-4xl w-full overflow-hidden mt-3  px-4 sm:px-0 transition-all duration-700">

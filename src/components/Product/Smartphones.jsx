@@ -202,6 +202,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const { smartphone, smartphoneAll } = deviceContext || {};
   const [params] = useSearchParams();
   const { filterSlug } = useParams();
+  const location = useLocation();
   const feature = params.get("feature");
   const normalizedFilterSlug = String(filterSlug || "")
     .trim()
@@ -3295,23 +3296,23 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
             {/* Hero Section - Professional Styling */}
             <div className="mb-6 sm:mb-8 md:mb-10 lg:mb-12">
               {/* Badge */}
-              <div className="inline-flex items-center gap-2 bg-purple-50 backdrop-blur-sm px-3 py-1.5 rounded-full border border-purple-100 mb-4 sm:mb-6">
-                <FaMobileAlt className="text-purple-600 text-sm" />
-                <span className="text-xs sm:text-sm font-semibold text-purple-800">
+              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 backdrop-blur-sm px-3 py-1.5 rounded-full border border-indigo-200 mb-4 sm:mb-6">
+                <FaMobileAlt className="text-indigo-600 text-sm" />
+                <span className="text-xs sm:text-sm font-semibold text-indigo-900">
                   {headerLabel}
                 </span>
               </div>
 
-              {/* Main Heading - Gradient Text */}
+              {/* Main Heading - Enhanced Gradient Text */}
               <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl xl:text-5xl font-bold mb-2 sm:mb-3 md:mb-4 lg:mb-6 leading-tight">
                 {heroTitlePrefix}{" "}
-                <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-indigo-600 via-blue-500 to-cyan-500 bg-clip-text text-transparent">
                   Smartphones
                 </span>
               </h1>
 
               {/* Subtitle */}
-              <h4 className="text-base sm:text-lg md:text-lg lg:text-xl mb-4 sm:mb-6 md:mb-8 text-gray-700 leading-relaxed max-w-3xl">
+              <h4 className="text-base sm:text-lg md:text-lg lg:text-xl mb-4 sm:mb-6 md:mb-8 text-gray-600 leading-relaxed max-w-3xl">
                 {heroSubtitleText}
               </h4>
             </div>
@@ -3320,7 +3321,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
             <div className="mb-6 sm:mb-7 md:mb-8">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <FaFilter className="text-purple-600" />
+                  <FaFilter className="text-indigo-600" />
                   <h3 className="text-sm sm:text-base font-semibold text-gray-900">
                     Popular Features
                   </h3>
@@ -3328,7 +3329,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                 {normalizedFeature && (
                   <button
                     onClick={() => setFeatureParam(null)}
-                    className="text-xs sm:text-sm text-purple-700 hover:text-purple-900 font-semibold"
+                    className="text-xs sm:text-sm text-indigo-700 hover:text-indigo-900 font-semibold"
                   >
                     Clear
                   </button>
@@ -3347,14 +3348,14 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                     <button
                       key={pf.id}
                       onClick={() => setFeatureParam(pf.id)}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-full border text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors ${
+                      className={`flex items-center gap-2 px-3 py-2 rounded-full border text-xs sm:text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
                         isActive
-                          ? "bg-purple-600 text-white border-purple-600"
-                          : "bg-white text-gray-700 border-gray-200 hover:border-purple-300 hover:text-purple-700"
+                          ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-white border-indigo-600 shadow-lg"
+                          : "bg-white text-gray-700 border-gray-200 hover:border-indigo-300 hover:text-indigo-700 hover:shadow-md"
                       }`}
                     >
                       <span
-                        className={isActive ? "text-white" : "text-purple-600"}
+                        className={isActive ? "text-white" : "text-indigo-600"}
                       >
                         {Icon ? <Icon className="text-base" /> : null}
                       </span>
@@ -3440,19 +3441,19 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                     placeholder="Search smartphones..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full h-12 pl-12 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-100 focus:border-purple-500 text-gray-700 transition-all duration-200 placeholder:text-gray-400"
+                    className="w-full h-12 pl-12 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 text-gray-700 transition-all duration-200 placeholder:text-gray-400"
                   />
                 </div>
 
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowFilters(true)}
-                    className="flex items-center justify-center gap-2 flex-1 h-12 text-white px-4 rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-300 font-semibold hover:from-purple-600 hover:to-blue-600 hover:shadow-lg"
+                    className="flex items-center justify-center gap-2 flex-1 h-12 text-white px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 transition-all duration-300 font-semibold hover:from-indigo-700 hover:to-blue-700 hover:shadow-lg"
                   >
                     <FaFilter />
                     Filters
                     {getActiveFiltersCount() > 0 && (
-                      <span className="  text-purple-200 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                      <span className="  text-indigo-200 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                         {getActiveFiltersCount()}
                       </span>
                     )}
@@ -3918,7 +3919,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                         onClick={(e) => handleView(device, e)}
                         className={`h-full w-full max-w-[880px] md:max-w-[1040px] lg:max-w-[1120px] mx-auto smooth-transition fade-in-up overflow-hidden rounded-2xl bg-white cursor-pointer transition-all duration-200 md:rounded-none md:bg-white ${
                           isCompareSelected(device)
-                            ? "ring-2 ring-purple-300 bg-purple-50"
+                            ? "ring-2 ring-indigo-400 bg-indigo-50"
                             : ""
                         }`}
                       >
@@ -3949,11 +3950,11 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                                 <div>
                                   <div className="flex items-center gap-2 mb-1 md:flex-nowrap">
                                     <div className="flex min-w-0 items-center gap-2 flex-wrap">
-                                      <span className="text-xs font-semibold text-purple-700">
+                                      <span className="text-xs font-semibold text-indigo-700">
                                         {device.brand}
                                       </span>
                                       {device.specs?.isAiPhone ? (
-                                        <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-purple-50 to-blue-100 px-2 py-0.5 text-[10px] font-semibold text-purple-700 ring-1 ring-purple-200 whitespace-nowrap">
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-indigo-50 to-blue-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 ring-1 ring-indigo-200 whitespace-nowrap">
                                           <span
                                             className="inline-flex items-center justify-center w-3 h-3"
                                             aria-hidden="true"
@@ -4898,7 +4899,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                       </button>
                       <button
                         onClick={() => setShowFilters(false)}
-                        className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 text-white py-4 rounded-xl font-semibold hover:from-purple-600 hover:to-blue-600 transition-all duration-200  "
+                        className="flex-1 bg-gradient-to-r from-indigo-600 to-blue-600 text-white py-4 rounded-xl font-semibold hover:from-indigo-700 hover:to-blue-700 transition-all duration-200  "
                       >
                         Apply Filters
                       </button>
@@ -4928,7 +4929,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
             </div>
             <button
               onClick={() => navigate("/compare")}
-              className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-6 py-3 rounded-xl font-semibold hover:from-purple-600 hover:to-blue-600 transition-all duration-200   whitespace-nowrap"
+              className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-indigo-700 hover:to-blue-700 transition-all duration-200   whitespace-nowrap"
             >
               Open Comparison Tool
             </button>

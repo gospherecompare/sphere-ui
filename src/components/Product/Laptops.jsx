@@ -3170,7 +3170,7 @@ const Laptops = () => {
             </div>
             <button
               onClick={() => navigate("/compare")}
-              className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-6 py-3 rounded-xl font-semibold hover:from-purple-600 hover:to-blue-600 transition-all duration-200   whitespace-nowrap"
+              className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-indigo-700 hover:to-blue-700 transition-all duration-200   whitespace-nowrap"
             >
               Open Comparison Tool
             </button>
