@@ -202,7 +202,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const { smartphone, smartphoneAll } = deviceContext || {};
   const [params] = useSearchParams();
   const { filterSlug } = useParams();
-  const location = useLocation();
   const feature = params.get("feature");
   const normalizedFilterSlug = String(filterSlug || "")
     .trim()
