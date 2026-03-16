@@ -6,7 +6,7 @@ const CURRENT_YEAR = new Date().getFullYear();
 
 // SEO-friendly titles for different pages
 const PAGE_TITLES = {
-  home: `Compare & Buy Latest Gadgets | ${SITE_NAME}`,
+  home: `Compare Smartphones, Laptops & TVs in India | Specs, Prices & Reviews | ${SITE_NAME}`,
   smartphones: `Best Smartphones ${CURRENT_YEAR} | Compare Prices | ${SITE_NAME}`,
   laptops: `Laptops Online | Compare & Buy Best Laptops | ${SITE_NAME}`,
   tvs: `TVs | Compare Prices & Features | ${SITE_NAME}`,

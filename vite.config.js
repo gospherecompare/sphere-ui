@@ -650,9 +650,9 @@ const resolveSeo = (routePath) => {
     {
       test: (p) => p === "/",
       title:
-        "Tech Reviews: Compare Smartphones, Laptops & TVs in India | Hooks",
+        "Compare Smartphones, Laptops & TVs in India | Specs, Prices & Reviews | Hooks",
       description:
-        "Explore and compare smartphones, laptops, TVs, and networking devices with clear specs, pricing, and trend insights.",
+        "Compare smartphones, laptops, TVs, and networking devices in India with specs, prices, variants, and trend insights. Discover latest launches on Hooks.",
       keywords: `hook, best gadget comparison site, mobile price comparison india, compare laptops smartphones tvs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, latest laptops in india ${CURRENT_YEAR}, latest smart tvs in india ${CURRENT_YEAR}, new launch and trending gadgets, top selling gadgets india, compare specs`,
     },
     {

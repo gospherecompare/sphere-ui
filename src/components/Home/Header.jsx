@@ -1085,7 +1085,7 @@ const Header = () => {
   // Top navigation links
   const directLinks = [
     { name: "Top Picks", link: "/trending" },
-    { name: "Latest Releases", link: "/smartphones?filter=new" },
+    { name: "Latest Releases", link: "/smartphones/filter/new" },
     { name: "Upcoming Phones", link: "/smartphones/upcoming" },
     { name: "Compare", link: "/compare" },
   ];
@@ -1185,12 +1185,21 @@ const Header = () => {
             <div className="space-y-2">
               {category.subcategories.map((sub, idx) => {
                 const name = String(sub.name || "").toLowerCase();
+                const categoryId = String(category.id || "").toLowerCase();
+                const isSmartphonesCategory =
+                  categoryId === "smartphones" || categoryId === "mobiles";
                 let href = `/${category.id}`;
-                if (name.includes("new")) href = `/${category.id}?filter=new`;
-                else if (name.includes("trending"))
-                  href = `/${category.id}?filter=trending`;
-                else if (name.includes("compare"))
+                if (name.includes("new")) {
+                  href = isSmartphonesCategory
+                    ? "/smartphones/filter/new"
+                    : `/${category.id}?filter=new`;
+                } else if (name.includes("trending")) {
+                  href = isSmartphonesCategory
+                    ? "/smartphones/filter/trending"
+                    : `/${category.id}?filter=trending`;
+                } else if (name.includes("compare")) {
                   href = `/compare?type=${category.id}`;
+                }
 
                 return (
                   <Link
@@ -2168,7 +2177,7 @@ const Header = () => {
       },
       {
         label: "Latest Releases",
-        link: "/smartphones?sort=newest",
+        link: "/smartphones/filter/new",
         icon: <FaCalendarAlt className="w-4 h-4" />,
       },
       {

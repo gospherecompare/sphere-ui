@@ -40,7 +40,7 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  to="/smartphones?filter=new"
+                  to="/smartphones/filter/new"
                   className="hover:text-purple-400 transition-colors duration-200"
                 >
                   New Launches

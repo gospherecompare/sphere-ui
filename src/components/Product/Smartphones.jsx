@@ -201,15 +201,11 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const { smartphone, smartphoneAll } = deviceContext || {};
   const [params] = useSearchParams();
   const { filterSlug } = useParams();
-  const rawFilter = params.get("filter");
   const feature = params.get("feature");
   const normalizedFilterSlug = String(filterSlug || "")
     .trim()
     .toLowerCase();
-  const normalizedQueryFilter = String(rawFilter || "")
-    .trim()
-    .toLowerCase();
-  const listFilter = normalizedQueryFilter || normalizedFilterSlug;
+  const listFilter = normalizedFilterSlug;
   const isUpcomingView =
     Boolean(onlyUpcoming) ||
     normalizedFilterSlug === "upcoming" ||
@@ -786,12 +782,23 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       String(batteryRaw).replace(/[^0-9]/g, "") || "0",
     );
 
+    const formatHz = (val) => {
+      if (val == null) return "";
+      const raw =
+        typeof val === "number" || typeof val === "boolean"
+          ? String(val)
+          : String(val || "").trim();
+      if (!raw) return "";
+      return /hz/i.test(raw) ? raw : `${raw} Hz`;
+    };
+
     // Refresh rate
-    const refreshRate =
+    const refreshRate = formatHz(
       apiDevice.display?.refresh_rate ||
-      apiDevice.display?.refreshRate ||
-      profileDisplay.refresh_rate ||
-      "";
+        apiDevice.display?.refreshRate ||
+        profileDisplay.refresh_rate ||
+        "",
+    );
 
     // Build / design specifics (dimensions, weight, thickness, back material)
     const build = apiDevice.build_design || apiDevice.build || {};
@@ -1034,18 +1041,45 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
           "label",
           "value",
           "processor",
+          "chipset",
+          "cpu",
+          "gpu",
           "display",
           "brand",
+          "size",
+          "display_size",
+          "displaySize",
+          "type",
+          "display_type",
+          "displayType",
+          "resolution",
+          "display_resolution",
+          "refresh_rate",
+          "refreshRate",
+          "hz",
+          "rate",
+          "ram",
+          "storage",
+          "battery",
+          "capacity",
         ];
         for (const k of common) {
-          if (v[k]) return String(v[k]).trim();
+          if (v[k] == null) continue;
+          if (k === "refresh_rate" || k === "refreshRate" || k === "hz")
+            return formatHz(v[k]);
+          return String(v[k]).trim();
         }
-        try {
-          const s = JSON.stringify(v);
-          return s === "{}" ? "" : s;
-        } catch {
-          return "";
-        }
+        const scalarValues = Object.values(v)
+          .filter(
+            (val) =>
+              typeof val === "string" ||
+              typeof val === "number" ||
+              typeof val === "boolean",
+          )
+          .map((val) => String(val).trim())
+          .filter(Boolean);
+        if (scalarValues.length) return scalarValues.join(" ");
+        return "";
       }
       return "";
     };
@@ -1744,7 +1778,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const { search } = location;
   const pathname = String(location?.pathname || "").toLowerCase();
   const isSingleSmartphonePath = pathname === "/smartphone";
-  const isNewFilterPath = pathname === "/smartphones" && listFilter === "new";
+  const isNewFilterPath = listFilter === "new";
   const currentYear = new Date().getFullYear();
 
   const priceFilterMap = {
@@ -1848,7 +1882,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     const brandParam = params.get("brand");
     const qParam =
       params.get("q") || params.get("query") || params.get("search") || null;
-    const sortParam = params.get("sort");
 
     // Parse price and list params (comma-separated lists supported)
     const rawMin =
@@ -1965,14 +1998,11 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     });
 
     if (brandParam) {
-      if (sortParam) setSortBy(sortParam);
-      else setSortBy("newest");
+      setSortBy("newest");
     }
 
     if (qParam !== null) {
       setSearchQuery(qParam);
-    } else if (sortParam) {
-      setSortBy(sortParam);
     }
   }, [search, normalizedFilterSlug]);
 
@@ -2180,8 +2210,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         const params = new URLSearchParams(search);
         if (next.length > 0) params.set("brand", next[0]);
         else params.delete("brand");
-        if (sortBy && sortBy !== "featured") params.set("sort", sortBy);
-        else params.delete("sort");
+        params.delete("sort");
         const qs = params.toString();
         const path = `/smartphones${qs ? `?${qs}` : ""}`;
         navigate(path, { replace: true });
@@ -2225,11 +2254,12 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     setShowSort(false);
     try {
       const params = new URLSearchParams(search);
-      if (value && value !== "featured") params.set("sort", value);
-      else params.delete("sort");
-      const qs = params.toString();
-      const path = `/smartphones${qs ? `?${qs}` : ""}`;
-      navigate(path, { replace: true });
+      if (params.has("sort")) {
+        params.delete("sort");
+        const qs = params.toString();
+        const path = `/smartphones${qs ? `?${qs}` : ""}`;
+        navigate(path, { replace: true });
+      }
     } catch {
       // ignore
     }
@@ -3042,11 +3072,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         "max",
         "max_price",
       ].forEach((key) => params.delete(key));
-      if (sortBy && sortBy !== "featured") {
-        params.set("sort", sortBy);
-      } else {
-        params.delete("sort");
-      }
+      params.delete("sort");
       const qs = params.toString();
       const path = `/smartphones${qs ? `?${qs}` : ""}`;
       navigate(path, { replace: true });
