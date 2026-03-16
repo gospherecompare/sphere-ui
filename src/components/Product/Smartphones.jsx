@@ -201,15 +201,19 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const { smartphone, smartphoneAll } = deviceContext || {};
   const [params] = useSearchParams();
   const { filterSlug } = useParams();
-  const filter = params.get("filter");
+  const rawFilter = params.get("filter");
   const feature = params.get("feature");
   const normalizedFilterSlug = String(filterSlug || "")
     .trim()
     .toLowerCase();
+  const normalizedQueryFilter = String(rawFilter || "")
+    .trim()
+    .toLowerCase();
+  const listFilter = normalizedQueryFilter || normalizedFilterSlug;
   const isUpcomingView =
     Boolean(onlyUpcoming) ||
     normalizedFilterSlug === "upcoming" ||
-    String(filter || "").toLowerCase() === "upcoming";
+    listFilter === "upcoming";
   const normalizedFeature = feature
     ? feature.toString().toLowerCase().replace(/\s+/g, "-")
     : null;
@@ -290,20 +294,22 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     return base.slice(0, 16);
   }, [phonesForFeatureList, normalizedFeature, popularFeatureOrder]);
 
+  const isListFilter = listFilter === "trending" || listFilter === "new";
   const smartphonesForList = useMemo(() => {
-    if (filter === "trending" || filter === "new") {
-      return Array.isArray(smartphone) ? smartphone : [];
+    if (isListFilter) {
+      const list = Array.isArray(smartphone) ? smartphone : [];
+      return list.length ? list : phonesForFeatureList;
     }
     return phonesForFeatureList;
-  }, [filter, smartphone, phonesForFeatureList]);
+  }, [isListFilter, smartphone, phonesForFeatureList]);
   const dispatch = useDispatch();
 
   useEffect(() => {
-    if (filter === "trending") dispatch(fetchTrendingSmartphones());
-    else if (filter === "new") dispatch(fetchNewLaunchSmartphones());
+    if (listFilter === "trending") dispatch(fetchTrendingSmartphones());
+    else if (listFilter === "new") dispatch(fetchNewLaunchSmartphones());
     else if (!smartphoneAll || smartphoneAll.length === 0)
       dispatch(fetchSmartphones());
-  }, [filter, dispatch, smartphoneAll ? smartphoneAll.length : 0]);
+  }, [listFilter, dispatch, smartphoneAll ? smartphoneAll.length : 0]);
 
   // When query filters change (feature / list filters), scroll back to top so the
   // user immediately sees the updated cards.
@@ -313,7 +319,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     } catch (e) {
       // ignore scroll errors (SSR / old browsers)
     }
-  }, [feature, filter]);
+  }, [feature, listFilter]);
 
   const { getLogo, getStore, getStoreLogo } = useStoreLogos();
 
@@ -1738,7 +1744,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const { search } = location;
   const pathname = String(location?.pathname || "").toLowerCase();
   const isSingleSmartphonePath = pathname === "/smartphone";
-  const isNewFilterPath = pathname === "/smartphones" && filter === "new";
+  const isNewFilterPath = pathname === "/smartphones" && listFilter === "new";
   const currentYear = new Date().getFullYear();
 
   const priceFilterMap = {
@@ -1795,7 +1801,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       String(location.pathname || "")
         .toLowerCase()
         .includes("newlaunch")) ||
-    (params && params.get("filter") === "new");
+    listFilter === "new";
   const headerLabel = isUpcomingView
     ? "UPCOMING SMARTPHONES"
     : isNewLaunchHeading
@@ -2238,8 +2244,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
     // When asking for new launches, prefer devices with a parseable
     // launch date that is not in the future and sort them newest-first.
+    // If dates are missing, fall back to the original list so the route
+    // never renders empty on refresh.
     let baseCards = variantCards;
-    if (filter === "new") {
+    if (listFilter === "new") {
       const today = new Date();
       const parseDate = (s) => {
         if (!s) return null;
@@ -2247,16 +2255,25 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         return Number.isNaN(d.getTime()) ? null : d;
       };
 
-      baseCards = variantCards
-        .filter((d) => {
-          const ld = parseDate(d.launchDate || d.launch_date || d.launch_date);
-          return ld && ld <= today;
-        })
-        .sort((a, b) => {
-          const da = parseDate(a.launchDate) || new Date(0);
-          const db = parseDate(b.launchDate) || new Date(0);
-          return db - da;
-        });
+      const datedCards = variantCards.map((d) => ({
+        device: d,
+        date: parseDate(d.launchDate || d.launch_date),
+      }));
+      const hasValidDate = datedCards.some((item) => item.date);
+      if (hasValidDate) {
+        const released = datedCards.filter(
+          (item) => item.date && item.date <= today,
+        );
+        const usable = released.length
+          ? released
+          : datedCards.filter((item) => item.date);
+        usable.sort((a, b) => b.date - a.date);
+        const noDate = datedCards.filter((item) => !item.date);
+        baseCards = [
+          ...usable.map((item) => item.device),
+          ...noDate.map((item) => item.device),
+        ];
+      }
     }
 
     return baseCards.filter((device) => {
@@ -3795,7 +3812,23 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                       device.is_prebooking === true,
                     );
                     const availableStoreRows = availabilityState.stores || [];
-                    const hasStoreRows = availableStoreRows.length > 0;
+                    const shouldFilterEmptyStores = listFilter === "new";
+                    const storeRowsForDisplay = shouldFilterEmptyStores
+                      ? availableStoreRows.filter((storePrice) => {
+                          if (!storePrice) return false;
+                          const hasUrl = Boolean(
+                            String(storePrice.url || "").trim(),
+                          );
+                          const hasPrice =
+                            extractNumericPrice(storePrice.price) > 0;
+                          return hasUrl || hasPrice;
+                        })
+                      : availableStoreRows;
+                    const hasStoreRows = storeRowsForDisplay.length > 0;
+                    const hiddenStoreCount =
+                      storeRowsForDisplay.length !== availableStoreRows.length
+                        ? Math.max(storeRowsForDisplay.length - 3, 0)
+                        : availabilityState.hiddenCount;
                     const launchDateParsed = device.launchDate
                       ? new Date(device.launchDate)
                       : null;
@@ -4076,7 +4109,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                                   </h4>
                                 </div>
                                 <div className="space-y-2">
-                                  {availableStoreRows
+                                  {storeRowsForDisplay
                                     .slice(0, 3)
                                     .map((storePrice, i) => {
                                       const storeObj =
@@ -4183,10 +4216,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                                         </div>
                                       );
                                     })}
-                                  {availabilityState.hiddenCount > 0 && (
+                                  {hiddenStoreCount > 0 && (
                                     <div className="text-center text-xs text-gray-500">
-                                      +{availabilityState.hiddenCount} more
-                                      stores
+                                      +{hiddenStoreCount} more stores
                                     </div>
                                   )}
                                 </div>
