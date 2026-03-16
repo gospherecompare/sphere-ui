@@ -62,6 +62,7 @@ const token = Cookies.get("arenak");
 const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
 const RECENT_STORAGE_KEY = "hooks_recent_smartphones_v1";
 const MAX_RECENT_ITEMS = 12;
+const SITE_ORIGIN = "https://tryhook.shop";
 
 const normalizeScore100 = (value) => {
   const n = Number(value);
@@ -1971,11 +1972,11 @@ Price: ${price}
   const getCanonicalUrl = () => {
     try {
       const slug = generateSlug(mobileData?.name || mobileData?.model || "");
-      if (!slug) return window.location.href;
+      if (!slug) return SITE_ORIGIN;
       const path = `/smartphones/${toSeoDetailSlug(slug) || slug}`;
-      return window.location.origin + path;
+      return `${SITE_ORIGIN}${path}`;
     } catch (e) {
-      return window.location.href;
+      return SITE_ORIGIN;
     }
   };
   const isSharedLink =

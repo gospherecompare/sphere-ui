@@ -59,6 +59,7 @@ import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
 
 // Data comes from API via `useDevice()`; embedded mock removed.
 const mockAppliances = [];
+const SITE_ORIGIN = "https://tryhook.shop";
 
 const toNumericPrice = (value) => {
   if (value === null || value === undefined || value === "") return null;
@@ -1586,11 +1587,11 @@ const TVDetailCard = () => {
       const slug = generateSlug(
         applianceData?.product_name || applianceData?.model_number || "",
       );
-      if (!slug) return window.location.href;
+      if (!slug) return SITE_ORIGIN;
       const path = `/tvs/${slug}`;
-      return window.location.origin + path;
+      return `${SITE_ORIGIN}${path}`;
     } catch (e) {
-      return window.location.href;
+      return SITE_ORIGIN;
     }
   };
 

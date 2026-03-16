@@ -64,6 +64,8 @@ import { networkingMeta } from "../../constants/meta";
 import RatingReview from "../ui/RatingReview";
 import useStoreLogos from "../../hooks/useStoreLogos";
 
+const SITE_ORIGIN = "https://tryhook.shop";
+
 // Rating Input Component
 const InlineRatingInput = ({
   value,
@@ -731,11 +733,11 @@ const NetworkingDetailCard = () => {
   const getCanonicalUrl = () => {
     try {
       const slug = generateSlug(deviceData?.name || deviceData?.model || "");
-      if (!slug) return window.location.href;
+      if (!slug) return SITE_ORIGIN;
       const path = `/networking/${slug}`;
-      return window.location.origin + path + (location.search || "");
+      return `${SITE_ORIGIN}${path}`;
     } catch (e) {
-      return window.location.href;
+      return SITE_ORIGIN;
     }
   };
 

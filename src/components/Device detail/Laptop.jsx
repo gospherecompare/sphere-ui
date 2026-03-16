@@ -43,6 +43,8 @@ import {
 } from "../../utils/groupScoreStats";
 import ScoreGroupTable from "../ui/ScoreGroupTable";
 
+const SITE_ORIGIN = "https://tryhook.shop";
+
 const normalizeScore100 = (value) => {
   const n = Number(value);
   if (!Number.isFinite(n)) return null;
@@ -1335,11 +1337,11 @@ const LaptopDetailCard = () => {
           laptopData?.model ||
           "",
       );
-      if (!slug) return window.location.href;
+      if (!slug) return SITE_ORIGIN;
       const path = `/laptops/${slug}`;
-      return window.location.origin + path;
+      return `${SITE_ORIGIN}${path}`;
     } catch (e) {
-      return window.location.href;
+      return SITE_ORIGIN;
     }
   };
 

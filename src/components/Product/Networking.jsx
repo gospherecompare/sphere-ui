@@ -40,6 +40,8 @@ import { generateSlug } from "../../utils/slugGenerator";
 import useDevice from "../../hooks/useDevice";
 import Breadcrumbs from "../Breadcrumbs";
 
+const SITE_ORIGIN = "https://tryhook.shop";
+
 // Enhanced Image Carousel
 const ImageCarousel = ({ images = [] }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -558,7 +560,8 @@ const Networking = () => {
   });
 
   const navigate = useNavigate();
-  const { search } = useLocation();
+  const location = useLocation();
+  const { search } = location;
   const [params] = useSearchParams();
   const filter = params.get("filter");
   const dispatch = useDispatch();
@@ -962,6 +965,10 @@ const Networking = () => {
     return toAbsoluteUrl(raw);
   }, [sortedVariants, siteOrigin]);
 
+  const listSchemaUrl = `${SITE_ORIGIN}${
+    location?.pathname ? location.pathname : "/networking"
+  }`;
+
   const itemListJsonLd = useMemo(() => {
     if (!sortedVariants?.length) return null;
     const items = sortedVariants
@@ -973,7 +980,7 @@ const Networking = () => {
           device?.model || device?.name || device?.id || "",
         );
         if (!slug) return null;
-        const url = `${siteOrigin}/networking/${slug}`;
+        const url = `${SITE_ORIGIN}/networking/${slug}`;
         const image = toAbsoluteUrl(
           device?.images?.find(Boolean) || device?.image || "",
         );
@@ -994,15 +1001,22 @@ const Networking = () => {
       })
       .filter(Boolean);
     if (!items.length) return null;
-    return JSON.stringify({
-      "@context": "https://schema.org",
+    const itemList = {
       "@type": "ItemList",
       name: seoTitle,
       itemListOrder: "https://schema.org/ItemListOrderAscending",
       numberOfItems: items.length,
       itemListElement: items,
-    });
-  }, [sortedVariants, siteOrigin, seoTitle]);
+    };
+    const schema = {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      name: seoTitle,
+      url: listSchemaUrl,
+      mainEntity: itemList,
+    };
+    return JSON.stringify(schema);
+  }, [sortedVariants, seoTitle, listSchemaUrl, toAbsoluteUrl]);
 
   return (
     <div className="min-h-screen ">

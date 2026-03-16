@@ -177,6 +177,7 @@ const CircularScoreBadge = ({ score, size = 62 }) => {
 };
 
 const API_ASSET_ORIGIN = "https://api.apisphere.in";
+const SITE_ORIGIN = "https://tryhook.shop";
 
 const Smartphones = ({ onlyUpcoming = false } = {}) => {
   // Add animation styles
@@ -3174,6 +3175,13 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     return abs || "";
   }, [sortedVariants, siteOrigin]);
 
+  const listSchemaUrl = `${SITE_ORIGIN}${
+    location?.pathname ? location.pathname : "/smartphones"
+  }`;
+  const isItemListSchema = Boolean(
+    isUpcomingView || listFilter || normalizedFeature || hasUrlDrivenFilters,
+  );
+
   const itemListJsonLd = useMemo(() => {
     if (!sortedVariants?.length) return null;
     const items = sortedVariants
@@ -3185,7 +3193,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
           device?.model || device?.name || device?.id || "",
         );
         if (!slug) return null;
-        const url = `${siteOrigin}/smartphones/${slug}-price-in-india`;
+        const url = `${SITE_ORIGIN}/smartphones/${slug}-price-in-india`;
         const image = toAbsoluteUrl(
           device?.images?.find(Boolean) || device?.image || "",
         );
@@ -3207,15 +3215,36 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       .filter(Boolean);
 
     if (!items.length) return null;
-    return JSON.stringify({
-      "@context": "https://schema.org",
+    const itemList = {
       "@type": "ItemList",
       name: seoTitle,
       itemListOrder: "https://schema.org/ItemListOrderAscending",
       numberOfItems: items.length,
       itemListElement: items,
-    });
-  }, [sortedVariants, siteOrigin, seoTitle]);
+    };
+
+    const schema = isItemListSchema
+      ? {
+          "@context": "https://schema.org",
+          ...itemList,
+          url: listSchemaUrl,
+        }
+      : {
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: seoTitle,
+          url: listSchemaUrl,
+          mainEntity: itemList,
+        };
+
+    return JSON.stringify(schema);
+  }, [
+    sortedVariants,
+    seoTitle,
+    listSchemaUrl,
+    isItemListSchema,
+    toAbsoluteUrl,
+  ]);
 
   if (noDataAndNotLoading) return null;
 

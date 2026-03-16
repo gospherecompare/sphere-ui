@@ -57,6 +57,8 @@ import {
   TV_FEATURE_CATALOG,
 } from "../../utils/tvPopularFeatures";
 
+const SITE_ORIGIN = "https://tryhook.shop";
+
 // Enhanced Image Carousel
 const ImageCarousel = ({ images = [] }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -1865,7 +1867,8 @@ const TVs = () => {
   });
 
   const navigate = useNavigate();
-  const { search } = useLocation();
+  const location = useLocation();
+  const { search } = location;
   const [params] = useSearchParams();
   const filter = params.get("filter");
   const feature = params.get("feature");
@@ -2562,6 +2565,11 @@ const TVs = () => {
     return toAbsoluteUrl(raw);
   }, [sortedVariants, siteOrigin]);
 
+  const listSchemaUrl = `${SITE_ORIGIN}${
+    location?.pathname ? location.pathname : "/tvs"
+  }`;
+  const isItemListSchema = Boolean(filter || normalizedFeature);
+
   const itemListJsonLd = useMemo(() => {
     if (!sortedVariants?.length) return null;
     const items = sortedVariants
@@ -2573,7 +2581,7 @@ const TVs = () => {
           device?.model || device?.name || device?.id || "",
         );
         if (!slug) return null;
-        const url = `${siteOrigin}/tvs/${slug}`;
+        const url = `${SITE_ORIGIN}/tvs/${slug}`;
         const image = toAbsoluteUrl(
           device?.images?.find(Boolean) || device?.image || "",
         );
@@ -2594,15 +2602,34 @@ const TVs = () => {
       })
       .filter(Boolean);
     if (!items.length) return null;
-    return JSON.stringify({
-      "@context": "https://schema.org",
+    const itemList = {
       "@type": "ItemList",
       name: seoTitle,
       itemListOrder: "https://schema.org/ItemListOrderAscending",
       numberOfItems: items.length,
       itemListElement: items,
-    });
-  }, [sortedVariants, siteOrigin, seoTitle]);
+    };
+    const schema = isItemListSchema
+      ? {
+          "@context": "https://schema.org",
+          ...itemList,
+          url: listSchemaUrl,
+        }
+      : {
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: seoTitle,
+          url: listSchemaUrl,
+          mainEntity: itemList,
+        };
+    return JSON.stringify(schema);
+  }, [
+    sortedVariants,
+    seoTitle,
+    listSchemaUrl,
+    isItemListSchema,
+    toAbsoluteUrl,
+  ]);
 
   // Get appliance type icon component
   const ApplianceTypeIcon = ({ applianceType }) => {

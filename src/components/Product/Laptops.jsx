@@ -148,6 +148,8 @@ const ImageCarousel = ({ images = [] }) => {
   );
 };
 
+const SITE_ORIGIN = "https://tryhook.shop";
+
 const clampScore100 = (value) => {
   const n = Number(value);
   if (!Number.isFinite(n)) return null;
@@ -1077,7 +1079,8 @@ const Laptops = () => {
   }, [brands, brandFilterQuery]);
 
   const navigate = useNavigate();
-  const { search } = useLocation();
+  const location = useLocation();
+  const { search } = location;
 
   // Apply query param filters
   useEffect(() => {
@@ -1607,6 +1610,11 @@ const Laptops = () => {
     return toAbsoluteUrl(raw);
   }, [sortedVariants, siteOrigin]);
 
+  const listSchemaUrl = `${SITE_ORIGIN}${
+    location?.pathname ? location.pathname : "/laptops"
+  }`;
+  const isItemListSchema = Boolean(filter || normalizedFeature);
+
   const itemListJsonLd = useMemo(() => {
     if (!sortedVariants?.length) return null;
     const items = sortedVariants
@@ -1618,7 +1626,7 @@ const Laptops = () => {
           device?.model || device?.name || device?.id || "",
         );
         if (!slug) return null;
-        const url = `${siteOrigin}/laptops/${slug}`;
+        const url = `${SITE_ORIGIN}/laptops/${slug}`;
         const image = toAbsoluteUrl(
           device?.images?.find(Boolean) || device?.image || "",
         );
@@ -1639,15 +1647,34 @@ const Laptops = () => {
       })
       .filter(Boolean);
     if (!items.length) return null;
-    return JSON.stringify({
-      "@context": "https://schema.org",
+    const itemList = {
       "@type": "ItemList",
       name: seoTitle,
       itemListOrder: "https://schema.org/ItemListOrderAscending",
       numberOfItems: items.length,
       itemListElement: items,
-    });
-  }, [sortedVariants, siteOrigin, seoTitle]);
+    };
+    const schema = isItemListSchema
+      ? {
+          "@context": "https://schema.org",
+          ...itemList,
+          url: listSchemaUrl,
+        }
+      : {
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: seoTitle,
+          url: listSchemaUrl,
+          mainEntity: itemList,
+        };
+    return JSON.stringify(schema);
+  }, [
+    sortedVariants,
+    seoTitle,
+    listSchemaUrl,
+    isItemListSchema,
+    toAbsoluteUrl,
+  ]);
 
   return (
     <div className="min-h-screen">

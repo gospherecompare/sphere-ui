@@ -34,6 +34,7 @@ import {
 
 const RUPEE = "\u20B9";
 const API_BASE = "https://api.apisphere.in";
+const SITE_ORIGIN = "https://tryhook.shop";
 
 const CATEGORIES = {
   smartphones: {
@@ -1241,14 +1242,52 @@ const TrendingProductsHub = () => {
   const seoDescription = config.metaDescription;
   const seoKeywords = config.metaKeywords;
   const canonicalPath = `/trending/${activeCategory}`;
-  const canonicalUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}${canonicalPath}`
-      : canonicalPath;
+  const canonicalUrl = `${SITE_ORIGIN}${canonicalPath}`;
   const ogImage = first(
     arr(visible).find((p) => text(p?.image))?.image,
     arr(products).find((p) => text(p?.image))?.image,
   );
+  const itemListJsonLd = useMemo(() => {
+    if (!visible.length) return null;
+    const items = visible
+      .slice(0, 24)
+      .map((product, index) => {
+        const name = text(product?.name);
+        if (!name) return null;
+        const slug = generateSlug(name);
+        if (!slug) return null;
+        const detailBase = product?.detailPath || `/${activeCategory}`;
+        const detailUrl =
+          detailBase === "/smartphones"
+            ? `${SITE_ORIGIN}${detailBase}/${slug}-price-in-india`
+            : `${SITE_ORIGIN}${detailBase}/${slug}`;
+        const item = {
+          "@type": "Product",
+          name,
+          url: detailUrl,
+        };
+        if (product?.image) item.image = product.image;
+        if (product?.brand) {
+          item.brand = { "@type": "Brand", name: product.brand };
+        }
+        return {
+          "@type": "ListItem",
+          position: index + 1,
+          item,
+        };
+      })
+      .filter(Boolean);
+    if (!items.length) return null;
+    return JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      name: seoTitle,
+      url: canonicalUrl,
+      itemListOrder: "https://schema.org/ItemListOrderAscending",
+      numberOfItems: items.length,
+      itemListElement: items,
+    });
+  }, [visible, seoTitle, canonicalUrl, activeCategory]);
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8 lg:p-10 bg-white">
@@ -1270,6 +1309,9 @@ const TrendingProductsHub = () => {
         <meta name="twitter:title" content={seoTitle} />
         <meta name="twitter:description" content={seoDescription} />
         {ogImage ? <meta name="twitter:image" content={ogImage} /> : null}
+        {itemListJsonLd ? (
+          <script type="application/ld+json">{itemListJsonLd}</script>
+        ) : null}
       </Helmet>
 
       <div className="mb-6 flex items-center gap-2 overflow-x-auto pb-1">

@@ -2762,6 +2762,16 @@ const MobileCompare = () => {
       : canonicalCompareEntries.length > 0
         ? "Compare selected devices side by side with detailed specifications, prices, performance, and feature differences to choose the right one."
         : "Compare smartphones, laptops, and more with detailed specifications, prices, performance, and key features side by side to find the right device for your needs.";
+  const compareJsonLd = useMemo(
+    () =>
+      JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        name: metaTitle,
+        url: canonicalCompareUrl,
+      }),
+    [metaTitle, canonicalCompareUrl],
+  );
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -2844,6 +2854,7 @@ const MobileCompare = () => {
           name="twitter:url"
           content={canonicalCompareUrl}
         />
+        <script type="application/ld+json">{compareJsonLd}</script>
       </Helmet>
       {/* Floating Header */}
       <div className="top-0 z-40 bg-white  max-w-4xl mx-auto sm:p-6 md:p-8 lg:p-10">
