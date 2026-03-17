@@ -53,6 +53,10 @@ import normalizeProduct from "../../utils/normalizeProduct";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
 import {
+  createCollectionSchema,
+  createItemListSchema,
+} from "../../utils/schemaGenerators";
+import {
   computePopularSmartphoneFeatures,
   SMARTPHONE_FEATURE_CATALOG,
 } from "../../utils/smartphonePopularFeatures";
@@ -3177,118 +3181,45 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     location?.pathname ? location.pathname : "/smartphones"
   }`;
 
-  // Generate CollectionPage + ItemList schema for category/collection pages
-  // CollectionPage wraps ItemList to satisfy Google's schema requirements for collections
-  const isItemListSchema = false;
-
-  const itemListJsonLd = useMemo(() => {
-    // Build items array if data available
-    const items =
-      sortedVariants?.length > 0
-        ? sortedVariants
-            .slice(0, 24)
-            .map((device, index) => {
-              const name = device?.name || device?.model || "";
-              if (!name) return null;
-              const slug = generateSlug(
-                device?.model || device?.name || device?.id || "",
-              );
-              if (!slug) return null;
-              const url = `${SITE_ORIGIN}/smartphones/${slug}-price-in-india`;
-              const image = toAbsoluteUrl(
-                device?.images?.find(Boolean) || device?.image || "",
-              );
-              const item = {
-                "@type": "Product",
-                name,
-                url,
-              };
-              if (image) item.image = image;
-              if (device?.brand) {
-                item.brand = { "@type": "Brand", name: device.brand };
-              }
-              // Add aggregateRating from HooksScore (Hooks proprietary rating algorithm)
-              // Converts HooksScore to 0-100 scale for Google schema.org aggregateRating
-              const hookScoreValue = Number(device?.hookScore);
-              if (Number.isFinite(hookScoreValue) && hookScoreValue > 0) {
-                // Normalize score to 0-100 scale
-                let normalizedScore = hookScoreValue;
-                if (hookScoreValue <= 1) {
-                  // Already 0-1 range, convert to 0-100
-                  normalizedScore = hookScoreValue * 100;
-                } else if (hookScoreValue <= 10) {
-                  // 0-10 range, convert to 0-100
-                  normalizedScore = hookScoreValue * 10;
-                }
-                // Ensure within 0-100
-                normalizedScore = Math.max(0, Math.min(100, normalizedScore));
-                item.aggregateRating = {
-                  "@type": "AggregateRating",
-                  ratingValue: Number(normalizedScore.toFixed(1)),
-                  bestRating: 100,
-                  worstRating: 0,
-                  ratingCount: 1,
-                };
-              }
-              return {
-                "@type": "ListItem",
-                position: index + 1,
-                item,
-              };
-            })
-            .filter(Boolean)
-        : [];
-
-    // Always return a schema with URL, even if items are empty
-    // This ensures page URL is properly indexed by search engines
-    const itemList = {
-      "@type": "ItemList",
-      name: seoTitle,
-      itemListOrder: "https://schema.org/ItemListOrderAscending",
-      numberOfItems: items.length,
-    };
-
-    if (items.length > 0) {
-      itemList.itemListElement = items;
-    }
-
-    const schema = isItemListSchema
-      ? {
-          "@context": "https://schema.org",
-          ...itemList,
-          url: listSchemaUrl,
-        }
-      : {
-          "@context": "https://schema.org",
-          "@type": "CollectionPage",
-          name: seoTitle,
-          url: listSchemaUrl,
-          mainEntity: itemList,
-        };
-
-    return JSON.stringify(schema);
-  }, [
-    sortedVariants,
-    seoTitle,
-    listSchemaUrl,
-    isItemListSchema,
-    toAbsoluteUrl,
-  ]);
-
-  // Organization schema (global, renders on all pages)
-  const organizationJsonLd = useMemo(() => {
-    return JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      name: "Hooks",
-      url: "https://tryhook.shop",
-      logo: "https://tryhook.shop/Hooks-logo.png",
-      sameAs: [
-        "https://instagram.com/tryHooks",
-        "https://twitter.com/tryHooks",
-      ],
+  const listSchemaItems = useMemo(() => {
+    const items = sortedVariants.slice(0, 20).map((device) => {
+      const name = String(
+        device?.name || device?.model || device?.title || "",
+      ).trim();
+      if (!name) return null;
+      const slug = generateSlug(device?.model || device?.name || device?.id);
+      const imageRaw = Array.isArray(device?.images)
+        ? device.images.find(Boolean)
+        : device?.image;
+      const image = normalizeAssetUrl(imageRaw) || undefined;
+      return {
+        name,
+        url: `${SITE_ORIGIN}/smartphones/${slug}-price-in-india`,
+        image,
+      };
     });
-  }, []);
+    return items.filter(Boolean);
+  }, [sortedVariants]);
+
+  const listSchema = useMemo(() => {
+    const collectionSchema = createCollectionSchema({
+      name: seoTitle,
+      description: seoDescription,
+      url: listSchemaUrl,
+      image: listOgImage || undefined,
+    });
+    const itemListSchema = createItemListSchema({
+      name: seoTitle,
+      url: listSchemaUrl,
+      items: listSchemaItems,
+    });
+    return [collectionSchema, itemListSchema];
+  }, [seoTitle, seoDescription, listSchemaUrl, listOgImage, listSchemaItems]);
+
+  const listSchemaJson = useMemo(
+    () => (listSchema ? JSON.stringify(listSchema) : null),
+    [listSchema],
+  );
 
   if (noDataAndNotLoading) return null;
 
@@ -3327,13 +3258,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
           />
         ) : null}
 
-        {/* Structured Data - Organization + ItemList schema */}
-        {organizationJsonLd ? (
-          <script type="application/ld+json">{organizationJsonLd}</script>
-        ) : null}
-        {itemListJsonLd ? (
-          <script type="application/ld+json">{itemListJsonLd}</script>
-        ) : null}
+        {listSchemaJson && (
+          <script type="application/ld+json">{listSchemaJson}</script>
+        )}
       </Helmet>
       {/* Page Header with Descriptive Content */}
 

@@ -8,13 +8,11 @@ const Terms = () => {
 
   const updatedOn = "March 9, 2026";
   const canonical = "https://tryhook.shop/terms";
-
-  const schema = createWebPageSchema({
+  const termsSchema = createWebPageSchema({
     name: "Terms and Conditions",
     description:
-      "Read the Terms and Conditions for using Hooks device comparison platform",
+      "Terms and conditions for using Hooks device comparison platform.",
     url: canonical,
-    pageType: "WebPage",
   });
 
   const termsParagraphs = [
@@ -33,8 +31,8 @@ const Terms = () => {
         image={`${canonical}/og-image`}
         url={canonical}
         robots="index, follow"
-        schema={schema}
         ogType="website"
+        schema={termsSchema}
       />
       <main className="min-h-screen bg-white max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-1">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-4">

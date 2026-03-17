@@ -1,5 +1,5 @@
 // src/components/LaptopDetailCard.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import useDevice from "../../hooks/useDevice";
 import useStoreLogos from "../../hooks/useStoreLogos";
@@ -32,8 +32,8 @@ import {
 import Cookies from "js-cookie";
 import Spinner from "../ui/Spinner";
 import { laptopMeta } from "../../constants/meta";
-import SEO, { createProductSchema } from "../SEO";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
+import { createProductSchema } from "../../utils/schemaGenerators";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
 import {
@@ -2096,61 +2096,26 @@ const LaptopDetailCard = () => {
     return url.startsWith("/") ? `${origin}${url}` : `${origin}/${url}`;
   };
   const ogImage = toAbsoluteUrl(metaImage);
-  const extractNumericPrice = (value) => {
-    if (value == null) return null;
-    const cleaned = String(value).replace(/[^0-9]/g, "");
-    if (!cleaned) return null;
-    const num = parseInt(cleaned, 10);
-    return Number.isFinite(num) && num > 0 ? num : null;
-  };
-  const productJsonLd = (() => {
-    if (!laptopData) return null;
-    const name = metaTitle || metaNameWithBrand || "Laptop";
-    const url =
-      canonicalUrl ||
-      (typeof window !== "undefined" ? window.location.href : "");
-    const brandName =
-      laptopData?.brand || laptopData?.brand_name || metaBrand || "";
-    const imageCandidates = [
-      metaImage,
-      ...(Array.isArray(laptopData?.images) ? laptopData.images : []),
-    ]
-      .filter(Boolean)
-      .map(toAbsoluteUrl)
-      .filter(Boolean);
-    const images = Array.from(new Set(imageCandidates));
-    const priceValue = extractNumericPrice(
-      laptopData?.price ??
-        laptopData?.base_price ??
-        laptopData?.variants?.[0]?.base_price ??
-        null,
-    );
-    const offers =
-      priceValue != null
-        ? {
-            "@type": "Offer",
-            priceCurrency: "INR",
-            price: priceValue,
-            availability: "https://schema.org/InStock",
-            url,
-            itemCondition: "https://schema.org/NewCondition",
-          }
-        : null;
-    const schema = {
-      "@context": "https://schema.org",
-      "@type": "Product",
+  const productSchemaJson = useMemo(() => {
+    const name = metaNameWithBrand || metaBaseName || metaTitle || "";
+    if (!name) return null;
+    const schema = createProductSchema({
       name,
       description: metaDescription,
-      url,
-    };
-    if (images.length) schema.image = images;
-    if (brandName) schema.brand = { "@type": "Brand", name: brandName };
-    const sku =
-      laptopData?.model || laptopData?.id || laptopData?.product_id || null;
-    if (sku) schema.sku = String(sku);
-    if (offers) schema.offers = offers;
+      image: ogImage || undefined,
+      url: canonicalUrl,
+      brand: metaBrand || undefined,
+    });
     return JSON.stringify(schema);
-  })();
+  }, [
+    metaNameWithBrand,
+    metaBaseName,
+    metaTitle,
+    metaDescription,
+    ogImage,
+    canonicalUrl,
+    metaBrand,
+  ]);
 
   return (
     <div className="px-2 lg:px-4 mx-auto max-w-4xl w-full bg-white">
@@ -2170,9 +2135,9 @@ const LaptopDetailCard = () => {
         <meta name="twitter:title" content={metaTitle} />
         <meta name="twitter:description" content={metaDescription} />
         {ogImage && <meta name="twitter:image" content={ogImage} />}
-        {productJsonLd ? (
-          <script type="application/ld+json">{productJsonLd}</script>
-        ) : null}
+        {productSchemaJson && (
+          <script type="application/ld+json">{productSchemaJson}</script>
+        )}
       </Helmet>
       {/* Share Menu Modal */}
       {showShareMenu && (

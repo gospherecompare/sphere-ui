@@ -7,15 +7,12 @@ const Contact = () => {
   useTitle({ page: "Contact" });
 
   const canonical = "https://tryhook.shop/contact";
-  const contactEmail = "gospherecompare@gmail.com";
-
-  const schema = createContactPageSchema({
+  const contactSchema = createContactPageSchema({
     name: "Contact Hooks",
     description:
-      "Get in touch with Hooks for partnerships, feedback, or support",
+      "Get in touch with Hooks for product inquiries, feedback, partnerships, or general support.",
     url: canonical,
-    contactEmail: contactEmail,
-    contactAddress: "India",
+    contactEmail: "gospherecompare@gmail.com",
   });
 
   const contacts = [
@@ -34,8 +31,8 @@ const Contact = () => {
         image={`${canonical}/og-image`}
         url={canonical}
         robots="index, follow"
-        schema={schema}
         ogType="website"
+        schema={contactSchema}
       />
       <main className="min-h-screen bg-white max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-1">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-1 space-y-2">

@@ -8,12 +8,11 @@ const PrivacyPolicy = () => {
 
   const updatedOn = "March 9, 2026";
   const canonical = "https://tryhook.shop/privacy-policy";
-
-  const schema = createWebPageSchema({
+  const privacySchema = createWebPageSchema({
     name: "Privacy Policy",
-    description: "Privacy policy for Hooks device comparison platform",
+    description:
+      "Privacy policy for Hooks device comparison platform and data practices.",
     url: canonical,
-    pageType: "WebPage",
   });
 
   const policyParagraphs = [
@@ -32,8 +31,8 @@ const PrivacyPolicy = () => {
         image={`${canonical}/og-image`}
         url={canonical}
         robots="index, follow"
-        schema={schema}
         ogType="website"
+        schema={privacySchema}
       />
       <main className="min-h-screen bg-white max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-1">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-4">

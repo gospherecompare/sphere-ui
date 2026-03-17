@@ -1,9 +1,10 @@
 // src/components/NetworkingDetailCard.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import useDevice from "../../hooks/useDevice";
 import Cookies from "js-cookie";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
+import { createProductSchema } from "../../utils/schemaGenerators";
 
 // Icons
 import {
@@ -59,7 +60,6 @@ import {
 
 import "../../styles/hideScrollbar.css";
 import Spinner from "../ui/Spinner";
-import SEO, { createProductSchema } from "../SEO";
 import { networkingMeta } from "../../constants/meta";
 import RatingReview from "../ui/RatingReview";
 import useStoreLogos from "../../hooks/useStoreLogos";
@@ -1407,61 +1407,27 @@ const NetworkingDetailCard = () => {
     return url.startsWith("/") ? `${origin}${url}` : `${origin}/${url}`;
   };
   const ogImage = toAbsoluteUrl(metaImage);
-  const extractNumericPrice = (value) => {
-    if (value == null) return null;
-    const cleaned = String(value).replace(/[^0-9]/g, "");
-    if (!cleaned) return null;
-    const num = parseInt(cleaned, 10);
-    return Number.isFinite(num) && num > 0 ? num : null;
-  };
-  const productJsonLd = (() => {
-    if (!deviceData) return null;
-    const name = metaTitle || deviceData?.name || deviceData?.model || "Device";
-    const url =
-      canonicalUrl ||
-      (typeof window !== "undefined" ? window.location.href : "");
-    const brandName =
-      deviceData?.brand || deviceData?.brand_name || deviceData?.manufacturer;
-    const imageCandidates = [
-      metaImage,
-      ...(Array.isArray(deviceData?.images) ? deviceData.images : []),
-    ]
-      .filter(Boolean)
-      .map(toAbsoluteUrl)
-      .filter(Boolean);
-    const images = Array.from(new Set(imageCandidates));
-    const priceValue = extractNumericPrice(
-      deviceData?.price ??
-        deviceData?.base_price ??
-        deviceData?.variants?.[0]?.base_price ??
-        null,
-    );
-    const offers =
-      priceValue != null
-        ? {
-            "@type": "Offer",
-            priceCurrency: "INR",
-            price: priceValue,
-            availability: "https://schema.org/InStock",
-            url,
-            itemCondition: "https://schema.org/NewCondition",
-          }
-        : null;
-    const schema = {
-      "@context": "https://schema.org",
-      "@type": "Product",
+  const productSchemaJson = useMemo(() => {
+    const name = deviceData?.name || deviceData?.model || metaTitle || "";
+    if (!name) return null;
+    const schema = createProductSchema({
       name,
       description: metaDescription,
-      url,
-    };
-    if (images.length) schema.image = images;
-    if (brandName) schema.brand = { "@type": "Brand", name: brandName };
-    const sku =
-      deviceData?.model || deviceData?.id || deviceData?.product_id || null;
-    if (sku) schema.sku = String(sku);
-    if (offers) schema.offers = offers;
+      image: ogImage || undefined,
+      url: canonicalUrl,
+      brand: deviceData?.brand || deviceData?.brand_name || undefined,
+    });
     return JSON.stringify(schema);
-  })();
+  }, [
+    deviceData?.name,
+    deviceData?.model,
+    deviceData?.brand,
+    deviceData?.brand_name,
+    metaTitle,
+    metaDescription,
+    ogImage,
+    canonicalUrl,
+  ]);
 
   return (
     <div className="max-w-8xl mx-auto bg-white">
@@ -1482,9 +1448,9 @@ const NetworkingDetailCard = () => {
         <meta name="twitter:title" content={metaTitle} />
         <meta name="twitter:description" content={metaDescription} />
         {ogImage && <meta name="twitter:image" content={ogImage} />}
-        {productJsonLd ? (
-          <script type="application/ld+json">{productJsonLd}</script>
-        ) : null}
+        {productSchemaJson && (
+          <script type="application/ld+json">{productSchemaJson}</script>
+        )}
       </Helmet>
       {/* Share Menu Modal */}
       {showShareMenu && (

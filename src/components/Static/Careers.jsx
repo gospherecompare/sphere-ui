@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import useTitle from "../../hooks/useTitle";
+import { createWebPageSchema } from "../../utils/schemaGenerators";
 
 const CAREERS_API_BASE = (
   import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in"
@@ -1303,6 +1304,16 @@ const SectionCard = ({ title, children, optional = false }) => (
 const Careers = () => {
   useTitle({ page: "Careers" });
 
+  const canonical = "https://tryhook.shop/careers";
+  const careersSchemaJson = JSON.stringify(
+    createWebPageSchema({
+      name: "Careers at Hooks",
+      description:
+        "Apply for frontend, backend, content developer, and fullstack roles at Hooks.",
+      url: canonical,
+    }),
+  );
+
   const [step, setStep] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState(createInitialForm);
@@ -1731,6 +1742,10 @@ const Careers = () => {
           content="Apply for Frontend, Backend, Content Developer, and Fullstack roles at Hooks."
         />
         <meta name="robots" content="index, follow" />
+        <link rel="canonical" href={canonical} />
+        {careersSchemaJson && (
+          <script type="application/ld+json">{careersSchemaJson}</script>
+        )}
       </Helmet>
 
       <div className="mx-auto max-w-4xl bg-white px-4 py-8 sm:px-6 lg:px-8 lg:py-10">

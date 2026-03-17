@@ -37,6 +37,10 @@ import LaptopDetailCard from "./components/Device detail/Laptop";
 import NetworkingDetailCard from "./components/Device detail/Network";
 import Wishlist from "./components/Wishlist";
 import AccountManagement from "./components/AccountManagement";
+import {
+  createOrganizationSchema,
+  createWebsiteSchema,
+} from "./utils/schemaGenerators";
 
 const SITE_ORIGIN = "https://tryhook.shop";
 const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/hook-logo.svg`;
@@ -418,18 +422,6 @@ const resolveSeoMeta = (pathname) => {
   };
 };
 
-const shouldInjectWebPageSchema = (canonicalPath = "", robots = "") => {
-  if (String(robots).toLowerCase().includes("noindex")) return false;
-  if (canonicalPath === "/") return false;
-  if (canonicalPath.startsWith("/smartphones")) return false;
-  if (canonicalPath.startsWith("/laptops")) return false;
-  if (canonicalPath.startsWith("/tvs")) return false;
-  if (canonicalPath.startsWith("/networking")) return false;
-  if (canonicalPath.startsWith("/trending")) return false;
-  if (canonicalPath.startsWith("/compare")) return false;
-  return true;
-};
-
 const RouteSeoFallback = () => {
   const { pathname } = useLocation();
   // Skip product pages - let component Helmet handle SEO
@@ -442,21 +434,22 @@ const RouteSeoFallback = () => {
   if (pathname.startsWith("/devices")) return null;
   if (pathname.startsWith("/mobiles")) return null;
   if (pathname.startsWith("/products")) return null;
+  if (pathname.startsWith("/about")) return null;
+  if (pathname.startsWith("/contact")) return null;
+  if (pathname.startsWith("/privacy-policy")) return null;
+  if (pathname.startsWith("/terms")) return null;
+  if (pathname.startsWith("/careers")) return null;
   const seo = resolveSeoMeta(pathname);
   const canonicalUrl = `${SITE_ORIGIN}${seo.canonicalPath}`;
-  const includeWebPageSchema = shouldInjectWebPageSchema(
-    seo.canonicalPath,
-    seo.robots,
-  );
-  const webPageJsonLd = includeWebPageSchema
-    ? JSON.stringify({
-        "@context": "https://schema.org",
-        "@type": "WebPage",
-        name: seo.title,
-        url: canonicalUrl,
-        description: seo.description,
-      })
-    : "";
+  const schemaJson = React.useMemo(() => {
+    if (seo.canonicalPath === "/") {
+      return JSON.stringify([
+        createWebsiteSchema(),
+        createOrganizationSchema(),
+      ]);
+    }
+    return null;
+  }, [seo.canonicalPath]);
 
   return (
     <Helmet prioritizeSeoTags>
@@ -474,9 +467,7 @@ const RouteSeoFallback = () => {
       <meta name="twitter:title" content={seo.title} />
       <meta name="twitter:description" content={seo.description} />
       <meta name="twitter:image" content={DEFAULT_OG_IMAGE} />
-      {includeWebPageSchema && (
-        <script type="application/ld+json">{webPageJsonLd}</script>
-      )}
+      {schemaJson && <script type="application/ld+json">{schemaJson}</script>}
     </Helmet>
   );
 };

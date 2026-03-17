@@ -55,6 +55,7 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import SEO from "../SEO";
 import { smartphoneMeta } from "../../constants/meta";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
+import { createProductSchema } from "../../utils/schemaGenerators";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
 
@@ -3394,13 +3395,25 @@ Price: ${price}
     ? mobileData.images[0]
     : null;
   const ogImage = toAbsoluteUrl(primaryImage);
-  const extractNumericPrice = (value) => {
-    if (value == null) return null;
-    const cleaned = String(value).replace(/[^0-9]/g, "");
-    if (!cleaned) return null;
-    const num = parseInt(cleaned, 10);
-    return Number.isFinite(num) && num > 0 ? num : null;
-  };
+  const productSchema = useMemo(() => {
+    const name = metaName || metaTitleBase || metaTitle || "";
+    if (!name) return null;
+    return createProductSchema({
+      name,
+      description: metaDescription,
+      image: ogImage || undefined,
+      url: canonicalUrl,
+      brand: metaBrand || undefined,
+    });
+  }, [
+    metaName,
+    metaTitleBase,
+    metaTitle,
+    metaDescription,
+    ogImage,
+    canonicalUrl,
+    metaBrand,
+  ]);
   const infoOsSummary =
     mobileData?.performance?.operating_system ||
     mobileData?.performance?.os ||
@@ -3651,79 +3664,7 @@ Price: ${price}
         image={ogImage}
         url={canonicalUrl}
         ogType="product"
-        schema={
-          mobileData
-            ? (() => {
-                const schema = {
-                  "@context": "https://schema.org",
-                  "@type": "Product",
-                  name:
-                    metaTitle ||
-                    mobileData?.name ||
-                    mobileData?.model ||
-                    "Product",
-                  description: metaDescription || "Product details",
-                  url: canonicalUrl,
-                };
-
-                // Add images
-                const imageCandidates = [
-                  primaryImage,
-                  ...(Array.isArray(mobileData?.images)
-                    ? mobileData.images
-                    : []),
-                  mobileData?.image,
-                  mobileData?.image_url,
-                ]
-                  .filter(Boolean)
-                  .map(toAbsoluteUrl)
-                  .filter(Boolean);
-
-                if (imageCandidates.length > 0) {
-                  schema.image = Array.from(new Set(imageCandidates));
-                }
-
-                // Add brand if available
-                const brandName = mobileData?.brand || mobileData?.brand_name;
-                if (brandName) {
-                  schema.brand = {
-                    "@type": "Brand",
-                    name: brandName,
-                  };
-                }
-
-                // Add SKU if available
-                const sku = mobileData?.model || mobileData?.id;
-                if (sku) {
-                  schema.sku = String(sku);
-                }
-
-                // Add offers/pricing
-                const price = extractNumericPrice(
-                  currentVariant?.base_price ??
-                    mobileData?.price ??
-                    mobileData?.base_price ??
-                    null,
-                );
-
-                if (price) {
-                  schema.offers = {
-                    "@type": "Offer",
-                    priceCurrency: "INR",
-                    price: String(price),
-                    availability:
-                      launchStatus === "preorder" || launchStatus === "upcoming"
-                        ? "PreOrder"
-                        : "InStock",
-                    url: canonicalUrl,
-                    itemCondition: "NewCondition",
-                  };
-                }
-
-                return schema;
-              })()
-            : null
-        }
+        schema={productSchema}
       />
       {isSharedLink && (
         <div className="max-w-4xl mx-auto px-4">

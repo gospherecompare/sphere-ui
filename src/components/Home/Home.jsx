@@ -1,6 +1,5 @@
 import React from "react";
 import useTitle from "../../hooks/useTitle";
-import { Helmet } from "react-helmet-async";
 import BestPriceSection from "./BestPrice";
 import UpcomingSmartphones from "./UpcomingSmartphones";
 import RecommendedSmartphones from "./RecommendedSmartphones";
@@ -14,17 +13,8 @@ import ProductsNav from "./Products";
 
 const Home = () => {
   useTitle({ page: "home" });
-  const websiteJsonLd = JSON.stringify({
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    name: "Hooks",
-    url: "https://tryhook.shop",
-  });
   return (
     <div className="px-4 sm:px-0">
-      <Helmet prioritizeSeoTags>
-        <script type="application/ld+json">{websiteJsonLd}</script>
-      </Helmet>
       <ProductsNav />
       {/* BannerSlot disabled (incomplete). */}
       <Brandofmonth />

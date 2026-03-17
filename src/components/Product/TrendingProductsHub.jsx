@@ -18,6 +18,10 @@ import useDevice from "../../hooks/useDevice";
 import useStoreLogos from "../../hooks/useStoreLogos";
 import { generateSlug } from "../../utils/slugGenerator";
 import {
+  createCollectionSchema,
+  createItemListSchema,
+} from "../../utils/schemaGenerators";
+import {
   computePopularSmartphoneFeatures,
   SMARTPHONE_FEATURE_CATALOG,
 } from "../../utils/smartphonePopularFeatures";
@@ -1247,71 +1251,45 @@ const TrendingProductsHub = () => {
     arr(visible).find((p) => text(p?.image))?.image,
     arr(products).find((p) => text(p?.image))?.image,
   );
-  const itemListJsonLd = useMemo(() => {
-    if (!visible.length) return null;
-    const items = visible
-      .slice(0, 24)
-      .map((product, index) => {
-        const name = text(product?.name);
-        if (!name) return null;
-        const slug = generateSlug(name);
-        if (!slug) return null;
-        const detailBase = product?.detailPath || `/${activeCategory}`;
-        const detailUrl =
-          detailBase === "/smartphones"
-            ? `${SITE_ORIGIN}${detailBase}/${slug}-price-in-india`
-            : `${SITE_ORIGIN}${detailBase}/${slug}`;
-        const item = {
-          "@type": "Product",
-          name,
-          url: detailUrl,
-        };
-        if (product?.image) item.image = product.image;
-        if (product?.brand) {
-          item.brand = { "@type": "Brand", name: product.brand };
-        }
-        // Add aggregateRating from HooksScore (Hooks proprietary rating algorithm)
-        const hookScoreValue = Number(product?.hookScore);
-        if (Number.isFinite(hookScoreValue) && hookScoreValue > 0) {
-          let normalizedScore = hookScoreValue;
-          if (hookScoreValue <= 1) {
-            normalizedScore = hookScoreValue * 100;
-          } else if (hookScoreValue <= 10) {
-            normalizedScore = hookScoreValue * 10;
-          }
-          normalizedScore = Math.max(0, Math.min(100, normalizedScore));
-          item.aggregateRating = {
-            "@type": "AggregateRating",
-            ratingValue: Number(normalizedScore.toFixed(1)),
-            bestRating: 100,
-            worstRating: 0,
-            ratingCount: 1,
-          };
-        }
-        return {
-          "@type": "ListItem",
-          position: index + 1,
-          item,
-        };
-      })
-      .filter(Boolean);
-    if (!items.length) return null;
-    // Wrap ItemList in CollectionPage to satisfy Google's schema requirements
-    return JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "CollectionPage",
+
+  const listSchemaItems = useMemo(() => {
+    const base = arr(visible).length ? arr(visible) : arr(products);
+    const items = base.slice(0, 20).map((p) => {
+      const name = text(p?.name);
+      if (!name) return null;
+      const slug = generateSlug(name || `product-${p?.id || ""}`);
+      const detailPath =
+        p?.detailPath === "/smartphones"
+          ? `/smartphones/${slug}-price-in-india`
+          : `${p?.detailPath || "/smartphones"}/${slug}`;
+      return {
+        name,
+        url: `${SITE_ORIGIN}${detailPath}`,
+        image: p?.image || undefined,
+      };
+    });
+    return items.filter(Boolean);
+  }, [visible, products]);
+
+  const listSchema = useMemo(() => {
+    const collectionSchema = createCollectionSchema({
+      name: seoTitle,
+      description: seoDescription,
+      url: canonicalUrl,
+      image: ogImage || undefined,
+    });
+    const itemListSchema = createItemListSchema({
       name: seoTitle,
       url: canonicalUrl,
-      mainEntity: {
-        "@type": "ItemList",
-        name: seoTitle,
-        url: canonicalUrl,
-        itemListOrder: "https://schema.org/ItemListOrderAscending",
-        numberOfItems: items.length,
-        itemListElement: items,
-      },
+      items: listSchemaItems,
     });
-  }, [visible, seoTitle, canonicalUrl, activeCategory]);
+    return [collectionSchema, itemListSchema];
+  }, [seoTitle, seoDescription, canonicalUrl, ogImage, listSchemaItems]);
+
+  const listSchemaJson = useMemo(
+    () => (listSchema ? JSON.stringify(listSchema) : null),
+    [listSchema],
+  );
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8 lg:p-10 bg-white">
@@ -1333,9 +1311,9 @@ const TrendingProductsHub = () => {
         <meta name="twitter:title" content={seoTitle} />
         <meta name="twitter:description" content={seoDescription} />
         {ogImage ? <meta name="twitter:image" content={ogImage} /> : null}
-        {itemListJsonLd ? (
-          <script type="application/ld+json">{itemListJsonLd}</script>
-        ) : null}
+        {listSchemaJson && (
+          <script type="application/ld+json">{listSchemaJson}</script>
+        )}
       </Helmet>
 
       <div className="mb-6 flex items-center gap-2 overflow-x-auto pb-1">

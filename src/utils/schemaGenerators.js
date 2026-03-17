@@ -32,7 +32,7 @@ export const createProductSchema = ({
   price,
   priceCurrency = "INR",
   url,
-  brand = "Various",
+  brand = null,
   rating = null,
   ratingCount = null,
   availability = "InStock",
@@ -103,13 +103,16 @@ export const createItemListSchema = ({
   }
 
   if (items.length > 0) {
-    schema.itemListElement = items.map((item, index) => ({
-      "@type": "ListItem",
-      position: index + 1,
-      name: item.name || "",
-      url: item.url ? toAbsoluteUrl(item.url) : "",
-      image: item.image ? toAbsoluteUrl(item.image) : "",
-    }));
+    schema.itemListElement = items.map((item, index) => {
+      const entry = {
+        "@type": "ListItem",
+        position: index + 1,
+        name: item.name || "",
+        url: item.url ? toAbsoluteUrl(item.url) : "",
+      };
+      if (item.image) entry.image = toAbsoluteUrl(item.image);
+      return entry;
+    });
   }
 
   return schema;

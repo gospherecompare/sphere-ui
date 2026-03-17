@@ -32,6 +32,7 @@ import useDevice from "../hooks/useDevice";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import normalizeProduct from "../utils/normalizeProduct";
 import { Helmet } from "react-helmet-async";
+import { createWebApplicationSchema } from "../utils/schemaGenerators";
 
 const Search = FaSearch;
 const X = FaTimes;
@@ -2762,18 +2763,16 @@ const MobileCompare = () => {
       : canonicalCompareEntries.length > 0
         ? "Compare selected devices side by side with detailed specifications, prices, performance, and feature differences to choose the right one."
         : "Compare smartphones, laptops, and more with detailed specifications, prices, performance, and key features side by side to find the right device for your needs.";
-  const compareJsonLd = useMemo(
-    () =>
-      JSON.stringify({
-        "@context": "https://schema.org",
-        "@type": "WebApplication",
-        name: metaTitle || "Product Comparison Tool",
-        url: canonicalCompareUrl,
-        applicationCategory: "UtilityApplication",
-        applicationSubCategory: "ComparisonTool",
-      }),
-    [metaTitle, canonicalCompareUrl],
-  );
+
+  const compareSchemaJson = useMemo(() => {
+    const schema = createWebApplicationSchema({
+      name: metaTitle,
+      description: metaDescription,
+      url: canonicalCompareUrl,
+      applicationCategory: "UtilityApplication",
+    });
+    return JSON.stringify(schema);
+  }, [metaTitle, metaDescription, canonicalCompareUrl]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -2856,7 +2855,9 @@ const MobileCompare = () => {
           name="twitter:url"
           content={canonicalCompareUrl}
         />
-        <script type="application/ld+json">{compareJsonLd}</script>
+        {compareSchemaJson && (
+          <script type="application/ld+json">{compareSchemaJson}</script>
+        )}
       </Helmet>
       {/* Floating Header */}
       <div className="top-0 z-40 bg-white  max-w-4xl mx-auto sm:p-6 md:p-8 lg:p-10">

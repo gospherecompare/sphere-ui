@@ -1,9 +1,10 @@
 ﻿// src/components/TVDetailCard.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import useDevice from "../../hooks/useDevice";
 import Cookies from "js-cookie";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
+import { createProductSchema } from "../../utils/schemaGenerators";
 
 // Icons
 import {
@@ -48,7 +49,6 @@ import {
 
 import "../../styles/hideScrollbar.css";
 import Spinner from "../ui/Spinner";
-import SEO, { createProductSchema } from "../SEO";
 import { tvMeta } from "../../constants/meta";
 import useStoreLogos from "../../hooks/useStoreLogos";
 import ProductDiscoverySections from "../ui/ProductDiscoverySections";
@@ -2745,64 +2745,26 @@ const TVDetailCard = () => {
     return url.startsWith("/") ? `${origin}${url}` : `${origin}/${url}`;
   };
   const ogImage = toAbsoluteUrl(metaImage);
-  const extractNumericPrice = (value) => {
-    if (value == null) return null;
-    const cleaned = String(value).replace(/[^0-9]/g, "");
-    if (!cleaned) return null;
-    const num = parseInt(cleaned, 10);
-    return Number.isFinite(num) && num > 0 ? num : null;
-  };
-  const productJsonLd = (() => {
-    if (!applianceData) return null;
-    const name = metaTitle || metaName || "TV";
-    const url =
-      canonicalUrl ||
-      (typeof window !== "undefined" ? window.location.href : "");
-    const brandName =
-      applianceData?.brand || applianceData?.brand_name || metaBrand || "";
-    const imageCandidates = [
-      metaImage,
-      ...(Array.isArray(applianceData?.images) ? applianceData.images : []),
-    ]
-      .filter(Boolean)
-      .map(toAbsoluteUrl)
-      .filter(Boolean);
-    const images = Array.from(new Set(imageCandidates));
-    const priceValue = extractNumericPrice(
-      applianceData?.price ??
-        applianceData?.base_price ??
-        applianceData?.variants?.[0]?.base_price ??
-        null,
-    );
-    const offers =
-      priceValue != null
-        ? {
-            "@type": "Offer",
-            priceCurrency: "INR",
-            price: priceValue,
-            availability: "https://schema.org/InStock",
-            url,
-            itemCondition: "https://schema.org/NewCondition",
-          }
-        : null;
-    const schema = {
-      "@context": "https://schema.org",
-      "@type": "Product",
+  const productSchemaJson = useMemo(() => {
+    const name = metaNameWithBrand || metaName || metaTitle || "";
+    if (!name) return null;
+    const schema = createProductSchema({
       name,
       description: metaDescription,
-      url,
-    };
-    if (images.length) schema.image = images;
-    if (brandName) schema.brand = { "@type": "Brand", name: brandName };
-    const sku =
-      applianceData?.model ||
-      applianceData?.id ||
-      applianceData?.product_id ||
-      null;
-    if (sku) schema.sku = String(sku);
-    if (offers) schema.offers = offers;
+      image: ogImage || undefined,
+      url: canonicalUrl,
+      brand: metaBrand || undefined,
+    });
     return JSON.stringify(schema);
-  })();
+  }, [
+    metaNameWithBrand,
+    metaName,
+    metaTitle,
+    metaDescription,
+    ogImage,
+    canonicalUrl,
+    metaBrand,
+  ]);
 
   return (
     <div className="px-2 lg:px-4 mx-auto max-w-4xl w-full bg-white">
@@ -2822,9 +2784,9 @@ const TVDetailCard = () => {
         <meta name="twitter:title" content={metaTitle} />
         <meta name="twitter:description" content={metaDescription} />
         {ogImage && <meta name="twitter:image" content={ogImage} />}
-        {productJsonLd ? (
-          <script type="application/ld+json">{productJsonLd}</script>
-        ) : null}
+        {productSchemaJson && (
+          <script type="application/ld+json">{productSchemaJson}</script>
+        )}
       </Helmet>
       {/* Share Menu Modal */}
       {showShareMenu && (

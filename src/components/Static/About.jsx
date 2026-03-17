@@ -7,11 +7,10 @@ const About = () => {
   useTitle({ page: "About" });
 
   const canonical = "https://tryhook.shop/about";
-
-  const schema = createAboutPageSchema({
+  const aboutSchema = createAboutPageSchema({
     name: "About Hooks",
     description:
-      "An independent technology discovery and comparison platform helping users make informed purchasing decisions",
+      "Independent technology discovery and comparison platform helping users make informed purchasing decisions.",
     url: canonical,
     organizationName: "Hooks",
   });
@@ -24,8 +23,8 @@ const About = () => {
         image={`${canonical}/og-image`}
         url={canonical}
         robots="index, follow"
-        schema={schema}
         ogType="website"
+        schema={aboutSchema}
       />
       <main className="min-h-screen bg-white max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-1">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-1 space-y-10">

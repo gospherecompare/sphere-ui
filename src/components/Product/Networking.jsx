@@ -37,6 +37,10 @@ import useStoreLogos from "../../hooks/useStoreLogos";
 import Spinner from "../ui/Spinner";
 import useTitle from "../../hooks/useTitle";
 import { generateSlug } from "../../utils/slugGenerator";
+import {
+  createCollectionSchema,
+  createItemListSchema,
+} from "../../utils/schemaGenerators";
 import useDevice from "../../hooks/useDevice";
 import Breadcrumbs from "../Breadcrumbs";
 
@@ -967,102 +971,46 @@ const Networking = () => {
     location?.pathname ? location.pathname : "/networking"
   }`;
 
-  const itemListJsonLd = useMemo(() => {
-    // Build items array if data available
-    const items =
-      sortedVariants?.length > 0
-        ? sortedVariants
-            .slice(0, 24)
-            .map((device, index) => {
-              const name = device?.name || device?.model || "";
-              if (!name) return null;
-              const slug = generateSlug(
-                device?.model || device?.name || device?.id || "",
-              );
-              if (!slug) return null;
-              const url = `${SITE_ORIGIN}/networking/${slug}`;
-              const image = toAbsoluteUrl(
-                device?.images?.find(Boolean) || device?.image || "",
-              );
-              const item = {
-                "@type": "Product",
-                name,
-                url,
-              };
-              if (image) item.image = image;
-              if (device?.brand) {
-                item.brand = { "@type": "Brand", name: device.brand };
-              }
-              // Add aggregateRating from HooksScore (Hooks proprietary rating algorithm)
-              // Converts HooksScore to 0-100 scale for Google schema.org aggregateRating
-              const hookScoreValue = Number(device?.hookScore);
-              if (Number.isFinite(hookScoreValue) && hookScoreValue > 0) {
-                // Normalize score to 0-100 scale
-                let normalizedScore = hookScoreValue;
-                if (hookScoreValue <= 1) {
-                  // Already 0-1 range, convert to 0-100
-                  normalizedScore = hookScoreValue * 100;
-                } else if (hookScoreValue <= 10) {
-                  // 0-10 range, convert to 0-100
-                  normalizedScore = hookScoreValue * 10;
-                }
-                // Ensure within 0-100
-                normalizedScore = Math.max(0, Math.min(100, normalizedScore));
-                item.aggregateRating = {
-                  "@type": "AggregateRating",
-                  ratingValue: Number(normalizedScore.toFixed(1)),
-                  bestRating: 100,
-                  worstRating: 0,
-                  ratingCount: 1,
-                };
-              }
-              return {
-                "@type": "ListItem",
-                position: index + 1,
-                item,
-              };
-            })
-            .filter(Boolean)
-        : [];
+  const listSchemaItems = useMemo(() => {
+    const items = sortedVariants.slice(0, 20).map((device) => {
+      const name = String(
+        device?.name || device?.product_name || device?.model || "",
+      ).trim();
+      if (!name) return null;
+      const slug = generateSlug(
+        device?.name || device?.model || device?.brand || device?.id,
+      );
+      const imageRaw = Array.isArray(device?.images)
+        ? device.images.find(Boolean)
+        : device?.image;
+      return {
+        name,
+        url: `${SITE_ORIGIN}/networking/${slug}`,
+        image: imageRaw ? toAbsoluteUrl(imageRaw) : undefined,
+      };
+    });
+    return items.filter(Boolean);
+  }, [sortedVariants, siteOrigin]);
 
-    // Always return a schema with URL, even if items are empty
-    // This ensures page URL is properly indexed by search engines
-    // Wrap ItemList in CollectionPage to satisfy Google's schema requirements
-    const itemList = {
-      "@type": "ItemList",
+  const listSchema = useMemo(() => {
+    const collectionSchema = createCollectionSchema({
       name: seoTitle,
-      numberOfItems: items.length,
-    };
-
-    if (items.length > 0) {
-      itemList.itemListElement = items;
-    }
-
-    const schema = {
-      "@context": "https://schema.org",
-      "@type": "CollectionPage",
+      description: seoDescription,
+      url: listSchemaUrl,
+      image: listOgImage || undefined,
+    });
+    const itemListSchema = createItemListSchema({
       name: seoTitle,
       url: listSchemaUrl,
-      mainEntity: itemList,
-    };
-
-    return JSON.stringify(schema);
-  }, [sortedVariants, seoTitle, listSchemaUrl, toAbsoluteUrl]);
-
-  // Organization schema (global, renders on all pages)
-  const organizationJsonLd = useMemo(() => {
-    return JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      name: "Hooks",
-      url: "https://tryhook.shop",
-      logo: "https://tryhook.shop/Hooks-logo.png",
-      sameAs: [
-        "https://instagram.com/tryHooks",
-        "https://twitter.com/tryHooks",
-      ],
+      items: listSchemaItems,
     });
-  }, []);
+    return [collectionSchema, itemListSchema];
+  }, [seoTitle, seoDescription, listSchemaUrl, listOgImage, listSchemaItems]);
+
+  const listSchemaJson = useMemo(
+    () => (listSchema ? JSON.stringify(listSchema) : null),
+    [listSchema],
+  );
 
   return (
     <div className="min-h-screen ">
@@ -1099,13 +1047,10 @@ const Networking = () => {
           />
         ) : null}
 
-        {/* Structured Data - Organization + ItemList schema */}
-        {organizationJsonLd ? (
-          <script type="application/ld+json">{organizationJsonLd}</script>
-        ) : null}
-        {itemListJsonLd ? (
-          <script type="application/ld+json">{itemListJsonLd}</script>
-        ) : null}
+        {listSchemaJson && (
+          <script type="application/ld+json">{listSchemaJson}</script>
+        )}
+
       </Helmet>
       {/* Main Content */}
       <div className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8 lg:p-10 bg-white">

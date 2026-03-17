@@ -43,12 +43,11 @@ const getCanonicalUrl = (customUrl, pathname) => {
 
 /**
  * Production-Ready SEO Component
- * Handles all SEO meta tags, canonical URLs, Open Graph, Twitter Cards, and Structured Data
+ * Handles all SEO meta tags, canonical URLs, Open Graph, and Twitter Cards
  * Features:
  * - Dynamic URL resolution with window.location.href fallback
  * - Complete Open Graph support (og:title, og:description, og:image, etc.)
  * - Twitter Card support
- * - Structured Data (Schema.org) with automatic URL injection
  * - Canonical URL handling
  * - Robots meta control
  *
@@ -57,7 +56,6 @@ const getCanonicalUrl = (customUrl, pathname) => {
  * @param {string} image - OG and Twitter image URL (absolute or relative)
  * @param {string} url - Canonical URL (if not provided, uses window.location.href)
  * @param {string} robots - robots meta directive (default: "index, follow")
- * @param {object|function} schema - Schema.org structured data
  * @param {string} ogType - Open Graph type (default: "website")
  * @param {string} twitterCreator - Twitter creator handle (default: "@tryhooks")
  *
@@ -67,20 +65,6 @@ const getCanonicalUrl = (customUrl, pathname) => {
  *   description="Compare iPhone 15 Pro pricing, full specs, and variants"
  *   image="https://cdn.example.com/iphone-15.jpg"
  *   url={canonicalUrl}
- *   schema={{
- *     "@context": "https://schema.org",
- *     "@type": "Product",
- *     name: "iPhone 15 Pro",
- *     description: "Apple iPhone 15 Pro with 48MP camera",
- *     image: imageUrl,
- *     brand: { "@type": "Brand", name: "Apple" },
- *     offers: {
- *       "@type": "Offer",
- *       priceCurrency: "INR",
- *       price: "99999",
- *       availability: "https://schema.org/InStock"
- *     }
- *   }}
  * />
  */
 const SEO = ({
@@ -89,9 +73,10 @@ const SEO = ({
   image = null,
   url = null,
   robots = "index, follow",
-  schema = null,
   ogType = "website",
   twitterCreator = "@tryhooks",
+  schema = null,
+  schemaType = null,
   children = null,
 }) => {
   const { pathname } = useLocation();
@@ -109,40 +94,32 @@ const SEO = ({
     [image],
   );
 
-  // Process and stringify schema with dynamic URL injection
-  const schemaJson = React.useMemo(() => {
+  const resolvedSchema = React.useMemo(() => {
     if (!schema) return null;
+    const base =
+      typeof schema === "function"
+        ? schema({ canonicalUrl, pathname })
+        : schema;
+    if (!base) return null;
 
-    try {
-      let processedSchema = schema;
+    const applyDefaults = (entry) => {
+      if (!entry || typeof entry !== "object") return entry;
+      const next = { ...entry };
+      if (!next["@context"]) next["@context"] = "https://schema.org";
+      if (schemaType) next["@type"] = schemaType;
+      if (!next.url && canonicalUrl) next.url = canonicalUrl;
+      return next;
+    };
 
-      // If schema is a function, call it with context
-      if (typeof schema === "function") {
-        processedSchema = schema({ canonicalUrl, pathname });
-        if (!processedSchema) return null;
-      }
+    return Array.isArray(base) ? base.map(applyDefaults) : applyDefaults(base);
+  }, [schema, schemaType, canonicalUrl, pathname]);
 
-      // If array of schemas, process each one
-      if (Array.isArray(processedSchema)) {
-        processedSchema = processedSchema.map((s) => {
-          if (!s.url) {
-            return { ...s, url: canonicalUrl };
-          }
-          return s;
-        });
-      } else if (processedSchema && typeof processedSchema === "object") {
-        // Single schema object
-        if (!processedSchema.url) {
-          processedSchema = { ...processedSchema, url: canonicalUrl };
-        }
-      }
-
-      return JSON.stringify(processedSchema);
-    } catch (error) {
-      console.error("SEO Component: Error processing schema", error);
-      return null;
-    }
-  }, [schema, canonicalUrl, pathname]);
+  const schemaJson = React.useMemo(() => {
+    if (!resolvedSchema) return null;
+    return typeof resolvedSchema === "string"
+      ? resolvedSchema
+      : JSON.stringify(resolvedSchema);
+  }, [resolvedSchema]);
 
   return (
     <Helmet prioritizeSeoTags>
@@ -194,7 +171,7 @@ const SEO = ({
       <meta name="apple-mobile-web-app-title" content="Hooks" />
       <meta name="format-detection" content="telephone=no" />
 
-      {/* ===== STRUCTURED DATA (SCHEMA.ORG) ===== */}
+      {/* ===== STRUCTURED DATA ===== */}
       {schemaJson && <script type="application/ld+json">{schemaJson}</script>}
 
       {/* ===== CUSTOM CHILDREN ===== */}
