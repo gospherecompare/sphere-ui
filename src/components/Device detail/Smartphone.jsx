@@ -52,7 +52,7 @@ import useStoreLogos from "../../hooks/useStoreLogos";
 import "../../styles/hideScrollbar.css";
 import Spinner from "../ui/Spinner";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
+import SEO from "../SEO";
 import { smartphoneMeta } from "../../constants/meta";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
@@ -3401,72 +3401,6 @@ Price: ${price}
     const num = parseInt(cleaned, 10);
     return Number.isFinite(num) && num > 0 ? num : null;
   };
-  const productJsonLd = useMemo(() => {
-    if (!mobileData) return null;
-    const name = metaTitle || mobileData?.name || mobileData?.model || "";
-    if (!name) return null;
-    const url =
-      canonicalUrl ||
-      (typeof window !== "undefined" ? window.location.href : "");
-    const brandName =
-      mobileData?.brand ||
-      mobileData?.brand_name ||
-      mobileData?.manufacturer ||
-      "";
-    const imageCandidates = [
-      primaryImage,
-      ...(Array.isArray(mobileData?.images) ? mobileData.images : []),
-      mobileData?.image,
-      mobileData?.image_url,
-    ]
-      .filter(Boolean)
-      .map(toAbsoluteUrl)
-      .filter(Boolean);
-    const images = Array.from(new Set(imageCandidates));
-    const priceValue = extractNumericPrice(
-      currentVariant?.base_price ??
-        mobileData?.price ??
-        mobileData?.base_price ??
-        null,
-    );
-    const availability =
-      launchStatus === "preorder" || launchStatus === "upcoming"
-        ? "https://schema.org/PreOrder"
-        : "https://schema.org/InStock";
-    const offers =
-      priceValue != null
-        ? {
-            "@type": "Offer",
-            priceCurrency: "INR",
-            price: priceValue,
-            availability,
-            url,
-            itemCondition: "https://schema.org/NewCondition",
-          }
-        : null;
-    const schema = {
-      "@context": "https://schema.org",
-      "@type": "Product",
-      name,
-      description: metaDescription,
-      url,
-    };
-    if (images.length) schema.image = images;
-    if (brandName) schema.brand = { "@type": "Brand", name: brandName };
-    const sku =
-      mobileData?.model || mobileData?.id || mobileData?.product_id || null;
-    if (sku) schema.sku = String(sku);
-    if (offers) schema.offers = offers;
-    return JSON.stringify(schema);
-  }, [
-    mobileData,
-    metaTitle,
-    metaDescription,
-    canonicalUrl,
-    currentVariant,
-    launchStatus,
-    primaryImage,
-  ]);
   const infoOsSummary =
     mobileData?.performance?.operating_system ||
     mobileData?.performance?.os ||
@@ -3711,24 +3645,65 @@ Price: ${price}
 
   return (
     <div className="px-2 lg:px-4 mx-auto bg-white max-w-4xl w-full m-0">
-      <Helmet prioritizeSeoTags>
-        <title>{metaTitleWithDate}</title>
-        <meta name="description" content={metaDescription} />
-        {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
-        <meta property="og:type" content="product" />
-        <meta property="og:title" content={metaTitle} />
-        <meta property="og:description" content={metaDescription} />
-        {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
-        {ogImage && <meta property="og:image" content={ogImage} />}
-        {ogImage && <meta property="og:image:secure_url" content={ogImage} />}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={metaTitle} />
-        <meta name="twitter:description" content={metaDescription} />
-        {ogImage && <meta name="twitter:image" content={ogImage} />}
-        {productJsonLd ? (
-          <script type="application/ld+json">{productJsonLd}</script>
-        ) : null}
-      </Helmet>
+      <SEO
+        title={metaTitleWithDate}
+        description={metaDescription}
+        image={ogImage}
+        url={canonicalUrl}
+        ogType="product"
+        schema={
+          mobileData
+            ? {
+                "@context": "https://schema.org",
+                "@type": "Product",
+                name: metaTitle || mobileData?.name || mobileData?.model || "",
+                description: metaDescription,
+                url: canonicalUrl,
+                image: [
+                  primaryImage,
+                  ...(Array.isArray(mobileData?.images)
+                    ? mobileData.images
+                    : []),
+                  mobileData?.image,
+                  mobileData?.image_url,
+                ]
+                  .filter(Boolean)
+                  .map(toAbsoluteUrl)
+                  .filter(Boolean),
+                brand:
+                  mobileData?.brand || mobileData?.brand_name
+                    ? {
+                        "@type": "Brand",
+                        name: mobileData?.brand || mobileData?.brand_name,
+                      }
+                    : undefined,
+                sku: mobileData?.model || mobileData?.id || undefined,
+                offers: (() => {
+                  const price = extractNumericPrice(
+                    currentVariant?.base_price ??
+                      mobileData?.price ??
+                      mobileData?.base_price ??
+                      null,
+                  );
+                  return price
+                    ? {
+                        "@type": "Offer",
+                        priceCurrency: "INR",
+                        price: String(price),
+                        availability:
+                          launchStatus === "preorder" ||
+                          launchStatus === "upcoming"
+                            ? "PreOrder"
+                            : "InStock",
+                        url: canonicalUrl,
+                        itemCondition: "NewCondition",
+                      }
+                    : undefined;
+                })(),
+              }
+            : null
+        }
+      />
       {isSharedLink && (
         <div className="max-w-4xl mx-auto px-4">
           <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded">

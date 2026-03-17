@@ -4,215 +4,203 @@ import { useLocation } from "react-router-dom";
 
 const SITE_ORIGIN = "https://tryhook.shop";
 
+/**
+ * Convert relative/absolute URLs to full absolute URLs
+ * Ensures all URLs are complete with origin
+ */
 const toAbsoluteUrl = (value, fallbackPath = "/") => {
-  const raw = String(value || "").trim();
+  if (!value) return `${SITE_ORIGIN}${fallbackPath}`;
+
+  const raw = String(value).trim();
   if (!raw) return `${SITE_ORIGIN}${fallbackPath}`;
+
+  // Already absolute
   if (/^https?:\/\//i.test(raw)) return raw;
+
+  // Protocol-relative
   if (raw.startsWith("//")) return `https:${raw}`;
+
+  // Path-relative
   if (raw.startsWith("/")) return `${SITE_ORIGIN}${raw}`;
+
+  // Relative path
   return `${SITE_ORIGIN}/${raw}`;
 };
 
-const resolveSchemaUrl = (url, fallbackPath = "/") => {
-  if (url) return toAbsoluteUrl(url, fallbackPath);
+/**
+ * Get the canonical URL for the current page
+ * Falls back to window.location.href if available
+ */
+const getCanonicalUrl = (customUrl, pathname) => {
+  if (customUrl) return toAbsoluteUrl(customUrl);
+
   if (typeof window !== "undefined" && window.location?.href) {
     return window.location.href;
   }
-  return `${SITE_ORIGIN}${fallbackPath}`;
+
+  return `${SITE_ORIGIN}${pathname || "/"}`;
 };
 
 /**
- * Dynamic SEO Component
- * Sets title, canonical URL, and structured data (schema.org) per route
+ * Production-Ready SEO Component
+ * Handles all SEO meta tags, canonical URLs, Open Graph, Twitter Cards, and Structured Data
+ * Features:
+ * - Dynamic URL resolution with window.location.href fallback
+ * - Complete Open Graph support (og:title, og:description, og:image, etc.)
+ * - Twitter Card support
+ * - Structured Data (Schema.org) with automatic URL injection
+ * - Canonical URL handling
+ * - Robots meta control
  *
- * Usage:
+ * @param {string} title - Page title (required)
+ * @param {string} description - Meta description
+ * @param {string} image - OG and Twitter image URL (absolute or relative)
+ * @param {string} url - Canonical URL (if not provided, uses window.location.href)
+ * @param {string} robots - robots meta directive (default: "index, follow")
+ * @param {object|function} schema - Schema.org structured data
+ * @param {string} ogType - Open Graph type (default: "website")
+ * @param {string} twitterCreator - Twitter creator handle (default: "@tryhooks")
+ *
+ * Example - Product Page:
  * <SEO
- *   title="Page Title"
- *   schemaType="ItemList"
- *   schema={({ canonicalUrl }) => ({
+ *   title="iPhone 15 Pro - Price & Specs | Hooks"
+ *   description="Compare iPhone 15 Pro pricing, full specs, and variants"
+ *   image="https://cdn.example.com/iphone-15.jpg"
+ *   url={canonicalUrl}
+ *   schema={{
  *     "@context": "https://schema.org",
- *     name: "Latest Smartphones",
- *     url: canonicalUrl,
- *   })}
+ *     "@type": "Product",
+ *     name: "iPhone 15 Pro",
+ *     description: "Apple iPhone 15 Pro with 48MP camera",
+ *     image: imageUrl,
+ *     brand: { "@type": "Brand", name: "Apple" },
+ *     offers: {
+ *       "@type": "Offer",
+ *       priceCurrency: "INR",
+ *       price: "99999",
+ *       availability: "https://schema.org/InStock"
+ *     }
+ *   }}
  * />
  */
 const SEO = ({
   title,
-  description,
-  schema,
-  schemaType,
+  description = "",
+  image = null,
+  url = null,
   robots = "index, follow",
-  canonicalPath,
-  canonicalUrl: canonicalUrlProp,
-  includeQuery = false,
+  schema = null,
+  ogType = "website",
+  twitterCreator = "@tryhooks",
+  children = null,
 }) => {
-  const { pathname, search } = useLocation();
-  const resolvedPath = canonicalPath || pathname || "/";
-  const resolvedQuery = includeQuery ? search || "" : "";
-  const canonicalUrl = toAbsoluteUrl(
-    canonicalUrlProp || `${resolvedPath}${resolvedQuery}`,
-    resolvedPath,
+  const { pathname } = useLocation();
+
+  // Resolve canonical URL - critical for dynamic pages!
+  // Falls back to current window.location.href if url not provided
+  const canonicalUrl = React.useMemo(
+    () => getCanonicalUrl(url, pathname),
+    [url, pathname],
   );
-  const resolvedSchema = React.useMemo(() => {
-    if (!schema) return null;
-    const base =
-      typeof schema === "function"
-        ? schema({ canonicalUrl, pathname: resolvedPath })
-        : schema;
-    if (!base) return null;
 
-    const applyDefaults = (entry) => {
-      if (!entry || typeof entry !== "object") return entry;
-      const next = { ...entry };
-      if (schemaType) next["@type"] = schemaType;
-      if (!next.url) next.url = canonicalUrl;
-      return next;
-    };
+  // Resolve absolute image URL
+  const absoluteImage = React.useMemo(
+    () => (image ? toAbsoluteUrl(image) : null),
+    [image],
+  );
 
-    return Array.isArray(base) ? base.map(applyDefaults) : applyDefaults(base);
-  }, [schema, schemaType, canonicalUrl, resolvedPath]);
-
+  // Process and stringify schema with dynamic URL injection
   const schemaJson = React.useMemo(() => {
-    if (!resolvedSchema) return null;
-    return typeof resolvedSchema === "string"
-      ? resolvedSchema
-      : JSON.stringify(resolvedSchema);
-  }, [resolvedSchema]);
+    if (!schema) return null;
+
+    try {
+      let processedSchema = schema;
+
+      // If schema is a function, call it with context
+      if (typeof schema === "function") {
+        processedSchema = schema({ canonicalUrl, pathname });
+        if (!processedSchema) return null;
+      }
+
+      // If array of schemas, process each one
+      if (Array.isArray(processedSchema)) {
+        processedSchema = processedSchema.map((s) => {
+          if (!s.url) {
+            return { ...s, url: canonicalUrl };
+          }
+          return s;
+        });
+      } else if (processedSchema && typeof processedSchema === "object") {
+        // Single schema object
+        if (!processedSchema.url) {
+          processedSchema = { ...processedSchema, url: canonicalUrl };
+        }
+      }
+
+      return JSON.stringify(processedSchema);
+    } catch (error) {
+      console.error("SEO Component: Error processing schema", error);
+      return null;
+    }
+  }, [schema, canonicalUrl, pathname]);
 
   return (
     <Helmet prioritizeSeoTags>
+      {/* ===== BASIC META TAGS ===== */}
       <title>{title}</title>
       {description && <meta name="description" content={description} />}
       <meta name="robots" content={robots} />
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, viewport-fit=cover"
+      />
+      <meta charSet="UTF-8" />
+
+      {/* ===== CANONICAL URL ===== */}
       <link rel="canonical" href={canonicalUrl} />
 
-      {/* Open Graph */}
-      <meta property="og:url" content={canonicalUrl} />
-      <meta property="og:type" content="website" />
-      {title && <meta property="og:title" content={title} />}
+      {/* ===== OPEN GRAPH META TAGS ===== */}
+      <meta property="og:title" content={title} />
       {description && <meta property="og:description" content={description} />}
+      <meta property="og:type" content={ogType} />
+      <meta property="og:url" content={canonicalUrl} />
+      <meta property="og:site_name" content="Hooks" />
+      {absoluteImage && <meta property="og:image" content={absoluteImage} />}
+      {absoluteImage && (
+        <meta property="og:image:secure_url" content={absoluteImage} />
+      )}
+      {absoluteImage && <meta property="og:image:type" content="image/jpeg" />}
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
 
-      {/* Structured Data */}
+      {/* ===== TWITTER CARD META TAGS ===== */}
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:site" content="@tryhooks" />
+      {twitterCreator && (
+        <meta name="twitter:creator" content={twitterCreator} />
+      )}
+      <meta name="twitter:title" content={title} />
+      {description && <meta name="twitter:description" content={description} />}
+      {absoluteImage && <meta name="twitter:image" content={absoluteImage} />}
+
+      {/* ===== ADDITIONAL OPTIMIZATION ===== */}
+      <meta name="theme-color" content="#ffffff" />
+      <meta name="color-scheme" content="light dark" />
+      <meta name="apple-mobile-web-app-capable" content="yes" />
+      <meta
+        name="apple-mobile-web-app-status-bar-style"
+        content="black-translucent"
+      />
+      <meta name="apple-mobile-web-app-title" content="Hooks" />
+      <meta name="format-detection" content="telephone=no" />
+
+      {/* ===== STRUCTURED DATA (SCHEMA.ORG) ===== */}
       {schemaJson && <script type="application/ld+json">{schemaJson}</script>}
+
+      {/* ===== CUSTOM CHILDREN ===== */}
+      {children}
     </Helmet>
   );
-};
-
-// ============================================================================
-// SCHEMA GENERATORS
-// ============================================================================
-
-/**
- * For search/filter listing pages like /smartphones/filter/new
- */
-export const createItemListSchema = ({
-  name,
-  url,
-  itemCount = null,
-  items = [],
-} = {}) => {
-  const schema = {
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    name: name || "Products",
-    url: resolveSchemaUrl(url, "/"),
-  };
-
-  if (itemCount) schema.itemListElement = { itemCount };
-  if (items.length > 0) {
-    schema.itemListElement = items.map((item, index) => ({
-      "@type": "ListItem",
-      position: index + 1,
-      url: item.url || "",
-      name: item.name || "",
-      image: item.image || "",
-    }));
-  }
-
-  return schema;
-};
-
-/**
- * For product detail pages like /smartphones/pixel-10-pro-price-in-india
- */
-export const createProductSchema = ({
-  name,
-  description,
-  image,
-  price,
-  priceCurrency = "INR",
-  url,
-  brand = "Various",
-  rating = null,
-  ratingCount = null,
-  availability = "InStock",
-} = {}) => {
-  const schema = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: name || "",
-    description: description || "",
-    image: image || [],
-    brand: {
-      "@type": "Brand",
-      name: brand,
-    },
-    url: resolveSchemaUrl(url, "/"),
-  };
-
-  if (price) {
-    schema.offers = {
-      "@type": "Offer",
-      price: price,
-      priceCurrency: priceCurrency,
-      availability: `https://schema.org/${availability}`,
-    };
-  }
-
-  if (rating && ratingCount) {
-    schema.aggregateRating = {
-      "@type": "AggregateRating",
-      ratingValue: rating,
-      ratingCount: ratingCount,
-    };
-  }
-
-  return schema;
-};
-
-/**
- * For breadcrumb navigation
- */
-export const createBreadcrumbSchema = (breadcrumbs = []) => {
-  return {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: breadcrumbs.map((item, index) => ({
-      "@type": "ListItem",
-      position: index + 1,
-      name: item.label || "",
-      item: `${SITE_ORIGIN}${item.url || ""}`,
-    })),
-  };
-};
-
-/**
- * For category pages
- */
-export const createCollectionSchema = ({
-  name,
-  description,
-  url,
-  image,
-} = {}) => {
-  return {
-    "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    name: name || "",
-    description: description || "",
-    url: resolveSchemaUrl(url, "/"),
-    image: image || "",
-  };
 };
 
 export default SEO;

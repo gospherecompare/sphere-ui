@@ -32,7 +32,7 @@ import {
 import Cookies from "js-cookie";
 import Spinner from "../ui/Spinner";
 import { laptopMeta } from "../../constants/meta";
-import { Helmet } from "react-helmet-async";
+import SEO, { createProductSchema } from "../SEO";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";

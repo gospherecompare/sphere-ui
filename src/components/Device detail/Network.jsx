@@ -59,7 +59,7 @@ import {
 
 import "../../styles/hideScrollbar.css";
 import Spinner from "../ui/Spinner";
-import { Helmet } from "react-helmet-async";
+import SEO, { createProductSchema } from "../SEO";
 import { networkingMeta } from "../../constants/meta";
 import RatingReview from "../ui/RatingReview";
 import useStoreLogos from "../../hooks/useStoreLogos";
