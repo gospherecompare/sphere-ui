@@ -3177,8 +3177,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     location?.pathname ? location.pathname : "/smartphones"
   }`;
 
-  // Always generate ItemList schema for listing pages with dynamic URL
-  const isItemListSchema = true;
+  // Generate CollectionPage + ItemList schema for category/collection pages
+  // CollectionPage wraps ItemList to satisfy Google's schema requirements for collections
+  const isItemListSchema = false;
 
   const itemListJsonLd = useMemo(() => {
     // Build items array if data available
@@ -3206,15 +3207,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
               if (device?.brand) {
                 item.brand = { "@type": "Brand", name: device.brand };
               }
-              // Add offers with price to satisfy Google's requirement
-              if (device?.numericPrice > 0) {
-                item.offers = {
-                  "@type": "Offer",
-                  price: String(device.numericPrice),
-                  priceCurrency: "INR",
-                  availability: "https://schema.org/InStock",
-                };
-              }
+              // Note: No offers/aggregateRating since this is a comparison platform,
+              // not an e-commerce store. Hooks provides HooksScore algorithm, not standard ratings
               return {
                 "@type": "ListItem",
                 position: index + 1,

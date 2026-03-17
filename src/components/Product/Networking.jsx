@@ -993,15 +993,8 @@ const Networking = () => {
               if (device?.brand) {
                 item.brand = { "@type": "Brand", name: device.brand };
               }
-              // Add offers with price to satisfy Google's requirement
-              if (device?.numericPrice > 0) {
-                item.offers = {
-                  "@type": "Offer",
-                  price: String(device.numericPrice),
-                  priceCurrency: "INR",
-                  availability: "https://schema.org/InStock",
-                };
-              }
+              // Note: No offers/aggregateRating since this is a comparison platform,
+              // not an e-commerce store. Hooks provides HooksScore algorithm, not standard ratings
               return {
                 "@type": "ListItem",
                 position: index + 1,
@@ -1013,17 +1006,24 @@ const Networking = () => {
 
     // Always return a schema with URL, even if items are empty
     // This ensures page URL is properly indexed by search engines
-    const schema = {
-      "@context": "https://schema.org",
+    // Wrap ItemList in CollectionPage to satisfy Google's schema requirements
+    const itemList = {
       "@type": "ItemList",
       name: seoTitle,
-      url: listSchemaUrl,
       numberOfItems: items.length,
     };
 
     if (items.length > 0) {
-      schema.itemListElement = items;
+      itemList.itemListElement = items;
     }
+
+    const schema = {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      name: seoTitle,
+      url: listSchemaUrl,
+      mainEntity: itemList,
+    };
 
     return JSON.stringify(schema);
   }, [sortedVariants, seoTitle, listSchemaUrl, toAbsoluteUrl]);

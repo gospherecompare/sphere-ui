@@ -1278,14 +1278,20 @@ const TrendingProductsHub = () => {
       })
       .filter(Boolean);
     if (!items.length) return null;
+    // Wrap ItemList in CollectionPage to satisfy Google's schema requirements
     return JSON.stringify({
       "@context": "https://schema.org",
-      "@type": "ItemList",
+      "@type": "CollectionPage",
       name: seoTitle,
       url: canonicalUrl,
-      itemListOrder: "https://schema.org/ItemListOrderAscending",
-      numberOfItems: items.length,
-      itemListElement: items,
+      mainEntity: {
+        "@type": "ItemList",
+        name: seoTitle,
+        url: canonicalUrl,
+        itemListOrder: "https://schema.org/ItemListOrderAscending",
+        numberOfItems: items.length,
+        itemListElement: items,
+      },
     });
   }, [visible, seoTitle, canonicalUrl, activeCategory]);
 
