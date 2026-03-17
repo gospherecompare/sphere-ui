@@ -968,44 +968,54 @@ const Networking = () => {
   }`;
 
   const itemListJsonLd = useMemo(() => {
-    if (!sortedVariants?.length) return null;
-    const items = sortedVariants
-      .slice(0, 24)
-      .map((device, index) => {
-        const name = device?.name || device?.model || "";
-        if (!name) return null;
-        const slug = generateSlug(
-          device?.model || device?.name || device?.id || "",
-        );
-        if (!slug) return null;
-        const url = `${SITE_ORIGIN}/networking/${slug}`;
-        const image = toAbsoluteUrl(
-          device?.images?.find(Boolean) || device?.image || "",
-        );
-        const item = {
-          "@type": "Product",
-          name,
-          url,
-        };
-        if (image) item.image = image;
-        if (device?.brand) {
-          item.brand = { "@type": "Brand", name: device.brand };
-        }
-        return {
-          "@type": "ListItem",
-          position: index + 1,
-          item,
-        };
-      })
-      .filter(Boolean);
-    if (!items.length) return null;
+    // Build items array if data available
+    const items =
+      sortedVariants?.length > 0
+        ? sortedVariants
+            .slice(0, 24)
+            .map((device, index) => {
+              const name = device?.name || device?.model || "";
+              if (!name) return null;
+              const slug = generateSlug(
+                device?.model || device?.name || device?.id || "",
+              );
+              if (!slug) return null;
+              const url = `${SITE_ORIGIN}/networking/${slug}`;
+              const image = toAbsoluteUrl(
+                device?.images?.find(Boolean) || device?.image || "",
+              );
+              const item = {
+                "@type": "Product",
+                name,
+                url,
+              };
+              if (image) item.image = image;
+              if (device?.brand) {
+                item.brand = { "@type": "Brand", name: device.brand };
+              }
+              return {
+                "@type": "ListItem",
+                position: index + 1,
+                item,
+              };
+            })
+            .filter(Boolean)
+        : [];
+
+    // Always return a schema with URL, even if items are empty
+    // This ensures page URL is properly indexed by search engines
     const schema = {
       "@context": "https://schema.org",
       "@type": "ItemList",
       name: seoTitle,
       url: listSchemaUrl,
-      itemListElement: items,
+      numberOfItems: items.length,
     };
+
+    if (items.length > 0) {
+      schema.itemListElement = items;
+    }
+
     return JSON.stringify(schema);
   }, [sortedVariants, seoTitle, listSchemaUrl, toAbsoluteUrl]);
 

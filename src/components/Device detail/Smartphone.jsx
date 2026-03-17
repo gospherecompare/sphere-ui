@@ -3653,13 +3653,21 @@ Price: ${price}
         ogType="product"
         schema={
           mobileData
-            ? {
-                "@context": "https://schema.org",
-                "@type": "Product",
-                name: metaTitle || mobileData?.name || mobileData?.model || "",
-                description: metaDescription,
-                url: canonicalUrl,
-                image: [
+            ? (() => {
+                const schema = {
+                  "@context": "https://schema.org",
+                  "@type": "Product",
+                  name:
+                    metaTitle ||
+                    mobileData?.name ||
+                    mobileData?.model ||
+                    "Product",
+                  description: metaDescription || "Product details",
+                  url: canonicalUrl,
+                };
+
+                // Add images
+                const imageCandidates = [
                   primaryImage,
                   ...(Array.isArray(mobileData?.images)
                     ? mobileData.images
@@ -3669,38 +3677,51 @@ Price: ${price}
                 ]
                   .filter(Boolean)
                   .map(toAbsoluteUrl)
-                  .filter(Boolean),
-                brand:
-                  mobileData?.brand || mobileData?.brand_name
-                    ? {
-                        "@type": "Brand",
-                        name: mobileData?.brand || mobileData?.brand_name,
-                      }
-                    : undefined,
-                sku: mobileData?.model || mobileData?.id || undefined,
-                offers: (() => {
-                  const price = extractNumericPrice(
-                    currentVariant?.base_price ??
-                      mobileData?.price ??
-                      mobileData?.base_price ??
-                      null,
-                  );
-                  return price
-                    ? {
-                        "@type": "Offer",
-                        priceCurrency: "INR",
-                        price: String(price),
-                        availability:
-                          launchStatus === "preorder" ||
-                          launchStatus === "upcoming"
-                            ? "PreOrder"
-                            : "InStock",
-                        url: canonicalUrl,
-                        itemCondition: "NewCondition",
-                      }
-                    : undefined;
-                })(),
-              }
+                  .filter(Boolean);
+
+                if (imageCandidates.length > 0) {
+                  schema.image = Array.from(new Set(imageCandidates));
+                }
+
+                // Add brand if available
+                const brandName = mobileData?.brand || mobileData?.brand_name;
+                if (brandName) {
+                  schema.brand = {
+                    "@type": "Brand",
+                    name: brandName,
+                  };
+                }
+
+                // Add SKU if available
+                const sku = mobileData?.model || mobileData?.id;
+                if (sku) {
+                  schema.sku = String(sku);
+                }
+
+                // Add offers/pricing
+                const price = extractNumericPrice(
+                  currentVariant?.base_price ??
+                    mobileData?.price ??
+                    mobileData?.base_price ??
+                    null,
+                );
+
+                if (price) {
+                  schema.offers = {
+                    "@type": "Offer",
+                    priceCurrency: "INR",
+                    price: String(price),
+                    availability:
+                      launchStatus === "preorder" || launchStatus === "upcoming"
+                        ? "PreOrder"
+                        : "InStock",
+                    url: canonicalUrl,
+                    itemCondition: "NewCondition",
+                  };
+                }
+
+                return schema;
+              })()
             : null
         }
       />
