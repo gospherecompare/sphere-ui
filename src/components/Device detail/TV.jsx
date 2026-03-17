@@ -1582,10 +1582,13 @@ const TVDetailCard = () => {
     };
   };
 
-  const getCanonicalUrl = () => {
+  const getCanonicalUrl = useMemo(() => {
+    if (!applianceData?.product_name && !applianceData?.model_number) {
+      return SITE_ORIGIN;
+    }
     try {
       const slug = generateSlug(
-        applianceData?.product_name || applianceData?.model_number || "",
+        applianceData.product_name || applianceData.model_number || "",
       );
       if (!slug) return SITE_ORIGIN;
       const path = `/tvs/${slug}`;
@@ -1593,11 +1596,11 @@ const TVDetailCard = () => {
     } catch (e) {
       return SITE_ORIGIN;
     }
-  };
+  }, [applianceData?.product_name, applianceData?.model_number]);
 
   const getShareUrl = () => {
     try {
-      const base = getCanonicalUrl();
+      const base = getCanonicalUrl;
       const url = new URL(base);
       const productId =
         applianceData?.id ||
@@ -1609,7 +1612,7 @@ const TVDetailCard = () => {
       url.searchParams.set("shared", "1");
       return url.toString();
     } catch (e) {
-      return getCanonicalUrl();
+      return getCanonicalUrl;
     }
   };
 
@@ -2731,7 +2734,7 @@ const TVDetailCard = () => {
     resolution: metaResolution,
     os: metaOs,
   });
-  const canonicalUrl = getCanonicalUrl();
+  const canonicalUrl = getCanonicalUrl;
   const metaImage = applianceData?.images?.[0] || null;
   const toAbsoluteUrl = (url) => {
     if (!url) return "";

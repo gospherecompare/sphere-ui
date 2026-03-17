@@ -4,6 +4,23 @@ import { useLocation } from "react-router-dom";
 
 const SITE_ORIGIN = "https://tryhook.shop";
 
+const toAbsoluteUrl = (value, fallbackPath = "/") => {
+  const raw = String(value || "").trim();
+  if (!raw) return `${SITE_ORIGIN}${fallbackPath}`;
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (raw.startsWith("//")) return `https:${raw}`;
+  if (raw.startsWith("/")) return `${SITE_ORIGIN}${raw}`;
+  return `${SITE_ORIGIN}/${raw}`;
+};
+
+const resolveSchemaUrl = (url, fallbackPath = "/") => {
+  if (url) return toAbsoluteUrl(url, fallbackPath);
+  if (typeof window !== "undefined" && window.location?.href) {
+    return window.location.href;
+  }
+  return `${SITE_ORIGIN}${fallbackPath}`;
+};
+
 /**
  * Dynamic SEO Component
  * Sets title, canonical URL, and structured data (schema.org) per route
@@ -11,16 +28,56 @@ const SITE_ORIGIN = "https://tryhook.shop";
  * Usage:
  * <SEO
  *   title="Page Title"
- *   schema={{
+ *   schemaType="ItemList"
+ *   schema={({ canonicalUrl }) => ({
  *     "@context": "https://schema.org",
- *     "@type": "ItemList",
- *     ...
- *   }}
+ *     name: "Latest Smartphones",
+ *     url: canonicalUrl,
+ *   })}
  * />
  */
-const SEO = ({ title, description, schema, robots = "index, follow" }) => {
-  const { pathname } = useLocation();
-  const canonicalUrl = `${SITE_ORIGIN}${pathname}`;
+const SEO = ({
+  title,
+  description,
+  schema,
+  schemaType,
+  robots = "index, follow",
+  canonicalPath,
+  canonicalUrl: canonicalUrlProp,
+  includeQuery = false,
+}) => {
+  const { pathname, search } = useLocation();
+  const resolvedPath = canonicalPath || pathname || "/";
+  const resolvedQuery = includeQuery ? search || "" : "";
+  const canonicalUrl = toAbsoluteUrl(
+    canonicalUrlProp || `${resolvedPath}${resolvedQuery}`,
+    resolvedPath,
+  );
+  const resolvedSchema = React.useMemo(() => {
+    if (!schema) return null;
+    const base =
+      typeof schema === "function"
+        ? schema({ canonicalUrl, pathname: resolvedPath })
+        : schema;
+    if (!base) return null;
+
+    const applyDefaults = (entry) => {
+      if (!entry || typeof entry !== "object") return entry;
+      const next = { ...entry };
+      if (schemaType) next["@type"] = schemaType;
+      if (!next.url) next.url = canonicalUrl;
+      return next;
+    };
+
+    return Array.isArray(base) ? base.map(applyDefaults) : applyDefaults(base);
+  }, [schema, schemaType, canonicalUrl, resolvedPath]);
+
+  const schemaJson = React.useMemo(() => {
+    if (!resolvedSchema) return null;
+    return typeof resolvedSchema === "string"
+      ? resolvedSchema
+      : JSON.stringify(resolvedSchema);
+  }, [resolvedSchema]);
 
   return (
     <Helmet prioritizeSeoTags>
@@ -36,9 +93,7 @@ const SEO = ({ title, description, schema, robots = "index, follow" }) => {
       {description && <meta property="og:description" content={description} />}
 
       {/* Structured Data */}
-      {schema && (
-        <script type="application/ld+json">{JSON.stringify(schema)}</script>
-      )}
+      {schemaJson && <script type="application/ld+json">{schemaJson}</script>}
     </Helmet>
   );
 };
@@ -60,7 +115,7 @@ export const createItemListSchema = ({
     "@context": "https://schema.org",
     "@type": "ItemList",
     name: name || "Products",
-    url: url || SITE_ORIGIN,
+    url: resolveSchemaUrl(url, "/"),
   };
 
   if (itemCount) schema.itemListElement = { itemCount };
@@ -102,7 +157,7 @@ export const createProductSchema = ({
       "@type": "Brand",
       name: brand,
     },
-    url: url || SITE_ORIGIN,
+    url: resolveSchemaUrl(url, "/"),
   };
 
   if (price) {
@@ -155,7 +210,7 @@ export const createCollectionSchema = ({
     "@type": "CollectionPage",
     name: name || "",
     description: description || "",
-    url: url || SITE_ORIGIN,
+    url: resolveSchemaUrl(url, "/"),
     image: image || "",
   };
 };

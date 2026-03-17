@@ -1329,12 +1329,19 @@ const LaptopDetailCard = () => {
     };
   };
 
-  const getCanonicalUrl = () => {
+  const getCanonicalUrl = useMemo(() => {
+    if (
+      !laptopData?.product_name &&
+      !laptopData?.model_number &&
+      !laptopData?.model
+    ) {
+      return SITE_ORIGIN;
+    }
     try {
       const slug = generateSlug(
-        laptopData?.product_name ||
-          laptopData?.model_number ||
-          laptopData?.model ||
+        laptopData.product_name ||
+          laptopData.model_number ||
+          laptopData.model ||
           "",
       );
       if (!slug) return SITE_ORIGIN;
@@ -1343,11 +1350,11 @@ const LaptopDetailCard = () => {
     } catch (e) {
       return SITE_ORIGIN;
     }
-  };
+  }, [laptopData?.product_name, laptopData?.model_number, laptopData?.model]);
 
   const getShareUrl = () => {
     try {
-      const base = getCanonicalUrl();
+      const base = getCanonicalUrl;
       const url = new URL(base);
       const productId =
         laptopData?.id ||
@@ -1359,7 +1366,7 @@ const LaptopDetailCard = () => {
       url.searchParams.set("shared", "1");
       return url.toString();
     } catch (e) {
-      return getCanonicalUrl();
+      return getCanonicalUrl;
     }
   };
 
@@ -2082,7 +2089,7 @@ const LaptopDetailCard = () => {
     storage: metaStorage,
     brand: metaBrand,
   });
-  const canonicalUrl = getCanonicalUrl();
+  const canonicalUrl = getCanonicalUrl;
   const metaImage = laptopData?.images?.[0] || null;
   const toAbsoluteUrl = (url) => {
     if (!url) return "";

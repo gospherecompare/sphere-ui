@@ -730,19 +730,22 @@ const NetworkingDetailCard = () => {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
 
-  const getCanonicalUrl = () => {
+  const getCanonicalUrl = useMemo(() => {
+    if (!deviceData?.name && !deviceData?.model) {
+      return SITE_ORIGIN;
+    }
     try {
-      const slug = generateSlug(deviceData?.name || deviceData?.model || "");
+      const slug = generateSlug(deviceData.name || deviceData.model || "");
       if (!slug) return SITE_ORIGIN;
       const path = `/networking/${slug}`;
       return `${SITE_ORIGIN}${path}`;
     } catch (e) {
       return SITE_ORIGIN;
     }
-  };
+  }, [deviceData?.name, deviceData?.model]);
 
   const handleShare = async () => {
-    const url = getCanonicalUrl();
+    const url = getCanonicalUrl;
     const content = generateShareContent();
     const payload = {
       title: content.title,
@@ -761,7 +764,7 @@ const NetworkingDetailCard = () => {
   };
 
   const handleCopyLink = () => {
-    const url = getCanonicalUrl();
+    const url = getCanonicalUrl;
     const content = generateShareContent();
     // Copy with product details and link
     const textToCopy = `${content.title}\n${content.description}\n\n${url}`;
@@ -1393,7 +1396,7 @@ const NetworkingDetailCard = () => {
       "",
     brand: deviceData?.brand || deviceData?.brand_name || "",
   });
-  const canonicalUrl = getCanonicalUrl();
+  const canonicalUrl = getCanonicalUrl;
   const metaImage = deviceData?.images?.[0] || deviceData?.image || null;
   const toAbsoluteUrl = (url) => {
     if (!url) return "";
@@ -1501,7 +1504,7 @@ const NetworkingDetailCard = () => {
             <div className="space-y-3">
               <button
                 onClick={() => {
-                  const urlToShare = getCanonicalUrl();
+                  const urlToShare = getCanonicalUrl;
                   const message = `${shareData.title}\n${shareData.text}\n\n${urlToShare}`;
                   const url = `https://wa.me/?text=${encodeURIComponent(
                     message,
@@ -1516,7 +1519,7 @@ const NetworkingDetailCard = () => {
               </button>
               <button
                 onClick={() => {
-                  const urlToShare = getCanonicalUrl();
+                  const urlToShare = getCanonicalUrl;
                   const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
                     urlToShare,
                   )}`;

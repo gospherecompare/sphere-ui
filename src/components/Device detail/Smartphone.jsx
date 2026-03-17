@@ -1965,16 +1965,19 @@ Price: ${price}
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
 
-  const getCanonicalUrl = () => {
+  const getCanonicalUrl = useMemo(() => {
+    if (!mobileData?.name && !mobileData?.model) {
+      return SITE_ORIGIN;
+    }
     try {
-      const slug = generateSlug(mobileData?.name || mobileData?.model || "");
+      const slug = generateSlug(mobileData.name || mobileData.model || "");
       if (!slug) return SITE_ORIGIN;
       const path = `/smartphones/${toSeoDetailSlug(slug) || slug}`;
       return `${SITE_ORIGIN}${path}`;
     } catch (e) {
       return SITE_ORIGIN;
     }
-  };
+  }, [mobileData?.name, mobileData?.model, toSeoDetailSlug]);
   const isSharedLink =
     query.get("shared") === "1" || query.get("shared") === "true";
 
@@ -2005,7 +2008,7 @@ Price: ${price}
     // can fetch/display the product. We keep the canonical slug path and
     // append the `id` and `shared=1` params.
     try {
-      const base = getCanonicalUrl();
+      const base = getCanonicalUrl;
       const shareUrl = new URL(base);
       const productId = mobileData?.id || mobileData?.model || "";
       if (productId) shareUrl.searchParams.set("id", String(productId));
@@ -2049,7 +2052,7 @@ Price: ${price}
   // copy link functionality removed â€” share-only flow
 
   const shareToWhatsApp = () => {
-    const base = getCanonicalUrl();
+    const base = getCanonicalUrl;
     const shareUrl = new URL(base);
     const productId = mobileData?.id || mobileData?.model || "";
     if (productId) shareUrl.searchParams.set("id", String(productId));
@@ -2062,7 +2065,7 @@ Price: ${price}
   };
 
   const shareToFacebook = () => {
-    const base = getCanonicalUrl();
+    const base = getCanonicalUrl;
     const shareUrl = new URL(base);
     const productId = mobileData?.id || mobileData?.model || "";
     if (productId) shareUrl.searchParams.set("id", String(productId));
@@ -2076,7 +2079,7 @@ Price: ${price}
   };
 
   const shareToTwitter = () => {
-    const base = getCanonicalUrl();
+    const base = getCanonicalUrl;
     const shareUrl = new URL(base);
     const productId = mobileData?.id || mobileData?.model || "";
     if (productId) shareUrl.searchParams.set("id", String(productId));
@@ -2091,7 +2094,7 @@ Price: ${price}
   };
 
   const shareViaEmail = () => {
-    const base = getCanonicalUrl();
+    const base = getCanonicalUrl;
     const shareUrl = new URL(base);
     const productId = mobileData?.id || mobileData?.model || "";
     if (productId) shareUrl.searchParams.set("id", String(productId));
@@ -3386,7 +3389,7 @@ Price: ${price}
     return url.startsWith("/") ? `${origin}${url}` : `${origin}/${url}`;
   };
 
-  const canonicalUrl = getCanonicalUrl();
+  const canonicalUrl = getCanonicalUrl;
   const primaryImage = Array.isArray(mobileData?.images)
     ? mobileData.images[0]
     : null;
