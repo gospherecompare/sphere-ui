@@ -292,64 +292,64 @@ const MobileDetailCard = () => {
     return Number.isNaN(dt.getTime()) ? null : dt.toISOString();
   };
 
-const formatDateForDisplay = (value) => {
-  const normalized = normalizeDateLikeValue(value);
-  if (!normalized) return "N/A";
-  try {
-    return new Date(normalized).toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-  } catch (e) {
-    return "N/A";
-  }
-};
-
-const normalizeLaunchStatus = (value) => {
-  if (!value) return null;
-  const text = String(value).trim().toLowerCase();
-  if (!text) return null;
-  if (/(pre[-\s]?order|pre[-\s]?book)/i.test(text)) return "preorder";
-  if (/(upcoming|coming soon|expected|launching soon|rumored)/i.test(text))
-    return "upcoming";
-  if (/(released|available|launched|out now|on sale)/i.test(text))
-    return "released";
-  return null;
-};
-
-const getDeviceLaunchStatus = (device) => {
-  if (!device) return null;
-  const override = normalizeLaunchStatus(
-    device.launch_status_override ||
-      device.launchStatusOverride ||
-      device.launch_status ||
-      device.launchStatus,
-  );
-  if (override) return override;
-
-  const preorderUrl =
-    device.official_preorder_url || device.officialPreorderUrl;
-  if (preorderUrl) return "preorder";
-
-  const statusHint = normalizeLaunchStatus(
-    device.status || device.availability || device.badge,
-  );
-  if (statusHint) return statusHint;
-
-  const dateValue = normalizeDateLikeValue(device.launch_date);
-  if (dateValue) {
-    const dt = new Date(dateValue);
-    if (!Number.isNaN(dt.getTime())) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      if (dt > today) return "upcoming";
-      return "released";
+  const formatDateForDisplay = (value) => {
+    const normalized = normalizeDateLikeValue(value);
+    if (!normalized) return "N/A";
+    try {
+      return new Date(normalized).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+    } catch (e) {
+      return "N/A";
     }
-  }
+  };
 
-  return null;
-};
+  const normalizeLaunchStatus = (value) => {
+    if (!value) return null;
+    const text = String(value).trim().toLowerCase();
+    if (!text) return null;
+    if (/(pre[-\s]?order|pre[-\s]?book)/i.test(text)) return "preorder";
+    if (/(upcoming|coming soon|expected|launching soon|rumored)/i.test(text))
+      return "upcoming";
+    if (/(released|available|launched|out now|on sale)/i.test(text))
+      return "released";
+    return null;
+  };
+
+  const getDeviceLaunchStatus = (device) => {
+    if (!device) return null;
+    const override = normalizeLaunchStatus(
+      device.launch_status_override ||
+        device.launchStatusOverride ||
+        device.launch_status ||
+        device.launchStatus,
+    );
+    if (override) return override;
+
+    const preorderUrl =
+      device.official_preorder_url || device.officialPreorderUrl;
+    if (preorderUrl) return "preorder";
+
+    const statusHint = normalizeLaunchStatus(
+      device.status || device.availability || device.badge,
+    );
+    if (statusHint) return statusHint;
+
+    const dateValue = normalizeDateLikeValue(device.launch_date);
+    if (dateValue) {
+      const dt = new Date(dateValue);
+      if (!Number.isNaN(dt.getTime())) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (dt > today) return "upcoming";
+        return "released";
+      }
+    }
+
+    return null;
+  };
 
   const getBatteryCapacityRaw = (deviceData) => {
     if (!deviceData) return null;
@@ -1123,10 +1123,7 @@ const getDeviceLaunchStatus = (device) => {
     const entry = {
       id: currentProductId,
       name:
-        mobileData?.name ||
-        mobileData?.model ||
-        mobileData?.brand ||
-        "Device",
+        mobileData?.name || mobileData?.model || mobileData?.brand || "Device",
       brand:
         mobileData?.brand ||
         mobileData?.brand_name ||
@@ -1142,8 +1139,7 @@ const getDeviceLaunchStatus = (device) => {
         mobileData?.price ??
         mobileData?.base_price ??
         null,
-      segment:
-        mobileData?.category || mobileData?.product_type || "smartphone",
+      segment: mobileData?.category || mobileData?.product_type || "smartphone",
       processor:
         mobileData?.performance?.processor ||
         mobileData?.processor ||
@@ -3712,7 +3708,7 @@ Price: ${price}
 
   return (
     <div className="px-2 lg:px-4 mx-auto bg-white max-w-4xl w-full m-0">
-      <Helmet>
+      <Helmet prioritizeSeoTags>
         <title>{metaTitleWithDate}</title>
         <meta name="description" content={metaDescription} />
         {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}

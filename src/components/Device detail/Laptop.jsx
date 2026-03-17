@@ -2151,7 +2151,7 @@ const LaptopDetailCard = () => {
 
   return (
     <div className="px-2 lg:px-4 mx-auto max-w-4xl w-full bg-white">
-      <Helmet>
+      <Helmet prioritizeSeoTags>
         <title>{metaTitleWithDate}</title>
         <meta name="description" content={metaDescription} />
         <link rel="canonical" href={canonicalUrl} />

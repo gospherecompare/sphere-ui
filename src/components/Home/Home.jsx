@@ -22,7 +22,7 @@ const Home = () => {
   });
   return (
     <div className="px-4 sm:px-0">
-      <Helmet>
+      <Helmet prioritizeSeoTags>
         <script type="application/ld+json">{websiteJsonLd}</script>
       </Helmet>
       <ProductsNav />

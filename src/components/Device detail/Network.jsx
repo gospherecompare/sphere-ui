@@ -1463,7 +1463,7 @@ const NetworkingDetailCard = () => {
   return (
     <div className="max-w-8xl mx-auto bg-white">
       {/* SEO Helmet */}
-      <Helmet>
+      <Helmet prioritizeSeoTags>
         <title>{metaTitle}</title>
         <meta name="description" content={metaDescription} />
         {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}

@@ -2630,6 +2630,21 @@ const TVs = () => {
     toAbsoluteUrl,
   ]);
 
+  // Organization schema (global, renders on all pages)
+  const organizationJsonLd = useMemo(() => {
+    return JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: "Hooks",
+      url: "https://tryhook.shop",
+      logo: "https://tryhook.shop/Hooks-logo.png",
+      sameAs: [
+        "https://instagram.com/tryHooks",
+        "https://twitter.com/tryHooks",
+      ],
+    });
+  }, []);
+
   // Get appliance type icon component
   const ApplianceTypeIcon = ({ applianceType }) => {
     const IconComponent = getApplianceTypeIcon(applianceType);
@@ -2667,7 +2682,10 @@ const TVs = () => {
           />
         ) : null}
 
-        {/* Structured Data - ItemList schema for filtering/listing pages */}
+        {/* Structured Data - Organization + ItemList schema */}
+        {organizationJsonLd ? (
+          <script type="application/ld+json">{organizationJsonLd}</script>
+        ) : null}
         {itemListJsonLd ? (
           <script type="application/ld+json">{itemListJsonLd}</script>
         ) : null}

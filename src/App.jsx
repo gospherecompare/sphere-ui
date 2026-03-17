@@ -432,7 +432,16 @@ const shouldInjectWebPageSchema = (canonicalPath = "", robots = "") => {
 
 const RouteSeoFallback = () => {
   const { pathname } = useLocation();
+  // Skip product pages - let component Helmet handle SEO
   if (pathname.startsWith("/compare")) return null;
+  if (pathname.startsWith("/smartphones")) return null;
+  if (pathname.startsWith("/laptops")) return null;
+  if (pathname.startsWith("/tvs")) return null;
+  if (pathname.startsWith("/networking")) return null;
+  if (pathname.startsWith("/trending")) return null;
+  if (pathname.startsWith("/devices")) return null;
+  if (pathname.startsWith("/mobiles")) return null;
+  if (pathname.startsWith("/products")) return null;
   const seo = resolveSeoMeta(pathname);
   const canonicalUrl = `${SITE_ORIGIN}${seo.canonicalPath}`;
   const includeWebPageSchema = shouldInjectWebPageSchema(
