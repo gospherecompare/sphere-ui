@@ -1583,7 +1583,7 @@ const TVDetailCard = () => {
   };
 
   const getCanonicalUrl = useMemo(() => {
-    if (!applianceData?.product_name && !applianceData?.model_number) {
+    if (!applianceData) {
       return SITE_ORIGIN;
     }
     try {
@@ -1596,7 +1596,7 @@ const TVDetailCard = () => {
     } catch (e) {
       return SITE_ORIGIN;
     }
-  }, [applianceData?.product_name, applianceData?.model_number]);
+  }, [applianceData]);
 
   const getShareUrl = () => {
     try {

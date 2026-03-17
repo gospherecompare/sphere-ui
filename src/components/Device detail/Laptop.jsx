@@ -1330,11 +1330,7 @@ const LaptopDetailCard = () => {
   };
 
   const getCanonicalUrl = useMemo(() => {
-    if (
-      !laptopData?.product_name &&
-      !laptopData?.model_number &&
-      !laptopData?.model
-    ) {
+    if (!laptopData) {
       return SITE_ORIGIN;
     }
     try {
@@ -1350,7 +1346,7 @@ const LaptopDetailCard = () => {
     } catch (e) {
       return SITE_ORIGIN;
     }
-  }, [laptopData?.product_name, laptopData?.model_number, laptopData?.model]);
+  }, [laptopData]);
 
   const getShareUrl = () => {
     try {

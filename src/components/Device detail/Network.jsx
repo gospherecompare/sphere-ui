@@ -731,7 +731,7 @@ const NetworkingDetailCard = () => {
       .replace(/^-+|-+$/g, "");
 
   const getCanonicalUrl = useMemo(() => {
-    if (!deviceData?.name && !deviceData?.model) {
+    if (!deviceData) {
       return SITE_ORIGIN;
     }
     try {
@@ -742,7 +742,7 @@ const NetworkingDetailCard = () => {
     } catch (e) {
       return SITE_ORIGIN;
     }
-  }, [deviceData?.name, deviceData?.model]);
+  }, [deviceData]);
 
   const handleShare = async () => {
     const url = getCanonicalUrl;

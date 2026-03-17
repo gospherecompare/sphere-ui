@@ -1966,18 +1966,18 @@ Price: ${price}
       .replace(/^-+|-+$/g, "");
 
   const getCanonicalUrl = useMemo(() => {
-    if (!mobileData?.name && !mobileData?.model) {
-      return SITE_ORIGIN;
-    }
+    if (!mobileData) return SITE_ORIGIN;
+    const name = mobileData?.name || mobileData?.model;
+    if (!name) return SITE_ORIGIN;
     try {
-      const slug = generateSlug(mobileData.name || mobileData.model || "");
+      const slug = generateSlug(name);
       if (!slug) return SITE_ORIGIN;
       const path = `/smartphones/${toSeoDetailSlug(slug) || slug}`;
       return `${SITE_ORIGIN}${path}`;
     } catch (e) {
       return SITE_ORIGIN;
     }
-  }, [mobileData?.name, mobileData?.model, toSeoDetailSlug]);
+  }, [mobileData, toSeoDetailSlug]);
   const isSharedLink =
     query.get("shared") === "1" || query.get("shared") === "true";
 
