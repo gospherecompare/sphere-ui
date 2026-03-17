@@ -2596,8 +2596,29 @@ const TVs = () => {
               if (device?.brand) {
                 item.brand = { "@type": "Brand", name: device.brand };
               }
-              // Note: No offers/aggregateRating since this is a comparison platform,
-              // not an e-commerce store. Hooks provides HooksScore algorithm, not standard ratings
+              // Add aggregateRating from HooksScore (Hooks proprietary rating algorithm)
+              // Converts HooksScore to 0-100 scale for Google schema.org aggregateRating
+              const hookScoreValue = Number(device?.hookScore);
+              if (Number.isFinite(hookScoreValue) && hookScoreValue > 0) {
+                // Normalize score to 0-100 scale
+                let normalizedScore = hookScoreValue;
+                if (hookScoreValue <= 1) {
+                  // Already 0-1 range, convert to 0-100
+                  normalizedScore = hookScoreValue * 100;
+                } else if (hookScoreValue <= 10) {
+                  // 0-10 range, convert to 0-100
+                  normalizedScore = hookScoreValue * 10;
+                }
+                // Ensure within 0-100
+                normalizedScore = Math.max(0, Math.min(100, normalizedScore));
+                item.aggregateRating = {
+                  "@type": "AggregateRating",
+                  ratingValue: Number(normalizedScore.toFixed(1)),
+                  bestRating: 100,
+                  worstRating: 0,
+                  ratingCount: 1,
+                };
+              }
               return {
                 "@type": "ListItem",
                 position: index + 1,

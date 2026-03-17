@@ -1270,6 +1270,24 @@ const TrendingProductsHub = () => {
         if (product?.brand) {
           item.brand = { "@type": "Brand", name: product.brand };
         }
+        // Add aggregateRating from HooksScore (Hooks proprietary rating algorithm)
+        const hookScoreValue = Number(product?.hookScore);
+        if (Number.isFinite(hookScoreValue) && hookScoreValue > 0) {
+          let normalizedScore = hookScoreValue;
+          if (hookScoreValue <= 1) {
+            normalizedScore = hookScoreValue * 100;
+          } else if (hookScoreValue <= 10) {
+            normalizedScore = hookScoreValue * 10;
+          }
+          normalizedScore = Math.max(0, Math.min(100, normalizedScore));
+          item.aggregateRating = {
+            "@type": "AggregateRating",
+            ratingValue: Number(normalizedScore.toFixed(1)),
+            bestRating: 100,
+            worstRating: 0,
+            ratingCount: 1,
+          };
+        }
         return {
           "@type": "ListItem",
           position: index + 1,
