@@ -467,6 +467,10 @@ const Wishlist = () => {
           name="description"
           content="View and manage your favorite products"
         />
+        <meta name="robots" content="noindex, nofollow" />
+        <link rel="canonical" href="https://tryhook.shop/wishlist" />
+        <meta name="robots" content="noindex, nofollow" />
+        <link rel="canonical" href="https://tryhook.shop/wishlist" />
       </Helmet>
 
       <div className="max-w-4xl mx-auto min-h-screen bg-white py-6 sm:py-8 lg:py-12 px-3 sm:px-4 lg:px-8">

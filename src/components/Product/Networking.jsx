@@ -999,19 +999,12 @@ const Networking = () => {
       })
       .filter(Boolean);
     if (!items.length) return null;
-    const itemList = {
-      "@type": "ItemList",
-      name: seoTitle,
-      itemListOrder: "https://schema.org/ItemListOrderAscending",
-      numberOfItems: items.length,
-      itemListElement: items,
-    };
     const schema = {
       "@context": "https://schema.org",
-      "@type": "CollectionPage",
+      "@type": "ItemList",
       name: seoTitle,
       url: listSchemaUrl,
-      mainEntity: itemList,
+      itemListElement: items,
     };
     return JSON.stringify(schema);
   }, [sortedVariants, seoTitle, listSchemaUrl, toAbsoluteUrl]);

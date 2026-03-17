@@ -1611,7 +1611,8 @@ const Laptops = () => {
   const listSchemaUrl = `${SITE_ORIGIN}${
     location?.pathname ? location.pathname : "/laptops"
   }`;
-  const isItemListSchema = Boolean(filter || normalizedFeature);
+  // Always generate ItemList schema for listing pages with dynamic URL
+  const isItemListSchema = true;
 
   const itemListJsonLd = useMemo(() => {
     if (!sortedVariants?.length) return null;

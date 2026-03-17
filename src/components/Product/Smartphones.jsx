@@ -3176,9 +3176,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const listSchemaUrl = `${SITE_ORIGIN}${
     location?.pathname ? location.pathname : "/smartphones"
   }`;
-  const isItemListSchema = Boolean(
-    isUpcomingView || listFilter || normalizedFeature || hasUrlDrivenFilters,
-  );
+
+  // Always generate ItemList schema for listing pages with dynamic URL
+  const isItemListSchema = true;
 
   const itemListJsonLd = useMemo(() => {
     if (!sortedVariants?.length) return null;
