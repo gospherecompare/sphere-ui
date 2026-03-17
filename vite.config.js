@@ -5,6 +5,15 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
+import {
+  createAboutPageSchema,
+  createCollectionSchema,
+  createContactPageSchema,
+  createItemListSchema,
+  createProductSchema,
+  createWebApplicationSchema,
+  createWebPageSchema,
+} from "./src/utils/schemaGenerators.js";
 
 const require = createRequire(import.meta.url);
 const vitePrerender = require("vite-plugin-prerender");
@@ -330,6 +339,54 @@ const parseApiRows = (body, preferredKeys = []) => {
   if (Array.isArray(body?.rows)) return body.rows;
   if (Array.isArray(body?.data?.rows)) return body.data.rows;
   return [];
+};
+
+const getPreloadedRows = (payload, endpoint, preferredKeys = []) =>
+  parseApiRows(payload?.byUrl?.[endpoint], preferredKeys);
+
+const getSmartphoneDetailName = (canonicalPath) => {
+  const name = extractDetailSlugName(
+    canonicalPath,
+    "/smartphones/",
+    stripSmartphoneSeoSuffix,
+  );
+  const tail = canonicalPath.startsWith("/smartphones/")
+    ? canonicalPath.slice("/smartphones/".length)
+    : "";
+  if (SMARTPHONE_LIST_SLUGS.has(String(tail || "").toLowerCase())) return "";
+  return name;
+};
+
+const buildItemListFromRows = (rows = [], options = {}) => {
+  const {
+    basePath = "",
+    toDetailSlug = (slug) => slug,
+    getName = (item) => item?.name || item?.model || item?.product_name,
+    getImage = (item) =>
+      (Array.isArray(item?.images) ? item.images.find(Boolean) : null) ||
+      item?.image ||
+      item?.photo ||
+      item?.thumbnail ||
+      null,
+  } = options;
+
+  return rows
+    .slice(0, 20)
+    .map((row) => {
+      const name = String(getName(row) || "").trim();
+      if (!name) return null;
+      const baseSlug = toSlug(name);
+      if (!baseSlug) return null;
+      const detailSlug = toDetailSlug(baseSlug, row);
+      if (!detailSlug) return null;
+      const image = getImage(row) || undefined;
+      return {
+        name,
+        url: `${basePath}/${detailSlug}`.replace(/\/+/g, "/"),
+        image,
+      };
+    })
+    .filter(Boolean);
 };
 
 const fetchApiRows = async (endpoint, preferredKeys = []) => {
@@ -827,6 +884,247 @@ const resolveSeo = (routePath) => {
   };
 };
 
+const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
+  const seo = resolveSeo(routePath);
+  const canonicalPath = seo.canonicalPath;
+  const canonicalUrl = `${SITE_ORIGIN}${canonicalPath}`;
+
+  if (canonicalPath === "/") return [];
+
+  const smartphoneDetailName = getSmartphoneDetailName(canonicalPath);
+  if (smartphoneDetailName) {
+    return [
+      createProductSchema({
+        name: smartphoneDetailName,
+        description: seo.description,
+        url: canonicalUrl,
+      }),
+    ];
+  }
+
+  const laptopDetailName = extractDetailSlugName(canonicalPath, "/laptops/");
+  if (laptopDetailName) {
+    return [
+      createProductSchema({
+        name: laptopDetailName,
+        description: seo.description,
+        url: canonicalUrl,
+      }),
+    ];
+  }
+
+  const tvDetailName = extractDetailSlugName(canonicalPath, "/tvs/");
+  if (tvDetailName) {
+    return [
+      createProductSchema({
+        name: tvDetailName,
+        description: seo.description,
+        url: canonicalUrl,
+      }),
+    ];
+  }
+
+  const networkingDetailName = extractDetailSlugName(
+    canonicalPath,
+    "/networking/",
+  );
+  if (networkingDetailName) {
+    return [
+      createProductSchema({
+        name: networkingDetailName,
+        description: seo.description,
+        url: canonicalUrl,
+      }),
+    ];
+  }
+
+  if (canonicalPath.startsWith("/compare")) {
+    return [
+      createWebApplicationSchema({
+        name: seo.title,
+        description: seo.description,
+        url: canonicalUrl,
+        applicationCategory: "UtilityApplication",
+      }),
+    ];
+  }
+
+  if (canonicalPath.startsWith("/about")) {
+    return [
+      createAboutPageSchema({
+        name: "About Hooks",
+        description: seo.description,
+        url: canonicalUrl,
+      }),
+    ];
+  }
+
+  if (canonicalPath.startsWith("/contact")) {
+    return [
+      createContactPageSchema({
+        name: "Contact Hooks",
+        description: seo.description,
+        url: canonicalUrl,
+        contactEmail: "gospherecompare@gmail.com",
+      }),
+    ];
+  }
+
+  if (
+    canonicalPath.startsWith("/privacy-policy") ||
+    canonicalPath.startsWith("/terms") ||
+    canonicalPath.startsWith("/careers")
+  ) {
+    return [
+      createWebPageSchema({
+        name: seo.title,
+        description: seo.description,
+        url: canonicalUrl,
+      }),
+    ];
+  }
+
+  if (canonicalPath.startsWith("/smartphones")) {
+    const rows = getPreloadedRows(preloadedApiPayload, `${API_BASE_URL}/smartphones`, [
+      "smartphones",
+    ]);
+    const items = buildItemListFromRows(rows, {
+      basePath: "/smartphones",
+      toDetailSlug: (slug) => toSmartphoneSeoSlug(slug),
+    });
+    return [
+      createCollectionSchema({
+        name: seo.title,
+        description: seo.description,
+        url: canonicalUrl,
+      }),
+      createItemListSchema({
+        name: seo.title,
+        url: canonicalUrl,
+        items,
+      }),
+    ];
+  }
+
+  if (canonicalPath.startsWith("/laptops")) {
+    const rows = getPreloadedRows(preloadedApiPayload, `${API_BASE_URL}/laptops`, [
+      "laptops",
+    ]);
+    const items = buildItemListFromRows(rows, {
+      basePath: "/laptops",
+    });
+    return [
+      createCollectionSchema({
+        name: seo.title,
+        description: seo.description,
+        url: canonicalUrl,
+      }),
+      createItemListSchema({
+        name: seo.title,
+        url: canonicalUrl,
+        items,
+      }),
+    ];
+  }
+
+  if (canonicalPath.startsWith("/tvs")) {
+    const rows = getPreloadedRows(preloadedApiPayload, `${API_BASE_URL}/tvs`, [
+      "tvs",
+    ]);
+    const items = buildItemListFromRows(rows, {
+      basePath: "/tvs",
+    });
+    return [
+      createCollectionSchema({
+        name: seo.title,
+        description: seo.description,
+        url: canonicalUrl,
+      }),
+      createItemListSchema({
+        name: seo.title,
+        url: canonicalUrl,
+        items,
+      }),
+    ];
+  }
+
+  if (canonicalPath.startsWith("/networking")) {
+    const rows = getPreloadedRows(
+      preloadedApiPayload,
+      `${API_BASE_URL}/networking`,
+      ["networking"],
+    );
+    const items = buildItemListFromRows(rows, {
+      basePath: "/networking",
+    });
+    return [
+      createCollectionSchema({
+        name: seo.title,
+        description: seo.description,
+        url: canonicalUrl,
+      }),
+      createItemListSchema({
+        name: seo.title,
+        url: canonicalUrl,
+        items,
+      }),
+    ];
+  }
+
+  if (canonicalPath.startsWith("/trending")) {
+    const category = canonicalPath.split("/")[2] || "smartphones";
+    const endpointByCategory = {
+      smartphones: `${API_BASE_URL}/public/trending/smartphones?limit=120`,
+      laptops: `${API_BASE_URL}/public/trending/laptops?limit=120`,
+      tvs: `${API_BASE_URL}/public/trending/tvs?limit=120`,
+      networking: `${API_BASE_URL}/public/trending/networking?limit=120`,
+    };
+    const endpoint =
+      endpointByCategory[category] ||
+      endpointByCategory.smartphones;
+    const rows = getPreloadedRows(preloadedApiPayload, endpoint, ["results"]);
+    const basePath =
+      category === "laptops"
+        ? "/laptops"
+        : category === "tvs"
+          ? "/tvs"
+          : category === "networking"
+            ? "/networking"
+            : "/smartphones";
+    const items = buildItemListFromRows(rows, {
+      basePath,
+      toDetailSlug:
+        basePath === "/smartphones"
+          ? (slug) => toSmartphoneSeoSlug(slug)
+          : (slug) => slug,
+      getName: (item) =>
+        item?.product_name ||
+        item?.name ||
+        item?.model ||
+        item?.title ||
+        "",
+      getImage: (item) =>
+        item?.image ||
+        (Array.isArray(item?.images) ? item.images.find(Boolean) : null) ||
+        null,
+    });
+    return [
+      createCollectionSchema({
+        name: seo.title,
+        description: seo.description,
+        url: canonicalUrl,
+      }),
+      createItemListSchema({
+        name: seo.title,
+        url: canonicalUrl,
+        items,
+      }),
+    ];
+  }
+
+  return [];
+};
+
 const escapeHtml = (value = "") =>
   String(value)
     .replace(/&/g, "&amp;")
@@ -850,6 +1148,23 @@ const injectPreloadedPayload = (html, payload) => {
   if (html.includes('id="hook-prerender-data"')) return html;
   const scriptTag = `<script id="hook-prerender-data">window.__HOOKS_PRERENDER_DATA__=${escapeInlineJson(payload)};</script>`;
   return html.replace("</head>", `${scriptTag}\n</head>`);
+};
+
+const injectStructuredData = (html, routePath, preloadedApiPayload) => {
+  const existing = [...html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>/gi)];
+  if (existing.length > 2) return html;
+
+  const schemas = buildStructuredDataForRoute(routePath, preloadedApiPayload);
+  if (!schemas || schemas.length === 0) return html;
+
+  const entries = Array.isArray(schemas) ? schemas : [schemas];
+  const scripts = entries
+    .map(
+      (schema) =>
+        `<script type="application/ld+json">${escapeInlineJson(schema)}</script>`,
+    )
+    .join("\n");
+  return html.replace("</head>", `${scripts}\n</head>`);
 };
 
 const applySeoToHtml = (html, routePath) => {
@@ -949,6 +1264,11 @@ export default defineConfig(async () => {
             renderedRoute.originalRoute || renderedRoute.route;
           const routePath = renderedRoute.route || "/";
           let nextHtml = applySeoToHtml(renderedRoute.html || "", routePath);
+          nextHtml = injectStructuredData(
+            nextHtml,
+            routePath,
+            preloadedApiPayload,
+          );
           if (shouldInjectPreloadedPayload(routePath)) {
             nextHtml = injectPreloadedPayload(nextHtml, preloadedApiPayload);
           }
