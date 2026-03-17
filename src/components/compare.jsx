@@ -2766,9 +2766,11 @@ const MobileCompare = () => {
     () =>
       JSON.stringify({
         "@context": "https://schema.org",
-        "@type": "WebPage",
-        name: metaTitle,
+        "@type": "WebApplication",
+        name: metaTitle || "Product Comparison Tool",
         url: canonicalCompareUrl,
+        applicationCategory: "UtilityApplication",
+        applicationSubCategory: "ComparisonTool",
       }),
     [metaTitle, canonicalCompareUrl],
   );

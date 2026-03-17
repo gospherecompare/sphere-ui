@@ -1,10 +1,21 @@
 import React from "react";
 import useTitle from "../../hooks/useTitle";
+import SEO from "../SEO";
+import { createWebPageSchema } from "../../utils/schemaGenerators";
 
 const Terms = () => {
   useTitle({ page: "Terms" });
 
   const updatedOn = "March 9, 2026";
+  const canonical = "https://tryhook.shop/terms";
+
+  const schema = createWebPageSchema({
+    name: "Terms and Conditions",
+    description:
+      "Read the Terms and Conditions for using Hooks device comparison platform",
+    url: canonical,
+    pageType: "WebPage",
+  });
 
   const termsParagraphs = [
     "Access to Hooks constitutes acceptance of these terms. Hooks functions as a device research and comparison platform that publishes structured specifications, pricing references, trend indicators, and decision-support insights. The service is designed to support informed product evaluation and does not replace independent buyer verification where material purchase decisions are involved.",
@@ -15,26 +26,37 @@ const Terms = () => {
   ];
 
   return (
-    <main className="min-h-screen bg-white max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-1">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-4">
-        <section className="py-1">
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 leading-tight">
-            Terms and Conditions
-          </h1>
-          <p className="text-sm text-gray-500">Last updated: {updatedOn}</p>
-        </section>
+    <>
+      <SEO
+        title="Terms and Conditions - Device Comparison Platform | Hooks"
+        description="Read the Terms and Conditions for using Hooks. We're a device comparison platform, not an e-commerce store."
+        image={`${canonical}/og-image`}
+        url={canonical}
+        robots="index, follow"
+        schema={schema}
+        ogType="website"
+      />
+      <main className="min-h-screen bg-white max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-1">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-4">
+          <section className="py-1">
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 leading-tight">
+              Terms and Conditions
+            </h1>
+            <p className="text-sm text-gray-500">Last updated: {updatedOn}</p>
+          </section>
 
-        <section className="space-y-0">
-          {termsParagraphs.map((paragraph, index) => (
-            <div key={index} className={index === 0 ? "pt-0" : "pt-4"}>
-              <p className="text-gray-700 text-sm sm:text-base leading-relaxed">
-                {paragraph}
-              </p>
-            </div>
-          ))}
-        </section>
-      </div>
-    </main>
+          <section className="space-y-0">
+            {termsParagraphs.map((paragraph, index) => (
+              <div key={index} className={index === 0 ? "pt-0" : "pt-4"}>
+                <p className="text-gray-700 text-sm sm:text-base leading-relaxed">
+                  {paragraph}
+                </p>
+              </div>
+            ))}
+          </section>
+        </div>
+      </main>
+    </>
   );
 };
 

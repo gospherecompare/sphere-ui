@@ -993,6 +993,15 @@ const Networking = () => {
               if (device?.brand) {
                 item.brand = { "@type": "Brand", name: device.brand };
               }
+              // Add offers with price to satisfy Google's requirement
+              if (device?.numericPrice > 0) {
+                item.offers = {
+                  "@type": "Offer",
+                  price: String(device.numericPrice),
+                  priceCurrency: "INR",
+                  availability: "https://schema.org/InStock",
+                };
+              }
               return {
                 "@type": "ListItem",
                 position: index + 1,
