@@ -111,6 +111,156 @@ const MAX_DEVICES = 4;
 const MIN_DEVICES = 2;
 const SITE_ORIGIN = "https://tryhook.shop";
 
+const normalizeLaunchStage = (value) => {
+  if (!value) return null;
+  const text = String(value).trim().toLowerCase();
+  if (!text) return null;
+  if (/rumou?r/.test(text)) return "rumored";
+  if (/announce/.test(text)) return "announced";
+  if (/(pre[-\s]?order|pre[-\s]?book|prebooking|presale)/i.test(text))
+    return "upcoming";
+  if (/(upcoming|coming soon|expected|launching soon)/i.test(text))
+    return "upcoming";
+  if (/(available|on sale|in stock)/i.test(text)) return "available";
+  if (/(released|launched|out now)/i.test(text)) return "released";
+  return null;
+};
+
+const parseDateOnly = (value) => {
+  if (!value) return null;
+  const raw = String(value).trim();
+  if (!raw) return null;
+  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    const d = new Date(`${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}T00:00:00`);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return null;
+  parsed.setHours(0, 0, 0, 0);
+  return parsed;
+};
+
+const resolveSaleStartDate = (device) => {
+  if (!device) return null;
+  const direct = parseDateOnly(
+    device.sale_start_date ||
+      device.saleStartDate ||
+      device.sale_date ||
+      device.saleDate ||
+      null,
+  );
+  if (direct) return direct;
+
+  const variants = Array.isArray(device.variants)
+    ? device.variants
+    : Array.isArray(device.variants_json)
+      ? device.variants_json
+      : [];
+  for (const variant of variants) {
+    const variantDate = parseDateOnly(
+      variant?.sale_start_date ||
+        variant?.saleStartDate ||
+        variant?.sale_date ||
+        variant?.saleDate ||
+        null,
+    );
+    if (variantDate) return variantDate;
+    const stores = Array.isArray(variant?.store_prices)
+      ? variant.store_prices
+      : Array.isArray(variant?.storePrices)
+        ? variant.storePrices
+        : [];
+    for (const store of stores) {
+      const storeDate = parseDateOnly(
+        store?.sale_start_date ||
+          store?.saleStartDate ||
+          store?.sale_date ||
+          store?.saleDate ||
+          store?.available_from ||
+          store?.availableFrom ||
+          null,
+      );
+      if (storeDate) return storeDate;
+    }
+  }
+  return null;
+};
+
+const resolveLaunchStage = (device) => {
+  if (!device) return null;
+  const override = normalizeLaunchStage(
+    device.launchStatus ||
+      device.launch_status ||
+      device.launchStatusOverride ||
+      device.launch_status_override ||
+      device.launchStatusText ||
+      device.launch_status_text,
+  );
+  if (override) return override;
+
+  const statusHint = normalizeLaunchStage(
+    device.status || device.availability || device.badge,
+  );
+  if (statusHint) return statusHint;
+
+  const saleStart = resolveSaleStartDate(device);
+  if (saleStart) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return saleStart > today ? "upcoming" : "available";
+  }
+
+  if (device.official_preorder_url || device.officialPreorderUrl)
+    return "upcoming";
+
+  const launchDate = parseDateOnly(
+    device.launch_date || device.launchDate || null,
+  );
+  if (launchDate) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return launchDate > today ? "upcoming" : "released";
+  }
+
+  return "released";
+};
+
+const getCompareLimitForStage = (stage) => {
+  if (stage === "rumored") return 0;
+  if (stage === "announced") return 2;
+  return MAX_DEVICES;
+};
+
+const resolveComparePolicy = (device) => {
+  const allowCompareRaw = device?.allowCompare ?? device?.allow_compare ?? null;
+  const compareLimitRaw = Number(
+    device?.compareLimit ?? device?.compare_limit ?? NaN,
+  );
+  const stage = resolveLaunchStage(device);
+  const allowCompare =
+    typeof allowCompareRaw === "boolean" ? allowCompareRaw : stage !== "rumored";
+  const fallbackLimit = getCompareLimitForStage(stage);
+  const compareLimit = Number.isFinite(compareLimitRaw)
+    ? compareLimitRaw
+    : fallbackLimit;
+
+  return {
+    allowCompare,
+    compareLimit: allowCompare ? compareLimit : 0,
+  };
+};
+
+const getCompareLimitForDevices = (devices = []) => {
+  return (Array.isArray(devices) ? devices : []).reduce((limit, device) => {
+    const policy = resolveComparePolicy(device);
+    const deviceLimit = Number.isFinite(policy.compareLimit)
+      ? policy.compareLimit
+      : limit;
+    return Math.min(limit, deviceLimit);
+  }, MAX_DEVICES);
+};
+
 const normalizeVariantIndex = (value) => {
   const parsed = Number.parseInt(value, 10);
   return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
@@ -300,10 +450,25 @@ const MobileCompare = () => {
   const isSeoCompareRoute = Boolean(resolvedLeftSlug && resolvedRightSlug);
 
   const activeDevices = isComparing ? comparedDevices : selectedDevices;
+  const maxDevices = useMemo(() => {
+    const typeSource = isComparing ? comparedDevices : selectedDevices;
+    const compareType = getResolvedProductType(typeSource?.[0]);
+    if (compareType !== "smartphone") return MAX_DEVICES;
+    return getCompareLimitForDevices(typeSource);
+  }, [isComparing, comparedDevices, selectedDevices]);
   const usedSlots = isComparing
     ? comparedDevices.length + selectedDevices.length
     : selectedDevices.length;
-  const remainingSlots = Math.max(0, MAX_DEVICES - usedSlots);
+  const remainingSlots = Math.max(0, maxDevices - usedSlots);
+
+  useEffect(() => {
+    if (selectedDevices.length > maxDevices) {
+      setSelectedDevices((prev) => prev.slice(0, maxDevices));
+    }
+    if (comparedDevices.length > maxDevices) {
+      setComparedDevices((prev) => prev.slice(0, maxDevices));
+    }
+  }, [maxDevices, selectedDevices.length, comparedDevices.length]);
 
   const productLookupById = useMemo(() => {
     const lookup = new Map();
@@ -2148,16 +2313,26 @@ const MobileCompare = () => {
       return;
     }
 
-    if (usedSlots >= MAX_DEVICES) {
-      alert(`Maximum ${MAX_DEVICES} devices can be compared`);
-      return;
-    }
-
     // If there is already a selected device, enforce same product type
     const typeSource =
       isComparing && comparedDevices.length > 0
         ? comparedDevices
         : selectedDevices;
+    const compareType = getResolvedProductType(baseDevice);
+    const nextLimit =
+      compareType === "smartphone"
+        ? getCompareLimitForDevices([...typeSource, baseDevice])
+        : MAX_DEVICES;
+
+    if (compareType === "smartphone" && nextLimit === 0) {
+      alert("Comparison is available after announcement.");
+      return;
+    }
+
+    if (usedSlots >= nextLimit) {
+      alert(`Maximum ${nextLimit} devices can be compared`);
+      return;
+    }
     if (typeSource.length > 0) {
       const existingType = getResolvedProductType(typeSource[0]);
       const newType = getResolvedProductType(baseDevice);
@@ -2170,7 +2345,7 @@ const MobileCompare = () => {
     }
 
     if (isComparing) {
-      setComparedDevices((prev) => [...prev, entry].slice(0, MAX_DEVICES));
+      setComparedDevices((prev) => [...prev, entry].slice(0, nextLimit));
     } else {
       setSelectedDevices((prev) => [...prev, entry]);
     }
@@ -2744,7 +2919,7 @@ const MobileCompare = () => {
 
   const comparisonNames =
     seoSelectedNames.length > 0
-      ? seoSelectedNames.slice(0, MAX_DEVICES).join(" vs ")
+      ? seoSelectedNames.slice(0, maxDevices).join(" vs ")
       : canonicalCompareEntries.length > 0
         ? `Selected ${canonicalCompareEntries.length} Devices`
         : "Device Comparison";
@@ -2913,7 +3088,7 @@ const MobileCompare = () => {
             Device Comparison
           </h1>
           <p className="text-gray-600 mb-4">
-            Compare up to {MAX_DEVICES} devices side by side
+            Compare up to {maxDevices} devices side by side
           </p>
 
           {usedSlots === 0 && (
@@ -2929,7 +3104,11 @@ const MobileCompare = () => {
                   <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mb-3 mx-auto">
                     <span className="text-purple-600 font-bold">1</span>
                   </div>
-                  <p className="text-sm text-gray-700">Add 2-4 devices</p>
+                  <p className="text-sm text-gray-700">
+                    {maxDevices === 2
+                      ? "Add 2 devices"
+                      : `Add 2-${maxDevices} devices`}
+                  </p>
                 </div>
                 <div className="bg-white p-4 rounded-xl border border-gray-200">
                   <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-3 mx-auto">
@@ -2954,7 +3133,7 @@ const MobileCompare = () => {
               <h2 className="text-[32px] leading-none font-bold text-slate-900 sm:text-3xl">
                 {isComparing ? "Compared Devices" : "Selected Devices"}
                 <span className="ml-2 text-xl font-medium text-slate-500">
-                  ({activeDevices.length}/{MAX_DEVICES})
+                  ({activeDevices.length}/{maxDevices})
                 </span>
               </h2>
               {activeDevices.length > 0 && (

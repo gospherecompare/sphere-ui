@@ -349,6 +349,7 @@ const CompetitorCard = ({
   onExpandAll,
   onCollapseSelf,
   onCompare,
+  compareDisabled = false,
 }) => {
   const score = useMemo(() => {
     const directDisplay = toFiniteNumber(
@@ -492,8 +493,16 @@ const CompetitorCard = ({
         </div>
         <button
           type="button"
-          onClick={() => onCompare?.(competitor)}
-          className="m-3 mt-2 inline-flex items-center justify-center rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-violet-700"
+          onClick={() => {
+            if (compareDisabled) return;
+            onCompare?.(competitor);
+          }}
+          disabled={compareDisabled}
+          className={`m-3 mt-2 inline-flex items-center justify-center rounded-lg px-3 py-2 text-xs font-semibold shadow-sm transition ${
+            compareDisabled
+              ? "cursor-not-allowed bg-slate-300 text-white"
+              : "bg-violet-600 text-white hover:bg-violet-700"
+          }`}
         >
           Compare Now
         </button>
@@ -556,6 +565,7 @@ const CompetitorCards = ({
   productLabel = "Device",
   entityType = "smartphones",
   className = "",
+  compareDisabled = false,
 }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -726,6 +736,7 @@ const CompetitorCards = ({
   }, [productId, limitedCompetitors.length]);
 
   const handleCompare = (competitor) => {
+    if (compareDisabled) return;
     const competitorId = Number(competitor?.id);
     const pid = Number(productId);
     if (!Number.isInteger(competitorId) || competitorId <= 0) return;
@@ -850,6 +861,7 @@ const CompetitorCards = ({
                 onExpandAll={handleExpandAll}
                 onCollapseSelf={handleCollapseSingle}
                 onCompare={handleCompare}
+                compareDisabled={compareDisabled}
               />
             ))}
           </div>

@@ -55,7 +55,10 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import SEO from "../SEO";
 import { smartphoneMeta } from "../../constants/meta";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
-import { createProductSchema } from "../../utils/schemaGenerators";
+import {
+  createProductSchema,
+  mapAvailabilityFromStatus,
+} from "../../utils/schemaGenerators";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
 
@@ -311,11 +314,75 @@ const MobileDetailCard = () => {
     if (!value) return null;
     const text = String(value).trim().toLowerCase();
     if (!text) return null;
-    if (/(pre[-\s]?order|pre[-\s]?book)/i.test(text)) return "preorder";
-    if (/(upcoming|coming soon|expected|launching soon|rumored)/i.test(text))
+    if (/rumou?r/.test(text)) return "rumored";
+    if (/announce/.test(text)) return "announced";
+    if (/(pre[-\s]?order|pre[-\s]?book|prebooking|presale)/i.test(text))
       return "upcoming";
-    if (/(released|available|launched|out now|on sale)/i.test(text))
-      return "released";
+    if (/(upcoming|coming soon|expected|launching soon)/i.test(text))
+      return "upcoming";
+    if (/(available|on sale|in stock)/i.test(text)) return "available";
+    if (/(released|launched|out now)/i.test(text)) return "released";
+    return null;
+  };
+
+  const getCompareLimitForStage = (stage) => {
+    if (stage === "rumored") return 0;
+    if (stage === "announced") return 2;
+    return 4;
+  };
+
+  const getCompetitorLimitForStage = (stage) => {
+    if (stage === "rumored") return 0;
+    if (stage === "announced") return 2;
+    return 10;
+  };
+
+  const isSpecScoreAllowed = (stage) =>
+    stage === "released" || stage === "available";
+
+  const getSaleStartDateFromDevice = (device) => {
+    if (!device) return null;
+    const direct = normalizeDateLikeValue(
+      device.sale_start_date ||
+        device.saleStartDate ||
+        device.sale_date ||
+        device.saleDate ||
+        null,
+    );
+    if (direct) return new Date(direct);
+
+    const variants = Array.isArray(device.variants)
+      ? device.variants
+      : Array.isArray(device.variants_json)
+        ? device.variants_json
+        : [];
+    for (const variant of variants) {
+      const variantDate = normalizeDateLikeValue(
+        variant?.sale_start_date ||
+          variant?.saleStartDate ||
+          variant?.sale_date ||
+          variant?.saleDate ||
+          null,
+      );
+      if (variantDate) return new Date(variantDate);
+      const stores = Array.isArray(variant?.store_prices)
+        ? variant.store_prices
+        : Array.isArray(variant?.storePrices)
+          ? variant.storePrices
+          : [];
+      for (const store of stores) {
+        const storeDate = normalizeDateLikeValue(
+          store?.sale_start_date ||
+            store?.saleStartDate ||
+            store?.sale_date ||
+            store?.saleDate ||
+            store?.available_from ||
+            store?.availableFrom ||
+            null,
+        );
+        if (storeDate) return new Date(storeDate);
+      }
+    }
     return null;
   };
 
@@ -329,16 +396,21 @@ const MobileDetailCard = () => {
     );
     if (override) return override;
 
-    const preorderUrl =
-      device.official_preorder_url || device.officialPreorderUrl;
-    if (preorderUrl) return "preorder";
-
     const statusHint = normalizeLaunchStatus(
       device.status || device.availability || device.badge,
     );
     if (statusHint) return statusHint;
 
-    const dateValue = normalizeDateLikeValue(device.launch_date);
+    const saleStart = getSaleStartDateFromDevice(device);
+    if (saleStart instanceof Date && !Number.isNaN(saleStart.getTime())) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return saleStart > today ? "upcoming" : "available";
+    }
+
+    const dateValue = normalizeDateLikeValue(
+      device.launch_date || device.launchDate,
+    );
     if (dateValue) {
       const dt = new Date(dateValue);
       if (!Number.isNaN(dt.getTime())) {
@@ -349,7 +421,7 @@ const MobileDetailCard = () => {
       }
     }
 
-    return null;
+    return "released";
   };
 
   const getBatteryCapacityRaw = (deviceData) => {
@@ -731,25 +803,78 @@ const MobileDetailCard = () => {
     () => getDeviceLaunchStatus(mobileData),
     [mobileData],
   );
+  const serverPolicy = useMemo(() => {
+    const allowCompareRaw =
+      mobileData?.allowCompare ?? mobileData?.allow_compare ?? null;
+    const allowSpecScoreRaw =
+      mobileData?.allowSpecScore ?? mobileData?.allow_spec_score ?? null;
+    const allowCompetitorsRaw =
+      mobileData?.allowCompetitors ?? mobileData?.allow_competitors ?? null;
+    const compareLimitRaw = Number(
+      mobileData?.compareLimit ?? mobileData?.compare_limit ?? NaN,
+    );
+    const competitorLimitRaw = Number(
+      mobileData?.competitorLimit ?? mobileData?.competitor_limit ?? NaN,
+    );
+
+    return {
+      allowCompare:
+        typeof allowCompareRaw === "boolean" ? allowCompareRaw : null,
+      allowSpecScore:
+        typeof allowSpecScoreRaw === "boolean" ? allowSpecScoreRaw : null,
+      allowCompetitors:
+        typeof allowCompetitorsRaw === "boolean" ? allowCompetitorsRaw : null,
+      compareLimit: Number.isFinite(compareLimitRaw) ? compareLimitRaw : null,
+      competitorLimit: Number.isFinite(competitorLimitRaw)
+        ? competitorLimitRaw
+        : null,
+    };
+  }, [mobileData]);
   const launchStatusLabel = useMemo(() => {
     if (!launchStatus) return null;
-    if (launchStatus === "preorder") return "PREORDER";
+    if (launchStatus === "rumored") return "RUMORED";
+    if (launchStatus === "announced") return "ANNOUNCED";
     if (launchStatus === "upcoming") return "UPCOMING";
+    if (launchStatus === "available") return "AVAILABLE";
     if (launchStatus === "released") return "RELEASED";
     return String(launchStatus).toUpperCase();
   }, [launchStatus]);
   const launchStatusBadgeClass = useMemo(() => {
-    if (launchStatus === "preorder") {
-      return "bg-amber-50 text-amber-700 ring-1 ring-amber-200";
+    if (launchStatus === "rumored") {
+      return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
+    }
+    if (launchStatus === "announced") {
+      return "bg-violet-50 text-violet-700 ring-1 ring-violet-200";
     }
     if (launchStatus === "upcoming") {
       return "bg-sky-50 text-sky-700 ring-1 ring-sky-200";
+    }
+    if (launchStatus === "available") {
+      return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200";
     }
     if (launchStatus === "released") {
       return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200";
     }
     return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
   }, [launchStatus]);
+  const compareLimit = useMemo(() => {
+    if (serverPolicy.allowCompare === false) return 0;
+    if (Number.isFinite(serverPolicy.compareLimit))
+      return serverPolicy.compareLimit;
+    return getCompareLimitForStage(launchStatus);
+  }, [launchStatus, serverPolicy]);
+  const compareDisabled = compareLimit === 0;
+  const competitorLimit = useMemo(() => {
+    if (serverPolicy.allowCompetitors === false) return 0;
+    if (Number.isFinite(serverPolicy.competitorLimit))
+      return serverPolicy.competitorLimit;
+    return getCompetitorLimitForStage(launchStatus);
+  }, [launchStatus, serverPolicy]);
+  const allowSpecScore = useMemo(() => {
+    if (typeof serverPolicy.allowSpecScore === "boolean")
+      return serverPolicy.allowSpecScore;
+    return isSpecScoreAllowed(launchStatus);
+  }, [launchStatus, serverPolicy]);
   const pickScore100 = useCallback((...values) => {
     for (const value of values) {
       const normalized = normalizeScore100(value);
@@ -946,7 +1071,7 @@ const MobileDetailCard = () => {
     [pickScore100],
   );
   const scoreSummary = useMemo(() => {
-    if (!mobileData) {
+    if (!mobileData || !allowSpecScore) {
       return {
         overall: null,
         overallDisplay: null,
@@ -959,7 +1084,7 @@ const MobileDetailCard = () => {
       allowSectionAverageFallback: true,
       allowFallbackPersistedScores: true,
     });
-  }, [mobileData, buildScoreSummary]);
+  }, [mobileData, buildScoreSummary, allowSpecScore]);
   const getSectionScore = useCallback(
     (key) => {
       if (!key || key === "overall") return scoreSummary.overall;
@@ -1218,6 +1343,7 @@ const MobileDetailCard = () => {
 
   const handlePopularCompare = useCallback(
     (other) => {
+      if (compareDisabled) return;
       const otherId =
         other?.id ?? other?.product_id ?? other?.productId ?? null;
       if (!currentProductId || !otherId) return;
@@ -1225,7 +1351,7 @@ const MobileDetailCard = () => {
         state: { initialProduct: mobileData },
       });
     },
-    [navigate, currentProductId, mobileData],
+    [navigate, currentProductId, mobileData, compareDisabled],
   );
 
   const allStorePrices =
@@ -1298,7 +1424,7 @@ const MobileDetailCard = () => {
   const isPrebookingStore = (store, launchDate = null) => {
     if (store?.is_prebooking === true) return true;
     if (store?.availability_status === "prebooking") return true;
-    if (/^pre(book|order)$/i.test(String(store?.cta_label || "").trim()))
+    if (/^(pre(book|order)|coming\s*soon)$/i.test(String(store?.cta_label || "").trim()))
       return true;
     const saleStartDate = normalizeDateOnly(
       store?.sale_start_date ?? store?.sale_date ?? store?.saleStartDate,
@@ -1307,8 +1433,6 @@ const MobileDetailCard = () => {
       return saleStartDate > getIndiaDateOnly();
     }
     if (!saleStartDate) {
-      const hasBuyLink = Boolean(String(store?.url || "").trim());
-      if (!hasBuyLink) return true;
       const normalizedLaunchDate = normalizeDateOnly(launchDate);
       return Boolean(
         normalizedLaunchDate && normalizedLaunchDate >= getIndiaDateOnly(),
@@ -1372,7 +1496,7 @@ const MobileDetailCard = () => {
           sale_start_date: saleStartDate,
           is_prebooking: prebooking,
           is_live: !prebooking,
-          cta_label: prebooking ? "Preorder" : "Buy Now",
+          cta_label: prebooking ? "Coming Soon" : "Buy Now",
         };
       },
     );
@@ -1400,38 +1524,17 @@ const MobileDetailCard = () => {
         return priceA - priceB;
       });
 
+    if (sortedPrebookingStores.length === 0) {
+      return { mode: "live", stores: normalizedStores, hiddenCount: 0 };
+    }
+
+    const primaryPrebooking = sortedPrebookingStores[0];
     const officialBrandUrl = getOfficialBrandStoreUrl(
       normalizedStores,
       brandName,
       brandWebsite,
       officialPreorderUrl,
     );
-    if (sortedPrebookingStores.length === 0) {
-      if (!officialBrandUrl) {
-        return { mode: "live", stores: normalizedStores, hiddenCount: 0 };
-      }
-      return {
-        mode: "prebooking",
-        stores: [
-          {
-            store_name: brandName || "Brand Store",
-            display_store_name: brandName || "Brand Store",
-            brand_logo: brandLogo || null,
-            url: officialBrandUrl,
-            is_prebooking: true,
-            is_live: false,
-            availability_status: "prebooking",
-            cta_label: "Preorder",
-            availability_note: launchDate
-              ? `Expected ${formatSaleStartLabel(launchDate)}`
-              : "",
-          },
-        ],
-        hiddenCount: 0,
-      };
-    }
-
-    const primaryPrebooking = sortedPrebookingStores[0];
     return {
       mode: "prebooking",
       stores: [
@@ -1441,7 +1544,7 @@ const MobileDetailCard = () => {
             brandName || primaryPrebooking.store_name || "Brand Store",
           brand_logo: brandLogo || null,
           url: officialBrandUrl || primaryPrebooking.url || null,
-          cta_label: "Preorder",
+          cta_label: "Coming Soon",
           availability_note: primaryPrebooking.sale_start_date
             ? `Sale starts ${formatSaleStartLabel(
                 primaryPrebooking.sale_start_date,
@@ -2213,8 +2316,14 @@ Price: ${price}
   const primaryTabs = [
     { id: "info", label: "Info" },
     { id: "specs", label: "Specs" },
-    { id: "competitors", label: "Competitors" },
+    ...(competitorLimit > 0 ? [{ id: "competitors", label: "Competitors" }] : []),
   ];
+
+  useEffect(() => {
+    if (activePrimaryTab === "competitors" && competitorLimit === 0) {
+      setActivePrimaryTab("info");
+    }
+  }, [activePrimaryTab, competitorLimit]);
 
   // Determine whether a piece of spec data actually contains useful content
   const hasContent = (data) => {
@@ -3746,7 +3855,7 @@ Price: ${price}
                 {currentVariantLabel ? (
                   <span>{currentVariantLabel}</span>
                 ) : null}
-                {launchStatus === "upcoming" ? (
+                {launchStatus && launchStatus !== "released" ? (
                   <span
                     className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold leading-none ${launchStatusBadgeClass}`}
                   >
@@ -3804,10 +3913,12 @@ Price: ${price}
         </div>
 
         {/* Popular Comparisons */}
-        {popularComparisonTargets.length > 0 && (
+        {!compareDisabled && popularComparisonTargets.length > 0 && (
           <div className="px-4 pt-4 pb-1">
             <div className="flex gap-3 overflow-x-auto no-scrollbar pb-3">
-              {popularComparisonTargets.map((d) => {
+              {popularComparisonTargets
+                .slice(0, compareLimit === 2 ? 2 : popularComparisonTargets.length)
+                .map((d) => {
                 const otherId = d?.id ?? d?.product_id ?? d?.productId ?? null;
                 const otherName = d?.name || d?.model || "Device";
                 const otherImg = d?.images?.[0] || d?.image || "";
@@ -4046,7 +4157,7 @@ Price: ${price}
                         {currentVariantLabel ? (
                           <span>{currentVariantLabel}</span>
                         ) : null}
-                        {launchStatus === "upcoming" ? (
+                        {launchStatus && launchStatus !== "released" ? (
                           <span
                             className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold leading-none ${launchStatusBadgeClass}`}
                           >
@@ -4156,7 +4267,7 @@ Price: ${price}
                           mobileData?.brand ||
                           "Store";
                         const ctaText = store.cta_label || "Buy Now";
-                        const isPreorderCta = /^pre(book|order)$/i.test(
+                        const isPreorderCta = /^(pre(book|order)|coming\s*soon)$/i.test(
                           String(ctaText).trim(),
                         );
                         return (
@@ -4367,7 +4478,7 @@ Price: ${price}
           </div>
         ) : null}
 
-        {activePrimaryTab === "competitors" ? (
+        {activePrimaryTab === "competitors" && competitorLimit > 0 ? (
           <div className="p-2 sm:p-3 border-t border-slate-200">
             <CompetitorCards
               title={
@@ -4380,35 +4491,39 @@ Price: ${price}
               }
               productId={currentProductId}
               onCompare={handlePopularCompare}
+              compareDisabled={compareDisabled}
               fallbackCompetitors={popularComparisonTargets}
               currentBrand={mobileData?.brand || ""}
               currentPrice={
                 currentVariant?.base_price ?? mobileData?.price ?? null
               }
-              maxCards={10}
+              maxCards={competitorLimit}
             />
           </div>
         ) : null}
       </div>
       {activePrimaryTab === "info" ? (
         <div className="w-full bg-white">
-          <CompetitorCards
-            title={
-              mobileData?.name
-                ? `Competitors For ${mobileData.name}`
-                : "Top Competitors"
-            }
-            productName={mobileData?.name || mobileData?.model || "This Device"}
-            productId={currentProductId}
-            onCompare={handlePopularCompare}
-            fallbackCompetitors={popularComparisonTargets}
-            currentBrand={mobileData?.brand || ""}
-            currentPrice={
-              currentVariant?.base_price ?? mobileData?.price ?? null
-            }
-            maxCards={10}
-            className="w-full"
-          />
+          {competitorLimit > 0 ? (
+            <CompetitorCards
+              title={
+                mobileData?.name
+                  ? `Competitors For ${mobileData.name}`
+                  : "Top Competitors"
+              }
+              productName={mobileData?.name || mobileData?.model || "This Device"}
+              productId={currentProductId}
+              onCompare={handlePopularCompare}
+              compareDisabled={compareDisabled}
+              fallbackCompetitors={popularComparisonTargets}
+              currentBrand={mobileData?.brand || ""}
+              currentPrice={
+                currentVariant?.base_price ?? mobileData?.price ?? null
+              }
+              maxCards={competitorLimit}
+              className="w-full"
+            />
+          ) : null}
           <RecommendedSmartphones />
           <ProductDiscoverySections
             productId={currentProductId}

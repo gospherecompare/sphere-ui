@@ -136,18 +136,33 @@ const normalizeLaunchStatus = (value) => {
   if (!value) return null;
   const text = String(value).trim().toLowerCase();
   if (!text) return null;
-  if (/(pre[-\s]?order|pre[-\s]?book)/i.test(text)) return "preorder";
-  if (/(upcoming|coming soon|expected|launching soon|rumored)/i.test(text))
+  if (/rumou?r/.test(text)) return "rumored";
+  if (/announce/.test(text)) return "announced";
+  if (/(pre[-\s]?order|pre[-\s]?book|prebooking|presale)/i.test(text))
     return "upcoming";
-  if (/(released|available|launched|out now|on sale)/i.test(text))
-    return "released";
+  if (/(upcoming|coming soon|expected|launching soon)/i.test(text))
+    return "upcoming";
+  if (/(available|on sale|in stock)/i.test(text)) return "available";
+  if (/(released|launched|out now)/i.test(text)) return "released";
   return null;
+};
+
+const isSpecScoreAllowed = (stage) =>
+  stage === "released" || stage === "available";
+
+const resolveAllowSpecScore = (device) => {
+  if (!device) return false;
+  const raw = device.allowSpecScore ?? device.allow_spec_score ?? null;
+  if (typeof raw === "boolean") return raw;
+  return isSpecScoreAllowed(device.launchStatus);
 };
 
 const formatLaunchStatusLabel = (status) => {
   if (!status) return null;
-  if (status === "preorder") return "Preorder";
+  if (status === "rumored") return "Rumored";
+  if (status === "announced") return "Announced";
   if (status === "upcoming") return "Upcoming";
+  if (status === "available") return "Available";
   if (status === "released") return "Released";
   return String(status);
 };
@@ -223,19 +238,20 @@ const getStoreSaleStartDate = (store) =>
     store?.availableFrom,
   );
 
-const hasSaleStartDate = (row) => {
-  const raw = getRowSaleStartDate(row);
-  if (!raw) return false;
-  return Boolean(parseDateValue(raw) || String(raw).trim());
-};
+const getEarliestSaleStartDate = (row) => {
+  const dates = [];
+  const direct = parseDateValue(getRowSaleStartDate(row));
+  if (direct) dates.push(direct);
 
-const hasNestedSaleStartDate = (row) => {
   const directStores = Array.isArray(row?.store_prices)
     ? row.store_prices
     : Array.isArray(row?.storePrices)
       ? row.storePrices
       : [];
-  if (directStores.some((store) => getStoreSaleStartDate(store))) return true;
+  directStores.forEach((store) => {
+    const dt = parseDateValue(getStoreSaleStartDate(store));
+    if (dt) dates.push(dt);
+  });
 
   const variants = Array.isArray(row?.variants)
     ? row.variants
@@ -245,28 +261,36 @@ const hasNestedSaleStartDate = (row) => {
         ? row.variants_json
         : [];
   for (const variant of variants) {
-    if (
+    const variantDate = parseDateValue(
       firstText(
         variant?.sale_start_date,
         variant?.saleStartDate,
         variant?.sale_date,
         variant?.saleDate,
-      )
-    ) {
-      return true;
-    }
+      ),
+    );
+    if (variantDate) dates.push(variantDate);
     const stores = Array.isArray(variant?.store_prices)
       ? variant.store_prices
       : Array.isArray(variant?.storePrices)
         ? variant.storePrices
         : [];
-    if (stores.some((store) => getStoreSaleStartDate(store))) return true;
+    stores.forEach((store) => {
+      const dt = parseDateValue(getStoreSaleStartDate(store));
+      if (dt) dates.push(dt);
+    });
   }
-  return false;
+
+  if (!dates.length) return null;
+  dates.sort((a, b) => a - b);
+  return dates[0];
 };
 
 const getRowLaunchStatus = (row) => {
-  if (hasSaleStartDate(row) || hasNestedSaleStartDate(row)) return "released";
+  const saleStart = getEarliestSaleStartDate(row);
+  if (saleStart) {
+    return saleStart > new Date() ? "upcoming" : "available";
+  }
 
   const override = normalizeLaunchStatus(
     firstText(
@@ -282,7 +306,7 @@ const getRowLaunchStatus = (row) => {
     row?.official_preorder_url,
     row?.officialPreorderUrl,
   );
-  if (preorderUrl) return "preorder";
+  if (preorderUrl) return "upcoming";
 
   const status = normalizeLaunchStatus(
     firstText(row?.status, row?.availability, row?.badge),
@@ -293,10 +317,11 @@ const getRowLaunchStatus = (row) => {
 };
 
 const isUpcomingRow = (row) => {
-  if (hasSaleStartDate(row) || hasNestedSaleStartDate(row)) return false;
+  const saleStart = getEarliestSaleStartDate(row);
+  if (saleStart) return saleStart > new Date();
 
   const status = getRowLaunchStatus(row);
-  if (status) return status !== "released";
+  if (status) return !["released", "available"].includes(status);
 
   const raw = getRowLaunchDate(row);
   const dt = parseDateValue(raw);
@@ -304,7 +329,7 @@ const isUpcomingRow = (row) => {
   const statusText = firstText(row?.status, row?.availability, row?.badge, raw);
   return Boolean(
     statusText &&
-    /(upcoming|coming soon|expected|pre[-\s]?book|pre[-\s]?order)/i.test(
+    /(upcoming|coming soon|expected|pre[-\s]?book|pre[-\s]?order|announced|rumored)/i.test(
       statusText,
     ),
   );
@@ -343,6 +368,12 @@ const UpcomingSmartphones = () => {
           launchDate: getRowLaunchDate(row),
           launchLabel: formatUpcomingDate(getRowLaunchDate(row)),
           launchStatus: getRowLaunchStatus(row),
+          allowSpecScore:
+            typeof row?.allow_spec_score === "boolean"
+              ? row.allow_spec_score
+              : typeof row?.allowSpecScore === "boolean"
+                ? row.allowSpecScore
+                : null,
           score: getRowDisplayScore(row),
           _rowIndex: index,
         }));
@@ -440,7 +471,7 @@ const UpcomingSmartphones = () => {
                   <div className="flex h-full flex-col gap-2">
                     {/* Image */}
                     <div className="relative w-full flex-shrink-0">
-                      {device.launchStatus === "preorder" &&
+                      {resolveAllowSpecScore(device) &&
                       Number.isFinite(device.score) ? (
                         <div className="absolute left-1 top-1 z-10 pointer-events-none">
                           <TrendSpecScoreBadge score={device.score} />

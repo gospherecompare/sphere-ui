@@ -334,19 +334,17 @@ const formatSaleStartLabel = (value) => {
 const isPrebookingStore = (store, launchDate = null) => {
   if (store?.isPrebooking === true) return true;
   if (store?.availabilityStatus === "prebooking") return true;
-  if (/^pre(book|order)$/i.test(String(store?.ctaLabel || "").trim()))
+  if (/^(pre(book|order)|coming\s*soon)$/i.test(String(store?.ctaLabel || "").trim()))
     return true;
   const saleStartDate = normalizeDateOnly(store?.saleStartDate);
-  if (saleStartDate) {
-    return saleStartDate > getIndiaDateOnly();
-  }
-  if (!saleStartDate) {
-    const hasBuyLink = Boolean(String(store?.url || "").trim());
-    if (!hasBuyLink) return true;
-    const normalizedLaunchDate = normalizeDateOnly(launchDate);
-    return Boolean(
-      normalizedLaunchDate && normalizedLaunchDate >= getIndiaDateOnly(),
-    );
+    if (saleStartDate) {
+      return saleStartDate > getIndiaDateOnly();
+    }
+    if (!saleStartDate) {
+      const normalizedLaunchDate = normalizeDateOnly(launchDate);
+      return Boolean(
+        normalizedLaunchDate && normalizedLaunchDate >= getIndiaDateOnly(),
+      );
   }
   return false;
 };
@@ -394,7 +392,7 @@ const getAvailabilityRows = (
       saleStartDate,
       isPrebooking: prebooking,
       isLive: !prebooking,
-      ctaLabel: prebooking ? "Preorder" : store?.ctaLabel || "Buy Now",
+      ctaLabel: prebooking ? "Coming Soon" : store?.ctaLabel || "Buy Now",
     };
   });
 
@@ -434,7 +432,7 @@ const getAvailabilityRows = (
         storeName: brandName || primaryPrebooking.storeName || "Brand Store",
         logo: brandLogo || primaryPrebooking.logo || null,
         url: officialBrandUrl || null,
-        ctaLabel: "Preorder",
+        ctaLabel: "Coming Soon",
         availabilityNote: primaryPrebooking.saleStartDate
           ? `Sale starts ${formatSaleStartLabel(primaryPrebooking.saleStartDate)}`
           : "",
@@ -2045,7 +2043,7 @@ const TrendingProductsHub = () => {
                                           : getLogo(storeNameCandidate));
                                     const ctaText = store.ctaLabel || "Buy Now";
                                     const isPreorderCta =
-                                      /^pre(book|order)$/i.test(
+                                      /^(pre(book|order)|coming\s*soon)$/i.test(
                                         String(ctaText).trim(),
                                       );
                                     return (
