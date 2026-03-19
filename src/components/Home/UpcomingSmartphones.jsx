@@ -4,59 +4,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { createProductPath } from "../../utils/slugGenerator";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
 import { FaMobileAlt } from "react-icons/fa";
+import { resolveSmartphoneBadgeScore } from "../../utils/smartphoneBadgeScore";
 
 const API_BASE = (
   import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in"
 ).replace(/\/$/, "");
-
-const normalizeScore100 = (value) => {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return null;
-  if (n <= 1) return Math.max(0, Math.min(100, n * 100));
-  if (n <= 10) return Math.max(0, Math.min(100, n * 10));
-  return Math.max(0, Math.min(100, n));
-};
-
-const mapScoreToDisplayBand = (score, minTarget = 80, maxTarget = 98) => {
-  const normalized = normalizeScore100(score);
-  if (normalized == null) return null;
-  const mapped = minTarget + (normalized / 100) * (maxTarget - minTarget);
-  return Number(mapped.toFixed(1));
-};
-
-const pickScoreValue = (...values) => {
-  for (const value of values) {
-    const n = Number(value);
-    if (Number.isFinite(n)) return n;
-  }
-  return null;
-};
-
-const getRowDisplayScore = (row) => {
-  const displayScore = pickScoreValue(
-    row?.overall_score_display,
-    row?.overallScoreDisplay,
-    row?.overall_score_v2_display_80_98,
-    row?.overallScoreV2Display8098,
-    row?.spec_score_v2_display_80_98,
-    row?.specScoreV2Display8098,
-  );
-  if (displayScore != null) return Number(displayScore.toFixed(1));
-
-  const rawScore = pickScoreValue(
-    row?.overall_score_v2,
-    row?.overallScoreV2,
-    row?.spec_score_v2,
-    row?.specScoreV2,
-    row?.overall_score,
-    row?.overallScore,
-    row?.spec_score,
-    row?.specScore,
-    row?.hook_score,
-    row?.hookScore,
-  );
-  return mapScoreToDisplayBand(rawScore);
-};
 
 const TrendSpecScoreBadge = ({ score }) => {
   const value = Number.isFinite(Number(score)) ? Number(score) : null;
@@ -147,26 +99,6 @@ const normalizeLaunchStatus = (value) => {
   return null;
 };
 
-const isSpecScoreAllowed = (stage) =>
-  stage === "released" || stage === "available";
-
-const resolveAllowSpecScore = (device) => {
-  if (!device) return false;
-  const raw = device.allowSpecScore ?? device.allow_spec_score ?? null;
-  if (typeof raw === "boolean") return raw;
-  return isSpecScoreAllowed(device.launchStatus);
-};
-
-const formatLaunchStatusLabel = (status) => {
-  if (!status) return null;
-  if (status === "rumored") return "Rumored";
-  if (status === "announced") return "Announced";
-  if (status === "upcoming") return "Upcoming";
-  if (status === "available") return "Available";
-  if (status === "released") return "Released";
-  return String(status);
-};
-
 const formatUpcomingDate = (value) => {
   const dt = parseDateValue(value);
   if (!dt) return null;
@@ -176,6 +108,14 @@ const formatUpcomingDate = (value) => {
 const getTrendingRows = (json) => {
   if (Array.isArray(json?.trending)) return json.trending;
   if (Array.isArray(json?.smartphones)) return json.smartphones;
+  if (Array.isArray(json)) return json;
+  return [];
+};
+
+const getSmartphoneRows = (json) => {
+  if (Array.isArray(json?.smartphones)) return json.smartphones;
+  if (Array.isArray(json?.data)) return json.data;
+  if (Array.isArray(json?.rows)) return json.rows;
   if (Array.isArray(json)) return json;
   return [];
 };
@@ -346,15 +286,33 @@ const UpcomingSmartphones = () => {
     const fetchUpcoming = async () => {
       setLoadingUpcoming(true);
       setCurrentDevices([]);
-      const endpoint = "/api/public/trending/smartphones?limit=25";
+      const trendingEndpoint = "/api/public/trending/smartphones?limit=25";
+      const smartphonesEndpoint = "/api/smartphones";
 
       try {
-        const r = await fetch(`${API_BASE}${endpoint}`);
-        if (!r.ok) throw new Error("Failed to fetch upcoming smartphones");
-        const json = await r.json();
+        const [trendingRes, smartphonesRes] = await Promise.all([
+          fetch(`${API_BASE}${trendingEndpoint}`),
+          fetch(`${API_BASE}${smartphonesEndpoint}`),
+        ]);
+        if (!trendingRes.ok)
+          throw new Error("Failed to fetch upcoming smartphones");
+        const trendingJson = await trendingRes.json();
+        const smartphonesJson = smartphonesRes.ok
+          ? await smartphonesRes.json()
+          : null;
         if (cancelled) return;
 
-        const rows = getTrendingRows(json);
+        const rows = getTrendingRows(trendingJson);
+        const smartphoneRows = getSmartphoneRows(smartphonesJson);
+        const scoreByProductId = new Map();
+        for (const item of smartphoneRows) {
+          const pid = item?.product_id ?? item?.id ?? null;
+          if (pid == null) continue;
+          const canonicalScore = resolveSmartphoneBadgeScore(item);
+          if (!Number.isFinite(canonicalScore)) continue;
+          scoreByProductId.set(String(pid), canonicalScore);
+        }
+
         const upcomingRows = rows.filter(isUpcomingRow);
         const mapped = upcomingRows.map((row, index) => ({
           id:
@@ -367,14 +325,13 @@ const UpcomingSmartphones = () => {
           image: getRowImage(row),
           launchDate: getRowLaunchDate(row),
           launchLabel: formatUpcomingDate(getRowLaunchDate(row)),
+          launch_status: firstText(row?.launch_status, row?.launchStatus),
           launchStatus: getRowLaunchStatus(row),
-          allowSpecScore:
-            typeof row?.allow_spec_score === "boolean"
-              ? row.allow_spec_score
-              : typeof row?.allowSpecScore === "boolean"
-                ? row.allowSpecScore
-                : null,
-          score: getRowDisplayScore(row),
+          status: firstText(row?.status, row?.availability, row?.badge),
+          score:
+            scoreByProductId.get(
+              String(row?.product_id ?? row?.productId ?? row?.id ?? ""),
+            ) ?? resolveSmartphoneBadgeScore(row),
           _rowIndex: index,
         }));
 
@@ -471,8 +428,7 @@ const UpcomingSmartphones = () => {
                   <div className="flex h-full flex-col gap-2">
                     {/* Image */}
                     <div className="relative w-full flex-shrink-0">
-                      {resolveAllowSpecScore(device) &&
-                      Number.isFinite(device.score) ? (
+                      {Number.isFinite(device.score) ? (
                         <div className="absolute left-1 top-1 z-10 pointer-events-none">
                           <TrendSpecScoreBadge score={device.score} />
                         </div>

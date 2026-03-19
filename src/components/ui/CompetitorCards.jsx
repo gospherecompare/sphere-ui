@@ -14,6 +14,7 @@ import {
   FaCheckCircle,
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import { resolveSmartphoneBadgeScore } from "../../utils/smartphoneBadgeScore";
 
 const API_BASE = (
   import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in"
@@ -39,21 +40,6 @@ const normalizeText = (value) => String(value || "").trim();
 const toFiniteNumber = (value) => {
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
-};
-
-const normalizeScore100 = (value) => {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return null;
-  if (n <= 1) return Math.max(0, Math.min(100, n * 100));
-  if (n <= 10) return Math.max(0, Math.min(100, n * 10));
-  return Math.max(0, Math.min(100, n));
-};
-
-const mapScoreToDisplayBand = (score, minTarget = 80, maxTarget = 98) => {
-  const normalized = normalizeScore100(score);
-  if (normalized == null) return null;
-  const mapped = minTarget + (normalized / 100) * (maxTarget - minTarget);
-  return Number(mapped.toFixed(1));
 };
 
 const resolveLowestPrice = (device) => {
@@ -185,18 +171,16 @@ const buildFallbackCompetitorRows = ({
       const hookScore = toFiniteNumber(item?.hook_score);
       const overallScoreRaw = toFiniteNumber(
         item?.overall_score_v2 ??
-          item?.spec_score_v2 ??
+          item?.overallScoreV2 ??
           item?.overall_score ??
+          item?.overallScore ??
+          item?.spec_score_v2 ??
+          item?.specScoreV2 ??
           item?.spec_score ??
+          item?.specScore ??
           null,
       );
-      const overallScoreDisplay =
-        toFiniteNumber(
-          item?.overall_score_display ??
-            item?.overall_score_v2_display_80_98 ??
-            item?.spec_score_v2_display_80_98 ??
-            null,
-        ) ?? mapScoreToDisplayBand(overallScoreRaw);
+      const overallScoreDisplay = resolveSmartphoneBadgeScore(item);
       const competitionScore = Math.round(
         Math.min(
           95,
@@ -222,13 +206,48 @@ const buildFallbackCompetitorRows = ({
         image_url: item?.image_url || item?.images?.[0] || item?.image || null,
         best_store_name: bestStoreName || null,
         price,
-        spec_score: overallScoreRaw,
+        spec_score: toFiniteNumber(
+          item?.spec_score_v2 ??
+            item?.specScoreV2 ??
+            item?.spec_score ??
+            item?.specScore ??
+            null,
+        ),
         overall_score: overallScoreRaw,
-        spec_score_v2: overallScoreRaw,
-        overall_score_v2: overallScoreRaw,
-        spec_score_v2_display_80_98: overallScoreDisplay,
+        spec_score_v2: toFiniteNumber(
+          item?.spec_score_v2 ?? item?.specScoreV2 ?? null,
+        ),
+        overall_score_v2: toFiniteNumber(
+          item?.overall_score_v2 ?? item?.overallScoreV2 ?? null,
+        ),
+        spec_score_display: toFiniteNumber(
+          item?.spec_score_v2_display_80_98 ??
+            item?.spec_score_display ??
+            item?.specScoreDisplay ??
+            item?.specScoreV2Display8098 ??
+            null,
+        ),
+        specScoreDisplay: toFiniteNumber(
+          item?.spec_score_v2_display_80_98 ??
+            item?.spec_score_display ??
+            item?.specScoreDisplay ??
+            item?.specScoreV2Display8098 ??
+            null,
+        ),
+        spec_score_v2_display_80_98: toFiniteNumber(
+          item?.spec_score_v2_display_80_98 ??
+            item?.specScoreV2Display8098 ??
+            null,
+        ),
+        specScoreV2Display8098: toFiniteNumber(
+          item?.spec_score_v2_display_80_98 ??
+            item?.specScoreV2Display8098 ??
+            null,
+        ),
         overall_score_v2_display_80_98: overallScoreDisplay,
+        overallScoreV2Display8098: overallScoreDisplay,
         overall_score_display: overallScoreDisplay,
+        overallScoreDisplay: overallScoreDisplay,
         competition_score: competitionScore,
         reason: reasonParts.slice(0, 2).join(" | "),
         common_features: ["Comparable segment and demand"],
@@ -320,26 +339,6 @@ const insightMeta = (type) => {
     iconClass: "text-purple-600",
   };
 };
-const SpecScoreBadge = ({ score }) => {
-  const normalized = normalizeScore100(score);
-  const value = normalized != null ? Number(normalized.toFixed(1)) : null;
-  const label = value != null ? `${value.toFixed(1)}%` : "--";
-
-  return (
-    <div
-      className="inline-flex flex-col rounded-sm border border-violet-200 bg-violet-50 px-1.5 py-1 text-violet-700"
-      aria-label={
-        value != null
-          ? `Spec score ${value.toFixed(1)} percent`
-          : "Spec score unavailable"
-      }
-    >
-      <span className="text-[11px] font-extrabold leading-none">{label}</span>
-      <span className="text-[8px] font-semibold leading-none mt-0.5">Spec</span>
-      <span className="text-[8px] font-semibold leading-none">Score</span>
-    </div>
-  );
-};
 
 const CompetitorCard = ({
   competitor,
@@ -351,23 +350,6 @@ const CompetitorCard = ({
   onCompare,
   compareDisabled = false,
 }) => {
-  const score = useMemo(() => {
-    const directDisplay = toFiniteNumber(
-      competitor?.overall_score_display ??
-        competitor?.overall_score_v2_display_80_98 ??
-        competitor?.spec_score_v2_display_80_98,
-    );
-    if (directDisplay != null) return directDisplay;
-
-    const raw = toFiniteNumber(
-      competitor?.overall_score_v2 ??
-        competitor?.spec_score_v2 ??
-        competitor?.overall_score ??
-        competitor?.spec_score ??
-        competitor?.competition_score,
-    );
-    return mapScoreToDisplayBand(raw) ?? 0;
-  }, [competitor]);
   const insights = useMemo(
     () => buildExtendedInsights(competitor),
     [competitor],
@@ -406,10 +388,6 @@ const CompetitorCard = ({
 
   return (
     <article className="group relative w-[240px] max-w-[260px] shrink-0 shadow-md border border-gray-50 bg-white rounded-sm transition">
-      <div className="absolute left-2 top-2 z-10">
-        <SpecScoreBadge score={score} />
-      </div>
-
       <div className="flex h-full flex-col">
         <div className="p-3 pb-2">
           <div className="mx-auto mt-1 h-24 w-24 overflow-hidden rounded-lg  bg-slate-100 p-1">

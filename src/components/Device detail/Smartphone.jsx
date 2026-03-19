@@ -61,6 +61,7 @@ import {
 } from "../../utils/schemaGenerators";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
+import { resolveSmartphoneBadgeScore } from "../../utils/smartphoneBadgeScore";
 
 const token = Cookies.get("arenak");
 const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
@@ -76,13 +77,90 @@ const normalizeScore100 = (value) => {
   return Math.max(0, Math.min(100, n));
 };
 
+const remapScoreToBand = (value, min = 80, max = 98) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  const clamped = Math.max(0, Math.min(100, n));
+  const ratio = clamped / 100;
+  return min + (max - min) * ratio;
+};
+
+const toAbsoluteUrl = (url) => {
+  if (!url) return "";
+  if (/^https?:\/\//i.test(url)) return url;
+  if (typeof window === "undefined") return url;
+  const origin = window.location.origin;
+  if (!origin) return url;
+  return url.startsWith("/") ? `${origin}${url}` : `${origin}/${url}`;
+};
+
 const formatScoreValue = (value) => {
   if (!Number.isFinite(value)) return null;
   return `${Number(value).toFixed(1)}%`;
 };
 
-// Spec score badge removed on detail page per request.
-const SpecScoreBadge = () => null;
+const SpecScoreBadge = ({
+  score,
+  displayScore = null,
+  size = 40,
+  showSpecLabel = false,
+  zeroFallback = false,
+  showValue = true,
+}) => {
+  const normalized = normalizeScore100(score);
+  const displayNormalized = normalizeScore100(displayScore);
+  const percentageRaw =
+    displayNormalized != null
+      ? Number(displayNormalized.toFixed(1))
+      : normalized != null
+        ? Number(normalized.toFixed(1))
+        : zeroFallback
+          ? 0
+          : null;
+  const safePercentageRaw =
+    !zeroFallback &&
+    percentageRaw === 0 &&
+    (displayNormalized == null || displayNormalized === 0) &&
+    (normalized == null || normalized === 0)
+      ? null
+      : percentageRaw;
+  const percentage =
+    safePercentageRaw != null
+      ? displayNormalized != null
+        ? safePercentageRaw
+        : remapScoreToBand(safePercentageRaw, 80, 98)
+      : null;
+  const label = percentage != null ? `${percentage.toFixed(1)}%` : "--";
+
+  return (
+    <div
+      className="inline-flex flex-col items-center justify-center rounded-md border border-violet-200 bg-violet-50/95 px-1.5 py-1 leading-none"
+      style={{ minWidth: `${Math.max(38, Math.round(size))}px` }}
+      aria-label={
+        showValue
+          ? percentage != null
+            ? `Overall score ${percentage.toFixed(1)} percent`
+            : "Overall score unavailable"
+          : showSpecLabel
+            ? "Spec score badge"
+            : "Score badge"
+      }
+    >
+      {showValue ? (
+        <span className="text-[11px] font-bold text-violet-700">{label}</span>
+      ) : null}
+      {showSpecLabel ? (
+        <span
+          className={`text-[8px] font-semibold uppercase tracking-wide text-violet-600 ${
+            showValue ? "mt-0.5" : ""
+          }`}
+        >
+          {showValue ? "Spec" : "Spec Score"}
+        </span>
+      ) : null}
+    </div>
+  );
+};
 
 const MobileDetailCard = () => {
   const [activePrimaryTab, setActivePrimaryTab] = useState("info");
@@ -337,8 +415,23 @@ const MobileDetailCard = () => {
     return 10;
   };
 
-  const isSpecScoreAllowed = (stage) =>
-    stage === "released" || stage === "available";
+  const isSpecScoreAllowed = (stage, device = null) => {
+    const explicit = normalizeLaunchStatus(
+      device?.launch_status_override ||
+        device?.launchStatusOverride ||
+        device?.launch_status ||
+        device?.launchStatus ||
+        device?.status ||
+        device?.availability ||
+        device?.badge,
+    );
+    if (explicit === "released" || explicit === "available") return true;
+    const launch = normalizeDateLikeValue(
+      device?.launch_date || device?.launchDate,
+    );
+    if (launch && launch <= getIndiaDateOnly()) return true;
+    return stage === "released" || stage === "available";
+  };
 
   const getSaleStartDateFromDevice = (device) => {
     if (!device) return null;
@@ -873,7 +966,7 @@ const MobileDetailCard = () => {
   const allowSpecScore = useMemo(() => {
     if (typeof serverPolicy.allowSpecScore === "boolean")
       return serverPolicy.allowSpecScore;
-    return isSpecScoreAllowed(launchStatus);
+    return isSpecScoreAllowed(launchStatus, mobileData);
   }, [launchStatus, serverPolicy]);
   const pickScore100 = useCallback((...values) => {
     for (const value of values) {
@@ -908,6 +1001,12 @@ const MobileDetailCard = () => {
         if (normalized == null) return null;
 
         const sourceKey = normalizeScoreSource(source);
+        if (
+          normalized === 0 &&
+          (!sourceKey || sourceKey.includes("unavailable"))
+        ) {
+          return null;
+        }
         if (
           !allowFallbackPersistedScores &&
           sourceKey &&
@@ -963,6 +1062,16 @@ const MobileDetailCard = () => {
         resolvePersistedScore(
           deviceData.specScoreV2Display8098,
           specScoreV2Source,
+        ),
+        resolvePersistedScore(deviceData.spec_score_display, specScoreSource),
+        resolvePersistedScore(deviceData.specScoreDisplay, specScoreSource),
+        resolvePersistedScore(
+          deviceData.overall_score_display,
+          overallScoreSource,
+        ),
+        resolvePersistedScore(
+          deviceData.overallScoreDisplay,
+          overallScoreSource,
         ),
       );
 
@@ -1044,7 +1153,7 @@ const MobileDetailCard = () => {
 
       const numericSectionScores = sections
         .map((section) => section.score)
-        .filter((score) => Number.isFinite(score));
+        .filter((score) => Number.isFinite(score) && score > 0);
       const sectionAverage =
         numericSectionScores.length > 0
           ? numericSectionScores.reduce((sum, score) => sum + score, 0) /
@@ -1057,10 +1166,10 @@ const MobileDetailCard = () => {
         allowProfileOverallFallback ? deviceData.field_profile?.score : null,
         allowSectionAverageFallback ? sectionAverage : null,
       );
-      const overallDisplay = pickScore100(
-        persistedOverallScoreDisplay,
-        overall,
-      );
+      const overallDisplay =
+        persistedOverallScoreDisplay != null
+          ? persistedOverallScoreDisplay
+          : remapScoreToBand(overall, 80, 98);
 
       return {
         overall,
@@ -1098,14 +1207,14 @@ const MobileDetailCard = () => {
   const getSectionScoreDisplay = useCallback(
     (key) => {
       if (!key || key === "overall") {
-        return scoreSummary.overallDisplay ?? scoreSummary.overall;
+        return resolveSmartphoneBadgeScore(mobileData);
       }
       const matched = scoreSummary.sections.find(
         (section) => section.key === key,
       );
       return matched?.score ?? scoreSummary.overall;
     },
-    [scoreSummary],
+    [mobileData, scoreSummary],
   );
 
   useTitle({
@@ -1424,7 +1533,11 @@ const MobileDetailCard = () => {
   const isPrebookingStore = (store, launchDate = null) => {
     if (store?.is_prebooking === true) return true;
     if (store?.availability_status === "prebooking") return true;
-    if (/^(pre(book|order)|coming\s*soon)$/i.test(String(store?.cta_label || "").trim()))
+    if (
+      /^(pre(book|order)|coming\s*soon)$/i.test(
+        String(store?.cta_label || "").trim(),
+      )
+    )
       return true;
     const saleStartDate = normalizeDateOnly(
       store?.sale_start_date ?? store?.sale_date ?? store?.saleStartDate,
@@ -1485,6 +1598,12 @@ const MobileDetailCard = () => {
     launchDate = null,
     officialPreorderUrl = null,
   ) => {
+    const officialBrandUrl = getOfficialBrandStoreUrl(
+      Array.isArray(stores) ? stores : [],
+      brandName,
+      brandWebsite,
+      officialPreorderUrl,
+    );
     const normalizedStores = (Array.isArray(stores) ? stores : []).map(
       (store) => {
         const saleStartDate = normalizeDateOnly(
@@ -1497,6 +1616,11 @@ const MobileDetailCard = () => {
           is_prebooking: prebooking,
           is_live: !prebooking,
           cta_label: prebooking ? "Coming Soon" : "Buy Now",
+          availability_note:
+            prebooking && saleStartDate
+              ? `Sale starts ${formatSaleStartLabel(saleStartDate)}`
+              : store?.availability_note || "",
+          url: store?.url || (prebooking ? officialBrandUrl : null),
         };
       },
     );
@@ -1525,33 +1649,42 @@ const MobileDetailCard = () => {
       });
 
     if (sortedPrebookingStores.length === 0) {
+      if (officialBrandUrl) {
+        const fallbackPrice = normalizedStores
+          .map((store) =>
+            parseInt(String(store?.price ?? "").replace(/[^0-9]/g, ""), 10),
+          )
+          .filter((price) => Number.isFinite(price));
+        return {
+          mode: "prebooking",
+          stores: [
+            {
+              id: "brand-store-fallback",
+              store_name: brandName || "Brand Store",
+              display_store_name: brandName || "Brand Store",
+              brand_logo: brandLogo || null,
+              url: officialBrandUrl,
+              is_prebooking: true,
+              is_live: false,
+              cta_label: "Coming Soon",
+              availability_note: "",
+              price: fallbackPrice.length ? Math.min(...fallbackPrice) : null,
+            },
+          ],
+          hiddenCount: 0,
+        };
+      }
       return { mode: "live", stores: normalizedStores, hiddenCount: 0 };
     }
 
-    const primaryPrebooking = sortedPrebookingStores[0];
-    const officialBrandUrl = getOfficialBrandStoreUrl(
-      normalizedStores,
-      brandName,
-      brandWebsite,
-      officialPreorderUrl,
-    );
     return {
       mode: "prebooking",
-      stores: [
-        {
-          ...primaryPrebooking,
-          display_store_name:
-            brandName || primaryPrebooking.store_name || "Brand Store",
-          brand_logo: brandLogo || null,
-          url: officialBrandUrl || primaryPrebooking.url || null,
-          cta_label: "Coming Soon",
-          availability_note: primaryPrebooking.sale_start_date
-            ? `Sale starts ${formatSaleStartLabel(
-                primaryPrebooking.sale_start_date,
-              )}`
-            : "",
-        },
-      ],
+      stores: sortedPrebookingStores.map((store) => ({
+        ...store,
+        display_store_name:
+          store.display_store_name || store.store_name || brandName || "Store",
+        brand_logo: store.brand_logo || brandLogo || null,
+      })),
       hiddenCount: 0,
     };
   };
@@ -2316,7 +2449,9 @@ Price: ${price}
   const primaryTabs = [
     { id: "info", label: "Info" },
     { id: "specs", label: "Specs" },
-    ...(competitorLimit > 0 ? [{ id: "competitors", label: "Competitors" }] : []),
+    ...(competitorLimit > 0
+      ? [{ id: "competitors", label: "Competitors" }]
+      : []),
   ];
 
   useEffect(() => {
@@ -2889,7 +3024,8 @@ Price: ${price}
                   </h4>
                   <div className="flex items-center gap-1.5">
                     <SpecScoreBadge
-                      score={sectionScoreDisplay("overall")}
+                      score={getSectionScore("overall")}
+                      displayScore={sectionScoreDisplay("overall")}
                       size={38}
                     />
                   </div>
@@ -3193,7 +3329,8 @@ Price: ${price}
                       Audio
                     </h4>
                     <SpecScoreBadge
-                      score={sectionScoreDisplay("overall")}
+                      score={getSectionScore("overall")}
+                      displayScore={sectionScoreDisplay("overall")}
                       size={38}
                     />
                   </div>
@@ -3213,7 +3350,8 @@ Price: ${price}
                       Sensors
                     </h4>
                     <SpecScoreBadge
-                      score={sectionScoreDisplay("overall")}
+                      score={getSectionScore("overall")}
+                      displayScore={sectionScoreDisplay("overall")}
                       size={38}
                     />
                   </div>
@@ -3327,7 +3465,8 @@ Price: ${price}
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <h4 className="font-semibold text-gray-800">Ports</h4>
                   <SpecScoreBadge
-                    score={getSectionScoreDisplay("overall")}
+                    score={getSectionScore("overall")}
+                    displayScore={getSectionScoreDisplay("overall")}
                     size={34}
                   />
                 </div>
@@ -3354,7 +3493,8 @@ Price: ${price}
                 Multimedia
               </h3>
               <SpecScoreBadge
-                score={getSectionScoreDisplay("overall")}
+                score={getSectionScore("overall")}
+                displayScore={getSectionScoreDisplay("overall")}
                 size={38}
               />
             </div>
@@ -3366,7 +3506,8 @@ Price: ${price}
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <h4 className="font-semibold text-gray-800">Audio</h4>
                   <SpecScoreBadge
-                    score={getSectionScoreDisplay("overall")}
+                    score={getSectionScore("overall")}
+                    displayScore={getSectionScoreDisplay("overall")}
                     size={34}
                   />
                 </div>
@@ -3378,7 +3519,8 @@ Price: ${price}
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <h4 className="font-semibold text-gray-800">Sensors</h4>
                   <SpecScoreBadge
-                    score={getSectionScoreDisplay("overall")}
+                    score={getSectionScore("overall")}
+                    displayScore={getSectionScoreDisplay("overall")}
                     size={34}
                   />
                 </div>
@@ -3398,7 +3540,8 @@ Price: ${price}
                 Build & Design
               </h3>
               <SpecScoreBadge
-                score={getSectionScoreDisplay("overall")}
+                score={getSectionScore("overall")}
+                displayScore={getSectionScoreDisplay("overall")}
                 size={38}
               />
             </div>
@@ -3417,32 +3560,7 @@ Price: ${price}
     }
   };
 
-  if (loading && !mobileData) {
-    return (
-      <div className="max-w-4xl mx-auto p-8">
-        <div className="bg-white rounded-lg p-8 text-center">
-          <Spinner />
-          <div className="text-sm text-gray-500 mt-3">Please waitâ€¦</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!loading && !mobileData) {
-    return (
-      <div className="max-w-4xl mx-auto p-4">
-        <div className="bg-white rounded-lg p-8 text-center">
-          <div className="text-gray-400 text-6xl mb-4">ðŸ“±</div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            Device Not Found
-          </h3>
-          <p className="text-gray-600 text-sm">
-            The requested mobile device could not be found.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const canonicalUrl = getCanonicalUrl;
 
   // compute SEO meta values
   const metaName = getDisplayProductName(mobileData) || mobileData?.name || "";
@@ -3490,16 +3608,6 @@ Price: ${price}
       brand: metaBrand,
     });
 
-  const toAbsoluteUrl = (url) => {
-    if (!url) return "";
-    if (/^https?:\/\//i.test(url)) return url;
-    if (typeof window === "undefined") return url;
-    const origin = window.location.origin;
-    if (!origin) return url;
-    return url.startsWith("/") ? `${origin}${url}` : `${origin}/${url}`;
-  };
-
-  const canonicalUrl = getCanonicalUrl;
   const primaryImage = Array.isArray(mobileData?.images)
     ? mobileData.images[0]
     : null;
@@ -3523,6 +3631,34 @@ Price: ${price}
     canonicalUrl,
     metaBrand,
   ]);
+
+  if (loading && !mobileData) {
+    return (
+      <div className="max-w-4xl mx-auto p-8">
+        <div className="bg-white rounded-lg p-8 text-center">
+          <Spinner />
+          <div className="text-sm text-gray-500 mt-3">Please waitâ€¦</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!loading && !mobileData) {
+    return (
+      <div className="max-w-4xl mx-auto p-4">
+        <div className="bg-white rounded-lg p-8 text-center">
+          <div className="text-gray-400 text-6xl mb-4">ðŸ“±</div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            Device Not Found
+          </h3>
+          <p className="text-gray-600 text-sm">
+            The requested mobile device could not be found.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const infoOsSummary =
     mobileData?.performance?.operating_system ||
     mobileData?.performance?.os ||
@@ -3855,7 +3991,9 @@ Price: ${price}
                 {currentVariantLabel ? (
                   <span>{currentVariantLabel}</span>
                 ) : null}
-                {launchStatus && launchStatus !== "released" ? (
+                {launchStatus &&
+                launchStatus !== "released" &&
+                launchStatus !== "upcoming" ? (
                   <span
                     className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold leading-none ${launchStatusBadgeClass}`}
                   >
@@ -3917,47 +4055,51 @@ Price: ${price}
           <div className="px-4 pt-4 pb-1">
             <div className="flex gap-3 overflow-x-auto no-scrollbar pb-3">
               {popularComparisonTargets
-                .slice(0, compareLimit === 2 ? 2 : popularComparisonTargets.length)
+                .slice(
+                  0,
+                  compareLimit === 2 ? 2 : popularComparisonTargets.length,
+                )
                 .map((d) => {
-                const otherId = d?.id ?? d?.product_id ?? d?.productId ?? null;
-                const otherName = d?.name || d?.model || "Device";
-                const otherImg = d?.images?.[0] || d?.image || "";
+                  const otherId =
+                    d?.id ?? d?.product_id ?? d?.productId ?? null;
+                  const otherName = d?.name || d?.model || "Device";
+                  const otherImg = d?.images?.[0] || d?.image || "";
 
-                return (
-                  <button
-                    key={String(otherId || otherName)}
-                    type="button"
-                    onClick={() => handlePopularCompare(d)}
-                    className="min-w-[240px] max-w-[280px] flex-shrink-0 rounded-xl border border-gray-200 bg-white p-3 hover:border-purple-200 transition-colors text-left"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
-                        {otherImg ? (
-                          <img
-                            src={otherImg}
-                            alt={otherName}
-                            className="w-full h-full object-contain"
-                            onError={(e) => {
-                              e.currentTarget.style.display = "none";
-                            }}
-                          />
-                        ) : null}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-[11px] text-gray-500 truncate">
-                          Compare with
+                  return (
+                    <button
+                      key={String(otherId || otherName)}
+                      type="button"
+                      onClick={() => handlePopularCompare(d)}
+                      className="min-w-[240px] max-w-[280px] flex-shrink-0 rounded-xl border border-gray-200 bg-white p-3 hover:border-purple-200 transition-colors text-left"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
+                          {otherImg ? (
+                            <img
+                              src={otherImg}
+                              alt={otherName}
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                              }}
+                            />
+                          ) : null}
                         </div>
-                        <div className="text-sm font-semibold text-gray-900 truncate">
-                          {otherName}
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[11px] text-gray-500 truncate">
+                            Compare with
+                          </div>
+                          <div className="text-sm font-semibold text-gray-900 truncate">
+                            {otherName}
+                          </div>
                         </div>
+                        <span className="text-xs font-semibold text-purple-700">
+                          Compare
+                        </span>
                       </div>
-                      <span className="text-xs font-semibold text-purple-700">
-                        Compare
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                })}
             </div>
           </div>
         )}
@@ -4020,9 +4162,8 @@ Price: ${price}
                 <div className="bg-gray-100 rounded-md p-6 mb-4 relative">
                   <div className="absolute left-2 top-2 z-10 pointer-events-none">
                     <SpecScoreBadge
-                      score={
-                        scoreSummary.overallDisplay ?? scoreSummary.overall
-                      }
+                      score={getSectionScore("overall")}
+                      displayScore={getSectionScoreDisplay("overall")}
                       size={40}
                       showSpecLabel
                       zeroFallback
@@ -4157,7 +4298,9 @@ Price: ${price}
                         {currentVariantLabel ? (
                           <span>{currentVariantLabel}</span>
                         ) : null}
-                        {launchStatus && launchStatus !== "released" ? (
+                        {launchStatus &&
+                        launchStatus !== "released" &&
+                        launchStatus !== "upcoming" ? (
                           <span
                             className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold leading-none ${launchStatusBadgeClass}`}
                           >
@@ -4234,7 +4377,8 @@ Price: ${price}
                         <FaStore className="text-green-500" />
                         Check Price On
                       </h3>
-                      {storeAvailabilityState.mode === "live" &&
+                      {(storeAvailabilityState.mode === "live" ||
+                        storeAvailabilityState.mode === "prebooking") &&
                         sortedStores.length > 3 && (
                           <button
                             onClick={() => setShowAllStores(!showAllStores)}
@@ -4255,21 +4399,42 @@ Price: ${price}
                         const isActive =
                           String(store.id) === String(activeStoreId);
                         const hasStoreUrl = Boolean(store.url);
-                        const logoSrc = store.is_prebooking
-                          ? store.brand_logo ||
-                            mobileData?.brand_logo ||
-                            mobileData?.brandLogo ||
-                            getLogo("")
-                          : getLogo(store.store_name);
+                        const brandKey = normalizeStoreKey(
+                          mobileData?.brand || "",
+                        );
+                        const storeKey = normalizeStoreKey(
+                          store?.store_name || store?.store || "",
+                        );
+                        const isBrandStore =
+                          brandKey &&
+                          storeKey &&
+                          (storeKey === brandKey ||
+                            storeKey.includes(brandKey) ||
+                            brandKey.includes(storeKey));
+                        const logoSrc =
+                          (isBrandStore
+                            ? store.brand_logo ||
+                              mobileData?.brand_logo ||
+                              mobileData?.brandLogo ||
+                              null
+                            : null) ||
+                          (store?.store_name || store?.store
+                            ? getLogo(store.store_name || store.store)
+                            : null) ||
+                          store.brand_logo ||
+                          mobileData?.brand_logo ||
+                          mobileData?.brandLogo ||
+                          getLogo("");
                         const storeTitle =
                           store.display_store_name ||
                           store.store_name ||
                           mobileData?.brand ||
                           "Store";
                         const ctaText = store.cta_label || "Buy Now";
-                        const isPreorderCta = /^(pre(book|order)|coming\s*soon)$/i.test(
-                          String(ctaText).trim(),
-                        );
+                        const isPreorderCta =
+                          /^(pre(book|order)|coming\s*soon)$/i.test(
+                            String(ctaText).trim(),
+                          );
                         return (
                           <div
                             key={store.id || index}
@@ -4389,6 +4554,7 @@ Price: ${price}
                           {(() => {
                             const iconMeta = highlightIconMap[section.key];
                             const Icon = iconMeta?.Icon;
+                            const showScoreBadge = Number(section.score) > 0;
                             return (
                               <div className="flex items-center gap-3">
                                 <div className="min-w-0">
@@ -4404,12 +4570,6 @@ Price: ${price}
                                   </div>
                                 </div>
                                 <div className="h-px flex-1 bg-gradient-to-r from-slate-200 via-slate-300/70 to-slate-200" />
-                                <div className="flex shrink-0 items-center gap-0.5">
-                                  <SpecScoreBadge
-                                    score={section.score}
-                                    size={32}
-                                  />
-                                </div>
                               </div>
                             );
                           })()}
@@ -4511,7 +4671,9 @@ Price: ${price}
                   ? `Competitors For ${mobileData.name}`
                   : "Top Competitors"
               }
-              productName={mobileData?.name || mobileData?.model || "This Device"}
+              productName={
+                mobileData?.name || mobileData?.model || "This Device"
+              }
               productId={currentProductId}
               onCompare={handlePopularCompare}
               compareDisabled={compareDisabled}
