@@ -583,7 +583,7 @@ const Signup = ({
 
           <div>
             <h3 className="text-2xl font-bold text-gray-900">
-              Join SmartArena
+              Join Hooks
             </h3>
             <p className="mt-1 text-sm text-gray-500">
               Create your account to explore devices
