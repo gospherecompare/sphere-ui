@@ -57,6 +57,7 @@ import {
   createCollectionSchema,
   createItemListSchema,
 } from "../../utils/schemaGenerators";
+import { buildListSeoKeywords } from "../../utils/seoKeywordBuilder";
 import {
   computePopularSmartphoneFeatures,
   SMARTPHONE_FEATURE_CATALOG,
@@ -2045,7 +2046,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         `Explore ${currentBrandObj.name} smartphones on Hooks. Compare models, check prices, specifications, reviews, and find the best phone for your needs.`,
     );
   }
-
   // Heading label: prefer new launches, then price-filtered collection
   const isNewLaunchHeading =
     (location &&
@@ -3253,6 +3253,33 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         return 0;
     }
   });
+  const seoKeywords = useMemo(
+    () =>
+      buildListSeoKeywords({
+        devices: sortedVariants,
+        category: "smartphones",
+        currentYear,
+        baseTerms: [
+          "smartphones",
+          "mobile price comparison india",
+          "compare smartphone specs",
+        ],
+        contextTerms: [
+          isUpcomingView ? "upcoming smartphones" : "",
+          isNewFilterPath ? "latest smartphones" : "",
+          priceFilter ? `best smartphones ${priceFilter.label}` : "",
+          currentBrandObj?.name ? `${currentBrandObj.name} smartphones` : "",
+        ],
+      }),
+    [
+      currentYear,
+      isUpcomingView,
+      isNewFilterPath,
+      priceFilter,
+      currentBrandObj,
+      sortedVariants,
+    ],
+  );
 
   const clearFilters = () => {
     const empty = {
@@ -3448,6 +3475,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       <Helmet prioritizeSeoTags>
         <title>{seoTitle}</title>
         <meta name="description" content={seoDescription} />
+        <meta name="keywords" content={seoKeywords} />
 
         {/* Canonical URL - CRITICAL for SEO per route */}
         <link rel="canonical" href={listSchemaUrl} />

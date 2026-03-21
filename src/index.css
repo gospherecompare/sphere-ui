@@ -264,18 +264,13 @@ h6 {
   transition: all 0.3s ease;
 }
 
-.search-input-wrapper:focus-within {
-  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.2);
-}
-
 .search-input {
   transition: all 0.2s ease;
 }
 
 .search-input:focus {
   background-color: #fff;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  border-color: #c41fe6;
 }
 
 /* =========================

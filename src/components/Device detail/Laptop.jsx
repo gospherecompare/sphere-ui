@@ -34,6 +34,8 @@ import Spinner from "../ui/Spinner";
 import { laptopMeta } from "../../constants/meta";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
 import { createProductSchema } from "../../utils/schemaGenerators";
+import { Helmet } from "react-helmet-async";
+import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
 import {
@@ -2085,6 +2087,22 @@ const LaptopDetailCard = () => {
     storage: metaStorage,
     brand: metaBrand,
   });
+  const metaKeywords = buildDeviceSeoKeywords({
+    device: laptopData,
+    productName: metaNameWithBrand || metaBaseName || "",
+    brand: metaBrand,
+    category: "laptops",
+    currentYear: new Date().getFullYear(),
+    baseTerms: [
+      "laptops",
+      "laptop price in india",
+      "compare laptop specifications",
+      metaCpu ? `${metaCpu} laptop` : "",
+      metaRam ? `${metaRam} RAM laptop` : "",
+      metaStorage ? `${metaStorage} storage laptop` : "",
+    ],
+    maxKeywords: 45,
+  });
   const canonicalUrl = getCanonicalUrl;
   const metaImage = laptopData?.images?.[0] || null;
   const toAbsoluteUrl = (url) => {
@@ -2096,7 +2114,7 @@ const LaptopDetailCard = () => {
     return url.startsWith("/") ? `${origin}${url}` : `${origin}/${url}`;
   };
   const ogImage = toAbsoluteUrl(metaImage);
-  const productSchemaJson = useMemo(() => {
+  const productSchemaJson = (() => {
     const name = metaNameWithBrand || metaBaseName || metaTitle || "";
     if (!name) return null;
     const schema = createProductSchema({
@@ -2107,21 +2125,14 @@ const LaptopDetailCard = () => {
       brand: metaBrand || undefined,
     });
     return JSON.stringify(schema);
-  }, [
-    metaNameWithBrand,
-    metaBaseName,
-    metaTitle,
-    metaDescription,
-    ogImage,
-    canonicalUrl,
-    metaBrand,
-  ]);
+  })();
 
   return (
     <div className="px-2 lg:px-4 mx-auto max-w-4xl w-full bg-white">
       <Helmet prioritizeSeoTags>
         <title>{metaTitleWithDate}</title>
         <meta name="description" content={metaDescription} />
+        <meta name="keywords" content={metaKeywords} />
         <link rel="canonical" href={canonicalUrl} />
         <meta property="og:type" content="product" />
         <meta property="og:title" content={metaTitle} />

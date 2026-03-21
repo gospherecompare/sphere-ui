@@ -62,6 +62,7 @@ import {
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
 import { resolveSmartphoneBadgeScore } from "../../utils/smartphoneBadgeScore";
+import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
 
 const token = Cookies.get("arenak");
 const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
@@ -172,10 +173,6 @@ const MobileDetailCard = () => {
   const [activeStoreId, setActiveStoreId] = useState(null);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [isPrimaryTabsSticky, setIsPrimaryTabsSticky] = useState(false);
-  const [primaryTabsHeight, setPrimaryTabsHeight] = useState(0);
-  const primaryTabsRef = useRef(null);
-  const primaryTabsSentinelRef = useRef(null);
   const variantInitKeyRef = useRef("");
   const recentStoreKeyRef = useRef("");
   const {
@@ -268,28 +265,6 @@ const MobileDetailCard = () => {
     // If nothing else, no-op; the global loader will fetch lists on mount.
   }, [id, routeSlug, searchModel, fetchDevice, findDeviceBySlug, smartphone]);
 
-  useEffect(() => {
-    if (!primaryTabsRef.current) return;
-    const updateHeight = () => {
-      setPrimaryTabsHeight(primaryTabsRef.current?.offsetHeight || 0);
-    };
-    updateHeight();
-    window.addEventListener("resize", updateHeight);
-    return () => window.removeEventListener("resize", updateHeight);
-  }, []);
-
-  useEffect(() => {
-    const sentinel = primaryTabsSentinelRef.current;
-    if (!sentinel) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsPrimaryTabsSticky(!entry.isIntersecting);
-      },
-      { threshold: [1] },
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, []);
 
   // Update URL to match canonical slug-based path if needed
   useEffect(() => {
@@ -3631,6 +3606,35 @@ Price: ${price}
     canonicalUrl,
     metaBrand,
   ]);
+  const metaKeywords = useMemo(
+    () =>
+      buildDeviceSeoKeywords({
+        device: mobileData,
+        productName: titleWithBrand || metaName || metaTitleBase || "",
+        brand: metaBrand,
+        category: "smartphones",
+        currentYear: new Date().getFullYear(),
+        baseTerms: [
+          "smartphones",
+          "mobile price comparison india",
+          "compare smartphone specs",
+          metaVariantTag ? `${metaVariantTag}` : "",
+          metaRam ? `${metaRam} RAM phone` : "",
+          metaStorage ? `${metaStorage} storage phone` : "",
+        ],
+        maxKeywords: 45,
+      }),
+    [
+      mobileData,
+      titleWithBrand,
+      metaName,
+      metaTitleBase,
+      metaBrand,
+      metaVariantTag,
+      metaRam,
+      metaStorage,
+    ],
+  );
 
   if (loading && !mobileData) {
     return (
@@ -3906,6 +3910,7 @@ Price: ${price}
       <SEO
         title={metaTitleWithDate}
         description={metaDescription}
+        keywords={metaKeywords}
         image={ogImage}
         url={canonicalUrl}
         ogType="product"
@@ -4105,23 +4110,8 @@ Price: ${price}
         )}
 
         {/* Top Tabs Section */}
-        <div ref={primaryTabsSentinelRef} className="h-px" />
-        {isPrimaryTabsSticky && primaryTabsHeight ? (
-          <div style={{ height: `${primaryTabsHeight}px` }} />
-        ) : null}
-        <div
-          ref={primaryTabsRef}
-          className={
-            isPrimaryTabsSticky
-              ? "fixed left-0 right-0 z-40 top-[var(--mobile-header-height,0px)] md:top-[var(--desktop-header-height,0px)]"
-              : "sticky z-20 top-[var(--mobile-header-height,0px)] md:top-[var(--desktop-header-height,0px)]"
-          }
-        >
-          <div
-            className={`mx-auto max-w-4xl w-full ${
-              isPrimaryTabsSticky ? "px-2 lg:px-4" : ""
-            }`}
-          >
+        <div className="sticky z-20 top-[var(--mobile-header-height,0px)] md:top-[var(--desktop-header-height,0px)]">
+          <div className="mx-auto max-w-4xl w-full">
             <div className="border-y border-slate-200 bg-white">
               <div className="flex overflow-x-auto no-scrollbar bg-white">
                 {primaryTabs.map((tab) => (

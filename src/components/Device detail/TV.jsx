@@ -5,6 +5,7 @@ import useDevice from "../../hooks/useDevice";
 import Cookies from "js-cookie";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
 import { createProductSchema } from "../../utils/schemaGenerators";
+import { Helmet } from "react-helmet-async";
 
 // Icons
 import {
@@ -54,6 +55,7 @@ import useStoreLogos from "../../hooks/useStoreLogos";
 import ProductDiscoverySections from "../ui/ProductDiscoverySections";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
+import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
 
 // Ratings UI removed: review submission and inline rating input deleted
 
@@ -2734,6 +2736,22 @@ const TVDetailCard = () => {
     resolution: metaResolution,
     os: metaOs,
   });
+  const metaKeywords = buildDeviceSeoKeywords({
+    device: applianceData,
+    productName: metaNameWithBrand || metaName || "",
+    brand: metaBrand,
+    category: "smart tv",
+    currentYear: new Date().getFullYear(),
+    baseTerms: [
+      "smart tv",
+      "tv price in india",
+      "compare tv specifications",
+      metaScreenSize ? `${metaScreenSize} tv` : "",
+      metaResolution ? `${metaResolution} tv` : "",
+      metaOs ? `${metaOs} tv` : "",
+    ],
+    maxKeywords: 45,
+  });
   const canonicalUrl = getCanonicalUrl;
   const metaImage = applianceData?.images?.[0] || null;
   const toAbsoluteUrl = (url) => {
@@ -2745,7 +2763,7 @@ const TVDetailCard = () => {
     return url.startsWith("/") ? `${origin}${url}` : `${origin}/${url}`;
   };
   const ogImage = toAbsoluteUrl(metaImage);
-  const productSchemaJson = useMemo(() => {
+  const productSchemaJson = (() => {
     const name = metaNameWithBrand || metaName || metaTitle || "";
     if (!name) return null;
     const schema = createProductSchema({
@@ -2756,21 +2774,14 @@ const TVDetailCard = () => {
       brand: metaBrand || undefined,
     });
     return JSON.stringify(schema);
-  }, [
-    metaNameWithBrand,
-    metaName,
-    metaTitle,
-    metaDescription,
-    ogImage,
-    canonicalUrl,
-    metaBrand,
-  ]);
+  })();
 
   return (
     <div className="px-2 lg:px-4 mx-auto max-w-4xl w-full bg-white">
       <Helmet prioritizeSeoTags>
         <title>{metaTitleWithDate}</title>
         <meta name="description" content={metaDescription} />
+        <meta name="keywords" content={metaKeywords} />
         <link rel="canonical" href={canonicalUrl} />
         <meta property="og:type" content="product" />
         <meta property="og:title" content={metaTitle} />
@@ -3190,7 +3201,7 @@ const TVDetailCard = () => {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                     <FaStore className="text-purple-500" />
-                    Available at
+                    Check Price on
                   </h3>
                   {sortedStores.length > 3 && (
                     <button

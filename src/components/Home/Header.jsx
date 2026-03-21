@@ -1942,7 +1942,7 @@ const Header = () => {
                     setShowSearchSuggestions(false);
                   }
                 }}
-                className="w-full pl-10 pr-4 py-3 text-sm bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 search-input rounded-lg transition-all placeholder-gray-500 font-medium"
+                className="w-full pl-10 pr-4 py-3 text-sm bg-white border border-gray-300 focus:outline-none search-input rounded-lg transition-all placeholder-gray-500 font-medium"
               />
 
               {/* Desktop Suggestions Dropdown - Enhanced with Images & Highlighting */}

@@ -424,6 +424,20 @@ const resolveSeoMeta = (pathname) => {
 
 const RouteSeoFallback = () => {
   const { pathname } = useLocation();
+  
+  // Initialize all hooks before any conditional returns
+  const seo = resolveSeoMeta(pathname);
+  const canonicalUrl = `${SITE_ORIGIN}${seo.canonicalPath}`;
+  const schemaJson = React.useMemo(() => {
+    if (seo.canonicalPath === "/") {
+      return JSON.stringify([
+        createWebsiteSchema(),
+        createOrganizationSchema(),
+      ]);
+    }
+    return null;
+  }, [seo.canonicalPath]);
+
   // Skip product pages - let component Helmet handle SEO
   if (pathname.startsWith("/compare")) return null;
   if (pathname.startsWith("/smartphones")) return null;
@@ -439,17 +453,6 @@ const RouteSeoFallback = () => {
   if (pathname.startsWith("/privacy-policy")) return null;
   if (pathname.startsWith("/terms")) return null;
   if (pathname.startsWith("/careers")) return null;
-  const seo = resolveSeoMeta(pathname);
-  const canonicalUrl = `${SITE_ORIGIN}${seo.canonicalPath}`;
-  const schemaJson = React.useMemo(() => {
-    if (seo.canonicalPath === "/") {
-      return JSON.stringify([
-        createWebsiteSchema(),
-        createOrganizationSchema(),
-      ]);
-    }
-    return null;
-  }, [seo.canonicalPath]);
 
   return (
     <Helmet prioritizeSeoTags>

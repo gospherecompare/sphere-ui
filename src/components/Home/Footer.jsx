@@ -1,5 +1,5 @@
 // src/components/Footer.jsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   FaFacebook,
   FaTwitter,
@@ -8,12 +8,175 @@ import {
   FaYoutube,
 } from "react-icons/fa";
 import { Link } from "react-router-dom";
+import { createProductPath } from "../../utils/slugGenerator";
+
+const API_BASE = (
+  import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in"
+).replace(/\/$/, "");
+
+const toText = (value) => String(value || "").trim();
+
+const normalizePhoneRows = (json) => {
+  if (Array.isArray(json?.new)) return json.new;
+  if (Array.isArray(json?.trending)) return json.trending;
+  if (Array.isArray(json?.smartphones)) return json.smartphones;
+  if (Array.isArray(json?.data)) return json.data;
+  if (Array.isArray(json?.rows)) return json.rows;
+  if (Array.isArray(json)) return json;
+  return [];
+};
+
+const buildFooterPhones = (rows = [], limit = 5) => {
+  const seen = new Set();
+  const phones = [];
+
+  for (const row of rows) {
+    const name = toText(
+      row?.name || row?.product_name || row?.model || row?.title || "",
+    );
+    if (!name) continue;
+
+    const productId = row?.product_id ?? row?.productId ?? row?.id ?? null;
+    const key = `${String(productId ?? "")}|${name.toLowerCase()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const basePath = createProductPath("smartphones", name);
+    const path =
+      productId != null && productId !== ""
+        ? `${basePath}?id=${encodeURIComponent(String(productId))}`
+        : basePath;
+
+    phones.push({
+      id: productId ?? name,
+      name,
+      path,
+    });
+
+    if (phones.length >= limit) break;
+  }
+
+  return phones;
+};
 
 const Footer = () => {
+  const [footerPhones, setFooterPhones] = useState([]);
+  const [footerPhonesLabel, setFooterPhonesLabel] =
+    useState("New Mobile Phones");
+  const [topPickPhones, setTopPickPhones] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPrimaryFooterPhones = async () => {
+      const sources = [
+        {
+          label: "New Mobile Phones",
+          url: `${API_BASE}/api/public/new/smartphones?limit=20`,
+        },
+        {
+          label: "Trending Mobile Phones",
+          url: `${API_BASE}/api/public/trending/smartphones?limit=20`,
+        },
+      ];
+
+      for (const source of sources) {
+        try {
+          const response = await fetch(source.url, { cache: "no-store" });
+          if (!response.ok) continue;
+          const json = await response.json();
+          const rows = normalizePhoneRows(json);
+          const phones = buildFooterPhones(rows, 5);
+          if (phones.length > 0) {
+            if (!cancelled) {
+              setFooterPhones(phones);
+              setFooterPhonesLabel(source.label);
+            }
+            return;
+          }
+        } catch {
+          // Try next fallback source
+        }
+      }
+
+      if (!cancelled) setFooterPhones([]);
+    };
+
+    const loadTopPicks = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/api/smartphones`, {
+          cache: "no-store",
+        });
+        if (!response.ok) {
+          if (!cancelled) setTopPickPhones([]);
+          return;
+        }
+        const json = await response.json();
+        const rows = normalizePhoneRows(json);
+        const phones = buildFooterPhones(rows, 5);
+        if (!cancelled) setTopPickPhones(phones);
+      } catch {
+        if (!cancelled) setTopPickPhones([]);
+      }
+    };
+
+    loadPrimaryFooterPhones();
+    loadTopPicks();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
-    <footer className="bg-black text-white relative">
+    <footer className="bg-black text-white relative ">
       {/* Purple-Indigo gradient accent line */}
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
+      <div className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-12 sm:py-14 lg:py-16">
+        {footerPhones.length > 0 || topPickPhones.length > 0 ? (
+          <div className="mb-10 border-y border-gray-800 py-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+              {footerPhones.length > 0 ? (
+                <div>
+                  <h4 className="text-sm font-bold mb-4 text-white uppercase tracking-wide">
+                    {footerPhonesLabel}
+                  </h4>
+                  <div className="grid grid-cols-1 gap-y-2">
+                    {footerPhones.map((phone) => (
+                      <Link
+                        key={`${String(phone.id)}-primary`}
+                        to={phone.path}
+                        className="text-[12px] text-gray-300 hover:text-purple-400 transition-colors duration-200 truncate"
+                        title={phone.name}
+                      >
+                        {phone.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {topPickPhones.length > 0 ? (
+                <div>
+                  <h4 className="text-sm font-bold mb-4 text-white uppercase tracking-wide">
+                    Top Picks by Hooks
+                  </h4>
+                  <div className="grid grid-cols-1 gap-y-2">
+                    {topPickPhones.map((phone) => (
+                      <Link
+                        key={`${String(phone.id)}-top-pick`}
+                        to={phone.path}
+                        className="text-[12px] text-gray-300 hover:text-purple-400 transition-colors duration-200 truncate"
+                        title={phone.name}
+                      >
+                        {phone.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
         {/* Top Navigation Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-8 sm:gap-10 mb-10 sm:mb-12">
           {/* Mobiles */}
@@ -184,97 +347,46 @@ const Footer = () => {
         </div>
 
         {/* Hooks - Separate Row with Border Divider + Newsletter */}
-        <div className="border-t border-gray-700 py-8 sm:py-10 px-0">
-          <h4 className="text-sm font-bold mb-6 text-white uppercase tracking-wide">
+        <div className="border-t border-gray-700 pt-8 pb-1">
+          <h4 className="text-sm font-bold mb-4 text-white uppercase tracking-wide">
             Hooks
           </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 items-center">
-            <div className="grid grid-cols-2 sm:grid-cols-6 gap-4">
-              <div>
-                <Link
-                  to="/about"
-                  className="hover:text-purple-400 transition-colors duration-200 text-gray-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 rounded"
-                >
-                  About Us
-                </Link>
-              </div>
-              <div>
-                <Link
-                  to="/careers"
-                  className="hover:text-purple-400 transition-colors duration-200 text-gray-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 rounded"
-                >
-                  Careers
-                </Link>
-              </div>
-              <div>
-                <Link
-                  to="/contact"
-                  className="hover:text-purple-400 transition-colors duration-200 text-gray-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 rounded"
-                >
-                  Contact
-                </Link>
-              </div>
-              <div>
-                <Link
-                  to="/privacy-policy"
-                  className="hover:text-purple-400 transition-colors duration-200 text-gray-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 rounded"
-                >
-                  Privacy Policy
-                </Link>
-              </div>
-              <div>
-                <Link
-                  to="/terms"
-                  className="hover:text-purple-400 transition-colors duration-200 text-gray-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 rounded"
-                >
-                  Terms & Conditions
-                </Link>
-              </div>
-            </div>
-
-            {/* Newsletter */}
-            <div>
-              <p className="text-gray-400 text-xs sm:text-sm mb-3">
-                Subscribe to get the latest deals, reviews & updates.
-              </p>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  // simple client-side feedback
-                  const form = e.currentTarget;
-                  const input = form.querySelector('input[name="email"]');
-                  if (input && input.value) {
-                    // eslint-disable-next-line no-alert
-                    alert("Thanks for subscribing!");
-                    input.value = "";
-                  }
-                }}
-                className="flex gap-2 max-w-md"
-                aria-label="Subscribe to newsletter"
-              >
-                <label htmlFor="footer-email" className="sr-only">
-                  Email address
-                </label>
-                <input
-                  id="footer-email"
-                  name="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  className="w-full px-3 py-2 text-sm rounded bg-gray-900 border border-gray-700 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 hover:from-purple-700 hover:to-purple-800 text-white text-sm rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
-                >
-                  Subscribe
-                </button>
-              </form>
-            </div>
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-3 text-gray-400 text-xs sm:text-sm">
+            <Link
+              to="/about"
+              className="hover:text-purple-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 rounded"
+            >
+              About Us
+            </Link>
+            <Link
+              to="/careers"
+              className="hover:text-purple-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 rounded"
+            >
+              Careers
+            </Link>
+            <Link
+              to="/contact"
+              className="hover:text-purple-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 rounded"
+            >
+              Contact
+            </Link>
+            <Link
+              to="/privacy-policy"
+              className="hover:text-purple-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 rounded"
+            >
+              Privacy Policy
+            </Link>
+            <Link
+              to="/terms"
+              className="hover:text-purple-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 rounded"
+            >
+              Terms & Conditions
+            </Link>
           </div>
         </div>
 
         {/* Divider */}
-        <div className="border-t border-gray-700 my-10 sm:my-12"></div>
+        <div className="border-t border-gray-700 my-8 sm:my-10"></div>
 
         {/* Bottom Bar */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8">

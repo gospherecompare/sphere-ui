@@ -46,6 +46,7 @@ import {
   createCollectionSchema,
   createItemListSchema,
 } from "../../utils/schemaGenerators";
+import { buildListSeoKeywords } from "../../utils/seoKeywordBuilder";
 import {
   fetchHomeAppliances,
   fetchTrendingHomeAppliances,
@@ -66,29 +67,24 @@ const SITE_ORIGIN = "https://tryhook.shop";
 // Enhanced Image Carousel
 const ImageCarousel = ({ images = [] }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const imageFrameClass =
+    "w-full h-full rounded-lg overflow-hidden flex items-center justify-center";
+  const imageClass = "w-auto h-auto max-w-full max-h-full object-contain rounded-lg";
 
   useEffect(() => {
     setCurrentIndex(0);
   }, [images]);
 
-  const handleNext = (e) => {
-    e?.stopPropagation();
-    setCurrentIndex((prev) => (prev + 1) % images.length);
-  };
-
-  const handlePrev = (e) => {
-    e?.stopPropagation();
-    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
-
   if (!images || images.length === 0) {
     return (
-      <div className="relative w-full h-full flex items-center justify-center rounded-lg bg-white">
-        <div className="text-center px-3">
-          <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-200">
-            <FaHome className="text-gray-400 text-sm" />
+      <div className="relative flex h-full w-full items-center justify-center">
+        <div className={imageFrameClass}>
+          <div className="text-center px-3">
+            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-200">
+              <FaHome className="text-gray-400 text-sm" />
+            </div>
+            <span className="text-xs text-gray-500">No image</span>
           </div>
-          <span className="text-xs text-gray-500">No image</span>
         </div>
       </div>
     );
@@ -96,67 +92,52 @@ const ImageCarousel = ({ images = [] }) => {
 
   if (images.length === 1) {
     return (
-      <div className="relative w-full h-full">
-        <img
-          src={images[0]}
-          alt="product"
-          className="w-full h-full object-contain rounded-lg"
-          loading="lazy"
-        />
+      <div className="flex h-full w-full items-center justify-center">
+        <div className={imageFrameClass}>
+          <img
+            src={images[0]}
+            alt="product"
+            className={imageClass}
+            loading="lazy"
+          />
+        </div>
       </div>
     );
   }
 
+  // Multiple images case - dots only
   return (
-    <div className="relative w-full h-full group">
-      <div className="w-full h-full flex items-center justify-center">
-        <img
-          src={images[currentIndex]}
-          alt={`product-view-${currentIndex + 1}`}
-          className="w-auto h-auto max-w-full max-h-full object-contain rounded-lg"
-          loading="lazy"
-        />
-      </div>
-
-      <div className="absolute inset-0 flex items-center justify-between p-1 pointer-events-none">
-        <button
-          onClick={handlePrev}
-          className="pointer-events-auto opacity-0 group-hover:opacity-100 md:opacity-100 bg-black/30 hover:bg-black/50 text-white p-1.5 rounded-full transition-all duration-200 transform -translate-x-1"
-          aria-label="Previous image"
-        >
-          <svg
-            className="w-3 h-3"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-        </button>
-        <button
-          onClick={handleNext}
-          className="pointer-events-auto opacity-0 group-hover:opacity-100 md:opacity-100 bg-black/30 hover:bg-black/50 text-white p-1.5 rounded-full transition-all duration-200 transform translate-x-1"
-          aria-label="Next image"
-        >
-          <svg
-            className="w-3 h-3"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
-        </button>
+    <div className="relative h-full w-full">
+      {/* Main Image */}
+      <div className="flex h-full w-full items-center justify-center">
+        <div className={`${imageFrameClass} relative`}>
+          <img
+            src={images[currentIndex]}
+            alt={`product-view-${currentIndex + 1}`}
+            className={imageClass}
+            loading="lazy"
+          />
+          {/* Dots inside image frame */}
+          <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
+            <div className="flex items-center gap-1 rounded-full px-2">
+              {images.map((_, index) => (
+                <button
+                  key={`dot-${index}`}
+                  onClick={(e) => {
+                    e?.stopPropagation();
+                    setCurrentIndex(index);
+                  }}
+                  aria-label={`Go to image ${index + 1}`}
+                  className={`h-1.5 rounded-full transition-all duration-200 ${
+                    currentIndex === index
+                      ? "w-5 bg-violet-500"
+                      : "w-1.5 bg-gray-300 hover:bg-gray-400"
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -2543,6 +2524,22 @@ const TVs = () => {
         `Compare ${currentBrandObj.name} TVs with detailed specifications, latest prices, and top store offers on Hooks.`,
     );
   }
+  const seoKeywords = useMemo(
+    () =>
+      buildListSeoKeywords({
+        devices: sortedVariants,
+        category: "smart tv",
+        currentYear,
+        baseTerms: ["smart tv", "tv price in india", "compare tv specs"],
+        contextTerms: [
+          filter === "new" ? "latest tv launches" : "",
+          filter === "trending" ? "trending tvs" : "",
+          currentBrandObj?.name ? `${currentBrandObj.name} tv` : "",
+          currentBrandObj?.name ? `${currentBrandObj.name} smart tv` : "",
+        ],
+      }),
+    [currentYear, filter, currentBrandObj, sortedVariants],
+  );
 
   const siteOrigin =
     typeof window !== "undefined" && window.location?.origin
@@ -2629,6 +2626,7 @@ const TVs = () => {
       <Helmet prioritizeSeoTags>
         <title>{seoTitle}</title>
         <meta name="description" content={seoDescription} />
+        <meta name="keywords" content={seoKeywords} />
 
         {/* Canonical URL - CRITICAL for SEO per route */}
         <link rel="canonical" href={listSchemaUrl} />
@@ -2657,7 +2655,6 @@ const TVs = () => {
         {listSchemaJson && (
           <script type="application/ld+json">{listSchemaJson}</script>
         )}
-
       </Helmet>
       {/* Main Content */}
       <div className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8 lg:p-10 bg-white">
@@ -3238,348 +3235,362 @@ const TVs = () => {
 
             {/* Products Grid */}
             <div className="grid grid-cols-1 gap-4 sm:gap-5 md:gap-6 auto-rows-fr">
-              {sortedVariants.map((device, idx) => (
-                <div
-                  key={`${device.id}-${idx}`}
-                  onClick={(e) => handleView(device, e)}
-                  className="h-full overflow-hidden rounded-md cursor-pointer"
-                >
-                  <div className="p-3 sm:p-4 md:p-5 lg:p-6 pt-4 sm:pt-5 md:pt-6">
-                    {/* Top Row: Image and Basic Info */}
-                    <div className="grid grid-cols-[minmax(0,8.5rem)_minmax(0,1fr)] sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)] gap-3 w-full items-start">
-                      {/* Product Image - Fixed container */}
-                      <div className="relative flex-shrink-0 w-full h-36 sm:h-48 rounded-2xl overflow-hidden group bg-white">
-                        <div className="w-full h-full flex items-center justify-center p-1.5 sm:p-2">
-                          <ImageCarousel images={device.images} />
-                        </div>
-                        <div className="absolute left-1.5 top-1.5 z-10 pointer-events-none">
-                          <CircularScoreBadge
-                            score={
-                              device.overall_score_display ??
-                              device.overall_score
-                            }
-                            size={42}
-                          />
-                        </div>
-                        {/* Compare Checkbox Overlay - Top Right */}
-                        <div
-                          onClick={(e) => e.stopPropagation()}
-                          className="absolute top-2 right-2 z-10 rounded-md transition-all duration-200 cursor-pointer hover:bg-gray-50"
-                          title="Add to compare"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isCompareSelected(device)}
+              {sortedVariants.map((device, idx) => {
+                const hasStoreSection =
+                  Array.isArray(device.storePrices) &&
+                  device.storePrices.length > 0;
+                const showTopDivider = hasStoreSection;
+
+                return (
+                  <div
+                    key={`${device.id}-${idx}`}
+                    onClick={(e) => handleView(device, e)}
+                    className="h-full overflow-hidden rounded-md cursor-pointer"
+                  >
+                    <div className="p-3 sm:p-4 md:p-5 lg:p-6 pt-4 sm:pt-5 md:pt-6">
+                      {/* Top Row: Image and Basic Info */}
+                      <div className="grid grid-cols-[minmax(0,8.5rem)_minmax(0,1fr)] sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)] gap-3 w-full items-start">
+                        {/* Product Image - Fixed container */}
+                        <div className="relative flex-shrink-0 w-full h-36 sm:h-48 rounded-2xl overflow-hidden group bg-gray-100">
+                          <div className="w-full h-full flex items-center justify-center p-1.5 sm:p-2">
+                            <ImageCarousel images={device.images} />
+                          </div>
+                          <div className="absolute left-1.5 top-1.5 z-10 pointer-events-none">
+                            <CircularScoreBadge
+                              score={
+                                device.overall_score_display ??
+                                device.overall_score
+                              }
+                              size={42}
+                            />
+                          </div>
+                          {/* Compare Checkbox Overlay - Top Right */}
+                          <div
                             onClick={(e) => e.stopPropagation()}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              handleCompareToggle(device, e);
-                            }}
-                            className="w-3 h-3 m-1 accent-purple-600 cursor-pointer"
-                          />
+                            className="absolute top-2 right-2 z-10 rounded-md transition-all duration-200 cursor-pointer hover:bg-gray-50"
+                            title="Add to compare"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isCompareSelected(device)}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                handleCompareToggle(device, e);
+                              }}
+                              className="w-3 h-3 m-1 accent-purple-600 cursor-pointer"
+                            />
+                          </div>
                         </div>
-                      </div>
 
-                      {/* Basic Info */}
-                      <div className="flex-1 min-w-0">
-                        {/* Brand and Model */}
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700">
-                                {device.brand}
-                              </span>
-                            </div>
-                            <h5 className="font-bold text-gray-900 text-base leading-6 break-words">
-                              {device.name || device.model || "TV"}
-                            </h5>
-                            {(() => {
-                              const activeSize = firstNonEmpty(
-                                device.variant?.screen_size,
-                                device.variant?.size,
-                                device.variant?.variant_key,
-                                device.specs?.screenSize,
-                                device.specs?.capacity,
-                              );
-                              const screenSize = String(
-                                activeSize || device.specs?.screenSize || "",
-                              ).trim();
-                              const variantSummary = firstNonEmpty(
-                                device.variant?.specification_summary,
-                              );
-                              const variantSummaryIsSize =
-                                normalizeLooseKey(variantSummary) ===
-                                normalizeLooseKey(screenSize);
-                              const resolution = String(
-                                firstNonEmpty(
-                                  device.variant?.resolution,
-                                  variantSummaryIsSize ? "" : variantSummary,
-                                  device.variant?.variant_resolution,
-                                  extractVariantSpecificValue(
+                        {/* Basic Info */}
+                        <div className="flex-1 min-w-0">
+                          {/* Brand and Model */}
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700">
+                                  {device.brand}
+                                </span>
+                              </div>
+                              <h5 className="font-bold text-gray-900 text-base leading-6 break-words">
+                                {device.name || device.model || "TV"}
+                              </h5>
+                              {(() => {
+                                const activeSize = firstNonEmpty(
+                                  device.variant?.screen_size,
+                                  device.variant?.size,
+                                  device.variant?.variant_key,
+                                  device.specs?.screenSize,
+                                  device.specs?.capacity,
+                                );
+                                const screenSize = String(
+                                  activeSize || device.specs?.screenSize || "",
+                                ).trim();
+                                const variantSummary = firstNonEmpty(
+                                  device.variant?.specification_summary,
+                                );
+                                const variantSummaryIsSize =
+                                  normalizeLooseKey(variantSummary) ===
+                                  normalizeLooseKey(screenSize);
+                                const resolution = String(
+                                  firstNonEmpty(
+                                    device.variant?.resolution,
+                                    variantSummaryIsSize ? "" : variantSummary,
+                                    device.variant?.variant_resolution,
+                                    extractVariantSpecificValue(
+                                      device.specs?.resolution,
+                                      screenSize,
+                                    ),
                                     device.specs?.resolution,
-                                    screenSize,
                                   ),
-                                  device.specs?.resolution,
-                                ),
-                              ).trim();
-                              const refreshRate = String(
-                                firstNonEmpty(
-                                  device.variant?.refresh_rate,
-                                  extractVariantSpecificValue(
+                                ).trim();
+                                const refreshRate = String(
+                                  firstNonEmpty(
+                                    device.variant?.refresh_rate,
+                                    extractVariantSpecificValue(
+                                      device.specs?.refreshRate,
+                                      screenSize,
+                                    ),
                                     device.specs?.refreshRate,
-                                    screenSize,
                                   ),
-                                  device.specs?.refreshRate,
-                                ),
-                              ).trim();
-                              const panelType = String(
-                                firstNonEmpty(
-                                  device.variant?.panel_type,
-                                  device.variant?.display_type,
-                                  extractVariantSpecificValue(
+                                ).trim();
+                                const panelType = String(
+                                  firstNonEmpty(
+                                    device.variant?.panel_type,
+                                    device.variant?.display_type,
+                                    extractVariantSpecificValue(
+                                      device.specs?.displayType,
+                                      screenSize,
+                                    ),
                                     device.specs?.displayType,
-                                    screenSize,
+                                    device.specs?.type || "",
                                   ),
-                                  device.specs?.displayType,
-                                  device.specs?.type || "",
-                                ),
-                              ).trim();
-                              const operatingSystem = String(
-                                device.specs?.operatingSystem || "",
-                              ).trim();
-                              const tvIdentity = [
-                                screenSize,
-                                resolution,
-                                refreshRate,
-                                panelType,
-                                operatingSystem,
-                              ]
-                                .filter(Boolean)
-                                .join(" | ");
+                                ).trim();
+                                const operatingSystem = String(
+                                  device.specs?.operatingSystem || "",
+                                ).trim();
+                                const tvIdentity = [
+                                  screenSize,
+                                  resolution,
+                                  refreshRate,
+                                  panelType,
+                                  operatingSystem,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" | ");
 
-                              if (!tvIdentity) return null;
+                                if (!tvIdentity) return null;
+                                return (
+                                  <p className="mt-1 text-[12px] text-gray-600 leading-5 break-words">
+                                    {tvIdentity}
+                                  </p>
+                                );
+                              })()}
+                            </div>
+                          </div>
+
+                          <div className="mb-1">
+                            {(() => {
+                              const firstStoreUrl = (device.storePrices || [])
+                                .map((sp) =>
+                                  getStoreVisitUrl(
+                                    sp?.url,
+                                    sp?.store,
+                                    [
+                                      device.brand,
+                                      device.name || device.model || "TV",
+                                      device.specs?.screenSize,
+                                      device.specs?.resolution,
+                                    ]
+                                      .filter(Boolean)
+                                      .join(" "),
+                                  ),
+                                )
+                                .find((url) => Boolean(url));
+                              if (!device.brand) return null;
                               return (
-                                <p className="mt-1 text-[12px] text-gray-600 leading-5 break-words">
-                                  {tvIdentity}
-                                </p>
+                                <a
+                                  href={firstStoreUrl || "#"}
+                                  target={firstStoreUrl ? "_blank" : undefined}
+                                  rel={
+                                    firstStoreUrl
+                                      ? "noopener noreferrer"
+                                      : undefined
+                                  }
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (!firstStoreUrl) e.preventDefault();
+                                  }}
+                                  className={`inline-block w-full mb-1 text-[12px] font-medium leading-snug whitespace-nowrap overflow-hidden text-ellipsis ${
+                                    firstStoreUrl
+                                      ? "text-blue-700 hover:text-blue-800 hover:underline"
+                                      : "text-blue-700 cursor-default"
+                                  }`}
+                                >
+                                  {`Visit the ${device.brand} Store`}
+                                </a>
                               );
                             })()}
                           </div>
-                        </div>
 
-                        {Array.isArray(device.variants) &&
-                          device.variants.length > 0 && (
-                            <div className="mb-3">
-                              <p className="text-[11px] font-semibold text-gray-500 mb-1.5">
-                                Available Sizes
-                              </p>
-                              <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                                {device.variants.map(
-                                  (variant, variantIndex) => {
-                                    const label = firstNonEmpty(
-                                      variant?.screen_size,
-                                      variant?.size,
-                                      variant?.variant_key,
-                                    );
-                                    if (!label) return null;
-                                    const variantId = getTvVariantIdentity(
-                                      variant,
-                                      variantIndex,
-                                    );
-                                    const activeVariantId =
-                                      getTvVariantIdentity(device.variant, 0);
-                                    const isSelected =
-                                      activeVariantId === variantId;
+                          {Array.isArray(device.variants) &&
+                            device.variants.length > 0 && (
+                              <div>
+                                <p className="text-[11px] font-semibold text-gray-500 mb-1.5">
+                                  Available Sizes
+                                </p>
+                                <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                                  {device.variants.map(
+                                    (variant, variantIndex) => {
+                                      const label = firstNonEmpty(
+                                        variant?.screen_size,
+                                        variant?.size,
+                                        variant?.variant_key,
+                                      );
+                                      if (!label) return null;
+                                      const variantId = getTvVariantIdentity(
+                                        variant,
+                                        variantIndex,
+                                      );
+                                      const activeVariantId =
+                                        getTvVariantIdentity(device.variant, 0);
+                                      const isSelected =
+                                        activeVariantId === variantId;
 
-                                    return (
-                                      <button
-                                        key={`${device.id}-size-${variantId}`}
-                                        type="button"
-                                        onClick={(event) =>
-                                          handleSelectTvSize(
-                                            device,
-                                            variant,
-                                            event,
-                                          )
-                                        }
-                                        className={`shrink-0 px-2.5 py-1 rounded-full border text-[11px] font-semibold transition-colors ${
-                                          isSelected
-                                            ? "bg-purple-600 text-white border-purple-600"
-                                            : "bg-white text-gray-700 border-gray-300 hover:border-purple-300 hover:text-purple-700"
-                                        }`}
-                                      >
-                                        {label}
-                                      </button>
-                                    );
-                                  },
-                                )}
+                                      return (
+                                        <button
+                                          key={`${device.id}-size-${variantId}`}
+                                          type="button"
+                                          onClick={(event) =>
+                                            handleSelectTvSize(
+                                              device,
+                                              variant,
+                                              event,
+                                            )
+                                          }
+                                          className={`shrink-0 px-2.5 py-1 rounded-full border text-[11px] font-semibold transition-colors ${
+                                            isSelected
+                                              ? "bg-purple-600 text-white border-purple-600"
+                                              : "bg-white text-gray-700 border-gray-300 hover:border-purple-300 hover:text-purple-700"
+                                          }`}
+                                        >
+                                          {label}
+                                        </button>
+                                      );
+                                    },
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            )}
 
-                        {/* Price */}
-                        <div className="mb-3">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              {(() => {
-                                const firstStoreUrl = (device.storePrices || [])
-                                  .map((sp) =>
-                                    getStoreVisitUrl(
-                                      sp?.url,
-                                      sp?.store,
-                                      [
-                                        device.brand,
-                                        device.name || device.model || "TV",
-                                        device.specs?.screenSize,
-                                        device.specs?.resolution,
-                                      ]
-                                        .filter(Boolean)
-                                        .join(" "),
-                                    ),
-                                  )
-                                  .find((url) => Boolean(url));
-                                if (!device.brand) return null;
-                                return (
-                                  <a
-                                    href={firstStoreUrl || "#"}
-                                    target={
-                                      firstStoreUrl ? "_blank" : undefined
-                                    }
-                                    rel={
-                                      firstStoreUrl
-                                        ? "noopener noreferrer"
-                                        : undefined
-                                    }
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (!firstStoreUrl) e.preventDefault();
-                                    }}
-                                    className={`inline-block w-full mb-1 text-[12px] font-medium leading-snug whitespace-nowrap overflow-hidden text-ellipsis ${
-                                      firstStoreUrl
-                                        ? "text-blue-700 hover:text-blue-800 hover:underline"
-                                        : "text-blue-700 cursor-default"
-                                    }`}
-                                  >
-                                    {`Visit the ${device.brand} Store`}
-                                  </a>
-                                );
-                              })()}
-                              <div className="text-lg font-bold text-green-600">
-                                {device.price}
+                          {/* Price */}
+                          <div>
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="text-lg font-bold text-green-600">
+                                  {device.price}
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Expanded Details */}
-                    <div className="mt-3 sm:mt-4 md:mt-5 pt-3 sm:pt-4 md:pt-5">
-                      {/* Store Availability */}
-                      {device.storePrices && device.storePrices.length > 0 && (
-                        <div className="mb-4">
-                          <div className="flex items-center gap-2 mb-3">
-                            <h4 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
-                              <FaStore className="text-green-500" />
-                              Available At
-                            </h4>
+                      {/* Expanded Details */}
+                      <div
+                        className={
+                          showTopDivider
+                            ? "mt-3 sm:mt-4 md:mt-5 pt-3 sm:pt-4 md:pt-5 border-t border-gray-200"
+                            : "mt-0 pt-0 border-t-0"
+                        }
+                      >
+                        {/* Store Availability */}
+                        {hasStoreSection && (
+                          <div className="mb-4">
+                            <div className="flex items-center gap-2 mb-3">
+                              <h4 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
+                                <FaStore className="text-green-500" />
+                                Check Price on
+                              </h4>
+                            </div>
+                            <div className="space-y-2">
+                              {device.storePrices
+                                .slice(0, 3)
+                                .map((storePrice, i) => {
+                                  const storeObj =
+                                    storePrice.storeObj ||
+                                    (getStore
+                                      ? getStore(
+                                          storePrice.store ||
+                                            storePrice.store_name ||
+                                            storePrice.storeName ||
+                                            "",
+                                        )
+                                      : null);
+                                  const storeNameCandidate =
+                                    storePrice.store ||
+                                    storePrice.store_name ||
+                                    storePrice.storeName ||
+                                    storeObj?.name ||
+                                    "";
+                                  const logoSrcRaw =
+                                    storePrice.logo ||
+                                    (getStoreLogo
+                                      ? getStoreLogo(storeNameCandidate)
+                                      : getLogo(storeNameCandidate));
+                                  const logoSrc = isLikelyImageSrc(logoSrcRaw)
+                                    ? logoSrcRaw
+                                    : "";
+                                  const visitUrl = getStoreVisitUrl(
+                                    storePrice.url,
+                                    storePrice.store,
+                                    [
+                                      device.brand,
+                                      device.name || device.model || "TV",
+                                      device.specs?.screenSize,
+                                      device.specs?.resolution,
+                                    ]
+                                      .filter(Boolean)
+                                      .join(" "),
+                                  );
+                                  return (
+                                    <div
+                                      key={`${device.id}-store-${i}`}
+                                      className="flex items-center justify-between text-sm bg-gradient-to-br from-purple-50 to-blue-50 px-3 py-2 rounded-lg"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        {logoSrc ? (
+                                          <img
+                                            src={logoSrc}
+                                            alt={
+                                              storeObj?.name || storePrice.store
+                                            }
+                                            className="w-6 h-6 object-contain"
+                                          />
+                                        ) : (
+                                          <FaStore className="text-gray-400" />
+                                        )}
+                                        <span className="font-medium text-gray-900 capitalize">
+                                          {storePrice.store ||
+                                            storeObj?.name ||
+                                            "Online Store"}
+                                        </span>
+                                      </div>
+                                      <div className="font-bold text-green-600">
+                                        {formatPriceDisplay(storePrice.price)}
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <a
+                                          href={visitUrl || "#"}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (!visitUrl) e.preventDefault();
+                                          }}
+                                          className="text-blue-600 hover:text-blue-800 text-xs font-medium flex items-center gap-1"
+                                        >
+                                          Buy Now
+                                          <FaExternalLinkAlt className="text-xs opacity-80" />
+                                        </a>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              {device.storePrices.length > 3 && (
+                                <div className="text-center text-xs text-gray-500">
+                                  +{device.storePrices.length - 3} more stores
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <div className="space-y-2">
-                            {device.storePrices
-                              .slice(0, 3)
-                              .map((storePrice, i) => {
-                                const storeObj =
-                                  storePrice.storeObj ||
-                                  (getStore
-                                    ? getStore(
-                                        storePrice.store ||
-                                          storePrice.store_name ||
-                                          storePrice.storeName ||
-                                          "",
-                                      )
-                                    : null);
-                                const storeNameCandidate =
-                                  storePrice.store ||
-                                  storePrice.store_name ||
-                                  storePrice.storeName ||
-                                  storeObj?.name ||
-                                  "";
-                                const logoSrcRaw =
-                                  storePrice.logo ||
-                                  (getStoreLogo
-                                    ? getStoreLogo(storeNameCandidate)
-                                    : getLogo(storeNameCandidate));
-                                const logoSrc = isLikelyImageSrc(logoSrcRaw)
-                                  ? logoSrcRaw
-                                  : "";
-                                const visitUrl = getStoreVisitUrl(
-                                  storePrice.url,
-                                  storePrice.store,
-                                  [
-                                    device.brand,
-                                    device.name || device.model || "TV",
-                                    device.specs?.screenSize,
-                                    device.specs?.resolution,
-                                  ]
-                                    .filter(Boolean)
-                                    .join(" "),
-                                );
-                                return (
-                                  <div
-                                    key={`${device.id}-store-${i}`}
-                                    className="flex items-center justify-between text-sm bg-gradient-to-br from-purple-50 to-blue-50 px-3 py-2 rounded-lg"
-                                  >
-                                    <div className="flex items-center gap-2">
-                                      {logoSrc ? (
-                                        <img
-                                          src={logoSrc}
-                                          alt={
-                                            storeObj?.name || storePrice.store
-                                          }
-                                          className="w-6 h-6 object-contain"
-                                        />
-                                      ) : (
-                                        <FaStore className="text-gray-400" />
-                                      )}
-                                      <span className="font-medium text-gray-900 capitalize">
-                                        {storePrice.store ||
-                                          storeObj?.name ||
-                                          "Online Store"}
-                                      </span>
-                                    </div>
-                                    <div className="font-bold text-green-600">
-                                      {formatPriceDisplay(storePrice.price)}
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <a
-                                        href={visitUrl || "#"}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          if (!visitUrl) e.preventDefault();
-                                        }}
-                                        className="text-blue-600 hover:text-blue-800 text-xs font-medium flex items-center gap-1"
-                                      >
-                                        Buy Now
-                                        <FaExternalLinkAlt className="text-xs opacity-80" />
-                                      </a>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            {device.storePrices.length > 3 && (
-                              <div className="text-center text-xs text-gray-500">
-                                +{device.storePrices.length - 3} more stores
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* No Results State */}

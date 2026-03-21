@@ -47,6 +47,7 @@ import {
   createCollectionSchema,
   createItemListSchema,
 } from "../../utils/schemaGenerators";
+import { buildListSeoKeywords } from "../../utils/seoKeywordBuilder";
 import {
   computePopularLaptopFeatures,
   getLaptopFeatureSortValue,
@@ -1588,6 +1589,21 @@ const Laptops = () => {
         `Compare ${currentBrandObj.name} laptops with detailed specifications, latest prices, and top deals on Hooks.`,
     );
   }
+  const seoKeywords = useMemo(
+    () =>
+      buildListSeoKeywords({
+        devices: sortedVariants,
+        category: "laptops",
+        currentYear,
+        baseTerms: ["laptops", "laptop price in india", "compare laptop specs"],
+        contextTerms: [
+          filter === "new" ? "latest laptop launches" : "",
+          filter === "trending" ? "trending laptops" : "",
+          currentBrandObj?.name ? `${currentBrandObj.name} laptops` : "",
+        ],
+      }),
+    [currentYear, filter, currentBrandObj, sortedVariants],
+  );
 
   const siteOrigin =
     typeof window !== "undefined" && window.location?.origin
@@ -1663,6 +1679,7 @@ const Laptops = () => {
       <Helmet prioritizeSeoTags>
         <title>{seoTitle}</title>
         <meta name="description" content={seoDescription} />
+        <meta name="keywords" content={seoKeywords} />
 
         {/* Canonical URL - CRITICAL for SEO per route */}
         <link rel="canonical" href={listSchemaUrl} />

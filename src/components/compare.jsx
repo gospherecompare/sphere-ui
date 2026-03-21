@@ -33,6 +33,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import normalizeProduct from "../utils/normalizeProduct";
 import { Helmet } from "react-helmet-async";
 import { createWebApplicationSchema } from "../utils/schemaGenerators";
+import { buildListSeoKeywords } from "../utils/seoKeywordBuilder";
 
 const Search = FaSearch;
 const X = FaTimes;
@@ -2938,6 +2939,32 @@ const MobileCompare = () => {
       : canonicalCompareEntries.length > 0
         ? "Compare selected devices side by side with detailed specifications, prices, performance, and feature differences to choose the right one."
         : "Compare smartphones, laptops, and more with detailed specifications, prices, performance, and key features side by side to find the right device for your needs.";
+  const metaKeywords = useMemo(
+    () =>
+      buildListSeoKeywords({
+        devices: activeDevices,
+        category: "device comparison",
+        currentYear,
+        baseTerms: [
+          "device comparison",
+          "compare smartphones laptops tvs",
+          "side by side specs comparison",
+        ],
+        contextTerms: [
+          seoSelectedNames.length > 0
+            ? `${comparisonNames} comparison`
+            : `compare ${canonicalCompareEntries.length || 0} devices`,
+        ],
+        maxKeywords: 45,
+      }),
+    [
+      activeDevices,
+      currentYear,
+      seoSelectedNames.length,
+      comparisonNames,
+      canonicalCompareEntries.length,
+    ],
+  );
 
   const compareSchemaJson = useMemo(() => {
     const schema = createWebApplicationSchema({
@@ -2956,6 +2983,10 @@ const MobileCompare = () => {
     upsertMetaTag('meta[name="description"]', {
       name: "description",
       content: metaDescription,
+    });
+    upsertMetaTag('meta[name="keywords"]', {
+      name: "keywords",
+      content: metaKeywords,
     });
     upsertMetaTag('meta[property="og:title"]', {
       property: "og:title",
@@ -2982,7 +3013,7 @@ const MobileCompare = () => {
       content: canonicalCompareUrl,
     });
     upsertCanonicalLink(canonicalCompareUrl);
-  }, [canonicalCompareUrl, metaDescription, metaTitle]);
+  }, [canonicalCompareUrl, metaDescription, metaKeywords, metaTitle]);
 
   return (
     <div className="min-h-screen ">
@@ -2993,6 +3024,7 @@ const MobileCompare = () => {
           name="description"
           content={metaDescription}
         />
+        <meta key="compare-keywords" name="keywords" content={metaKeywords} />
         <link
           key="compare-canonical"
           rel="canonical"

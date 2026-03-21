@@ -5,6 +5,8 @@ import useDevice from "../../hooks/useDevice";
 import Cookies from "js-cookie";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
 import { createProductSchema } from "../../utils/schemaGenerators";
+import { Helmet } from "react-helmet-async";
+import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
 
 // Icons
 import {
@@ -1396,6 +1398,20 @@ const NetworkingDetailCard = () => {
       "",
     brand: deviceData?.brand || deviceData?.brand_name || "",
   });
+  const metaKeywords = buildDeviceSeoKeywords({
+    device: deviceData,
+    productName: deviceData?.name || deviceData?.model || "",
+    brand: deviceData?.brand || deviceData?.brand_name || "",
+    category: "networking devices",
+    currentYear: new Date().getFullYear(),
+    baseTerms: [
+      "networking devices",
+      "wifi router price in india",
+      "compare router specifications",
+      deviceData?.device_type || deviceData?.deviceType || "",
+    ],
+    maxKeywords: 45,
+  });
   const canonicalUrl = getCanonicalUrl;
   const metaImage = deviceData?.images?.[0] || deviceData?.image || null;
   const toAbsoluteUrl = (url) => {
@@ -1407,7 +1423,7 @@ const NetworkingDetailCard = () => {
     return url.startsWith("/") ? `${origin}${url}` : `${origin}/${url}`;
   };
   const ogImage = toAbsoluteUrl(metaImage);
-  const productSchemaJson = useMemo(() => {
+  const productSchemaJson = (() => {
     const name = deviceData?.name || deviceData?.model || metaTitle || "";
     if (!name) return null;
     const schema = createProductSchema({
@@ -1418,16 +1434,7 @@ const NetworkingDetailCard = () => {
       brand: deviceData?.brand || deviceData?.brand_name || undefined,
     });
     return JSON.stringify(schema);
-  }, [
-    deviceData?.name,
-    deviceData?.model,
-    deviceData?.brand,
-    deviceData?.brand_name,
-    metaTitle,
-    metaDescription,
-    ogImage,
-    canonicalUrl,
-  ]);
+  })();
 
   return (
     <div className="max-w-8xl mx-auto bg-white">
@@ -1435,6 +1442,7 @@ const NetworkingDetailCard = () => {
       <Helmet prioritizeSeoTags>
         <title>{metaTitle}</title>
         <meta name="description" content={metaDescription} />
+        <meta name="keywords" content={metaKeywords} />
         {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
         <meta property="og:type" content="product" />
         <meta property="og:title" content={metaTitle} />

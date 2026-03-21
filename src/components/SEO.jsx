@@ -70,6 +70,7 @@ const getCanonicalUrl = (customUrl, pathname) => {
 const SEO = ({
   title,
   description = "",
+  keywords = "",
   image = null,
   url = null,
   robots = "index, follow",
@@ -126,6 +127,7 @@ const SEO = ({
       {/* ===== BASIC META TAGS ===== */}
       <title>{title}</title>
       {description && <meta name="description" content={description} />}
+      {keywords ? <meta name="keywords" content={keywords} /> : null}
       <meta name="robots" content={robots} />
       <meta
         name="viewport"

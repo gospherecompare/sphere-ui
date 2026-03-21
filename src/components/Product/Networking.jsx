@@ -41,6 +41,7 @@ import {
   createCollectionSchema,
   createItemListSchema,
 } from "../../utils/schemaGenerators";
+import { buildListSeoKeywords } from "../../utils/seoKeywordBuilder";
 import useDevice from "../../hooks/useDevice";
 import Breadcrumbs from "../Breadcrumbs";
 
@@ -943,6 +944,24 @@ const Networking = () => {
   const seoDescription =
     currentBrandObj?.description ||
     "Discover routers, modems, switches, mesh systems and extenders on SmartArena.";
+  const seoKeywords = useMemo(
+    () =>
+      buildListSeoKeywords({
+        devices: sortedVariants,
+        category: "networking devices",
+        baseTerms: [
+          "networking devices",
+          "wifi router price in india",
+          "mesh wifi systems",
+          "compare routers",
+        ],
+        contextTerms: [
+          currentBrandObj?.name ? `${currentBrandObj.name} networking` : "",
+          currentBrandObj?.name ? `${currentBrandObj.name} router` : "",
+        ],
+      }),
+    [currentBrandObj, sortedVariants],
+  );
 
   const siteOrigin =
     typeof window !== "undefined" && window.location?.origin
@@ -1018,6 +1037,7 @@ const Networking = () => {
       <Helmet prioritizeSeoTags>
         <title>{seoTitle}</title>
         <meta name="description" content={seoDescription} />
+        <meta name="keywords" content={seoKeywords} />
 
         {/* Canonical URL - CRITICAL for SEO per route */}
         <link rel="canonical" href={listSchemaUrl} />

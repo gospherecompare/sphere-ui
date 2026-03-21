@@ -21,6 +21,7 @@ import {
   createCollectionSchema,
   createItemListSchema,
 } from "../../utils/schemaGenerators";
+import { buildListSeoKeywords } from "../../utils/seoKeywordBuilder";
 import {
   computePopularSmartphoneFeatures,
   SMARTPHONE_FEATURE_CATALOG,
@@ -1242,7 +1243,22 @@ const TrendingProductsHub = () => {
 
   const seoTitle = `${config.metaTitle} | Hooks`;
   const seoDescription = config.metaDescription;
-  const seoKeywords = config.metaKeywords;
+  const seoKeywords = useMemo(() => {
+    const baseKeywords = String(config.metaKeywords || "")
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean);
+    const sample = arr(visible).length ? arr(visible) : arr(products);
+    return buildListSeoKeywords({
+      devices: sample,
+      category: `${activeCategory} trending`,
+      baseTerms: baseKeywords,
+      contextTerms: [
+        `${activeCategory} trending`,
+        `trending ${activeCategory} in india`,
+      ],
+    });
+  }, [config.metaKeywords, activeCategory, visible, products]);
   const canonicalPath = `/trending/${activeCategory}`;
   const canonicalUrl = `${SITE_ORIGIN}${canonicalPath}`;
   const ogImage = first(

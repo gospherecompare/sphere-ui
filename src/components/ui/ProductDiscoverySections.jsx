@@ -17,6 +17,9 @@ const normalizeEntityType = (value) => {
   return "smartphones";
 };
 
+const supportsDiscoveryApi = (entityType) =>
+  normalizeEntityType(entityType) === "smartphones";
+
 const getEntityConfig = (entityType) => {
   const type = normalizeEntityType(entityType);
   if (type === "tvs") {
@@ -379,6 +382,13 @@ const ProductDiscoverySections = ({
   useEffect(() => {
     const pid = Number(productId);
     if (!Number.isInteger(pid) || pid <= 0) {
+      setPayload(null);
+      return;
+    }
+
+    if (!supportsDiscoveryApi(entityType)) {
+      setLoading(false);
+      setError("");
       setPayload(null);
       return;
     }
