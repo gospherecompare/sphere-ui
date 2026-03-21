@@ -803,7 +803,7 @@ const Signup = ({
                 >
                   Privacy Policy
                 </a>
-                . I understand that SmartArena will collect and process my data
+                . I understand that Hooks will collect and process my data
                 as described in these documents.
               </label>
             </div>
