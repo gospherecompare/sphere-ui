@@ -583,7 +583,7 @@ const Signup = ({
 
           <div>
             <h3 className="text-2xl font-bold text-gray-900">
-              Join SmartArena
+              Join Hooks
             </h3>
             <p className="mt-1 text-sm text-gray-500">
               Create your account to explore devices
@@ -803,7 +803,7 @@ const Signup = ({
                 >
                   Privacy Policy
                 </a>
-                . I understand that SmartArena will collect and process my data
+                . I understand that Hooks will collect and process my data
                 as described in these documents.
               </label>
             </div>
