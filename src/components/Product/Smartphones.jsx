@@ -406,13 +406,14 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       typeof allowCompareRaw === "boolean"
         ? allowCompareRaw
         : stage !== "rumored";
-    const allowSpecScore = isExplicitReleased(device) || isReleasedByDate(device)
-      ? true
-      : isSpecScoreAllowed(stage)
+    const allowSpecScore =
+      isExplicitReleased(device) || isReleasedByDate(device)
         ? true
-        : typeof allowSpecScoreRaw === "boolean"
-          ? allowSpecScoreRaw
-          : false;
+        : isSpecScoreAllowed(stage)
+          ? true
+          : typeof allowSpecScoreRaw === "boolean"
+            ? allowSpecScoreRaw
+            : false;
     const compareLimitRaw = toNumberOrNull(
       device?.compareLimit ?? device?.compare_limit,
     );
@@ -678,35 +679,35 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
               : "Buy Now"),
         };
       },
-      );
+    );
 
-      if (normalizedStores.length === 0) {
-        if (deviceStage === "released") {
-          const officialStoreUrl = getOfficialBrandStoreUrl(
-            [],
-            brandName,
-            brandWebsite,
-          );
-          return {
-            stores: [
-              {
-                id: "brand-store-fallback",
-                store: brandName || "Brand Store",
-                store_name: brandName || "Brand Store",
-                display_store_name: brandName || "Brand Store",
-                logo: normalizeAssetUrl(brandLogo || null),
-                url: officialStoreUrl || "",
-                cta_label: "Coming Soon",
-                is_prebooking: true,
-                price: fallbackPrice || null,
-              },
-            ],
-            hiddenCount: 0,
-            mode: "prebooking",
-          };
-        }
-        return { stores: [], hiddenCount: 0, mode: "none" };
+    if (normalizedStores.length === 0) {
+      if (deviceStage === "released") {
+        const officialStoreUrl = getOfficialBrandStoreUrl(
+          [],
+          brandName,
+          brandWebsite,
+        );
+        return {
+          stores: [
+            {
+              id: "brand-store-fallback",
+              store: brandName || "Brand Store",
+              store_name: brandName || "Brand Store",
+              display_store_name: brandName || "Brand Store",
+              logo: normalizeAssetUrl(brandLogo || null),
+              url: officialStoreUrl || "",
+              cta_label: "Coming Soon",
+              is_prebooking: true,
+              price: fallbackPrice || null,
+            },
+          ],
+          hiddenCount: 0,
+          mode: "prebooking",
+        };
       }
+      return { stores: [], hiddenCount: 0, mode: "none" };
+    }
 
     const hasStoreUrl = (value) => Boolean(String(value || "").trim());
     const liveStores = sortStoreRows(
@@ -728,71 +729,68 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       ? normalizedStores.filter((store) => store.is_prebooking)
       : [];
 
-      const prebookingStores = sortStoreRows(inferredPrebookingStores);
-      if (prebookingStores.length === 0) {
-        const hasOnlineStore = normalizedStores.some((store) => {
-          const name = String(
-            store?.store_name || store?.store || store?.storeName || "",
-          )
-            .trim()
-            .toLowerCase();
-          return name && name !== "variant";
-        });
-        if (deviceStage === "released" && !hasOnlineStore) {
-          const officialStoreUrl = getOfficialBrandStoreUrl(
-            normalizedStores,
-            brandName,
-            brandWebsite,
-          );
-          const inferredPrices = normalizedStores
-            .map((store) => extractNumericPrice(store?.price))
-            .filter((price) => price > 0);
-          const fallbackStorePrice =
-            fallbackPrice ||
-            (inferredPrices.length ? Math.min(...inferredPrices) : null);
-          return {
-            stores: [
-              {
-                id: "brand-store-fallback",
-                store: brandName || "Brand Store",
-                store_name: brandName || "Brand Store",
-                display_store_name: brandName || "Brand Store",
-                logo: normalizeAssetUrl(brandLogo || null),
-                url: officialStoreUrl || "",
-                cta_label: "Coming Soon",
-                is_prebooking: true,
-                price: fallbackStorePrice,
-              },
-            ],
-            hiddenCount: 0,
-            mode: "prebooking",
-          };
-        }
+    const prebookingStores = sortStoreRows(inferredPrebookingStores);
+    if (prebookingStores.length === 0) {
+      const hasOnlineStore = normalizedStores.some((store) => {
+        const name = String(
+          store?.store_name || store?.store || store?.storeName || "",
+        )
+          .trim()
+          .toLowerCase();
+        return name && name !== "variant";
+      });
+      if (deviceStage === "released" && !hasOnlineStore) {
+        const officialStoreUrl = getOfficialBrandStoreUrl(
+          normalizedStores,
+          brandName,
+          brandWebsite,
+        );
+        const inferredPrices = normalizedStores
+          .map((store) => extractNumericPrice(store?.price))
+          .filter((price) => price > 0);
+        const fallbackStorePrice =
+          fallbackPrice ||
+          (inferredPrices.length ? Math.min(...inferredPrices) : null);
         return {
-          stores: sortStoreRows(normalizedStores),
-          hiddenCount: Math.max(normalizedStores.length - 3, 0),
-          mode: "fallback",
+          stores: [
+            {
+              id: "brand-store-fallback",
+              store: brandName || "Brand Store",
+              store_name: brandName || "Brand Store",
+              display_store_name: brandName || "Brand Store",
+              logo: normalizeAssetUrl(brandLogo || null),
+              url: officialStoreUrl || "",
+              cta_label: "Coming Soon",
+              is_prebooking: true,
+              price: fallbackStorePrice,
+            },
+          ],
+          hiddenCount: 0,
+          mode: "prebooking",
         };
+      }
+      return {
+        stores: sortStoreRows(normalizedStores),
+        hiddenCount: Math.max(normalizedStores.length - 3, 0),
+        mode: "fallback",
+      };
     }
 
-      return {
-        stores: prebookingStores.map((store) => ({
-          ...store,
-          display_store_name:
-            store.display_store_name ||
-            store.store_name ||
-            brandName ||
-            "Store",
-          store: store.store || store.store_name || brandName || "Store",
-          store_name: store.store_name || store.store || brandName || "Store",
-          storeName: store.storeName || store.store_name || store.store || "",
-          logo: normalizeAssetUrl(store.logo || null),
-          cta_label: "Coming Soon",
-          is_prebooking: true,
-        })),
-        hiddenCount: Math.max(prebookingStores.length - 3, 0),
-        mode: "prebooking",
-      };
+    return {
+      stores: prebookingStores.map((store) => ({
+        ...store,
+        display_store_name:
+          store.display_store_name || store.store_name || brandName || "Store",
+        store: store.store || store.store_name || brandName || "Store",
+        store_name: store.store_name || store.store || brandName || "Store",
+        storeName: store.storeName || store.store_name || store.store || "",
+        logo: normalizeAssetUrl(store.logo || null),
+        cta_label: "Coming Soon",
+        is_prebooking: true,
+      })),
+      hiddenCount: Math.max(prebookingStores.length - 3, 0),
+      mode: "prebooking",
+    };
   };
 
   // Map API response to device format
@@ -4084,43 +4082,43 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                 {/* BannerSlot disabled (incomplete). */}
 
                 {/* Products Grid */}
-                  <div className="grid grid-cols-1 gap-4 sm:gap-5 md:gap-6 auto-rows-max">
+                <div className="grid grid-cols-1 gap-4 sm:gap-5 md:gap-6 auto-rows-max">
                   {sortedVariants.map((device, _idx) => {
-                      const devicePolicy = resolveDevicePolicy(device);
-                      const availabilityState = getAvailabilityState(
-                        device.storePrices || [],
-                        device.brand,
-                        device.brandWebsite || null,
-                        device.launchDate || null,
-                        device.brandLogo || null,
-                        device.saleStartDate || null,
-                        isUpcomingDevice(device) || device.is_prebooking === true,
-                        devicePolicy.stage,
-                        device.price,
-                      );
+                    const devicePolicy = resolveDevicePolicy(device);
+                    const availabilityState = getAvailabilityState(
+                      device.storePrices || [],
+                      device.brand,
+                      device.brandWebsite || null,
+                      device.launchDate || null,
+                      device.brandLogo || null,
+                      device.saleStartDate || null,
+                      isUpcomingDevice(device) || device.is_prebooking === true,
+                      devicePolicy.stage,
+                      device.price,
+                    );
                     const availableStoreRows = availabilityState.stores || [];
                     const shouldFilterEmptyStores = listFilter === "new";
-                      const storeRowsForDisplay = shouldFilterEmptyStores
-                        ? availableStoreRows.filter((storePrice) => {
-                            if (!storePrice) return false;
-                            const hasUrl = Boolean(
-                              String(storePrice.url || "").trim(),
+                    const storeRowsForDisplay = shouldFilterEmptyStores
+                      ? availableStoreRows.filter((storePrice) => {
+                          if (!storePrice) return false;
+                          const hasUrl = Boolean(
+                            String(storePrice.url || "").trim(),
+                          );
+                          const hasPrice =
+                            extractNumericPrice(storePrice.price) > 0;
+                          const isPrebookingRow =
+                            storePrice.is_prebooking === true ||
+                            /^(pre(book|order)|coming\s*soon)$/i.test(
+                              String(storePrice.cta_label || "").trim(),
                             );
-                            const hasPrice =
-                              extractNumericPrice(storePrice.price) > 0;
-                            const isPrebookingRow =
-                              storePrice.is_prebooking === true ||
-                              /^(pre(book|order)|coming\s*soon)$/i.test(
-                                String(storePrice.cta_label || "").trim(),
-                              );
-                            return hasUrl || hasPrice || isPrebookingRow;
-                          })
-                        : availableStoreRows;
-                      const hasStoreRows = storeRowsForDisplay.length > 0;
-                      const hasStoreSection =
-                        hasStoreRows &&
-                        (availabilityState.mode === "live" ||
-                          availabilityState.mode === "prebooking");
+                          return hasUrl || hasPrice || isPrebookingRow;
+                        })
+                      : availableStoreRows;
+                    const hasStoreRows = storeRowsForDisplay.length > 0;
+                    const hasStoreSection =
+                      hasStoreRows &&
+                      (availabilityState.mode === "live" ||
+                        availabilityState.mode === "prebooking");
                     const hiddenStoreCount =
                       storeRowsForDisplay.length !== availableStoreRows.length
                         ? Math.max(storeRowsForDisplay.length - 3, 0)
@@ -4132,12 +4130,11 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                       launchDateParsed &&
                       !Number.isNaN(launchDateParsed.getTime());
                     const showReleaseDate = !isUpcomingView && hasLaunchDate;
-                      const showTopDivider =
-                        hasStoreSection || showReleaseDate;
+                    const showTopDivider = hasStoreSection || showReleaseDate;
                     const upcomingBadge = isUpcomingView
                       ? getUpcomingBadge(device)
                       : null;
-                      const allowSpecScore = devicePolicy.allowSpecScore;
+                    const allowSpecScore = devicePolicy.allowSpecScore;
                     const deviceCompareLimit = Number.isFinite(
                       devicePolicy.compareLimit,
                     )
@@ -4419,7 +4416,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                             {/* Detailed Specifications */}
 
                             {/* Store Availability */}
-                              {hasStoreSection ? (
+                            {hasStoreSection ? (
                               <div className="mb-4">
                                 <div className="flex items-center justify-between gap-2 mb-3">
                                   <h4 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
@@ -4455,33 +4452,32 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                                         /^(pre(book|order)|coming\s*soon)$/i.test(
                                           String(ctaText).trim(),
                                         );
-                                        const brandKey = normalizeStoreKey(
-                                          device.brand || "",
-                                        );
-                                        const storeKey = normalizeStoreKey(
-                                          storeNameCandidate,
-                                        );
-                                        const isBrandStore =
-                                          brandKey &&
-                                          storeKey &&
-                                          (storeKey === brandKey ||
-                                            storeKey.includes(brandKey) ||
-                                            brandKey.includes(storeKey));
-                                        const rawLogoSrc =
-                                          storePrice.logo ||
-                                          (storeNameCandidate && !isBrandStore
-                                            ? getStoreLogo
-                                              ? getStoreLogo(storeNameCandidate)
-                                              : getLogo(storeNameCandidate)
-                                            : null) ||
-                                          (isBrandStore
-                                            ? device.brandLogo || null
-                                            : null) ||
-                                          (storeNameCandidate
-                                            ? getStoreLogo
-                                              ? getStoreLogo(storeNameCandidate)
-                                              : getLogo(storeNameCandidate)
-                                            : null);
+                                      const brandKey = normalizeStoreKey(
+                                        device.brand || "",
+                                      );
+                                      const storeKey =
+                                        normalizeStoreKey(storeNameCandidate);
+                                      const isBrandStore =
+                                        brandKey &&
+                                        storeKey &&
+                                        (storeKey === brandKey ||
+                                          storeKey.includes(brandKey) ||
+                                          brandKey.includes(storeKey));
+                                      const rawLogoSrc =
+                                        storePrice.logo ||
+                                        (storeNameCandidate && !isBrandStore
+                                          ? getStoreLogo
+                                            ? getStoreLogo(storeNameCandidate)
+                                            : getLogo(storeNameCandidate)
+                                          : null) ||
+                                        (isBrandStore
+                                          ? device.brandLogo || null
+                                          : null) ||
+                                        (storeNameCandidate
+                                          ? getStoreLogo
+                                            ? getStoreLogo(storeNameCandidate)
+                                            : getLogo(storeNameCandidate)
+                                          : null);
                                       const logoSrc =
                                         normalizeAssetUrl(rawLogoSrc);
 
@@ -4494,7 +4490,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                                         >
                                           <div className="flex items-center gap-2">
                                             {logoSrc ? (
-                                              <div className="h-7 w-7 shrink-0 rounded-md border border-slate-100 bg-white flex items-center justify-center p-1">
+                                              <div className="h-7 w-7 shrink-0 rounded-lg flex items-center justify-center p-1">
                                                 <img
                                                   src={logoSrc}
                                                   alt={
@@ -4514,15 +4510,15 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                                                 "Online Store"}
                                             </span>
                                           </div>
-                                            {extractNumericPrice(
-                                              storePrice.price,
-                                            ) > 0 ? (
-                                              <div className="font-bold text-green-600">
-                                                {formatPriceDisplay(
-                                                  storePrice.price,
-                                                )}
-                                              </div>
-                                            ) : null}
+                                          {extractNumericPrice(
+                                            storePrice.price,
+                                          ) > 0 ? (
+                                            <div className="font-bold text-green-600">
+                                              {formatPriceDisplay(
+                                                storePrice.price,
+                                              )}
+                                            </div>
+                                          ) : null}
                                           <div className="flex items-center gap-2">
                                             {storePrice.url ? (
                                               <a

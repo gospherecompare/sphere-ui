@@ -26,3 +26,4 @@ dist-ssr
 # Blog files (local-only)
 src/components/Static/Blogs.jsx
 src/components/Static/BlogDetail.jsx
+src/components/PopularComparisonsPage.jsx

@@ -10,6 +10,7 @@ import Laptops from "./components/Product/Laptops";
 import Networking from "./components/Product/Networking";
 import TVs from "./components/Product/TVs";
 import TrendingProductsHub from "./components/Product/TrendingProductsHub";
+import PopularComparisonsPage from "./components/PopularComparisonsPage";
 import DeviceComparison from "./components/compare";
 import Breadcrumbs from "./components/Breadcrumbs";
 // BannerSlot disabled until completed.
@@ -424,7 +425,7 @@ const resolveSeoMeta = (pathname) => {
 
 const RouteSeoFallback = () => {
   const { pathname } = useLocation();
-  
+
   // Initialize all hooks before any conditional returns
   const seo = resolveSeoMeta(pathname);
   const canonicalUrl = `${SITE_ORIGIN}${seo.canonicalPath}`;
@@ -440,6 +441,7 @@ const RouteSeoFallback = () => {
 
   // Skip product pages - let component Helmet handle SEO
   if (pathname.startsWith("/compare")) return null;
+  if (pathname.startsWith("/popular-comparisons")) return null;
   if (pathname.startsWith("/smartphones")) return null;
   if (pathname.startsWith("/laptops")) return null;
   if (pathname.startsWith("/tvs")) return null;
@@ -659,6 +661,10 @@ function App() {
           {/* Comparison */}
           <Route path="/compare/:compareSlug" element={<DeviceComparison />} />
           <Route path="/compare" element={<DeviceComparison />} />
+          <Route
+            path="/popular-comparisons"
+            element={<PopularComparisonsPage />}
+          />
 
           {/* Placeholder routes for footer links (can be implemented later) */}
           <Route path="/about" element={<About />} />
