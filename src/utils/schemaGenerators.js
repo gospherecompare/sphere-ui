@@ -39,6 +39,15 @@ export const createProductSchema = ({
   sku = null,
   mpn = null,
 } = {}) => {
+  const normalizedPrice = (() => {
+    if (price == null || price === "") return null;
+    if (typeof price === "number" && Number.isFinite(price)) {
+      return String(price);
+    }
+    const cleaned = String(price).replace(/[^\d.]/g, "").trim();
+    return cleaned || null;
+  })();
+
   const schema = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -58,10 +67,10 @@ export const createProductSchema = ({
     };
   }
 
-  if (price) {
+  if (normalizedPrice) {
     schema.offers = {
       "@type": "Offer",
-      price: String(price),
+      price: normalizedPrice,
       priceCurrency: priceCurrency,
       availability: `https://schema.org/${availability}`,
       url: url || SITE_ORIGIN,

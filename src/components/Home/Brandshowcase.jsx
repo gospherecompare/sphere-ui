@@ -1,11 +1,6 @@
 import { Link } from "react-router-dom";
 import React, { useEffect, useState } from "react";
-import {
-  FaExchangeAlt,
-  FaArrowRight,
-  FaMobileAlt,
-  FaChartLine,
-} from "react-icons/fa";
+import { FaExchangeAlt, FaArrowRight, FaMobileAlt } from "react-icons/fa";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
 
 const PopularComparisons = ({
@@ -49,159 +44,146 @@ const PopularComparisons = ({
 
   return (
     <div
-      className={`px-4 lg:px-4 mx-auto bg-white max-w-6xl w-full m-0 overflow-hidden pt-8 sm:pt-12 pb-6 sm:pb-10 transition-all duration-700 ${
+      className={`px-4 lg:px-4 mx-auto bg-white max-w-4xl w-full m-0 overflow-hidden pt-5 sm:pt-10 transition-all duration-700 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
-      } ${className}`}
+      } ${isFlat && ""} ${className}`}
     >
-      {/* Header Section - Enhanced */}
-      <div className="mb-8 px-2">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-3">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg">
-                <FaChartLine className="text-lg text-blue-600" />
-              </div>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 leading-tight">
-                Top{" "}
-                <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent">
-                  Gadget Comparisons
-                </span>
-              </h2>
-            </div>
-            <p className="text-sm sm:text-base text-gray-600 leading-relaxed ml-11">
-              Explore the most compared smartphones, laptops, appliances, and
-              networking devices. Find the perfect match for your needs.
-            </p>
-          </div>
-
+      {/* Header Section */}
+      <div className="mb-5">
+        <div className="flex items-center gap-2 mb-2">
+          <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 leading-tight">
+            Top{" "}
+            <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent">
+              Gadget Comparisons
+            </span>
+          </h2>
+        </div>
+        <p className="text-xs sm:text-sm text-gray-600 leading-snug">
+          Compare top smartphones, laptops, appliances, and networking devices
+          side by side
+        </p>
+        <div>
           <Link
             to="/popular-comparisons"
-            className="group inline-flex shrink-0 items-center gap-2 rounded-full border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md"
-            aria-label="View all popular comparisons"
+            className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors"
           >
-            View All
-            <FaArrowRight className="text-xs transition-transform duration-300 group-hover:translate-x-1" />
+            View All Comparisons
+            <FaArrowRight className="h-3 w-3" />
           </Link>
         </div>
       </div>
 
-      {/* Comparisons Row - Enhanced */}
-      <div className="flex overflow-x-auto no-scrollbar hide-scrollbar gap-4 sm:gap-5 pb-6 px-2">
+      {/* Comparisons Row */}
+      <div className="flex overflow-x-auto no-scrollbar hide-scrollbar gap-3 sm:gap-3 lg:gap-4 pb-6">
         {data.slice(0, 24).map((item, index) => (
           <Link
             key={`${item.left_id}-${item.right_id}-${index}`}
             to={`/compare?devices=${item.left_id}:0,${item.right_id}:0`}
-            className={`group flex-shrink-0 transition-all duration-500 ${
+            className={`group w-[320px] sm:w-[360px] md:w-[420px] shrink-0 transition-all duration-500 ${
               isLoaded ? "opacity-100 " : "opacity-0"
             }`}
             style={{ transitionDelay: `${index * 40}ms` }}
           >
-            {/* Comparison Card - Professional Design */}
+            {/* Comparison Card */}
             <div
-              className={`relative h-full bg-white border border-gray-200 hover:border-blue-300 p-4 sm:p-5 transition-all duration-300 hover:shadow-lg hover:shadow-blue-100 w-[280px] sm:w-[320px] md:w-[360px] rounded-xl overflow-hidden group-hover:-translate-y-1 ${
-                isFlat ? "" : ""
+              className={`relative bg-white border border-gray-100 p-2 sm:p-1 transition-all duration-300  ${
+                isFlat ? "" : "rounded-md"
               }`}
             >
-              {/* Background Gradient Accent */}
-              <div className="absolute top-0 right-0 h-32 w-32 bg-gradient-to-bl from-blue-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-bl-3xl"></div>
-
-              {/* Devices Row - Enhanced */}
-              <div className="flex flex-col gap-4 relative z-10">
-                {/* Left Device - Professional */}
-                <div className="flex items-start gap-3">
-                  <div className="h-14 w-14 shrink-0 overflow-hidden p-2 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 group-hover:border-blue-300 group-hover:shadow-md transition-all duration-300 flex items-center justify-center">
-                    {item.left_image ? (
-                      <img
-                        src={item.left_image}
-                        alt={item.left_name}
-                        className="h-full w-full object-contain"
-                        loading="lazy"
-                        onError={(e) => {
-                          e.currentTarget.style.display = "none";
-                        }}
-                      />
-                    ) : (
-                      <FaMobileAlt className="h-5 w-5 text-gray-400" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-0.5">
-                      Device
-                    </p>
-                    <h6 className="text-sm sm:text-base font-bold text-gray-900 line-clamp-2 leading-tight hover:text-blue-600 transition-colors">
+              {/* Devices Row */}
+              <div className="flex items-center justify-between">
+                {/* Left Device */}
+                <div className="flex-1 pr-2 sm:pr-4">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <div
+                      className={`h-10 w-10 sm:h-10 sm:w-10 shrink-0 overflow-hidden p-0.5 sm:p-1 ${
+                        isFlat ? "" : "rounded-full"
+                      }`}
+                    >
+                      {item.left_image ? (
+                        <img
+                          src={item.left_image}
+                          alt={item.left_name}
+                          className="h-full w-full object-contain bg-gray-100 p-1"
+                          loading="lazy"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                          }}
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-gray-400">
+                          <FaMobileAlt className="h-3 w-3 sm:h-4 sm:w-4" />
+                        </div>
+                      )}
+                    </div>
+                    <h6 className="text-[10px] sm:text-xs md:text-sm font-semibold text-gray-900 truncate transition-colors line-clamp-2">
                       {item.left_name}
                     </h6>
                   </div>
                 </div>
 
-                {/* VS Badge - Professional */}
-                <div className="flex items-center justify-center">
-                  <div className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xs font-bold shadow-md group-hover:shadow-lg transition-shadow">
+                {/* VS Badge */}
+                <div className="relative">
+                  <div
+                    className={`absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-[10px] font-bold bg-gray-100 text-purple-600 px-2 py-0.5 ${
+                      isFlat ? "" : "rounded-full"
+                    }`}
+                  >
                     VS
                   </div>
                 </div>
 
-                {/* Right Device - Professional */}
-                <div className="flex items-start gap-3">
-                  <div className="h-14 w-14 shrink-0 overflow-hidden p-2 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 group-hover:border-blue-300 group-hover:shadow-md transition-all duration-300 flex items-center justify-center order-2">
-                    {item.right_image ? (
-                      <img
-                        src={item.right_image}
-                        alt={item.right_name}
-                        className="h-full w-full object-contain"
-                        loading="lazy"
-                        onError={(e) => {
-                          e.currentTarget.style.display = "none";
-                        }}
-                      />
-                    ) : (
-                      <FaMobileAlt className="h-5 w-5 text-gray-400" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0 order-1">
-                    <p className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-0.5">
-                      Compared With
-                    </p>
-                    <h6 className="text-sm sm:text-base font-bold text-gray-900 line-clamp-2 leading-tight hover:text-blue-600 transition-colors">
+                {/* Right Device */}
+                <div className="flex-1 pl-2 sm:pl-4">
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-row-reverse">
+                    <div
+                      className={`h-10 w-10 sm:h-10 sm:w-10 shrink-0 overflow-hidden p-0.5 sm:p-1 ${
+                        isFlat ? "" : "rounded-full"
+                      }`}
+                    >
+                      {item.right_image ? (
+                        <img
+                          src={item.right_image}
+                          alt={item.right_name}
+                          className="h-full w-full object-contain bg-gray-100 p-1"
+                          loading="lazy"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                          }}
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-gray-400">
+                          <FaMobileAlt className="h-3 w-3 sm:h-4 sm:w-4" />
+                        </div>
+                      )}
+                    </div>
+                    <h6 className="text-[11px] sm:text-sm font-semibold text-gray-900 truncate text-right">
                       {item.right_name}
                     </h6>
                   </div>
                 </div>
               </div>
 
-              {/* CTA Footer - Professional */}
-              <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between group/btn">
-                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  {item.compare_count > 0 &&
-                    `${item.compare_count.toLocaleString()} imports`}
-                </span>
-                <FaArrowRight className="text-gray-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all duration-300 text-sm" />
-              </div>
+              {/* Comparison Stats */}
+
+              {/* Comparison Visual Indicator */}
             </div>
           </Link>
         ))}
       </div>
 
-      {/* Empty State - Professional */}
+      {/* Empty State */}
       {data.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-12 px-4">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-50 to-purple-50 mb-4 border border-blue-200">
-            <FaExchangeAlt className="text-blue-600 text-2xl" />
+        <div className="text-center py-8 px-2">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-50 mb-3">
+            <FaExchangeAlt className="text-blue-500 text-lg" />
           </div>
-          <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">
-            No Comparisons Available Yet
-          </h3>
-          <p className="text-gray-600 text-sm text-center max-w-sm mb-6">
-            Be the first to compare devices! Explore and contrast the latest
-            smartphones, laptops, and gadgets.
+          <p className="text-gray-600 font-medium text-sm">
+            No comparisons available yet
           </p>
-          <Link
-            to="/compare"
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg hover:shadow-blue-200 transition-all duration-300 hover:-translate-y-0.5"
-          >
-            Start Comparing
-            <FaArrowRight className="text-sm" />
-          </Link>
+          <p className="text-gray-500 text-xs mt-1">
+            Be the first to compare devices!
+          </p>
         </div>
       )}
     </div>

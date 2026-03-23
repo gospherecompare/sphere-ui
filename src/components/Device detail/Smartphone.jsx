@@ -3587,6 +3587,37 @@ Price: ${price}
     ? mobileData.images[0]
     : null;
   const ogImage = toAbsoluteUrl(primaryImage);
+  const schemaPrice = useMemo(
+    () =>
+      currentVariant?.base_price ??
+      currentVariant?.price ??
+      mobileData?.base_price ??
+      mobileData?.price ??
+      null,
+    [currentVariant, mobileData],
+  );
+  const schemaRatingValue = useMemo(() => {
+    const value =
+      mobileData?.rating ??
+      mobileData?.avg_rating ??
+      mobileData?.average_rating ??
+      mobileData?.user_rating ??
+      null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }, [mobileData]);
+  const schemaRatingCount = useMemo(() => {
+    const value =
+      mobileData?.rating_count ??
+      mobileData?.ratings_count ??
+      mobileData?.review_count ??
+      mobileData?.reviews_count ??
+      mobileData?.user_rating_count ??
+      mobileData?.total_ratings ??
+      null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }, [mobileData]);
   const productSchema = useMemo(() => {
     const name = metaName || metaTitleBase || metaTitle || "";
     if (!name) return null;
@@ -3594,8 +3625,25 @@ Price: ${price}
       name,
       description: metaDescription,
       image: ogImage || undefined,
+      price: schemaPrice ?? undefined,
+      availability: mapAvailabilityFromStatus(
+        launchStatus ||
+          mobileData?.availability ||
+          mobileData?.status ||
+          mobileData?.badge ||
+          "",
+      ),
       url: canonicalUrl,
       brand: metaBrand || undefined,
+      rating: schemaRatingValue ?? undefined,
+      ratingCount: schemaRatingCount ?? undefined,
+      sku:
+        currentVariant?.variant_id ??
+        currentVariant?.id ??
+        mobileData?.product_id ??
+        mobileData?.id ??
+        undefined,
+      mpn: mobileData?.model || mobileData?.name || undefined,
     });
   }, [
     metaName,
@@ -3603,8 +3651,14 @@ Price: ${price}
     metaTitle,
     metaDescription,
     ogImage,
+    schemaPrice,
+    launchStatus,
+    mobileData,
     canonicalUrl,
     metaBrand,
+    schemaRatingValue,
+    schemaRatingCount,
+    currentVariant,
   ]);
   const metaKeywords = useMemo(
     () =>
