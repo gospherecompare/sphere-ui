@@ -33,17 +33,6 @@ const toReadableTitle = (text) => {
     .join(" ");
 };
 
-const cleanDocumentTitle = (value) => {
-  let title = String(value || "").trim();
-  if (!title) return "";
-  // Remove date suffix used in detail pages: [dd/mm/yyyy]
-  title = title.replace(/\s*\[\d{2}\/\d{2}\/\d{4}\]\s*$/i, "");
-  // Remove optional site suffix if present
-  title = title.replace(/\s+\|\s+hooks\s*$/i, "");
-  if (/^details$/i.test(title)) return "";
-  return title;
-};
-
 const toProductLabel = (value) => {
   let text = String(value || "").replace(/\s+/g, " ").trim();
   if (!text) return "";
@@ -52,13 +41,6 @@ const toProductLabel = (value) => {
   // Product headings often append specs with " - " or " | ".
   if (text.includes(" - ")) text = text.split(" - ")[0].trim();
   if (text.includes(" | ")) text = text.split(" | ")[0].trim();
-  if (/^details$/i.test(text)) return "";
-  return text;
-};
-
-const cleanHeadingText = (value) => {
-  const text = String(value || "").replace(/\s+/g, " ").trim();
-  if (!text) return "";
   if (/^details$/i.test(text)) return "";
   return text;
 };
@@ -90,6 +72,9 @@ const renderSlugBreadcrumb = ({ match }) =>
       "Details",
   );
 
+const renderFilterBreadcrumb = ({ match }) =>
+  slugToTitle((match && match.params && match.params.filterSlug) || "Filter");
+
 const getLabelText = (label) => {
   if (typeof label === "string" || typeof label === "number") {
     return String(label);
@@ -105,7 +90,7 @@ const getLabelText = (label) => {
 
 const routes = [
   { path: "/", breadcrumb: "Home" },
-  { path: "/trending", breadcrumb: "Products" },
+  { path: "/trending", breadcrumb: "Trending" },
   {
     path: "/trending/:category",
     breadcrumb: ({ match }) => {
@@ -127,6 +112,11 @@ const routes = [
   { path: "/networking", breadcrumb: "Networking" },
   { path: "/tvs", breadcrumb: "TVs" },
   { path: "/appliances", breadcrumb: "TVs" },
+  { path: "/smartphones/filter", breadcrumb: null },
+  {
+    path: "/smartphones/filter/:filterSlug",
+    breadcrumb: renderFilterBreadcrumb,
+  },
   {
     path: "/smartphones/:slug",
     breadcrumb: renderSlugBreadcrumb,
@@ -257,6 +247,19 @@ export default function Breadcrumbs() {
         ? bc.breadcrumb(bc.match)
         : bc.breadcrumb;
     const label = getLabelText(rawLabel).toLowerCase();
+    const crumbPath = String(bc.match?.pathname || "").toLowerCase();
+    const currentPath = String(location.pathname || "").toLowerCase();
+
+    if (
+      label === "filter" &&
+      /\/(smartphones|laptops|tvs|appliances|networking)\/filter(\/|$)/.test(
+        currentPath,
+      ) &&
+      /\/filter(\/|$)/.test(crumbPath || currentPath)
+    ) {
+      return false;
+    }
+
     if (label !== "details") return true;
     const next = arr[idx + 1];
     if (!next) return true;

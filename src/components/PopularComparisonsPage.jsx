@@ -223,7 +223,9 @@ const PopularComparisonsPage = () => {
           `${item?.left_name || ""} vs ${item?.right_name || ""}`,
         ];
         return haystacks.some((value) =>
-          String(value || "").toLowerCase().includes(normalizedSearchQuery),
+          String(value || "")
+            .toLowerCase()
+            .includes(normalizedSearchQuery),
         );
       });
     }
@@ -453,9 +455,7 @@ const PopularComparisonsPage = () => {
                       : "bg-white text-gray-700 border-gray-200 hover:border-indigo-300 hover:text-indigo-700 hover:shadow-md"
                   }`}
                 >
-                  <span
-                    className={isActive ? "text-white" : "text-indigo-600"}
-                  >
+                  <span className={isActive ? "text-white" : "text-indigo-600"}>
                     <Icon className="text-base" />
                   </span>
                   <span>{chip.label}</span>
@@ -582,9 +582,7 @@ const PopularComparisonsPage = () => {
                       <span className="text-sm font-medium text-purple-800">
                         Filters are active
                       </span>
-                      <p className="text-xs text-purple-700">
-                        {showingLabel}
-                      </p>
+                      <p className="text-xs text-purple-700">{showingLabel}</p>
                     </div>
                   </div>
                   <button
@@ -689,7 +687,7 @@ const PopularComparisonsPage = () => {
                     }`}
                     style={{ transitionDelay: `${index * 50}ms` }}
                   >
-                    <div className="h-full p-4 sm:p-2 bg-white border border-gray-50 rounded-sm md:hover:border-indigo-300 md:hover:shadow-lg transition-all duration-300 md:hover:scale-105">
+                    <div className="h-full p-4 sm:p-2 bg-white rounded-sm  transition-all duration-300 md:hover:scale-105">
                       {/* Comparison Count Badge */}
 
                       {/* Device Comparison */}
@@ -701,7 +699,7 @@ const PopularComparisonsPage = () => {
                               <img
                                 src={item.left_image}
                                 alt={item.left_name}
-                                className="w-full h-full object-contain bg-gradient-to-br from-gray-50 to-gray-100 rounded-md p-1 transition-transform duration-300"
+                                className="shadow-md w-full h-full object-contain bg-gradient-to-br from-gray-50 to-gray-100 rounded-md p-1 transition-transform duration-300"
                                 loading="lazy"
                               />
                             ) : (
@@ -737,7 +735,7 @@ const PopularComparisonsPage = () => {
                               <img
                                 src={item.right_image}
                                 alt={item.right_name}
-                                className="w-full h-full object-contain bg-gradient-to-br from-gray-50 to-gray-100 rounded-md p-1 transition-transform duration-300"
+                                className="w-full h-full shadow-md object-contain bg-gradient-to-br from-gray-50 to-gray-100 rounded-md p-1 transition-transform duration-300"
                                 loading="lazy"
                               />
                             ) : (
