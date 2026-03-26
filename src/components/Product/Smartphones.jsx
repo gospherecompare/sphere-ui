@@ -371,26 +371,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const isSpecScoreAllowed = (stage) =>
     stage === "released" || stage === "available";
 
-  const isExplicitReleased = (device) => {
-    if (!device) return false;
-    const status = normalizeLaunchStatus(
-      device.launch_status_override ||
-        device.launchStatusOverride ||
-        device.launch_status ||
-        device.launchStatus ||
-        device.status ||
-        device.availability ||
-        device.badge,
-    );
-    return status === "released" || status === "available";
-  };
-
-  const isReleasedByDate = (device) => {
-    const launch = parseDateValue(device?.launchDate || device?.launch_date);
-    if (!launch || Number.isNaN(launch.getTime())) return false;
-    return launch <= new Date();
-  };
-
   const toNumberOrNull = (value) => {
     const num = Number(value);
     return Number.isFinite(num) ? num : null;
@@ -400,20 +380,11 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     const stage = resolveLaunchStage(device);
     const allowCompareRaw =
       device?.allowCompare ?? device?.allow_compare ?? null;
-    const allowSpecScoreRaw =
-      device?.allowSpecScore ?? device?.allow_spec_score ?? null;
     const allowCompare =
       typeof allowCompareRaw === "boolean"
         ? allowCompareRaw
         : stage !== "rumored";
-    const allowSpecScore =
-      isExplicitReleased(device) || isReleasedByDate(device)
-        ? true
-        : isSpecScoreAllowed(stage)
-          ? true
-          : typeof allowSpecScoreRaw === "boolean"
-            ? allowSpecScoreRaw
-            : false;
+    const allowSpecScore = isSpecScoreAllowed(stage);
     const compareLimitRaw = toNumberOrNull(
       device?.compareLimit ?? device?.compare_limit,
     );
@@ -1557,6 +1528,12 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       field_profile: profileResult,
     };
     baseDevice.launchStatus = resolveLaunchStage(baseDevice);
+    if (!isSpecScoreAllowed(baseDevice.launchStatus)) {
+      baseDevice.allowSpecScore = false;
+      baseDevice.spec_score = null;
+      baseDevice.overall_score = null;
+      baseDevice.overall_score_display = null;
+    }
     return baseDevice;
   };
 

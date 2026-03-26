@@ -525,7 +525,7 @@ function App() {
   return (
     <Router>
       <RouteSeoFallback />
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-blue-100">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-50">
         <Header />
         <div className="">
           <div className="mx-auto max-w-4xl w-full overflow-hidden mt-3  px-4 sm:px-0 transition-all duration-700">

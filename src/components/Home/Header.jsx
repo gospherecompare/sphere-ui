@@ -99,6 +99,37 @@ import {
   FaBriefcase,
 } from "react-icons/fa";
 
+const BrandIdentity = ({ variant = "desktop", inverse = false }) => {
+  const isDesktop = variant === "desktop";
+  const isMobile = variant === "mobile";
+
+  const iconClass = isDesktop
+    ? "h-10 w-10 lg:h-11 lg:w-11"
+    : isMobile
+      ? "h-8 w-8 sm:h-9 sm:w-9"
+      : "h-8 w-8";
+  const brandClass = isDesktop
+    ? "text-[24px] lg:text-[26px]"
+    : isMobile
+      ? "text-[18px] sm:text-[20px]"
+      : "text-[18px]";
+  const wrapperClass = isDesktop ? "gap-3" : "gap-2.5";
+  const brandTone = inverse
+    ? "text-white"
+    : "text-transparent bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text";
+
+  return (
+    <span className={`flex items-center min-w-0 ${wrapperClass}`}>
+      <img src="/favicon.svg" alt="Hooks" className={`block ${iconClass}`} />
+      <span
+        className={`condiment-regular ${brandClass} ${brandTone} leading-[1.02] pt-1`}
+      >
+        Hooks
+      </span>
+    </span>
+  );
+};
+
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState(null);
@@ -1844,14 +1875,7 @@ const Header = () => {
         <div className="flex items-center justify-between px-4 py-3 gap-3">
           {/* Logo (mobile) */}
           <Link to="/" className="flex items-center min-w-0 gap-2">
-            <img
-              src="/favicon.svg"
-              alt="Hooks"
-              className="block h-8 w-8 text-gray-900 sm:h-9 sm:w-9"
-            />
-            <span className="condiment-regular text-[18px] leading-none tracking-wide text-transparent bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text sm:text-[20px]">
-              Hooks
-            </span>
+            <BrandIdentity variant="mobile" />
           </Link>
 
           {/* Right Icons: Compare + Menu */}
@@ -1908,14 +1932,7 @@ const Header = () => {
           <div className="flex items-center justify-between gap-2 sm:gap-8">
             {/* Logo */}
             <Link to="/" className="flex items-center flex-shrink-0 gap-2">
-              <img
-                src="/favicon.svg"
-                alt="Hooks"
-                className="block h-9 w-9 text-gray-900 lg:h-10 lg:w-10"
-              />
-              <span className="condiment-regular text-[26px] leading-none tracking-wide text-transparent bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text lg:text-[24px]">
-                Hooks
-              </span>
+              <BrandIdentity variant="desktop" />
             </Link>
 
             {/* Desktop Search Bar - Professional Style */}
@@ -2248,16 +2265,7 @@ const Header = () => {
                         className="rounded-md p-1 hover:bg-white/15"
                         aria-label="Go to home"
                       >
-                        <div className="flex items-center gap-2">
-                          <img
-                            src="/favicon.svg"
-                            alt="Hooks"
-                            className="h-8 w-8"
-                          />
-                          <span className="condiment-regular text-[18px] leading-none tracking-wide text-white">
-                            Hooks
-                          </span>
-                        </div>
+                        <BrandIdentity variant="drawer" inverse />
                       </button>
                       <button
                         type="button"

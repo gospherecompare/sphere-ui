@@ -100,7 +100,9 @@ const formatScoreValue = (value) => {
   return `${Number(value).toFixed(1)}%`;
 };
 
-const SpecScoreBadge = ({
+const HiddenScoreBadge = () => null;
+
+const BaseSpecScoreBadge = ({
   score,
   displayScore = null,
   size = 40,
@@ -390,23 +392,8 @@ const MobileDetailCard = () => {
     return 10;
   };
 
-  const isSpecScoreAllowed = (stage, device = null) => {
-    const explicit = normalizeLaunchStatus(
-      device?.launch_status_override ||
-        device?.launchStatusOverride ||
-        device?.launch_status ||
-        device?.launchStatus ||
-        device?.status ||
-        device?.availability ||
-        device?.badge,
-    );
-    if (explicit === "released" || explicit === "available") return true;
-    const launch = normalizeDateLikeValue(
-      device?.launch_date || device?.launchDate,
-    );
-    if (launch && launch <= getIndiaDateOnly()) return true;
-    return stage === "released" || stage === "available";
-  };
+  const isSpecScoreAllowed = (stage) =>
+    stage === "released" || stage === "available";
 
   const getSaleStartDateFromDevice = (device) => {
     if (!device) return null;
@@ -848,7 +835,25 @@ const MobileDetailCard = () => {
       deviceFieldProfiles,
     );
     out.field_profile = profileResult;
-    if (
+    const canShowSpecScore = isSpecScoreAllowed(getDeviceLaunchStatus(out));
+    if (!canShowSpecScore) {
+      out.spec_score = null;
+      out.specScore = null;
+      out.spec_score_v2 = null;
+      out.specScoreV2 = null;
+      out.spec_score_display = null;
+      out.specScoreDisplay = null;
+      out.spec_score_v2_display_80_98 = null;
+      out.specScoreV2Display8098 = null;
+      out.overall_score = null;
+      out.overallScore = null;
+      out.overall_score_v2 = null;
+      out.overallScoreV2 = null;
+      out.overall_score_display = null;
+      out.overallScoreDisplay = null;
+      out.overall_score_v2_display_80_98 = null;
+      out.overallScoreV2Display8098 = null;
+    } else if (
       out.spec_score == null &&
       out.overall_score == null &&
       out.hook_score == null
@@ -874,8 +879,6 @@ const MobileDetailCard = () => {
   const serverPolicy = useMemo(() => {
     const allowCompareRaw =
       mobileData?.allowCompare ?? mobileData?.allow_compare ?? null;
-    const allowSpecScoreRaw =
-      mobileData?.allowSpecScore ?? mobileData?.allow_spec_score ?? null;
     const allowCompetitorsRaw =
       mobileData?.allowCompetitors ?? mobileData?.allow_competitors ?? null;
     const compareLimitRaw = Number(
@@ -888,8 +891,6 @@ const MobileDetailCard = () => {
     return {
       allowCompare:
         typeof allowCompareRaw === "boolean" ? allowCompareRaw : null,
-      allowSpecScore:
-        typeof allowSpecScoreRaw === "boolean" ? allowSpecScoreRaw : null,
       allowCompetitors:
         typeof allowCompetitorsRaw === "boolean" ? allowCompetitorsRaw : null,
       compareLimit: Number.isFinite(compareLimitRaw) ? compareLimitRaw : null,
@@ -938,11 +939,13 @@ const MobileDetailCard = () => {
       return serverPolicy.competitorLimit;
     return getCompetitorLimitForStage(launchStatus);
   }, [launchStatus, serverPolicy]);
-  const allowSpecScore = useMemo(() => {
-    if (typeof serverPolicy.allowSpecScore === "boolean")
-      return serverPolicy.allowSpecScore;
-    return isSpecScoreAllowed(launchStatus, mobileData);
-  }, [launchStatus, serverPolicy]);
+  const allowSpecScore = useMemo(
+    () => isSpecScoreAllowed(launchStatus),
+    [launchStatus],
+  );
+  const SpecScoreBadge = allowSpecScore
+    ? BaseSpecScoreBadge
+    : HiddenScoreBadge;
   const pickScore100 = useCallback((...values) => {
     for (const value of values) {
       const normalized = normalizeScore100(value);
@@ -1181,6 +1184,7 @@ const MobileDetailCard = () => {
   );
   const getSectionScoreDisplay = useCallback(
     (key) => {
+      if (!allowSpecScore) return null;
       if (!key || key === "overall") {
         return resolveSmartphoneBadgeScore(mobileData);
       }
@@ -1189,7 +1193,7 @@ const MobileDetailCard = () => {
       );
       return matched?.score ?? scoreSummary.overall;
     },
-    [mobileData, scoreSummary],
+    [allowSpecScore, mobileData, scoreSummary],
   );
 
   useTitle({

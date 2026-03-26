@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { FaChevronRight } from "react-icons/fa";
+import { FaBolt, FaChevronRight, FaFire, FaStore, FaTag } from "react-icons/fa";
 
 const API_BASE = (
   import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in"
@@ -133,14 +133,14 @@ const RowVisual = ({ src = "", label = "" }) => {
         src={imageSrc}
         alt={label || "Item"}
         loading="lazy"
-        className="h-8 w-8 shrink-0 rounded-sm bg-slate-100 object-contain p-0.5"
+        className="h-10 w-10 shrink-0 rounded-md bg-gray-50 object-contain p-1 shadow-sm"
         onError={() => setFailed(true)}
       />
     );
   }
 
   return (
-    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-slate-100 text-xs font-semibold uppercase text-slate-500">
+    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white text-xs font-semibold uppercase text-slate-500 shadow-sm">
       {initial}
     </span>
   );
@@ -152,13 +152,13 @@ const BrandLogo = ({ src = "", label = "" }) => {
   const initial = normalizeText(label).charAt(0).toUpperCase() || "?";
 
   return (
-    <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100">
+    <span className="flex h-14 w-14 items-center justify-center rounded-md bg-gray-50 shadow-md">
       {imageSrc && !failed ? (
         <img
           src={imageSrc}
           alt={label || "Brand"}
           loading="lazy"
-          className="h-8 w-8 object-contain"
+          className="h-9 w-9 object-contain"
           onError={() => setFailed(true)}
         />
       ) : (
@@ -216,6 +216,40 @@ const renderSectionSubtitle = (title = "", itemNounLower = "devices") => {
   return "Curated links to help you discover faster.";
 };
 
+const getSectionMeta = (title = "") => {
+  const value = normalizeText(title).toLowerCase();
+  if (value === "smart popular links") {
+    return {
+      icon: FaBolt,
+      badge: "Quick Paths",
+      iconTone: "text-indigo-600",
+      iconBg: "from-indigo-50 to-blue-50",
+    };
+  }
+  if (value === "latest launches") {
+    return {
+      icon: FaFire,
+      badge: "Fresh Picks",
+      iconTone: "text-rose-500",
+      iconBg: "from-rose-50 to-orange-50",
+    };
+  }
+  if (value === "by price") {
+    return {
+      icon: FaTag,
+      badge: "Budget Guide",
+      iconTone: "text-emerald-600",
+      iconBg: "from-emerald-50 to-cyan-50",
+    };
+  }
+  return {
+    icon: FaStore,
+    badge: "Discover",
+    iconTone: "text-violet-600",
+    iconBg: "from-violet-50 to-indigo-50",
+  };
+};
+
 const LinkListBlock = ({
   title = "",
   items = [],
@@ -224,21 +258,27 @@ const LinkListBlock = ({
   itemNounLower = "device",
 }) => {
   if (!Array.isArray(items) || items.length === 0) return null;
+  const sectionMeta = getSectionMeta(title);
+  const SectionIcon = sectionMeta.icon;
 
   return (
-    <div className="overflow-hidden bg-white">
+    <div className="overflow-hidden bg-transparent">
       {title ? (
-        <div className="px-3 py-2.5">
-          <h4 className="text-base font-semibold text-slate-900">
-            {renderSectionTitle(title)}
-          </h4>
-          <p className="mt-1 text-sm text-slate-500">
-            {renderSectionSubtitle(title, itemNounLower)}
-          </p>
+        <div className="border-b border-slate-200/80 px-4 py-3.5">
+          <div className="flex items-start gap-3">
+            <div className="min-w-0">
+              <h4 className="mt-2 text-base font-semibold text-slate-900">
+                {renderSectionTitle(title)}
+              </h4>
+              <p className="mt-1 text-sm leading-relaxed text-slate-500">
+                {renderSectionSubtitle(title, itemNounLower)}
+              </p>
+            </div>
+          </div>
         </div>
       ) : null}
 
-      <div className="bg-white">
+      <div className="bg-transparent p-2">
         {items.map((item, index) => {
           const subtitle = normalizeText(item?.subtitle);
           const meta = normalizeText(item?.meta);
@@ -249,13 +289,15 @@ const LinkListBlock = ({
               key={`${item.path || item.label || "item"}-${index}`}
               to={normalizeDiscoveryPath(item.path || "", entityType)}
               aria-label={item.label || "Explore"}
-              className="group flex items-center gap-2 px-3 py-2.5 text-sm text-slate-700 no-underline transition-all duration-200 ease-out hover:bg-slate-50/70 hover:no-underline focus-visible:bg-slate-50/70"
+              className="group mb-1.5 flex items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-sm text-slate-700 no-underline transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-indigo-100 hover:bg-white hover:shadow-sm hover:no-underline focus-visible:border-indigo-100 focus-visible:bg-white"
             >
               {withVisual ? null : (
-                <FaChevronRight className="text-[11px] text-gray-500 transition-all duration-200 ease-out group-hover:translate-x-0.5 group-hover:text-violet-700" />
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 transition-all duration-200 group-hover:bg-indigo-100">
+                  <FaChevronRight className="text-[11px] transition-all duration-200 ease-out group-hover:translate-x-0.5" />
+                </span>
               )}
 
-              <span className="flex min-w-0 items-center gap-2.5">
+              <span className="flex min-w-0 items-center gap-3">
                 {withVisual ? (
                   <RowVisual
                     src={
@@ -270,12 +312,12 @@ const LinkListBlock = ({
                 ) : null}
 
                 <span className="min-w-0 pr-2">
-                  <span className="block truncate text-sm font-medium text-slate-800 transition-colors duration-200 ease-out">
+                  <span className="block truncate text-sm font-semibold text-slate-800 transition-colors duration-200 ease-out group-hover:text-indigo-700">
                     {item.label || "Explore"}
                   </span>
 
                   {withVisual || subtitle || meta ? (
-                    <span className="mt-0.5 flex items-center gap-1.5 text-[11px] text-slate-500 transition-colors duration-200 ease-out">
+                    <span className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500 transition-colors duration-200 ease-out">
                       {subtitle ? (
                         <span className="truncate">{subtitle}</span>
                       ) : null}
@@ -295,10 +337,14 @@ const LinkListBlock = ({
               </span>
 
               {badge ? (
-                <span className="ml-auto rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 transition-colors duration-200 ease-out">
+                <span className="ml-auto rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-600 transition-colors duration-200 ease-out group-hover:bg-indigo-50 group-hover:text-indigo-700">
                   {badge}
                 </span>
-              ) : null}
+              ) : (
+                <span className="ml-auto text-slate-300 transition-colors duration-200 group-hover:text-indigo-500">
+                  <FaChevronRight className="text-[11px]" />
+                </span>
+              )}
             </Link>
           );
         })}
@@ -318,28 +364,30 @@ const TopBrandsBlock = ({
   if (!Array.isArray(items) || items.length === 0) return null;
 
   return (
-    <div className="overflow-hidden bg-white">
-      <div className="flex items-start justify-between gap-2 bg-white px-3 py-2.5">
-        <div>
-          <h4 className="text-lg font-semibold text-slate-900">
-            Explore by <span className="text-violet-600">{titleText}</span>
-          </h4>
-          <p className="mt-1 text-sm text-slate-600">{subtitleText}</p>
+    <div className="overflow-hidden bg-transparent">
+      <div className="flex items-start justify-between gap-3 border-b border-slate-200/80 px-4 py-3.5">
+        <div className="flex items-start gap-3">
+          <div>
+            <h4 className="mt-2 text-lg font-semibold text-slate-900">
+              Explore by <span className="text-violet-600">{titleText}</span>
+            </h4>
+            <p className="mt-1 text-sm text-slate-600">{subtitleText}</p>
+          </div>
         </div>
         <Link
           to={normalizeDiscoveryPath(viewAllPath, entityType)}
-          className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-violet-700 transition-colors duration-200 ease-out hover:text-violet-800"
+          className="inline-flex shrink-0 items-center gap-1 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-sm font-semibold text-indigo-700 transition-all duration-200 ease-out hover:border-indigo-200 hover:bg-indigo-100 hover:text-indigo-800"
         >
           View all
-          <FaChevronRight className="text-[10px] text-violet-600" />
+          <FaChevronRight className="text-[10px]" />
         </Link>
       </div>
 
       <div className="relative">
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-white to-transparent" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l from-white to-transparent" />
-        <div className="no-scrollbar overflow-x-auto px-3 py-3 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <div className="flex min-w-max items-start gap-5 pr-2">
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-white to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-white to-transparent" />
+        <div className="no-scrollbar overflow-x-auto px-4 py-4 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex min-w-max items-start gap-4 pr-2">
             {items.map((item, index) => {
               const rawBrandName = normalizeText(item?.name || item?.label);
               const brandName = trimMobilesSuffix
@@ -350,13 +398,13 @@ const TopBrandsBlock = ({
                 <Link
                   key={`${item.path || brandName || "brand"}-${index}`}
                   to={normalizeDiscoveryPath(item.path || "", entityType)}
-                  className="group flex w-[72px] shrink-0 flex-col items-center gap-2 text-center"
+                  className="group flex w-[84px] shrink-0 flex-col items-center gap-2 rounded-2xl border border-transparent px-2 py-2 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-100 hover:bg-white hover:shadow-sm"
                 >
                   <BrandLogo
                     src={item.logo_url || item.image_url || ""}
                     label={brandName || "Brand"}
                   />
-                  <span className="w-full truncate text-[11px] font-medium text-slate-700 transition-colors group-hover:text-violet-700">
+                  <span className="w-full truncate text-[11px] font-semibold text-slate-700 transition-colors group-hover:text-violet-700">
                     {brandName || "Brand"}
                   </span>
                 </Link>
@@ -586,7 +634,7 @@ const ProductDiscoverySections = ({
   if (loading && !hasContent) {
     return (
       <div
-        className={`w-full bg-white p-3 text-sm text-slate-600 sm:p-4 ${className}`}
+        className={`w-full bg-transparent p-4 text-sm text-slate-600 sm:p-5 ${className}`}
       >
         Loading discovery sections...
       </div>
@@ -596,19 +644,29 @@ const ProductDiscoverySections = ({
   if (!loading && !hasContent && !error) return null;
 
   return (
-    <section className={`w-full overflow-hidden bg-white ${className}`}>
-      <div className="flex items-center justify-between gap-2 px-3 py-2.5 sm:px-4">
-        <h3 className="text-lg font-semibold text-slate-900">Popular Links</h3>
+    <section className={`w-full overflow-hidden bg-transparent ${className}`}>
+      <div className="flex items-start justify-between gap-3 px-4 py-4 sm:px-5">
+        <div className="flex items-start gap-3">
+          <div>
+            <h3 className="mt-2 text-lg font-semibold text-slate-900">
+              Popular Links
+            </h3>
+            <p className="mt-1 text-sm text-slate-500">
+              Continue exploring with curated shortcuts, fresh launches, and
+              brand-led discovery paths.
+            </p>
+          </div>
+        </div>
       </div>
 
       {error ? (
-        <div className="mx-3 mt-3 border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 sm:mx-4">
+        <div className="mx-4 mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 sm:mx-5">
           {error}
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-3 p-3 sm:p-4 md:grid-cols-2 md:gap-3">
-        <div className="space-y-4 md:pr-3">
+      <div className="grid grid-cols-1 gap-4 p-4 sm:p-5 md:grid-cols-2 md:gap-4">
+        <div className="space-y-4 md:pr-1">
           <LinkListBlock title="Smart Popular Links" items={popularLinks} />
           <LinkListBlock
             title="Latest Launches"

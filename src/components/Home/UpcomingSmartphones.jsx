@@ -4,24 +4,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { createProductPath } from "../../utils/slugGenerator";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
 import { FaMobileAlt } from "react-icons/fa";
-import { resolveSmartphoneBadgeScore } from "../../utils/smartphoneBadgeScore";
 
 const API_BASE = (
   import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in"
 ).replace(/\/$/, "");
-
-const TrendSpecScoreBadge = ({ score }) => {
-  const value = Number.isFinite(Number(score)) ? Number(score) : null;
-  const label = value != null ? `${value.toFixed(1)}%` : "--";
-  return (
-    <div className="inline-flex flex-col items-center justify-center rounded-md border border-violet-200 bg-violet-50/95 px-1.5 py-1 leading-none">
-      <span className="text-[10px] font-bold text-violet-700">{label}</span>
-      <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide text-violet-600">
-        Spec
-      </span>
-    </div>
-  );
-};
 
 const toText = (value) => {
   if (value === null || value === undefined) return null;
@@ -108,14 +94,6 @@ const formatUpcomingDate = (value) => {
 const getTrendingRows = (json) => {
   if (Array.isArray(json?.trending)) return json.trending;
   if (Array.isArray(json?.smartphones)) return json.smartphones;
-  if (Array.isArray(json)) return json;
-  return [];
-};
-
-const getSmartphoneRows = (json) => {
-  if (Array.isArray(json?.smartphones)) return json.smartphones;
-  if (Array.isArray(json?.data)) return json.data;
-  if (Array.isArray(json?.rows)) return json.rows;
   if (Array.isArray(json)) return json;
   return [];
 };
@@ -287,32 +265,15 @@ const UpcomingSmartphones = () => {
       setLoadingUpcoming(true);
       setCurrentDevices([]);
       const trendingEndpoint = "/api/public/trending/smartphones?limit=25";
-      const smartphonesEndpoint = "/api/smartphones";
 
       try {
-        const [trendingRes, smartphonesRes] = await Promise.all([
-          fetch(`${API_BASE}${trendingEndpoint}`),
-          fetch(`${API_BASE}${smartphonesEndpoint}`),
-        ]);
+        const trendingRes = await fetch(`${API_BASE}${trendingEndpoint}`);
         if (!trendingRes.ok)
           throw new Error("Failed to fetch upcoming smartphones");
         const trendingJson = await trendingRes.json();
-        const smartphonesJson = smartphonesRes.ok
-          ? await smartphonesRes.json()
-          : null;
         if (cancelled) return;
 
         const rows = getTrendingRows(trendingJson);
-        const smartphoneRows = getSmartphoneRows(smartphonesJson);
-        const scoreByProductId = new Map();
-        for (const item of smartphoneRows) {
-          const pid = item?.product_id ?? item?.id ?? null;
-          if (pid == null) continue;
-          const canonicalScore = resolveSmartphoneBadgeScore(item);
-          if (!Number.isFinite(canonicalScore)) continue;
-          scoreByProductId.set(String(pid), canonicalScore);
-        }
-
         const upcomingRows = rows.filter(isUpcomingRow);
         const mapped = upcomingRows.map((row, index) => ({
           id:
@@ -328,10 +289,6 @@ const UpcomingSmartphones = () => {
           launch_status: firstText(row?.launch_status, row?.launchStatus),
           launchStatus: getRowLaunchStatus(row),
           status: firstText(row?.status, row?.availability, row?.badge),
-          score:
-            scoreByProductId.get(
-              String(row?.product_id ?? row?.productId ?? row?.id ?? ""),
-            ) ?? resolveSmartphoneBadgeScore(row),
           _rowIndex: index,
         }));
 
@@ -428,11 +385,6 @@ const UpcomingSmartphones = () => {
                   <div className="flex h-full flex-col gap-2">
                     {/* Image */}
                     <div className="relative w-full flex-shrink-0">
-                      {Number.isFinite(device.score) ? (
-                        <div className="absolute left-1 top-1 z-10 pointer-events-none">
-                          <TrendSpecScoreBadge score={device.score} />
-                        </div>
-                      ) : null}
                       <div className="mx-auto h-28 sm:h-32 w-28 rounded-md shadow-md  overflow-hidden bg-gray-100 flex items-center justify-center">
                         {device.image ? (
                           <img
