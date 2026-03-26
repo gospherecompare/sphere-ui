@@ -2928,10 +2928,10 @@ const MobileCompare = () => {
   const currentYear = new Date().getFullYear();
   const metaTitle =
     seoSelectedNames.length > 0
-      ? `${comparisonNames} | Compare Specs, Prices & Features ${currentYear}`
+      ? `${comparisonNames} - Compare Specs, Prices & Features ${currentYear}`
       : canonicalCompareEntries.length > 0
-        ? `Compare Selected Devices | Specs, Prices & Features ${currentYear}`
-        : `Device Comparison | Compare Specs, Prices & Features ${currentYear}`;
+        ? `Compare Selected Devices - Specs, Prices & Features ${currentYear}`
+        : `Device Comparison - Compare Specs, Prices & Features ${currentYear}`;
 
   const metaDescription =
     seoSelectedNames.length > 0

@@ -2074,12 +2074,15 @@ const LaptopDetailCard = () => {
     ram: metaRam,
     storage: metaStorage,
   });
-  const currentDateLabel = new Date().toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "2-digit",
+  const currentMonthYearLabel = new Intl.DateTimeFormat("en-US", {
+    month: "short",
     year: "numeric",
-  });
-  const metaTitleWithDate = `${metaTitle} [${currentDateLabel}]`;
+  }).format(new Date());
+  const metaTitleWithMonthYear = String(metaTitle).includes(
+    currentMonthYearLabel,
+  )
+    ? metaTitle
+    : `${metaTitle} (${currentMonthYearLabel})`;
   const metaDescription = laptopMeta.description({
     name: metaBaseName,
     cpu: metaCpu,
@@ -2130,7 +2133,7 @@ const LaptopDetailCard = () => {
   return (
     <div className="px-2 lg:px-4 mx-auto max-w-4xl w-full bg-white">
       <Helmet prioritizeSeoTags>
-        <title>{metaTitleWithDate}</title>
+        <title>{metaTitleWithMonthYear}</title>
         <meta name="description" content={metaDescription} />
         <meta name="keywords" content={metaKeywords} />
         <link rel="canonical" href={canonicalUrl} />

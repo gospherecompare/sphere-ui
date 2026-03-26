@@ -2,31 +2,33 @@ import { useEffect } from "react";
 
 const SITE_NAME = "Hooks";
 const BRAND_TAGLINE = "Gadget Destination";
-const CURRENT_YEAR = new Date().getFullYear();
+const CURRENT_MONTH_YEAR = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  year: "numeric",
+}).format(new Date());
 
 // SEO-friendly titles for different pages
 const PAGE_TITLES = {
-  home: `Compare Smartphones, Laptops & TVs in India | Specs, Prices & Reviews | ${SITE_NAME}`,
-  smartphones: `Best Smartphones ${CURRENT_YEAR} | Compare Prices | ${SITE_NAME}`,
-  laptops: `Laptops Online | Compare & Buy Best Laptops | ${SITE_NAME}`,
-  tvs: `TVs | Compare Prices & Features | ${SITE_NAME}`,
-  appliances: `Home Appliances | Compare Prices & Features | ${SITE_NAME}`,
-  networking: `Networking Devices | Routers, Modems & Switches | ${SITE_NAME}`,
-  signin: `Sign In | ${SITE_NAME}`,
-  signup: `Create Account | ${SITE_NAME}`,
-  account: `My Account | ${SITE_NAME}`,
-  compare: `Compare Gadgets | ${SITE_NAME}`,
-  wishlist: `My Wishlist | ${SITE_NAME}`,
-  careers: `Careers at ${SITE_NAME} | Join Hooks Team`,
-  about: `About ${SITE_NAME} | Product Discovery & Comparison`,
-  contact: `Contact ${SITE_NAME} | Support and Partnerships`,
-  privacypolicy: `Privacy Policy | ${SITE_NAME}`,
-  terms: `Terms of Use | ${SITE_NAME}`,
+  home: `Compare Smartphones, Laptops & TVs in India - Specs, Prices & Reviews - ${SITE_NAME}`,
+  smartphones: `Best Smartphones (${CURRENT_MONTH_YEAR}) - Compare Prices - ${SITE_NAME}`,
+  laptops: `Best Laptops (${CURRENT_MONTH_YEAR}) - Compare Prices & Specs - ${SITE_NAME}`,
+  tvs: `Best TVs (${CURRENT_MONTH_YEAR}) - Compare Prices & Features - ${SITE_NAME}`,
+  appliances: `Home Appliances (${CURRENT_MONTH_YEAR}) - Compare Prices & Features - ${SITE_NAME}`,
+  networking: `Networking Devices (${CURRENT_MONTH_YEAR}) - Routers, Modems & Switches - ${SITE_NAME}`,
+  signin: `Sign In - ${SITE_NAME}`,
+  signup: `Create Account - ${SITE_NAME}`,
+  account: `My Account - ${SITE_NAME}`,
+  compare: `Compare Gadgets - ${SITE_NAME}`,
+  wishlist: `My Wishlist - ${SITE_NAME}`,
+  careers: `Careers at ${SITE_NAME} - Join Hooks Team`,
+  about: `About ${SITE_NAME} - Product Discovery & Comparison`,
+  contact: `Contact ${SITE_NAME} - Support and Partnerships`,
+  privacypolicy: `Privacy Policy - ${SITE_NAME}`,
+  terms: `Terms of Use - ${SITE_NAME}`,
 };
 
 function formatTitle({
   siteName = SITE_NAME,
-  separator = " | ",
   name,
   page,
   brand,
@@ -48,7 +50,7 @@ function formatTitle({
   // Always include site name as a suffix for branding/SEO
   if (siteName) parts.push(siteName);
 
-  return parts.filter(Boolean).join(separator);
+  return parts.filter(Boolean).join(" - ");
 }
 
 /**
@@ -56,9 +58,9 @@ function formatTitle({
  * Accepts page, brand, name and optional siteName.
  *
  * Usage:
- * - useTitle({ page: "Home" }) → "Compare & Buy Latest Gadgets | Hooks"
- * - useTitle({ page: "Smartphones" }) → "Best Smartphones 2025 | Compare Prices | Hooks"
- * - useTitle({ page: "Product", brand: "Apple", name: "iPhone 15" }) → "Product | iPhone 15 | Hooks"
+ * - useTitle({ page: "Home" }) -> "Compare Smartphones, Laptops & TVs in India - Specs, Prices & Reviews - Hooks"
+ * - useTitle({ page: "Smartphones" }) -> "Best Smartphones (Mar 2026) - Compare Prices - Hooks"
+ * - useTitle({ page: "Product", brand: "Apple", name: "iPhone 15" }) -> "Product - iPhone 15 - Hooks"
  */
 export default function useTitle({ page, brand, name, siteName } = {}) {
   useEffect(() => {

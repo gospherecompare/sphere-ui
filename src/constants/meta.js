@@ -1,9 +1,14 @@
 // Meta templates for product detail pages
+const CURRENT_MONTH_YEAR = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  year: "numeric",
+}).format(new Date());
+
 export const smartphoneMeta = {
   title: ({ name, ram, storage }) =>
     `${name}${ram ? ` (${ram} RAM` : ""}${
       storage ? `, ${storage} Storage)` : ram ? ")" : ""
-    } - Price, Specs & Offers | Hooks`,
+    } (${CURRENT_MONTH_YEAR}) - Price, Specs & Offers - Hooks`,
 
   description: ({ name, ram, storage, brand }) =>
     `${name}${brand ? ` by ${brand}` : ""}${ram ? ` with ${ram} RAM` : ""}${
@@ -15,7 +20,7 @@ export const laptopMeta = {
   title: ({ name, cpu, ram, storage }) =>
     `${name}${cpu ? ` (${cpu}` : ""}${ram ? `, ${ram} RAM` : ""}${
       storage ? `, ${storage})` : cpu ? ")" : ""
-    } - Price & Specs | Hooks`,
+    } (${CURRENT_MONTH_YEAR}) - Price & Specs - Hooks`,
 
   description: ({ name, cpu, ram, storage, brand }) =>
     `${name}${brand ? ` by ${brand}` : ""}${cpu ? ` powered by ${cpu}` : ""}${
@@ -29,7 +34,7 @@ export const tvMeta = {
   title: ({ name, screenSize, resolution }) =>
     `${name}${screenSize ? ` (${screenSize})` : ""}${
       resolution ? ` - ${resolution}` : ""
-    } - Price & Specs | Hooks`,
+    } (${CURRENT_MONTH_YEAR}) - Price & Specs - Hooks`,
 
   description: ({ name, brand, screenSize, resolution, os }) =>
     `${name}${brand ? ` by ${brand}` : ""}${
@@ -41,7 +46,7 @@ export const tvMeta = {
 
 export const networkingMeta = {
   title: ({ name, deviceType }) =>
-    `${name}${deviceType ? ` (${deviceType})` : ""} - Specs, Price & Coverage | Hooks`,
+    `${name}${deviceType ? ` (${deviceType})` : ""} (${CURRENT_MONTH_YEAR}) - Specs, Price & Coverage - Hooks`,
 
   description: ({ name, deviceType, brand }) =>
     `${name}${deviceType ? ` ${deviceType}` : ""}${
@@ -53,7 +58,7 @@ export const homeApplianceMeta = {
   title: ({ name, applianceType, capacity }) =>
     `${name}${capacity ? ` ${capacity}` : ""}${
       applianceType ? ` ${applianceType}` : ""
-    } - Price & Features | Hooks`,
+    } (${CURRENT_MONTH_YEAR}) - Price & Features - Hooks`,
 
   description: ({ name, applianceType, capacity, brand }) =>
     `${name}${capacity ? ` ${capacity}` : ""}${

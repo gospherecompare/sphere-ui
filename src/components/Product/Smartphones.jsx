@@ -1636,8 +1636,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         const variantStorage =
           v.storage || v.storage_capacity || v.ROM || v.rom || "";
 
-        // Card title in strict format: {device name} | {variant RAM} / {variant Storage} | {price or N/A}
-        const cardTitle = `${device.name || device.model || "Unnamed"} | ${variantRam || ""} / ${variantStorage || ""} | ${priceDisplay}`;
+        // Card title in strict format: {device name} - {variant RAM} / {variant Storage} - {price or N/A}
+        const cardTitle = `${device.name || device.model || "Unnamed"} - ${variantRam || ""} / ${variantStorage || ""} - ${priceDisplay}`;
         const variantSaleStartDate =
           v.sale_start_date ||
           v.saleStartDate ||
@@ -1973,6 +1973,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const isSingleSmartphonePath = pathname === "/smartphone";
   const isNewFilterPath = listFilter === "new";
   const currentYear = new Date().getFullYear();
+  const currentMonthYear = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    year: "numeric",
+  }).format(new Date());
 
   const priceFilterMap = {
     "under-10000": { min: 0, max: 10000, label: "Under ₹10,000" },
@@ -1994,28 +1998,28 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     return text.length > 180 ? `${text.slice(0, 177)}...` : text;
   };
 
-  let seoTitle = `Smartphones ${currentYear} - Specs, Prices & Reviews | Hooks`;
+  let seoTitle = `Best Smartphones (${currentMonthYear}) - Compare Prices, Specs & Reviews - Hooks`;
   let seoDescription = sanitizeDescription(
     "Browse the latest smartphones with detailed specs, prices, reviews, and comparisons on Hooks.",
   );
 
   if (isUpcomingView) {
-    seoTitle = `Upcoming Smartphones ${currentYear} - Expected Launches & Preorders | Hooks`;
+    seoTitle = `Upcoming Smartphones (${currentMonthYear}) - Expected Launches & Preorders - Hooks`;
     seoDescription =
       "Track upcoming smartphones, expected launch timelines, and preorder-ready devices to plan your next upgrade.";
   } else if (isSingleSmartphonePath) {
-    seoTitle = `Smartphones ${currentYear} - Compare Specs, Prices & Reviews | Hooks`;
+    seoTitle = `Best Smartphones (${currentMonthYear}) - Compare Prices, Specs & Reviews - Hooks`;
     seoDescription =
       "Compare the latest smartphones on Hooks. Explore detailed specifications, prices, reviews, and side-by-side comparisons before you buy.";
   } else if (isNewFilterPath) {
-    seoTitle = `Latest Smartphones ${currentYear} - New Launches & Prices | Hooks`;
+    seoTitle = `Latest Smartphones (${currentMonthYear}) - New Launches & Prices - Hooks`;
     seoDescription =
       "Discover newly launched smartphones with updated prices, full specifications, and reviews. Stay updated with the latest mobile releases on Hooks.";
   } else if (priceFilter) {
-    seoTitle = `Best Smartphones ${priceFilter.label} in ${currentYear} - Reviews, Specs & Deals | Hooks`;
+    seoTitle = `Best Smartphones ${priceFilter.label} (${currentMonthYear}) - Reviews, Specs & Deals - Hooks`;
     seoDescription = `Explore the best smartphones ${priceFilter.label.toLowerCase()} with detailed specs, latest prices, reviews, and comparisons to choose the right phone for your budget.`;
   } else if (currentBrandObj) {
-    seoTitle = `${currentBrandObj.name} Smartphones ${currentYear} - Models, Prices & Specs | Hooks`;
+    seoTitle = `${currentBrandObj.name} Smartphones (${currentMonthYear}) - Models, Prices & Specs - Hooks`;
     seoDescription = sanitizeDescription(
       currentBrandObj.description ||
         `Explore ${currentBrandObj.name} smartphones on Hooks. Compare models, check prices, specifications, reviews, and find the best phone for your needs.`,

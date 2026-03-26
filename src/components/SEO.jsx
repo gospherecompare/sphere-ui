@@ -61,7 +61,7 @@ const getCanonicalUrl = (customUrl, pathname) => {
  *
  * Example - Product Page:
  * <SEO
- *   title="iPhone 15 Pro - Price & Specs | Hooks"
+ *   title="iPhone 15 Pro - Price & Specs - Hooks"
  *   description="Compare iPhone 15 Pro pricing, full specs, and variants"
  *   image="https://cdn.example.com/iphone-15.jpg"
  *   url={canonicalUrl}

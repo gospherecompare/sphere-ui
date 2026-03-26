@@ -1716,7 +1716,7 @@ const Careers = () => {
   return (
     <main className="min-h-screen bg-slate-100">
       <Helmet>
-        <title>Careers at Hooks | Join Hooks Team</title>
+        <title>Careers at Hooks - Join Hooks Team</title>
         <meta
           name="description"
           content="Join Hooks Team. Apply for Frontend, Backend, Content Developer, and Fullstack roles through a simple 4-step career application process."
@@ -1727,7 +1727,7 @@ const Careers = () => {
         />
         <meta
           property="og:title"
-          content="Careers at Hooks | Join Hooks Team"
+          content="Careers at Hooks - Join Hooks Team"
         />
         <meta
           property="og:description"
@@ -1735,7 +1735,7 @@ const Careers = () => {
         />
         <meta
           name="twitter:title"
-          content="Careers at Hooks | Join Hooks Team"
+          content="Careers at Hooks - Join Hooks Team"
         />
         <meta
           name="twitter:description"

@@ -345,7 +345,7 @@ const PopularComparisonsPage = () => {
   }, [missingProductIds]);
 
   const pageTitle =
-    "Popular Device Comparisons | Compare Trending Products | Hooks";
+    "Popular Device Comparisons - Compare Trending Products - Hooks";
   const pageDescription =
     "Explore the most popular device comparisons on Hooks. Compare trending smartphones, laptops, TVs, and networking devices. Find the best device for you by comparing top choices.";
 

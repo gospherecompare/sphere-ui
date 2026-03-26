@@ -40,19 +40,23 @@ import {
 const RUPEE = "\u20B9";
 const API_BASE = "https://api.apisphere.in";
 const SITE_ORIGIN = "https://tryhook.shop";
+const CURRENT_MONTH_YEAR = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  year: "numeric",
+}).format(new Date());
 
 const CATEGORIES = {
   smartphones: {
     id: "smartphones",
     label: "Smartphones",
     badge: "TRENDING SMARTPHONES",
-    title: "Trending Smartphones in India: Prices, Specs, and Best Deals",
+    title: `Trending Smartphones in India (${CURRENT_MONTH_YEAR}): Prices, Specs, and Best Deals`,
     description:
       "Compare trending smartphones with camera, battery, display, and performance specs, plus live prices from top online stores.",
     endpoint: "/api/public/trending/smartphones?limit=120",
     detailPath: "/smartphones",
     icon: FaMobileAlt,
-    metaTitle: "Trending Smartphones in India - Specs, Prices, Deals",
+    metaTitle: `Trending Smartphones in India (${CURRENT_MONTH_YEAR}) - Specs, Prices, Deals`,
     metaDescription:
       "Browse trending smartphones with detailed specs, latest prices, and best online deals.",
     metaKeywords:
@@ -64,13 +68,13 @@ const CATEGORIES = {
     id: "laptops",
     label: "Laptops",
     badge: "TRENDING LAPTOPS",
-    title: "Trending Laptops in India: Prices, Specs, and Best Deals",
+    title: `Trending Laptops in India (${CURRENT_MONTH_YEAR}): Prices, Specs, and Best Deals`,
     description:
       "Compare trending laptops by processor, RAM, storage, display, and battery life, plus live prices from top online stores.",
     endpoint: "/api/public/trending/laptops?limit=120",
     detailPath: "/laptops",
     icon: FaLaptop,
-    metaTitle: "Trending Laptops in India - Specs, Prices, Deals",
+    metaTitle: `Trending Laptops in India (${CURRENT_MONTH_YEAR}) - Specs, Prices, Deals`,
     metaDescription:
       "Compare trending laptops by processor, RAM, storage, display, and latest offers.",
     metaKeywords:
@@ -82,13 +86,13 @@ const CATEGORIES = {
     id: "tvs",
     label: "TVs",
     badge: "TRENDING TVS",
-    title: "Trending TVs in India: Prices, Specs, and Best Deals",
+    title: `Trending TVs in India (${CURRENT_MONTH_YEAR}): Prices, Specs, and Best Deals`,
     description:
       "Compare trending TVs by screen size, resolution, refresh rate, panel type, and smart features, plus live prices from top online stores.",
     endpoint: "/api/public/trending/tvs?limit=120",
     detailPath: "/tvs",
     icon: FaTv,
-    metaTitle: "Trending TVs in India - Specs, Prices, Deals",
+    metaTitle: `Trending TVs in India (${CURRENT_MONTH_YEAR}) - Specs, Prices, Deals`,
     metaDescription:
       "Browse trending TVs with detailed specifications, latest prices, and direct buy links.",
     metaKeywords:
@@ -1241,7 +1245,7 @@ const TrendingProductsHub = () => {
     );
   };
 
-  const seoTitle = `${config.metaTitle} | Hooks`;
+  const seoTitle = `${config.metaTitle} - Hooks`;
   const seoDescription = config.metaDescription;
   const seoKeywords = useMemo(() => {
     const baseKeywords = String(config.metaKeywords || "")

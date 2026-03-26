@@ -26,7 +26,7 @@ const PrivacyPolicy = () => {
   return (
     <>
       <SEO
-        title="Privacy Policy - Data Protection | Hooks Device Comparison"
+        title="Privacy Policy - Data Protection - Hooks Device Comparison"
         description="Read our privacy policy to understand how Hooks collects, uses, and protects your personal information on our comparison platform."
         image={`${canonical}/og-image`}
         url={canonical}

@@ -3557,11 +3557,10 @@ Price: ${price}
         ? descriptiveTitle
         : `${metaBrand} ${descriptiveTitle}`
       : descriptiveTitle;
-  const currentDateLabel = new Date().toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "2-digit",
+  const currentMonthYearLabel = new Intl.DateTimeFormat("en-US", {
+    month: "short",
     year: "numeric",
-  });
+  }).format(new Date());
   const metaTitleBase =
     titleWithBrand ||
     smartphoneMeta.title({
@@ -3576,7 +3575,11 @@ Price: ${price}
     metaVariantTag && !String(metaTitleBase).includes(metaVariantTag)
       ? `${metaTitleBase} (${metaVariantTag})`
       : metaTitleBase;
-  const metaTitleWithDate = `${metaTitle} [${currentDateLabel}]`;
+  const metaTitleWithMonthYear = String(metaTitle).includes(
+    currentMonthYearLabel,
+  )
+    ? metaTitle
+    : `${metaTitle} (${currentMonthYearLabel})`;
 
   const metaDescription =
     buildMetaDescription(mobileData, currentVariant) ||
@@ -3966,7 +3969,7 @@ Price: ${price}
   return (
     <div className="px-2 lg:px-4 mx-auto bg-white max-w-4xl w-full m-0">
       <SEO
-        title={metaTitleWithDate}
+        title={metaTitleWithMonthYear}
         description={metaDescription}
         keywords={metaKeywords}
         image={ogImage}

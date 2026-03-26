@@ -1560,6 +1560,10 @@ const Laptops = () => {
         : "LAPTOP COLLECTION";
 
   const currentYear = new Date().getFullYear();
+  const currentMonthYear = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    year: "numeric",
+  }).format(new Date());
   const sanitizeDescription = (desc = "") => {
     const text = String(desc || "")
       .replace(/<[^>]*>/g, "")
@@ -1568,22 +1572,22 @@ const Laptops = () => {
     return text.length > 180 ? `${text.slice(0, 177)}...` : text;
   };
 
-  let seoTitle = `Best Laptops ${currentYear} - Compare Prices, Specs & Deals | Hooks`;
+  let seoTitle = `Best Laptops (${currentMonthYear}) - Compare Prices, Specs & Deals - Hooks`;
   let seoDescription =
     "Browse the latest laptops with full specifications, prices, and feature comparisons on Hooks.";
 
   if (filter === "trending") {
-    seoTitle = `Trending Laptops ${currentYear} - Most Popular Models & Prices | Hooks`;
+    seoTitle = `Trending Laptops (${currentMonthYear}) - Most Popular Models & Prices - Hooks`;
     seoDescription =
       "Explore trending laptops with rising buyer interest, latest prices, and key specs to find the best option quickly on Hooks.";
   } else if (filter === "new") {
-    seoTitle = `Latest Laptops ${currentYear} - New Launches, Specs & Prices | Hooks`;
+    seoTitle = `Latest Laptops (${currentMonthYear}) - New Launches, Specs & Prices - Hooks`;
     seoDescription =
       "Discover newly launched laptops with updated prices, processor details, RAM and storage options, and full spec breakdowns on Hooks.";
   }
 
   if (currentBrandObj) {
-    seoTitle = `${currentBrandObj.name} Laptops ${currentYear} - Models, Prices & Specs | Hooks`;
+    seoTitle = `${currentBrandObj.name} Laptops (${currentMonthYear}) - Models, Prices & Specs - Hooks`;
     seoDescription = sanitizeDescription(
       currentBrandObj.description ||
         `Compare ${currentBrandObj.name} laptops with detailed specifications, latest prices, and top deals on Hooks.`,

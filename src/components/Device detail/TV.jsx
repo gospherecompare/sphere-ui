@@ -2723,12 +2723,15 @@ const TVDetailCard = () => {
     screenSize: metaScreenSize,
     resolution: metaResolution,
   });
-  const currentDateLabel = new Date().toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "2-digit",
+  const currentMonthYearLabel = new Intl.DateTimeFormat("en-US", {
+    month: "short",
     year: "numeric",
-  });
-  const metaTitleWithDate = `${metaTitle} [${currentDateLabel}]`;
+  }).format(new Date());
+  const metaTitleWithMonthYear = String(metaTitle).includes(
+    currentMonthYearLabel,
+  )
+    ? metaTitle
+    : `${metaTitle} (${currentMonthYearLabel})`;
   const metaDescription = tvMeta.description({
     name: metaName,
     brand: metaBrand,
@@ -2779,20 +2782,29 @@ const TVDetailCard = () => {
   return (
     <div className="px-2 lg:px-4 mx-auto max-w-4xl w-full bg-white">
       <Helmet prioritizeSeoTags>
-        <title>{metaTitleWithDate}</title>
+        <title>{metaTitleWithMonthYear}</title>
         <meta name="description" content={metaDescription} />
         <meta name="keywords" content={metaKeywords} />
         <link rel="canonical" href={canonicalUrl} />
         <meta property="og:type" content="product" />
-        <meta property="og:title" content={metaTitle} />
+        <meta property="og:title" content={metaTitleWithMonthYear} />
         <meta property="og:description" content={metaDescription} />
+        <meta property="og:site_name" content="Hooks" />
         {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
         {ogImage && <meta property="og:image" content={ogImage} />}
+        {ogImage && (
+          <meta property="og:image:secure_url" content={ogImage} />
+        )}
+        {ogImage && <meta property="og:image:type" content="image/jpeg" />}
+        {ogImage && <meta property="og:image:width" content="1200" />}
+        {ogImage && <meta property="og:image:height" content="630" />}
         <meta
           name="twitter:card"
           content={ogImage ? "summary_large_image" : "summary"}
         />
-        <meta name="twitter:title" content={metaTitle} />
+        <meta name="twitter:site" content="@tryhooks" />
+        <meta name="twitter:creator" content="@tryhooks" />
+        <meta name="twitter:title" content={metaTitleWithMonthYear} />
         <meta name="twitter:description" content={metaDescription} />
         {ogImage && <meta name="twitter:image" content={ogImage} />}
         {productSchemaJson && (

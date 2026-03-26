@@ -2495,6 +2495,10 @@ const TVs = () => {
   };
 
   const currentYear = new Date().getFullYear();
+  const currentMonthYear = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    year: "numeric",
+  }).format(new Date());
   const sanitizeDescription = (desc = "") => {
     const text = String(desc || "")
       .replace(/<[^>]*>/g, "")
@@ -2503,22 +2507,22 @@ const TVs = () => {
     return text.length > 180 ? `${text.slice(0, 177)}...` : text;
   };
 
-  let seoTitle = `Best TVs ${currentYear} - Compare Smart TVs, Prices & Specs | Hooks`;
+  let seoTitle = `Best TVs (${currentMonthYear}) - Compare Smart TVs, Prices & Specs - Hooks`;
   let seoDescription =
     "Browse the latest TVs with detailed display, audio, smart features, and price comparisons on Hooks.";
 
   if (filter === "trending") {
-    seoTitle = `Trending TVs ${currentYear} - Most Popular Smart TVs & Prices | Hooks`;
+    seoTitle = `Trending TVs (${currentMonthYear}) - Most Popular Smart TVs & Prices - Hooks`;
     seoDescription =
       "Explore trending TVs with rising demand, key specifications, and latest prices to find the right smart TV on Hooks.";
   } else if (filter === "new") {
-    seoTitle = `Latest TVs ${currentYear} - New Smart TV Launches & Prices | Hooks`;
+    seoTitle = `Latest TVs (${currentMonthYear}) - New Smart TV Launches & Prices - Hooks`;
     seoDescription =
       "Discover newly launched TVs with updated specifications, panel details, refresh rates, and best store prices on Hooks.";
   }
 
   if (currentBrandObj) {
-    seoTitle = `${currentBrandObj.name} TVs ${currentYear} - Models, Prices & Specs | Hooks`;
+    seoTitle = `${currentBrandObj.name} TVs (${currentMonthYear}) - Models, Prices & Specs - Hooks`;
     seoDescription = sanitizeDescription(
       currentBrandObj.description ||
         `Compare ${currentBrandObj.name} TVs with detailed specifications, latest prices, and top store offers on Hooks.`,

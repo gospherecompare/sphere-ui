@@ -26,7 +26,7 @@ const Terms = () => {
   return (
     <>
       <SEO
-        title="Terms and Conditions - Device Comparison Platform | Hooks"
+        title="Terms and Conditions - Device Comparison Platform - Hooks"
         description="Read the Terms and Conditions for using Hooks. We're a device comparison platform, not an e-commerce store."
         image={`${canonical}/og-image`}
         url={canonical}

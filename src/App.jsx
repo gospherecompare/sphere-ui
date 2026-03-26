@@ -46,6 +46,10 @@ import {
 const SITE_ORIGIN = "https://tryhook.shop";
 const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/hook-logo.svg`;
 const CURRENT_YEAR = new Date().getFullYear();
+const CURRENT_MONTH_YEAR = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  year: "numeric",
+}).format(new Date());
 const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
 const SMARTPHONE_LIST_SLUGS = new Set(["upcoming"]);
 const SMARTPHONE_FILTER_SEO = {
@@ -249,38 +253,38 @@ const resolveSeoMeta = (pathname) => {
     {
       test: (p) => p === "/",
       title:
-        "Compare Smartphones, Laptops & TVs in India | Specs, Prices & Reviews | Hooks",
+        "Compare Smartphones, Laptops & TVs in India - Specs, Prices & Reviews - Hooks",
       description:
         "Compare smartphones, laptops, TVs, and networking devices in India with specs, prices, variants, and trend insights. Discover latest launches on Hooks.",
       keywords: `hooks, best gadget comparison site, mobile price comparison india, compare laptops smartphones tvs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, latest laptops in india ${CURRENT_YEAR}, latest smart tvs in india ${CURRENT_YEAR}, new launch and trending gadgets, top selling gadgets india, compare specs`,
     },
     {
       test: () => Boolean(smartphoneDetailName),
-      title: `${smartphoneDetailName} Price, Specs & Comparison in India (${CURRENT_YEAR}) | Hooks`,
+      title: `${smartphoneDetailName} Price, Specs & Comparison in India (${CURRENT_MONTH_YEAR}) - Hooks`,
       description: `Compare ${smartphoneDetailName} price in India, full specifications, variants, launch details, and latest offers on Hooks.`,
       keywords: `${smartphoneDetailName.toLowerCase()}, ${smartphoneDetailName.toLowerCase()} price in india, ${smartphoneDetailName.toLowerCase()} specifications, ${smartphoneDetailName.toLowerCase()} launch date, compare smartphones, mobile price comparison india`,
     },
     {
       test: () => Boolean(laptopDetailName),
-      title: `${laptopDetailName} Price, Specs & Comparison in India (${CURRENT_YEAR}) | Hooks`,
+      title: `${laptopDetailName} Price, Specs & Comparison in India (${CURRENT_MONTH_YEAR}) - Hooks`,
       description: `Compare ${laptopDetailName} laptop price in India, full specifications, variants, and best store offers on Hooks.`,
       keywords: `${laptopDetailName.toLowerCase()}, ${laptopDetailName.toLowerCase()} price in india, ${laptopDetailName.toLowerCase()} specs, compare laptops india, laptop prices list ${CURRENT_YEAR}`,
     },
     {
       test: () => Boolean(tvDetailName),
-      title: `${tvDetailName} Price, Specs & TV Comparison in India (${CURRENT_YEAR}) | Hooks`,
+      title: `${tvDetailName} Price, Specs & TV Comparison in India (${CURRENT_MONTH_YEAR}) - Hooks`,
       description: `Compare ${tvDetailName} TV price in India, size variants, display specs, smart features, and store offers on Hooks.`,
       keywords: `${tvDetailName.toLowerCase()}, ${tvDetailName.toLowerCase()} tv price in india, ${tvDetailName.toLowerCase()} specifications, smart tv comparison india, tv prices list ${CURRENT_YEAR}`,
     },
     {
       test: () => Boolean(blogDetailName),
-      title: `${blogDetailName} | Hooks Blog`,
+      title: `${blogDetailName} - Hooks Blog`,
       description: `Read ${blogDetailName} and more product insights, specifications, and buying guidance on Hooks.`,
       keywords: `${blogDetailName.toLowerCase()}, hooks blog, gadget blog, product insights`,
     },
     {
       test: (p) => p === "/smartphones/upcoming",
-      title: `Upcoming Smartphones ${CURRENT_YEAR} - Expected Launches & Preorders | Hooks`,
+      title: `Upcoming Smartphones (${CURRENT_MONTH_YEAR}) - Expected Launches & Preorders - Hooks`,
       description:
         "Track upcoming smartphones, expected launch timelines, and preorder-ready devices to plan your next upgrade.",
       keywords: `upcoming smartphones ${CURRENT_YEAR}, preorder phones, expected launch mobiles, new launch phones, smartphones launch calendar india`,
@@ -289,8 +293,8 @@ const resolveSeoMeta = (pathname) => {
       test: () => Boolean(smartphoneFilterMeta),
       title:
         smartphoneFilterSlug === "new"
-          ? `Latest Smartphones ${CURRENT_YEAR} - New Launches & Prices | Hooks`
-          : `Best Smartphones ${smartphoneFilterMeta?.label} in ${CURRENT_YEAR} - Reviews, Specs & Deals | Hooks`,
+          ? `Latest Smartphones (${CURRENT_MONTH_YEAR}) - New Launches & Prices - Hooks`
+          : `Best Smartphones ${smartphoneFilterMeta?.label} (${CURRENT_MONTH_YEAR}) - Reviews, Specs & Deals - Hooks`,
       description:
         smartphoneFilterSlug === "new"
           ? "Discover newly launched smartphones with updated prices, full specifications, and reviews. Stay updated with the latest mobile releases on Hooks."
@@ -308,28 +312,28 @@ const resolveSeoMeta = (pathname) => {
     },
     {
       test: (p) => p.startsWith("/smartphones") || p === "/mobiles",
-      title: "Smartphones - Compare Prices, Specs & Variants | Hooks",
+      title: `Best Smartphones (${CURRENT_MONTH_YEAR}) - Compare Prices, Specs & Variants - Hooks`,
       description:
         "Compare smartphones by price, RAM/ROM variants, camera, battery, and performance. Find trending and latest mobile launches on Hooks.",
       keywords: `smartphones, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch mobiles, trending phone in india, most popular mobiles, mobile price comparison india, moblie price comparison india, compare smartphone specs, compare smartphone prices, 5g phones in india, ai phone, ai budget phone, ${BUDGET_PHONE_KEYWORDS}`,
     },
     {
       test: (p) => p.startsWith("/laptops"),
-      title: "Laptops - Compare Models, Prices & Specifications | Hooks",
+      title: `Best Laptops (${CURRENT_MONTH_YEAR}) - Compare Models, Prices & Specifications - Hooks`,
       description:
         "Discover and compare laptops by processor, RAM, storage, display, and price. View current deals and top laptop picks on Hooks.",
       keywords: `laptops, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, compare laptops india, laptop comparison site, laptop compare specs, gaming laptops india, student laptops india, productivity laptops, vacuum cooler laptop and phone`,
     },
     {
       test: (p) => p.startsWith("/tvs") || p.startsWith("/appliances"),
-      title: "TVs - Compare Screen Sizes, Specs & Prices | Hooks",
+      title: `Best TVs (${CURRENT_MONTH_YEAR}) - Compare Screen Sizes, Specs & Prices - Hooks`,
       description:
         "Compare TVs across 43, 55, 65, and larger screen sizes with full specifications, variant pricing, and store availability on Hooks.",
       keywords: `tvs, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, smart tv comparison india, compare tv prices india, compare tv specs, 43 inch tv, 55 inch tv, 65 inch tv, 75 inch tv, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000`,
     },
     {
       test: (p) => p.startsWith("/networking"),
-      title: "Networking Devices - Compare Routers & More | Hooks",
+      title: `Networking Devices (${CURRENT_MONTH_YEAR}) - Compare Routers & More - Hooks`,
       description:
         "Compare routers and networking products with speed, band, and connectivity specs to choose the right setup for your needs.",
       keywords:
@@ -337,7 +341,7 @@ const resolveSeoMeta = (pathname) => {
     },
     {
       test: (p) => p.startsWith("/compare"),
-      title: "Device Comparison - Side by Side Specs & Prices | Hooks",
+      title: "Device Comparison - Side by Side Specs & Prices - Hooks",
       description:
         "Compare devices side by side with full specs, pricing, and feature differences to make faster buying decisions.",
       keywords:
@@ -345,14 +349,14 @@ const resolveSeoMeta = (pathname) => {
     },
     {
       test: (p) => p.startsWith("/trending"),
-      title: "Trending Devices - Smartphones, Laptops & TVs | Hooks",
+      title: `Trending Devices (${CURRENT_MONTH_YEAR}) - Smartphones, Laptops & TVs - Hooks`,
       description:
         "Track trending smartphones, laptops, and TVs based on momentum and user interest to spot what is hot right now.",
       keywords: `trending smartphones india, trending laptops india, trending tvs india, trending phone in india, most popular mobiles, top selling gadgets india, new launch and trending devices, latest smartphones in india ${CURRENT_YEAR}`,
     },
     {
       test: (p) => p.startsWith("/blogs") || p.startsWith("/blog"),
-      title: "Hooks Blogs | Product Insights and Buying Guides",
+      title: "Hooks Blogs - Product Insights and Buying Guides",
       description:
         "Read Hooks blogs for smartphones, laptops, and TVs with practical product insights and buying guidance.",
       keywords:
@@ -360,7 +364,7 @@ const resolveSeoMeta = (pathname) => {
     },
     {
       test: (p) => p.startsWith("/careers") || p.startsWith("/career"),
-      title: "Careers at Hooks | Join Hooks Team",
+      title: "Careers at Hooks - Join Hooks Team",
       description:
         "Apply for frontend, backend, content developer, and fullstack opportunities at Hooks through a simple step-by-step application form.",
       keywords:
@@ -368,7 +372,7 @@ const resolveSeoMeta = (pathname) => {
     },
     {
       test: (p) => p.startsWith("/about"),
-      title: "About Hooks | Product Discovery & Comparison Platform",
+      title: "About Hooks - Product Discovery & Comparison Platform",
       description:
         "Learn about Hooks, our mission, and how we help users compare technology products with structured and transparent information.",
       keywords:
@@ -376,7 +380,7 @@ const resolveSeoMeta = (pathname) => {
     },
     {
       test: (p) => p.startsWith("/contact"),
-      title: "Contact Hooks | Support, Partnerships & Press",
+      title: "Contact Hooks - Support, Partnerships & Press",
       description:
         "Contact Hooks for product support, partnerships, and press queries. Reach the team through verified contact channels.",
       keywords:
@@ -384,7 +388,7 @@ const resolveSeoMeta = (pathname) => {
     },
     {
       test: (p) => p.startsWith("/privacy-policy"),
-      title: "Privacy Policy | Hooks",
+      title: "Privacy Policy - Hooks",
       description:
         "Read Hooks privacy policy to understand what data we collect, why we collect it, and how you can control your information.",
       keywords:
@@ -392,7 +396,7 @@ const resolveSeoMeta = (pathname) => {
     },
     {
       test: (p) => p.startsWith("/terms"),
-      title: "Terms of Use | Hooks",
+      title: "Terms of Use - Hooks",
       description:
         "Read Hooks terms of use covering platform usage, content accuracy, and service limitations.",
       keywords: "terms of use, hooks terms, website terms, usage policy",
@@ -416,7 +420,7 @@ const resolveSeoMeta = (pathname) => {
   return {
     path,
     canonicalPath,
-    title: matched?.title || "Hooks | Smart Device Comparison Platform",
+    title: matched?.title || "Hooks - Smart Device Comparison Platform",
     description: matched?.description || DEFAULT_SEO_DESCRIPTION,
     keywords: matched?.keywords || DEFAULT_SEO_KEYWORDS,
     robots: matched?.robots || "index, follow",
