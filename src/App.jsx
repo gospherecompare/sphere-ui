@@ -42,6 +42,7 @@ import {
   createOrganizationSchema,
   createWebsiteSchema,
 } from "./utils/schemaGenerators";
+import { normalizeSeoTitle } from "./utils/seoTitle";
 
 const SITE_ORIGIN = "https://tryhook.shop";
 const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/hook-logo.svg`;
@@ -433,6 +434,7 @@ const RouteSeoFallback = () => {
   // Initialize all hooks before any conditional returns
   const seo = resolveSeoMeta(pathname);
   const canonicalUrl = `${SITE_ORIGIN}${seo.canonicalPath}`;
+  const normalizedTitle = normalizeSeoTitle(seo.title);
   const schemaJson = React.useMemo(() => {
     if (seo.canonicalPath === "/") {
       return JSON.stringify([
@@ -462,20 +464,26 @@ const RouteSeoFallback = () => {
 
   return (
     <Helmet prioritizeSeoTags>
-      <title>{seo.title}</title>
+      <title>{normalizedTitle}</title>
       <meta name="description" content={seo.description} />
       <meta name="keywords" content={seo.keywords} />
       <meta name="robots" content={seo.robots} />
       <link rel="canonical" href={canonicalUrl} />
       <meta property="og:type" content="website" />
-      <meta property="og:title" content={seo.title} />
+      <meta property="og:title" content={normalizedTitle} />
       <meta property="og:description" content={seo.description} />
       <meta property="og:url" content={canonicalUrl} />
       <meta property="og:image" content={DEFAULT_OG_IMAGE} />
+      <meta property="og:image:secure_url" content={DEFAULT_OG_IMAGE} />
+      <meta property="og:image:type" content="image/svg+xml" />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta property="og:image:alt" content="Hooks preview image" />
       <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={seo.title} />
+      <meta name="twitter:title" content={normalizedTitle} />
       <meta name="twitter:description" content={seo.description} />
       <meta name="twitter:image" content={DEFAULT_OG_IMAGE} />
+      <meta name="twitter:image:alt" content="Hooks preview image" />
       {schemaJson && <script type="application/ld+json">{schemaJson}</script>}
     </Helmet>
   );

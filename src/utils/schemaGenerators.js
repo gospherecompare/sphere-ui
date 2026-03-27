@@ -21,6 +21,51 @@ const toAbsoluteUrl = (value, fallbackPath = "/") => {
   return `${SITE_ORIGIN}/${raw}`;
 };
 
+const normalizeImageObject = (
+  entry,
+  { width = 1200, height = 630, alt = "" } = {},
+) => {
+  if (!entry) return null;
+
+  if (typeof entry === "string") {
+    return {
+      "@type": "ImageObject",
+      url: toAbsoluteUrl(entry),
+      width,
+      height,
+      ...(alt ? { caption: alt } : {}),
+    };
+  }
+
+  if (typeof entry !== "object") return null;
+
+  const rawUrl = entry.url || entry.src || entry.image || entry["@id"];
+  if (!rawUrl) return null;
+
+  const resolvedWidth = Number(entry.width ?? width);
+  const resolvedHeight = Number(entry.height ?? height);
+  const caption = entry.caption || entry.alt || alt || "";
+
+  const imageObject = {
+    "@type": "ImageObject",
+    url: toAbsoluteUrl(rawUrl),
+  };
+
+  if (Number.isFinite(resolvedWidth) && resolvedWidth > 0) {
+    imageObject.width = resolvedWidth;
+  }
+
+  if (Number.isFinite(resolvedHeight) && resolvedHeight > 0) {
+    imageObject.height = resolvedHeight;
+  }
+
+  if (caption) {
+    imageObject.caption = caption;
+  }
+
+  return imageObject;
+};
+
 /**
  * Generate Product schema for product detail pages
  * Always pass the dynamic URL!
@@ -29,6 +74,9 @@ export const createProductSchema = ({
   name,
   description,
   image,
+  imageWidth = 1200,
+  imageHeight = 630,
+  imageAlt = "",
   price,
   priceCurrency = "INR",
   url,
@@ -57,7 +105,15 @@ export const createProductSchema = ({
   };
 
   if (image) {
-    schema.image = Array.isArray(image) ? image : [image];
+    const imageDefaults = { width: imageWidth, height: imageHeight, alt: imageAlt };
+    const normalizedImages = (Array.isArray(image) ? image : [image])
+      .map((entry) => normalizeImageObject(entry, imageDefaults))
+      .filter(Boolean);
+
+    if (normalizedImages.length) {
+      schema.image =
+        normalizedImages.length === 1 ? normalizedImages[0] : normalizedImages;
+    }
   }
 
   if (brand) {

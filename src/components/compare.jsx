@@ -34,6 +34,7 @@ import normalizeProduct from "../utils/normalizeProduct";
 import { Helmet } from "react-helmet-async";
 import { createWebApplicationSchema } from "../utils/schemaGenerators";
 import { buildListSeoKeywords } from "../utils/seoKeywordBuilder";
+import { normalizeSeoTitle } from "../utils/seoTitle";
 
 const Search = FaSearch;
 const X = FaTimes;
@@ -2932,6 +2933,7 @@ const MobileCompare = () => {
       : canonicalCompareEntries.length > 0
         ? `Compare Selected Devices - Specs, Prices & Features ${currentYear}`
         : `Device Comparison - Compare Specs, Prices & Features ${currentYear}`;
+  const normalizedMetaTitle = normalizeSeoTitle(metaTitle);
 
   const metaDescription =
     seoSelectedNames.length > 0
@@ -2968,18 +2970,18 @@ const MobileCompare = () => {
 
   const compareSchemaJson = useMemo(() => {
     const schema = createWebApplicationSchema({
-      name: metaTitle,
+      name: normalizedMetaTitle,
       description: metaDescription,
       url: canonicalCompareUrl,
       applicationCategory: "UtilityApplication",
     });
     return JSON.stringify(schema);
-  }, [metaTitle, metaDescription, canonicalCompareUrl]);
+  }, [normalizedMetaTitle, metaDescription, canonicalCompareUrl]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
 
-    document.title = metaTitle;
+    document.title = normalizedMetaTitle;
     upsertMetaTag('meta[name="description"]', {
       name: "description",
       content: metaDescription,
@@ -2990,7 +2992,7 @@ const MobileCompare = () => {
     });
     upsertMetaTag('meta[property="og:title"]', {
       property: "og:title",
-      content: metaTitle,
+      content: normalizedMetaTitle,
     });
     upsertMetaTag('meta[property="og:description"]', {
       property: "og:description",
@@ -3002,7 +3004,7 @@ const MobileCompare = () => {
     });
     upsertMetaTag('meta[name="twitter:title"]', {
       name: "twitter:title",
-      content: metaTitle,
+      content: normalizedMetaTitle,
     });
     upsertMetaTag('meta[name="twitter:description"]', {
       name: "twitter:description",
@@ -3013,12 +3015,12 @@ const MobileCompare = () => {
       content: canonicalCompareUrl,
     });
     upsertCanonicalLink(canonicalCompareUrl);
-  }, [canonicalCompareUrl, metaDescription, metaKeywords, metaTitle]);
+  }, [canonicalCompareUrl, metaDescription, metaKeywords, normalizedMetaTitle]);
 
   return (
     <div className="min-h-screen ">
       <Helmet prioritizeSeoTags>
-        <title key="compare-title">{metaTitle}</title>
+        <title key="compare-title">{normalizedMetaTitle}</title>
         <meta
           key="compare-description"
           name="description"
@@ -3031,7 +3033,11 @@ const MobileCompare = () => {
           href={canonicalCompareUrl}
         />
         <meta key="compare-og-type" property="og:type" content="website" />
-        <meta key="compare-og-title" property="og:title" content={metaTitle} />
+        <meta
+          key="compare-og-title"
+          property="og:title"
+          content={normalizedMetaTitle}
+        />
         <meta
           key="compare-og-description"
           property="og:description"
@@ -3050,7 +3056,7 @@ const MobileCompare = () => {
         <meta
           key="compare-twitter-title"
           name="twitter:title"
-          content={metaTitle}
+          content={normalizedMetaTitle}
         />
         <meta
           key="compare-twitter-description"

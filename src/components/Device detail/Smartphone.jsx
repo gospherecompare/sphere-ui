@@ -1916,82 +1916,75 @@ const MobileDetailCard = () => {
 
     const brand = data.brand || data.brand_name || data.manufacturer || "";
     const name = getDisplayProductName(data);
+    const identity =
+      brand && name
+        ? name.toLowerCase().includes(brand.toLowerCase())
+          ? name
+          : `${brand} ${name}`
+        : name || brand || "";
+    if (!identity) return "";
 
     const processorRaw =
       variant?.processor || data.performance?.processor || data.processor || "";
     const processor =
       !isPrimitive(processorRaw) || processorRaw === ""
         ? ""
-        : formatSpecValue(processorRaw, "processor")
-            .replace(/\s+/g, " ")
-            .trim();
+        : getCompactProcessorLabel(processorRaw);
 
     const ramRaw = variant?.ram || data.performance?.ram || "";
-    const ram =
-      !isPrimitive(ramRaw) || ramRaw === ""
-        ? ""
-        : String(ramRaw).toUpperCase().includes("GB")
-          ? ramRaw
-          : `${ramRaw}GB`;
+    const ram = normalizeMemoryLabel(ramRaw);
 
     const storageRaw =
       variant?.storage ||
       data.performance?.storage ||
       data.performance?.ROM_storage ||
       "";
-    const storage =
-      !isPrimitive(storageRaw) || storageRaw === ""
-        ? ""
-        : String(storageRaw).toUpperCase().includes("GB")
-          ? storageRaw
-          : `${storageRaw}GB`;
+    const storage = normalizeMemoryLabel(storageRaw);
 
     const cameraValue = getMainCameraMp(data);
     const cameraRaw = data.camera?.main_camera || data.camera || "";
     const camera =
       cameraValue != null
-        ? `${cameraValue}MP`
+        ? `${cameraValue}MP Camera`
         : !isPrimitive(cameraRaw) || cameraRaw === ""
           ? ""
-          : formatSpecValue(cameraRaw, "camera").trim();
+          : `${formatSpecValue(cameraRaw, "camera")
+              .replace(/\s+/g, " ")
+              .trim()} Camera`;
 
     const batteryValue = getBatteryCapacityMah(data);
     const batteryRaw = getBatteryCapacityRaw(data) ?? "";
     const battery =
       batteryValue != null
-        ? `${batteryValue}mAh`
+        ? `${batteryValue}mAh Battery`
         : !isPrimitive(batteryRaw) || batteryRaw === ""
           ? ""
-          : formatSpecValue(batteryRaw, "battery").trim();
+          : `${formatSpecValue(batteryRaw, "battery")
+              .replace(/\s+/g, " ")
+              .trim()} Battery`;
 
     const displayRaw = data.display?.size || data.display || "";
     const display =
       !isPrimitive(displayRaw) || displayRaw === ""
         ? ""
-        : String(displayRaw).replace(/"/g, "").trim();
-
-    const priceText =
-      variant?.base_price != null
-        ? `Price starts at ₹${formatPrice(variant.base_price)}`
-        : "";
+        : getCompactDisplayLabel(displayRaw);
 
     const highlights = [
-      processor && `Processor: ${processor}`,
-      camera && `${camera} Camera`,
-      battery && `${battery} Battery`,
-      display && `${display}" Display`,
+      processor,
       ram && `${ram} RAM`,
       storage && `${storage} Storage`,
-    ].filter(Boolean);
+      display && `${display} Display`,
+      camera,
+      battery,
+    ]
+      .filter(Boolean)
+      .slice(0, 3);
 
-    const identity = [brand, name].filter(Boolean).join(" ").trim();
-    if (!identity) return "";
-    const highlightText = highlights.length
-      ? ` â€” ${highlights.slice(0, 4).join(" Â· ")}`
-      : "";
-    const priceSuffix = priceText ? `. ${priceText}.` : ".";
-
-    return `${identity}${highlightText}${priceSuffix} Compare prices, variants, and detailed specs on Hooks.`;
+    return smartphoneMeta.description({
+      name,
+      brand,
+      highlights,
+    });
   };
 
   const getCompactProcessorLabel = (raw) => {
@@ -3557,43 +3550,53 @@ Price: ${price}
         ? descriptiveTitle
         : `${metaBrand} ${descriptiveTitle}`
       : descriptiveTitle;
-  const currentMonthYearLabel = new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    year: "numeric",
-  }).format(new Date());
-  const metaTitleBase =
-    titleWithBrand ||
-    smartphoneMeta.title({
-      name: metaName,
-      ram: metaRam,
-      storage: metaStorage,
-    });
+  const metaTitleBase = smartphoneMeta.title({
+    name: metaName,
+    brand: metaBrand,
+  });
   const metaVariantTag = [currentVariant?.ram, currentVariant?.storage]
     .filter(Boolean)
     .join(" / ");
-  const metaTitle =
-    metaVariantTag && !String(metaTitleBase).includes(metaVariantTag)
-      ? `${metaTitleBase} (${metaVariantTag})`
-      : metaTitleBase;
-  const metaTitleWithMonthYear = String(metaTitle).includes(
-    currentMonthYearLabel,
-  )
-    ? metaTitle
-    : `${metaTitle} (${currentMonthYearLabel})`;
+  const metaTitle = metaTitleBase;
+
+  const normalizeMemoryLabel = (raw) => {
+    const text = String(raw || "").replace(/\s+/g, " ").trim();
+    if (!text) return "";
+
+    const cleaned = text
+      .replace(/\b(RAM|Storage)\b/gi, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (!cleaned) return "";
+    return cleaned.toUpperCase().includes("GB") ? cleaned : `${cleaned}GB`;
+  };
 
   const metaDescription =
     buildMetaDescription(mobileData, currentVariant) ||
     smartphoneMeta.description({
       name: metaName,
-      ram: metaRam,
-      storage: metaStorage,
       brand: metaBrand,
+      highlights: [
+        headerProcessor,
+        normalizeMemoryLabel(metaRam) && `${normalizeMemoryLabel(metaRam)} RAM`,
+        normalizeMemoryLabel(metaStorage) &&
+          `${normalizeMemoryLabel(metaStorage)} Storage`,
+        currentMainCameraMp && `${currentMainCameraMp}MP Camera`,
+        batteryForShare && `${batteryForShare} Battery`,
+      ]
+        .filter(Boolean)
+        .slice(0, 3),
     });
 
   const primaryImage = Array.isArray(mobileData?.images)
     ? mobileData.images[0]
     : null;
   const ogImage = toAbsoluteUrl(primaryImage);
+  const ogImageWidth = 1200;
+  const ogImageHeight = 630;
+  const ogImageAlt =
+    [metaBrand, metaName].filter(Boolean).join(" ").trim() || metaTitle;
   const schemaPrice = useMemo(
     () =>
       currentVariant?.base_price ??
@@ -3631,7 +3634,15 @@ Price: ${price}
     return createProductSchema({
       name,
       description: metaDescription,
-      image: ogImage || undefined,
+      image: ogImage
+        ? {
+            url: ogImage,
+            width: ogImageWidth,
+            height: ogImageHeight,
+            caption: ogImageAlt,
+          }
+        : undefined,
+      imageAlt: ogImageAlt,
       price: schemaPrice ?? undefined,
       availability: mapAvailabilityFromStatus(
         launchStatus ||
@@ -3663,6 +3674,9 @@ Price: ${price}
     mobileData,
     canonicalUrl,
     metaBrand,
+    ogImageWidth,
+    ogImageHeight,
+    ogImageAlt,
     schemaRatingValue,
     schemaRatingCount,
     currentVariant,
@@ -3969,10 +3983,13 @@ Price: ${price}
   return (
     <div className="px-2 lg:px-4 mx-auto bg-white max-w-4xl w-full m-0">
       <SEO
-        title={metaTitleWithMonthYear}
+        title={metaTitle}
         description={metaDescription}
         keywords={metaKeywords}
         image={ogImage}
+        imageWidth={ogImageWidth}
+        imageHeight={ogImageHeight}
+        imageAlt={ogImageAlt}
         url={canonicalUrl}
         ogType="product"
         schema={productSchema}

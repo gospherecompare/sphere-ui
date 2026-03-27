@@ -1,6 +1,7 @@
 import React from "react";
 import { Helmet } from "react-helmet-async";
 import { useLocation } from "react-router-dom";
+import { normalizeSeoTitle } from "../utils/seoTitle";
 
 const SITE_ORIGIN = "https://tryhook.shop";
 
@@ -41,6 +42,16 @@ const getCanonicalUrl = (customUrl, pathname) => {
   return `${SITE_ORIGIN}${pathname || "/"}`;
 };
 
+const inferImageType = (url) => {
+  const raw = String(url || "").toLowerCase();
+  if (raw.endsWith(".png")) return "image/png";
+  if (raw.endsWith(".webp")) return "image/webp";
+  if (raw.endsWith(".avif")) return "image/avif";
+  if (raw.endsWith(".gif")) return "image/gif";
+  if (raw.endsWith(".svg")) return "image/svg+xml";
+  return "image/jpeg";
+};
+
 /**
  * Production-Ready SEO Component
  * Handles all SEO meta tags, canonical URLs, Open Graph, and Twitter Cards
@@ -72,6 +83,10 @@ const SEO = ({
   description = "",
   keywords = "",
   image = null,
+  imageWidth = 1200,
+  imageHeight = 630,
+  imageAlt = "",
+  imageType = null,
   url = null,
   robots = "index, follow",
   ogType = "website",
@@ -88,12 +103,59 @@ const SEO = ({
     () => getCanonicalUrl(url, pathname),
     [url, pathname],
   );
+  const normalizedTitle = React.useMemo(
+    () => normalizeSeoTitle(title),
+    [title],
+  );
+
+  const imageInput = React.useMemo(() => {
+    if (!image || typeof image !== "object" || Array.isArray(image)) return null;
+    return image;
+  }, [image]);
+
+  const imageSource = imageInput
+    ? imageInput.url || imageInput.src || imageInput.image || imageInput["@id"]
+    : image;
 
   // Resolve absolute image URL
   const absoluteImage = React.useMemo(
-    () => (image ? toAbsoluteUrl(image) : null),
-    [image],
+    () => (imageSource ? toAbsoluteUrl(imageSource) : null),
+    [imageSource],
   );
+
+  const imageMeta = React.useMemo(() => {
+    if (!absoluteImage) return null;
+
+    const widthValue = Number(imageInput?.width ?? imageWidth);
+    const heightValue = Number(imageInput?.height ?? imageHeight);
+    const resolvedAlt = String(
+      imageInput?.alt ||
+        imageInput?.caption ||
+        imageAlt ||
+        normalizedTitle ||
+        description ||
+        "",
+    )
+      .replace(/\s+/g, " ")
+      .trim();
+
+    return {
+      url: absoluteImage,
+      width: Number.isFinite(widthValue) && widthValue > 0 ? widthValue : null,
+      height: Number.isFinite(heightValue) && heightValue > 0 ? heightValue : null,
+      alt: resolvedAlt,
+      type: imageType || inferImageType(absoluteImage),
+    };
+  }, [
+    absoluteImage,
+    imageInput,
+    imageWidth,
+    imageHeight,
+    imageAlt,
+    imageType,
+    normalizedTitle,
+    description,
+  ]);
 
   const resolvedSchema = React.useMemo(() => {
     if (!schema) return null;
@@ -125,7 +187,7 @@ const SEO = ({
   return (
     <Helmet prioritizeSeoTags>
       {/* ===== BASIC META TAGS ===== */}
-      <title>{title}</title>
+      <title>{normalizedTitle}</title>
       {description && <meta name="description" content={description} />}
       {keywords ? <meta name="keywords" content={keywords} /> : null}
       <meta name="robots" content={robots} />
@@ -139,18 +201,25 @@ const SEO = ({
       <link rel="canonical" href={canonicalUrl} />
 
       {/* ===== OPEN GRAPH META TAGS ===== */}
-      <meta property="og:title" content={title} />
+      <meta property="og:title" content={normalizedTitle} />
       {description && <meta property="og:description" content={description} />}
       <meta property="og:type" content={ogType} />
       <meta property="og:url" content={canonicalUrl} />
       <meta property="og:site_name" content="Hooks" />
-      {absoluteImage && <meta property="og:image" content={absoluteImage} />}
-      {absoluteImage && (
-        <meta property="og:image:secure_url" content={absoluteImage} />
+      {imageMeta && <meta property="og:image" content={imageMeta.url} />}
+      {imageMeta && (
+        <meta property="og:image:secure_url" content={imageMeta.url} />
       )}
-      {absoluteImage && <meta property="og:image:type" content="image/jpeg" />}
-      <meta property="og:image:width" content="1200" />
-      <meta property="og:image:height" content="630" />
+      {imageMeta && <meta property="og:image:type" content={imageMeta.type} />}
+      {imageMeta && imageMeta.width ? (
+        <meta property="og:image:width" content={String(imageMeta.width)} />
+      ) : null}
+      {imageMeta && imageMeta.height ? (
+        <meta property="og:image:height" content={String(imageMeta.height)} />
+      ) : null}
+      {imageMeta && imageMeta.alt ? (
+        <meta property="og:image:alt" content={imageMeta.alt} />
+      ) : null}
 
       {/* ===== TWITTER CARD META TAGS ===== */}
       <meta name="twitter:card" content="summary_large_image" />
@@ -158,9 +227,12 @@ const SEO = ({
       {twitterCreator && (
         <meta name="twitter:creator" content={twitterCreator} />
       )}
-      <meta name="twitter:title" content={title} />
+      <meta name="twitter:title" content={normalizedTitle} />
       {description && <meta name="twitter:description" content={description} />}
-      {absoluteImage && <meta name="twitter:image" content={absoluteImage} />}
+      {imageMeta && <meta name="twitter:image" content={imageMeta.url} />}
+      {imageMeta && imageMeta.alt ? (
+        <meta name="twitter:image:alt" content={imageMeta.alt} />
+      ) : null}
 
       {/* ===== ADDITIONAL OPTIMIZATION ===== */}
       <meta name="theme-color" content="#ffffff" />

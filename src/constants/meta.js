@@ -3,17 +3,43 @@ const CURRENT_MONTH_YEAR = new Intl.DateTimeFormat("en-US", {
   month: "short",
   year: "numeric",
 }).format(new Date());
+const CURRENT_DAY_MONTH_YEAR = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+}).format(new Date());
 
 export const smartphoneMeta = {
-  title: ({ name, ram, storage }) =>
-    `${name}${ram ? ` (${ram} RAM` : ""}${
-      storage ? `, ${storage} Storage)` : ram ? ")" : ""
-    } (${CURRENT_MONTH_YEAR}) - Price, Specs & Offers - Hooks`,
+  title: ({ name, brand }) => {
+    const identity =
+      brand && name
+        ? name.toLowerCase().includes(brand.toLowerCase())
+          ? name
+          : `${brand} ${name}`
+        : name || brand || "";
+    if (!identity) return "";
 
-  description: ({ name, ram, storage, brand }) =>
-    `${name}${brand ? ` by ${brand}` : ""}${ram ? ` with ${ram} RAM` : ""}${
-      storage ? ` and ${storage} storage` : ""
-    }. Compare prices, variants, and full specifications on Hooks.`,
+    return `${identity} Price in India Full Specifications, Features and Buying Guide (${CURRENT_DAY_MONTH_YEAR}) - Hooks`;
+  },
+
+  description: ({ name, brand, highlights = [] }) => {
+    const identity =
+      brand && name
+        ? name.toLowerCase().includes(brand.toLowerCase())
+          ? name
+          : `${brand} ${name}`
+        : name || brand || "";
+    if (!identity) return "";
+
+    const intro = `Explore ${identity} price in India, complete specifications, key features, RAM and storage variants, display, camera and battery details, and a clear buying guide to help you choose the right variant.`;
+    const cleanHighlights = Array.isArray(highlights)
+      ? highlights.filter(Boolean).slice(0, 3)
+      : [];
+
+    return cleanHighlights.length
+      ? `${intro} Key highlights: ${cleanHighlights.join(", ")}.`
+      : intro;
+  },
 };
 
 export const laptopMeta = {

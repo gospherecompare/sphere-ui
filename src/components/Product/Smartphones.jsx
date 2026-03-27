@@ -1,6 +1,5 @@
 // src/components/DeviceList.jsx
 import React, { useState, useEffect, useMemo } from "react";
-import { Helmet } from "react-helmet-async";
 import {
   FaStar,
   FaBatteryFull,
@@ -48,6 +47,7 @@ import ProductNav from "../Home/Products";
 import useStoreLogos from "../../hooks/useStoreLogos";
 import Spinner from "../ui/Spinner";
 import Breadcrumbs from "../Breadcrumbs";
+import SEO from "../SEO";
 import { generateSlug } from "../../utils/slugGenerator";
 import normalizeProduct from "../../utils/normalizeProduct";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
@@ -58,6 +58,7 @@ import {
   createItemListSchema,
 } from "../../utils/schemaGenerators";
 import { buildListSeoKeywords } from "../../utils/seoKeywordBuilder";
+import { normalizeSeoTitle } from "../../utils/seoTitle";
 import {
   computePopularSmartphoneFeatures,
   SMARTPHONE_FEATURE_CATALOG,
@@ -1977,6 +1978,11 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     month: "short",
     year: "numeric",
   }).format(new Date());
+  const currentDayMonthYear = new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(new Date());
 
   const priceFilterMap = {
     "under-10000": { min: 0, max: 10000, label: "Under ₹10,000" },
@@ -1998,28 +2004,28 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     return text.length > 180 ? `${text.slice(0, 177)}...` : text;
   };
 
-  let seoTitle = `Best Smartphones (${currentMonthYear}) - Compare Prices, Specs & Reviews - Hooks`;
+  let seoTitle = `Smartphones (${currentYear}) - Price, Specifications and Features in India - Hooks`;
   let seoDescription = sanitizeDescription(
     "Browse the latest smartphones with detailed specs, prices, reviews, and comparisons on Hooks.",
   );
 
   if (isUpcomingView) {
-    seoTitle = `Upcoming Smartphones (${currentMonthYear}) - Expected Launches & Preorders - Hooks`;
+    seoTitle = `Upcoming smartphones update (${currentDayMonthYear}) - Full Specifications, Features and Price - Hooks`;
     seoDescription =
       "Track upcoming smartphones, expected launch timelines, and preorder-ready devices to plan your next upgrade.";
   } else if (isSingleSmartphonePath) {
-    seoTitle = `Best Smartphones (${currentMonthYear}) - Compare Prices, Specs & Reviews - Hooks`;
+    seoTitle = `Smartphones (${currentYear}) - Price, Specifications and Features in India - Hooks`;
     seoDescription =
       "Compare the latest smartphones on Hooks. Explore detailed specifications, prices, reviews, and side-by-side comparisons before you buy.";
   } else if (isNewFilterPath) {
-    seoTitle = `Latest Smartphones (${currentMonthYear}) - New Launches & Prices - Hooks`;
+    seoTitle = `Latest smartphones update (${currentDayMonthYear}) - Full Specifications, Features and Price - Hooks`;
     seoDescription =
       "Discover newly launched smartphones with updated prices, full specifications, and reviews. Stay updated with the latest mobile releases on Hooks.";
   } else if (priceFilter) {
-    seoTitle = `Best Smartphones ${priceFilter.label} (${currentMonthYear}) - Reviews, Specs & Deals - Hooks`;
+    seoTitle = `Best Smartphones ${priceFilter.label} (${currentMonthYear}) - Full Specifications, Features and Price - Hooks`;
     seoDescription = `Explore the best smartphones ${priceFilter.label.toLowerCase()} with detailed specs, latest prices, reviews, and comparisons to choose the right phone for your budget.`;
   } else if (currentBrandObj) {
-    seoTitle = `${currentBrandObj.name} Smartphones (${currentMonthYear}) - Models, Prices & Specs - Hooks`;
+    seoTitle = `${currentBrandObj.name} Smartphones (${currentMonthYear}) - Full Specifications, Features and Price - Hooks`;
     seoDescription = sanitizeDescription(
       currentBrandObj.description ||
         `Explore ${currentBrandObj.name} smartphones on Hooks. Compare models, check prices, specifications, reviews, and find the best phone for your needs.`,
@@ -3399,8 +3405,20 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     const raw =
       firstWithImage?.images?.find(Boolean) || firstWithImage?.image || "";
     const abs = toAbsoluteUrl(raw);
-    return abs || "";
+    return abs || `${SITE_ORIGIN}/hook-logo.svg`;
   }, [sortedVariants, siteOrigin]);
+
+  const listOgImageMeta = listOgImage
+    ? {
+        url: listOgImage,
+        width: 1200,
+        height: 630,
+        alt: `${normalizeSeoTitle(seoTitle)
+          .replace(/\s*Hooks$/i, "")
+          .trim()} preview image`,
+      }
+    : null;
+  const normalizedSeoTitle = normalizeSeoTitle(seoTitle);
 
   const listSchemaUrl = `${SITE_ORIGIN}${
     location?.pathname ? location.pathname : "/smartphones"
@@ -3428,66 +3446,39 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
   const listSchema = useMemo(() => {
     const collectionSchema = createCollectionSchema({
-      name: seoTitle,
+      name: normalizedSeoTitle,
       description: seoDescription,
       url: listSchemaUrl,
-      image: listOgImage || undefined,
+      image: listOgImageMeta || undefined,
     });
     const itemListSchema = createItemListSchema({
-      name: seoTitle,
+      name: normalizedSeoTitle,
       url: listSchemaUrl,
       items: listSchemaItems,
     });
     return [collectionSchema, itemListSchema];
-  }, [seoTitle, seoDescription, listSchemaUrl, listOgImage, listSchemaItems]);
-
-  const listSchemaJson = useMemo(
-    () => (listSchema ? JSON.stringify(listSchema) : null),
-    [listSchema],
-  );
+  }, [
+    normalizedSeoTitle,
+    seoDescription,
+    listSchemaUrl,
+    listOgImageMeta,
+    listSchemaItems,
+  ]);
 
   if (noDataAndNotLoading) return null;
 
   return (
     <div className="min-h-screen  ">
       <style>{animationStyles}</style>
-      <Helmet prioritizeSeoTags>
-        <title>{seoTitle}</title>
-        <meta name="description" content={seoDescription} />
-        <meta name="keywords" content={seoKeywords} />
-
-        {/* Canonical URL - CRITICAL for SEO per route */}
-        <link rel="canonical" href={listSchemaUrl} />
-
-        {/* Open Graph */}
-        <meta property="og:type" content="website" />
-        <meta property="og:title" content={seoTitle} />
-        <meta property="og:description" content={seoDescription} />
-        <meta property="og:url" content={listSchemaUrl} />
-        {listOgImage ? (
-          <meta
-            key="smartphones-og-image"
-            property="og:image"
-            content={listOgImage}
-          />
-        ) : null}
-
-        {/* Twitter Card */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={seoTitle} />
-        <meta name="twitter:description" content={seoDescription} />
-        {listOgImage ? (
-          <meta
-            key="smartphones-twitter-image"
-            name="twitter:image"
-            content={listOgImage}
-          />
-        ) : null}
-
-        {listSchemaJson && (
-          <script type="application/ld+json">{listSchemaJson}</script>
-        )}
-      </Helmet>
+      <SEO
+        title={seoTitle}
+        description={seoDescription}
+        keywords={seoKeywords}
+        image={listOgImageMeta}
+        url={listSchemaUrl}
+        robots="index, follow, max-image-preview:large"
+        schema={listSchema}
+      />
       {/* Page Header with Descriptive Content */}
 
       {/* Main Content */}

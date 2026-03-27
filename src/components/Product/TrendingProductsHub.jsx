@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Helmet } from "react-helmet-async";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   FaCalendarAlt,
@@ -16,12 +15,14 @@ import {
 import Spinner from "../ui/Spinner";
 import useDevice from "../../hooks/useDevice";
 import useStoreLogos from "../../hooks/useStoreLogos";
+import SEO from "../SEO";
 import { generateSlug } from "../../utils/slugGenerator";
 import {
   createCollectionSchema,
   createItemListSchema,
 } from "../../utils/schemaGenerators";
 import { buildListSeoKeywords } from "../../utils/seoKeywordBuilder";
+import { normalizeSeoTitle } from "../../utils/seoTitle";
 import {
   computePopularSmartphoneFeatures,
   SMARTPHONE_FEATURE_CATALOG,
@@ -44,19 +45,24 @@ const CURRENT_MONTH_YEAR = new Intl.DateTimeFormat("en-US", {
   month: "short",
   year: "numeric",
 }).format(new Date());
+const CURRENT_DAY_MONTH_YEAR = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+}).format(new Date());
 
 const CATEGORIES = {
   smartphones: {
     id: "smartphones",
     label: "Smartphones",
     badge: "TRENDING SMARTPHONES",
-    title: `Trending Smartphones in India (${CURRENT_MONTH_YEAR}): Prices, Specs, and Best Deals`,
+    title: `Top smartphones in India (${CURRENT_DAY_MONTH_YEAR}) - Full Specifications, Features and Price - Hooks`,
     description:
       "Compare trending smartphones with camera, battery, display, and performance specs, plus live prices from top online stores.",
     endpoint: "/api/public/trending/smartphones?limit=120",
     detailPath: "/smartphones",
     icon: FaMobileAlt,
-    metaTitle: `Trending Smartphones in India (${CURRENT_MONTH_YEAR}) - Specs, Prices, Deals`,
+    metaTitle: `Trending smartphones update (${CURRENT_DAY_MONTH_YEAR}) - Full Specifications, Features and Price`,
     metaDescription:
       "Browse trending smartphones with detailed specs, latest prices, and best online deals.",
     metaKeywords:
@@ -1269,6 +1275,16 @@ const TrendingProductsHub = () => {
     arr(visible).find((p) => text(p?.image))?.image,
     arr(products).find((p) => text(p?.image))?.image,
   );
+  const ogImageUrl = ogImage || `${SITE_ORIGIN}/hook-logo.svg`;
+  const ogImageMeta = {
+    url: ogImageUrl,
+    width: 1200,
+    height: 630,
+    alt: `${normalizeSeoTitle(seoTitle)
+      .replace(/\s*Hooks$/i, "")
+      .trim()} preview image`,
+  };
+  const normalizedSeoTitle = normalizeSeoTitle(seoTitle);
 
   const listSchemaItems = useMemo(() => {
     const base = arr(visible).length ? arr(visible) : arr(products);
@@ -1291,48 +1307,36 @@ const TrendingProductsHub = () => {
 
   const listSchema = useMemo(() => {
     const collectionSchema = createCollectionSchema({
-      name: seoTitle,
+      name: normalizedSeoTitle,
       description: seoDescription,
       url: canonicalUrl,
-      image: ogImage || undefined,
+      image: ogImageMeta || undefined,
     });
     const itemListSchema = createItemListSchema({
-      name: seoTitle,
+      name: normalizedSeoTitle,
       url: canonicalUrl,
       items: listSchemaItems,
     });
     return [collectionSchema, itemListSchema];
-  }, [seoTitle, seoDescription, canonicalUrl, ogImage, listSchemaItems]);
-
-  const listSchemaJson = useMemo(
-    () => (listSchema ? JSON.stringify(listSchema) : null),
-    [listSchema],
-  );
+  }, [
+    normalizedSeoTitle,
+    seoDescription,
+    canonicalUrl,
+    ogImageMeta,
+    listSchemaItems,
+  ]);
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8 lg:p-10 bg-white">
-      <Helmet prioritizeSeoTags>
-        <title>{seoTitle}</title>
-        <meta name="description" content={seoDescription} />
-        <meta name="keywords" content={seoKeywords} />
-        <meta name="robots" content="index, follow, max-image-preview:large" />
-        <link rel="canonical" href={canonicalUrl} />
-
-        <meta property="og:type" content="website" />
-        <meta property="og:site_name" content="Hooks" />
-        <meta property="og:title" content={seoTitle} />
-        <meta property="og:description" content={seoDescription} />
-        <meta property="og:url" content={canonicalUrl} />
-        {ogImage ? <meta property="og:image" content={ogImage} /> : null}
-
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={seoTitle} />
-        <meta name="twitter:description" content={seoDescription} />
-        {ogImage ? <meta name="twitter:image" content={ogImage} /> : null}
-        {listSchemaJson && (
-          <script type="application/ld+json">{listSchemaJson}</script>
-        )}
-      </Helmet>
+      <SEO
+        title={seoTitle}
+        description={seoDescription}
+        keywords={seoKeywords}
+        image={ogImageMeta}
+        url={canonicalUrl}
+        robots="index, follow, max-image-preview:large"
+        schema={listSchema}
+      />
 
       <div className="mb-6 flex items-center gap-2 overflow-x-auto pb-1">
         {Object.values(CATEGORIES).map((c) => {

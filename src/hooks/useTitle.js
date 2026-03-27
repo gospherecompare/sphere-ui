@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { normalizeSeoTitle } from "../utils/seoTitle";
 
 const SITE_NAME = "Hooks";
 const BRAND_TAGLINE = "Gadget Destination";
@@ -36,7 +37,7 @@ function formatTitle({
   // Check if page is a predefined route with SEO title
   const pageKey = page?.toLowerCase().replace(/\s+/g, "");
   if (pageKey && PAGE_TITLES[pageKey]) {
-    return PAGE_TITLES[pageKey];
+    return normalizeSeoTitle(PAGE_TITLES[pageKey]);
   }
 
   const parts = [];
@@ -50,7 +51,7 @@ function formatTitle({
   // Always include site name as a suffix for branding/SEO
   if (siteName) parts.push(siteName);
 
-  return parts.filter(Boolean).join(" - ");
+  return normalizeSeoTitle(parts.filter(Boolean).join(" - "));
 }
 
 /**
@@ -64,7 +65,7 @@ function formatTitle({
  */
 export default function useTitle({ page, brand, name, siteName } = {}) {
   useEffect(() => {
-    const title = formatTitle({ page, brand, name, siteName });
+    const title = normalizeSeoTitle(formatTitle({ page, brand, name, siteName }));
     if (title) document.title = title;
 
     // Also set Open Graph and Twitter meta tags for better social sharing
