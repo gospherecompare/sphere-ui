@@ -109,6 +109,7 @@ const BaseSpecScoreBadge = ({
   showSpecLabel = false,
   zeroFallback = false,
   showValue = true,
+  variant = "default",
 }) => {
   const normalized = normalizeScore100(score);
   const displayNormalized = normalizeScore100(displayScore);
@@ -134,10 +135,24 @@ const BaseSpecScoreBadge = ({
         : remapScoreToBand(safePercentageRaw, 80, 98)
       : null;
   const label = percentage != null ? `${percentage.toFixed(1)}%` : "--";
+  const isGlass = variant === "glass";
+  const containerClass = isGlass
+    ? "inline-flex flex-col items-center justify-center rounded-xl border border-white/70 bg-white/60 px-2.5 py-1.5 leading-none shadow-[0_8px_24px_rgba(59,130,246,0.10)] backdrop-blur-md ring-1 ring-white/40"
+    : "inline-flex flex-col items-center justify-center rounded-md border border-violet-200 bg-violet-50/95 px-1.5 py-1 leading-none";
+  const valueClass = isGlass
+    ? "text-[11px] font-bold text-slate-700"
+    : "text-[11px] font-bold text-violet-700";
+  const labelClass = isGlass
+    ? `text-[8px] font-semibold uppercase tracking-wide text-slate-500 ${
+        showValue ? "mt-0.5" : ""
+      }`
+    : `text-[8px] font-semibold uppercase tracking-wide text-violet-600 ${
+        showValue ? "mt-0.5" : ""
+      }`;
 
   return (
     <div
-      className="inline-flex flex-col items-center justify-center rounded-md border border-violet-200 bg-violet-50/95 px-1.5 py-1 leading-none"
+      className={containerClass}
       style={{ minWidth: `${Math.max(38, Math.round(size))}px` }}
       aria-label={
         showValue
@@ -149,17 +164,9 @@ const BaseSpecScoreBadge = ({
             : "Score badge"
       }
     >
-      {showValue ? (
-        <span className="text-[11px] font-bold text-violet-700">{label}</span>
-      ) : null}
+      {showValue ? <span className={valueClass}>{label}</span> : null}
       {showSpecLabel ? (
-        <span
-          className={`text-[8px] font-semibold uppercase tracking-wide text-violet-600 ${
-            showValue ? "mt-0.5" : ""
-          }`}
-        >
-          {showValue ? "Spec" : "Spec Score"}
-        </span>
+        <span className={labelClass}>{showValue ? "Spec" : "Spec Score"}</span>
       ) : null}
     </div>
   );
@@ -266,7 +273,6 @@ const MobileDetailCard = () => {
     }
     // If nothing else, no-op; the global loader will fetch lists on mount.
   }, [id, routeSlug, searchModel, fetchDevice, findDeviceBySlug, smartphone]);
-
 
   // Update URL to match canonical slug-based path if needed
   useEffect(() => {
@@ -943,9 +949,7 @@ const MobileDetailCard = () => {
     () => isSpecScoreAllowed(launchStatus),
     [launchStatus],
   );
-  const SpecScoreBadge = allowSpecScore
-    ? BaseSpecScoreBadge
-    : HiddenScoreBadge;
+  const SpecScoreBadge = allowSpecScore ? BaseSpecScoreBadge : HiddenScoreBadge;
   const pickScore100 = useCallback((...values) => {
     for (const value of values) {
       const normalized = normalizeScore100(value);
@@ -3560,7 +3564,9 @@ Price: ${price}
   const metaTitle = metaTitleBase;
 
   const normalizeMemoryLabel = (raw) => {
-    const text = String(raw || "").replace(/\s+/g, " ").trim();
+    const text = String(raw || "")
+      .replace(/\s+/g, " ")
+      .trim();
     if (!text) return "";
 
     const cleaned = text
@@ -4600,15 +4606,15 @@ Price: ${price}
                 )}
 
                 {infoKeySections.length > 0 ? (
-                  <div className="mt-5  p-3 sm:p-4 ">
-                    <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200/70">
+                  <div className="mt-5 rounded-md border border-white/70 bg-white/70 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 pb-3">
                       <div>
                         <h3 className="text-lg font-semibold text-slate-900 tracking-tight">
-                          Highlighted Specs
+                          Key Information
                         </h3>
                       </div>
                       {hasContent(infoOsSummary) ? (
-                        <span className="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-medium text-violet-700">
+                        <span className="inline-flex items-center rounded-full border border-white/70 bg-white/60 px-2.5 py-1 text-[11px] font-medium text-violet-700 shadow-sm backdrop-blur-md">
                           {formatSpecValue(infoOsSummary, "OS")}
                         </span>
                       ) : null}
@@ -4617,15 +4623,18 @@ Price: ${price}
                       {infoKeySections.map((section) => (
                         <div
                           key={section.key}
-                          className=" bg-white py-3 sm:px-4 sm:py-3  transition-all duration-200 "
+                          className="group relative overflow-hidden rounded-md border border-white/70 bg-white/65 px-3 py-3  backdrop-blur-xl transition-all duration-200 hover:shadow-[0_14px_30px_rgba(59,130,246,0.08)] sm:px-4 sm:py-3"
                         >
+                          <span
+                            aria-hidden="true"
+                            className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/80 via-white/35 to-blue-50/40"
+                          />
                           {(() => {
                             const iconMeta = highlightIconMap[section.key];
                             const Icon = iconMeta?.Icon;
-                            const showScoreBadge = Number(section.score) > 0;
                             return (
-                              <div className="flex items-center gap-3">
-                                <div className="min-w-0">
+                              <div className="relative flex items-center gap-3">
+                                <div className="min-w-0 flex items-center gap-2">
                                   <div className="flex items-center">
                                     {Icon ? (
                                       <Icon
@@ -4637,17 +4646,16 @@ Price: ${price}
                                     </h4>
                                   </div>
                                 </div>
-                                <div className="h-px flex-1 bg-gradient-to-r from-slate-200 via-slate-300/70 to-slate-200" />
                               </div>
                             );
                           })()}
-                          <ul className="mt-2 space-y-2 px-1 sm:px-2">
+                          <ul className="relative mt-2 space-y-2 px-1 sm:px-2">
                             {section.points.map((point, idx) => (
                               <li
                                 key={idx}
                                 className="flex items-start gap-2.5 text-[14px] text-slate-700 leading-relaxed"
                               >
-                                <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-violet-500" />
+                                <span className="mt-[7px] h-2 w-2 shrink-0 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 ring-2 ring-white shadow-sm" />
                                 <span className="tracking-tight">
                                   {formatSpecValue(point, section.title)}
                                 </span>

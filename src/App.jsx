@@ -537,10 +537,10 @@ function App() {
   return (
     <Router>
       <RouteSeoFallback />
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-50">
+      <div className="min-h-screen w-full overflow-x-hidden bg-gradient-to-br from-blue-50 via-blue-50 to-blue-50">
         <Header />
         <div className="">
-          <div className="mx-auto max-w-4xl w-full overflow-hidden mt-3  px-4 sm:px-0 transition-all duration-700">
+          <div className="hidden sm:block mx-auto max-w-4xl w-full overflow-hidden mt-3 px-4 sm:px-0 transition-all duration-700">
             {/* BannerSlot disabled (incomplete). */}
           </div>
         </div>
@@ -689,10 +689,10 @@ function App() {
           {/* 404 Fallback */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        {/* BannerSlot disabled (incomplete). */}
+        <Footer />
+        {/* BannerSlot disabled (incomplete). */}
       </div>
-      {/* BannerSlot disabled (incomplete). */}
-      <Footer />
-      {/* BannerSlot disabled (incomplete). */}
     </Router>
   );
 }

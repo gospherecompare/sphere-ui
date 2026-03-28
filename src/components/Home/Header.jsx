@@ -214,7 +214,7 @@ const Header = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Keep the mobile spacer in sync with actual fixed header height.
+  // Keep the mobile header height in sync for sticky offsets.
   useEffect(() => {
     const updateMobileHeaderHeight = () => {
       if (typeof window === "undefined") return;
@@ -2504,19 +2504,13 @@ const Header = () => {
 
       <header
         ref={headerRef}
-        className="fixed top-0 left-0 right-0 z-40 bg-white lg:sticky lg:z-40"
+        className="sticky top-0 left-0 right-0 z-40 bg-white"
       >
         <MainHeader />
         <CategoryNavBar />
       </header>
 
       <MobileMenuDrawer />
-
-      {/* Spacer for fixed header (mobile only) */}
-      <div
-        className="md:hidden"
-        style={{ height: `${mobileHeaderHeight}px` }}
-      />
 
       <QuickNavTabs />
     </>

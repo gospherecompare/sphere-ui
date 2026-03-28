@@ -3,14 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { createProductPath } from "../../utils/slugGenerator";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
-import {
-  FaFire,
-  FaMobileAlt,
-  FaLaptop,
-  FaTv,
-  FaWifi,
-  FaArrowRight,
-} from "react-icons/fa";
+import { FaMobileAlt, FaLaptop, FaTv, FaWifi } from "react-icons/fa";
 
 const normalizeScore100 = (value) => {
   const n = Number(value);
@@ -138,36 +131,6 @@ const firstText = (...values) => {
     if (normalized) return normalized;
   }
   return null;
-};
-
-const compactMemoryLabel = (value, suffix) => {
-  const text = toText(value);
-  if (!text) return null;
-  if (suffix && new RegExp(`\\b${suffix}\\b`, "i").test(text)) return text;
-
-  const matches = Array.from(text.matchAll(/(\d+(?:\.\d+)?)\s*(TB|GB|MB)/gi));
-  if (matches.length === 0) {
-    return suffix ? `${text} ${suffix}` : text;
-  }
-
-  const units = Array.from(
-    new Set(matches.map((match) => match[2].toUpperCase())),
-  );
-
-  if (units.length === 1) {
-    const unit = units[0];
-    const amounts = matches
-      .map((match) => match[1])
-      .map((amount) => amount.replace(/\.0+$/, ""))
-      .filter(Boolean);
-    const uniqueAmounts = Array.from(new Set(amounts));
-    return `${uniqueAmounts.join("/")} ${unit}${suffix ? ` ${suffix}` : ""}`;
-  }
-
-  const joined = matches
-    .map((match) => `${match[1]} ${match[2].toUpperCase()}`)
-    .join(" / ");
-  return suffix ? `${joined} ${suffix}` : joined;
 };
 
 const parseVariantRamStorage = (label) => {
@@ -458,26 +421,14 @@ const TrendingSection = () => {
     {
       id: "smartphone",
       name: "Smartphones",
-      icon: <FaMobileAlt />,
-      activeGradient: "from-blue-600 via-purple-500 to-blue-600",
-      inactiveColor: "text-gray-400",
-      count: 156,
     },
     {
       id: "laptop",
       name: "Laptops",
-      icon: <FaLaptop />,
-      activeGradient: "from-blue-600 via-purple-500 to-blue-600",
-      inactiveColor: "text-gray-400",
-      count: 89,
     },
     {
       id: "appliance",
       name: "TVs",
-      icon: <FaTv />,
-      activeGradient: "from-blue-600 via-purple-500 to-blue-600",
-      inactiveColor: "text-gray-400",
-      count: 124,
     },
   ];
 
@@ -638,16 +589,6 @@ const TrendingSection = () => {
     navigate(getDevicePath(device));
   };
 
-  const handleViewAll = () => {
-    const routeMap = {
-      smartphone: "/trending/smartphones",
-      laptop: "/trending/laptops",
-      appliance: "/trending/tvs",
-      networking: "/trending/smartphones",
-    };
-    navigate(routeMap[activeCategory] || "/");
-  };
-
   const FallbackCardIcon =
     activeCategory === "laptop"
       ? FaLaptop
@@ -680,59 +621,48 @@ const TrendingSection = () => {
       </div>
 
       {/* Category Tabs - Single Row */}
-      <div className="flex overflow-x-auto gap-2 lg:gap-3 hide-scrollbar no-scrollbar scroll-smooth mb-1">
+      <div className="mb-3 flex overflow-x-auto gap-2.5 lg:gap-3 hide-scrollbar no-scrollbar scroll-smooth  bg-white p-1.5 ">
         {categories.map((category, index) => {
           const isActive = activeCategory === category.id;
 
           return (
             <button
+              type="button"
               key={category.id}
               onClick={() => setActiveCategory(category.id)}
-              className={`flex flex-col items-center p-3 lg:p-4 transition-all duration-500 min-w-[90px] lg:min-w-[110px] shrink-0 group ${
+              aria-pressed={isActive}
+              className={`group relative min-w-[140px] shrink-0 rounded-md  px-4 py-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-white lg:min-w-[160px] ${
                 isActive
-                  ? "text-gray-900 transform -translate-y-1"
-                  : "text-gray-600 hover:text-gray-900 hover:transform hover:scale-105"
+                  ? " bg-gray-100 text-blue-700 shadow-md"
+                  : "border-transparent bg-white text-slate-700 hover:border-slate-200 hover:bg-slate-50 hover:shadow-sm"
               } ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
               style={{ transitionDelay: `${index * 55}ms` }}
             >
-              {/* Icon Container */}
-              <div
-                className={`w-12 h-12 lg:w-14 lg:h-14 flex items-center justify-center rounded-2xl p-2 lg:p-3 transition-all duration-300 mb-2 lg:mb-2 ${
-                  isActive
-                    ? `bg-gradient-to-br ${category.activeGradient} text-white shadow-lg shadow-red-200/50`
-                    : "bg-gray-100 text-gray-400 group-hover:bg-gray-200 group-hover:shadow-md"
-                }`}
-              >
-                <span
-                  className={`text-lg lg:text-xl transition-colors duration-300 ${
-                    isActive ? "text-white" : category.inactiveColor
-                  }`}
-                >
-                  {category.icon}
-                </span>
-              </div>
-
-              {/* Category Name */}
               <span
-                className={`font-medium text-xs lg:text-sm text-center transition-all duration-300 ${
+                className={`relative block text-sm lg:text-base font-semibold leading-tight transition-colors duration-300 ${
                   isActive
-                    ? "text-gray-900 font-semibold"
-                    : "text-gray-600 group-hover:text-gray-900"
+                    ? "bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent"
+                    : "text-slate-800"
                 }`}
               >
                 {category.name}
               </span>
 
-              {/* Count Badge */}
-
-              {/* Active Indicator Dot */}
               <div
-                className={`mt-1 w-1 h-1 rounded-full transition-all duration-300 ${
+                className={`relative mt-4 h-px overflow-hidden rounded-full transition-all duration-300 ${
                   isActive
-                    ? `bg-gradient-to-r ${category.activeGradient} opacity-100`
-                    : "bg-transparent opacity-0"
+                    ? "bg-purple-100"
+                    : "bg-slate-100 group-hover:bg-slate-200"
                 }`}
-              />
+              >
+                <div
+                  className={`relative h-full rounded-full transition-all duration-500 ${
+                    isActive
+                      ? "w-4/5 bg-gradient-to-r from-purple-600 to-blue-600"
+                      : "w-1/4 bg-slate-300"
+                  }`}
+                />
+              </div>
             </button>
           );
         })}
@@ -786,8 +716,8 @@ const TrendingSection = () => {
                       <div className="absolute left-1 top-1 z-10 pointer-events-none">
                         <TrendSpecScoreBadge score={device.score} />
                       </div>
-                    <div className="mx-auto h-28 sm:h-32 w-28 rounded-md shadow-md border border-gray-100 overflow-hidden bg-gray-100 flex items-center justify-center">
-                      {device.image ? (
+                      <div className="mx-auto h-28 sm:h-32 w-28 rounded-md shadow-md border border-gray-100 overflow-hidden bg-gray-100 flex items-center justify-center">
+                        {device.image ? (
                           <img
                             src={device.image}
                             alt={device.name}

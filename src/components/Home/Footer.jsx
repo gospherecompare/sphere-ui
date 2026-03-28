@@ -128,7 +128,7 @@ const Footer = () => {
   }, []);
 
   return (
-    <footer className="bg-black text-white relative ">
+    <footer className="w-full bg-black text-white relative">
       {/* Purple-Indigo gradient accent line */}
       <div className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-12 sm:py-14 lg:py-16">
         {footerPhones.length > 0 || topPickPhones.length > 0 ? (
