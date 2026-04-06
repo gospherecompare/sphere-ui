@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { createProductPath } from "../../utils/slugGenerator";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
-import { FaMobileAlt } from "react-icons/fa";
+import { FaCalendarAlt, FaMobileAlt } from "react-icons/fa";
 
 const API_BASE = (
   import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in"
@@ -120,6 +120,115 @@ const getRowImage = (row) => {
   }
 
   return "";
+};
+
+const getRowBrand = (row) =>
+  firstText(
+    row?.brand,
+    row?.brand_name,
+    row?.basic_info?.brand_name,
+    row?.basic_info?.brand,
+  );
+
+const formatLaunchStatusText = (status) => {
+  if (!status) return "Upcoming";
+  return String(status)
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+const getUpcomingBadgeLabel = (device) => {
+  const status = String(device?.launchStatus || "").toLowerCase();
+  if (status === "rumored") return "Rumored";
+  if (status === "announced") return "Announced";
+  if (device?.launchLabel || status === "upcoming") return "Coming Soon";
+  return "Upcoming";
+};
+
+const getUpcomingBadgeTone = (device) => {
+  const status = String(device?.launchStatus || "").toLowerCase();
+  if (status === "rumored") return "bg-slate-900 text-white";
+  if (status === "announced") return "bg-violet-600 text-white";
+  if (device?.launchLabel || status === "upcoming")
+    return "bg-yellow-600 text-white";
+  return "bg-cyan-600 text-white";
+};
+
+const UpcomingSmartphoneCard = ({ device, index, isLoaded, onClick }) => {
+  const deviceName = device?.name || "Upcoming smartphone";
+  const badgeLabel = getUpcomingBadgeLabel(device);
+  const badgeTone = getUpcomingBadgeTone(device);
+  const launchText = device?.launchLabel
+    ? `Expected ${device.launchLabel}`
+    : formatLaunchStatusText(device?.launchStatus || device?.status);
+
+  return (
+    <button
+      type="button"
+      aria-label={`Open ${deviceName}`}
+      onClick={onClick}
+      className={`group relative flex h-full w-[74vw] max-w-[17rem] shrink-0 snap-start flex-col overflow-hidden border border-slate-200 bg-white text-left shadow-[0_10px_22px_rgba(15,23,42,0.12)] transition-all duration-300 hover:border-slate-300 hover:shadow-[0_16px_34px_rgba(15,23,42,0.16)] sm:w-[18rem] lg:w-[19rem] ${
+        isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+      }`}
+      style={{ transitionDelay: `${index * 60}ms` }}
+    >
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-blue-500 to-cyan-400" />
+
+      <div className="relative bg-gradient-to-br from-slate-50 via-white to-blue-50/60 p-3 sm:p-5">
+        <div className="relative flex h-40 items-center justify-center overflow-hidden rounded-[1.5rem] bg-white/90 ring-1 ring-slate-200 sm:h-48">
+          <span
+            className={`absolute left-3 top-3 z-10 inline-flex items-center rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] shadow-sm ${badgeTone}`}
+          >
+            {badgeLabel}
+          </span>
+
+          {device.image ? (
+            <img
+              src={device.image}
+              alt={deviceName}
+              className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-110"
+              loading="lazy"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
+            />
+          ) : (
+            <FaMobileAlt className="text-3xl text-slate-300" />
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-1 flex-col p-3 sm:p-5">
+        {device.brand ? (
+          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-blue-600">
+            {device.brand}
+          </p>
+        ) : null}
+
+        <h6 className="mt-2 line-clamp-2 text-base font-semibold leading-snug text-slate-900 transition-colors duration-200 group-hover:text-blue-600 sm:text-xl">
+          {deviceName}
+        </h6>
+
+        <div className="mt-4 flex items-end justify-between gap-3 border-t border-slate-100 pt-3 sm:pt-4">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
+              Launch
+            </p>
+            <div className="mt-1 flex items-center gap-2">
+              <FaCalendarAlt className="text-xs text-slate-400" />
+              <p className="text-sm font-semibold tracking-tight text-slate-900 sm:text-lg">
+                {launchText}
+              </p>
+            </div>
+          </div>
+
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-violet-600 text-sm text-white shadow-lg transition-transform duration-300 group-hover:translate-x-1 sm:h-11 sm:w-11 sm:text-base">
+            →
+          </span>
+        </div>
+      </div>
+    </button>
+  );
 };
 
 const getRowLaunchDate = (row) =>
@@ -282,6 +391,7 @@ const UpcomingSmartphones = () => {
             row.id ??
             row.basic_info?.id ??
             null,
+          brand: getRowBrand(row),
           name: getRowName(row),
           image: getRowImage(row),
           launchDate: getRowLaunchDate(row),
@@ -321,118 +431,102 @@ const UpcomingSmartphones = () => {
   };
 
   return (
-    <div
-      className={`px-2 lg:px-4 mx-auto bg-white max-w-4xl mb-5 w-full m-0 overflow-hidden pt-5 sm:pt-10 transition-all duration-700 ${
+    <section
+      className={`relative isolate overflow-hidden bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950 transition-all duration-700 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
-      {/* Header Section */}
-      <div className="mb-6 px-2">
-        <div className="flex items-center justify-between gap-3 mb-2">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 opacity-35 [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:72px_72px]" />
+      <div className="absolute -left-20 top-0 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
+      <div className="absolute right-0 top-20 h-80 w-80 rounded-full bg-cyan-300/10 blur-3xl" />
+      <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-white/10 to-transparent" />
+
+      <div className="relative mx-auto max-w-7xl px-4 pb-14 pt-10 sm:px-6 sm:pb-20 sm:pt-16 lg:px-8 lg:pb-24 lg:pt-24">
+        {/* Header Section */}
+        <div className="mx-auto max-w-5xl text-center">
+          <h1 className="mt-8 text-3xl font-black leading-tight text-white sm:text-5xl lg:text-6xl">
             Upcoming{" "}
-            <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent font-bold">
+            <span className="bg-gradient-to-r from-cyan-200 via-white to-sky-100 bg-clip-text text-transparent animate-pulse">
               Smartphones
             </span>
-          </h2>
-          <Link
-            to="/smartphones/upcoming"
-            className="text-xs sm:text-sm font-semibold text-purple-700 hover:text-purple-900"
-          >
-            View all
-          </Link>
+          </h1>
+          <p className="mx-auto mt-4 max-w-2xl text-sm font-medium leading-7 text-white/85 sm:mt-6 sm:text-xl sm:leading-8">
+            Keep track of devices expected to launch soon.
+          </p>
         </div>
-        <p className="text-sm text-gray-600">
-          Keep track of devices expected to launch soon.
-        </p>
-      </div>
 
-      {loadingUpcoming ? null : currentDevices.length === 0 ? (
-        <div className="px-2 text-sm text-gray-500">
-          No upcoming smartphones available right now.
+        {/* Section Divider */}
+        <div className="mt-14 flex items-center gap-4">
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/35 to-transparent" />
+          <span className="whitespace-nowrap text-xs font-bold uppercase tracking-[0.3em] text-white/80">
+            📱 Featured Upcoming
+          </span>
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/35 to-transparent" />
         </div>
-      ) : null}
 
-      {/* Products Row - Horizontal scroll with fixed-size cards */}
-      <div className="flex overflow-x-auto gap-4 lg:gap-5 hide-scrollbar no-scrollbar scroll-smooth pb-6">
-        {loadingUpcoming
-          ? Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={`skeleton-${i}`}
-                className="w-[220px] h-[200px] shrink-0 animate-pulse"
-              >
-                <div className="rounded-2xl bg-white p-3 shadow-sm">
-                  <div className="bg-gray-200 rounded-xl w-full h-24 sm:h-32 lg:h-40 mb-3"></div>
-                  <div className="h-3 bg-gray-200 rounded mb-2 w-4/5"></div>
-                  <div className="h-4 bg-gray-200 rounded mb-3 w-full"></div>
-                  <div className="h-3 bg-gray-200 rounded mb-2 w-2/3"></div>
-                  <div className="h-3 bg-gray-200 rounded w-3/4"></div>
-                </div>
-              </div>
-            ))
-          : currentDevices.map((device, i) => (
-              <div
-                key={`${device.id || "noid"}-${i}`}
-                onClick={() => handleDeviceClick(device)}
-                className={`group shrink-0 cursor-pointer transition-all duration-500 ${
-                  isLoaded
-                    ? "opacity-100 translate-y-0"
-                    : "opacity-0 translate-y-2"
-                }`}
-                style={{ transitionDelay: `${i * 45}ms` }}
-              >
-                <div className="relative h-full w-32 rounded-lg overflow-hidden p-2 transition-all duration-200 group-hover:-translate-y-0.5">
-                  <div className="flex h-full flex-col gap-2">
-                    {/* Image */}
-                    <div className="relative w-full flex-shrink-0">
-                      <div className="mx-auto h-28 sm:h-32 w-28 rounded-md shadow-md  overflow-hidden bg-gray-100 flex items-center justify-center">
-                        {device.image ? (
-                          <img
-                            src={device.image}
-                            alt={device.name}
-                            className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-105"
-                            onError={(e) => {
-                              e.target.style.display = "none";
-                            }}
-                          />
-                        ) : (
-                          <div className="text-center px-3">
-                            <div className="mx-auto mb-1.5 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-200">
-                              <FaMobileAlt className="text-gray-400 text-sm" />
-                            </div>
-                            <span className="text-[11px] text-gray-500">
-                              No image
-                            </span>
-                          </div>
-                        )}
+        {loadingUpcoming ? null : currentDevices.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-lg text-white/70">
+              No upcoming smartphones available right now.
+            </p>
+          </div>
+        ) : null}
+
+        {/* Products Row - Horizontal scroll with fixed-size cards */}
+        <div className="no-scrollbar mt-8 flex snap-x snap-mandatory overflow-x-auto gap-2 pb-4 scroll-smooth sm:gap-4 lg:gap-5">
+          {loadingUpcoming
+            ? Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={`skeleton-${i}`}
+                  className="w-[74vw] max-w-[17rem] shrink-0 animate-pulse sm:w-[18rem] lg:w-[19rem]"
+                >
+                  <div className="overflow-hidden border border-slate-200 bg-white shadow-[0_10px_22px_rgba(15,23,42,0.12)]">
+                    <div className="h-1 bg-gradient-to-r from-violet-500 via-blue-500 to-cyan-400" />
+                    <div className="p-3 sm:p-5">
+                      <div className="relative flex h-40 items-center justify-center overflow-hidden rounded-[1.5rem] bg-slate-100 ring-1 ring-slate-200 sm:h-48">
+                        <div className="h-14 w-10 rounded-full bg-slate-200" />
                       </div>
-                    </div>
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0 text-left">
-                      <h6 className="mt-1 text-sm sm:text-base font-semibold text-gray-900 leading-snug line-clamp-2 group-hover:text-purple-600 transition-colors duration-200">
-                        <Link
-                          to={getDevicePath(device)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-flex"
-                        >
-                          {device.name}
-                        </Link>
-                      </h6>
-                      {device.launchLabel || device.launchStatus ? (
-                        <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-gray-500">
-                          {device.launchLabel ? (
-                            <span>Expected {device.launchLabel}</span>
-                          ) : null}
+                      <div className="mt-4 space-y-2">
+                        <div className="h-2.5 w-20 rounded-full bg-slate-200" />
+                        <div className="h-4 w-4/5 rounded bg-slate-200" />
+                        <div className="h-3 w-3/4 rounded bg-slate-200" />
+                      </div>
+                      <div className="mt-4 flex items-end justify-between gap-3 border-t border-slate-100 pt-4">
+                        <div className="space-y-2">
+                          <div className="h-2.5 w-16 rounded bg-slate-200" />
+                          <div className="h-3 w-28 rounded bg-slate-200" />
                         </div>
-                      ) : null}
+                        <div className="h-10 w-10 rounded-full bg-slate-200" />
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            : currentDevices.map((device, i) => (
+                <UpcomingSmartphoneCard
+                  key={`${device.id || "noid"}-${i}`}
+                  device={device}
+                  index={i}
+                  isLoaded={isLoaded}
+                  onClick={() => handleDeviceClick(device)}
+                />
+              ))}
+        </div>
+
+        {/* View All Link */}
+        {!loadingUpcoming && currentDevices.length > 0 && (
+          <div className="mt-10 flex justify-center">
+            <Link
+              to="/smartphones/upcoming"
+              className="group rounded-full border border-white/25 bg-white/8 px-6 py-3 text-white/95 backdrop-blur-md transition-all duration-300 hover:border-white/40 hover:bg-white/15 hover:shadow-lg font-semibold"
+            >
+              View all upcoming smartphones →
+            </Link>
+          </div>
+        )}
       </div>
-    </div>
+    </section>
   );
 };
 

@@ -1,6 +1,6 @@
-// src/components/Home/RecommendedSmartphones.jsx
+﻿// src/components/Home/RecommendedSmartphones.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { createProductPath } from "../../utils/slugGenerator";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
 import { FaMobileAlt } from "react-icons/fa";
@@ -114,9 +114,9 @@ const TrendSpecScoreBadge = ({ score }) => {
   const value = Number.isFinite(Number(score)) ? Number(score) : null;
   const label = value != null ? `${value.toFixed(1)}%` : "--";
   return (
-    <div className="inline-flex flex-col items-center justify-center rounded-md border border-violet-200 bg-violet-50/95 px-1.5 py-1 leading-none">
-      <span className="text-[10px] font-bold text-violet-700">{label}</span>
-      <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide text-violet-600">
+    <div className="inline-flex flex-col items-center justify-center rounded-md border border-blue-200 bg-blue-50/95 px-1.5 py-1 leading-none">
+      <span className="text-[10px] font-bold text-blue-700">{label}</span>
+      <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide text-blue-600">
         Spec
       </span>
     </div>
@@ -246,10 +246,15 @@ const scoreSimilarity = (candidate, recent) => {
   return score;
 };
 
-const RecommendedSmartphones = () => {
+const RecommendedSmartphones = ({
+  variant = "rail",
+  limit = MAX_RECOMMENDATIONS,
+  className = "",
+}) => {
   const [recentDevices, setRecentDevices] = useState([]);
   const [recommended, setRecommended] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [activeFeed, setActiveFeed] = useState("latest");
   const navigate = useNavigate();
   const isLoaded = useRevealAnimation();
 
@@ -380,7 +385,7 @@ const RecommendedSmartphones = () => {
 
         if (next.length > 0) writeFallbackCache(next);
         if (!cancelled) setRecommended(next.slice(0, MAX_RECOMMENDATIONS));
-      } catch (err) {
+      } catch {
         const cached = readFallbackCache();
         if (!cancelled) setRecommended(cached.slice(0, MAX_RECOMMENDATIONS));
       } finally {
@@ -407,112 +412,258 @@ const RecommendedSmartphones = () => {
     navigate(getDevicePath(device));
   };
 
-  const showEmpty = !loading && recommended.length === 0;
+  const showEmpty =
+    !loading && recommended.length === 0 && recentDevices.length === 0;
 
   const displayItems = useMemo(
     () => (recommended.length > 0 ? recommended : recentDevices),
     [recommended, recentDevices],
   );
 
+  const isSidebar = variant === "sidebar";
+
+  const sidebarItems = useMemo(() => {
+    const base = displayItems.slice(0, Math.max(3, Math.min(limit, 8)));
+    if (!isSidebar) return base;
+
+    const launchText = (item) =>
+      String(
+        item?.launch_status ||
+          item?.launchStatus ||
+          item?.status ||
+          item?.availability ||
+          item?.badge ||
+          "",
+      ).toLowerCase();
+
+    let next = base;
+    if (activeFeed === "upcoming") {
+      next = base.filter((item) =>
+        /(upcoming|coming soon|announced|pre[-\s]?order|pre[-\s]?book)/i.test(
+          launchText(item),
+        ),
+      );
+    } else if (activeFeed === "popular") {
+      next = [...base].sort((a, b) => {
+        const scoreA = Number(a?.score ?? a?.rating ?? 0) || 0;
+        const scoreB = Number(b?.score ?? b?.rating ?? 0) || 0;
+        if (scoreB !== scoreA) return scoreB - scoreA;
+        const priceA = parsePriceNumber(a?.price);
+        const priceB = parsePriceNumber(b?.price);
+        if (priceA == null && priceB != null) return 1;
+        if (priceA != null && priceB == null) return -1;
+        if (priceA != null && priceB != null) return priceA - priceB;
+        return 0;
+      });
+    }
+
+    if (next.length === 0) next = base;
+    return next.slice(0, Math.min(limit, MAX_RECOMMENDATIONS));
+  }, [activeFeed, displayItems, isSidebar, limit]);
+
+  const formatPriceLabel = (value) => {
+    const n = parsePriceNumber(value);
+    const rupee = "\u20B9";
+    if (n != null) return `${rupee} ${n.toLocaleString("en-IN")}`;
+    const raw = String(value || "").trim();
+    return raw
+      ? raw.startsWith(rupee)
+        ? raw
+        : `${rupee} ${raw}`
+      : "Price not available";
+  };
+
+  if (isSidebar) {
+    return (
+      <div className={`mx-auto w-full ${className}`}>
+        <div className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+          <div className="mb-4 text-center">
+            <h3 className="text-2xl font-semibold tracking-tight text-slate-900">
+              Explore Mobile Phones
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-3 gap-1 rounded-2xl border border-slate-200 bg-slate-50 p-1">
+            {[
+              { id: "latest", label: "Latest" },
+              { id: "upcoming", label: "Upcoming" },
+              { id: "popular", label: "Popular" },
+            ].map((tab) => {
+              const active = activeFeed === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveFeed(tab.id)}
+                  className={`rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
+                    active
+                      ? "bg-white text-indigo-900 shadow-sm"
+                      : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 space-y-3">
+            {loading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={`sidebar-skeleton-${i}`}
+                  className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3"
+                >
+                  <div className="h-20 w-20 animate-pulse rounded-xl bg-slate-200" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 w-24 rounded bg-slate-200" />
+                    <div className="h-4 w-40 rounded bg-slate-200" />
+                    <div className="h-5 w-24 rounded bg-slate-200" />
+                  </div>
+                </div>
+              ))
+            ) : sidebarItems.length > 0 ? (
+              sidebarItems.map((device, i) => (
+                <button
+                  key={`${device.id || "noid"}-${i}`}
+                  type="button"
+                  onClick={() => handleDeviceClick(device)}
+                  className="group flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 text-left transition-all duration-300 hover:border-slate-300 hover:shadow-[0_8px_20px_rgba(15,23,42,0.08)]"
+                >
+                  <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                    {device.image ? (
+                      <img
+                        src={device.image}
+                        alt={device.name}
+                        className="h-full w-full object-contain p-2"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      <FaMobileAlt className="text-2xl text-slate-400" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    {device.brand ? (
+                      <p className="truncate text-xs font-semibold uppercase tracking-[0.24em] text-blue-600">
+                        {device.brand}
+                      </p>
+                    ) : null}
+                    <h6 className="mt-1 line-clamp-2 text-base font-semibold leading-snug text-slate-900 group-hover:text-blue-600">
+                      {device.name}
+                    </h6>
+                    <div className="mt-2 text-lg font-bold text-slate-900">
+                      {formatPriceLabel(device.price)}
+                    </div>
+                  </div>
+                </button>
+              ))
+            ) : (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                Browse a smartphone to unlock recommendations.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
-      className={`px-2 lg:px-4 mx-auto bg-white max-w-4xl mb-5 w-full m-0 overflow-hidden pt-5 sm:pt-10 transition-all duration-700 ${
+      className={`relative mx-auto w-full bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950 transition-all duration-700 px-4 py-10 sm:px-6 sm:py-16 lg:px-8 lg:py-20 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
-      <div className="mb-6 px-2">
-        <div className="flex items-center gap-2 mb-2">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-            Recommended{" "}
-            <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent">
-              For You
-            </span>
+      <div className="mx-auto max-w-7xl">
+        <div className="mx-auto mb-8 max-w-7xl text-center">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-4">
+            Recommended Smartphones
           </h2>
+          <p className="text-sm sm:text-base text-white/80">
+            Recommendations tailored to your recent browsing.
+          </p>
         </div>
-        <p className="text-sm text-gray-600">
-          Recommendations tailored to your recent browsing.
-        </p>
-      </div>
 
-      {showEmpty ? (
-        <div className="px-2 text-sm text-gray-500">
-          Browse a smartphone to unlock recommendations.
-        </div>
-      ) : null}
+        {showEmpty ? (
+          <div className="rounded-2xl border border-white/15 bg-white/10 backdrop-blur-md px-6 py-8 text-center text-sm text-white/70">
+            Browse a smartphone to unlock recommendations.
+          </div>
+        ) : null}
 
-      <div className="flex overflow-x-auto gap-4 lg:gap-5 hide-scrollbar no-scrollbar scroll-smooth pb-6">
-        {loading
-          ? Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={`skeleton-${i}`}
-                className="w-[220px] h-[200px] shrink-0 animate-pulse"
-              >
-                <div className="rounded-2xl bg-white p-3 shadow-sm">
-                  <div className="bg-gray-200 rounded-xl w-full h-24 sm:h-32 lg:h-40 mb-3"></div>
-                  <div className="h-3 bg-gray-200 rounded mb-2 w-4/5"></div>
-                  <div className="h-4 bg-gray-200 rounded mb-3 w-full"></div>
-                  <div className="h-3 bg-gray-200 rounded mb-2 w-2/3"></div>
-                  <div className="h-3 bg-gray-200 rounded w-3/4"></div>
-                </div>
-              </div>
-            ))
-          : displayItems.map((device, i) => (
-              <div
-                key={`${device.id || "noid"}-${i}`}
-                onClick={() => handleDeviceClick(device)}
-                className={`group shrink-0 cursor-pointer transition-all duration-500 ${
-                  isLoaded
-                    ? "opacity-100 translate-y-0"
-                    : "opacity-0 translate-y-2"
-                }`}
-                style={{ transitionDelay: `${i * 45}ms` }}
-              >
-                <div className="relative h-full w-32 rounded-lg overflow-hidden p-2 transition-all duration-200 group-hover:-translate-y-0.5">
-                  <div className="flex h-full flex-col gap-2">
-                    <div className="relative w-full flex-shrink-0">
-                      {Number.isFinite(device.score) ? (
-                        <div className="absolute left-1 top-1 z-10 pointer-events-none">
-                          <TrendSpecScoreBadge score={device.score} />
-                        </div>
-                      ) : null}
-                      <div className="mx-auto h-28 sm:h-32 w-28 rounded-md shadow-md border border-gray-100 overflow-hidden bg-gray-100 flex items-center justify-center">
-                        {device.image ? (
-                          <img
-                            src={device.image}
-                            alt={device.name}
-                            className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-105"
-                            onError={(e) => {
-                              e.target.style.display = "none";
-                            }}
-                          />
-                        ) : (
-                          <div className="text-center px-3">
-                            <div className="mx-auto mb-1.5 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-200">
-                              <FaMobileAlt className="text-gray-400 text-sm" />
-                            </div>
-                            <span className="text-[11px] text-gray-500">
-                              No image
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex-1 min-w-0 text-left">
-                      <h6 className="mt-1 text-sm sm:text-base font-semibold text-gray-900 leading-snug line-clamp-2 group-hover:text-purple-600 transition-colors duration-200">
-                        <Link
-                          to={getDevicePath(device)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-flex"
-                        >
-                          {device.name}
-                        </Link>
-                      </h6>
+        <div className="no-scrollbar mt-8 grid grid-flow-col auto-cols-[84%] gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scroll-smooth sm:gap-4 sm:auto-cols-[calc(50%-0.5rem)] md:auto-cols-[calc(33.333%-0.67rem)] lg:auto-cols-[calc(20%-0.8rem)]">
+          {loading
+            ? Array.from({ length: 6 }).map((_, i) => (
+                <div key={`skeleton-${i}`} className="w-full animate-pulse">
+                  <div className="relative overflow-hidden rounded-lg bg-white/10 ring-1 ring-white/15 p-4 h-auto flex flex-col gap-3">
+                    <div className="bg-white/20 rounded-lg w-full h-36 sm:h-40"></div>
+                    <div className="h-3 bg-white/20 rounded w-4/5"></div>
+                    <div className="h-3 bg-white/20 rounded w-3/4"></div>
+                    <div className="h-2 bg-white/10 rounded"></div>
+                    <div className="border-t border-white/10 pt-2">
+                      <div className="h-2 bg-white/20 rounded w-20"></div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            : displayItems.map((device, i) => (
+                <button
+                  key={`${device.id || "noid"}-${i}`}
+                  type="button"
+                  onClick={() => handleDeviceClick(device)}
+                  className={`group relative flex w-full snap-start flex-col gap-3 p-3 text-left text-white/95 transition-all duration-300 sm:p-4 ${
+                    isLoaded
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 translate-y-2"
+                  }`}
+                  style={{ transitionDelay: `${i * 60}ms` }}
+                >
+                  {/* NEW Badge */}
+                  {i % 3 === 0 && (
+                    <div className="absolute -top-2 right-3">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-cyan-400 to-blue-400 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white shadow-lg">
+                        NEW
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Image Container */}
+                  <div className="flex h-36 w-full items-center justify-center overflow-hidden rounded-lg bg-white/10 ring-1 ring-white/15 sm:h-40">
+                    {device.image ? (
+                      <img
+                        src={device.image}
+                        alt={device.name}
+                        className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-110"
+                        loading="lazy"
+                        onError={(e) => {
+                          e.target.style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      <FaMobileAlt className="text-2xl text-white/40" />
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1">
+                    <p className="text-sm font-bold leading-snug text-white line-clamp-2">
+                      {device.name}
+                    </p>
+                  </div>
+
+                  {/* Divider & View Details */}
+                  <div className="flex items-center justify-between gap-2 border-t border-white/10 pt-2">
+                    <span className="text-xs font-medium text-white/70">
+                      View Details
+                    </span>
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      →
+                    </span>
+                  </div>
+                </button>
+              ))}
+        </div>
       </div>
     </div>
   );

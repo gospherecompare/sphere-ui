@@ -985,9 +985,11 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
   }
 
   if (canonicalPath.startsWith("/smartphones")) {
-    const rows = getPreloadedRows(preloadedApiPayload, `${API_BASE_URL}/smartphones`, [
-      "smartphones",
-    ]);
+    const rows = getPreloadedRows(
+      preloadedApiPayload,
+      `${API_BASE_URL}/smartphones`,
+      ["smartphones"],
+    );
     const items = buildItemListFromRows(rows, {
       basePath: "/smartphones",
       toDetailSlug: (slug) => toSmartphoneSeoSlug(slug),
@@ -1007,9 +1009,11 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
   }
 
   if (canonicalPath.startsWith("/laptops")) {
-    const rows = getPreloadedRows(preloadedApiPayload, `${API_BASE_URL}/laptops`, [
-      "laptops",
-    ]);
+    const rows = getPreloadedRows(
+      preloadedApiPayload,
+      `${API_BASE_URL}/laptops`,
+      ["laptops"],
+    );
     const items = buildItemListFromRows(rows, {
       basePath: "/laptops",
     });
@@ -1080,8 +1084,7 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
       networking: `${API_BASE_URL}/public/trending/networking?limit=120`,
     };
     const endpoint =
-      endpointByCategory[category] ||
-      endpointByCategory.smartphones;
+      endpointByCategory[category] || endpointByCategory.smartphones;
     const rows = getPreloadedRows(preloadedApiPayload, endpoint, ["results"]);
     const basePath =
       category === "laptops"
@@ -1098,11 +1101,7 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
           ? (slug) => toSmartphoneSeoSlug(slug)
           : (slug) => slug,
       getName: (item) =>
-        item?.product_name ||
-        item?.name ||
-        item?.model ||
-        item?.title ||
-        "",
+        item?.product_name || item?.name || item?.model || item?.title || "",
       getImage: (item) =>
         item?.image ||
         (Array.isArray(item?.images) ? item.images.find(Boolean) : null) ||
@@ -1151,7 +1150,9 @@ const injectPreloadedPayload = (html, payload) => {
 };
 
 const injectStructuredData = (html, routePath, preloadedApiPayload) => {
-  const existing = [...html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>/gi)];
+  const existing = [
+    ...html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>/gi),
+  ];
   if (existing.length > 2) return html;
 
   const schemas = buildStructuredDataForRoute(routePath, preloadedApiPayload);
@@ -1235,16 +1236,42 @@ const applySeoToHtml = (html, routePath) => {
   return next;
 };
 
+const processRouteHtml = (html, routePath, preloadedApiPayload) => {
+  const normalizedRoute = normalizePath(routePath || "/");
+  let nextHtml = applySeoToHtml(html, normalizedRoute);
+  nextHtml = injectStructuredData(
+    nextHtml,
+    normalizedRoute,
+    preloadedApiPayload,
+  );
+
+  if (PRELOAD_CANONICAL_PATHS.has(toCanonicalPath(normalizedRoute))) {
+    nextHtml = injectPreloadedPayload(nextHtml, preloadedApiPayload);
+  }
+
+  return nextHtml;
+};
+
 export default defineConfig(async () => {
   const prerenderRoutes = await getPrerenderRoutes();
   const preloadedApiPayload = await fetchPreloadedApiPayload();
-  const shouldInjectPreloadedPayload = (routePath) =>
-    PRELOAD_CANONICAL_PATHS.has(toCanonicalPath(routePath || "/"));
+  const processHtml = (html, routePath) =>
+    processRouteHtml(html, routePath, preloadedApiPayload);
 
   return {
     plugins: [
       react(),
       tailwindcss(),
+      {
+        name: "hooks-route-seo-dev",
+        apply: "serve",
+        transformIndexHtml(html, ctx) {
+          const rawPath = String(ctx?.path || ctx?.url || "/")
+            .split("?")[0]
+            .split("#")[0];
+          return processHtml(html, rawPath || "/");
+        },
+      },
       vitePrerender({
         staticDir: path.join(__dirname, "dist"),
         routes: prerenderRoutes,
@@ -1263,16 +1290,7 @@ export default defineConfig(async () => {
           renderedRoute.route =
             renderedRoute.originalRoute || renderedRoute.route;
           const routePath = renderedRoute.route || "/";
-          let nextHtml = applySeoToHtml(renderedRoute.html || "", routePath);
-          nextHtml = injectStructuredData(
-            nextHtml,
-            routePath,
-            preloadedApiPayload,
-          );
-          if (shouldInjectPreloadedPayload(routePath)) {
-            nextHtml = injectPreloadedPayload(nextHtml, preloadedApiPayload);
-          }
-          renderedRoute.html = nextHtml;
+          renderedRoute.html = processHtml(renderedRoute.html || "", routePath);
           return renderedRoute;
         },
       }),

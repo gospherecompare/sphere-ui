@@ -1,4 +1,4 @@
-﻿// src/components/HomeApplianceList.jsx
+// src/components/HomeApplianceList.jsx
 import React, { useState, useEffect, useMemo } from "react";
 import { Helmet } from "react-helmet-async";
 import {
@@ -32,6 +32,7 @@ import {
   FaUtensils,
   FaFan,
   FaExchangeAlt,
+  FaChevronRight,
 } from "react-icons/fa";
 import { useNavigate, useLocation } from "react-router-dom";
 import useStoreLogos from "../../hooks/useStoreLogos";
@@ -68,8 +69,8 @@ const SITE_ORIGIN = "https://tryhook.shop";
 const ImageCarousel = ({ images = [] }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const imageFrameClass =
-    "w-full h-full rounded-lg overflow-hidden flex items-center justify-center";
-  const imageClass = "w-auto h-auto max-w-full max-h-full object-contain rounded-lg";
+    "relative flex h-[180px] w-full max-w-[140px] items-center justify-center overflow-hidden rounded-[20px] border border-slate-100 bg-[#f4f5f8] shadow-[0_1px_2px_rgba(15,23,42,0.03)] sm:h-[210px] sm:max-w-[160px]";
+  const imageClass = "h-full w-full object-contain p-2.5 sm:p-3";
 
   useEffect(() => {
     setCurrentIndex(0);
@@ -77,13 +78,13 @@ const ImageCarousel = ({ images = [] }) => {
 
   if (!images || images.length === 0) {
     return (
-      <div className="relative flex h-full w-full items-center justify-center">
+      <div className="flex h-full w-full items-center justify-center">
         <div className={imageFrameClass}>
-          <div className="text-center px-3">
-            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-200">
-              <FaHome className="text-gray-400 text-sm" />
+          <div className="px-3 text-center">
+            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-slate-200">
+              <FaTv className="text-slate-400 text-sm" />
             </div>
-            <span className="text-xs text-gray-500">No image</span>
+            <span className="text-xs text-slate-500">No image</span>
           </div>
         </div>
       </div>
@@ -118,8 +119,8 @@ const ImageCarousel = ({ images = [] }) => {
             loading="lazy"
           />
           {/* Dots inside image frame */}
-          <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
-            <div className="flex items-center gap-1 rounded-full px-2">
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
+            <div className="flex items-center gap-1 rounded-full bg-white/85 px-2 py-1 shadow-[0_2px_8px_rgba(15,23,42,0.04)] ring-1 ring-slate-100">
               {images.map((_, index) => (
                 <button
                   key={`dot-${index}`}
@@ -130,8 +131,8 @@ const ImageCarousel = ({ images = [] }) => {
                   aria-label={`Go to image ${index + 1}`}
                   className={`h-1.5 rounded-full transition-all duration-200 ${
                     currentIndex === index
-                      ? "w-5 bg-violet-500"
-                      : "w-1.5 bg-gray-300 hover:bg-gray-400"
+                      ? "w-5 bg-blue-500"
+                      : "w-1.5 bg-slate-300 hover:bg-slate-400"
                   }`}
                 />
               ))}
@@ -160,22 +161,22 @@ const mapScoreToDisplayBand = (score, minTarget = 80, maxTarget = 98) => {
 
 const CircularScoreBadge = ({ score, size = 42 }) => {
   const normalized = clampScore100(score);
-  const percentage = normalized != null ? Number(normalized.toFixed(1)) : null;
-  const label = percentage != null ? `${percentage.toFixed(1)}%` : "--";
+  const value = normalized != null ? Math.round(normalized) : null;
 
   return (
     <div
-      className="inline-flex flex-col items-center justify-center rounded-md border border-violet-200 bg-violet-50/95 px-1.5 py-1 leading-none"
-      style={{ minWidth: `${Math.max(38, Math.round(size))}px` }}
+      className="inline-flex items-center gap-1.5 leading-none"
+      style={{ minWidth: `${Math.max(48, Math.round(size * 1.8))}px` }}
       aria-label={
-        percentage != null
-          ? `Overall score ${percentage.toFixed(1)} percent`
-          : "Overall score unavailable"
+        value != null ? `Spec score ${value} percent` : "Spec score unavailable"
       }
     >
-      <span className="text-[11px] font-bold text-violet-700">{label}</span>
-      <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide text-violet-600">
-        Spec
+      <span className="text-[34px] font-bold leading-none text-violet-600 sm:text-[38px]">
+        {value != null ? value : "--"}
+      </span>
+      <span className="flex flex-col text-[7px] font-semibold uppercase tracking-[0.28em] text-violet-400 leading-[0.92]">
+        <span>SPEC</span>
+        <span>SCORE</span>
       </span>
     </div>
   );
@@ -238,6 +239,15 @@ const TVs = () => {
 
   const { getLogo, getStore, getStoreLogo } = useStoreLogos();
   const deviceFieldProfiles = useDeviceFieldProfiles();
+  const RUPEE_SYMBOL = "\u20B9";
+  const [showHeroDescription, setShowHeroDescription] = useState(false);
+
+  const formatRupeeNumber = (value) => {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return "Price not available";
+    return `${RUPEE_SYMBOL}${numeric.toLocaleString("en-IN")}`;
+  };
+
   // Helper function to extract numeric price
   const extractNumericPrice = (price) => {
     if (!price || price === "NaN") return 0;
@@ -247,12 +257,8 @@ const TVs = () => {
 
   // Helper function to format price display
   const formatPriceDisplay = (price) => {
-    if (!price || price === "NaN") return "Price not available";
-    if (typeof price === "string" && price.includes(",")) return `₹${price}`;
     const numeric = extractNumericPrice(price);
-    return numeric > 0
-      ? `₹ ${numeric.toLocaleString()}`
-      : "Price not available";
+    return numeric > 0 ? formatRupeeNumber(numeric) : "Price not available";
   };
 
   const buildStoreSearchUrl = (storeName, query) => {
@@ -393,10 +399,7 @@ const TVs = () => {
       applianceType: apiDevice.appliance_type || "",
       applianceTypeDisplay,
       model: apiDevice.model_number || "",
-      price:
-        numericPrice > 0
-          ? `₹${numericPrice.toLocaleString()}`
-          : "Price not available",
+      price: formatPriceDisplay(numericPrice),
       numericPrice,
       image: images[0] || "",
       images,
@@ -1036,10 +1039,7 @@ const TVs = () => {
         overallScoreDisplay != null
           ? overallScoreDisplay
           : mapScoreToDisplayBand(overallScoreRaw),
-      price:
-        numericPrice > 0
-          ? `₹${numericPrice.toLocaleString()}`
-          : "Price not available",
+      price: formatPriceDisplay(numericPrice),
       numericPrice,
       image: images[0] || "",
       images,
@@ -1198,10 +1198,7 @@ const TVs = () => {
         ? Math.min(...candidatePrices)
         : device.numericPrice || 0;
 
-      const price =
-        numericPrice > 0
-          ? `₹${numericPrice.toLocaleString()}`
-          : "Price not available";
+      const price = formatPriceDisplay(numericPrice);
 
       return {
         ...device,
@@ -1334,10 +1331,7 @@ const TVs = () => {
         ? variantBasePrice
         : device.numericPrice || 0;
 
-    const price =
-      numericPrice > 0
-        ? `₹${numericPrice.toLocaleString()}`
-        : "Price not available";
+    const price = formatPriceDisplay(numericPrice);
 
     const resolvedScreenSize = firstNonEmpty(
       variant?.screen_size,
@@ -2507,25 +2501,72 @@ const TVs = () => {
     return text.length > 180 ? `${text.slice(0, 177)}...` : text;
   };
 
+  const headerLabel = currentBrandObj
+    ? `${String(currentBrandObj.name).toUpperCase()} TVs`
+    : filter === "trending"
+      ? "TRENDING NOW"
+      : filter === "new"
+        ? "LATEST COLLECTION"
+        : "TV COLLECTION";
+
+  const heroTitleText = currentBrandObj
+    ? `${currentBrandObj.name} TVs`
+    : filter === "trending"
+      ? "Trending TVs"
+      : filter === "new"
+        ? "Latest TVs"
+        : "Browse TVs in India";
+
+  const heroSubtitleText = currentBrandObj
+    ? sanitizeDescription(
+        currentBrandObj.description ||
+          `Browse ${currentBrandObj.name} TVs with detailed specifications, updated prices, and store offers before you decide.`,
+      )
+    : filter === "trending"
+      ? "Browse the TVs buyers are watching most and quickly spot the models that are getting attention right now. This page brings together updated prices, display technology, panel type, resolution, refresh rate, audio features, smart features, and model variants in one place so you can compare the practical details that matter without opening multiple store pages. Whether you are looking for a budget smart TV, a 4K home-theater screen, a gaming-friendly panel, or a premium flagship display, the trending collection helps you narrow the field with confidence. Use the filters and product cards to sort by brand, price, screen size, resolution, and feature, then open the listings that look the most promising."
+      : filter === "new"
+        ? "Browse the newest TV releases and keep up with fresh launches as they arrive. This page brings together updated pricing, panel details, refresh rates, audio information, smart platform options, and screen sizes so you can track what is new in one place. If you are waiting for a newly announced model, planning a living-room upgrade, or checking how the latest releases stack up, the new-launch collection makes it easy to review the important details without jumping between many product pages. Use the filters and product cards to sort by brand, price, size, resolution, and feature, then open the TVs that are most worth watching."
+        : "Browse TVs in India across brands, price ranges, screen sizes, panel types, and feature sets so you can quickly find a display that matches your room and viewing needs. This page brings updated prices, key specifications, ratings, and model variants together in one place, making it easier to review picture quality, audio output, smart features, refresh rates, and value without switching between multiple store pages. Whether you are looking for a budget smart TV, a family viewing screen, a gaming display, or a premium home-theater panel, the collection helps you scan what is new, what is popular, and what is worth shortlisting. Use the filters, search, and product cards to narrow results by brand, size, price, or feature, then open the TVs that stand out most.";
+
+  const isExpandedHeroDescriptionPath =
+    filter === "trending" || filter === "new" || !currentBrandObj;
+  const heroSubtitleStyle =
+    isExpandedHeroDescriptionPath && !showHeroDescription
+      ? {
+          display: "-webkit-box",
+          WebkitBoxOrient: "vertical",
+          WebkitLineClamp: 3,
+          overflow: "hidden",
+        }
+      : undefined;
+  const heroSubtitleWidthClass = isExpandedHeroDescriptionPath
+    ? "max-w-6xl"
+    : "max-w-3xl";
+  useEffect(() => {
+    if (isExpandedHeroDescriptionPath) {
+      setShowHeroDescription(false);
+    }
+  }, [isExpandedHeroDescriptionPath]);
+
   let seoTitle = `Best TVs (${currentMonthYear}) - Compare Smart TVs, Prices & Specs - Hooks`;
   let seoDescription =
-    "Browse the latest TVs with detailed display, audio, smart features, and price comparisons on Hooks.";
+    "Browse the latest TVs on Hooks with updated prices, key specifications, and featured launches. Use filters to explore brands, sizes, and viewing preferences in one place.";
 
   if (filter === "trending") {
     seoTitle = `Trending TVs (${currentMonthYear}) - Most Popular Smart TVs & Prices - Hooks`;
     seoDescription =
-      "Explore trending TVs with rising demand, key specifications, and latest prices to find the right smart TV on Hooks.";
+      "Browse trending TVs with rising demand, key specifications, and latest prices to find the right smart TV on Hooks.";
   } else if (filter === "new") {
     seoTitle = `Latest TVs (${currentMonthYear}) - New Smart TV Launches & Prices - Hooks`;
     seoDescription =
-      "Discover newly launched TVs with updated specifications, panel details, refresh rates, and best store prices on Hooks.";
+      "Browse newly launched TVs with updated specifications, panel details, refresh rates, and best store prices on Hooks.";
   }
 
   if (currentBrandObj) {
     seoTitle = `${currentBrandObj.name} TVs (${currentMonthYear}) - Models, Prices & Specs - Hooks`;
     seoDescription = sanitizeDescription(
       currentBrandObj.description ||
-        `Compare ${currentBrandObj.name} TVs with detailed specifications, latest prices, and top store offers on Hooks.`,
+        `Browse ${currentBrandObj.name} TVs with detailed specifications, latest prices, and top store offers on Hooks.`,
     );
   }
   const seoKeywords = useMemo(
@@ -2625,7 +2666,7 @@ const TVs = () => {
   };
 
   return (
-    <div className="min-h-screen  ">
+    <div className="min-h-screen bg-[#eef2ff] text-slate-900">
       <style>{animationStyles}</style>
       <Helmet prioritizeSeoTags>
         <title>{seoTitle}</title>
@@ -2661,52 +2702,81 @@ const TVs = () => {
         )}
       </Helmet>
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8 lg:p-10 bg-white">
-        {/* Hero Section - Professional Styling */}
-        <div className="mb-8 sm:mb-10 lg:mb-12">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 bg-purple-50 backdrop-blur-sm px-3 py-1.5 rounded-full border border-purple-100 mb-4 sm:mb-6">
-            <FaHome className="text-purple-600 text-sm" />
-            <span className="text-xs sm:text-sm font-semibold text-purple-800">
-              SMART TVS
-            </span>
+      <div className="relative mx-auto max-w-7xl px-4 pt-0 pb-8 sm:px-6 sm:pb-12 md:pb-16 lg:px-8 lg:pb-20">
+        <section className="relative left-1/2 isolate w-screen -translate-x-1/2 overflow-hidden bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950 px-4 py-6 text-white sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+          <div className="absolute inset-0 opacity-35 [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:72px_72px]" />
+          <div className="absolute -left-20 top-0 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
+          <div className="absolute right-0 top-20 h-80 w-80 rounded-full bg-emerald-300/10 blur-3xl" />
+          <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/10 to-transparent" />
+
+          <div className="relative mx-auto max-w-7xl">
+            <div className={isExpandedHeroDescriptionPath ? "max-w-6xl" : "max-w-4xl"}>
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-emerald-100">
+                <FaTv className="h-3.5 w-3.5" />
+                {headerLabel}
+              </span>
+
+              <h1 className="mt-6 max-w-7xl text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">
+                {heroTitleText}
+              </h1>
+
+              <h4
+                className={`mt-4 ${heroSubtitleWidthClass} text-base leading-7 text-white/80 sm:text-lg sm:leading-8`}
+                style={heroSubtitleStyle}
+              >
+                {heroSubtitleText}
+              </h4>
+
+              {isExpandedHeroDescriptionPath ? (
+                <button
+                  type="button"
+                  onClick={() => setShowHeroDescription((prev) => !prev)}
+                  className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-emerald-100 transition-colors duration-200 hover:text-white"
+                  aria-expanded={showHeroDescription}
+                >
+                  {showHeroDescription ? "Show less" : "Read more"}
+                </button>
+              ) : null}
+
+              <div className="mt-8 flex flex-wrap gap-3">
+                <button
+                  onClick={() => navigate("/compare")}
+                  className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition-colors duration-200 hover:bg-slate-100"
+                >
+                  Compare TVs
+                  <FaExchangeAlt className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  onClick={() => navigate("/brands")}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:border-white/25 hover:bg-white/15"
+                >
+                  Browse brands
+                  <FaChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
           </div>
+        </section>
 
-          {/* Main Heading - Gradient Text */}
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold mb-3 sm:mb-4 lg:mb-6 leading-tight">
-            Explore Premium{" "}
-            <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-              TVs
-            </span>
-          </h1>
-
-          {/* Subtitle */}
-          <h4 className="text-base sm:text-lg lg:text-xl mb-6 sm:mb-8 text-gray-700 leading-relaxed max-w-3xl">
-            Discover the latest televisions with detailed display, audio, smart
-            features and gaming readiness. Compare specifications and find the
-            right TV for your home.
-          </h4>
-        </div>
-
-        <div className="mb-6 sm:mb-7 md:mb-8">
+        <div className="mt-6 overflow-hidden pt-0 pb-4 sm:pb-5">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <FaFilter className="text-purple-600" />
-              <h3 className="text-sm sm:text-base font-semibold text-gray-900">
+              <FaFilter className="text-blue-600" />
+              <h3 className="text-sm sm:text-base font-semibold text-slate-900">
                 Popular Features
               </h3>
             </div>
             {normalizedFeature && (
               <button
                 onClick={() => setFeatureParam(null)}
-                className="text-xs sm:text-sm text-purple-700 hover:text-purple-900 font-semibold"
+                className="text-xs sm:text-sm text-blue-700 hover:text-blue-900 font-semibold"
               >
                 Clear
               </button>
             )}
           </div>
           {popularFeatureOrderLoaded && (
-            <p className="text-xs text-gray-600 mb-3">
+            <p className="text-xs text-slate-600 mb-3">
               Popular choices from other users (last 7 days)
             </p>
           )}
@@ -2718,13 +2788,13 @@ const TVs = () => {
                 <button
                   key={pf.id}
                   onClick={() => setFeatureParam(pf.id)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-full border text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors ${
+                  className={`flex items-center gap-2 rounded-full border px-3 py-2 text-xs sm:text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
                     isActive
-                      ? "bg-purple-600 text-white border-purple-600"
-                      : "bg-white text-gray-700 border-gray-200 hover:border-purple-300 hover:text-purple-700"
+                      ? "bg-blue-600 text-white border-blue-600 shadow-lg"
+                      : "bg-slate-50 text-slate-700 border border-slate-200 hover:border-blue-300 hover:text-blue-700 hover:bg-white"
                   }`}
                 >
-                  <span className={isActive ? "text-white" : "text-purple-600"}>
+                  <span className={isActive ? "text-white" : "text-blue-600"}>
                     {Icon ? <Icon className="text-base" /> : null}
                   </span>
                   <span>{pf.name}</span>
@@ -2734,34 +2804,34 @@ const TVs = () => {
           </div>
         </div>
         {/* Control Bar */}
-        <div className="mb-8">
+        <div className="overflow-hidden">
           {/* Desktop Search and Sort */}
           <div className="hidden lg:flex items-center justify-between mb-6">
             <div className="flex-1 max-w-2xl">
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <FaSearch className="text-purple-500 group-focus-within:text-purple-600 transition-colors duration-200" />
+                  <FaSearch className="text-blue-500 group-focus-within:text-blue-600 transition-colors duration-200" />
                 </div>
                 <input
                   type="text"
                   placeholder="Search TVs by brand, model, display, or features..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-300 text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full rounded-md border border-slate-200 bg-white pl-12 pr-4 py-3 text-sm text-slate-700 placeholder:text-slate-400  transition-all duration-200 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-400 sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
             </div>
 
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <FaFilter className="text-gray-500" />
-                <span className="text-sm text-gray-600">Sort by:</span>
+                <FaFilter className="text-slate-500" />
+                <span className="text-sm text-slate-600">Sort by:</span>
               </div>
               <div className="relative min-w-[200px]">
                 <select
                   value={sortBy}
                   onChange={(e) => handleSortChange(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 text-gray-700 appearance-none cursor-pointer bg-white pr-10 transition-all duration-200 hover:border-purple-400"
+                  className="w-full cursor-pointer appearance-none rounded-md border border-slate-200 bg-white px-4 py-2.5 pr-10 text-slate-700  transition-all duration-200 hover:border-blue-300 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 >
                   <option value="featured">Featured Devices</option>
                   <option value="price-low">Price: Low to High</option>
@@ -2770,7 +2840,7 @@ const TVs = () => {
                   <option value="capacity">Highest Capacity</option>
                   <option value="energy">Best Energy Rating</option>
                 </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-700">
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-700">
                   <svg
                     className="fill-current h-4 w-4"
                     xmlns="http://www.w3.org/2000/svg"
@@ -2784,7 +2854,7 @@ const TVs = () => {
               {getActiveFiltersCount() > 0 && (
                 <button
                   onClick={clearFilters}
-                  className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-xl transition-colors"
+                  className="flex items-center gap-2 rounded-[18px] px-4 py-2.5 text-sm font-medium text-blue-600 transition-all duration-200 hover:bg-blue-50 hover:text-blue-700"
                 >
                   <FaTimes />
                   Clear Filters
@@ -2796,25 +2866,25 @@ const TVs = () => {
           {/* Mobile Search and Filter Bar */}
           <div className="lg:hidden space-y-4 mb-6">
             <div className="relative group">
-              <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-purple-500 group-focus-within:text-purple-600 transition-colors duration-200" />
+              <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-500 group-focus-within:text-blue-600 transition-colors duration-200" />
               <input
                 type="text"
                 placeholder="Search TVs..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-12 pl-12 pr-4 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-100 focus:border-purple-500 text-gray-700 transition-all duration-200 placeholder:text-gray-400"
+                className="h-12 w-full rounded-[18px] border border-slate-200 bg-white pl-12 pr-4 py-2 text-slate-700 placeholder:text-slate-400 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all duration-200 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100"
               />
             </div>
 
             <div className="flex gap-3">
               <button
                 onClick={() => setShowFilters(true)}
-                className="flex items-center justify-center gap-2 flex-1 h-12 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 rounded-xl transition-all duration-300 font-semibold hover:from-purple-600 hover:to-blue-600 hover:shadow-lg hover:-translate-y-0.5"
+                className="flex h-12 flex-1 items-center justify-center gap-2 rounded-[18px] bg-gradient-to-r from-blue-600 to-sky-500 px-4 font-semibold text-white transition-all duration-300 hover:from-blue-700 hover:to-sky-600 hover:shadow-lg hover:-translate-y-0.5"
               >
                 <FaFilter />
                 Filters
                 {getActiveFiltersCount() > 0 && (
-                  <span className="text-purple-200 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  <span className="text-blue-200 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                     {getActiveFiltersCount()}
                   </span>
                 )}
@@ -2822,7 +2892,7 @@ const TVs = () => {
 
               <button
                 onClick={() => setShowSort(true)}
-                className="flex items-center justify-center gap-2 flex-1 h-12   text-gray-700 px-4 rounded-xl border border-gray-900 hover:bg-gray-50 transition-all duration-300 font-semibold"
+                className="flex h-12 flex-1 items-center justify-center gap-2 rounded-[18px] border border-slate-200 px-4 font-semibold text-slate-700 transition-all duration-300 hover:bg-slate-50 hover:shadow-sm"
               >
                 <FaSort />
                 Sort
@@ -2831,15 +2901,15 @@ const TVs = () => {
 
             {/* Active Filters Badge - Mobile */}
             {getActiveFiltersCount() > 0 && (
-              <div className="flex items-center justify-between p-4 bg-purple-50 rounded-xl border border-purple-200">
+              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-200">
                 <div className="flex items-center gap-3">
-                  <FaInfoCircle className="text-purple-600" />
+                  <FaInfoCircle className="text-blue-600" />
                   <div>
-                    <span className="text-sm font-medium text-purple-800">
+                    <span className="text-sm font-medium text-blue-800">
                       {getActiveFiltersCount()} filter
                       {getActiveFiltersCount() > 1 ? "s" : ""} applied
                     </span>
-                    <p className="text-xs text-purple-600 mt-0.5">
+                    <p className="text-xs text-blue-600 mt-0.5">
                       Showing {filteredVariants.length} of {variantCards.length}{" "}
                       products
                     </p>
@@ -2847,7 +2917,7 @@ const TVs = () => {
                 </div>
                 <button
                   onClick={clearFilters}
-                  className="text-purple-600 hover:text-purple-800 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-purple-100 transition-colors duration-200"
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors duration-200"
                 >
                   Clear all
                 </button>
@@ -2856,40 +2926,26 @@ const TVs = () => {
           </div>
 
           {/* Results Count */}
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">
-                Available TVs
-              </h2>
-              <p className="text-sm text-gray-600 mt-1">
-                Browse through our TV collection with detailed specs, size
-                options, and latest pricing
-              </p>
-            </div>
-            <div className="hidden lg:block text-sm text-gray-500">
-              Showing {sortedVariants.length} of {variantCards.length} products
-            </div>
-          </div>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Desktop Filter Sidebar */}
           <div className="hidden lg:block lg:w-80 flex-shrink-0">
-            <div className="p-6 sticky top-6">
+            <div className="sticky top-6  border border-slate-100 bg-white p-6 border border-slate-200">
               {/* Filters Header */}
-              <div className="flex justify-between items-center mb-8 pb-4 border-b border-gray-300">
+              <div className="mb-8 flex items-center justify-between border-b border-slate-200 pb-4">
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                     Refine Search
                   </h3>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-slate-500 mt-1">
                     Narrow down TVs by specifications
                   </p>
                 </div>
                 {getActiveFiltersCount() > 0 && (
                   <button
                     onClick={clearFilters}
-                    className="flex items-center gap-2 text-sm text-purple-600 hover:text-purple-700 font-semibold transition-colors duration-200 px-3 py-1 rounded-lg hover:bg-purple-50"
+                    className="flex items-center gap-2 rounded-lg px-3 py-1 text-sm font-semibold text-blue-600 transition-all duration-200 hover:bg-blue-50 hover:text-blue-700"
                   >
                     <FaTimes />
                     Clear all
@@ -2899,53 +2955,53 @@ const TVs = () => {
 
               {/* Active Filters Badge */}
               {getActiveFiltersCount() > 0 && (
-                <div className="mb-6 p-4 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl border border-purple-200">
+                <div className="mb-6 rounded-[20px] border border-blue-100 bg-gradient-to-r from-blue-50 to-sky-50 p-4 shadow-[0_8px_24px_rgba(8,145,178,0.08)]">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-semibold text-purple-800">
+                    <span className="text-sm font-semibold text-blue-900">
                       Active Filters
                     </span>
-                    <span className="text-xs font-bold text-purple-600 bg-purple-100 px-2 py-1 rounded-full">
+                    <span className="text-xs font-bold text-blue-700 bg-blue-100 px-2 py-1 rounded-full">
                       {getActiveFiltersCount()}
                     </span>
                   </div>
-                  <p className="text-xs text-purple-600">
+                  <p className="text-xs text-blue-700">
                     Refine further or clear to see all TVs
                   </p>
                 </div>
               )}
 
               {/* Price Range Filter */}
-              <div className="mb-8">
+              <div className="mb-8  p-4">
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
+                  <h4 className="font-semibold text-slate-900 text-lg flex items-center gap-2">
                     Price Range
                   </h4>
-                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                    ₹{filters.priceRange.min?.toLocaleString()} - ₹
-                    {filters.priceRange.max?.toLocaleString()}
+                  <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
+                    {formatRupeeNumber(filters.priceRange.min)} -{" "}
+                    {formatRupeeNumber(filters.priceRange.max)}
                   </span>
                 </div>
-                <div className="bg-gradient-to-r from-purple-50 via-blue-50 to-white rounded-xl p-4 border border-gray-200">
-                  <div className="flex justify-between text-sm font-medium text-gray-700 mb-4">
+                <div className="rounded-[18px] border border-slate-200 bg-[#f8fbff] p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                  <div className="flex justify-between text-sm font-medium text-slate-700 mb-4">
                     <div className="text-center">
-                      <div className="text-xs text-gray-500">Minimum</div>
+                      <div className="text-xs text-slate-500">Minimum</div>
                       <div className="font-bold">
-                        ₹{filters.priceRange.min?.toLocaleString()}
+                        {formatRupeeNumber(filters.priceRange.min)}
                       </div>
                     </div>
                     <div className="text-center">
-                      <div className="text-xs text-gray-500">Maximum</div>
+                      <div className="text-xs text-slate-500">Maximum</div>
                       <div className="font-bold">
-                        ₹{filters.priceRange.max?.toLocaleString()}
+                        {formatRupeeNumber(filters.priceRange.max)}
                       </div>
                     </div>
                   </div>
 
                   {/* Dual Range Slider */}
                   <div className="relative mb-8">
-                    <div className="absolute h-2 bg-gray-200 rounded-full w-full top-1/2 transform -translate-y-1/2"></div>
+                    <div className="absolute h-2 bg-slate-200 rounded-full w-full top-1/2 transform -translate-y-1/2"></div>
                     <div
-                      className="absolute h-2 bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 rounded-full top-1/2 transform -translate-y-1/2"
+                      className="absolute h-2 bg-gradient-to-r from-blue-400 to-sky-400 rounded-full top-1/2 transform -translate-y-1/2"
                       style={{
                         left: `${Math.max(
                           0,
@@ -2978,7 +3034,7 @@ const TVs = () => {
                           filters.priceRange.max,
                         )
                       }
-                      className="absolute w-full top-1/2 transform -translate-y-1/2 appearance-none h-4 bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-purple-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer"
+                      className="absolute w-full top-1/2 transform -translate-y-1/2 appearance-none h-4 bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer"
                     />
 
                     <input
@@ -2992,28 +3048,28 @@ const TVs = () => {
                           Number(e.target.value),
                         )
                       }
-                      className="absolute w-full top-1/2 transform -translate-y-1/2 appearance-none h-4 bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-purple-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer"
+                      className="absolute w-full top-1/2 transform -translate-y-1/2 appearance-none h-4 bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer"
                     />
                   </div>
 
                   <div className="flex justify-between items-center text-xs mb-2">
-                    <span className="text-gray-500">
-                      ₹{MIN_PRICE.toLocaleString()}
+                    <span className="text-slate-500">
+                      {formatRupeeNumber(MIN_PRICE)}
                     </span>
-                    <span className="text-gray-500">
-                      ₹{MAX_PRICE.toLocaleString()}
+                    <span className="text-slate-500">
+                      {formatRupeeNumber(MAX_PRICE)}
                     </span>
                   </div>
                 </div>
               </div>
 
               {/* Appliance Type Filter */}
-              <div className="mb-6">
+              <div className="mb-6 rounded-[20px] border border-slate-200 bg-slate-50 p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
+                  <h4 className="font-semibold text-slate-900 text-lg flex items-center gap-2">
                     Appliance Type
                   </h4>
-                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                  <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
                     {filters.applianceType.length} selected
                   </span>
                 </div>
@@ -3025,8 +3081,8 @@ const TVs = () => {
                         key={type}
                         className={`flex items-center justify-between gap-2 cursor-pointer px-4 py-3 rounded-xl transition-all duration-200 font-medium ${
                           filters.applianceType.includes(type)
-                            ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg"
-                            : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300"
+                            ? "bg-blue-600 text-white shadow-lg"
+                            : "bg-slate-50 border border-slate-200 text-slate-700 hover:border-slate-300"
                         }`}
                       >
                         <input
@@ -3045,7 +3101,7 @@ const TVs = () => {
                           className={`w-2 h-2 rounded-full ${
                             filters.applianceType.includes(type)
                               ? "bg-white"
-                              : "bg-gray-300"
+                              : "bg-slate-300"
                           }`}
                         ></div>
                       </label>
@@ -3055,47 +3111,47 @@ const TVs = () => {
               </div>
 
               {/* Brand Filter */}
-              <div className="mb-6">
+              <div className="mb-6 rounded-[20px] border border-slate-200 bg-slate-50 p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
+                  <h4 className="font-semibold text-slate-900 text-lg flex items-center gap-2">
                     Brand
                   </h4>
-                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                  <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
                     {filters.brand.length} selected
                   </span>
                 </div>
                 <div className="relative mb-3">
-                  <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+                  <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
                   <input
                     type="text"
                     value={brandFilterQuery}
                     onChange={(e) => setBrandFilterQuery(e.target.value)}
                     placeholder="Search brand..."
-                    className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full rounded-lg border border-slate-200 bg-white pl-8 pr-3 py-2 text-sm shadow-[0_1px_2px_rgba(15,23,42,0.04)] focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
                   {filteredBrandOptions.map((brand) => (
                     <label
                       key={brand}
-                      className="flex items-center gap-3 cursor-pointer group hover:bg-gray-50 px-3 py-2.5 rounded-lg transition-all duration-200 border border-transparent hover:border-gray-200"
+                      className="flex items-center gap-3 cursor-pointer group hover:bg-slate-50 px-3 py-2.5 rounded-lg transition-all duration-200 border border-transparent hover:border-slate-200"
                     >
                       <input
                         type="checkbox"
                         checked={filters.brand.includes(brand)}
                         onChange={() => handleFilterChange("brand", brand)}
-                        className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-2 focus:ring-purple-500 focus:ring-offset-1"
+                        className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
                       />
-                      <span className="text-gray-700 group-hover:text-gray-900 font-medium flex-1">
+                      <span className="text-slate-700 group-hover:text-slate-900 font-medium flex-1">
                         {brand}
                       </span>
-                      <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                      <div className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">
                         {devices.filter((d) => d.brand === brand).length}
                       </div>
                     </label>
                   ))}
                   {filteredBrandOptions.length === 0 && (
-                    <div className="text-sm text-gray-500 px-2 py-1">
+                    <div className="text-sm text-slate-500 px-2 py-1">
                       No brands found
                     </div>
                   )}
@@ -3103,12 +3159,12 @@ const TVs = () => {
               </div>
 
               {/* Energy Rating Filter */}
-              <div className="mb-6">
+              <div className="mb-6 rounded-[20px] border border-slate-200 bg-slate-50 p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
+                  <h4 className="font-semibold text-slate-900 text-lg flex items-center gap-2">
                     Energy Rating
                   </h4>
-                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                  <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
                     {filters.energyRating.length} selected
                   </span>
                 </div>
@@ -3118,8 +3174,8 @@ const TVs = () => {
                       key={rating}
                       className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium text-sm ${
                         filters.energyRating.includes(rating)
-                          ? "bg-gradient-to-b from-purple-600 to-blue-600 text-white shadow-lg"
-                          : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300 hover:shadow-sm"
+                          ? "bg-gradient-to-b from-blue-600 to-blue-500 text-white shadow-lg"
+                          : "bg-slate-50 border border-slate-200 text-slate-700 hover:border-slate-300 hover:shadow-sm"
                       }`}
                     >
                       <input
@@ -3138,12 +3194,12 @@ const TVs = () => {
 
               {/* Capacity Range Filter */}
               {extractDynamicFilters.capacityRanges.length > 0 && (
-                <div className="mb-6">
+                <div className="mb-6 rounded-[20px] border border-slate-200 bg-slate-50 p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
+                    <h4 className="font-semibold text-slate-900 text-lg flex items-center gap-2">
                       Capacity Range
                     </h4>
-                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                    <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
                       {filters.capacityRange.length} selected
                     </span>
                   </div>
@@ -3153,8 +3209,8 @@ const TVs = () => {
                         key={range.id}
                         className={`flex items-center justify-between gap-2 cursor-pointer px-4 py-3 rounded-xl transition-all duration-200 font-medium ${
                           filters.capacityRange.includes(range.id)
-                            ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg"
-                            : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300"
+                            ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg"
+                            : "bg-slate-50 border border-slate-200 text-slate-700 hover:border-slate-300"
                         }`}
                       >
                         <input
@@ -3172,7 +3228,7 @@ const TVs = () => {
                           className={`w-2 h-2 rounded-full ${
                             filters.capacityRange.includes(range.id)
                               ? "bg-white"
-                              : "bg-gray-300"
+                              : "bg-slate-300"
                           }`}
                         ></div>
                       </label>
@@ -3183,13 +3239,13 @@ const TVs = () => {
 
               {/* Specific Filters for Selected Appliance Type */}
               {selectedApplianceType && specificFiltersConfig.length > 0 && (
-                <div className="mb-6">
+                <div className="mb-6 rounded-[20px] border border-slate-200 bg-slate-50 p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
-                      <FaCog className="text-purple-500" />
+                    <h4 className="font-semibold text-slate-900 text-lg flex items-center gap-2">
+                      <FaCog className="text-blue-500" />
                       {selectedApplianceType} Filters
                     </h4>
-                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                    <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
                       {Object.values(filters.specific || {}).flat().length}{" "}
                       selected
                     </span>
@@ -3197,14 +3253,14 @@ const TVs = () => {
                   <div className="space-y-4">
                     {specificFiltersConfig.map((filter) => (
                       <div key={filter.key}>
-                        <h5 className="font-medium text-gray-800 text-sm mb-2">
+                        <h5 className="font-medium text-slate-800 text-sm mb-2">
                           {filter.label}
                         </h5>
                         <div className="space-y-2">
                           {filter.options.map((option) => (
                             <label
                               key={option}
-                              className="flex items-center gap-3 cursor-pointer group hover:bg-gray-50 px-3 py-2 rounded-lg transition-all duration-200"
+                              className="flex items-center gap-3 cursor-pointer group hover:bg-slate-50 px-3 py-2 rounded-lg transition-all duration-200"
                             >
                               <input
                                 type="checkbox"
@@ -3216,9 +3272,9 @@ const TVs = () => {
                                 onChange={() =>
                                   handleSpecificFilterChange(filter.key, option)
                                 }
-                                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
                               />
-                              <span className="text-gray-700 text-sm group-hover:text-gray-900">
+                              <span className="text-slate-700 text-sm group-hover:text-slate-900">
                                 {option}
                               </span>
                             </label>
@@ -3238,182 +3294,230 @@ const TVs = () => {
             {/* BannerSlot disabled (incomplete). */}
 
             {/* Products Grid */}
-            <div className="grid grid-cols-1 gap-4 sm:gap-5 md:gap-6 auto-rows-fr">
+            <div className="grid grid-cols-1 gap-4 sm:gap-5 md:gap-6 auto-rows-max">
               {sortedVariants.map((device, idx) => {
                 const hasStoreSection =
                   Array.isArray(device.storePrices) &&
                   device.storePrices.length > 0;
-                const showTopDivider = hasStoreSection;
 
                 return (
                   <div
                     key={`${device.id}-${idx}`}
                     onClick={(e) => handleView(device, e)}
-                    className="h-full overflow-hidden rounded-md cursor-pointer"
+                    className={`h-full w-full mx-auto overflow-hidden  bg-white border border-slate-200 cursor-pointer transition-all duration-300   ${
+                      isCompareSelected(device)
+                        ? "ring-2 ring-blue-400 bg-blue-50"
+                        : ""
+                    }`}
                   >
-                    <div className="p-3 sm:p-4 md:p-5 lg:p-6 pt-4 sm:pt-5 md:pt-6">
-                      {/* Top Row: Image and Basic Info */}
-                      <div className="grid grid-cols-[minmax(0,8.5rem)_minmax(0,1fr)] sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)] gap-3 w-full items-start">
-                        {/* Product Image - Fixed container */}
-                        <div className="relative flex-shrink-0 w-full h-36 sm:h-48 rounded-2xl overflow-hidden group bg-gray-100">
-                          <div className="w-full h-full flex items-center justify-center p-1.5 sm:p-2">
-                            <ImageCarousel images={device.images} />
+                    <div className="p-5 sm:p-6 transition-all duration-300">
+                      {/* Desktop Header Section - Hidden on mobile */}
+                      <div className="hidden flex-col gap-4 lg:flex lg:flex-row lg:items-start lg:justify-between">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="max-w-3xl text-[1.45rem] font-semibold tracking-tight text-[#14255e] sm:text-[1.8rem]">
+                            {device.name || device.model || "TV"}
+                          </h3>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+                          <div className="text-xl font-semibold tracking-tight text-[#14255e] sm:text-2xl">
+                            {formatPriceDisplay(device.price)}
                           </div>
-                          <div className="absolute left-1.5 top-1.5 z-10 pointer-events-none">
-                            <CircularScoreBadge
-                              score={
-                                device.overall_score_display ??
-                                device.overall_score
-                              }
-                              size={42}
-                            />
-                          </div>
-                          {/* Compare Checkbox Overlay - Top Right */}
-                          <div
-                            onClick={(e) => e.stopPropagation()}
-                            className="absolute top-2 right-2 z-10 rounded-md transition-all duration-200 cursor-pointer hover:bg-gray-50"
-                            title="Add to compare"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isCompareSelected(device)}
-                              onClick={(e) => e.stopPropagation()}
-                              onChange={(e) => {
-                                e.stopPropagation();
-                                handleCompareToggle(device, e);
-                              }}
-                              className="w-3 h-3 m-1 accent-purple-600 cursor-pointer"
-                            />
+                        </div>
+                      </div>
+
+                      {/* Desktop Score and Launch Date Section */}
+                      <div className="mt-4 hidden flex-col gap-3 lg:flex lg:flex-row lg:items-center lg:justify-between">
+                        <div className="flex flex-wrap items-center gap-4">
+                          <CircularScoreBadge
+                            score={
+                              device.overall_score_display ??
+                              device.overall_score
+                            }
+                            size={42}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Main Content Grid */}
+                      <div className="mt-5 grid grid-cols-[128px_minmax(0,1fr)] gap-3 sm:grid-cols-[120px_minmax(0,1fr)] lg:grid-cols-[180px_minmax(0,1fr)] sm:gap-4 lg:gap-5">
+                        {/* Image Column */}
+                        <div className="relative flex items-start justify-start sm:justify-center">
+                          <div className="relative h-36 w-full overflow-hidden rounded-[20px] border border-slate-200 bg-[#f8fbff] shadow-[0_1px_2px_rgba(15,23,42,0.03)] group sm:h-48">
+                            <div className="flex h-full w-full items-center justify-center p-2.5 sm:p-3">
+                              <ImageCarousel images={device.images} />
+                            </div>
                           </div>
                         </div>
 
-                        {/* Basic Info */}
-                        <div className="flex-1 min-w-0">
-                          {/* Brand and Model */}
-                          <div className="flex items-start justify-between mb-2">
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700">
-                                  {device.brand}
-                                </span>
-                              </div>
-                              <h5 className="font-bold text-gray-900 text-base leading-6 break-words">
-                                {device.name || device.model || "TV"}
-                              </h5>
-                              {(() => {
-                                const activeSize = firstNonEmpty(
-                                  device.variant?.screen_size,
-                                  device.variant?.size,
-                                  device.variant?.variant_key,
-                                  device.specs?.screenSize,
-                                  device.specs?.capacity,
-                                );
-                                const screenSize = String(
-                                  activeSize || device.specs?.screenSize || "",
-                                ).trim();
-                                const variantSummary = firstNonEmpty(
-                                  device.variant?.specification_summary,
-                                );
-                                const variantSummaryIsSize =
-                                  normalizeLooseKey(variantSummary) ===
-                                  normalizeLooseKey(screenSize);
-                                const resolution = String(
-                                  firstNonEmpty(
-                                    device.variant?.resolution,
-                                    variantSummaryIsSize ? "" : variantSummary,
-                                    device.variant?.variant_resolution,
-                                    extractVariantSpecificValue(
-                                      device.specs?.resolution,
-                                      screenSize,
-                                    ),
-                                    device.specs?.resolution,
-                                  ),
-                                ).trim();
-                                const refreshRate = String(
-                                  firstNonEmpty(
-                                    device.variant?.refresh_rate,
-                                    extractVariantSpecificValue(
-                                      device.specs?.refreshRate,
-                                      screenSize,
-                                    ),
-                                    device.specs?.refreshRate,
-                                  ),
-                                ).trim();
-                                const panelType = String(
-                                  firstNonEmpty(
-                                    device.variant?.panel_type,
-                                    device.variant?.display_type,
-                                    extractVariantSpecificValue(
-                                      device.specs?.displayType,
-                                      screenSize,
-                                    ),
-                                    device.specs?.displayType,
-                                    device.specs?.type || "",
-                                  ),
-                                ).trim();
-                                const operatingSystem = String(
-                                  device.specs?.operatingSystem || "",
-                                ).trim();
-                                const tvIdentity = [
-                                  screenSize,
-                                  resolution,
-                                  refreshRate,
-                                  panelType,
-                                  operatingSystem,
-                                ]
-                                  .filter(Boolean)
-                                  .join(" | ");
-
-                                if (!tvIdentity) return null;
-                                return (
-                                  <p className="mt-1 text-[12px] text-gray-600 leading-5 break-words">
-                                    {tvIdentity}
-                                  </p>
-                                );
-                              })()}
+                        {/* Right Column - Info */}
+                        <div className="space-y-3 pt-1">
+                          {/* Mobile Brand, Title, Score */}
+                          <div className="space-y-1 lg:hidden">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="inline-block text-sm font-semibold text-blue-600">
+                                {device.brand}
+                              </span>
+                            </div>
+                            <h5 className="text-[1.05rem] font-semibold tracking-tight text-[#14255e] leading-6 break-words">
+                              {device.name || device.model || "TV"}
+                            </h5>
+                            <div className="flex items-end gap-1 leading-none">
+                              <CircularScoreBadge
+                                score={
+                                  device.overall_score_display ??
+                                  device.overall_score
+                                }
+                                size={42}
+                              />
                             </div>
                           </div>
 
-                          <div className="mb-1">
+                          {/* Specs Summary - Desktop Only */}
+                          <div className="hidden lg:block text-[13px] leading-6 text-slate-700 sm:text-sm sm:leading-7 sm:text-base">
                             {(() => {
-                              const firstStoreUrl = (device.storePrices || [])
-                                .map((sp) =>
-                                  getStoreVisitUrl(
-                                    sp?.url,
-                                    sp?.store,
-                                    [
-                                      device.brand,
-                                      device.name || device.model || "TV",
-                                      device.specs?.screenSize,
-                                      device.specs?.resolution,
-                                    ]
-                                      .filter(Boolean)
-                                      .join(" "),
+                              const activeSize = firstNonEmpty(
+                                device.variant?.screen_size,
+                                device.variant?.size,
+                                device.variant?.variant_key,
+                                device.specs?.screenSize,
+                                device.specs?.capacity,
+                              );
+                              const screenSize = String(
+                                activeSize || device.specs?.screenSize || "",
+                              ).trim();
+                              const variantSummary = firstNonEmpty(
+                                device.variant?.specification_summary,
+                              );
+                              const variantSummaryIsSize =
+                                normalizeLooseKey(variantSummary) ===
+                                normalizeLooseKey(screenSize);
+                              const resolution = String(
+                                firstNonEmpty(
+                                  device.variant?.resolution,
+                                  variantSummaryIsSize ? "" : variantSummary,
+                                  device.variant?.variant_resolution,
+                                  extractVariantSpecificValue(
+                                    device.specs?.resolution,
+                                    screenSize,
                                   ),
-                                )
-                                .find((url) => Boolean(url));
-                              if (!device.brand) return null;
+                                  device.specs?.resolution,
+                                ),
+                              ).trim();
+                              const refreshRate = String(
+                                firstNonEmpty(
+                                  device.variant?.refresh_rate,
+                                  extractVariantSpecificValue(
+                                    device.specs?.refreshRate,
+                                    screenSize,
+                                  ),
+                                  device.specs?.refreshRate,
+                                ),
+                              ).trim();
+                              const panelType = String(
+                                firstNonEmpty(
+                                  device.variant?.panel_type,
+                                  device.variant?.display_type,
+                                  extractVariantSpecificValue(
+                                    device.specs?.displayType,
+                                    screenSize,
+                                  ),
+                                  device.specs?.displayType,
+                                  device.specs?.type || "",
+                                ),
+                              ).trim();
+                              const operatingSystem = String(
+                                device.specs?.operatingSystem || "",
+                              ).trim();
+                              const tvIdentity = [
+                                screenSize,
+                                resolution,
+                                refreshRate,
+                                panelType,
+                                operatingSystem,
+                              ]
+                                .filter(Boolean)
+                                .join(" | ");
+                              return tvIdentity || "TV specifications";
+                            })()}
+                          </div>
+
+                          {/* Mobile Price */}
+                          <div className="lg:hidden text-lg font-semibold tracking-tight text-[#14255e] sm:text-xl">
+                            {formatPriceDisplay(device.price)}
+                          </div>
+
+                          {/* Mobile Specs and Details */}
+                          <div className="lg:hidden space-y-3">
+                            {(() => {
+                              const activeSize = firstNonEmpty(
+                                device.variant?.screen_size,
+                                device.variant?.size,
+                                device.variant?.variant_key,
+                                device.specs?.screenSize,
+                                device.specs?.capacity,
+                              );
+                              const screenSize = String(
+                                activeSize || device.specs?.screenSize || "",
+                              ).trim();
+                              const variantSummary = firstNonEmpty(
+                                device.variant?.specification_summary,
+                              );
+                              const variantSummaryIsSize =
+                                normalizeLooseKey(variantSummary) ===
+                                normalizeLooseKey(screenSize);
+                              const resolution = String(
+                                firstNonEmpty(
+                                  device.variant?.resolution,
+                                  variantSummaryIsSize ? "" : variantSummary,
+                                  device.variant?.variant_resolution,
+                                  extractVariantSpecificValue(
+                                    device.specs?.resolution,
+                                    screenSize,
+                                  ),
+                                  device.specs?.resolution,
+                                ),
+                              ).trim();
+                              const refreshRate = String(
+                                firstNonEmpty(
+                                  device.variant?.refresh_rate,
+                                  extractVariantSpecificValue(
+                                    device.specs?.refreshRate,
+                                    screenSize,
+                                  ),
+                                  device.specs?.refreshRate,
+                                ),
+                              ).trim();
+                              const panelType = String(
+                                firstNonEmpty(
+                                  device.variant?.panel_type,
+                                  device.variant?.display_type,
+                                  extractVariantSpecificValue(
+                                    device.specs?.displayType,
+                                    screenSize,
+                                  ),
+                                  device.specs?.displayType,
+                                  device.specs?.type || "",
+                                ),
+                              ).trim();
+                              const operatingSystem = String(
+                                device.specs?.operatingSystem || "",
+                              ).trim();
+                              const tvIdentity = [
+                                screenSize,
+                                resolution,
+                                refreshRate,
+                                panelType,
+                                operatingSystem,
+                              ]
+                                .filter(Boolean)
+                                .join(" | ");
+
+                              if (!tvIdentity) return null;
                               return (
-                                <a
-                                  href={firstStoreUrl || "#"}
-                                  target={firstStoreUrl ? "_blank" : undefined}
-                                  rel={
-                                    firstStoreUrl
-                                      ? "noopener noreferrer"
-                                      : undefined
-                                  }
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (!firstStoreUrl) e.preventDefault();
-                                  }}
-                                  className={`inline-block w-full mb-1 text-[12px] font-medium leading-snug whitespace-nowrap overflow-hidden text-ellipsis ${
-                                    firstStoreUrl
-                                      ? "text-blue-700 hover:text-blue-800 hover:underline"
-                                      : "text-blue-700 cursor-default"
-                                  }`}
-                                >
-                                  {`Visit the ${device.brand} Store`}
-                                </a>
+                                <p className="mt-1 text-[13px] leading-6 text-slate-700 break-words">
+                                  {tvIdentity}
+                                </p>
                               );
                             })()}
                           </div>
@@ -3421,7 +3525,7 @@ const TVs = () => {
                           {Array.isArray(device.variants) &&
                             device.variants.length > 0 && (
                               <div>
-                                <p className="text-[11px] font-semibold text-gray-500 mb-1.5">
+                                <p className="text-[11px] font-semibold text-slate-500 mb-1.5">
                                   Available Sizes
                                 </p>
                                 <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
@@ -3455,8 +3559,8 @@ const TVs = () => {
                                           }
                                           className={`shrink-0 px-2.5 py-1 rounded-full border text-[11px] font-semibold transition-colors ${
                                             isSelected
-                                              ? "bg-purple-600 text-white border-purple-600"
-                                              : "bg-white text-gray-700 border-gray-300 hover:border-purple-300 hover:text-purple-700"
+                                              ? "bg-blue-600 text-white border-blue-600"
+                                              : "bg-white text-slate-700 border-slate-300 hover:border-blue-300 hover:text-blue-700"
                                           }`}
                                         >
                                           {label}
@@ -3468,128 +3572,104 @@ const TVs = () => {
                               </div>
                             )}
 
-                          {/* Price */}
-                          <div>
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <div className="text-lg font-bold text-green-600">
-                                  {device.price}
-                                </div>
+                          {/* Store Prices - Desktop */}
+                          {hasStoreSection && (
+                            <div className="hidden lg:block mt-4 rounded-[24px] border border-blue-100 bg-[#f8fbff] p-2.5 sm:p-4">
+                              <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
+                                <FaStore className="text-emerald-500" />
+                                Check Price On
+                              </div>
+                              <div className="space-y-2">
+                                {device.storePrices
+                                  .slice(0, 2)
+                                  .map((storePrice, i) => {
+                                    const storeObj =
+                                      storePrice.storeObj ||
+                                      (getStore
+                                        ? getStore(
+                                            storePrice.store ||
+                                              storePrice.store_name ||
+                                              storePrice.storeName ||
+                                              "",
+                                          )
+                                        : null);
+                                    const storeNameCandidate =
+                                      storePrice.store ||
+                                      storePrice.store_name ||
+                                      storePrice.storeName ||
+                                      storeObj?.name ||
+                                      "";
+                                    const logoSrc =
+                                      storePrice.logo ||
+                                      (getStoreLogo
+                                        ? getStoreLogo(storeNameCandidate)
+                                        : getLogo(storeNameCandidate));
+                                    return (
+                                      <div
+                                        key={`${device.id}-store-${i}`}
+                                        className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-white px-3 py-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:px-3.5 sm:py-3.5"
+                                      >
+                                        <div className="flex min-w-0 items-center gap-3">
+                                          {logoSrc ? (
+                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center">
+                                              <img
+                                                src={logoSrc}
+                                                alt={storePrice.store}
+                                                className="h-full w-full object-contain"
+                                              />
+                                            </div>
+                                          ) : (
+                                            <FaStore className="h-8 w-8 text-slate-300" />
+                                          )}
+                                          <span className="min-w-0 flex-1 text-sm font-medium text-slate-900">
+                                            {storePrice.store || "Online Store"}
+                                          </span>
+                                        </div>
+                                        <div className="flex flex-wrap items-center justify-end gap-3">
+                                          <div className="flex flex-col items-end">
+                                            <span className="text-sm font-bold text-emerald-600">
+                                              {formatPriceDisplay(
+                                                storePrice.price,
+                                              )}
+                                            </span>
+                                          </div>
+                                          <a
+                                            href={storePrice.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="text-blue-600 hover:text-blue-700 text-xs font-medium flex items-center gap-1 shrink-0"
+                                          >
+                                            Buy Now
+                                            <FaExternalLinkAlt className="text-xs opacity-80" />
+                                          </a>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                {device.storePrices.length > 2 ? (
+                                  <div className="text-center text-xs text-slate-500 py-2">
+                                    +{device.storePrices.length - 2} more stores
+                                  </div>
+                                ) : null}
                               </div>
                             </div>
-                          </div>
-                        </div>
-                      </div>
+                          )}
 
-                      {/* Expanded Details */}
-                      <div
-                        className={
-                          showTopDivider
-                            ? "mt-3 sm:mt-4 md:mt-5 pt-3 sm:pt-4 md:pt-5 border-t border-gray-200"
-                            : "mt-0 pt-0 border-t-0"
-                        }
-                      >
-                        {/* Store Availability */}
-                        {hasStoreSection && (
-                          <div className="mb-4">
-                            <div className="flex items-center gap-2 mb-3">
-                              <h4 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
-                                <FaStore className="text-green-500" />
-                                Check Price on
-                              </h4>
-                            </div>
-                            <div className="space-y-2">
-                              {device.storePrices
-                                .slice(0, 3)
-                                .map((storePrice, i) => {
-                                  const storeObj =
-                                    storePrice.storeObj ||
-                                    (getStore
-                                      ? getStore(
-                                          storePrice.store ||
-                                            storePrice.store_name ||
-                                            storePrice.storeName ||
-                                            "",
-                                        )
-                                      : null);
-                                  const storeNameCandidate =
-                                    storePrice.store ||
-                                    storePrice.store_name ||
-                                    storePrice.storeName ||
-                                    storeObj?.name ||
-                                    "";
-                                  const logoSrcRaw =
-                                    storePrice.logo ||
-                                    (getStoreLogo
-                                      ? getStoreLogo(storeNameCandidate)
-                                      : getLogo(storeNameCandidate));
-                                  const logoSrc = isLikelyImageSrc(logoSrcRaw)
-                                    ? logoSrcRaw
-                                    : "";
-                                  const visitUrl = getStoreVisitUrl(
-                                    storePrice.url,
-                                    storePrice.store,
-                                    [
-                                      device.brand,
-                                      device.name || device.model || "TV",
-                                      device.specs?.screenSize,
-                                      device.specs?.resolution,
-                                    ]
-                                      .filter(Boolean)
-                                      .join(" "),
-                                  );
-                                  return (
-                                    <div
-                                      key={`${device.id}-store-${i}`}
-                                      className="flex items-center justify-between text-sm bg-gradient-to-br from-purple-50 to-blue-50 px-3 py-2 rounded-lg"
-                                    >
-                                      <div className="flex items-center gap-2">
-                                        {logoSrc ? (
-                                          <img
-                                            src={logoSrc}
-                                            alt={
-                                              storeObj?.name || storePrice.store
-                                            }
-                                            className="w-6 h-6 object-contain"
-                                          />
-                                        ) : (
-                                          <FaStore className="text-gray-400" />
-                                        )}
-                                        <span className="font-medium text-gray-900 capitalize">
-                                          {storePrice.store ||
-                                            storeObj?.name ||
-                                            "Online Store"}
-                                        </span>
-                                      </div>
-                                      <div className="font-bold text-green-600">
-                                        {formatPriceDisplay(storePrice.price)}
-                                      </div>
-                                      <div className="flex items-center gap-2">
-                                        <a
-                                          href={visitUrl || "#"}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (!visitUrl) e.preventDefault();
-                                          }}
-                                          className="text-blue-600 hover:text-blue-800 text-xs font-medium flex items-center gap-1"
-                                        >
-                                          Buy Now
-                                          <FaExternalLinkAlt className="text-xs opacity-80" />
-                                        </a>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              {device.storePrices.length > 3 && (
-                                <div className="text-center text-xs text-gray-500">
-                                  +{device.storePrices.length - 3} more stores
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
+                          <label
+                            className="mt-4 flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isCompareSelected(device)}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => handleCompareToggle(device, e)}
+                              className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white transition-all duration-200 checked:border-blue-500 checked:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1"
+                            />
+                            <span>Add to Compare</span>
+                          </label>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -3599,13 +3679,13 @@ const TVs = () => {
 
             {/* No Results State */}
             {sortedVariants.length === 0 && (
-              <div className="text-center py-16 bg-white border border-gray-200 rounded-xl">
+              <div className="rounded-[24px] border border-slate-100 bg-white/90 py-16 text-center shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
                 <div className="max-w-md mx-auto">
-                  <FaSearch className="text-gray-300 text-5xl mx-auto mb-4" />
-                  <h3 className="text-2xl font-semibold text-gray-900 mb-3">
+                  <FaSearch className="text-slate-300 text-5xl mx-auto mb-4" />
+                  <h3 className="text-2xl font-semibold text-slate-900 mb-3">
                     No TVs found
                   </h3>
-                  <p className="text-gray-600 mb-6">
+                  <p className="text-slate-600 mb-6">
                     Try adjusting your filters or search terms to find what
                     you're looking for. We have a wide range of devices
                     available.
@@ -3613,13 +3693,13 @@ const TVs = () => {
                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
                     <button
                       onClick={clearFilters}
-                      className="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-all duration-200"
+                      className="rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-3 font-semibold text-white transition-all duration-300 hover:from-blue-700 hover:to-blue-600 hover:shadow-lg hover:-translate-y-0.5"
                     >
                       Clear All Filters
                     </button>
                     <button
                       onClick={() => setShowFilters(true)}
-                      className="bg-white text-gray-700 px-6 py-3 rounded-lg font-semibold border border-gray-300 hover:bg-gray-50 transition-colors duration-200"
+                      className="rounded-lg border border-slate-300 bg-white px-6 py-3 font-semibold text-slate-700 transition-all duration-300 hover:border-slate-400 hover:bg-slate-50 hover:shadow-md"
                     >
                       Adjust Filters
                     </button>
@@ -3630,9 +3710,9 @@ const TVs = () => {
 
             {/* Results Footer */}
             {sortedVariants.length > 0 && (
-              <div className="mt-8 pt-6 border-t border-gray-200">
+              <div className="mt-8 border-t border-slate-200 pt-6">
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-slate-500">
                     Showing {sortedVariants.length} of {variantCards.length}{" "}
                     products
                   </div>
@@ -3658,7 +3738,7 @@ const TVs = () => {
                       </svg>
                       Back to top
                     </button>
-                    <div className="text-xs text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full">
+                    <div className="rounded-full bg-slate-100 px-3 py-1.5 text-xs text-slate-500">
                       Last updated: Today
                     </div>
                   </div>
@@ -3676,24 +3756,24 @@ const TVs = () => {
               onClick={() => setShowSort(false)}
             ></div>
 
-            <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl transform transition-transform duration-300 max-h-[70vh] overflow-hidden">
-              <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-white">
+            <div className="absolute bottom-0 left-0 right-0 max-h-[70vh] overflow-hidden rounded-t-3xl border border-slate-100 bg-white shadow-2xl transform transition-transform duration-300">
+              <div className="flex items-center justify-between border-b border-slate-200 bg-white p-6">
                 <div className="flex items-center gap-3">
                   <FaSort className="text-blue-600 text-xl" />
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900">
+                    <h3 className="text-xl font-bold text-slate-900">
                       Sort Options
                     </h3>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-slate-500">
                       Arrange TVs by preference
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowSort(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                  className="rounded-lg p-2 transition-colors duration-200 hover:bg-slate-100"
                 >
-                  <FaTimes className="text-gray-500 text-lg" />
+                  <FaTimes className="text-slate-500 text-lg" />
                 </button>
               </div>
 
@@ -3733,14 +3813,14 @@ const TVs = () => {
                   <button
                     key={option.value}
                     onClick={() => handleSortChange(option.value)}
-                    className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 ${
+                    className={`w-full rounded-[18px] border-2 p-4 text-left transition-all duration-200 ${
                       sortBy === option.value
-                        ? "bg-blue-50 border-blue-500 text-blue-700"
-                        : "bg-gray-50 border-gray-200 text-gray-700 hover:border-gray-300"
+                        ? "border-blue-500 bg-blue-50 text-blue-700 shadow-[0_8px_24px_rgba(8,145,178,0.08)]"
+                        : "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-white"
                     }`}
                   >
                     <div className="font-semibold">{option.label}</div>
-                    <div className="text-sm text-gray-500 mt-1">
+                    <div className="text-sm text-slate-500 mt-1">
                       {option.desc}
                     </div>
                   </button>
@@ -3758,23 +3838,23 @@ const TVs = () => {
               onClick={() => setShowFilters(false)}
             ></div>
 
-            <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl transform transition-transform duration-300 max-h-[90vh] overflow-hidden">
-              <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-white">
+            <div className="absolute bottom-0 left-0 right-0 max-h-[90vh] overflow-hidden rounded-t-3xl bg-white transform transition-transform duration-300">
+              <div className="flex items-center justify-between border-b border-slate-200 bg-white p-6">
                 <div className="flex items-center gap-3">
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900">
+                    <h3 className="text-xl font-bold text-slate-900">
                       Refine Search
                     </h3>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-slate-500">
                       Filter TVs by specifications
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowFilters(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                  className="rounded-lg p-2 transition-colors duration-200 hover:bg-slate-100"
                 >
-                  <FaTimes className="text-gray-500 text-lg" />
+                  <FaTimes className="text-slate-500 text-lg" />
                 </button>
               </div>
 
@@ -3782,19 +3862,19 @@ const TVs = () => {
                 {/* Price Range */}
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-semibold text-gray-900 text-lg">
+                    <h4 className="font-semibold text-slate-900 text-lg">
                       Price Range
                     </h4>
-                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                      ₹{filters.priceRange.min?.toLocaleString()} - ₹
-                      {filters.priceRange.max?.toLocaleString()}
+                    <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
+                      {formatRupeeNumber(filters.priceRange.min)} -{" "}
+                      {formatRupeeNumber(filters.priceRange.max)}
                     </span>
                   </div>
-                  <div className="bg-gradient-to-r from-purple-50 via-blue-50 to-white rounded-xl p-4 border border-gray-200">
+                  <div className="rounded-xl border border-slate-200 bg-[#f8fbff] p-4">
                     <div className="relative mb-4">
-                      <div className="absolute h-2 bg-gray-200 rounded-full w-full top-1/2 transform -translate-y-1/2"></div>
+                      <div className="absolute h-2 bg-slate-200 rounded-full w-full top-1/2 transform -translate-y-1/2"></div>
                       <div
-                        className="absolute h-2 bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 rounded-full top-1/2 transform -translate-y-1/2"
+                        className="absolute h-2 bg-gradient-to-r from-blue-400 to-sky-400 rounded-full top-1/2 transform -translate-y-1/2"
                         style={{
                           left: `${Math.max(
                             0,
@@ -3847,11 +3927,11 @@ const TVs = () => {
                       />
 
                       <div className="flex justify-between items-center text-xs mt-6">
-                        <span className="text-gray-500">
-                          ₹{MIN_PRICE.toLocaleString()}
+                        <span className="text-slate-500">
+                          {formatRupeeNumber(MIN_PRICE)}
                         </span>
-                        <span className="text-gray-500">
-                          ₹{MAX_PRICE.toLocaleString()}
+                        <span className="text-slate-500">
+                          {formatRupeeNumber(MAX_PRICE)}
                         </span>
                       </div>
                     </div>
@@ -3860,7 +3940,7 @@ const TVs = () => {
 
                 {/* Appliance Type */}
                 <div>
-                  <h4 className="font-semibold text-gray-900 text-lg mb-3">
+                  <h4 className="font-semibold text-slate-900 text-lg mb-3">
                     Appliance Type
                   </h4>
                   <div className="grid grid-cols-2 gap-2">
@@ -3871,8 +3951,8 @@ const TVs = () => {
                           key={type}
                           className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium text-sm ${
                             filters.applianceType.includes(type)
-                              ? "bg-gradient-to-b from-purple-600 to-blue-600 text-white shadow-lg"
-                              : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300 hover:shadow-sm"
+                              ? "bg-blue-600 text-white shadow-lg"
+                              : "bg-slate-50 border border-slate-200 text-slate-700 hover:border-slate-300 hover:shadow-sm"
                           }`}
                         >
                           <input
@@ -3893,17 +3973,17 @@ const TVs = () => {
 
                 {/* Brand */}
                 <div>
-                  <h4 className="font-semibold text-gray-900 text-lg mb-3">
+                  <h4 className="font-semibold text-slate-900 text-lg mb-3">
                     Brand
                   </h4>
                   <div className="relative mb-3">
-                    <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+                    <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
                     <input
                       type="text"
                       value={brandFilterQuery}
                       onChange={(e) => setBrandFilterQuery(e.target.value)}
                       placeholder="Search brand..."
-                      className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full rounded-lg border border-slate-200 bg-white pl-8 pr-3 py-2 text-sm shadow-[0_1px_2px_rgba(15,23,42,0.04)] focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -3912,8 +3992,8 @@ const TVs = () => {
                         key={brand}
                         className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium text-sm ${
                           filters.brand.includes(brand)
-                            ? "bg-gradient-to-b from-purple-600 to-blue-600 text-white shadow-lg"
-                            : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300 hover:shadow-sm"
+                            ? "bg-gradient-to-b from-blue-600 to-blue-500 text-white shadow-lg"
+                            : "bg-slate-50 border border-slate-200 text-slate-700 hover:border-slate-300 hover:shadow-sm"
                         }`}
                       >
                         <input
@@ -3927,7 +4007,7 @@ const TVs = () => {
                     ))}
                   </div>
                   {filteredBrandOptions.length === 0 && (
-                    <div className="text-sm text-gray-500 mt-2">
+                    <div className="text-sm text-slate-500 mt-2">
                       No brands found
                     </div>
                   )}
@@ -3935,7 +4015,7 @@ const TVs = () => {
 
                 {/* Energy Rating */}
                 <div>
-                  <h4 className="font-semibold text-gray-900 text-lg mb-3">
+                  <h4 className="font-semibold text-slate-900 text-lg mb-3">
                     Energy Rating
                   </h4>
                   <div className="grid grid-cols-2 gap-2">
@@ -3944,8 +4024,8 @@ const TVs = () => {
                         key={rating}
                         className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium text-sm ${
                           filters.energyRating.includes(rating)
-                            ? "bg-gradient-to-b from-purple-600 to-blue-600 text-white shadow-lg"
-                            : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300 hover:shadow-sm"
+                            ? "bg-gradient-to-b from-blue-600 to-blue-500 text-white shadow-lg"
+                            : "bg-slate-50 border border-slate-200 text-slate-700 hover:border-slate-300 hover:shadow-sm"
                         }`}
                       >
                         <input
@@ -3966,13 +4046,13 @@ const TVs = () => {
                 {/* Specific Filters for Selected Appliance Type (Mobile) */}
                 {selectedApplianceType && specificFiltersConfig.length > 0 && (
                   <div>
-                    <h4 className="font-semibold text-gray-900 text-lg mb-3">
+                    <h4 className="font-semibold text-slate-900 text-lg mb-3">
                       {selectedApplianceType} Filters
                     </h4>
                     <div className="space-y-4">
                       {specificFiltersConfig.slice(0, 2).map((filter) => (
                         <div key={filter.key}>
-                          <h5 className="font-medium text-gray-800 text-sm mb-2">
+                          <h5 className="font-medium text-slate-800 text-sm mb-2">
                             {filter.label}
                           </h5>
                           <div className="grid grid-cols-2 gap-2">
@@ -3981,8 +4061,8 @@ const TVs = () => {
                                 key={option}
                                 className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium text-sm ${
                                   filters.specific[filter.key]?.includes(option)
-                                    ? "bg-gradient-to-b from-purple-600 to-blue-600 text-white shadow-lg"
-                                    : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300 hover:shadow-sm"
+                                    ? "bg-gradient-to-b from-blue-600 to-blue-500 text-white shadow-lg"
+                                    : "bg-slate-50 border border-slate-200 text-slate-700 hover:border-slate-300 hover:shadow-sm"
                                 }`}
                               >
                                 <input
@@ -4012,17 +4092,17 @@ const TVs = () => {
               </div>
 
               {/* Apply Button */}
-              <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-6">
+              <div className="absolute bottom-0 left-0 right-0 border-t border-slate-200 bg-white p-6">
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowFilters(false)}
-                    className="flex-1 bg-gray-100 text-gray-700 py-4 rounded-xl font-semibold hover:bg-gray-200 transition-colors duration-200"
+                    className="flex-1 rounded-xl bg-slate-100 py-4 font-semibold text-slate-700 transition-colors duration-200 hover:bg-slate-200"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={() => setShowFilters(false)}
-                    className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white py-4 rounded-xl font-semibold hover:from-purple-600 hover:to-blue-600 transition-all duration-200 shadow-lg"
+                    className="flex-1 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 py-4 font-semibold text-white shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-blue-600"
                   >
                     Apply Filters
                   </button>
@@ -4034,21 +4114,21 @@ const TVs = () => {
       </div>
 
       {/* Help Section */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="bg-gradient-to-r from-purple-200 to-blue-200 rounded-2xl p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="rounded-2xl bg-gradient-to-r from-blue-200 to-sky-200 p-6 lg:p-8 shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
             <div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
+              <h3 className="text-xl font-bold text-slate-900 mb-2">
                 Need help choosing?
               </h3>
-              <p className="text-gray-600 mb-4 lg:mb-0">
+              <p className="text-slate-600 mb-4 lg:mb-0">
                 Use our comparison tool to side-by-side compare TV models by
                 screen size, panel, refresh rate, smart features, and price.
               </p>
             </div>
             <button
               onClick={() => navigate("/compare")}
-              className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-indigo-700 hover:to-blue-700 transition-all duration-200 whitespace-nowrap"
+              className="bg-gradient-to-r from-blue-600 to-sky-500 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-sky-600 transition-all duration-200 whitespace-nowrap"
             >
               Open Comparison Tool
             </button>

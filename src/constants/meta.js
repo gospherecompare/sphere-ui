@@ -3,11 +3,6 @@ const CURRENT_MONTH_YEAR = new Intl.DateTimeFormat("en-US", {
   month: "short",
   year: "numeric",
 }).format(new Date());
-const CURRENT_DAY_MONTH_YEAR = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-}).format(new Date());
 
 export const smartphoneMeta = {
   title: ({ name, brand }) => {
@@ -19,7 +14,7 @@ export const smartphoneMeta = {
         : name || brand || "";
     if (!identity) return "";
 
-    return `${identity} Price in India Full Specifications, Features and Buying Guide (${CURRENT_DAY_MONTH_YEAR}) - Hooks`;
+    return `${identity} - See full specifications, price & more (${CURRENT_MONTH_YEAR}) - Hooks`;
   },
 
   description: ({ name, brand, highlights = [] }) => {

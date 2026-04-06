@@ -3,130 +3,56 @@ import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDevice } from "../../hooks/useDevice";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
-import {
-  FaMobileAlt,
-  FaWifi,
-  FaLaptop,
-  FaPlug,
-  FaTag,
-  FaTv,
-} from "react-icons/fa";
+import { FaChartLine, FaFire, FaTag } from "react-icons/fa";
+import RecommendedSmartphones from "./RecommendedSmartphones";
 
 const BRAND_PLACEHOLDER_LOGO =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Crect width='80' height='80' rx='12' fill='%23f3f4f6'/%3E%3Ctext x='40' y='46' font-family='Arial' font-size='10' text-anchor='middle' fill='%239ca3af'%3ELogo%3C/text%3E%3C/svg%3E";
 
+const BrandCard = ({ brand, index, isActive, isLoaded, onClick }) => {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`group relative flex h-16 w-[84vw] max-w-[240px] shrink-0 snap-start items-center gap-0 rounded-2xl bg-transparent px-1 text-left transition-all duration-500 hover:-translate-y-0.5 sm:w-[255px] lg:w-[270px] ${
+        isLoaded ? "opacity-100" : "opacity-0 translate-y-2"
+      }`}
+      style={{ transitionDelay: `${index * 45}ms` }}
+    >
+      <img
+        src={brand.logo || BRAND_PLACEHOLDER_LOGO}
+        alt={brand.name || "brand"}
+        loading="lazy"
+        decoding="async"
+        className={`h-12 w-12 shrink-0 rounded-2xl object-contain p-1.5 transition-transform duration-300 sm:h-14 sm:w-14 sm:p-2 ${
+          isActive ? "scale-105" : "scale-100 opacity-90"
+        }`}
+        onError={(e) => {
+          e.currentTarget.onerror = null;
+          e.currentTarget.src = BRAND_PLACEHOLDER_LOGO;
+        }}
+      />
+
+      <div className="min-w-0 flex h-14 flex-1 items-center">
+        <span
+          className={`block truncate text-xl font-black leading-none sm:text-[2rem] ${
+            isActive ? "text-blue-700" : "text-slate-900"
+          }`}
+        >
+          {brand.name}
+        </span>
+      </div>
+    </button>
+  );
+};
+
 const PopularBrands = () => {
-  const [activeBrand, setActiveBrand] = useState("all");
+  const [activeBrand, setActiveBrand] = useState(null);
   const navigate = useNavigate();
   const isLoaded = useRevealAnimation();
 
   const deviceCtx = useDevice();
-  const allBrands = (deviceCtx && deviceCtx.brands) || [];
-
-  // Get unique brands with their categories
-  const brandCategories = useMemo(() => {
-    const categories = [
-      {
-        id: "all",
-        name: "All Brands",
-        icon: <FaTag />,
-        activeGradient: "from-blue-600 via-purple-500 to-blue-600",
-        inactiveColor: "text-gray-400",
-        count: allBrands.length,
-      },
-    ];
-
-    // Group brands by category
-    const smartphoneBrands = allBrands.filter((b) => {
-      const type = String(b.category || b.product_type || "").toLowerCase();
-      return (
-        type.includes("smartphone") ||
-        type.includes("mobile") ||
-        (type.includes("smart") && !type.includes("home"))
-      );
-    });
-
-    const laptopBrands = allBrands.filter((b) => {
-      const type = String(b.category || b.product_type || "").toLowerCase();
-      return (
-        type.includes("laptop") ||
-        type.includes("computer") ||
-        type.includes("notebook")
-      );
-    });
-
-    const applianceBrands = allBrands.filter((b) => {
-      const type = String(b.category || b.product_type || "").toLowerCase();
-      return (
-        type.includes("appliance") ||
-        type.includes("home appliance") ||
-        type.includes("kitchen") ||
-        type.includes("television") ||
-        type.includes("tv")
-      );
-    });
-
-    const networkingBrands = allBrands.filter((b) => {
-      const type = String(b.category || b.product_type || "").toLowerCase();
-      return (
-        type.includes("network") ||
-        type.includes("router") ||
-        type.includes("modem") ||
-        type.includes("wifi")
-      );
-    });
-
-    // Add category entries if they have brands
-    if (smartphoneBrands.length > 0) {
-      categories.push({
-        id: "smartphone",
-        name: "Smartphones",
-        icon: <FaMobileAlt />,
-        activeGradient: "from-blue-600 via-purple-500 to-blue-600",
-        inactiveColor: "text-gray-400",
-        count: smartphoneBrands.length,
-        brands: smartphoneBrands,
-      });
-    }
-
-    if (laptopBrands.length > 0) {
-      categories.push({
-        id: "laptop",
-        name: "Laptops",
-        icon: <FaLaptop />,
-        activeGradient: "from-blue-600 via-purple-500 to-blue-600",
-        inactiveColor: "text-gray-400",
-        count: laptopBrands.length,
-        brands: laptopBrands,
-      });
-    }
-
-    if (applianceBrands.length > 0) {
-      categories.push({
-        id: "appliance",
-        name: "TVs",
-        icon: <FaTv />,
-        activeGradient: "from-blue-600 via-purple-500 to-blue-600",
-        inactiveColor: "text-gray-400",
-        count: applianceBrands.length,
-        brands: applianceBrands,
-      });
-    }
-
-    if (networkingBrands.length > 0) {
-      categories.push({
-        id: "networking",
-        name: "Networking",
-        icon: <FaWifi />,
-        activeGradient: "from-blue-600 via-purple-500 to-blue-600",
-        inactiveColor: "text-gray-400",
-        count: networkingBrands.length,
-        brands: networkingBrands,
-      });
-    }
-
-    return categories;
-  }, [allBrands]);
+  const allBrands = useMemo(() => deviceCtx?.brands || [], [deviceCtx?.brands]);
 
   // Get unique individual brands for horizontal scrolling
   const uniqueBrands = useMemo(() => {
@@ -138,34 +64,6 @@ const PopularBrands = () => {
       if (brandName && !seen.has(brandName.toLowerCase())) {
         seen.add(brandName.toLowerCase());
 
-        // Determine brand category for icon
-        const type = String(
-          brand.category || brand.product_type || "",
-        ).toLowerCase();
-        let icon = <FaTag />;
-        let gradient = "from-blue-600 via-purple-500 to-blue-600";
-
-        if (type.includes("smartphone") || type.includes("mobile")) {
-          icon = <FaMobileAlt />;
-          gradient = "from-blue-600 via-purple-500 to-blue-600";
-        } else if (type.includes("laptop") || type.includes("computer")) {
-          icon = <FaLaptop />;
-          gradient = "from-blue-600 via-purple-500 to-blue-600";
-        } else if (type.includes("television") || type.includes("tv")) {
-          icon = <FaTv />;
-          gradient = "from-blue-600 via-purple-500 to-blue-600";
-        } else if (type.includes("appliance") || type.includes("home")) {
-          icon = <FaPlug />;
-          gradient = "from-blue-600 via-purple-500 to-blue-600";
-        } else if (
-          type.includes("network") ||
-          type.includes("router") ||
-          type.includes("wifi")
-        ) {
-          icon = <FaWifi />;
-          gradient = "from-blue-600 via-purple-500 to-blue-600";
-        }
-
         brandsList.push({
           id: brand.id || brandName.toLowerCase().replace(/\s+/g, "-"),
           name: brandName,
@@ -173,11 +71,6 @@ const PopularBrands = () => {
           slug: brand.slug || brandName.toLowerCase().replace(/\s+/g, "-"),
           category: brand.category || brand.product_type || "",
           originalBrand: brand,
-          icon,
-          activeGradient: gradient,
-          inactiveColor: "text-gray-400",
-          productCount:
-            brand.product_count || Math.floor(Math.random() * 100) + 10,
         });
       }
     });
@@ -230,95 +123,63 @@ const PopularBrands = () => {
   };
 
   return (
-    <div
-      className={`px-2 lg:px-4 mx-auto bg-white max-w-4xl w-full m-5 overflow-hidden pt-8 sm:pt-12 transition-all duration-700 ${
+    <section
+      className={`relative isolate overflow-hidden transition-all duration-700 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
-      {/* Header Section */}
-      <div className="mb-1 px-2">
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">
-          Explore by{" "}
-          <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent">
-            Brand
+      <div className="relative px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
+        <div className="relative mx-auto max-w-5xl text-center">
+          <h1 className="mt-6 text-3xl font-bold leading-tight text-slate-900 sm:text-4xl lg:text-5xl">
+            Mobiles by{" "}
+            <span className="bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 bg-clip-text text-transparent">
+              Popular Brands
+            </span>
+          </h1>
+
+          <p className="mx-auto mt-4 max-w-3xl text-sm leading-7 text-slate-600 sm:text-base lg:text-lg">
+            Jump into the brands people search for most and browse straight to
+            their latest devices.
+          </p>
+        </div>
+
+        <div className="mt-6 flex flex-col items-center justify-center gap-2 sm:flex-row sm:gap-3">
+          <span className="inline-flex items-center gap-2 rounded-full border border-slate-200  px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700 ">
+            <FaChartLine className="h-3.5 w-3.5 text-cyan-500" />
+            Brand shortcuts
           </span>
-        </h2>
-        <p className="text-sm text-gray-600">Explore Phones by Key Features</p>
+          <span className="hidden h-1 w-1 rounded-full bg-slate-300 sm:inline-block" />
+          <span className="max-w-xs text-center text-xs font-medium text-slate-500 sm:max-w-none sm:text-left">
+            Tap any brand to jump to products instantly
+          </span>
+        </div>
       </div>
 
-      {/* Category Tabs - Single Row */}
+      <div className="relative mx-auto max-w-7xl px-4 pb-12 sm:px-6 sm:pb-16 lg:px-8 lg:pb-20">
+        {uniqueBrands.length > 0 && (
+          <div className="mx-auto mt-8 max-w-6xl">
+            <div className="no-scrollbar flex w-full flex-nowrap gap-0 overflow-x-auto pb-5 pt-0 snap-x snap-mandatory sm:gap-4">
+              {uniqueBrands.map((brand, index) => {
+                const isActive = activeBrand === brand.id;
 
-      {/* Individual Brands - Single Row */}
-      {uniqueBrands.length > 0 && (
-        <>
-          <div className="flex overflow-x-auto gap-3 lg:gap-4 hide-scrollbar no-scrollbar scroll-smooth pb-6 pt-2">
-            {uniqueBrands.map((brand, index) => {
-              const isActive = activeBrand === brand.id;
-
-              return (
-                <button
-                  key={brand.id}
-                  onClick={() => handleBrandClick(brand.id, brand)}
-                  className={`flex flex-col items-center p-3 lg:p-4 transition-all duration-500 min-w-[80px] lg:min-w-[90px] shrink-0 group ${
-                    isActive
-                      ? "text-gray-900 transform -translate-y-1"
-                      : "text-gray-600 hover:text-gray-900 hover:transform hover:scale-105"
-                  } ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
-                  style={{ transitionDelay: `${index * 35}ms` }}
-                >
-                  {/* Icon Container */}
-                  <div
-                    className={`w-10 h-10 lg:w-12 lg:h-12 flex items-center justify-center rounded-xl p-2 transition-all duration-300 mb-2 shadow-md ${
-                      isActive
-                        ? `bg-gradient-to-br ${brand.activeGradient} shadow-lg shadow-red-200/50`
-                        : "bg-gray-100 group-hover:bg-gray-200 group-hover:shadow-md"
-                    }`}
-                  >
-                    <div className="w-full h-full flex items-center justify-center">
-                      <img
-                        src={brand.logo || BRAND_PLACEHOLDER_LOGO}
-                        alt={brand.name || "brand"}
-                        loading="lazy"
-                        decoding="async"
-                        className={`w-full h-full object-contain transition-transform duration-300 ${
-                          isActive ? "scale-105" : "scale-100 opacity-80"
-                        }`}
-                        onError={(e) => {
-                          e.currentTarget.onerror = null;
-                          e.currentTarget.src = BRAND_PLACEHOLDER_LOGO;
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Brand Name */}
-                  <span
-                    className={`font-medium text-xs text-center transition-all duration-300 line-clamp-2 ${
-                      isActive
-                        ? "text-gray-900 font-semibold"
-                        : "text-gray-600 group-hover:text-gray-900"
-                    }`}
-                  >
-                    {brand.name}
-                  </span>
-
-                  {/* Product Count (Small) */}
-
-                  {/* Active Indicator Dot */}
-                  <div
-                    className={`mt-1 w-1 h-1 rounded-full transition-all duration-300 ${
-                      isActive
-                        ? `bg-gradient-to-r ${brand.activeGradient} opacity-100`
-                        : "bg-transparent opacity-0"
-                    }`}
+                return (
+                  <BrandCard
+                    key={brand.id}
+                    brand={brand}
+                    index={index}
+                    isActive={isActive}
+                    isLoaded={isLoaded}
+                    onClick={() => handleBrandClick(brand.id, brand)}
                   />
-                </button>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </>
-      )}
-    </div>
+        )}
+
+        <RecommendedSmartphones />
+      </div>
+    </section>
   );
 };
 

@@ -7,13 +7,7 @@ const PRODUCT_DETAIL_PATH_RE =
   /^\/(smartphones|laptops|tvs|appliances|networking)\/[^/]+\/?$/i;
 const LEGACY_DETAILS_PATH_RE =
   /^\/(smartphones|laptops|tvs|appliances|networking)\/details\/?$/i;
-const DETAIL_QUERY_KEYS = [
-  "name",
-  "product_name",
-  "product",
-  "title",
-  "model",
-];
+const DETAIL_QUERY_KEYS = ["name", "product_name", "product", "title", "model"];
 
 const safeDecode = (value) => {
   try {
@@ -34,7 +28,9 @@ const toReadableTitle = (text) => {
 };
 
 const toProductLabel = (value) => {
-  let text = String(value || "").replace(/\s+/g, " ").trim();
+  let text = String(value || "")
+    .replace(/\s+/g, " ")
+    .trim();
   if (!text) return "";
   text = text.replace(/\s*\[\d{2}\/\d{2}\/\d{4}\]\s*$/i, "");
   text = text.replace(/\s+\|\s+hooks\s*$/i, "");
@@ -73,7 +69,19 @@ const renderSlugBreadcrumb = ({ match }) =>
   );
 
 const renderFilterBreadcrumb = ({ match }) =>
-  slugToTitle((match && match.params && match.params.filterSlug) || "Filter");
+  (() => {
+    const raw = String(
+      (match && match.params && match.params.filterSlug) || "Filter",
+    )
+      .trim()
+      .toLowerCase();
+
+    if (raw === "new") return "Latest Mobiles";
+    if (raw === "trending") return "Top Mobiles";
+    if (raw === "upcoming") return "Upcoming Mobiles";
+
+    return slugToTitle(raw || "Filter");
+  })();
 
 const getLabelText = (label) => {
   if (typeof label === "string" || typeof label === "number") {
@@ -107,7 +115,11 @@ const routes = [
       return slugToTitle(raw || "products");
     },
   },
+  { path: "/products", breadcrumb: "Explore" },
   { path: "/smartphones", breadcrumb: "Smartphones" },
+  { path: "/smartphones/upcoming", breadcrumb: "Upcoming Mobiles" },
+  { path: "/smartphones/latest", breadcrumb: "Latest Mobiles" },
+  { path: "/smartphones/top", breadcrumb: "Top Mobiles" },
   { path: "/laptops", breadcrumb: "Laptops" },
   { path: "/networking", breadcrumb: "Networking" },
   { path: "/tvs", breadcrumb: "TVs" },
@@ -183,9 +195,7 @@ export default function Breadcrumbs() {
 
     const resolveDetailLabel = () => {
       // Prefer visible page heading first, then metadata fallbacks.
-      const heading = toProductLabel(
-        document.querySelector("h1")?.textContent,
-      );
+      const heading = toProductLabel(document.querySelector("h1")?.textContent);
       if (heading) return heading;
 
       const ogTitle = toProductLabel(
@@ -267,87 +277,143 @@ export default function Breadcrumbs() {
     return !/\/smartphones\/details\/(under|above)[-_ ]?\d+/.test(nextPath);
   });
 
-  return (
-    <div className="px-2 lg:px-4 mx-auto bg-white max-w-4xl w-full m-0 overflow-hidden pb-1">
-      <nav
-        aria-label="breadcrumb"
-        className="flex items-center overflow-x-auto gap-1 hide-scrollbar no-scrollbar scroll-smooth py-2"
-      >
-        {visibleBreadcrumbs.map((bc, idx) => {
-          const isLast = idx === visibleBreadcrumbs.length - 1;
-          const to = bc.match.pathname;
-          const rawLabel =
-            typeof bc.breadcrumb === "function"
-              ? bc.breadcrumb(bc.match)
-              : bc.breadcrumb;
-          let label = formatPriceBreadcrumb(rawLabel, bc.match.pathname);
-          const labelText = getLabelText(label).trim().toLowerCase();
+  const path = String(location.pathname || "");
+  const isLegacyDetailsPath = LEGACY_DETAILS_PATH_RE.test(path);
+  const isProductDetailPath = PRODUCT_DETAIL_PATH_RE.test(path);
+  const shouldCompactOnMobile = visibleBreadcrumbs.length > 2;
+  const mobileBreadcrumbs = shouldCompactOnMobile
+    ? [visibleBreadcrumbs[0], visibleBreadcrumbs[visibleBreadcrumbs.length - 1]]
+    : visibleBreadcrumbs;
 
-          const path = String(location.pathname || "");
-          const isLegacyDetailsPath = LEGACY_DETAILS_PATH_RE.test(path);
-          const isProductDetailPath = PRODUCT_DETAIL_PATH_RE.test(path);
+  const renderBreadcrumbItem = (bc, idx, isLast, compact = false) => {
+    const to = bc.match.pathname;
+    const rawLabel =
+      typeof bc.breadcrumb === "function"
+        ? bc.breadcrumb(bc.match)
+        : bc.breadcrumb;
+    let label = formatPriceBreadcrumb(rawLabel, bc.match.pathname);
+    const labelText = getLabelText(label).trim().toLowerCase();
 
-          // Always prefer resolved product title on detail pages for the last crumb.
-          if (isLast && isProductDetailPath && detailCrumbLabel) {
-            label = detailCrumbLabel;
-          } else if (labelText === "details" && isLegacyDetailsPath && detailCrumbLabel) {
-            label = detailCrumbLabel;
-          }
+    // Always prefer resolved product title on detail pages for the last crumb.
+    if (isLast && isProductDetailPath && detailCrumbLabel) {
+      label = detailCrumbLabel;
+    } else if (
+      labelText === "details" &&
+      isLegacyDetailsPath &&
+      detailCrumbLabel
+    ) {
+      label = detailCrumbLabel;
+    }
 
-          return (
-            <div key={to + idx} className="flex items-center shrink-0">
-              {/* Breadcrumb Item */}
-              {!isLast ? (
-                <Link
-                  to={to}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm transition-all duration-200 group relative"
-                >
-                  {/* Home Icon for first item */}
-                  {idx === 0 ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-100 to-red-50 flex items-center justify-center group-hover:from-purple-50 group-hover:to-red-100 transition-all duration-200">
-                        <FaHome className="text-gray-500 group-hover:text-red-600 text-sm transition-colors" />
-                      </div>
-                      <span className="text-gray-600 group-hover:text-gray-900 font-medium transition-colors">
-                        {label}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1">
-                      <span className="text-gray-600 group-hover:text-gray-900 font-medium transition-colors">
-                        {label}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Hover effect line */}
-                  <div className="absolute bottom-0 left-3 right-3 h-0.5 bg-gradient-to-r from-purple-600 to-red-600 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                </Link>
-              ) : (
-                <div className="flex items-center gap-1 px-3 py-1.5 relative">
-                  {/* Current page indicator */}
-                  <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-purple-600 to-red-600 absolute -left-1"></div>
-                  <span className="text-gray-900 font-semibold text-sm bg-gradient-to-r from-purple-600 to-purple-600 bg-clip-text text-transparent">
+    if (compact) {
+      return (
+        <div key={to + idx} className="flex items-center shrink-0">
+          {!isLast ? (
+            <Link
+              to={to}
+              className="group flex items-center gap-1 px-2 py-0.5 text-xs transition-all duration-200 relative"
+            >
+              {idx === 0 ? (
+                <div className="flex items-center gap-1.5">
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full transition-all duration-200 group-hover:from-purple-50 group-hover:to-red-100">
+                    <FaHome className="text-gray-500 text-[10px] transition-colors group-hover:text-red-600" />
+                  </div>
+                  <span className="max-w-[6.5rem] truncate font-medium text-gray-700 transition-colors group-hover:text-gray-900">
                     {label}
                   </span>
                 </div>
+              ) : (
+                <span className="max-w-[8rem] truncate font-semibold text-gray-900">
+                  {label}
+                </span>
               )}
-
-              {/* Separator (not for last item) */}
-              {!isLast && (
-                <div className="flex items-center px-1">
-                  <FaChevronRight className="text-gray-300 text-xs" />
-                </div>
-              )}
+            </Link>
+          ) : (
+            <div className="px-2 py-0.5 text-xs">
+              <span className="max-w-[9rem] truncate font-semibold text-gray-900">
+                {label}
+              </span>
             </div>
-          );
-        })}
-      </nav>
+          )}
+        </div>
+      );
+    }
 
-      {/* Current Page Indicator Line */}
-      <div className="h-px bg-gradient-to-r from-purple-100 via-purple-200 to-red-200"></div>
+    return (
+      <div key={to + idx} className="flex items-center shrink-0">
+        {!isLast ? (
+          <Link
+            to={to}
+            className="group flex items-center gap-1 px-2.5 py-0.5 text-xs transition-all duration-200"
+          >
+            {idx === 0 ? (
+              <div className="flex items-center gap-1.5">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-purple-100 to-red-50 transition-all duration-200 group-hover:from-purple-50 group-hover:to-red-100">
+                  <FaHome className="text-[10px] text-gray-500 transition-colors group-hover:text-red-600" />
+                </div>
+                <span className="font-medium text-gray-600 transition-colors group-hover:text-gray-900">
+                  {label}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1">
+                <span className="font-medium text-gray-600 transition-colors group-hover:text-gray-900">
+                  {label}
+                </span>
+              </div>
+            )}
+          </Link>
+        ) : (
+          <div className="relative flex items-center gap-1 px-2.5 py-0.5">
+            <div className="absolute -left-1 h-1.5 w-1.5 rounded-full bg-gradient-to-r from-purple-600 to-red-600" />
+            <span className="bg-gradient-to-r from-purple-600 to-purple-600 bg-clip-text text-sm font-semibold text-transparent">
+              {label}
+            </span>
+          </div>
+        )}
 
-      <style>{`
+        {!isLast && (
+          <div className="flex items-center px-1">
+            <FaChevronRight className="text-xs text-gray-300" />
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="bg-transparent border-b border-gray-200">
+      <div className="mx-auto w-full max-w-6xl overflow-hidden px-2 pb-0 pt-0.5 lg:px-4">
+        <nav
+          aria-label="breadcrumb"
+          className="flex items-center gap-1 overflow-x-auto py-0.5 sm:hidden hide-scrollbar no-scrollbar scroll-smooth"
+        >
+          {mobileBreadcrumbs.map((bc, idx) => {
+            const isLast = idx === mobileBreadcrumbs.length - 1;
+            return (
+              <React.Fragment key={`${bc.match.pathname}-${idx}`}>
+                {renderBreadcrumbItem(bc, idx, isLast, true)}
+                {shouldCompactOnMobile && idx === 0 ? (
+                  <span className="flex-shrink-0 px-1 text-xs font-semibold text-gray-400">
+                    ...
+                  </span>
+                ) : null}
+              </React.Fragment>
+            );
+          })}
+        </nav>
+
+        <nav
+          aria-label="breadcrumb"
+          className="hidden items-center gap-1 overflow-x-auto py-0.5 sm:flex hide-scrollbar no-scrollbar scroll-smooth"
+        >
+          {visibleBreadcrumbs.map((bc, idx) => {
+            const isLast = idx === visibleBreadcrumbs.length - 1;
+            return renderBreadcrumbItem(bc, idx, isLast, false);
+          })}
+        </nav>
+
+        <style>{`
         /* Custom scrollbar for consistency */
         .hide-scrollbar {
           -ms-overflow-style: none;
@@ -357,6 +423,7 @@ export default function Breadcrumbs() {
           display: none;
         }
       `}</style>
+      </div>
     </div>
   );
 }

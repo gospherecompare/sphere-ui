@@ -6,8 +6,6 @@ import {
   FaEnvelope,
   FaLock,
   FaUser,
-  FaGoogle,
-  FaFacebookF,
   FaArrowRight,
   FaEye,
   FaEyeSlash,
@@ -24,22 +22,20 @@ import {
 // store logos now fetched via `useStoreLogos` where needed
 import Cookies from "js-cookie";
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 // Stable Wrapper component moved to top-level to avoid remounting children
 const Wrapper = ({ children, asPage, onClose }) =>
   asPage ? (
-    <div className="min-h-screen bg-white max-w-4xl mx-auto">
-      {/* Header Back Button */}
-
-      <div className="max-w-4xl mx-auto px-4 py-10">
-        <div className="flex items-center justify-center">
-          <div className="w-full max-w-xl">{children}</div>
-        </div>
+    <div className="min-h-screen bg-slate-50 px-4 py-10 sm:py-14">
+      <div className="mx-auto flex w-full max-w-xl items-center justify-center">
+        <div className="w-full">{children}</div>
       </div>
     </div>
   ) : (
     <div className="fixed inset-0 z-[9999] overflow-y-auto">
       <div
-        className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm"
+        className="fixed inset-0 bg-slate-950/55 backdrop-blur-sm"
         onClick={onClose}
       ></div>
       <div className="flex items-center justify-center min-h-screen p-4">
@@ -78,7 +74,6 @@ const Signup = ({
   const [usernameAvailable, setUsernameAvailable] = useState(null);
   const [emailAvailable, setEmailAvailable] = useState(null);
   const [checkingAvailability, setCheckingAvailability] = useState(false);
-  const [formValid, setFormValid] = useState(false);
   const navigate = useNavigate();
 
   // Validation rules
@@ -106,7 +101,7 @@ const Signup = ({
     },
     email: {
       required: true,
-      pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+      pattern: EMAIL_PATTERN,
       message: "Please enter a valid email address",
     },
     password: {
@@ -191,7 +186,7 @@ const Signup = ({
             input.setSelectionRange(selectionStart, selectionEnd);
           }
         }
-      } catch (err) {
+      } catch {
         // ignore
       }
     });
@@ -247,7 +242,7 @@ const Signup = ({
     const checkEmail = async () => {
       if (
         !formData.email ||
-        !validationRules.email.pattern.test(formData.email)
+        !EMAIL_PATTERN.test(formData.email)
       ) {
         setEmailAvailable(null);
         return;
@@ -467,12 +462,12 @@ const Signup = ({
     return (
       <div className="mb-4">
         <div className="flex items-center justify-between mb-2">
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-slate-700">
             {label} {required && "*"}
           </label>
           {showAvailability && availability !== null && (
             <span
-              className={`text-xs font-medium px-2 py-1 rounded-full ${
+              className={`rounded-md px-2 py-1 text-xs font-medium ${
                 availability
                   ? "bg-green-100 text-green-800"
                   : "bg-red-100 text-red-800"
@@ -485,9 +480,9 @@ const Signup = ({
 
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Icon
-              className={`${hasError ? "text-red-400" : "text-gray-400"}`}
-            />
+            {React.createElement(Icon, {
+              className: hasError ? "text-red-400" : "text-gray-400",
+            })}
           </div>
 
           <input
@@ -497,12 +492,12 @@ const Signup = ({
             onChange={handleInputChange}
             onBlur={handleBlur}
             autoComplete={autoComplete}
-            className={`pl-10 pr-10 w-full px-4 py-3 border rounded-full transition-all duration-200 focus:ring-2 focus:outline-none ${
+            className={`w-full rounded-md border px-4 py-3 pl-10 pr-10 transition-colors duration-200 focus:outline-none focus:ring-2 ${
               hasError
-                ? "border-red-300 bg-red-50 focus:ring-red-500 focus:border-red-500"
+                ? "border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-100"
                 : showSuccess
-                  ? "border-green-300 bg-green-50 focus:ring-green-500 focus:border-green-500"
-                  : "border-gray-200 bg-gray-50 focus:ring-blue-500 focus:border-blue-500"
+                  ? "border-green-300 bg-green-50 focus:border-green-500 focus:ring-green-100"
+                  : "border-slate-200 bg-slate-50 focus:border-blue-500 focus:bg-white focus:ring-blue-100"
             }`}
             placeholder={placeholder}
             required={required}
@@ -567,38 +562,47 @@ const Signup = ({
 
   return (
     <Wrapper asPage={asPage} onClose={onClose}>
-      <div className="relative bg-white   overflow-hidden  border border-purple-100 shadow-sm">
-        {/* Header */}
-        <div className=" border-b border-gray-100 px-6 md:px-8 py-6">
-          <div className="flex items-center justify-between mb-4">
+      <div className="relative overflow-hidden rounded-md border border-slate-200 bg-white">
+        <div className="border-b border-slate-200 px-6 py-6 md:px-8">
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 transition-colors hover:text-blue-900"
+            >
+              <FaArrowLeft className="h-3.5 w-3.5" />
+              <span>Back to home</span>
+            </Link>
+
             {onClose && (
               <button
                 onClick={onClose}
-                className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-slate-500 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
               >
-                <FaTimes className="w-5 h-5" />
+                <FaTimes className="h-4 w-4" />
               </button>
             )}
           </div>
 
           <div>
-            <h3 className="text-2xl font-bold text-gray-900">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-blue-600">
+              Hooks Access
+            </p>
+            <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
               Join Hooks
             </h3>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-slate-600">
               Create your account to explore devices
             </p>
           </div>
         </div>
 
-        {/* Content */}
-        <div className="px-4 md:px-8 py-6">
+        <div className="px-6 py-6 md:px-8">
           {/* API Error Message */}
           {apiError && (
-            <div className="mb-6 p-4 bg-gradient-to-r from-purple-600 to-blue-600 border border-red-100 rounded-xl">
-              <div className="flex items-center">
-                <FaExclamationCircle className="text-red-500 mr-3" />
-                <p className="text-sm text-red-600 font-medium">{apiError}</p>
+            <div className="mb-6 rounded-md border border-red-200 bg-red-50 px-4 py-3.5">
+              <div className="flex items-center gap-2">
+                <FaExclamationCircle className="text-red-600" />
+                <p className="text-sm font-medium text-red-700">{apiError}</p>
               </div>
             </div>
           )}
@@ -663,7 +667,7 @@ const Signup = ({
                 {formData.password && (
                   <div className="mt-2">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-slate-500">
                         Password strength:
                       </span>
                       <span
@@ -680,13 +684,13 @@ const Signup = ({
                         {passwordStrength.text}
                       </span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="h-2 w-full rounded-md bg-slate-200">
                       <div
-                        className={`${passwordStrength.color} h-2 rounded-full transition-all duration-300`}
+                        className={`${passwordStrength.color} h-2 rounded-md transition-all duration-300`}
                         style={{ width: passwordStrength.width }}
                       ></div>
                     </div>
-                    <div className="mt-2 text-xs text-gray-500">
+                    <div className="mt-2 text-xs text-slate-500">
                       <FaInfoCircle className="inline mr-1" />
                       Must include uppercase, lowercase, number & special
                       character
@@ -731,8 +735,8 @@ const Signup = ({
             </div>
 
             {/* Location Information */}
-            <div className="pt-4 border-t border-gray-200">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+            <div className="pt-4 border-t border-slate-200">
+              <h4 className="mb-3 flex items-center text-sm font-semibold text-slate-700">
                 <FaMapMarkerAlt className="mr-2 text-blue-500" />
                 Location Information (Optional)
               </h4>
@@ -777,20 +781,20 @@ const Signup = ({
             </div>
 
             {/* Terms & Conditions */}
-            <div className="flex items-start mt-4 p-3 bg-gray-50 rounded-xl">
+            <div className="mt-4 flex items-start rounded-md bg-slate-50 p-3">
               <input
                 type="checkbox"
                 id="terms"
                 required
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-1"
+                className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-100"
               />
-              <label htmlFor="terms" className="ml-2 text-sm text-gray-700">
+              <label htmlFor="terms" className="ml-2 text-sm text-slate-700">
                 I agree to the{" "}
                 <a
                   href="/terms"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                  className="font-medium text-blue-700 hover:text-blue-900"
                 >
                   Terms of Service
                 </a>{" "}
@@ -799,7 +803,7 @@ const Signup = ({
                   href="/privacy"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                  className="font-medium text-blue-700 hover:text-blue-900"
                 >
                   Privacy Policy
                 </a>
@@ -813,11 +817,11 @@ const Signup = ({
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex items-center justify-center py-3 px-4 bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 text-white font-semibold rounded-full hover:shadow-lg hover:from-purple-600 hover:to-blue-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex w-full items-center justify-center rounded-md bg-blue-600 px-4 py-3 font-semibold text-white transition-colors duration-200 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isLoading ? (
                   <>
-                    <FaSpinner className="animate-spin mr-2" />
+                    <FaSpinner className="mr-2 animate-spin" />
                     Creating Account...
                   </>
                 ) : (
@@ -830,9 +834,8 @@ const Signup = ({
             </div>
           </form>
 
-          {/* Footer */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <p className="text-center text-sm text-gray-600">
+          <div className="mt-6 border-t border-slate-200 pt-6">
+            <p className="text-center text-sm text-slate-600">
               Already have an account?{" "}
               <button
                 type="button"
@@ -843,15 +846,13 @@ const Signup = ({
                     navigate("/login");
                   }
                 }}
-                className="font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                className="font-semibold text-blue-700 hover:text-blue-900"
               >
                 Sign in here
               </button>
             </p>
           </div>
         </div>
-
-        {/* Bottom Gradient Border */}
       </div>
     </Wrapper>
   );

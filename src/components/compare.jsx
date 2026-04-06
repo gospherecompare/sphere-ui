@@ -69,19 +69,19 @@ const SECTIONS = [
     id: "display",
     label: "Display",
     icon: Monitor,
-    color: "purple",
+    color: "sky",
   },
   {
     id: "camera",
     label: "Camera",
     icon: Camera,
-    color: "pink",
+    color: "blue",
   },
   {
     id: "performance",
     label: "Performance",
     icon: Cpu,
-    color: "green",
+    color: "emerald",
   },
   {
     id: "battery",
@@ -93,13 +93,13 @@ const SECTIONS = [
     id: "network",
     label: "Network",
     icon: Wifi,
-    color: "indigo",
+    color: "cyan",
   },
   {
     id: "audio",
     label: "Audio",
     icon: Headphones,
-    color: "cyan",
+    color: "teal",
   },
   {
     id: "features",
@@ -115,16 +115,16 @@ const COMPARE_CARD_THEMES = [
     dotClass: "bg-blue-500",
   },
   {
-    badgeClass: "bg-violet-50 text-violet-700 ring-violet-200",
-    dotClass: "bg-violet-500",
+    badgeClass: "bg-sky-50 text-sky-700 ring-sky-200",
+    dotClass: "bg-sky-500",
   },
   {
-    badgeClass: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-    dotClass: "bg-emerald-500",
+    badgeClass: "bg-blue-50 text-blue-700 ring-blue-200",
+    dotClass: "bg-blue-500",
   },
   {
-    badgeClass: "bg-amber-50 text-amber-700 ring-amber-200",
-    dotClass: "bg-amber-500",
+    badgeClass: "bg-sky-50 text-sky-700 ring-sky-200",
+    dotClass: "bg-sky-500",
   },
 ];
 
@@ -460,11 +460,7 @@ const MobileCompare = () => {
   const [signalsFetched, setSignalsFetched] = useState(false);
   const [activeQuickFilter, setActiveQuickFilter] = useState("all");
 
-  const {
-    devices: availableDevices = [],
-    loading,
-    getDevice,
-  } = useDevice();
+  const { devices: availableDevices = [], loading, getDevice } = useDevice();
   const location = useLocation();
   const navigate = useNavigate();
   const { leftSlug = "", rightSlug = "", compareSlug = "" } = useParams();
@@ -483,7 +479,7 @@ const MobileCompare = () => {
   const usedSlots = isComparing
     ? comparedDevices.length + selectedDevices.length
     : selectedDevices.length;
-  const remainingSlots = Math.max(0, maxDevices - usedSlots);
+  const visibleRemainingSlots = Math.max(0, maxDevices - activeDevices.length);
 
   useEffect(() => {
     if (selectedDevices.length > maxDevices) {
@@ -776,9 +772,7 @@ const MobileCompare = () => {
       setSelectedDevices((prev) => {
         const next = [...prev];
         entries.forEach((entry) => {
-          if (
-            next.some((item) => String(item.id) === String(entry.id))
-          ) {
+          if (next.some((item) => String(item.id) === String(entry.id))) {
             return;
           }
           next.push(entry);
@@ -788,7 +782,9 @@ const MobileCompare = () => {
       setVariantSelection((vs) => {
         const next = { ...vs };
         entries.forEach((entry) => {
-          next[entry.id] = normalizeVariantIndex(entry.selectedVariantIndex ?? 0);
+          next[entry.id] = normalizeVariantIndex(
+            entry.selectedVariantIndex ?? 0,
+          );
         });
         return next;
       });
@@ -1736,7 +1732,7 @@ const MobileCompare = () => {
                 </span>
               ))}
               {hiddenCount > 0 ? (
-                <span className="inline-flex items-center border border-violet-200 bg-violet-50 px-2 py-0.5 text-[11px] font-medium leading-4 text-violet-600">
+                <span className="inline-flex items-center border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-medium leading-4 text-blue-600">
                   +{hiddenCount} more
                 </span>
               ) : null}
@@ -1872,12 +1868,12 @@ const MobileCompare = () => {
         {entries.map(([key, value]) => (
           <div
             key={key}
-            className="flex justify-between items-center py-3 px-4 bg-white rounded-lg border border-slate-100 hover:border-gray-200 hover:shadow-sm hover:bg-gray-50 transition-all duration-200"
+            className="flex items-center justify-between   border border-slate-200 bg-white px-4 py-3 transition-colors hover:border-blue-200 hover:bg-slate-50"
           >
-            <span className="text-gray-700 font-semibold text-sm flex-1">
+            <span className="flex-1 text-sm font-semibold text-slate-700">
               {toNormalCase(key)}
             </span>
-            <span className="text-gray-900 font-bold text-sm text-right flex-1 break-words text-purple-600">
+            <span className="flex-1 break-words text-right text-sm font-bold text-blue-600">
               {formatSpecValue(value, key)}
             </span>
           </div>
@@ -2530,12 +2526,7 @@ const MobileCompare = () => {
         // ignore
       }
     })();
-  }, [
-    location.search,
-    availableDevices,
-    routeDeviceEntries,
-    getDevice,
-  ]);
+  }, [location.search, availableDevices, routeDeviceEntries, getDevice]);
   // Sync variant selection
   useEffect(() => {
     setVariantSelection((prev) => {
@@ -2752,7 +2743,7 @@ const MobileCompare = () => {
     const parts = [variantText, processor, displaySize, batteryText].filter(
       Boolean,
     );
-    if (parts.length) return parts.slice(0, 3).join(" | ");
+    if (parts.length) return parts.slice(0, 4).join(" | ");
 
     return "Balanced specs for daily use";
   };
@@ -3047,7 +3038,7 @@ const MobileCompare = () => {
   }, [canonicalCompareUrl, metaDescription, metaKeywords, normalizedMetaTitle]);
 
   return (
-    <div className="min-h-screen overflow-x-hidden">
+    <div className="min-h-screen overflow-x-hidden text-slate-900">
       <Helmet prioritizeSeoTags>
         <title key="compare-title">{normalizedMetaTitle}</title>
         <meta
@@ -3102,15 +3093,17 @@ const MobileCompare = () => {
         )}
       </Helmet>
       {/* Floating Header */}
-      <div className="top-0 z-40 bg-white  max-w-4xl mx-auto sm:p-6 md:p-8 lg:p-10">
-        <div className="px-4 py-3">
+      <div className="sticky top-0 z-40 w-full px-3 pt-3 sm:px-6 sm:pt-5 lg:px-8">
+        <div className="mx-auto max-w-7xl  px-4 py-3  sm:px-5 sm:py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="p-2 bg-purple-600 rounded-lg">
+              <div className=" rounded-md bg-blue-600 p-2">
                 <BarChart3 className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-gray-900">Compare</h1>
+                <h1 className="text-lg font-bold text-gray-900">
+                  Compare Devices
+                </h1>
                 <p className="text-xs text-gray-500">
                   {activeDevices.length} device
                   {activeDevices.length !== 1 ? "s" : ""} selected
@@ -3148,58 +3141,55 @@ const MobileCompare = () => {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8 lg:p-10 bg-white">
+      <div className="mx-auto max-w-7xl px-3 pb-8 pt-2 sm:px-6 sm:py-6 lg:px-8">
         {/* Hero Section */}
-        <div className="mb-1 text-center">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-            Device Comparison
-          </h1>
-          <p className="text-gray-600 mb-4">
-            Compare up to {maxDevices} devices side by side
-          </p>
-
-          {usedSlots === 0 && (
-            <div className="rounded-2xl p-6 max-w-2xl mx-auto">
+        {usedSlots === 0 && (
+          <div className="mb-6 px-4 py-4 text-center sm:px-6">
+            <div className="mx-auto max-w-5xl border border-slate-200 bg-white p-6 sm:p-7">
               <div className="flex items-center justify-center gap-3 mb-4">
-                <Sparkles className="h-8 w-8 text-purple-600" />
-                <h2 className="text-lg font-semibold text-gray-900">
+                <Sparkles className="h-8 w-8 text-blue-600" />
+                <h2 className="text-lg font-semibold text-slate-900">
                   How to Compare
                 </h2>
               </div>
+              <p className="mx-auto mb-5 max-w-2xl text-sm text-slate-500">
+                Add 2 to 4 devices, pick the categories you care about, and
+                compare price, specs, and features side by side.
+              </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-white p-4 rounded-xl border border-gray-200">
-                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mb-3 mx-auto">
-                    <span className="text-purple-600 font-bold">1</span>
+                <div className="border border-slate-200 bg-slate-50 p-4">
+                  <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
+                    <span className="font-bold text-blue-600">1</span>
                   </div>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm text-slate-700">
                     {maxDevices === 2
                       ? "Add 2 devices"
                       : `Add 2-${maxDevices} devices`}
                   </p>
                 </div>
-                <div className="bg-white p-4 rounded-xl border border-gray-200">
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-3 mx-auto">
-                    <span className="text-blue-600 font-bold">2</span>
+                <div className="border border-slate-200 bg-slate-50 p-4">
+                  <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-sky-50">
+                    <span className="font-bold text-blue-600">2</span>
                   </div>
-                  <p className="text-sm text-gray-700">Select categories</p>
+                  <p className="text-sm text-slate-700">Select categories</p>
                 </div>
-                <div className="bg-white p-4 rounded-xl border border-gray-200">
-                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mb-3 mx-auto">
-                    <span className="text-purple-600 font-bold">3</span>
+                <div className="border border-slate-200 bg-slate-50 p-4">
+                  <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
+                    <span className="font-bold text-blue-600">3</span>
                   </div>
-                  <p className="text-sm text-gray-700">Compare & decide</p>
+                  <p className="text-sm text-slate-700">Compare & decide</p>
                 </div>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
         {/* Selected Devices Section */}
-        <div className="mb-8">
-          <div className="mb-4 flex items-center justify-between">
+        <div className="mb-8 border border-slate-200 bg-white p-4 sm:p-5 lg:p-6">
+          <div className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-[32px] leading-none font-bold text-slate-900 sm:text-3xl">
+              <h2 className="text-2xl font-semibold leading-none tracking-tight text-[#14255e] sm:text-3xl">
                 {isComparing ? "Compared Devices" : "Selected Devices"}
-                <span className="ml-2 text-xl font-medium text-slate-500">
+                <span className="ml-2 text-base font-medium text-slate-500 sm:text-xl">
                   ({activeDevices.length}/{maxDevices})
                 </span>
               </h2>
@@ -3213,7 +3203,7 @@ const MobileCompare = () => {
             {activeDevices.length > 0 && (
               <button
                 onClick={() => setShowTips(!showTips)}
-                className="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                className="  p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
               >
                 <AlertCircle className="h-5 w-5" />
               </button>
@@ -3222,7 +3212,7 @@ const MobileCompare = () => {
 
           {/* Tips Card */}
           {showTips && activeDevices.length > 0 && (
-            <div className="mb-4 p-4  rounded-xl shadow-md border border-amber-200">
+            <div className="mb-4   border border-amber-200 bg-amber-50/60 p-4">
               <div className="flex items-start gap-3">
                 <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
                 <div>
@@ -3240,149 +3230,132 @@ const MobileCompare = () => {
           )}
 
           {/* Devices Grid */}
-          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-            {activeDevices.map((device, index) => {
-              const cardTheme =
-                COMPARE_CARD_THEMES[
-                  index % COMPARE_CARD_THEMES.length
-                ] || COMPARE_CARD_THEMES[0];
-              const selectedVariant = getSelectedVariant(device);
-              const variants = Array.isArray(device.variants)
-                ? device.variants
-                : [];
-              const rawVariantIndex =
-                variantSelection[device.id] ?? device.selectedVariantIndex ?? 0;
-              const safeVariantIndex =
-                variants.length > 0 && variants[rawVariantIndex]
-                  ? rawVariantIndex
-                  : 0;
-              const specScore = getDeviceSpecScore(device);
-              const summaryText = getCardSummary(
-                device,
-                selectedVariant || variants[safeVariantIndex] || null,
-              );
-              const signalLabel = getCardSignalLabel(device);
-              return (
-                <div
-                  key={device.id}
-                  className={`group relative flex h-[220px] w-[220px] shrink-0 flex-col overflow-hidden rounded-md border border-slate-200/80 bg-white shadow-none transition-all duration-200 focus-within:ring-2 focus-within:ring-purple-100 sm:h-[230px] sm:w-[230px] md:h-[240px] md:w-[240px] lg:h-[250px] lg:w-[250px]`}
-                >
+          <div className="relative">
+            <div className="no-scrollbar flex gap-3 overflow-x-auto pb-2">
+              {activeDevices.map((device, index) => {
+                const cardTheme =
+                  COMPARE_CARD_THEMES[index % COMPARE_CARD_THEMES.length] ||
+                  COMPARE_CARD_THEMES[0];
+                const selectedVariant = getSelectedVariant(device);
+                const variants = Array.isArray(device.variants)
+                  ? device.variants
+                  : [];
+                const rawVariantIndex =
+                  variantSelection[device.id] ??
+                  device.selectedVariantIndex ??
+                  0;
+                const safeVariantIndex =
+                  variants.length > 0 && variants[rawVariantIndex]
+                    ? rawVariantIndex
+                    : 0;
+                const specScore = getDeviceSpecScore(device);
+                const summaryText = getCardSummary(
+                  device,
+                  selectedVariant || variants[safeVariantIndex] || null,
+                );
+                const signalLabel = getCardSignalLabel(device);
+                return (
                   <div
-                    className={`absolute left-2 top-2 z-10 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cardTheme.badgeClass}`}
+                    key={device.id}
+                    className={`group relative flex h-[240px] w-[78vw] max-w-[220px] shrink-0 flex-col overflow-hidden rounded-lg border border-slate-100 bg-white transition-all duration-200 focus-within:ring-2 focus-within:ring-blue-100 hover:border-blue-600 hover:bg-slate-50 sm:h-[250px] sm:w-[230px] md:h-[260px] md:w-[240px] lg:h-[270px] lg:w-[250px]`}
                   >
-                    <span className={`h-1.5 w-1.5 rounded-full ${cardTheme.dotClass}`} />
-                    <span className="rounded-full bg-white/70 px-1.5 py-0.5 text-[9px] font-semibold tracking-[0.18em] text-current">
-                      {formatCompareCardIndex(index)}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      isComparing
-                        ? removeComparedDevice(device.id)
-                        : removeDevice(device.id)
-                    }
-                    className="absolute right-2 top-2 z-10 inline-flex items-center justify-center rounded-full bg-white/90 p-1 text-gray-500 ring-1 ring-gray-200 hover:bg-red-50 hover:text-red-600 hover:ring-red-200 transition-colors"
-                    aria-label="Remove device"
-                    title="Remove"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        isComparing
+                          ? removeComparedDevice(device.id)
+                          : removeDevice(device.id)
+                      }
+                      className="absolute right-2 top-2 z-10 inline-flex items-center justify-center rounded-full bg-white/90 p-1 text-slate-500 ring-1 ring-slate-200 transition-colors hover:bg-red-50 hover:text-red-600 hover:ring-red-200"
+                      aria-label="Remove device"
+                      title="Remove"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
 
-                  {/* Content */}
-                  <div className="flex flex-1 flex-col gap-2 p-2.5 pt-8">
-                    <div className="relative mx-auto inline-flex items-center justify-center overflow-hidden rounded-md bg-gray-100 px-4 py-2 shadow-md">
-                      {specScore != null ? (
-                        <div
-                          className="absolute left-1 top-1 z-10 inline-flex flex-col items-center justify-center rounded-md border border-violet-200 bg-violet-50/95 px-1.5 py-1 leading-none"
-                          style={{ minWidth: "44px" }}
-                        >
-                          <span className="text-[10px] font-bold text-violet-700">
-                            {formatSpecScoreLabel(specScore)}
-                          </span>
-                          <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide text-violet-600">
-                            Spec
-                          </span>
-                        </div>
-                      ) : null}
-                      <img
-                        src={getPrimaryImage(device) || null}
-                        alt={device.name}
-                        className="h-20 w-auto max-w-[120px] object-contain"
-                        onError={(e) => {
-                          e.target.src = `/api/placeholder/320/240?text=${encodeURIComponent(
-                            (device.brand || "D").slice(0, 1),
-                          )}`;
-                        }}
-                      />
-                    </div>
-                    <div className="min-w-0 w-full">
-                      <div className="text-[11px] font-semibold text-purple-600">
-                        {device.brand || "Brand"}
+                    {/* Content */}
+                    <div className="flex flex-1 flex-col gap-1.5 p-3 pt-7 sm:p-3.5 sm:pt-7">
+                      <div className="relative mx-auto inline-flex items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5">
+                        <img
+                          src={getPrimaryImage(device) || null}
+                          alt={device.name}
+                          className="h-20 w-auto max-w-[120px] object-contain rounded-md"
+                          onError={(e) => {
+                            e.target.src = `/api/placeholder/320/240?text=${encodeURIComponent(
+                              (device.brand || "D").slice(0, 1),
+                            )}`;
+                          }}
+                        />
                       </div>
-                      <h3 className="mt-0.5 text-[14px] font-bold leading-tight text-slate-900 line-clamp-1 sm:text-[15px]">
-                        {device.name ||
-                          device.model ||
-                          device.title ||
-                          "Device"}
-                      </h3>
-                      <p className="mt-0.5 text-[10px] text-slate-500 line-clamp-1 leading-snug">
-                        {summaryText}
-                      </p>
-                      {signalLabel ? (
-                        <p className="mt-0.5 text-[10px] font-medium text-violet-600 line-clamp-1">
-                          {signalLabel}
+                      <div className="min-w-0 w-full">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-blue-600">
+                          {device.brand || "Brand"}
+                        </div>
+                        <h3 className="mt-1 line-clamp-1 text-[14px] font-semibold leading-tight tracking-tight text-[#14255e] sm:text-[15px]">
+                          {device.name ||
+                            device.model ||
+                            device.title ||
+                            "Device"}
+                        </h3>
+                        <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-slate-500">
+                          {summaryText}
                         </p>
-                      ) : null}
-                      <p
-                        className={`mt-0.5 text-[14px] font-extrabold ${
-                          selectedVariant?.base_price || device.price
-                            ? "text-green-600"
-                            : "text-slate-400"
-                        }`}
-                        title={
-                          selectedVariant?.base_price || device.price
-                            ? "Price"
-                            : "Price not available"
-                        }
-                      >
-                        {selectedVariant
-                          ? formatPrice(selectedVariant.base_price)
-                          : formatPrice(device.price || 0)}
-                      </p>
+                        {signalLabel ? (
+                          <p className="mt-1 line-clamp-1 text-[11px] font-medium text-blue-600">
+                            {signalLabel}
+                          </p>
+                        ) : null}
+                        <p
+                          className={`mt-1 text-[15px] font-semibold tracking-tight ${
+                            selectedVariant?.base_price || device.price
+                              ? "text-green-600"
+                              : "text-slate-400"
+                          }`}
+                          title={
+                            selectedVariant?.base_price || device.price
+                              ? "Price"
+                              : "Price not available"
+                          }
+                        >
+                          {selectedVariant
+                            ? formatPrice(selectedVariant.base_price)
+                            : formatPrice(device.price || 0)}
+                        </p>
+                      </div>
+
+                      {/* Variant Selector / Info */}
                     </div>
-
-                    {/* Variant Selector / Info */}
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
 
-            {/* Add Device Button - COMPACT */}
-            {remainingSlots > 0 && (
-              <button
-                onClick={() => setShowSearch(true)}
-                className="group relative flex h-[220px] w-[220px] shrink-0 flex-col items-center justify-center rounded-md border-2 border-dashed border-slate-200 bg-white p-4 text-center transition-all duration-200 hover:border-purple-300 hover:bg-slate-50 sm:h-[230px] sm:w-[230px] md:h-[240px] md:w-[240px] lg:h-[250px] lg:w-[250px]"
-              >
-                <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-md bg-purple-600 transition-transform duration-200 group-hover:scale-105">
-                  <Plus className="h-5 w-5 text-white" />
-                </div>
-                <div className="text-base font-semibold text-slate-900">
-                  Add Device
-                </div>
-                <div className="mt-1 text-sm text-slate-500">
-                  {remainingSlots} slot{remainingSlots !== 1 ? "s" : ""} left
-                </div>
-              </button>
-            )}
+              {/* Add Device Button - COMPACT */}
+              {visibleRemainingSlots > 0 && (
+                <button
+                  onClick={() => setShowSearch(true)}
+                  className="group relative flex h-[240px] w-[78vw] max-w-[220px] shrink-0 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-white p-4 text-center transition-all duration-200 hover:border-blue-300 hover:bg-slate-50 sm:h-[250px] sm:w-[230px] md:h-[260px] md:w-[240px] lg:h-[270px] lg:w-[250px]"
+                >
+                  <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-md bg-blue-600 transition-transform duration-200 group-hover:scale-105">
+                    <Plus className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="text-base font-semibold text-slate-900">
+                    Add Device
+                  </div>
+                  <div className="mt-1 text-sm text-slate-500">
+                    {visibleRemainingSlots} slot
+                    {visibleRemainingSlots !== 1 ? "s" : ""} left
+                  </div>
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Compare Button */}
           {!isComparing && selectedDevices.length >= MIN_DEVICES && (
-            <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <button
                 onClick={startComparison}
-                className="px-6 py-3 bg-purple-600 text-white font-semibold rounded-xl hover:bg-purple-700 transition-all duration-300 flex items-center gap-2"
+                className="inline-flex w-full items-center justify-center gap-2   bg-blue-600 px-6 py-3 font-semibold text-white transition-all duration-300 hover:bg-blue-700 sm:w-auto"
               >
                 <BarChart3 className="h-4 w-4" />
                 Start Comparing
@@ -3393,38 +3366,38 @@ const MobileCompare = () => {
         </div>
         {/* Search Modal */}
         {showSearch && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-start justify-center p-4 pt-16 sm:p-6">
-            <div className="bg-white rounded-none w-full max-w-2xl max-h-[85vh] flex flex-col border border-gray-200 animate-in slide-in-from-bottom-4 duration-300">
+          <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-4 pt-16 backdrop-blur-sm sm:p-6">
+            <div className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden   border border-slate-200 bg-white animate-in slide-in-from-bottom-4 duration-300">
               {/* Modal Header */}
-              <div className="p-6 border-b border-gray-200">
-                <div className="flex items-center justify-between mb-6">
+              <div className="border-b border-slate-200 p-5 sm:p-6">
+                <div className="mb-6 flex items-center justify-between gap-3">
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900">
+                    <h3 className="text-xl font-bold tracking-tight text-slate-900">
                       Add Devices
                     </h3>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="mt-1 text-sm text-slate-500">
                       Select devices to compare
                     </p>
                   </div>
                   <button
                     onClick={() => setShowSearch(false)}
-                    className="p-2 hover:bg-gray-100 rounded-none transition-colors"
+                    className="rounded-lg p-2 transition-colors hover:bg-slate-100"
                   >
-                    <X className="h-5 w-5 text-gray-500" />
+                    <X className="h-5 w-5 text-slate-500" />
                   </button>
                 </div>
 
                 {/* Search Input */}
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Search className="h-5 w-5 text-purple-500 group-focus-within:text-purple-600 transition-colors duration-200" />
+                    <Search className="h-5 w-5 text-blue-500 group-focus-within:text-blue-600 transition-colors duration-200" />
                   </div>
                   <input
                     type="text"
                     placeholder="Search by brand, model, or feature..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-100 focus:border-purple-500 outline-none text-base placeholder-gray-400 transition-all duration-200"
+                    className="w-full   border-2 border-slate-200 bg-slate-50 py-3.5 pl-12 pr-4 text-base placeholder-slate-400 outline-none transition-all duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     autoFocus
                   />
                 </div>
@@ -3432,8 +3405,8 @@ const MobileCompare = () => {
                 <div className="mt-4">
                   <div className="mb-1 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Filter className="h-4 w-4 text-purple-600" />
-                      <h3 className="text-sm sm:text-base font-semibold text-gray-900">
+                      <Filter className="h-4 w-4 text-blue-600" />
+                      <h3 className="text-sm font-semibold text-slate-900 sm:text-base">
                         Popular Features
                       </h3>
                     </div>
@@ -3441,13 +3414,13 @@ const MobileCompare = () => {
                       <button
                         type="button"
                         onClick={() => setActiveQuickFilter("all")}
-                        className="text-xs sm:text-sm text-purple-700 hover:text-purple-900 font-semibold"
+                        className="text-xs font-semibold text-blue-700 hover:text-blue-900 sm:text-sm"
                       >
                         Clear
                       </button>
                     ) : null}
                   </div>
-                  <p className="mb-2 text-xs text-gray-600">
+                  <p className="mb-2 text-xs text-slate-500">
                     Popular choices from other users (last 7 days)
                   </p>
                   <div className="flex gap-2.5 overflow-x-auto pb-2 hide-scrollbar">
@@ -3463,17 +3436,13 @@ const MobileCompare = () => {
                               prev === chip.id ? "all" : chip.id,
                             )
                           }
-                          className={`flex items-center gap-2 px-3 py-2 rounded-full border text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
+                          className={`flex items-center gap-2 px-3 py-2   border text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
                             active
-                              ? "bg-purple-50 text-purple-700 border-purple-400"
-                              : "bg-white text-gray-700 border-gray-200 hover:border-purple-300 hover:text-purple-700"
+                              ? "border-blue-400 bg-blue-50 text-blue-700"
+                              : "border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:text-blue-700"
                           }`}
                         >
-                          <span
-                            className={
-                              active ? "text-purple-600" : "text-purple-600"
-                            }
-                          >
+                          <span className="text-blue-600">
                             <Icon className="h-4 w-4" />
                           </span>
                           <span>{chip.label}</span>
@@ -3488,11 +3457,11 @@ const MobileCompare = () => {
               <div className="flex-1 overflow-y-auto">
                 {filteredDevices.length === 0 ? (
                   <div className="p-12 text-center">
-                    <Search className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                    <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                    <Search className="mx-auto mb-4 h-16 w-16 text-slate-300" />
+                    <h4 className="mb-2 text-lg font-semibold text-slate-900">
                       No devices found
                     </h4>
-                    <p className="text-gray-500">
+                    <p className="text-slate-500">
                       Try different keywords or browse all devices
                     </p>
                   </div>
@@ -3520,19 +3489,19 @@ const MobileCompare = () => {
                         <button
                           key={key}
                           onClick={() => addDevice(base, vi)}
-                          className="text-left rounded-none p-4 hover:bg-gray-50 hover:border-purple-200 transition-all duration-200 group"
+                          className="group   border border-slate-200 bg-white p-4 text-left transition-all duration-200 hover:border-blue-200 hover:bg-slate-50"
                         >
                           <div className="flex items-start gap-3">
-                            <div className="relative w-24 h-24 p-1 bg-gray-100 rounded-md flex-shrink-0 group-hover:scale-105 transition-transform duration-200">
+                            <div className="relative h-24 w-24 flex-shrink-0   border border-slate-200 bg-slate-50 p-1 transition-transform duration-200 group-hover:scale-105">
                               {specScore != null ? (
                                 <div
-                                  className="absolute left-1 top-1 z-10 inline-flex flex-col items-center justify-center rounded-md border border-violet-200 bg-violet-50/95 px-1.5 py-1 leading-none"
+                                  className="absolute left-1 top-1 z-10 inline-flex flex-col items-center justify-center rounded-md border border-blue-200 bg-blue-50/95 px-1.5 py-1 leading-none"
                                   style={{ minWidth: "44px" }}
                                 >
-                                  <span className="text-[10px] font-bold text-violet-700">
+                                  <span className="text-[10px] font-bold text-blue-700">
                                     {formatSpecScoreLabel(specScore)}
                                   </span>
-                                  <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide text-violet-600">
+                                  <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide text-blue-600">
                                     Spec
                                   </span>
                                 </div>
@@ -3546,22 +3515,22 @@ const MobileCompare = () => {
                             <div className="flex-1 min-w-0">
                               <div className="mb-1">
                                 <div className="mb-1 flex flex-wrap items-center gap-1.5">
-                                  <div className="text-xs font-semibold text-purple-600">
+                                  <div className="text-xs font-semibold text-blue-600">
                                     {base.brand}
                                   </div>
                                   {showAiTag && (
-                                    <span className="inline-flex items-center gap-1 rounded-full  px-2 py-0.5 text-[10px] font-semibold text-purple-700 ring-1 ring-purple-200 whitespace-nowrap">
+                                    <span className="inline-flex items-center gap-1 whitespace-nowrap   px-2 py-0.5 text-[10px] font-semibold text-blue-700 ring-1 ring-blue-200">
                                       <span
-                                        className="inline-flex items-center justify-center w-3 h-3"
+                                        className="inline-flex h-3 w-3 items-center justify-center"
                                         aria-hidden="true"
                                       >
                                         <svg
                                           viewBox="0 0 64 64"
-                                          className="w-3 h-3"
+                                          className="h-3 w-3"
                                         >
                                           <path
                                             d="M32 2C34.5 14.5 40 20 52 22C40 24 34.5 29.5 32 42C29.5 29.5 24 24 12 22C24 20 29.5 14.5 32 2Z"
-                                            fill="#2196F3"
+                                            fill="#2563EB"
                                           />
                                           <path
                                             d="M50 34C51.5 41.5 55 45 62 46C55 47 51.5 50.5 50 58C48.5 50.5 45 47 38 46C45 45 48.5 41.5 50 34Z"
@@ -3573,14 +3542,14 @@ const MobileCompare = () => {
                                     </span>
                                   )}
                                 </div>
-                                <h4 className="font-bold text-gray-900 text-sm line-clamp-2 leading-tight">
+                                <h4 className="text-sm font-bold leading-tight text-slate-900 line-clamp-2">
                                   {base.name}
                                 </h4>
-                                <p className="mt-1 text-[11px] text-gray-500 line-clamp-2 leading-snug">
+                                <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-slate-500">
                                   {summaryText}
                                 </p>
                                 {signalLabel ? (
-                                  <p className="mt-1 text-[11px] font-medium text-violet-600 line-clamp-2 leading-snug">
+                                  <p className="mt-1 line-clamp-2 text-[11px] font-medium leading-snug text-blue-600">
                                     {signalLabel}
                                   </p>
                                 ) : null}
@@ -3590,7 +3559,7 @@ const MobileCompare = () => {
 
                               {/* Variant & Price */}
                               <div className="flex items-center justify-between">
-                                <div className="text-sm font-bold text-green-600">
+                                <div className="text-sm font-bold text-emerald-600">
                                   {displayVariant
                                     ? formatPrice(displayVariant.base_price)
                                     : formatPrice(base.price || 0)}
@@ -3606,22 +3575,22 @@ const MobileCompare = () => {
               </div>
 
               {/* Modal Footer */}
-              <div className="p-4 border-t border-gray-200 bg-gray-50 rounded-none">
+              <div className="border-t border-slate-200 bg-slate-50 p-4">
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-4">
-                    <span className="text-gray-600">
+                    <span className="text-slate-600">
                       {filteredDevices.length} devices
                     </span>
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <span className="text-gray-600">
-                        {remainingSlots} slots available
+                      <div className="h-2 w-2   bg-blue-500" />
+                      <span className="text-slate-600">
+                        {visibleRemainingSlots} slots available
                       </span>
                     </div>
                   </div>
                   <button
                     onClick={() => setShowSearch(false)}
-                    className="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium"
+                    className="px-4 py-2 font-medium text-slate-700 hover:text-slate-900"
                   >
                     Close
                   </button>
@@ -3637,12 +3606,12 @@ const MobileCompare = () => {
             className="space-y-6 animate-in fade-in duration-500"
           >
             {/* Detailed Comparison Header (smartphone-style: no tabs) */}
-            <div className="rounded-2xl border border-slate-200 bg-white">
+            <div className="  border border-slate-200 bg-white">
               <div className="px-4 py-4 sm:px-5">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
-                      <BarChart3 className="h-5 w-5 text-violet-500" />
+                      <BarChart3 className="h-5 w-5 text-blue-600" />
                       Detailed Comparison
                     </h2>
                     <p className="mt-1 text-sm text-slate-600">
@@ -3651,17 +3620,17 @@ const MobileCompare = () => {
                     </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    {remainingSlots > 0 ? (
+                    {visibleRemainingSlots > 0 ? (
                       <button
                         type="button"
                         onClick={() => setShowSearch(true)}
-                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:border-violet-300 hover:bg-violet-50"
+                        className="inline-flex items-center gap-2   border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:bg-blue-50"
                       >
                         <FaPlus className="h-3.5 w-3.5" />
                         Add Device
                       </button>
                     ) : null}
-                    <div className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700">
+                    <div className="  border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700">
                       {comparedDevices.length} devices
                     </div>
                   </div>
@@ -3678,15 +3647,15 @@ const MobileCompare = () => {
                 const Icon = section.icon;
                 const iconColorClass =
                   {
-                    overview: "text-purple-500",
-                    display: "text-green-500",
-                    camera: "text-purple-500",
-                    performance: "text-yellow-500",
-                    battery: "text-red-500",
-                    network: "text-purple-500",
-                    audio: "text-indigo-500",
+                    overview: "text-blue-600",
+                    display: "text-sky-600",
+                    camera: "text-blue-500",
+                    performance: "text-emerald-500",
+                    battery: "text-amber-500",
+                    network: "text-cyan-500",
+                    audio: "text-teal-500",
                     features: "text-orange-500",
-                  }[section.id] || "text-purple-500";
+                  }[section.id] || "text-blue-600";
 
                 return (
                   <div key={`section-${section.id}`} className="bg-white">
@@ -3709,11 +3678,6 @@ const MobileCompare = () => {
                               {comparedDevices.map((device) => {
                                 const selectedVariant =
                                   getSelectedVariant(device);
-                                const ranking =
-                                  section.id === "overview"
-                                    ? rankingByDeviceId[String(device.id)] ||
-                                      null
-                                    : null;
                                 const name =
                                   device.name ||
                                   device.model ||
@@ -3731,14 +3695,14 @@ const MobileCompare = () => {
                                         onClick={() =>
                                           removeComparedDevice(device.id)
                                         }
-                                        className="absolute top-0 right-0 rounded-full p-1 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                                        className="absolute top-0 right-0   p-1 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
                                         title="Remove device from comparison"
                                         aria-label="Remove device from comparison"
                                       >
                                         <Trash2 className="h-3.5 w-3.5" />
                                       </button>
                                       {device.brand ? (
-                                        <div className="truncate text-[11px] font-semibold normal-case tracking-normal text-violet-600">
+                                        <div className="truncate text-[11px] font-semibold normal-case tracking-normal text-blue-600">
                                           {device.brand}
                                         </div>
                                       ) : null}
@@ -3773,8 +3737,8 @@ const MobileCompare = () => {
                                   key={`${section.id}-${specKey}`}
                                   className={
                                     idx % 2 === 0
-                                      ? "bg-white hover:bg-violet-50/20"
-                                      : "bg-slate-50/50 hover:bg-violet-50/30"
+                                      ? "bg-white hover:bg-blue-50/30"
+                                      : "bg-slate-50/50 hover:bg-blue-50/40"
                                   }
                                 >
                                   <td className="w-1/3 px-6 py-3 text-sm font-semibold text-slate-700 align-top">
@@ -3782,7 +3746,7 @@ const MobileCompare = () => {
                                       <span>{toNormalCase(specKey)}</span>
                                       {specHint ? (
                                         <span
-                                          className="inline-flex cursor-help text-slate-400 hover:text-violet-500"
+                                          className="inline-flex cursor-help text-slate-400 hover:text-blue-500"
                                           title={specHint}
                                         >
                                           <Info className="h-3.5 w-3.5" />
@@ -3845,18 +3809,18 @@ const MobileCompare = () => {
                                           <div
                                             className={`${
                                               shouldRenderNaIcon
-                                                ? "text-violet-500"
+                                                ? "text-blue-500"
                                                 : isPrice
                                                   ? "font-semibold text-emerald-600"
                                                   : isVariant
-                                                    ? "font-semibold text-violet-700"
+                                                    ? "font-semibold text-blue-700"
                                                     : "text-slate-800"
                                             }`}
                                           >
                                             {shouldRenderNaIcon ? (
                                               <span
                                                 title="Not available"
-                                                className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-violet-50 text-violet-500 ring-1 ring-violet-200"
+                                                className="inline-flex h-6 w-6 items-center justify-center   bg-blue-50 text-blue-500 ring-1 ring-blue-200"
                                               >
                                                 <FaTimes
                                                   className="h-3 w-3"
@@ -3889,38 +3853,38 @@ const MobileCompare = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 onClick={shareComparison}
-                className="p-3 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all duration-200 flex items-center justify-center gap-2"
+                className="flex items-center justify-center gap-2 rounded-2xl  border border-slate-200 bg-white p-3 transition-colors hover:border-blue-200 hover:bg-blue-50"
               >
-                <Share2 className="h-4 w-4 text-gray-700" />
-                <span className="font-medium text-gray-700 text-sm">
+                <Share2 className="h-4 w-4 text-slate-700" />
+                <span className="text-sm font-medium text-slate-700">
                   Share Comparison
                 </span>
               </button>
               <button
                 onClick={() => navigate("/smartphones")}
-                className="p-3  border border-purple-600 rounded-xl hover:bg-purple-700 transition-all duration-200 flex items-center justify-center gap-2 text-white"
+                className="flex items-center justify-center gap-2 rounded-2xl  border border-blue-600 bg-blue-600 p-3 text-white transition-colors hover:bg-blue-700"
               >
                 <Plus className="h-4 w-4" />
-                <span className="font-medium text-sm">Browse More</span>
+                <span className="text-sm font-medium">Browse More</span>
               </button>
             </div>
           </div>
         )}
         {/* Empty State */}
         {usedSlots === 0 && !showSearch && (
-          <div className="text-center py-8">
-            <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <BarChart3 className="h-10 w-10 text-purple-600" />
+          <div className="py-8 text-center">
+            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center   bg-blue-50">
+              <BarChart3 className="h-10 w-10 text-blue-600" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <h3 className="mb-2 text-lg font-semibold text-slate-900">
               Start Comparing
             </h3>
-            <p className="text-gray-600 mb-4 max-w-md mx-auto">
+            <p className="mx-auto mb-4 max-w-md text-slate-600">
               Add 2-4 devices to see detailed specifications side by side
             </p>
             <button
               onClick={() => setShowSearch(true)}
-              className="px-6 py-2.5 bg-purple-600 text-white font-semibold rounded-xl hover:bg-purple-700 transition-all duration-300 inline-flex items-center gap-2"
+              className="inline-flex items-center gap-2   bg-blue-600 px-6 py-2.5 font-semibold text-white transition-colors hover:bg-blue-700"
             >
               <Plus className="h-4 w-4" />
               Add Your First Device
@@ -3930,12 +3894,12 @@ const MobileCompare = () => {
         {/* Details Modal */}
         {showDetailsModal && modalDevice && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom-4 duration-300">
+            <div className="bg-white   max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom-4 duration-300">
               {/* Modal Header */}
               <div className="sticky top-0 z-20 bg-white px-6 py-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-purple-50 border border-purple-100 rounded-lg p-1 flex-shrink-0 overflow-hidden">
+                    <div className="w-12 h-12 bg-blue-50 border border-blue-100 rounded-lg p-1 flex-shrink-0 overflow-hidden">
                       <img
                         src={getPrimaryImage(modalDevice)}
                         alt={modalDevice.name}
@@ -3996,17 +3960,17 @@ const MobileCompare = () => {
                     ].map((item, idx) => (
                       <div
                         key={idx}
-                        className="p-4 bg-gray-50 rounded-lg border border-gray-200"
+                        className="  border border-slate-200 bg-slate-50 p-4"
                       >
-                        <div className="text-2xl mb-2">{item.icon}</div>
-                        <div className="text-xs text-gray-600 font-medium mb-1">
+                        <div className="mb-2 text-2xl">{item.icon}</div>
+                        <div className="mb-1 text-xs font-medium text-slate-600">
                           {item.label}
                         </div>
                         <div
                           className={`font-bold text-sm ${
                             item.color === "green"
                               ? "text-green-600"
-                              : "text-gray-900"
+                              : "text-slate-900"
                           }`}
                         >
                           {item.value}
@@ -4015,9 +3979,9 @@ const MobileCompare = () => {
                     ))}
                   </div>
 
-                  <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  <div className="overflow-hidden   border border-slate-200 bg-white">
                     <table className="w-full">
-                      <tbody className="divide-y divide-gray-100">
+                      <tbody className="divide-y divide-slate-100">
                         {[
                           {
                             label: "Operating System",
@@ -4053,13 +4017,13 @@ const MobileCompare = () => {
                           <tr
                             key={idx}
                             className={
-                              idx % 2 === 0 ? "bg-white" : "bg-gray-50"
+                              idx % 2 === 0 ? "bg-white" : "bg-slate-50"
                             }
                           >
-                            <td className="px-6 py-3 text-sm font-medium text-gray-600 w-1/3">
+                            <td className="w-1/3 px-6 py-3 text-sm font-medium text-slate-600">
                               {item.label}
                             </td>
-                            <td className="px-6 py-3 text-sm font-semibold text-gray-900 w-2/3">
+                            <td className="w-2/3 px-6 py-3 text-sm font-semibold text-slate-900">
                               {item.value}
                             </td>
                           </tr>
@@ -4072,15 +4036,15 @@ const MobileCompare = () => {
 
               {/* Performance Section */}
               <div className="space-y-3">
-                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-4">
-                  <div className="p-2 bg-yellow-500 rounded-lg">
+                <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-900">
+                  <div className="rounded-lg bg-amber-500 p-2">
                     <Cpu className="h-5 w-5 text-white" />
                   </div>
                   Performance
                 </h3>
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="overflow-hidden   border border-slate-200 bg-white">
                   <table className="w-full">
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-slate-100">
                       {modalDevice.performance &&
                         Object.entries(modalDevice.performance)
                           .filter(
@@ -4092,13 +4056,13 @@ const MobileCompare = () => {
                             <tr
                               key={key}
                               className={
-                                idx % 2 === 0 ? "bg-white" : "bg-gray-50"
+                                idx % 2 === 0 ? "bg-white" : "bg-slate-50"
                               }
                             >
-                              <td className="px-6 py-3 text-sm font-medium text-gray-600 w-1/3">
+                              <td className="w-1/3 px-6 py-3 text-sm font-medium text-slate-600">
                                 {toNormalCase(key)}
                               </td>
-                              <td className="px-6 py-3 text-sm font-semibold text-gray-900 w-2/3">
+                              <td className="w-2/3 px-6 py-3 text-sm font-semibold text-slate-900">
                                 {formatSpecValue(value, key)}
                               </td>
                             </tr>
@@ -4110,15 +4074,15 @@ const MobileCompare = () => {
 
               {/* Display Section */}
               <div className="space-y-3">
-                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-4">
-                  <div className="p-2 bg-purple-500 rounded-lg">
+                <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-900">
+                  <div className="rounded-lg bg-sky-500 p-2">
                     <Monitor className="h-5 w-5 text-white" />
                   </div>
                   Display
                 </h3>
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="overflow-hidden   border border-slate-200 bg-white">
                   <table className="w-full">
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-slate-100">
                       {modalDevice.display &&
                         Object.entries(modalDevice.display)
                           .filter(([k, v]) => v && !["ai_features"].includes(k))
@@ -4126,13 +4090,13 @@ const MobileCompare = () => {
                             <tr
                               key={key}
                               className={
-                                idx % 2 === 0 ? "bg-white" : "bg-gray-50"
+                                idx % 2 === 0 ? "bg-white" : "bg-slate-50"
                               }
                             >
-                              <td className="px-6 py-3 text-sm font-medium text-gray-600 w-1/3">
+                              <td className="w-1/3 px-6 py-3 text-sm font-medium text-slate-600">
                                 {toNormalCase(key)}
                               </td>
-                              <td className="px-6 py-3 text-sm font-semibold text-gray-900 w-2/3">
+                              <td className="w-2/3 px-6 py-3 text-sm font-semibold text-slate-900">
                                 {formatSpecValue(value, key)}
                               </td>
                             </tr>
@@ -4144,15 +4108,15 @@ const MobileCompare = () => {
 
               {/* Camera Section */}
               <div className="space-y-3">
-                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-4">
-                  <div className="p-2 bg-pink-500 rounded-lg">
+                <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-900">
+                  <div className="rounded-lg bg-blue-500 p-2">
                     <Camera className="h-5 w-5 text-white" />
                   </div>
                   Camera
                 </h3>
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="overflow-hidden   border border-slate-200 bg-white">
                   <table className="w-full">
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-slate-100">
                       {[
                         {
                           label: "Main Camera",
@@ -4206,12 +4170,12 @@ const MobileCompare = () => {
                       ].map((item, idx) => (
                         <tr
                           key={idx}
-                          className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                          className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}
                         >
-                          <td className="px-6 py-3 text-sm font-medium text-gray-600 w-1/3">
+                          <td className="w-1/3 px-6 py-3 text-sm font-medium text-slate-600">
                             {item.label}
                           </td>
-                          <td className="px-6 py-3 text-sm font-semibold text-gray-900 w-2/3">
+                          <td className="w-2/3 px-6 py-3 text-sm font-semibold text-slate-900">
                             {formatSpecValue(item.value, item.label)}
                           </td>
                         </tr>
@@ -4223,15 +4187,15 @@ const MobileCompare = () => {
 
               {/* Battery Section */}
               <div className="space-y-3">
-                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-4">
-                  <div className="p-2 bg-green-500 rounded-lg">
+                <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-900">
+                  <div className="rounded-lg bg-emerald-500 p-2">
                     <Battery className="h-5 w-5 text-white" />
                   </div>
                   Battery
                 </h3>
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="overflow-hidden   border border-slate-200 bg-white">
                   <table className="w-full">
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-slate-100">
                       {[
                         {
                           label: "Capacity",
@@ -4276,12 +4240,12 @@ const MobileCompare = () => {
                       ].map((item, idx) => (
                         <tr
                           key={idx}
-                          className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                          className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}
                         >
-                          <td className="px-6 py-3 text-sm font-medium text-gray-600 w-1/3">
+                          <td className="w-1/3 px-6 py-3 text-sm font-medium text-slate-600">
                             {item.label}
                           </td>
-                          <td className="px-6 py-3 text-sm font-semibold text-gray-900 w-2/3">
+                          <td className="w-2/3 px-6 py-3 text-sm font-semibold text-slate-900">
                             {formatSpecValue(item.value, item.label)}
                           </td>
                         </tr>
@@ -4293,15 +4257,15 @@ const MobileCompare = () => {
 
               {/* Network Section */}
               <div className="space-y-3">
-                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-4">
-                  <div className="p-2 bg-cyan-500 rounded-lg">
+                <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-900">
+                  <div className="rounded-lg bg-cyan-500 p-2">
                     <Wifi className="h-5 w-5 text-white" />
                   </div>
                   Network
                 </h3>
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="overflow-hidden   border border-slate-200 bg-white">
                   <table className="w-full">
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-slate-100">
                       {[
                         {
                           label: "5G",
@@ -4344,12 +4308,12 @@ const MobileCompare = () => {
                       ].map((item, idx) => (
                         <tr
                           key={idx}
-                          className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                          className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}
                         >
-                          <td className="px-6 py-3 text-sm font-medium text-gray-600 w-1/3">
+                          <td className="w-1/3 px-6 py-3 text-sm font-medium text-slate-600">
                             {item.label}
                           </td>
-                          <td className="px-6 py-3 text-sm font-semibold text-gray-900 w-2/3">
+                          <td className="w-2/3 px-6 py-3 text-sm font-semibold text-slate-900">
                             {formatSpecValue(item.value, item.label)}
                           </td>
                         </tr>
@@ -4361,10 +4325,10 @@ const MobileCompare = () => {
             </div>
 
             {/* Modal Footer */}
-            <div className="sticky bottom-0 border-t border-gray-200 bg-gray-50 px-6 py-4 flex gap-3">
+            <div className="sticky bottom-0 flex gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4">
               <button
                 onClick={() => setShowDetailsModal(false)}
-                className="flex-1 px-4 py-2 text-gray-700 font-medium hover:bg-gray-100 rounded-lg transition-colors"
+                className="flex-1 rounded-lg px-4 py-2 font-medium text-slate-700 transition-colors hover:bg-white hover:text-slate-900"
               >
                 Close
               </button>

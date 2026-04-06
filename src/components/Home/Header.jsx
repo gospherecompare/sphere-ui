@@ -24,7 +24,6 @@
  *   └─ Desktop section: hidden md:block (visible on desktop+)
  * - SearchModal: Full-screen overlay search with discover section
  * - MobileMenuDrawer: Vertical sidebar for categories (hamburger)
- * - QuickNavTabs: Optional mobile navigation tabs below header
  * - CategoryNavBar: Desktop mega menus (hidden on mobile)
  *
  * WHY PREVIOUS INPUT RENDERING BROKE:
@@ -47,7 +46,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import Cookies from "js-cookie";
 import { useDevice } from "../../hooks/useDevice";
-import { createProductPath, generateSlug } from "../../utils/slugGenerator";
+import { createProductPath } from "../../utils/slugGenerator";
 
 // Icons - matching Vijay Sales style
 import {
@@ -99,30 +98,22 @@ import {
   FaBriefcase,
 } from "react-icons/fa";
 
-const BrandIdentity = ({ variant = "desktop", inverse = false }) => {
+const BrandIdentity = ({ variant = "desktop" }) => {
   const isDesktop = variant === "desktop";
   const isMobile = variant === "mobile";
 
-  const iconClass = isDesktop
-    ? "h-10 w-10 lg:h-11 lg:w-11"
-    : isMobile
-      ? "h-8 w-8 sm:h-9 sm:w-9"
-      : "h-8 w-8";
   const brandClass = isDesktop
-    ? "text-[24px] lg:text-[26px]"
+    ? "text-[26px] lg:text-[28px]"
     : isMobile
       ? "text-[18px] sm:text-[20px]"
       : "text-[18px]";
   const wrapperClass = isDesktop ? "gap-3" : "gap-2.5";
-  const brandTone = inverse
-    ? "text-white"
-    : "text-transparent bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text";
+  const brandTone = "text-[#345ce3] font-normal";
 
   return (
-    <span className={`flex items-center min-w-0 ${wrapperClass}`}>
-      <img src="/favicon.svg" alt="Hooks" className={`block ${iconClass}`} />
+    <span className={`flex items-center min-w-0 ${wrapperClass} group`}>
       <span
-        className={`condiment-regular ${brandClass} ${brandTone} leading-[1.02] pt-1`}
+        className={`luckiest-guy-regular ${brandClass} ${brandTone} leading-[1.02] pt-1 transition-all`}
       >
         Hooks
       </span>
@@ -148,6 +139,7 @@ const Header = () => {
   const [mobileHeaderHeight, setMobileHeaderHeight] = useState(112);
   const navigate = useNavigate();
   const location = useLocation();
+  const currentPath = String(location.pathname || "").toLowerCase();
   const megaMenuRef = useRef(null);
   const authDropdownRef = useRef(null);
   const searchRef = useRef(null);
@@ -363,6 +355,115 @@ const Header = () => {
     } catch (e) {
       return `₹${Math.round(n)}`;
     }
+  };
+
+  const escapeRegExp = (value) =>
+    String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  const getSuggestionTypeLabel = (sugg) => {
+    const suggestionType = String(sugg?.type || "").toLowerCase();
+    if (suggestionType === "brand") return "Brand";
+
+    const productType = String(
+      sugg?.product_type || sugg?.productType || "",
+    ).toLowerCase();
+
+    if (productType.includes("laptop")) return "Laptop";
+    if (productType.includes("tv") || productType.includes("appliance"))
+      return "TV";
+    if (productType.includes("network")) return "Networking";
+    if (productType.includes("phone") || productType.includes("smart"))
+      return "Smartphone";
+
+    return suggestionType === "product" ? "Product" : "Search";
+  };
+
+  const getSuggestionTypeIcon = (sugg) => {
+    const suggestionType = String(sugg?.type || "").toLowerCase();
+    if (suggestionType === "brand") return FaStore;
+
+    const productType = String(
+      sugg?.product_type || sugg?.productType || "",
+    ).toLowerCase();
+
+    if (productType.includes("laptop")) return FaLaptop;
+    if (productType.includes("tv") || productType.includes("appliance"))
+      return FaTv;
+    if (productType.includes("network")) return FaPlug;
+    if (productType.includes("phone") || productType.includes("smart"))
+      return FaMobileAlt;
+
+    return FaSearch;
+  };
+
+  const getSuggestionSubtitle = (sugg) => {
+    if (!sugg || typeof sugg !== "object") return "";
+    const suggestionType = String(sugg?.type || "").toLowerCase();
+    const brandName = readFirstText(sugg?.brand_name, sugg?.brand);
+    const modelName = readFirstText(sugg?.model, sugg?.model_number);
+    const typeLabel = getSuggestionTypeLabel(sugg);
+
+    if (suggestionType === "brand") {
+      return `Explore the full ${readFirstText(sugg?.name) || "brand"} lineup`;
+    }
+
+    const summaryParts = [brandName, modelName || typeLabel].filter(Boolean);
+    if (summaryParts.length) return summaryParts.join(" • ");
+    return typeLabel;
+  };
+
+  const buildSuggestionChips = (sugg, variant = "desktop") => {
+    const chips = [];
+    const suggestionType = String(sugg?.type || "").toLowerCase();
+    const isMobileVariant = variant === "mobile";
+    const brandName = readFirstText(sugg?.brand_name, sugg?.brand);
+    const priceLabel = formatINR(sugg?.min_price ?? sugg?.minPrice);
+
+    if (suggestionType === "brand") {
+      chips.push({
+        label: "Brand",
+        tone: "bg-amber-50 text-amber-700 ring-amber-100",
+      });
+      chips.push({
+        label: `Explore ${readFirstText(sugg?.name) || "products"}`,
+        tone: "bg-blue-50 text-[#345ce3] ring-blue-100",
+      });
+      return chips;
+    }
+
+    if (brandName && normalizeText(brandName) !== normalizeText(sugg?.name)) {
+      chips.push({
+        label: brandName,
+        tone: "bg-slate-100 text-slate-700 ring-slate-200",
+      });
+    }
+
+    getSuggestionVariantTypes(sugg)
+      .slice(0, isMobileVariant ? 1 : 2)
+      .forEach((variantType) => {
+        chips.push({
+          label: variantType,
+          tone: "bg-blue-50 text-[#345ce3] ring-blue-100",
+        });
+      });
+
+    if (priceLabel) {
+      chips.push({
+        label: `From ${priceLabel}`,
+        tone: "bg-emerald-50 text-emerald-700 ring-emerald-100",
+      });
+    }
+
+    getSuggestionFeatures(sugg)
+      .slice(0, isMobileVariant ? 1 : 2)
+      .forEach((feature) => {
+        chips.push({
+          label: feature,
+          tone: "bg-cyan-50 text-cyan-700 ring-cyan-100",
+        });
+      });
+
+    return chips.slice(0, isMobileVariant ? 3 : 4);
   };
 
   const getSuggestionImage = (sugg) =>
@@ -876,6 +977,37 @@ const Header = () => {
     }, 250);
   };
 
+  const trackSearchInterest = (payload) => {
+    try {
+      const body = JSON.stringify({
+        ...payload,
+        event_id:
+          payload?.event_id ||
+          (typeof crypto !== "undefined" && crypto.randomUUID
+            ? crypto.randomUUID()
+            : undefined),
+      });
+
+      if (typeof navigator !== "undefined" && navigator.sendBeacon) {
+        const blob = new Blob([body], { type: "application/json" });
+        navigator.sendBeacon(
+          "https://api.apisphere.in/api/public/search-interest",
+          blob,
+        );
+        return;
+      }
+
+      fetch("https://api.apisphere.in/api/public/search-interest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+        keepalive: true,
+      }).catch(() => {});
+    } catch (err) {
+      // analytics should never block navigation
+    }
+  };
+
   const handleSuggestionClick = (item) => {
     if (!item) return;
     // prevent focus restoration while we're intentionally navigating
@@ -898,11 +1030,24 @@ const Header = () => {
       const finalPath = item.id
         ? `${path}?id=${encodeURIComponent(item.id)}`
         : path;
+      trackSearchInterest({
+        query: String(item.name || item.model || searchQuery || "").trim(),
+        product_id: item.id,
+        source: "suggestion",
+      });
       navigate(finalPath);
     } else if (item.type === "brand") {
+      trackSearchInterest({
+        query: String(item.name || searchQuery || "").trim(),
+        source: "brand-suggestion",
+      });
       // Navigate to brand search / results
       navigate(`/search?brand=${encodeURIComponent(item.name)}`);
     } else {
+      trackSearchInterest({
+        query: String(item.name || searchQuery || "").trim(),
+        source: "search-suggestion",
+      });
       // Fallback: perform a general search
       navigate(`/search?q=${encodeURIComponent(item.name || item)}`);
     }
@@ -1114,14 +1259,47 @@ const Header = () => {
   });
 
   // Top navigation links
+  const exploreDropdownLinks = [
+    { name: "Smartphones", link: "/smartphones" },
+    { name: "Laptops", link: "/laptops" },
+    { name: "TVs", link: "/tvs" },
+  ];
+  const isCompareRoute = currentPath.startsWith("/compare");
+  const browseNavLabel = isCompareRoute ? "Home" : "Explore";
+  const browseNavLink = isCompareRoute ? "/" : "explore";
+
   const directLinks = [
-    { name: "Top Picks", link: "/trending" },
-    { name: "Latest Releases", link: "/smartphones/filter/new" },
-    { name: "Upcoming Phones", link: "/smartphones/upcoming" },
+    {
+      name: browseNavLabel,
+      link: browseNavLink,
+      caret: !isCompareRoute,
+      dropdownItems: isCompareRoute ? undefined : exploreDropdownLinks,
+    },
     { name: "Compare", link: "/compare" },
+    { name: "Upcoming Mobiles", link: "/smartphones/upcoming" },
+    { name: "Latest Mobiles", link: "/smartphones/filter/new" },
+    { name: "Trending Mobiles", link: "/trending/smartphones" },
+    { name: "Phone Finder", link: "/" },
+    // { name: "News & Articles", link: "/blogs", caret: true },
   ];
 
-  // Utility items with counts
+  const isActiveNavLink = (href) => {
+    const target = String(href || "").toLowerCase();
+    if (!target) return false;
+    if (target === "/") return currentPath === "/";
+    if (target === "/compare")
+      return currentPath === "/compare" || currentPath.startsWith("/compare/");
+    if (target === "/smartphones/upcoming")
+      return currentPath === "/smartphones/upcoming";
+    if (target === "/smartphones/filter/new")
+      return currentPath === "/smartphones/filter/new";
+    if (target === "/trending/smartphones")
+      return currentPath === "/trending/smartphones";
+    if (target === "/laptops") return currentPath === "/laptops";
+    if (target === "/tvs") return currentPath === "/tvs";
+    return currentPath === target || currentPath.startsWith(`${target}/`);
+  };
+
   const utilityItems = [
     { name: "Wishlist", icon: <FaHeart />, count: 1, link: "/wishlist" },
   ];
@@ -1129,8 +1307,13 @@ const Header = () => {
   // Handle search
   const handleSearch = (e) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+    const query = String(searchQuery || "").trim();
+    if (query) {
+      trackSearchInterest({
+        query,
+        source: "header",
+      });
+      navigate(`/search?q=${encodeURIComponent(query)}`);
       setSearchQuery("");
     }
   };
@@ -1256,7 +1439,7 @@ const Header = () => {
 
           {/* Column 2: Popular Products */}
           <div>
-            <h4 className="font-bold text-base mb-5 text-gray-900 border-b-2 border-purple-600 pb-3">
+            <h4 className="font-bold text-base mb-5 text-slate-900 border-b-2 border-blue-600 pb-3">
               By Price
             </h4>
             <div className="space-y-3">
@@ -1289,7 +1472,7 @@ const Header = () => {
               {category.featured.map((offer, idx) => (
                 <div
                   key={idx}
-                  className="block p-4 rounded-lg border border-red-200 hover:border-red-400 bg-gradient-to-br from-purple-600 to-red-600 group transition-all duration-200 hover:shadow-md"
+                  className="block p-4 rounded-lg border border-blue-200 hover:border-blue-400 bg-gradient-to-br from-blue-600 to-cyan-500 group transition-all duration-200 hover:shadow-md"
                 >
                   <div className="flex items-center space-x-3">
                     <div className="text-red-600 group-hover:text-red-700 text-lg">
@@ -1388,7 +1571,7 @@ const Header = () => {
             <Link
               to={`/${category.id}`}
               onClick={() => setPinnedCategory(null)}
-              className="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-purple-600 to-red-600 text-white rounded-lg hover:from-purple-600 hover:to-red-600 transition-all duration-200 font-semibold text-sm shadow-md hover:shadow-lg"
+              className="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg hover:from-blue-700 hover:to-cyan-600 transition-all duration-200 font-semibold text-sm shadow-md hover:shadow-lg"
             >
               View All in {category.name}
               <FaChevronRight className="ml-2 w-3 h-3" />
@@ -1409,7 +1592,7 @@ const Header = () => {
         <div className="p-4">
           <div className="flex items-center space-x-3 mb-4">
             <div className="w-12 h-12 rounded-full flex items-center justify-center">
-              <FaUser className="w-6 h-6 text-purple-600" />
+              <FaUser className="w-6 h-6 text-blue-600" />
             </div>
             <div>
               <h4 className="font-bold text-gray-800">Welcome, {userName}!</h4>
@@ -1421,7 +1604,7 @@ const Header = () => {
               href="/account"
               className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100"
             >
-              <FaUser className="text-purple-600" />
+              <FaUser className="text-blue-600" />
               <span>My Account</span>
             </a>
 
@@ -1453,7 +1636,7 @@ const Header = () => {
 
           <button
             onClick={handleLogin}
-            className="w-full flex items-center justify-center space-x-2 py-3 bg-gradient-to-r from-purple-600 to-red-600 text-white rounded-lg hover:from-purple-600 hover:to-red-600 transition mb-3"
+            className="w-full flex items-center justify-center space-x-2 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg hover:from-blue-700 hover:to-cyan-600 transition mb-3"
           >
             <FaSignInAlt />
             <span>Continue with Email</span>
@@ -1464,25 +1647,105 @@ const Header = () => {
   );
 
   // Skeleton Loader Component
-  const SkeletonSuggestion = () => (
-    <div className="w-full flex items-center gap-3 px-4 sm:px-5 py-4 border-b border-gray-100 animate-pulse">
-      <div className="w-10 h-10 rounded-md bg-gray-200 flex-shrink-0" />
-      <div className="flex-1 min-w-0 space-y-2">
-        <div className="h-4 bg-gray-200 rounded w-3/4" />
-        <div className="h-3 bg-gray-200 rounded w-1/2" />
+  const SkeletonSuggestion = ({ variant = "desktop" }) => {
+    const isMobileVariant = variant === "mobile";
+
+    return (
+      <div
+        className={`animate-pulse ${
+          isMobileVariant
+            ? "group rounded-2xl border border-blue-100/70 bg-white/80 px-4 py-4 shadow-sm"
+            : "w-full flex items-center gap-3 border-b border-blue-100/70 px-4 sm:px-5 py-4 last:border-b-0"
+        }`}
+      >
+        <div className="h-12 w-12 shrink-0 rounded-2xl bg-gradient-to-br from-blue-100 via-indigo-100 to-cyan-100 ring-1 ring-blue-100" />
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="h-4 w-3/5 rounded-full bg-slate-200/90" />
+          <div className="h-3 w-4/5 rounded-full bg-slate-100" />
+          <div className="flex flex-wrap gap-2 pt-1">
+            <div className="h-5 w-16 rounded-full bg-blue-100/80" />
+            <div className="h-5 w-20 rounded-full bg-slate-100" />
+          </div>
+        </div>
+        {!isMobileVariant ? (
+          <div className="h-4 w-4 shrink-0 rounded-full bg-slate-200/80" />
+        ) : null}
       </div>
+    );
+  };
+
+  const SuggestionPanelHeader = ({
+    query,
+    count,
+    isSearching: panelSearching = false,
+  }) => (
+    <div className="border-b border-blue-100/70 bg-gradient-to-r from-blue-50 via-white to-cyan-50 px-4 py-3 sm:px-5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#345ce3] via-blue-500 to-cyan-400 text-white shadow-[0_12px_24px_rgba(52,92,227,0.24)]">
+            <FaSearch className="h-4 w-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#345ce3]">
+              Hooks search
+            </p>
+            <p className="truncate text-sm font-semibold text-slate-900">
+              Suggestions for "{query}"
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {panelSearching ? (
+            <span className="rounded-full bg-[#345ce3]/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#345ce3]">
+              Live
+            </span>
+          ) : null}
+          <span className="rounded-full bg-white/80 px-3 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-blue-100">
+            {count} matches
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+
+  const SuggestionEmptyState = ({ query, variant = "desktop" }) => (
+    <div
+      className={`flex flex-col items-center justify-center text-center ${
+        variant === "mobile" ? "px-6 py-10" : "px-4 py-8"
+      }`}
+    >
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 via-white to-cyan-50 text-[#345ce3] ring-1 ring-blue-100">
+        <FaSearch className="h-5 w-5" />
+      </div>
+      <p className="mt-4 text-sm font-semibold text-slate-900">
+        No matches found
+      </p>
+      <p className="mt-1 text-xs text-slate-500">
+        Try a brand, model, or feature.
+      </p>
+      {query ? (
+        <p className="mt-2 text-[11px] font-medium text-slate-400">
+          Searched for "{query}"
+        </p>
+      ) : null}
     </div>
   );
 
   // Text Highlight Component
   const HighlightText = ({ text, query }) => {
     if (!query || !text) return text;
-    const parts = String(text).split(new RegExp(`(${query})`, "gi"));
+    const safeQuery = escapeRegExp(query);
+    if (!safeQuery) return text;
+    const parts = String(text).split(new RegExp(`(${safeQuery})`, "gi"));
     return (
       <>
         {parts.map((part, idx) =>
           part.toLowerCase() === query.toLowerCase() ? (
-            <span key={idx} className="font-bold text-purple-600 bg-purple-50">
+            <span
+              key={idx}
+              className="rounded-md bg-[#345ce3]/10 px-1.5 py-0.5 font-semibold text-[#345ce3]"
+            >
               {part}
             </span>
           ) : (
@@ -1493,15 +1756,135 @@ const Header = () => {
     );
   };
 
+  const SuggestionRow = ({
+    suggestion,
+    query,
+    selected = false,
+    variant = "desktop",
+    onActivate,
+    onMouseEnter,
+  }) => {
+    if (!suggestion) return null;
+
+    const isMobileVariant = variant === "mobile";
+    const typeLabel = getSuggestionTypeLabel(suggestion);
+    const subtitle = getSuggestionSubtitle(suggestion);
+    const chips = buildSuggestionChips(suggestion, variant);
+    const TypeIcon = getSuggestionTypeIcon(suggestion);
+    const imageUrl = getSuggestionImage(suggestion);
+    const isBrand = String(suggestion?.type || "").toLowerCase() === "brand";
+
+    const buttonClasses = isMobileVariant
+      ? `group w-full overflow-hidden rounded-2xl border px-4 py-4 text-left shadow-[0_12px_30px_rgba(59,130,246,0.08)] transition-all duration-200 ${
+          selected
+            ? "border-blue-200 bg-blue-50/90 shadow-[0_16px_36px_rgba(59,130,246,0.14)]"
+            : "border-blue-100 bg-white/95 hover:border-blue-200 hover:shadow-[0_16px_36px_rgba(59,130,246,0.12)] active:bg-blue-50"
+        }`
+      : `group relative flex w-full items-center gap-3 px-4 sm:px-5 py-3.5 text-left transition-all duration-200 border-b border-blue-100/70 last:border-b-0 ${
+          selected
+            ? "bg-blue-50/90"
+            : "bg-white/90 hover:bg-blue-50/60 active:bg-blue-100/70"
+        }`;
+
+    const badgeClasses = isBrand
+      ? "bg-amber-50 text-amber-700 ring-amber-100"
+      : "bg-blue-50 text-[#345ce3] ring-blue-100";
+
+    return (
+      <button
+        type="button"
+        onMouseDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onActivate?.(suggestion);
+        }}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onActivate?.(suggestion);
+        }}
+        onMouseEnter={onMouseEnter}
+        aria-selected={selected}
+        className={buttonClasses}
+      >
+        {!isMobileVariant ? (
+          <span
+            className={`absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-[#345ce3] via-blue-500 to-cyan-400 transition-opacity duration-200 ${
+              selected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+            }`}
+          />
+        ) : null}
+
+        <div
+          className={`relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md ring-1 ring-blue-100 transition group-hover:ring-blue-200 ${
+            imageUrl
+              ? "bg-white"
+              : "bg-gradient-to-br from-blue-50 via-white to-cyan-50"
+          }`}
+        >
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={suggestion.name}
+              className="h-full w-full object-contain p-1.5"
+              loading="lazy"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
+            />
+          ) : (
+            <TypeIcon className="h-5 w-5 text-[#345ce3]" />
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold leading-snug text-slate-900 transition group-hover:text-[#345ce3] sm:text-[15px]">
+                <HighlightText
+                  text={readFirstText(suggestion?.name, suggestion?.model)}
+                  query={query}
+                />
+              </p>
+              <p className="mt-0.5 truncate text-xs text-slate-500 sm:text-[13px]">
+                {subtitle}
+              </p>
+            </div>
+
+            <span
+              className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] ring-1 ${badgeClasses}`}
+            >
+              {typeLabel}
+            </span>
+          </div>
+
+          {chips.length > 0 ? (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {chips.map((chip) => (
+                <span
+                  key={`${chip.label}-${chip.tone}`}
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ${chip.tone}`}
+                >
+                  {chip.label}
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        <FaChevronRight
+          className={`relative shrink-0 transition group-hover:translate-x-0.5 group-hover:text-[#345ce3] ${
+            isMobileVariant
+              ? "h-4 w-4 text-slate-400"
+              : "h-3.5 w-3.5 text-slate-300"
+          }`}
+        />
+      </button>
+    );
+  };
+
   // Flipkart-Style Search Modal - Mobile Optimized
   const SearchModal = () => {
-    const discoverItems = [
-      { label: "All Products", link: "/all-products", icon: <FaTag /> },
-      { label: "Best Deals", link: "/deals", icon: <FaBolt /> },
-      { label: "Latest Releases", link: "/new-launches", icon: <FaStar /> },
-      { label: "Top Brands", link: "/brands", icon: <FaStore /> },
-    ];
-
     return (
       <>
         {isSearchOpen && (
@@ -1568,12 +1951,12 @@ const Header = () => {
                           setIsSearchOpen(false);
                         }
                       }}
-                      className="w-full lg:hi px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base bg-purple-50 border-0 rounded-full focus:outline-none transition-all placeholder-gray-400 font-medium"
+                      className="w-full px-4 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base bg-gradient-to-r from-blue-50/80 via-white to-cyan-50/60 border border-blue-100 rounded-full shadow-sm focus:outline-none focus:border-[#345ce3] focus:ring-2 focus:ring-[#345ce3]/10 transition-all placeholder-slate-400 font-medium"
                     />
 
                     {/* Suggestions Dropdown - Flipkart Style with Images & Highlighting */}
                     {(showSearchSuggestions || searchQuery.trim()) && (
-                      <div className="hidden md:block absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                      <div className="hidden md:block absolute top-full left-0 right-0 mt-2 max-h-96 overflow-hidden overflow-y-auto rounded-2xl border border-blue-100/80 bg-gradient-to-br from-white via-white to-blue-50/60 shadow-[0_28px_70px_rgba(15,23,42,0.16)] backdrop-blur z-50 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                         {/* Loading / Empty State */}
                         {!searchSuggestions ||
                         searchSuggestions.length === 0 ? (
@@ -1588,17 +1971,10 @@ const Header = () => {
                               {!isSearching &&
                                 searchSuggestions &&
                                 searchSuggestions.length === 0 && (
-                                  <div className="w-full text-center py-8 px-4">
-                                    <div className="text-gray-400 text-4xl mb-2">
-                                      🔍
-                                    </div>
-                                    <p className="text-sm text-gray-500">
-                                      No products found for "{searchQuery}"
-                                    </p>
-                                    <p className="text-xs text-gray-400 mt-2">
-                                      Try searching for brands or other devices
-                                    </p>
-                                  </div>
+                                  <SuggestionEmptyState
+                                    query={searchQuery}
+                                    variant="desktop"
+                                  />
                                 )}
                             </>
                           ) : null
@@ -1608,106 +1984,17 @@ const Header = () => {
                             {searchSuggestions
                               .slice(0, 7)
                               .map((sugg, index) => (
-                                <button
-                                  key={index}
-                                  onMouseDown={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    handleSuggestionClick(sugg);
-                                  }}
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    handleSuggestionClick(sugg);
-                                  }}
+                                <SuggestionRow
+                                  key={`${sugg.id || sugg.name || index}-desktop`}
+                                  suggestion={sugg}
+                                  query={searchQuery}
+                                  selected={selectedSuggestionIndex === index}
+                                  variant="desktop"
+                                  onActivate={handleSuggestionClick}
                                   onMouseEnter={() =>
                                     setSelectedSuggestionIndex(index)
                                   }
-                                  className={`w-full flex items-center gap-3 px-4 sm:px-5 py-4 border-b border-gray-100 last:border-b-0 text-left transition-all duration-150 min-h-[56px] sm:min-h-[60px] hover:bg-purple-50 active:bg-purple-100 ${
-                                    selectedSuggestionIndex === index
-                                      ? "bg-purple-50"
-                                      : ""
-                                  }`}
-                                >
-                                  {/* Product Thumbnail */}
-                                  <div className="w-12 h-12 flex-shrink-0 overflow-hidden flex items-center justify-center">
-                                    {sugg.image_url ? (
-                                      <img
-                                        src={sugg.image_url}
-                                        alt={sugg.name}
-                                        className="w-full h-full object-contain"
-                                        loading="lazy"
-                                        onError={(e) => {
-                                          e.currentTarget.style.display =
-                                            "none";
-                                        }}
-                                      />
-                                    ) : (
-                                      <span className="font-bold text-lg text-purple-600">
-                                        {(sugg.brand_name || sugg.name || "")
-                                          .charAt(0)
-                                          .toUpperCase()}
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  {/* Text Content */}
-                                  <div className="flex-1 min-w-0">
-                                    <div className="text-sm sm:text-base font-medium text-gray-900 truncate leading-snug">
-                                      <HighlightText
-                                        text={sugg.name}
-                                        query={searchQuery}
-                                      />
-                                    </div>
-                                    <div className="text-xs sm:text-sm text-gray-500 mt-0.5">
-                                      {sugg.type === "product" ? (
-                                        <div className="min-w-0">
-                                          <div className="truncate">
-                                            {sugg.brand_name ||
-                                              sugg.model ||
-                                              sugg.product_type ||
-                                              "Product"}
-                                          </div>
-                                          <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                            {getSuggestionVariantTypes(
-                                              sugg,
-                                            ).map((v) => (
-                                              <span
-                                                key={v}
-                                                className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700"
-                                              >
-                                                {v}
-                                              </span>
-                                            ))}
-                                            {formatINR(
-                                              sugg.min_price ?? sugg.minPrice,
-                                            ) && (
-                                              <span className="text-[11px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-100">
-                                                From{" "}
-                                                {formatINR(
-                                                  sugg.min_price ??
-                                                    sugg.minPrice,
-                                                )}
-                                              </span>
-                                            )}
-                                          </div>
-                                          {getSuggestionFeatures(sugg).length >
-                                            0 && (
-                                            <div className="mt-1 text-[11px] text-gray-500 truncate">
-                                              {getSuggestionFeatures(sugg).join(
-                                                " • ",
-                                              )}
-                                            </div>
-                                          )}
-                                        </div>
-                                      ) : (
-                                        sugg.type || ""
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  {/* Chevron Icon */}
-                                </button>
+                                />
                               ))}
                           </>
                         )}
@@ -1734,25 +2021,15 @@ const Header = () => {
                         {!isSearching &&
                           searchSuggestions &&
                           searchSuggestions.length === 0 && (
-                            <div className="w-full text-center py-12 px-4">
-                              <div className="text-gray-400 text-5xl mb-3">
-                                🔍
-                              </div>
-                              <p className="text-[13px] font-medium text-gray-900 mb-1">
-                                No products found
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                No results for "{searchQuery}"
-                              </p>
-                              <p className="text-xs text-gray-400 mt-2">
-                                Try searching for brands or other devices
-                              </p>
-                            </div>
+                            <SuggestionEmptyState
+                              query={searchQuery}
+                              variant="mobile"
+                            />
                           )}
                       </>
                     ) : (
                       /* Suggestions List for Mobile */
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         {searchSuggestions.slice(0, 7).map((sugg, index) => (
                           <button
                             key={index}
@@ -1767,10 +2044,10 @@ const Header = () => {
                               e.stopPropagation();
                               handleSuggestionClick(sugg);
                             }}
-                            className="w-full flex items-center gap-3 p-4 bg-white rounded-lg border border-gray-200 hover:border-purple-300 active:bg-purple-50 transition-all duration-150 min-h-[64px] text-left"
+                            className="group relative flex w-full items-center gap-3 overflow-hidden rounded-2xl border border-blue-100 bg-white/95 p-4 text-left shadow-[0_12px_30px_rgba(59,130,246,0.08)] transition-all duration-200 hover:border-blue-200 hover:shadow-[0_16px_36px_rgba(59,130,246,0.12)] active:bg-blue-50 min-h-[64px]"
                           >
                             {/* Product Thumbnail */}
-                            <div className="w-12 h-12 overflow-hidden flex items-center justify-center flex-shrink-0">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-blue-50 via-white to-cyan-50 ring-1 ring-blue-100">
                               {getSuggestionImage(sugg) ? (
                                 <img
                                   src={getSuggestionImage(sugg)}
@@ -1782,7 +2059,7 @@ const Header = () => {
                                   }}
                                 />
                               ) : (
-                                <span className="font-bold text-sm text-purple-600">
+                                <span className="font-bold text-sm text-[#345ce3]">
                                   {(
                                     sugg.brand_name ||
                                     sugg.model ||
@@ -1797,13 +2074,13 @@ const Header = () => {
 
                             {/* Text Content */}
                             <div className="flex-1 min-w-0">
-                              <div className="text-[13px] font-medium text-gray-900 truncate leading-snug">
+                              <div className="truncate text-[13px] font-semibold leading-snug text-slate-900 group-hover:text-[#345ce3]">
                                 <HighlightText
                                   text={sugg.name}
                                   query={searchQuery}
                                 />
                               </div>
-                              <div className="text-xs text-gray-500 mt-1">
+                              <div className="mt-1 text-xs text-slate-500">
                                 {sugg.type === "product" ? (
                                   <div className="min-w-0">
                                     <div className="truncate">
@@ -1817,7 +2094,7 @@ const Header = () => {
                                         (v) => (
                                           <span
                                             key={v}
-                                            className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700"
+                                            className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-[#345ce3] ring-1 ring-blue-100"
                                           >
                                             {v}
                                           </span>
@@ -1826,7 +2103,7 @@ const Header = () => {
                                       {formatINR(
                                         sugg.min_price ?? sugg.minPrice,
                                       ) && (
-                                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-100">
+                                        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-100">
                                           From{" "}
                                           {formatINR(
                                             sugg.min_price ?? sugg.minPrice,
@@ -1835,7 +2112,7 @@ const Header = () => {
                                       )}
                                     </div>
                                     {getSuggestionFeatures(sugg).length > 0 && (
-                                      <div className="mt-1 text-[11px] text-gray-500 truncate">
+                                      <div className="mt-1 truncate text-[11px] text-slate-500">
                                         {getSuggestionFeatures(sugg).join(
                                           " • ",
                                         )}
@@ -1863,84 +2140,63 @@ const Header = () => {
     );
   };
 
-  // Main Header Component - Desktop + Mobile
+  // Main Header Component - Desktop + Mobile (Clean Minimal Design)
   const MainHeader = () => (
     <>
       {/* MOBILE HEADER (≤ 768px) */}
       <div
         ref={mobileHeaderRef}
-        className="md:hidden border-b bg-white border-purple-50 z-40"
+        className="md:hidden border-b bg-white border-gray-200 z-40"
       >
-        {/* Mobile Top Row: Logo (left) | Icons (right) */}
-        <div className="flex items-center justify-between px-4 py-3 gap-3">
-          {/* Logo (mobile) */}
-          <Link to="/" className="flex items-center min-w-0 gap-2">
-            <BrandIdentity variant="mobile" />
-          </Link>
-
-          {/* Right Icons: Compare + Menu */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+        {/* Mobile Top Row: Menu | Logo | Actions */}
+        <div className="flex items-center justify-between gap-3 px-4 py-3">
+          <div className="flex min-w-0 items-center gap-2">
             <button
-              className="p-2.5 rounded-lg hover:bg-gray-100 transition-all duration-200 flex-shrink-0 text-gray-600 hover:text-gray-900"
+              className="inline-flex h-10 w-10 items-center justify-center  text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
               onClick={() => setIsMenuOpen(true)}
               aria-label="Open menu"
             >
-              <FaStream className="w-5 h-5" />
+              <FaBars className="h-5 w-5" />
             </button>
+
+            <Link to="/" className="flex min-w-0 items-center">
+              <BrandIdentity variant="mobile" />
+            </Link>
           </div>
-        </div>
 
-        {/* Mobile Search Input Row */}
-        <div className="px-4 py-3 max-w-4xl mx-auto">
-          <div className="relative">
-            {/* Search Icon */}
-
-            <FaSearch className="fa fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-
-            <input
-              type="text"
-              placeholder="Search products, brands and more..."
-              value={searchQuery}
-              onChange={(e) => {
-                handleSearchInputChange(e.target.value);
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setShowSearchSuggestions(false);
+                setSelectedSuggestionIndex(-1);
                 setIsSearchOpen(true);
               }}
-              onFocus={() => setIsSearchOpen(true)}
-              onKeyDown={(e) => {
-                handleSearchKeyDown(e);
-                if (
-                  e.key === "Enter" &&
-                  searchQuery.trim() &&
-                  selectedSuggestionIndex < 0
-                ) {
-                  navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
-                  setSearchQuery("");
-                  setShowSearchSuggestions(false);
-                  setIsSearchOpen(false);
-                }
-              }}
-              className="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-gray-300 font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all placeholder-gray-500"
-              aria-label="Search"
-            />
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
+              aria-label="Open search"
+            >
+              <FaSearch className="h-4 w-4" />
+            </button>
           </div>
         </div>
       </div>
 
-      {/* DESKTOP HEADER (> 768px) */}
-      <div className="hidden md:block bg-white  z-40 py-2 sm:py-2.5 px-2">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6">
-          <div className="flex items-center justify-between gap-2 sm:gap-8">
+      {/* DESKTOP HEADER (> 768px) - Clean Minimal Design like Beebom */}
+      <div className="hidden md:block bg-white sticky top-0 z-40 border-b border-gray-200">
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3 lg:py-4">
+          {/* Header Row: Logo | Search | Login */}
+          <div className="flex items-center justify-between gap-3 sm:gap-4 lg:gap-6">
             {/* Logo */}
-            <Link to="/" className="flex items-center flex-shrink-0 gap-2">
+            <Link to="/" className="flex-shrink-0">
               <BrandIdentity variant="desktop" />
             </Link>
 
-            {/* Desktop Search Bar - Professional Style */}
+            {/* Search Bar - Responsive */}
             <div
               ref={searchRef}
-              className="flex-1 min-w-[240px] max-w-2xl lg:max-w-3xl xl:max-w-[900px] mx-2 sm:mx-6 relative search-input-wrapper"
+              className="flex-1 min-w-0 max-w-sm sm:max-w-md lg:max-w-lg xl:max-w-2xl relative"
             >
-              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#345ce3] sm:w-4 sm:h-4" />
               <input
                 ref={searchInputRef}
                 type="text"
@@ -1959,132 +2215,48 @@ const Header = () => {
                     setShowSearchSuggestions(false);
                   }
                 }}
-                className="w-full pl-10 pr-4 py-3 text-sm bg-white border border-gray-300 focus:outline-none search-input rounded-lg transition-all placeholder-gray-500 font-medium"
+                className="w-full rounded-full border border-blue-100 bg-gradient-to-r from-blue-50/80 via-white to-cyan-50/60 py-2 pl-9 pr-3 text-sm placeholder-slate-400  transition-all focus:outline-none focus:border-[#345ce3] focus:ring-2 focus:ring-[#345ce3]/10 sm:py-2.5 sm:text-base"
               />
 
-              {/* Desktop Suggestions Dropdown - Enhanced with Images & Highlighting */}
+              {/* Desktop Suggestions Dropdown */}
               {showSearchSuggestions && searchQuery.trim() && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-96 overflow-y-auto mega-menu-slide [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
                   {isSearching ? (
-                    <div className="p-4 space-y-2">
+                    <div className="p-3 space-y-2">
                       {[...Array(3)].map((_, i) => (
-                        <SkeletonSuggestion key={`desktop-skel-${i}`} />
+                        <SkeletonSuggestion key={`skel-${i}`} />
                       ))}
                     </div>
                   ) : searchSuggestions.length === 0 ? (
-                    <div className="w-full text-center py-10 px-4">
-                      <p className="text-[13px] font-medium text-gray-900 mb-1">
+                    <div className="w-full text-center py-8 px-4">
+                      <p className="text-sm font-medium text-gray-900">
                         No products found
                       </p>
                       <p className="text-xs text-gray-500">
-                        No results for "{searchQuery}"
+                        Try different keywords
                       </p>
                     </div>
                   ) : (
-                    searchSuggestions.slice(0, 7).map((sugg, index) => (
+                    searchSuggestions.slice(0, 6).map((sugg, index) => (
                       <button
                         key={index}
                         onMouseDown={(e) => {
                           e.preventDefault();
-                          e.stopPropagation();
-                          handleSuggestionClick(sugg);
-                        }}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
                           handleSuggestionClick(sugg);
                         }}
                         onMouseEnter={() => setSelectedSuggestionIndex(index)}
-                        className={`w-full flex items-center gap-4 px-5 py-4 border-b border-gray-100 last:border-b-0 text-left transition-all duration-150 min-h-[64px] mega-menu-item ${
-                          selectedSuggestionIndex === index
-                            ? "bg-purple-50"
-                            : "hover:bg-gray-50"
-                        }`}
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-purple-50 text-left text-sm sm:text-base border-b border-gray-100 last:border-b-0 transition-colors"
                       >
-                        {/* Product Image */}
-                        <div className="w-12 h-12 overflow-hidden flex items-center justify-center flex-shrink-0">
-                          {sugg.image ||
-                          sugg.image_url ||
-                          sugg.product_image ||
-                          sugg.imageUrl ? (
-                            <img
-                              src={
-                                sugg.image ||
-                                sugg.image_url ||
-                                sugg.product_image ||
-                                sugg.imageUrl
-                              }
-                              alt={sugg.name}
-                              className="w-full h-full object-contain"
-                              loading="lazy"
-                              onError={(e) => {
-                                e.currentTarget.style.display = "none";
-                              }}
-                            />
-                          ) : (
-                            <span className="font-bold text-sm text-purple-600">
-                              {(
-                                sugg.brand_name ||
-                                sugg.model ||
-                                sugg.name ||
-                                ""
-                              )
-                                .charAt(0)
-                                .toUpperCase()}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="text-base font-semibold text-gray-900 truncate">
-                            <HighlightText
-                              text={sugg.name}
-                              query={searchQuery}
-                            />
-                          </div>
-                          <div className="text-sm text-gray-600 mt-1">
-                            {sugg.type === "product" ? (
-                              <div className="min-w-0">
-                                <div className="truncate">
-                                  {sugg.brand_name ||
-                                    sugg.model ||
-                                    sugg.product_type ||
-                                    "Product"}
-                                </div>
-                                <div className="flex items-center gap-2 mt-2 flex-wrap">
-                                  {getSuggestionVariantTypes(sugg).map((v) => (
-                                    <span
-                                      key={v}
-                                      className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700"
-                                    >
-                                      {v}
-                                    </span>
-                                  ))}
-                                  {formatINR(
-                                    sugg.min_price ?? sugg.minPrice,
-                                  ) && (
-                                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-100">
-                                      From{" "}
-                                      {formatINR(
-                                        sugg.min_price ?? sugg.minPrice,
-                                      )}
-                                    </span>
-                                  )}
-                                </div>
-                                {getSuggestionFeatures(sugg).length > 0 && (
-                                  <div className="mt-2 text-xs text-gray-500 truncate">
-                                    {getSuggestionFeatures(sugg).join(" • ")}
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              sugg.type || ""
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Chevron */}
+                        {sugg.image_url && (
+                          <img
+                            src={sugg.image_url}
+                            alt={sugg.name}
+                            className="w-8 h-8 sm:w-10 sm:h-10 object-contain flex-shrink-0"
+                          />
+                        )}
+                        <span className="font-medium text-gray-900 truncate">
+                          {sugg.name}
+                        </span>
                       </button>
                     ))
                   )}
@@ -2092,59 +2264,107 @@ const Header = () => {
               )}
             </div>
 
-            {/* Utility Icons - Desktop */}
-            <div className="flex items-center space-x-8 ml-auto">
-              {directLinks.map((linkItem, index) => (
-                <a
-                  key={index}
-                  href={linkItem.link}
-                  className="text-gray-600 hover:text-red-600 font-medium text-sm transition-all duration-200 relative group"
-                >
-                  {linkItem.name}
-                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-red-600 group-hover:w-full transition-all duration-300" />
-                </a>
-              ))}
-              {utilityItems.map((item, index) => (
-                <a
-                  key={index}
-                  href={item.link}
-                  className="relative group flex items-center justify-center transition-all duration-200"
-                >
-                  <div className="relative">
-                    <div className="p-2.5 rounded-lg hover:bg-gray-100 transition-all duration-200 text-gray-600 hover:text-gray-900">
-                      <span className="text-lg">{item.icon}</span>
-                    </div>
-                    {item.count && (
-                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-md">
-                        {item.count}
-                      </span>
-                    )}
-                  </div>
+            {/* Account Menu */}
+            <div className="relative flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowAuthDropdown((prev) => !prev)}
+                className="auth-button inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-200 hover:bg-slate-50 hover:text-slate-900"
+                aria-haspopup="menu"
+                aria-expanded={showAuthDropdown}
+              >
+                <FaUser className="h-4 w-4 text-slate-500" />
+                <span>Account</span>
+                <FaChevronDown
+                  className={`h-3 w-3 text-slate-400 transition-transform duration-200 ${
+                    showAuthDropdown ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
 
-                  {item.name === "Cart" && (
-                    <div className="absolute -bottom-10 hidden group-hover:block bg-gray-900 text-white text-xs px-3 py-1.5 rounded-md whitespace-nowrap shadow-lg z-50 font-medium">
-                      ₹24,599
-                    </div>
-                  )}
-                </a>
-              ))}
+              {showAuthDropdown ? <AuthDropdown /> : null}
+            </div>
+          </div>
+        </div>
+        {/* Navigation Links */}
+        <div className="w-full bg-blue-50">
+          <div className="mx-auto max-w-7xl px-6">
+            <div className="flex items-center gap-2 py-1 overflow-visible">
+              {directLinks.map((link) =>
+                link.dropdownItems &&
+                !(
+                  currentPath.startsWith("/compare") && link.name === "Explore"
+                ) ? (
+                  <div
+                    key={`${link.link}-${link.name}`}
+                    className="relative group"
+                  >
+                    <button
+                      type="button"
+                      className={`inline-flex cursor-default items-center gap-1 whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition ${
+                        currentPath.startsWith("/compare") ||
+                        currentPath.startsWith("/smartphones") ||
+                        currentPath.startsWith("/trending")
+                          ? "text-gray-700 hover:text-blue-600"
+                          : "text-gray-700 hover:text-blue-600"
+                      }`}
+                    >
+                      {link.name}
+                      {link.caret && <FaChevronDown className="h-3 w-3" />}
+                    </button>
 
-              {/* Auth Dropdown Trigger */}
-              <div className="relative auth-button">
-                <button
-                  className="flex items-center justify-center transition-all duration-200"
-                  onClick={() => setShowAuthDropdown(!showAuthDropdown)}
-                >
-                  <div className="p-2.5 rounded-lg hover:bg-gray-100 transition-all duration-200 text-gray-600 hover:text-gray-900">
-                    <FaUser className="w-5 h-5" />
+                    <div className="absolute left-0 top-full z-50 mt-1 hidden min-w-56  border border-blue-100 bg-white p-2 group-hover:block group-focus-within:block">
+                      <div className="px-3 py-2">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-500">
+                          Browse categories
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        {link.dropdownItems.map((item) => (
+                          <Link
+                            key={item.link}
+                            to={item.link}
+                            className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
+                          >
+                            <span>{item.name}</span>
+                            <FaChevronRight className="h-3 w-3 text-gray-400" />
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                </button>
-                {showAuthDropdown && <AuthDropdown />}
-              </div>
+                ) : (
+                  <Link
+                    key={`${link.link}-${link.name}`}
+                    to={
+                      currentPath.startsWith("/compare") &&
+                      link.name === "Explore"
+                        ? "/"
+                        : link.link
+                    }
+                    className={`inline-flex items-center gap-1 whitespace-nowrap px-3 py-2 text-sm font-medium transition ${
+                      isActiveNavLink(link.link)
+                        ? "text-blue-700"
+                        : "text-gray-700 hover:text-blue-600"
+                    }`}
+                  >
+                    {link.name}
+                    {link.caret &&
+                    !(
+                      currentPath.startsWith("/compare") &&
+                      link.name === "Explore"
+                    ) ? (
+                      <FaChevronDown className="h-3 w-3" />
+                    ) : null}
+                  </Link>
+                ),
+              )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Secondary Navigation Bar (Optional) */}
     </>
   );
 
@@ -2159,289 +2379,393 @@ const Header = () => {
 
   // Mobile Menu Drawer
   const MobileMenuDrawer = () => {
-    const mobileCategories = categoriesWithBrands.filter((category) => {
-      const routeKey = mapProductTypeToRoute(category.id);
-      return ["smartphones", "laptops", "tvs"].includes(routeKey);
-    });
+    const [openSection, setOpenSection] = useState("");
+    const smartphoneCategory =
+      categoriesWithBrands.find(
+        (category) => String(category.id || "").toLowerCase() === "smartphones",
+      ) ||
+      categoriesWithBrands[0] ||
+      null;
+    const phoneSource = Array.isArray(smartphones) ? smartphones : [];
+    const fallbackBrands = [
+      "Samsung",
+      "OnePlus",
+      "Vivo",
+      "Realme",
+      "Oppo",
+      "Apple",
+    ];
+
+    const normalizeName = (value) =>
+      String(value || "")
+        .trim()
+        .replace(/\s+/g, " ");
+
+    const getTitle = (device) =>
+      normalizeName(
+        device?.name || device?.model || device?.title || device?.slug || "",
+      );
+
+    const parseDate = (device) => {
+      const candidates = [
+        device?.updated_at,
+        device?.updatedAt,
+        device?.created_at,
+        device?.createdAt,
+        device?.launch_date,
+        device?.launchDate,
+        device?.release_date,
+        device?.releaseDate,
+      ];
+      for (const candidate of candidates) {
+        if (!candidate) continue;
+        const timestamp = Date.parse(candidate);
+        if (!Number.isNaN(timestamp)) return timestamp;
+      }
+      return 0;
+    };
+
+    const isUpcomingDevice = (device) => {
+      const text = [
+        device?.launch_status,
+        device?.status,
+        device?.availability,
+        device?.release_status,
+        device?.name,
+        device?.model,
+        device?.title,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      if (
+        /(upcoming|coming soon|expected|launching soon|preorder|pre-order|announced|rumored)/i.test(
+          text,
+        )
+      ) {
+        return true;
+      }
+
+      const futureDates = [
+        device?.launch_date,
+        device?.launchDate,
+        device?.release_date,
+        device?.releaseDate,
+      ].filter(Boolean);
+      return futureDates.some((value) => {
+        const ts = Date.parse(value);
+        return !Number.isNaN(ts) && ts > Date.now();
+      });
+    };
+
+    const brandNames = [
+      ...(Array.isArray(smartphoneCategory?.topBrands)
+        ? smartphoneCategory.topBrands
+            .map((brand) => normalizeName(brand?.name || brand))
+            .filter(Boolean)
+        : []),
+      ...fallbackBrands,
+    ];
+
+    const brandItems = Array.from(new Set(brandNames))
+      .slice(0, 6)
+      .map((name) => ({
+        label: name,
+        href: `/smartphones?brand=${encodeURIComponent(name)}`,
+      }));
+
+    const priceItems = [
+      {
+        label: "Best Phones Under 10,000",
+        href: "/smartphones?priceMax=10000",
+      },
+      {
+        label: "Best Phones Under 15,000",
+        href: "/smartphones?priceMax=15000",
+      },
+      {
+        label: "Best Phones Under 20,000",
+        href: "/smartphones?priceMax=20000",
+      },
+      {
+        label: "Best Phones Under 25,000",
+        href: "/smartphones?priceMax=25000",
+      },
+      {
+        label: "Best Phones Under 30,000",
+        href: "/smartphones?priceMax=30000",
+      },
+      {
+        label: "Best Phones Under 40,000",
+        href: "/smartphones?priceMax=40000",
+      },
+      {
+        label: "Best Phones Under 50,000",
+        href: "/smartphones?priceMax=50000",
+      },
+      {
+        label: "Best Phones Under 60,000",
+        href: "/smartphones?priceMax=60000",
+      },
+    ];
+
+    const featureItems = [
+      { label: "5G Phones", href: "/smartphones?feature=5g" },
+      { label: "AMOLED", href: "/smartphones?feature=amoled" },
+      { label: "120Hz+", href: "/smartphones?feature=high-refresh-rate" },
+      { label: "Long Battery", href: "/smartphones?feature=long-battery" },
+      { label: "Fast Charge", href: "/smartphones?feature=fast-charging" },
+      { label: "Gaming", href: "/smartphones?feature=gaming" },
+    ];
+
+    const popularItems = phoneSource.slice(0, 6).map((device) => ({
+      label: getTitle(device),
+      href: createProductPath(
+        "smartphones",
+        device?.model || device?.name || device?.slug || device?.id || "",
+      ),
+    }));
+
+    const latestItems = [...phoneSource]
+      .sort((a, b) => parseDate(b) - parseDate(a))
+      .slice(0, 6)
+      .map((device) => ({
+        label: getTitle(device),
+        href: createProductPath(
+          "smartphones",
+          device?.model || device?.name || device?.slug || device?.id || "",
+        ),
+      }));
+
+    const upcomingSource = phoneSource.filter(isUpcomingDevice).slice(0, 6);
+    const upcomingItems = upcomingSource.length
+      ? upcomingSource.map((device) => ({
+          label: getTitle(device),
+          href: createProductPath(
+            "smartphones",
+            device?.model || device?.name || device?.slug || device?.id || "",
+          ),
+        }))
+      : [{ label: "View upcoming phones", href: "/smartphones/upcoming" }];
 
     const quickLinks = [
-      { label: "Home", link: "/", icon: <FaHome className="w-4 h-4" /> },
+      { label: "Home", href: "/", icon: <FaHome className="h-4 w-4" /> },
       {
         label: "Compare",
-        link: "/compare",
-        icon: <FaBalanceScale className="w-4 h-4" />,
+        href: "/compare",
+        icon: <FaBalanceScale className="h-4 w-4" />,
+      },
+      {
+        label: "Brands",
+        href: "/brands",
+        icon: <FaStore className="h-4 w-4" />,
+      },
+      {
+        label: "Explore",
+        icon: <FaTag className="h-4 w-4" />,
+        dropdownItems: exploreDropdownLinks,
       },
       ...(isLoggedIn
         ? [
             {
               label: "Wishlist",
-              link: "/wishlist",
-              icon: <FaHeart className="w-4 h-4" />,
+              href: "/wishlist",
+              icon: <FaHeart className="h-4 w-4" />,
             },
           ]
         : []),
     ];
-    const discoverLinks = [
+
+    const sections = [
+      { id: "price", title: "Best Phones by Price", items: priceItems },
       {
-        label: "Top Picks",
-        link: "/trending",
-        icon: <FaBolt className="w-4 h-4" />,
+        id: "brands",
+        title: "Popular Brands",
+        items: brandItems,
+        footer: { label: "All Brands", href: "/brands" },
       },
-      {
-        label: "Upcoming Phones",
-        link: "/smartphones/upcoming",
-        icon: <FaCalendarAlt className="w-4 h-4" />,
-      },
-      {
-        label: "Latest Releases",
-        link: "/smartphones/filter/new",
-        icon: <FaCalendarAlt className="w-4 h-4" />,
-      },
-      {
-        label: "Latest Updates",
-        link: "/blogs",
-        icon: <FaTag className="w-4 h-4" />,
-      },
+      { id: "features", title: "Browse by Feature", items: featureItems },
+      { id: "popular", title: "Popular Mobiles", items: popularItems },
+      { id: "latest", title: "Latest Phones", items: latestItems },
+      { id: "upcoming", title: "Upcoming Mobiles", items: upcomingItems },
     ];
-    const helpLinks = [
-      {
-        label: "About",
-        link: "/about",
-        icon: <FaInfoCircle className="w-4 h-4" />,
-      },
-      {
-        label: "Contact",
-        link: "/contact",
-        icon: <FaHandsHelping className="w-4 h-4" />,
-      },
-      {
-        label: "Privacy",
-        link: "/privacy-policy",
-        icon: <FaShieldAlt className="w-4 h-4" />,
-      },
-      {
-        label: "Career",
-        link: "/careers",
-        icon: <FaBriefcase className="w-4 h-4" />,
-      },
-      {
-        label: "Terms",
-        link: "/terms",
-        icon: <FaAlignJustify className="w-4 h-4" />,
-      },
-    ];
-    const userInitial = String(userName || "H")
-      .trim()
-      .charAt(0)
-      .toUpperCase();
 
     return (
       <>
         {isMenuOpen && (
           <>
-            {/* Backdrop */}
             <div
-              className="fixed inset-0 z-40 bg-black/45 backdrop-blur-[1px] lg:hidden"
+              className="fixed inset-0 z-40 bg-slate-950/55 backdrop-blur-sm lg:hidden"
               onClick={() => setIsMenuOpen(false)}
             />
 
-            {/* Drawer */}
             <div
-              className={`fixed inset-y-0 left-0 z-50 w-[320px] max-w-[86vw] transform overflow-hidden rounded-r-2xl bg-white shadow-2xl ring-1 ring-black/5 transition-transform duration-300 lg:hidden ${
+              className={`fixed inset-y-0 left-0 z-50 w-[296px] max-w-[84vw] transform overflow-hidden rounded-none border-r border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] shadow-[24px_0_60px_rgba(15,23,42,0.18)] transition-transform duration-300 lg:hidden ${
                 isMenuOpen ? "translate-x-0" : "-translate-x-full"
               }`}
             >
               <div className="flex h-full flex-col">
-                {/* Drawer Header */}
-                <div className="bg-gradient-to-br from-blue-500 via-indigo-500 to-violet-500">
-                  <div className="p-4 pb-5 text-white">
-                    <div className="flex items-center justify-between">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigate("/");
-                          setIsMenuOpen(false);
-                        }}
-                        className="rounded-md p-1 hover:bg-white/15"
-                        aria-label="Go to home"
-                      >
-                        <BrandIdentity variant="drawer" inverse />
-                      </button>
-                      <button
-                        type="button"
-                        className="rounded-lg p-2 transition-colors duration-200 hover:bg-white/15"
-                        onClick={() => setIsMenuOpen(false)}
-                        aria-label="Close menu"
-                      >
-                        <FaTimes className="h-5 w-5 text-white" />
-                      </button>
-                    </div>
-
-                    {isLoggedIn ? (
-                      <div className="mt-4 rounded-xl bg-white/10 p-3 backdrop-blur-[2px]">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-sm font-bold text-indigo-700">
-                            {userInitial}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="truncate text-sm font-semibold text-white">
-                              {userName}
-                            </div>
-                            <div className="truncate text-xs text-blue-100">
-                              {userEmail}
-                            </div>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => {
-                            handleLogout();
-                            setIsMenuOpen(false);
-                          }}
-                          type="button"
-                          className="mt-3 w-full rounded-lg bg-white/15 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/25"
-                        >
-                          Logout
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="mt-4 rounded-xl bg-white/10 p-3 backdrop-blur-[2px]">
-                        <p className="text-sm font-semibold text-white">
-                          Welcome to Hooks
-                        </p>
-                        <p className="mt-1 text-xs text-blue-100">
-                          Login to save wishlist and comparisons.
-                        </p>
-                        <div className="mt-3 flex items-center gap-2">
-                          <Link
-                            to="/login"
-                            onClick={() => setIsMenuOpen(false)}
-                            className="inline-flex flex-1 items-center justify-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-indigo-700"
-                          >
-                            Login
-                          </Link>
-                          <Link
-                            to="/signup"
-                            onClick={() => setIsMenuOpen(false)}
-                            className="inline-flex flex-1 items-center justify-center rounded-lg bg-white/15 px-3 py-2 text-sm font-semibold text-white"
-                          >
-                            Signup
-                          </Link>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                <div className="flex items-center justify-between border-b border-slate-200 bg-[linear-gradient(135deg,#ffffff_0%,#f3f8ff_100%)] px-4 py-4">
+                  <Link
+                    to="/"
+                    className="flex items-center min-w-0"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <BrandIdentity variant="drawer" />
+                  </Link>
+                  <button
+                    type="button"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition-colors duration-200 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+                    onClick={() => setIsMenuOpen(false)}
+                    aria-label="Close menu"
+                  >
+                    <FaTimes className="h-4 w-4" />
+                  </button>
                 </div>
 
-                {/* Drawer Content */}
-                <div className="flex-1 space-y-4 overflow-y-auto bg-white px-4 py-4">
-                  <div>
-                    <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                      Navigation
-                    </h4>
-                    <div className="space-y-1">
-                      {quickLinks.map((item) => (
-                        <button
-                          key={item.label}
-                          type="button"
-                          className="group flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-gray-900 transition-colors hover:bg-slate-50"
-                          onClick={() => {
-                            navigate(item.link);
-                            setIsMenuOpen(false);
-                          }}
-                        >
-                          <span className="flex items-center gap-3">
-                            <span className="text-slate-500">{item.icon}</span>
-                            <span className="text-[13px] font-medium">
-                              {item.label}
-                            </span>
-                          </span>
-                          <FaChevronRight className="h-4 w-4 text-slate-400 transition-colors group-hover:text-slate-700" />
-                        </button>
-                      ))}
+                <div className="flex-1 overflow-y-auto px-3 py-4">
+                  <div className="mb-5">
+                    <div className="px-3 pb-2 pt-1">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-blue-600">
+                        Quick Links
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Start with the most used pages
+                      </p>
                     </div>
-                  </div>
-
-                  <div>
-                    <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                      Discover
-                    </h4>
                     <div className="space-y-1">
-                      {discoverLinks.map((item) => (
-                        <button
-                          key={item.label}
-                          type="button"
-                          className="group flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-gray-900 transition-colors hover:bg-slate-50"
-                          onClick={() => {
-                            navigate(item.link);
-                            setIsMenuOpen(false);
-                          }}
-                        >
-                          <span className="flex items-center gap-3">
-                            <span className="text-slate-500">{item.icon}</span>
-                            <span className="text-[13px] font-medium">
-                              {item.label}
-                            </span>
-                          </span>
-                          <FaChevronRight className="h-4 w-4 text-slate-400 transition-colors group-hover:text-slate-700" />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                      Categories
-                    </h4>
-                    <div className="space-y-1">
-                      {mobileCategories.map((category) => (
-                        <button
-                          key={category.id}
-                          type="button"
-                          className="group flex w-full items-center justify-between rounded-lg px-3 py-2.5 transition-colors hover:bg-slate-50"
-                          onClick={() => {
-                            const route = `/${mapProductTypeToRoute(
-                              category.id,
-                            )}`;
-                            navigate(route || "/");
-                            setIsMenuOpen(false);
-                          }}
-                        >
-                          <div className="flex min-w-0 items-center gap-3">
-                            <span className="text-slate-500 transition-colors group-hover:text-violet-600">
-                              {category.icon}
-                            </span>
-                            <span className="truncate text-[13px] font-medium text-gray-900">
-                              {category.name}
-                            </span>
+                      {quickLinks.map((item) =>
+                        item.dropdownItems ? (
+                          <div
+                            key={item.label}
+                            className="overflow-hidden border border-slate-100 bg-slate-50/60"
+                          >
+                            <button
+                              type="button"
+                              className="group flex w-full cursor-default items-center justify-between px-3 py-3 text-[13px] font-medium text-slate-800 transition-all duration-200 hover:bg-slate-100 hover:text-slate-950"
+                            >
+                              <span className="flex min-w-0 items-center gap-3">
+                                <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border border-slate-100 bg-gradient-to-br from-blue-50 via-white to-cyan-50 text-blue-700 transition-colors group-hover:border-blue-100 group-hover:text-blue-800">
+                                  {item.icon}
+                                </span>
+                                <span className="truncate transition-colors">
+                                  {item.label}
+                                </span>
+                              </span>
+                              <FaChevronDown className="h-3.5 w-3.5 flex-shrink-0 text-slate-400" />
+                            </button>
+                            <div className="border-t border-slate-100 bg-white p-2">
+                              <div className="grid grid-cols-1 gap-1">
+                                {item.dropdownItems.map((dropdownItem) => (
+                                  <Link
+                                    key={dropdownItem.link}
+                                    to={dropdownItem.link}
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className="group flex items-center justify-between rounded-lg px-3 py-2.5 text-[13px] font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700"
+                                  >
+                                    <span>{dropdownItem.name}</span>
+                                    <FaChevronRight className="h-3 w-3 text-slate-400 transition-colors group-hover:text-blue-600" />
+                                  </Link>
+                                ))}
+                              </div>
+                            </div>
                           </div>
-                          <FaChevronRight className="h-4 w-4 text-gray-400 transition-colors group-hover:text-gray-700" />
-                        </button>
-                      ))}
+                        ) : (
+                          <Link
+                            key={item.label}
+                            to={item.href}
+                            onClick={() => setIsMenuOpen(false)}
+                            className="group flex items-center justify-between rounded-xl px-3 py-3 text-[13px] font-medium text-slate-800 transition-all duration-200 hover:bg-slate-50 hover:text-slate-950"
+                          >
+                            <span className="flex min-w-0 items-center gap-3">
+                              <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border border-slate-100 bg-gradient-to-br from-blue-50 via-white to-cyan-50 text-blue-700 transition-colors group-hover:border-blue-100 group-hover:text-blue-800">
+                                {item.icon}
+                              </span>
+                              <span className="truncate transition-colors">
+                                {item.label}
+                              </span>
+                            </span>
+                            <FaChevronRight className="h-3.5 w-3.5 flex-shrink-0 text-slate-400 transition-colors group-hover:text-blue-600" />
+                          </Link>
+                        ),
+                      )}
                     </div>
                   </div>
 
-                  <div>
-                    <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                      Help
-                    </h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      {helpLinks.map((item) => (
-                        <button
-                          key={item.label}
-                          type="button"
-                          className="group flex items-center gap-2 rounded-lg bg-white px-2.5 py-2 text-left transition-colors hover:bg-slate-50"
-                          onClick={() => {
-                            navigate(item.link);
-                            setIsMenuOpen(false);
-                          }}
+                  <div className="space-y-3">
+                    {sections.map((section) => {
+                      const isOpen = openSection === section.id;
+
+                      return (
+                        <section
+                          key={section.id}
+                          className="overflow-hidden bg-white transition-all duration-200"
                         >
-                          <span className="text-slate-500">{item.icon}</span>
-                          <span className="truncate text-[11px] font-medium text-slate-700">
-                            {item.label}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setOpenSection(isOpen ? "" : section.id)
+                            }
+                            className={`flex w-full items-center justify-between px-4 py-4 text-left transition-colors duration-200 ${
+                              isOpen ? "bg-blue-50/70" : "hover:bg-slate-50"
+                            }`}
+                          >
+                            <span
+                              className={`text-[15px] font-semibold ${
+                                isOpen ? "text-blue-900" : "text-slate-900"
+                              }`}
+                            >
+                              {section.title}
+                            </span>
+                            <span
+                              className={`flex h-8 w-8 items-center justify-center rounded-full border transition-all duration-200 ${
+                                isOpen
+                                  ? "border-blue-200 bg-white text-blue-700"
+                                  : "border-slate-200 bg-slate-50 text-slate-700"
+                              }`}
+                            >
+                              <FaChevronDown
+                                className={`h-4 w-4 transition-transform duration-200 ${
+                                  isOpen ? "rotate-180" : ""
+                                }`}
+                              />
+                            </span>
+                          </button>
+
+                          {isOpen ? (
+                            <div className="bg-slate-50/80 p-2">
+                              <ul className="space-y-0.5">
+                                {section.items.map((item) => (
+                                  <li key={`${section.id}-${item.label}`}>
+                                    <Link
+                                      to={item.href}
+                                      onClick={() => setIsMenuOpen(false)}
+                                      className="group flex items-start gap-3 rounded-xl px-3 py-2.5 text-[14px] leading-6 text-slate-800 transition-all duration-200 hover:bg-white hover:text-blue-700 hover:shadow-sm"
+                                    >
+                                      <span className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-blue-600/80 transition-colors group-hover:bg-blue-700" />
+                                      <span className="font-medium">
+                                        {item.label}
+                                      </span>
+                                    </Link>
+                                  </li>
+                                ))}
+                              </ul>
+                              {section.footer ? (
+                                <Link
+                                  to={section.footer.href}
+                                  onClick={() => setIsMenuOpen(false)}
+                                  className="mt-2 inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-[14px] font-semibold text-blue-700 transition-colors hover:bg-blue-50 hover:text-blue-800"
+                                >
+                                  <span>{section.footer.label}</span>
+                                  <FaChevronRight className="h-3.5 w-3.5" />
+                                </Link>
+                              ) : null}
+                            </div>
+                          ) : null}
+                        </section>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -2449,52 +2773,6 @@ const Header = () => {
           </>
         )}
       </>
-    );
-  };
-
-  // Quick Navigation Tabs - Mobile Only
-  const QuickNavTabs = () => {
-    const navTabs = [
-      { label: "Mobiles", link: "/smartphones", icon: <FaMobileAlt /> },
-      { label: "Laptops", link: "/laptops", icon: <FaLaptop /> },
-      { label: "TVs", link: "/tvs", icon: <FaTv /> },
-    ];
-
-    return (
-      <div className="bg-white border-b border-gray-200 lg:hidden">
-        <div className="max-w-4xl mx-auto px-2 sm:px-4">
-          <div className="overflow-x-auto no-scrollbar">
-            <nav className="flex gap-6 py-2 pl-2 sm:pl-3 min-w-max">
-              {navTabs.map((tab, index) => {
-                const isActive =
-                  location.pathname === tab.link ||
-                  location.pathname.startsWith(`${tab.link}/`);
-
-                return (
-                  <Link
-                    key={index}
-                    to={tab.link}
-                    className={`flex items-center gap-2 px-1 border-b-2 transition-colors duration-200 font-medium text-sm sm:text-base whitespace-nowrap flex-shrink-0 ${
-                      isActive
-                        ? "text-purple-700 border-purple-600"
-                        : "text-gray-600 border-transparent hover:text-gray-900"
-                    }`}
-                  >
-                    <span
-                      className={`transition-colors ${
-                        isActive ? "text-purple-700" : "text-gray-500"
-                      }`}
-                    >
-                      {tab.icon}
-                    </span>
-                    <span>{tab.label}</span>
-                  </Link>
-                );
-              })}
-            </nav>
-          </div>
-        </div>
-      </div>
     );
   };
 
@@ -2510,9 +2788,9 @@ const Header = () => {
         <CategoryNavBar />
       </header>
 
-      <MobileMenuDrawer />
-
-      <QuickNavTabs />
+      <MobileMenuDrawer
+        key={isMenuOpen ? "mobile-menu-open" : "mobile-menu-closed"}
+      />
     </>
   );
 };

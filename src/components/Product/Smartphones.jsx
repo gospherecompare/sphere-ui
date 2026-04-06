@@ -1,16 +1,14 @@
-// src/components/DeviceList.jsx
+﻿// src/components/DeviceList.jsx
 import React, { useState, useEffect, useMemo } from "react";
 import {
   FaStar,
   FaBatteryFull,
   FaMemory,
-  FaSignal,
   FaSyncAlt,
   FaFingerprint,
   FaWifi,
   FaShieldAlt,
   FaRobot,
-  FaTachometerAlt,
   FaFilter,
   FaTimes,
   FaSearch,
@@ -18,7 +16,6 @@ import {
   FaMoneyBill,
   FaWeight,
   FaSort,
-  FaEye,
   FaShoppingBag,
   FaCalendarAlt,
   FaMobileAlt,
@@ -41,15 +38,12 @@ import {
   fetchTrendingSmartphones,
   fetchNewLaunchSmartphones,
 } from "../../store/deviceSlice";
-import Brandofmonth from "../Home/Brandofmonth";
-import ProductNav from "../Home/Products";
 // BannerSlot disabled until completed.
 import useStoreLogos from "../../hooks/useStoreLogos";
 import Spinner from "../ui/Spinner";
 import Breadcrumbs from "../Breadcrumbs";
 import SEO from "../SEO";
 import { generateSlug } from "../../utils/slugGenerator";
-import normalizeProduct from "../../utils/normalizeProduct";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
 import { resolveSmartphoneBadgeScore } from "../../utils/smartphoneBadgeScore";
@@ -63,13 +57,14 @@ import {
   computePopularSmartphoneFeatures,
   SMARTPHONE_FEATURE_CATALOG,
 } from "../../utils/smartphonePopularFeatures";
+import "../../styles/hideScrollbar.css";
 
 // Enhanced Image Carousel - Simplified without counts/indicators
 const ImageCarousel = ({ images = [] }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const imageFrameClass =
-    "h-36 w-24 sm:h-40 sm:w-28 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center";
-  const imageClass = "h-full w-full object-contain p-2";
+    "h-44 w-32 sm:h-48 sm:w-32 lg:h-52 lg:w-36 rounded-2xl bg-gray-100 overflow-hidden flex items-center justify-center";
+  const imageClass = "h-full w-full object-contain p-0.5 sm:p-2";
 
   useEffect(() => {
     setCurrentIndex(0);
@@ -132,7 +127,7 @@ const ImageCarousel = ({ images = [] }) => {
                   aria-label={`Go to image ${index + 1}`}
                   className={`h-1.5 rounded-full transition-all duration-200 ${
                     currentIndex === index
-                      ? "w-5 bg-violet-500"
+                      ? "w-5 bg-blue-500"
                       : "w-1.5 bg-gray-300 hover:bg-gray-400"
                   }`}
                 />
@@ -158,29 +153,6 @@ const mapScoreToDisplayBand = (score, minTarget = 80, maxTarget = 98) => {
   if (normalized == null) return null;
   const mapped = minTarget + (normalized / 100) * (maxTarget - minTarget);
   return Number(mapped.toFixed(1));
-};
-
-const CircularScoreBadge = ({ score, size = 62 }) => {
-  const normalized = clampScore100(score);
-  const percentage = normalized != null ? Number(normalized.toFixed(1)) : null;
-  const label = percentage != null ? `${percentage.toFixed(1)}%` : "--";
-
-  return (
-    <div
-      className="inline-flex flex-col items-center justify-center rounded-md border border-violet-200 bg-violet-50/95 px-1.5 py-1 leading-none"
-      style={{ minWidth: `${Math.max(38, Math.round(size))}px` }}
-      aria-label={
-        percentage != null
-          ? `Overall score ${percentage.toFixed(1)} percent`
-          : "Overall score unavailable"
-      }
-    >
-      <span className="text-[11px] font-bold text-violet-700">{label}</span>
-      <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide text-violet-600">
-        Spec
-      </span>
-    </div>
-  );
 };
 
 const API_ASSET_ORIGIN = "https://api.apisphere.in";
@@ -332,14 +304,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     if (!price || price === "NaN") return 0;
     const numeric = parseInt(String(price).replace(/[^0-9]/g, ""));
     return isNaN(numeric) ? 0 : numeric;
-  };
-
-  // Helper function to format price display
-  const formatPriceDisplay = (price) => {
-    if (!price || price === "NaN") return "";
-    if (typeof price === "string" && price.includes(",")) return `₹${price}`;
-    const numeric = extractNumericPrice(price);
-    return numeric > 0 ? `₹ ${numeric.toLocaleString()}` : "";
   };
 
   const parseDateValue = (value) => {
@@ -828,7 +792,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                 display_store_name:
                   sp.display_store_name || sp.displayStoreName || storeName,
                 storeObj: getStore ? getStore(storeName) : null,
-                // do not persist logo here — resolve at render time via getLogo()
+                // do not persist logo here â€” resolve at render time via getLogo()
                 price: sp.price,
                 url: sp.url || sp.url_link || sp.link,
                 last_updated: sp.last_updated || sp.lastUpdated,
@@ -994,7 +958,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     const otg = connectivity.otg || "";
     const usb = connectivity.usb || "";
 
-    // Network support (5G / 4G) — keep this human-readable for filters/UI
+    // Network support (5G / 4G) â€” keep this human-readable for filters/UI
     const supports5g = () => {
       const sources = [
         apiDevice.connectivity_network,
@@ -1461,7 +1425,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         apiDevice.hook_calculated_at ??
         apiDevice.hookCalculatedAt ??
         null,
-      price: numericPrice > 0 ? `₹${numericPrice.toLocaleString()}` : "",
+      price: numericPrice > 0 ? `₹ ${numericPrice.toLocaleString()}` : "",
       numericPrice: numericPrice,
       rating: parseFloat(apiDevice.rating) || 0,
       reviews:
@@ -1625,7 +1589,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
         const priceDisplay =
           resolvedNumericPrice > 0
-            ? `₹${resolvedNumericPrice.toLocaleString()}`
+            ? `₹ ${resolvedNumericPrice.toLocaleString()}`
             : "";
 
         // Store prices to expose on card: prefer mappedVariantStores when available, else an empty list
@@ -1914,6 +1878,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const [brandFilterQuery, setBrandFilterQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
+  const [showHeroDescription, setShowHeroDescription] = useState(false);
   const [compareItems, setCompareItems] = useState([]);
   const compareLimit = useMemo(
     () => getCompareLimitForDevices(compareItems),
@@ -1985,14 +1950,14 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   }).format(new Date());
 
   const priceFilterMap = {
-    "under-10000": { min: 0, max: 10000, label: "Under ₹10,000" },
-    "under-15000": { min: 0, max: 15000, label: "Under ₹15,000" },
-    "under-20000": { min: 0, max: 20000, label: "Under ₹20,000" },
-    "under-25000": { min: 0, max: 25000, label: "Under ₹25,000" },
-    "under-30000": { min: 0, max: 30000, label: "Under ₹30,000" },
-    "under-40000": { min: 0, max: 40000, label: "Under ₹40,000" },
-    "under-50000": { min: 0, max: 50000, label: "Under ₹50,000" },
-    "above-50000": { min: 50000, max: MAX_PRICE, label: "Above ₹50,000" },
+    "under-10000": { min: 0, max: 10000, label: "Under ₹ 10,000" },
+    "under-15000": { min: 0, max: 15000, label: "Under ₹ 15,000" },
+    "under-20000": { min: 0, max: 20000, label: "Under ₹ 20,000" },
+    "under-25000": { min: 0, max: 25000, label: "Under ₹ 25,000" },
+    "under-30000": { min: 0, max: 30000, label: "Under ₹ 30,000" },
+    "under-40000": { min: 0, max: 40000, label: "Under ₹ 40,000" },
+    "under-50000": { min: 0, max: 50000, label: "Under ₹ 50,000" },
+    "above-50000": { min: 50000, max: MAX_PRICE, label: "Above ₹ 50,000" },
   };
   const priceFilter = priceFilterMap[normalizedFilterSlug] || null;
 
@@ -2006,21 +1971,21 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
   let seoTitle = `Smartphones (${currentYear}) - Price, Specifications and Features in India - Hooks`;
   let seoDescription = sanitizeDescription(
-    "Browse the latest smartphones with detailed specs, prices, reviews, and comparisons on Hooks.",
+    "Browse the latest smartphones on Hooks with updated prices, key specifications, and featured launches. Use filters to explore brands, budgets, and performance tiers in one place.",
   );
 
   if (isUpcomingView) {
-    seoTitle = `Upcoming smartphones update (${currentDayMonthYear}) - Full Specifications, Features and Price - Hooks`;
+    seoTitle = `Upcoming Smartphones (${currentDayMonthYear}) - Expected Launches, Features and Prices - Hooks`;
     seoDescription =
-      "Track upcoming smartphones, expected launch timelines, and preorder-ready devices to plan your next upgrade.";
+      "Browse upcoming smartphones in India, track expected launch timelines, compare preview specifications, and watch preorder-ready devices before they arrive on Hooks.";
   } else if (isSingleSmartphonePath) {
     seoTitle = `Smartphones (${currentYear}) - Price, Specifications and Features in India - Hooks`;
     seoDescription =
-      "Compare the latest smartphones on Hooks. Explore detailed specifications, prices, reviews, and side-by-side comparisons before you buy.";
+      "Browse the latest smartphones on Hooks. Explore detailed specifications, prices, reviews, and featured launches before you buy.";
   } else if (isNewFilterPath) {
-    seoTitle = `Latest smartphones update (${currentDayMonthYear}) - Full Specifications, Features and Price - Hooks`;
+    seoTitle = `Latest Smartphones (${currentDayMonthYear}) - Full Specifications, Features and Price - Hooks`;
     seoDescription =
-      "Discover newly launched smartphones with updated prices, full specifications, and reviews. Stay updated with the latest mobile releases on Hooks.";
+      "Browse the latest smartphones across camera, battery, display, and performance with updated prices, full specifications, and launch details on Hooks.";
   } else if (priceFilter) {
     seoTitle = `Best Smartphones ${priceFilter.label} (${currentMonthYear}) - Full Specifications, Features and Price - Hooks`;
     seoDescription = `Explore the best smartphones ${priceFilter.label.toLowerCase()} with detailed specs, latest prices, reviews, and comparisons to choose the right phone for your budget.`;
@@ -2041,16 +2006,52 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const headerLabel = isUpcomingView
     ? "UPCOMING SMARTPHONES"
     : isNewLaunchHeading
-      ? "LATEST COLLECTION"
+      ? "LATEST SMARTPHONES"
       : priceFilter
         ? `BEST SMARTPHONE ${priceFilter.label.toUpperCase()}`
         : "SMARTPHONE COLLECTION";
-  const heroTitlePrefix = isUpcomingView
-    ? "Explore Upcoming"
-    : "Explore Premium";
+  const heroTitleText = isUpcomingView
+    ? "Upcoming Smartphones"
+    : isNewFilterPath
+      ? "Latest Smartphones"
+    : priceFilter
+      ? `${priceFilter.label} Smartphones in India`
+      : "Browse Smartphones in India";
+  const isExpandedHeroDescriptionPath =
+    isUpcomingView ||
+    isNewFilterPath ||
+    pathname === "/smartphones" ||
+    pathname === "/mobiles";
   const heroSubtitleText = isUpcomingView
-    ? "Track devices expected to launch soon, compare early specs, and bookmark upcoming releases."
-    : "Discover detailed specifications, compare models, and find the best deals on the latest smartphones. Use our advanced filters to narrow down your search from our curated collection of premium devices.";
+    ? "Browse upcoming smartphones in India and keep track of devices that are expected to launch soon, all in one place. This page helps you follow new phone announcements, rumored launch windows, preorder-ready models, and early specification leaks without jumping between multiple news posts. Use it to scan expected camera setups, battery sizes, charging speeds, display details, chipset hints, storage variants, and brand lineups so you can plan your next upgrade with a clearer view of what is coming. Whether you are waiting for a flagship launch, a battery-focused phone, a gaming-ready model, or a balanced everyday device, the upcoming collection gives you an easy way to watch the next wave of releases as they build up. You can also use the filters and product cards to follow the brands and categories that matter most, then return later when launch details and prices are confirmed."
+    : isNewFilterPath
+      ? "Browse the latest smartphones in India and keep up with new launches as they arrive, all in one place. This page brings together updated prices, fresh variants, and the key specifications people care about most, including camera quality, low-light results, portrait shots, video stability, battery life, charging speed, display brightness, refresh rate, chipset performance, RAM, storage, software experience, and long-term update support. Use it to scan the newest phones from leading brands, spot which models are getting attention, and quickly narrow your shortlist without opening dozens of tabs. If you are looking for a flagship camera phone, a balanced all-rounder, a battery-first option, or a gaming-ready device, the latest collection helps you focus on the right candidates at a glance. The filters and product cards make it easy to sort by brand, price, and feature, while the latest-launch focus keeps the page current as new phones arrive. You can also check live prices, offers, and variants so you can judge value before you buy."
+      : "Browse smartphones in India across brands, price ranges, launch windows, and performance tiers so you can quickly find a device that matches your budget and daily use. The collection brings updated prices, key specifications, ratings, and variant details together in one place, making it easier to check camera quality, low-light results, portrait shots, video stability, battery life, charging speed, display brightness, refresh rate, chipset performance, RAM, storage, software support, and long-term update value. Whether you are looking for a flagship camera phone, a balanced all-rounder, a battery-focused option, or a gaming-ready device, the page helps you scan what is new, what is popular, and what is worth shortlisting without opening multiple tabs. Use the filters, search, and product cards to narrow results by brand, budget, or feature, then open the phones that stand out most.";
+  const heroSubtitleStyle =
+    isExpandedHeroDescriptionPath && !showHeroDescription
+      ? {
+          display: "-webkit-box",
+          WebkitBoxOrient: "vertical",
+          WebkitLineClamp: 3,
+          overflow: "hidden",
+        }
+      : undefined;
+  const heroSubtitleWidthClass = isExpandedHeroDescriptionPath
+    ? "max-w-6xl"
+    : "max-w-3xl";
+  useEffect(() => {
+    if (isExpandedHeroDescriptionPath) {
+      setShowHeroDescription(false);
+    }
+  }, [isExpandedHeroDescriptionPath]);
+  const currentPriceRangeLabel =
+    priceFilter ||
+    Number(filters.priceRange.min) !== MIN_PRICE ||
+    Number(filters.priceRange.max) !== MAX_PRICE
+      ? priceFilter
+        ? priceFilter.label
+        : `₹ ${filters.priceRange.min?.toLocaleString()} - ₹ ${filters.priceRange.max?.toLocaleString()}`
+      : `₹ ${filters.priceRange.min?.toLocaleString()} - ₹ ${filters.priceRange.max?.toLocaleString()}`;
 
   // Defer render check until after all Hooks are declared to keep Hooks order stable
   const noDataAndNotLoading =
@@ -2477,7 +2478,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   // Filter logic (operates on variant-level cards) - memoized so it updates
   // when device data, filters, searchQuery or feature change.
   const filteredVariants = React.useMemo(() => {
-    // Do not attempt to apply feature filters while data is loading —
+    // Do not attempt to apply feature filters while data is loading â€”
     // wait for server response to avoid empty results on first render.
     if (loading) return [];
 
@@ -3468,7 +3469,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   if (noDataAndNotLoading) return null;
 
   return (
-    <div className="min-h-screen  ">
+    <div className="min-h-screen  text-slate-900" data-page-label={headerLabel}>
       <style>{animationStyles}</style>
       <SEO
         title={seoTitle}
@@ -3479,56 +3480,308 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         robots="index, follow, max-image-preview:large"
         schema={listSchema}
       />
-      {/* Page Header with Descriptive Content */}
-
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto">
+      <div className="relative mx-auto max-w-7xl px-4 pt-0 pb-8 sm:px-6 sm:pb-12 md:pb-16 lg:px-8 lg:pb-20">
         <div className="relative">
-          <div className="bg-white px-2 lg:px-4 py-4 sm:py-6 md:py-8 lg:py-10">
-            {/* Hero Section - Professional Styling */}
-            <div className="mb-6 sm:mb-8 md:mb-10 lg:mb-12">
-              {/* Badge */}
-              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 backdrop-blur-sm px-3 py-1.5 rounded-full border border-indigo-200 mb-4 sm:mb-6">
-                <FaMobileAlt className="text-indigo-600 text-sm" />
-                <span className="text-xs sm:text-sm font-semibold text-indigo-900">
+          <section className="relative left-1/2 isolate w-screen -translate-x-1/2 overflow-hidden bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950 px-4 py-6 text-white sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+            <div className="absolute inset-0 opacity-35 [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:72px_72px]" />
+            <div className="absolute -left-20 top-0 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
+            <div className="absolute right-0 top-20 h-80 w-80 rounded-full bg-cyan-300/10 blur-3xl" />
+            <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/10 to-transparent" />
+
+            <div className="relative mx-auto max-w-7xl">
+              <div className={isExpandedHeroDescriptionPath ? "max-w-6xl" : "max-w-4xl"}>
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-100">
+                  <FaMobileAlt className="h-3.5 w-3.5" />
                   {headerLabel}
                 </span>
+
+                <h1 className="mt-6 max-w-7xl text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">
+                  {heroTitleText}
+                </h1>
+
+                <h4
+                  className={`mt-4 ${heroSubtitleWidthClass} text-base leading-7 text-white/80 sm:text-lg sm:leading-8`}
+                  style={heroSubtitleStyle}
+                >
+                  {heroSubtitleText}
+                </h4>
+
+                {isExpandedHeroDescriptionPath ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowHeroDescription((prev) => !prev)}
+                    className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-cyan-100 transition-colors duration-200 hover:text-white"
+                    aria-expanded={showHeroDescription}
+                  >
+                    {showHeroDescription ? "Show less" : "Read more"}
+                  </button>
+                ) : null}
+
+                <div className="mt-8 flex flex-wrap gap-3">
+                  <button
+                    onClick={() => navigate("/compare")}
+                    className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition-colors duration-200 hover:bg-slate-100"
+                  >
+                    Compare devices
+                    <FaExchangeAlt className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={() => navigate("/brands")}
+                    className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:border-white/25 hover:bg-white/15"
+                  >
+                    Browse brands
+                    <FaChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
 
-              {/* Main Heading - Enhanced Gradient Text */}
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl xl:text-5xl font-bold mb-2 sm:mb-3 md:mb-4 lg:mb-6 leading-tight">
-                {heroTitlePrefix}{" "}
-                <span className="bg-gradient-to-r from-indigo-600 via-blue-500 to-cyan-500 bg-clip-text text-transparent">
-                  Smartphones
-                </span>
-              </h1>
+              <div className="hidden  rounded-2xl border border-white/10 p-4 sm:p-5">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <FaFilter className="text-cyan-100" />
+                    <h3 className="text-sm font-semibold text-white sm:text-base">
+                      Popular Features
+                    </h3>
+                  </div>
+                  {normalizedFeature && (
+                    <button
+                      onClick={() => setFeatureParam(null)}
+                      className="text-xs font-semibold text-cyan-100 transition-colors duration-200 hover:text-white"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+                {popularFeatureOrderLoaded && (
+                  <p className="mb-3 text-xs text-white/60">
+                    Popular choices from other users (last 7 days)
+                  </p>
+                )}
+                <div className="flex gap-2.5 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {popularFeatures.map((pf) => {
+                    const isActive = normalizedFeature === pf.id;
+                    const Icon = pf.icon;
+                    return (
+                      <button
+                        key={pf.id}
+                        onClick={() => setFeatureParam(pf.id)}
+                        className={`flex items-center gap-2 rounded-full border px-3 py-2 text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors duration-200 ${
+                          isActive
+                            ? "border-white bg-white text-slate-950"
+                            : "border-white/10 bg-white/10 text-white hover:bg-white/15"
+                        }`}
+                      >
+                        <span
+                          className={
+                            isActive ? "text-slate-950" : "text-cyan-100"
+                          }
+                        >
+                          {Icon ? <Icon className="text-base" /> : null}
+                        </span>
+                        <span>{pf.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-              {/* Subtitle */}
-              <h4 className="text-base sm:text-lg md:text-lg lg:text-xl mb-4 sm:mb-6 md:mb-8 text-gray-600 leading-relaxed max-w-3xl">
-                {heroSubtitleText}
-              </h4>
+              <div className="hidden  rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-5">
+                {/* Desktop Search and Sort */}
+                <div className="hidden items-center justify-between gap-4 lg:flex">
+                  <div className="min-w-0 flex-1 max-w-4xl">
+                    <div className="relative group">
+                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+                        <FaSearch className="text-cyan-100 transition-colors duration-200 group-focus-within:text-white" />
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Search smartphones by brand, model, or specifications..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full rounded-md border border-white/10 bg-white/10 pl-12 pr-4 py-3 text-sm text-white placeholder:text-white/50 transition-colors duration-200 focus:border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-200/40 sm:text-base disabled:cursor-not-allowed disabled:opacity-50"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <FaSort className="text-cyan-100" />
+                      <span className="text-sm text-white/75">Sort by:</span>
+                    </div>
+                    <div className="relative min-w-[200px]">
+                      <select
+                        value={sortBy}
+                        onChange={(e) => handleSortChange(e.target.value)}
+                        className="w-full cursor-pointer appearance-none rounded-md border border-white/10 bg-white/10 px-4 py-2.5 pr-10 text-white transition-colors duration-200 hover:border-white/20 focus:border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-200/40"
+                      >
+                        <option value="featured" className="bg-slate-900">
+                          Featured Devices
+                        </option>
+                        <option value="price-low" className="bg-slate-900">
+                          Price: Low to High
+                        </option>
+                        <option value="price-high" className="bg-slate-900">
+                          Price: High to Low
+                        </option>
+                        <option value="rating" className="bg-slate-900">
+                          Highest Rated
+                        </option>
+                        <option value="newest" className="bg-slate-900">
+                          Newest First
+                        </option>
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-white/70">
+                        <svg
+                          className="h-4 w-4 fill-current"
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                        </svg>
+                      </div>
+                    </div>
+
+                    {getActiveFiltersCount() > 0 && (
+                      <button
+                        onClick={clearFilters}
+                        className="flex items-center gap-2 rounded-[18px] border border-white/10 px-4 py-2.5 text-sm font-medium text-white transition-colors duration-200 hover:bg-white/10"
+                      >
+                        <FaTimes />
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Mobile Search and Filter Bar */}
+                <div className="space-y-3 sm:space-y-4 lg:hidden">
+                  <div className="relative group">
+                    <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-100 transition-colors duration-200 group-focus-within:text-white" />
+                    <input
+                      type="text"
+                      placeholder="Search smartphones..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="h-12 w-full rounded-xl border border-white/10 bg-white/10 pl-12 pr-4 py-2 text-white placeholder:text-white/50 transition-colors duration-200 focus:border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-200/40"
+                    />
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowFilters(true)}
+                      className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 font-semibold text-white transition-colors duration-300 hover:bg-white/15"
+                    >
+                      <FaFilter />
+                      Filters
+                      {getActiveFiltersCount() > 0 && (
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white">
+                          {getActiveFiltersCount()}
+                        </span>
+                      )}
+                    </button>
+
+                    <button
+                      onClick={() => setShowSort(true)}
+                      className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 font-semibold text-white transition-colors duration-300 hover:bg-white/15"
+                    >
+                      <FaSort />
+                      Sort
+                    </button>
+                  </div>
+
+                  {/* Active Filters Badge - Mobile */}
+                  {getActiveFiltersCount() > 0 && (
+                    <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-4">
+                      <div className="flex items-center gap-3">
+                        <FaInfoCircle className="text-cyan-100" />
+                        <div>
+                          <span className="text-sm font-medium text-white">
+                            {getActiveFiltersCount()} filter
+                            {getActiveFiltersCount() > 1 ? "s" : ""} applied
+                          </span>
+                          <p className="mt-0.5 text-xs text-white/60">
+                            Showing {filteredVariants.length} of{" "}
+                            {variantCards.length} options
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={clearFilters}
+                        className="rounded-lg px-3 py-1.5 text-sm font-medium text-cyan-100 transition-colors duration-200 hover:bg-white/10 hover:text-white"
+                      >
+                        Clear all
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Results Count */}
+                <div className="hidden">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-end">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-medium text-slate-500">
+                        Sort By:
+                      </span>
+                      <div className="relative min-w-[170px]">
+                        <select
+                          value={sortBy}
+                          onChange={(e) => handleSortChange(e.target.value)}
+                          className="w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 py-2.5 pr-10 font-semibold text-slate-900 shadow-sm transition-all duration-200 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        >
+                          <option value="featured" className="bg-white">
+                            Popularity
+                          </option>
+                          <option value="price-low" className="bg-white">
+                            Price: Low to High
+                          </option>
+                          <option value="price-high" className="bg-white">
+                            Price: High to Low
+                          </option>
+                          <option value="rating" className="bg-white">
+                            Highest Rated
+                          </option>
+                          <option value="newest" className="bg-white">
+                            Newest First
+                          </option>
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                          <svg
+                            className="h-4 w-4 fill-current"
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 20 20"
+                          >
+                            <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
+          </section>
 
-            {/* Feature Quick Filters */}
-            <div className="mb-6 sm:mb-7 md:mb-8">
-              <div className="flex items-center justify-between mb-3">
+          <div className="mt-6">
+            <div className="overflow-hidden pt-0 pb-4 sm:pb-5">
+              <div className="mb-3 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <FaFilter className="text-indigo-600" />
-                  <h3 className="text-sm sm:text-base font-semibold text-gray-900">
+                  <FaFilter className="text-blue-600" />
+                  <h3 className="text-sm font-semibold text-slate-900 sm:text-base">
                     Popular Features
                   </h3>
                 </div>
                 {normalizedFeature && (
                   <button
                     onClick={() => setFeatureParam(null)}
-                    className="text-xs sm:text-sm text-indigo-700 hover:text-indigo-900 font-semibold"
+                    className="text-xs font-semibold text-blue-700 transition-colors duration-200 hover:text-blue-900"
                   >
                     Clear
                   </button>
                 )}
               </div>
               {popularFeatureOrderLoaded && (
-                <p className="text-xs text-gray-600 mb-3">
+                <p className="mb-3 text-xs text-slate-500">
                   Popular choices from other users (last 7 days)
                 </p>
               )}
@@ -3540,14 +3793,14 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                     <button
                       key={pf.id}
                       onClick={() => setFeatureParam(pf.id)}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-full border text-xs sm:text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
+                      className={`flex items-center gap-2 rounded-full border px-3 py-2 text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors duration-200 ${
                         isActive
-                          ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-white border-indigo-600 shadow-lg"
-                          : "bg-white text-gray-700 border-gray-200 hover:border-indigo-300 hover:text-indigo-700 hover:shadow-md"
+                          ? "border-blue-600 bg-blue-600 text-white"
+                          : "border-slate-200 bg-slate-50 text-slate-700 hover:border-blue-200 hover:bg-white"
                       }`}
                     >
                       <span
-                        className={isActive ? "text-white" : "text-indigo-600"}
+                        className={isActive ? "text-white" : "text-blue-600"}
                       >
                         {Icon ? <Icon className="text-base" /> : null}
                       </span>
@@ -3557,51 +3810,52 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                 })}
               </div>
             </div>
-            {/* Quick Stats Bar */}
 
-            {/* Control Bar */}
-            <div className="mb-6 sm:mb-7 md:mb-8">
-              {/* Desktop Search and Sort */}
-              <div className="hidden lg:flex items-center justify-between mb-4 md:mb-5 lg:mb-6">
-                <div className="flex-1 max-w-2xl">
+            <div className="mb-4 overflow-hidden">
+              <div className="hidden items-center justify-between gap-4 lg:flex">
+                <div className="min-w-0 flex-1 max-w-4xl">
                   <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <FaSearch className="text-purple-500 group-focus-within:text-purple-600 transition-colors duration-200" />
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+                      <FaSearch className="text-blue-500 transition-colors duration-200 group-focus-within:text-blue-600" />
                     </div>
                     <input
                       type="text"
                       placeholder="Search smartphones by brand, model, or specifications..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 rounded-xl
-            border border-gray-200
-             text-gray-700 placeholder:text-gray-400
-             focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent
-             text-sm sm:text-base
-             disabled:opacity-50 disabled:cursor-not-allowed
-"
+                      className="w-full rounded-md border border-slate-200 bg-white pl-12 pr-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 transition-colors duration-200 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-400 sm:text-base disabled:cursor-not-allowed disabled:opacity-50"
                     />
                   </div>
                 </div>
 
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
-                    <FaFilter className="text-gray-500" />
-                    <span className="text-sm text-gray-600">Sort by:</span>
+                    <FaSort className="text-slate-500" />
+                    <span className="text-sm text-slate-600">Sort by:</span>
                   </div>
                   <div className="relative min-w-[200px]">
                     <select
                       value={sortBy}
                       onChange={(e) => handleSortChange(e.target.value)}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 text-gray-700 appearance-none cursor-pointer bg-white pr-10 transition-all duration-200 hover:border-purple-400"
+                      className="w-full cursor-pointer appearance-none rounded-md border border-slate-200 bg-white px-4 py-2.5 pr-10 text-slate-700 transition-colors duration-200 hover:border-blue-300 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
                     >
-                      <option value="featured">Featured Devices</option>
-                      <option value="price-low">Price: Low to High</option>
-                      <option value="price-high">Price: High to Low</option>
-                      <option value="rating">Highest Rated</option>
-                      <option value="newest">Newest First</option>
+                      <option value="featured" className="bg-white">
+                        Featured Devices
+                      </option>
+                      <option value="price-low" className="bg-white">
+                        Price: Low to High
+                      </option>
+                      <option value="price-high" className="bg-white">
+                        Price: High to Low
+                      </option>
+                      <option value="rating" className="bg-white">
+                        Highest Rated
+                      </option>
+                      <option value="newest" className="bg-white">
+                        Newest First
+                      </option>
                     </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-700">
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
                       <svg
                         className="fill-current h-4 w-4"
                         xmlns="http://www.w3.org/2000/svg"
@@ -3615,37 +3869,36 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                   {getActiveFiltersCount() > 0 && (
                     <button
                       onClick={clearFilters}
-                      className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-colors"
+                      className="flex items-center gap-2 rounded-[18px] px-4 py-2.5 text-sm font-medium text-blue-600 transition-colors duration-200 hover:bg-blue-50 hover:text-blue-700"
                     >
                       <FaTimes />
-                      Clear Filters
+                      Clear
                     </button>
                   )}
                 </div>
               </div>
 
-              {/* Mobile Search and Filter Bar */}
-              <div className="lg:hidden space-y-3 sm:space-y-4 mb-4 sm:mb-5 md:mb-6">
+              <div className="space-y-3 sm:space-y-4 lg:hidden">
                 <div className="relative group">
-                  <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-purple-500 group-focus-within:text-purple-600 transition-colors duration-200" />
+                  <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500 transition-colors duration-200 group-focus-within:text-blue-600" />
                   <input
                     type="text"
                     placeholder="Search smartphones..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full h-12 pl-12 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 text-gray-700 transition-all duration-200 placeholder:text-gray-400"
+                    className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-12 pr-4 py-2 text-slate-900 placeholder:text-slate-400 transition-colors duration-200 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
                   />
                 </div>
 
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowFilters(true)}
-                    className="flex items-center justify-center gap-2 flex-1 h-12 text-white px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 transition-all duration-300 font-semibold hover:from-indigo-700 hover:to-blue-700 hover:shadow-lg"
+                    className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-sky-500 px-4 font-semibold text-white transition-colors duration-300 hover:from-blue-600 hover:to-sky-600"
                   >
                     <FaFilter />
                     Filters
                     {getActiveFiltersCount() > 0 && (
-                      <span className="  text-indigo-200 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white">
                         {getActiveFiltersCount()}
                       </span>
                     )}
@@ -3653,24 +3906,23 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
                   <button
                     onClick={() => setShowSort(true)}
-                    className="flex items-center justify-center gap-2 flex-1 h-12   text-gray-700 px-4 rounded-xl border border-gray-200 hover:bg-gray-50 transition-all duration-300 font-semibold"
+                    className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 font-semibold text-slate-700 transition-colors duration-300 hover:bg-slate-50"
                   >
                     <FaSort />
                     Sort
                   </button>
                 </div>
 
-                {/* Active Filters Badge - Mobile */}
                 {getActiveFiltersCount() > 0 && (
-                  <div className="flex items-center justify-between p-4 bg-purple-50 rounded-xl border border-purple-200">
+                  <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4">
                     <div className="flex items-center gap-3">
-                      <FaInfoCircle className="text-purple-600" />
+                      <FaInfoCircle className="text-blue-500" />
                       <div>
-                        <span className="text-sm font-medium text-purple-800">
+                        <span className="text-sm font-medium text-slate-900">
                           {getActiveFiltersCount()} filter
                           {getActiveFiltersCount() > 1 ? "s" : ""} applied
                         </span>
-                        <p className="text-xs text-purple-600 mt-0.5">
+                        <p className="mt-0.5 text-xs text-slate-500">
                           Showing {filteredVariants.length} of{" "}
                           {variantCards.length} options
                         </p>
@@ -3678,107 +3930,89 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                     </div>
                     <button
                       onClick={clearFilters}
-                      className="text-purple-600 hover:text-purple-800 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-purple-100 transition-colors duration-200"
+                      className="rounded-lg px-3 py-1.5 text-sm font-medium text-blue-600 transition-colors duration-200 hover:bg-slate-100 hover:text-blue-700"
                     >
                       Clear all
                     </button>
                   </div>
                 )}
               </div>
-
-              {/* Results Count */}
-              <div className="flex items-center justify-between mb-4 sm:mb-5 md:mb-6">
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    Available Smartphones
-                  </h2>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Browse through our curated selection of smartphones with
-                    detailed specifications and competitive prices
-                  </p>
-                </div>
-                <div className="hidden lg:block text-sm text-gray-500">
-                  Showing {sortedVariants.length} of {variantCards.length}{" "}
-                  options
-                </div>
-              </div>
             </div>
+          </div>
 
-            <div className="flex flex-col lg:flex-row gap-4 sm:gap-5 md:gap-6">
+          <section className="">
+            <div className="mt-8 flex flex-col lg:flex-row gap-6 md:gap-8">
               {/* Desktop Filter Sidebar */}
-              <div className="hidden lg:block lg:w-72 xl:w-80 flex-shrink-0">
-                <div className="p-4 md:p-5 lg:p-6 sticky top-6">
+              <div className="hidden lg:block lg:w-72 flex-shrink-0">
+                <div className="sticky top-6  p-5 border border-gray-100 bg-white border border-slate-200 lg:p-6">
                   {/* Filters Header */}
-                  <div
-                    className="flex justify-between items-center mb-6 sm:mb-7 md:mb-8 pb-3 sm:pb-4
-           border-b border-indigo-100 px-2 sm:px-3 md:px-4"
-                  >
+                  <div className="mb-6 flex items-center justify-between border-b border-slate-200 px-2 pb-4 sm:mb-8 sm:px-3 md:px-4">
                     <div>
-                      <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                        Refine Search
+                      <h3 className="flex items-center gap-2 text-xl font-bold text-slate-900">
+                        Filters
                       </h3>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Narrow down devices by specifications
+                      <p className="mt-1 text-sm text-slate-500">
+                        Narrow down by specifications
                       </p>
                     </div>
                     {getActiveFiltersCount() > 0 && (
                       <button
                         onClick={clearFilters}
-                        className="flex items-center gap-2 text-sm text-purple-600 hover:text-purple-700 font-semibold transition-colors duration-200 px-3 py-1 rounded-lg hover:bg-purple-50"
+                        className="flex items-center gap-2 rounded-lg px-3 py-1 text-sm font-semibold text-blue-600 transition-colors duration-200 hover:bg-slate-50 hover:text-blue-500"
                       >
                         <FaTimes />
-                        Clear all
+                        RESET
                       </button>
                     )}
                   </div>
 
                   {/* Active Filters Badge */}
                   {getActiveFiltersCount() > 0 && (
-                    <div className="mb-4 sm:mb-5 md:mb-6 p-3 sm:p-4 bg-gradient-to-r from-purple-100 to-blue-50 rounded-xl border border-purple-200">
+                    <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 shadow-sm sm:mb-8">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-semibold text-purple-800">
+                        <span className="text-sm font-semibold text-slate-900">
                           Active Filters
                         </span>
-                        <span className="text-xs font-bold text-purple-600 bg-purple-100 px-2 py-1 rounded-full">
+                        <span className="text-xs font-bold text-blue-300 bg-blue-500/20 px-2 py-1 rounded-full border border-blue-400/30">
                           {getActiveFiltersCount()}
                         </span>
                       </div>
-                      <p className="text-xs text-purple-600">
-                        Refine further or clear to see all devices
+                      <p className="text-xs text-slate-500">
+                        {filteredVariants.length} devices match
                       </p>
                     </div>
                   )}
 
                   {/* Brand Filter */}
-                  <div className="mb-6 sm:mb-7 md:mb-8">
+                  <div className="mb-8">
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <h4 className="font-bold text-gray-900 text-base">
+                        <h4 className="text-base font-bold text-slate-900">
                           Brands
                         </h4>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Select devices by manufacturer
+                        <p className="mt-1 text-xs text-slate-500">
+                          Select by manufacturer
                         </p>
                       </div>
-                      <span className="text-xs font-bold text-purple-600 bg-purple-100 px-2.5 py-1.5 rounded-full">
+                      <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
                         {filters.brand.length}
                       </span>
                     </div>
-                    <div className="relative mb-3">
-                      <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+                    <div className="relative mb-4">
+                      <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
                       <input
                         type="text"
                         value={brandFilterQuery}
                         onChange={(e) => setBrandFilterQuery(e.target.value)}
                         placeholder="Search brand..."
-                        className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
                       />
                     </div>
-                    <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+                    <div className="no-scrollbar space-y-2 max-h-60 overflow-y-auto pr-2">
                       {filteredBrandOptions.map((brand) => (
                         <label
                           key={brand}
-                          className="flex items-center gap-3 cursor-pointer group hover:bg-gray-50 px-3 py-2.5 rounded-lg transition-all duration-200 border border-transparent hover:border-gray-200"
+                          className="group flex cursor-pointer items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 transition-all duration-200 hover:border-slate-200 hover:bg-slate-50"
                         >
                           <div className="relative">
                             <input
@@ -3787,19 +4021,19 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                               onChange={() =>
                                 handleFilterChange("brand", brand)
                               }
-                              className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-2 focus:ring-purple-500 focus:ring-offset-1 transition-all duration-200"
+                              className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white transition-all duration-200 checked:border-blue-500 checked:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1"
                             />
                           </div>
-                          <span className="text-gray-700 group-hover:text-gray-900 font-medium flex-1">
+                          <span className="flex-1 font-medium text-slate-700 group-hover:text-slate-900">
                             {brand}
                           </span>
-                          <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                          <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-500">
                             {devices.filter((d) => d.brand === brand).length}
                           </div>
                         </label>
                       ))}
                       {filteredBrandOptions.length === 0 && (
-                        <div className="text-sm text-gray-500 px-2 py-1">
+                        <div className="px-2 py-1 text-sm text-slate-400">
                           No brands found
                         </div>
                       )}
@@ -3807,42 +4041,42 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                   </div>
 
                   {/* Price Range Filter */}
-                  <div className="mb-6 sm:mb-7 md:mb-8">
+                  <div className="mb-8">
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <h4 className="font-bold text-gray-900 text-base">
+                        <h4 className="text-base font-bold text-slate-900">
                           Price Range
                         </h4>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Budget for your purchase
+                        <p className="mt-1 text-xs text-slate-500">
+                          Set your budget
                         </p>
                       </div>
-                      <span className="text-xs font-bold text-purple-600 bg-purple-100 px-2.5 py-1.5 rounded-full">
-                        ₹{filters.priceRange.min?.toLocaleString()}
+                      <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
+                        ₹ {filters.priceRange.min?.toLocaleString()}
                       </span>
                     </div>
 
-                    <div className="bg-gradient-to-br from-blue-50 via-purple-50 to-blue-50 border border-indigo-100 rounded-xl p-4">
-                      <div className="flex justify-between text-sm font-medium text-gray-700 mb-4">
+                    <div className="rounded-xl border border-slate-200 bg-[#f8fbff] p-4">
+                      <div className="mb-4 flex justify-between text-sm font-medium text-slate-900">
                         <div className="text-center">
-                          <div className="text-xs text-gray-500">Minimum</div>
+                          <div className="text-xs text-slate-500">Minimum</div>
                           <div className="font-bold">
-                            ₹{filters.priceRange.min?.toLocaleString()}
+                            ₹ {filters.priceRange.min?.toLocaleString()}
                           </div>
                         </div>
                         <div className="text-center">
-                          <div className="text-xs text-gray-500">Maximum</div>
+                          <div className="text-xs text-slate-500">Maximum</div>
                           <div className="font-bold">
-                            ₹{filters.priceRange.max?.toLocaleString()}
+                            ₹ {filters.priceRange.max?.toLocaleString()}
                           </div>
                         </div>
                       </div>
 
                       {/* Dual Range Slider */}
                       <div className="relative mb-8">
-                        <div className="absolute h-2 bg-gray-200 rounded-full w-full top-1/2 transform -translate-y-1/2"></div>
+                        <div className="absolute top-1/2 h-2 w-full -translate-y-1/2 rounded-full bg-slate-200"></div>
                         <div
-                          className="absolute h-2 bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 rounded-full top-1/2 transform -translate-y-1/2"
+                          className="absolute h-2 bg-gradient-to-r from-blue-300 via-blue-700 to-blue-900 rounded-full top-1/2 transform -translate-y-1/2"
                           style={{
                             left: `${Math.max(
                               0,
@@ -3877,7 +4111,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                               filters.priceRange.max,
                             )
                           }
-                          className="absolute w-full top-1/2 transform -translate-y-1/2 appearance-none h-4 bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-purple-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer"
+                          className="absolute w-full top-1/2 h-4 -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-400 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-blue-500/30 [&::-webkit-slider-thumb]:cursor-pointer"
                         />
 
                         <input
@@ -3891,22 +4125,22 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                               Number(e.target.value),
                             )
                           }
-                          className="absolute w-full top-1/2 transform -translate-y-1/2 appearance-none h-4 bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-purple-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer"
+                          className="absolute w-full top-1/2 h-4 -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-400 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-blue-500/30 [&::-webkit-slider-thumb]:cursor-pointer"
                         />
                       </div>
 
-                      <div className="flex justify-between items-center text-xs mb-2">
-                        <span className="text-gray-500">
-                          ₹{MIN_PRICE.toLocaleString()}
+                      <div className="flex justify-between items-center text-xs mb-3">
+                        <span className="text-slate-500">
+                          ₹ {MIN_PRICE.toLocaleString()}
                         </span>
-                        <span className="text-gray-500">
-                          ₹{MAX_PRICE.toLocaleString()}
+                        <span className="text-slate-500">
+                          ₹ {MAX_PRICE.toLocaleString()}
                         </span>
                       </div>
                       <div className="flex justify-center">
                         <button
                           onClick={() => updatePriceRange(MIN_PRICE, MAX_PRICE)}
-                          className="text-purple-600 hover:text-purple-700 font-medium px-3 py-1.5 rounded-lg hover:bg-purple-50 transition-colors duration-200"
+                          className="rounded-lg px-3 py-1.5 font-medium text-blue-600 transition-colors duration-200 hover:bg-slate-100 hover:text-blue-500"
                         >
                           Reset Range
                         </button>
@@ -3915,17 +4149,17 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                   </div>
 
                   {/* RAM Filter */}
-                  <div className="mb-6 sm:mb-7 md:mb-8">
+                  <div className="mb-8">
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <h4 className="font-bold text-gray-900 text-base">
+                        <h4 className="text-base font-bold text-slate-900">
                           Memory (RAM)
                         </h4>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="mt-1 text-xs text-slate-500">
                           Multitasking performance
                         </p>
                       </div>
-                      <span className="text-xs font-bold text-purple-600 px-2.5 py-1.5 rounded-full">
+                      <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
                         {filters.ram.length}
                       </span>
                     </div>
@@ -3933,10 +4167,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                       {ramOptions.map((ram) => (
                         <label
                           key={ram}
-                          className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium ${
+                          className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium border ${
                             filters.ram.includes(ram)
-                              ? "bg-gradient-to-b from-purple-200 to-blue-200 text-blue-500  "
-                              : "text-gray-700 hover:border-gray-300 bg-gradient-to-br from-purple-50 to-blue-50 border  border-indigo-100"
+                              ? "bg-gradient-to-b from-blue-500 to-sky-500 text-white border-blue-400"
+                              : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-slate-50"
                           }`}
                         >
                           <input
@@ -3952,17 +4186,17 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                   </div>
 
                   {/* Storage Filter */}
-                  <div className="mb-6 sm:mb-7 md:mb-8">
+                  <div className="mb-8">
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <h4 className="font-bold text-gray-900 text-base">
+                        <h4 className="text-base font-bold text-slate-900">
                           Storage Capacity
                         </h4>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="mt-1 text-xs text-slate-500">
                           Apps and media space
                         </p>
                       </div>
-                      <span className="text-xs font-bold text-purple-600 bg-purple-100 px-2.5 py-1.5 rounded-full">
+                      <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
                         {filters.storage.length}
                       </span>
                     </div>
@@ -3970,10 +4204,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                       {storageOptions.map((storage) => (
                         <label
                           key={storage}
-                          className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium ${
+                          className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium border ${
                             filters.storage.includes(storage)
-                              ? "bg-gradient-to-b from-purple-200 to-blue-200 text-blue-500  "
-                              : "bg-gradient-to-br from-purple-50 to-blue-50 border border-indigo-100 text-gray-700 hover:border-gray-300 hover: "
+                              ? "bg-gradient-to-b from-blue-500 to-sky-500 text-white border-blue-400"
+                              : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-slate-50"
                           }`}
                         >
                           <input
@@ -3991,17 +4225,17 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                   </div>
 
                   {/* Battery Filter */}
-                  <div className="mb-6 sm:mb-7 md:mb-8">
+                  <div className="mb-8">
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <h4 className="font-bold text-gray-900 text-base">
+                        <h4 className="text-base font-bold text-slate-900">
                           Battery Capacity
                         </h4>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="mt-1 text-xs text-slate-500">
                           Usage time and endurance
                         </p>
                       </div>
-                      <span className="text-xs font-bold text-purple-600 bg-purple-100 px-2.5 py-1.5 rounded-full">
+                      <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
                         {filters.battery.length}
                       </span>
                     </div>
@@ -4010,10 +4244,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                         return (
                           <label
                             key={r.id}
-                            className={`flex items-center justify-between gap-2 cursor-pointer px-4 py-3 rounded-xl transition-all duration-300 font-medium ${
+                            className={`flex items-center justify-between gap-2 cursor-pointer px-4 py-3 rounded-xl transition-all duration-300 font-medium border ${
                               filters.battery.includes(r.id)
-                                ? "bg-gradient-to-r from-purple-200 to-blue-200 text-blue-500 "
-                                : "bg-gradient-to-br from-purple-50 to-blue-50 border border-b border-indigo-100 text-gray-700 hover:border-gray-300"
+                                ? "bg-gradient-to-r from-blue-500 to-sky-500 text-white border-blue-400"
+                                : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-slate-50"
                             }`}
                           >
                             <input
@@ -4028,8 +4262,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                             <div
                               className={`w-2 h-2 rounded-full ${
                                 filters.battery.includes(r.id)
-                                  ? " "
-                                  : "bg-gray-300"
+                                  ? "bg-white/80"
+                                  : "bg-slate-300"
                               }`}
                             ></div>
                           </label>
@@ -4041,7 +4275,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                   {/* Additional filters button */}
                   <button
                     onClick={() => setShowFilters(true)}
-                    className="w-full lg:hidden mt-6 bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 text-white py-3 rounded-xl font-semibold hover:from-purple-600 hover:to-blue-600 transition-all duration-300 hover:shadow-lg"
+                    className="mt-6 w-full rounded-xl bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 py-3 font-semibold text-white transition-all duration-300 hover:from-blue-700 hover:to-blue-600 hover:shadow-lg lg:hidden"
                   >
                     Show More Filters
                   </button>
@@ -4050,9 +4284,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
               {/* Products List - Right */}
               <div className="flex-1">
-                {/* Results Summary */}
-                {/* BannerSlot disabled (incomplete). */}
-
                 {/* Products Grid */}
                 <div className="grid grid-cols-1 gap-4 sm:gap-5 md:gap-6 auto-rows-max">
                   {sortedVariants.map((device, _idx) => {
@@ -4086,27 +4317,47 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                           return hasUrl || hasPrice || isPrebookingRow;
                         })
                       : availableStoreRows;
-                    const hasStoreRows = storeRowsForDisplay.length > 0;
-                    const hasStoreSection =
-                      hasStoreRows &&
-                      (availabilityState.mode === "live" ||
-                        availabilityState.mode === "prebooking");
-                    const hiddenStoreCount =
-                      storeRowsForDisplay.length !== availableStoreRows.length
-                        ? Math.max(storeRowsForDisplay.length - 3, 0)
-                        : availabilityState.hiddenCount;
                     const launchDateParsed = device.launchDate
                       ? new Date(device.launchDate)
                       : null;
                     const hasLaunchDate =
                       launchDateParsed &&
                       !Number.isNaN(launchDateParsed.getTime());
-                    const showReleaseDate = !isUpcomingView && hasLaunchDate;
-                    const showTopDivider = hasStoreSection || showReleaseDate;
                     const upcomingBadge = isUpcomingView
                       ? getUpcomingBadge(device)
                       : null;
                     const allowSpecScore = devicePolicy.allowSpecScore;
+                    const scoreValueRaw = allowSpecScore
+                      ? Number(resolveSmartphoneBadgeScore(device))
+                      : null;
+                    const scoreValue = Number.isFinite(scoreValueRaw)
+                      ? Math.round(scoreValueRaw)
+                      : null;
+                    const marketStatusLabel =
+                      devicePolicy.stage === "upcoming"
+                        ? "Coming Soon"
+                        : devicePolicy.stage === "announced"
+                          ? "Announced"
+                          : devicePolicy.stage === "rumored"
+                            ? "Rumored"
+                            : "In Stock";
+                    const marketStatusClass =
+                      devicePolicy.stage === "upcoming" ||
+                      devicePolicy.stage === "announced"
+                        ? "text-amber-600"
+                        : devicePolicy.stage === "rumored"
+                          ? "text-slate-500"
+                          : "text-emerald-600";
+                    const isAiDevice = Boolean(
+                      device.specs?.isAiPhone || getAiFeatureCount(device) > 0,
+                    );
+                    const cardBadgeLabel =
+                      upcomingBadge ||
+                      (isAiDevice ? "AI Phone" : null) ||
+                      (Number(device.trend_velocity || 0) > 0 ||
+                      listFilter === "trending"
+                        ? "Trending"
+                        : null);
                     const deviceCompareLimit = Number.isFinite(
                       devicePolicy.compareLimit,
                     )
@@ -4125,441 +4376,488 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                           typeof sp?.url === "string" &&
                           sp.url.trim().length > 0,
                       )?.url || null;
+                    const primaryStoreRow = storeRowsForDisplay[0] || null;
+                    const primaryStoreName =
+                      primaryStoreRow?.display_store_name ||
+                      primaryStoreRow?.store ||
+                      primaryStoreRow?.store_name ||
+                      primaryStoreRow?.storeName ||
+                      "";
+                    const primaryStoreLogo = normalizeAssetUrl(
+                      primaryStoreRow?.logo ||
+                        (primaryStoreName
+                          ? getStoreLogo
+                            ? getStoreLogo(primaryStoreName)
+                            : getLogo(primaryStoreName)
+                          : null) ||
+                        device.brandLogo ||
+                        null,
+                    );
+                    const primaryStoreUrl =
+                      primaryStoreRow?.url || brandStoreUrl || null;
+                    const priceRowsForDisplay = storeRowsForDisplay
+                      .filter(
+                        (row) =>
+                          row &&
+                          (row.price ||
+                            row.url ||
+                            row.store ||
+                            row.store_name ||
+                            row.storeName),
+                      )
+                      .slice(0, 2);
+                    const displaySummary = (() => {
+                      const rawDisplay =
+                        device.display || device.specs?.display;
+                      if (typeof rawDisplay === "string" && rawDisplay.trim()) {
+                        return rawDisplay.trim().split("|")[0].trim();
+                      }
+                      if (rawDisplay && typeof rawDisplay === "object") {
+                        const size =
+                          rawDisplay.size ||
+                          rawDisplay.display_size ||
+                          rawDisplay.displaySize ||
+                          "";
+                        const inches =
+                          rawDisplay.inches || rawDisplay.sizeInches || "";
+                        if (size && inches) return `${size} (${inches})`;
+                        if (size) return size;
+                      }
+                      return "Display Info";
+                    })();
+                    const processorSummary =
+                      device.specs?.processor ||
+                      device.processor ||
+                      device.performance?.processor ||
+                      "Processor Info";
+                    const cameraMp =
+                      parseFirstInt(device.specs?.rearCameraResolution) ||
+                      getRearCameraMp(device) ||
+                      50;
+                    const cameraSummary = `${cameraMp} MP Camera`;
+                    const batteryCapacity = getBatteryMah(device);
+                    const batterySummary = `${
+                      batteryCapacity || "5000"
+                    } mAh Battery`;
+                    const formatGbLabel = (value, fallback) => {
+                      const normalized = parseFirstInt(value);
+                      if (normalized) return `${normalized} GB`;
+                      const raw = String(value || "").trim();
+                      return raw || fallback;
+                    };
+                    const ramValue = formatGbLabel(device.specs?.ram, "8 GB");
+                    const storageValue = formatGbLabel(
+                      device.specs?.storage,
+                      "256 GB",
+                    );
+                    const memorySummary = `${ramValue} | ${storageValue}`;
+                    const compactSpecLine = [
+                      memorySummary,
+                      cameraSummary,
+                      batterySummary,
+                      displaySummary,
+                      processorSummary,
+                    ]
+                      .filter(Boolean)
+                      .join(" | ");
+                    const formatStorePrice = (price) => {
+                      if (price == null || price === "" || price === "NaN") {
+                        return "";
+                      }
+                      const numeric = extractNumericPrice(price);
+                      if (numeric > 0)
+                        return `₹ ${numeric.toLocaleString("en-IN")}`;
+                      const raw = String(price).trim();
+                      return raw.startsWith("₹") ? raw : `₹ ${raw}`;
+                    };
 
                     return (
                       <div
                         key={`${device.id ?? device.model ?? ""}-${_idx}`}
                         onClick={(e) => handleView(device, e)}
-                        className={`h-full w-full max-w-[880px] md:max-w-[1040px] lg:max-w-[1120px] mx-auto smooth-transition fade-in-up overflow-hidden rounded-2xl bg-white cursor-pointer transition-all duration-200 md:rounded-none md:bg-white ${
+                        className={`h-full w-full mx-auto smooth-transition fade-in-up overflow-hidden bg-white border border-slate-200 cursor-pointer transition-all duration-300 ${
                           isCompareSelected(device)
-                            ? "ring-2 ring-indigo-400 bg-indigo-50"
-                            : ""
+                            ? "ring-2 ring-blue-400 border-blue-400 bg-blue-50"
+                            : "hover:border-blue-200  "
                         }`}
                       >
-                        {/* Mobile Optimized Card Layout */}
-                        <div className="p-3 sm:p-4 md:p-5 lg:p-4 pt-4 sm:pt-5 md:pt-6 transition-all duration-300">
-                          {/* Top Row: Image and Basic Info */}
-                          <div className="grid grid-cols-[minmax(0,8.5rem)_minmax(0,1fr)] sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)] gap-3 w-full items-start">
-                            {/* Product Image with score + compare overlays */}
-                            <div className="relative flex-shrink-0 w-full h-36 sm:h-48 rounded-2xl overflow-hidden group bg-white">
-                              <div className="w-full h-full flex items-center justify-center p-1.5 sm:p-2">
-                                <ImageCarousel images={device.images} />
-                              </div>
-                              <div className="absolute left-1.5 top-1.5 z-10 pointer-events-none">
-                                {allowSpecScore ? (
-                                  <CircularScoreBadge
-                                    score={resolveSmartphoneBadgeScore(device)}
-                                    size={42}
-                                  />
-                                ) : null}
-                              </div>
+                        <div className="p-5 sm:p-6 transition-all duration-300">
+                          <div className="hidden flex-col gap-4 lg:flex lg:flex-row lg:items-start lg:justify-between">
+                            <div className="min-w-0 flex-1">
+                              <h3 className="max-w-3xl text-[1.45rem] font-semibold tracking-tight text-[#14255e] sm:text-[1.8rem]">
+                                {device.name || device.model}
+                              </h3>
                             </div>
 
-                            {/* Basic Info */}
-                            <div className="flex-1 min-w-0">
-                              {/* Brand and Model */}
-                              <div className="mb-2">
-                                <div>
-                                  <div className="flex items-center gap-2 mb-1 md:flex-nowrap">
-                                    <div className="flex min-w-0 items-center gap-2 flex-wrap">
-                                      <span className="text-xs font-semibold text-indigo-700">
-                                        {device.brand}
-                                      </span>
-                                      {device.specs?.isAiPhone ? (
-                                        <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-indigo-50 to-blue-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 ring-1 ring-indigo-200 whitespace-nowrap">
-                                          <span
-                                            className="inline-flex items-center justify-center w-3 h-3"
-                                            aria-hidden="true"
-                                          >
-                                            <svg
-                                              viewBox="0 0 64 64"
-                                              className="w-3 h-3"
-                                            >
-                                              <path
-                                                d="M32 2C34.5 14.5 40 20 52 22C40 24 34.5 29.5 32 42C29.5 29.5 24 24 12 22C24 20 29.5 14.5 32 2Z"
-                                                fill="red"
-                                              />
-                                              <path
-                                                d="M50 34C51.5 41.5 55 45 62 46C55 47 51.5 50.5 50 58C48.5 50.5 45 47 38 46C45 45 48.5 41.5 50 34Z"
-                                                fill="#7E57C2"
-                                              />
-                                            </svg>
-                                          </span>
-                                          <span>AI Phone</span>
-                                        </span>
-                                      ) : null}
-                                    </div>
-                                  </div>
-                                  <div className="leading-snug">
-                                    {(() => {
-                                      const name =
-                                        device.name || device.model || "";
-                                      const ram = String(
-                                        device.specs?.ram ?? "",
-                                      ).trim();
-                                      const storage = (
-                                        device.specs?.storage ?? ""
-                                      ).trim();
-                                      const display = String(
-                                        device.specs?.display ?? "",
-                                      ).trim();
-                                      const processor = String(
-                                        device.specs?.processor ?? "",
-                                      ).trim();
-                                      const rearCameraMp =
-                                        getRearCameraMp(device);
-                                      const rearCameraRaw = String(
-                                        device.specs?.rearCameraResolution ??
-                                          "",
-                                      ).trim();
-                                      const batteryMah = getBatteryMah(device);
-                                      const batteryRaw = String(
-                                        device.specs?.battery ?? "",
-                                      ).trim();
-
-                                      const parts = [];
-
-                                      if (ram) {
-                                        const ramLabel =
-                                          ram.toLowerCase().includes("gb") ||
-                                          ram.toLowerCase().includes("tb")
-                                            ? ram
-                                            : `${ram} RAM`;
-                                        parts.push(ramLabel);
-                                      }
-                                      if (storage) {
-                                        const storageLabel =
-                                          storage
-                                            .toLowerCase()
-                                            .includes("gb") ||
-                                          storage.toLowerCase().includes("tb")
-                                            ? storage
-                                            : `${storage} Storage`;
-                                        parts.push(storageLabel);
-                                      }
-                                      if (rearCameraMp) {
-                                        parts.push(`${rearCameraMp} MP Camera`);
-                                      } else if (rearCameraRaw) {
-                                        parts.push(
-                                          /camera/i.test(rearCameraRaw)
-                                            ? rearCameraRaw
-                                            : `${rearCameraRaw} Camera`,
-                                        );
-                                      }
-                                      if (batteryMah) {
-                                        parts.push(`${batteryMah} mAh Battery`);
-                                      } else if (batteryRaw) {
-                                        parts.push(
-                                          /battery/i.test(batteryRaw)
-                                            ? batteryRaw
-                                            : `${batteryRaw} Battery`,
-                                        );
-                                      }
-                                      if (display) parts.push(display);
-                                      if (processor) parts.push(processor);
-
-                                      const summary = parts
-                                        .filter(Boolean)
-                                        .join(" | ");
-
-                                      return (
-                                        <>
-                                          <h5 className="font-bold text-gray-900 text-[15px] leading-5 whitespace-normal break-normal">
-                                            {name}
-                                          </h5>
-                                          {summary ? (
-                                            <p className="mt-1 text-[12px] text-gray-600 leading-5 whitespace-normal break-normal">
-                                              {summary}
-                                            </p>
-                                          ) : null}
-                                          {isUpcomingView && upcomingBadge ? (
-                                            <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
-                                              <span className="font-semibold text-purple-700">
-                                                {upcomingBadge}
-                                              </span>
-                                              {hasLaunchDate ? (
-                                                <span className="text-gray-500">
-                                                  Expected:{" "}
-                                                  {launchDateParsed.toLocaleDateString(
-                                                    "en-US",
-                                                    {
-                                                      year: "numeric",
-                                                      month: "long",
-                                                      day: "numeric",
-                                                    },
-                                                  )}
-                                                </span>
-                                              ) : null}
-                                            </div>
-                                          ) : null}
-                                        </>
-                                      );
-                                    })()}
-                                  </div>
-                                </div>
-                                {/* Details always expanded - removed toggle button */}
-                              </div>
-
-                              {/* Price and Rating */}
-                              <div className="mb-3">
-                                <div className="flex items-end justify-between">
-                                  <div>
-                                    {device.brand ? (
-                                      <a
-                                        href={brandStoreUrl || "#"}
-                                        target={
-                                          brandStoreUrl ? "_blank" : undefined
-                                        }
-                                        rel={
-                                          brandStoreUrl
-                                            ? "noopener noreferrer"
-                                            : undefined
-                                        }
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          if (!brandStoreUrl)
-                                            e.preventDefault();
-                                        }}
-                                        className={`inline-block w-full mb-1 text-[12px] font-medium leading-snug whitespace-nowrap overflow-hidden text-ellipsis ${
-                                          brandStoreUrl
-                                            ? "text-blue-700 hover:text-blue-800 hover:underline"
-                                            : "text-blue-700 cursor-default"
-                                        }`}
-                                      >
-                                        {`Visit the ${device.brand} Store`}
-                                      </a>
-                                    ) : null}
-                                    <div className="text-lg font-bold text-green-600">
-                                      {device.price}
-                                    </div>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleCompareToggle(device, e);
-                                    }}
-                                    disabled={
-                                      compareDisabled ||
-                                      (!isCompareSelected(device) &&
-                                        compareItems.length >=
-                                          effectiveCompareLimit)
-                                    }
-                                    title={
-                                      compareDisabled
-                                        ? "Comparison available after announcement"
-                                        : !isCompareSelected(device) &&
-                                            compareItems.length >=
-                                              effectiveCompareLimit
-                                          ? `You can compare up to ${effectiveCompareLimit} devices`
-                                          : "Add to compare"
-                                    }
-                                    className={`ml-1 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold transition-all duration-200 ${
-                                      isCompareSelected(device)
-                                        ? "border-purple-600 bg-purple-600 text-white"
-                                        : "border-purple-200 text-purple-700 hover:border-purple-300 hover:bg-purple-50"
-                                    } ${
-                                      compareDisabled
-                                        ? "cursor-not-allowed opacity-60"
-                                        : ""
-                                    } ${
-                                      !isCompareSelected(device) &&
-                                      compareItems.length >=
-                                        effectiveCompareLimit
-                                        ? "cursor-not-allowed opacity-60"
-                                        : "cursor-pointer"
-                                    }`}
-                                  >
-                                    <FaPlus className="text-[10px]" />
-                                    Compare
-                                  </button>
-                                </div>
+                            <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+                              <div className="text-xl font-semibold tracking-tight text-[#14255e] sm:text-2xl">
+                                {device.price}
                               </div>
                             </div>
                           </div>
-                          {/* Expanded Details */}
-                          <div
-                            className={
-                              showTopDivider
-                                ? "mt-3 sm:mt-4 md:mt-5 pt-3 sm:pt-4 md:pt-5 border-t border-gray-200"
-                                : "mt-0 pt-0 border-t-0"
-                            }
-                          >
-                            {/* Detailed Specifications */}
 
-                            {/* Store Availability */}
-                            {hasStoreSection ? (
-                              <div className="mb-4">
-                                <div className="flex items-center justify-between gap-2 mb-3">
-                                  <h4 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
-                                    <FaStore className="text-green-500" />
-                                    Check Price On
-                                  </h4>
+                          <div className="mt-4 hidden flex-col gap-3 lg:flex lg:flex-row lg:items-center lg:justify-between">
+                            <div className="flex flex-wrap items-center gap-4">
+                              {scoreValue != null ? (
+                                <div className="flex items-end gap-1 leading-none">
+                                  <span className="text-3xl font-semibold leading-none text-blue-600">
+                                    {scoreValue}
+                                  </span>
+                                  <div className="flex flex-col items-start leading-none">
+                                    <span className="text-[8px] font-semibold uppercase tracking-[0.32em] text-blue-400">
+                                      Spec
+                                    </span>
+                                    <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-blue-500">
+                                      Score
+                                    </span>
+                                  </div>
                                 </div>
-                                <div className="space-y-2">
-                                  {storeRowsForDisplay
-                                    .slice(0, 3)
-                                    .map((storePrice, i) => {
-                                      const storeObj =
-                                        storePrice.storeObj ||
-                                        (getStore
-                                          ? getStore(
-                                              storePrice.store ||
-                                                storePrice.store_name ||
-                                                storePrice.storeName ||
-                                                "",
-                                            )
-                                          : null);
-                                      const storeNameCandidate =
-                                        storePrice.display_store_name ||
-                                        storePrice.store ||
-                                        storePrice.store_name ||
-                                        storePrice.storeName ||
-                                        storeObj?.name ||
-                                        "";
-                                      const ctaText =
-                                        storePrice.cta_label || "Buy Now";
-                                      const isPreorderCta =
-                                        storePrice.is_prebooking === true ||
-                                        /^(pre(book|order)|coming\s*soon)$/i.test(
-                                          String(ctaText).trim(),
-                                        );
-                                      const brandKey = normalizeStoreKey(
-                                        device.brand || "",
-                                      );
-                                      const storeKey =
-                                        normalizeStoreKey(storeNameCandidate);
-                                      const isBrandStore =
-                                        brandKey &&
-                                        storeKey &&
-                                        (storeKey === brandKey ||
-                                          storeKey.includes(brandKey) ||
-                                          brandKey.includes(storeKey));
-                                      const rawLogoSrc =
-                                        storePrice.logo ||
-                                        (storeNameCandidate && !isBrandStore
-                                          ? getStoreLogo
-                                            ? getStoreLogo(storeNameCandidate)
-                                            : getLogo(storeNameCandidate)
-                                          : null) ||
-                                        (isBrandStore
-                                          ? device.brandLogo || null
-                                          : null) ||
-                                        (storeNameCandidate
-                                          ? getStoreLogo
-                                            ? getStoreLogo(storeNameCandidate)
-                                            : getLogo(storeNameCandidate)
-                                          : null);
-                                      const logoSrc =
-                                        normalizeAssetUrl(rawLogoSrc);
+                              ) : null}
+                            </div>
 
-                                      return (
-                                        <div
-                                          key={`${
-                                            device.id ?? device.model ?? ""
-                                          }-store-${i}`}
-                                          className="flex min-h-[46px] items-center justify-between gap-2 text-sm bg-gradient-to-br from-purple-50 to-blue-50 px-3 py-2 rounded-lg"
-                                        >
-                                          <div className="flex items-center gap-2">
-                                            {logoSrc ? (
-                                              <div className="h-7 w-7 shrink-0 rounded-lg flex items-center justify-center p-1">
-                                                <img
-                                                  src={logoSrc}
-                                                  alt={
-                                                    storeObj?.name ||
-                                                    storePrice.store
-                                                  }
-                                                  className="h-full w-full object-contain"
-                                                />
-                                              </div>
-                                            ) : (
-                                              <div className="h-7 w-7 shrink-0 rounded-md border border-slate-100 bg-white flex items-center justify-center">
-                                                <FaStore className="text-gray-400 text-xs" />
-                                              </div>
-                                            )}
-                                            <span className="font-medium text-gray-900 capitalize">
-                                              {storeNameCandidate ||
-                                                "Online Store"}
-                                            </span>
-                                          </div>
-                                          {extractNumericPrice(
-                                            storePrice.price,
-                                          ) > 0 ? (
-                                            <div className="font-bold text-green-600">
-                                              {formatPriceDisplay(
-                                                storePrice.price,
-                                              )}
-                                            </div>
-                                          ) : null}
-                                          <div className="flex items-center gap-2">
-                                            {storePrice.url ? (
-                                              <a
-                                                href={storePrice.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                onClick={(e) =>
-                                                  e.stopPropagation()
-                                                }
-                                                className="text-purple-600 hover:text-blue-800 text-xs font-medium flex items-center gap-1"
-                                              >
-                                                {ctaText}
-                                                {isPreorderCta ? (
-                                                  <FaShoppingBag className="text-xs opacity-80" />
-                                                ) : (
-                                                  <FaExternalLinkAlt className="text-xs opacity-80" />
-                                                )}
-                                              </a>
-                                            ) : (
-                                              <span
-                                                className={`text-xs font-medium inline-flex items-center gap-1 ${
-                                                  isPreorderCta
-                                                    ? "text-purple-600"
-                                                    : "text-gray-400"
-                                                }`}
-                                              >
-                                                {isPreorderCta ? (
-                                                  <FaShoppingBag className="text-xs opacity-80" />
-                                                ) : null}
-                                                {ctaText || "Unavailable"}
-                                              </span>
-                                            )}
-                                          </div>
-                                        </div>
-                                      );
-                                    })}
-                                  {hiddenStoreCount > 0 && (
-                                    <div className="text-center text-xs text-gray-500">
-                                      +{hiddenStoreCount} more stores
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            ) : null}
-
-                            {/* Launch Date */}
-                            {showReleaseDate ? (
-                              <div className="flex items-center gap-2 text-xs text-gray-600 mb-4">
-                                <FaCalendarAlt className="text-gray-400" />
+                            {hasLaunchDate ? (
+                              <div className="flex items-center gap-1.5 text-sm text-slate-700 sm:justify-end">
+                                <FaCalendarAlt className="text-slate-400" />
                                 <span>
-                                  Released:{" "}
-                                  {launchDateParsed.toLocaleDateString(
-                                    "en-US",
-                                    {
-                                      year: "numeric",
-                                      month: "long",
-                                      day: "numeric",
-                                    },
-                                  )}
+                                  Launched:{" "}
+                                  <span className="font-semibold text-slate-900">
+                                    {launchDateParsed.toLocaleDateString(
+                                      "en-US",
+                                      {
+                                        day: "2-digit",
+                                        month: "short",
+                                        year: "numeric",
+                                      },
+                                    )}
+                                  </span>
                                 </span>
                               </div>
                             ) : null}
                           </div>
 
-                          {/* Action Buttons */}
-                          <div className="flex gap-2 mt-4 items-center">
-                            <div className="flex-1"></div>
+                          <div className="mt-5 grid grid-cols-[128px_minmax(0,1fr)] gap-3 sm:grid-cols-[120px_minmax(0,1fr)] lg:grid-cols-[180px_minmax(0,1fr)] sm:gap-4 lg:gap-5">
+                            {" "}
+                            <div className="relative flex items-start justify-start sm:justify-center">
+                              {cardBadgeLabel ? (
+                                <span className="absolute left-0 top-0 z-10 inline-flex items-center rounded-full bg-yellow-600 px-3 py-1 text-xs font-semibold text-white shadow-sm">
+                                  {cardBadgeLabel}
+                                </span>
+                              ) : null}
+                              <div className="flex w-full justify-start sm:justify-center">
+                                <ImageCarousel
+                                  images={device.images}
+                                  className="shadow-md"
+                                />
+                              </div>
+                            </div>
+                            <div className="space-y-3 pt-1">
+                              <div className="space-y-1 lg:hidden">
+                                {device.brand ? (
+                                  <p className="text-sm font-semibold text-blue-600">
+                                    {device.brand}
+                                  </p>
+                                ) : null}
+                                <h3 className="max-w-3xl text-[1.05rem] font-semibold tracking-tight text-[#14255e] sm:text-[1.2rem]">
+                                  {device.name || device.model}
+                                </h3>
+
+                                {scoreValue != null ? (
+                                  <div className="flex items-end gap-1 leading-none">
+                                    <span className="text-3xl font-semibold leading-none text-blue-600">
+                                      {scoreValue}
+                                    </span>
+                                    <div className="flex flex-col items-start leading-none">
+                                      <span className="text-[8px] font-semibold uppercase tracking-[0.32em] text-blue-400">
+                                        Spec
+                                      </span>
+                                      <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-blue-500">
+                                        Score
+                                      </span>
+                                    </div>
+                                  </div>
+                                ) : null}
+                              </div>
+
+                              <div className="hidden lg:block text-[13px] leading-6 text-slate-700 sm:text-sm sm:leading-7 sm:text-base">
+                                {compactSpecLine}
+                              </div>
+
+                              <div className="lg:hidden text-lg font-semibold tracking-tight text-[#14255e] sm:text-xl">
+                                {device.price}
+                              </div>
+
+                              {priceRowsForDisplay.length > 0 ? (
+                                <div className="hidden rounded-[24px] border border-blue-100 bg-[#f8fbff] p-2.5 sm:p-4 lg:block">
+                                  <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
+                                    <FaStore className="text-emerald-500" />
+                                    Check Price On
+                                  </div>
+                                  <div className="space-y-2">
+                                    {priceRowsForDisplay.map(
+                                      (storePrice, i) => {
+                                        const storeObj =
+                                          storePrice.storeObj ||
+                                          (getStore
+                                            ? getStore(
+                                                storePrice.store ||
+                                                  storePrice.store_name ||
+                                                  storePrice.storeName ||
+                                                  "",
+                                              )
+                                            : null);
+                                        const storeNameCandidate =
+                                          storePrice.display_store_name ||
+                                          storePrice.store ||
+                                          storePrice.store_name ||
+                                          storePrice.storeName ||
+                                          storeObj?.name ||
+                                          "";
+                                        const ctaText =
+                                          storePrice.cta_label || "Buy Now";
+                                        const isPreorderCta =
+                                          storePrice.is_prebooking === true ||
+                                          /^(pre(book|order)|coming\s*soon)$/i.test(
+                                            String(ctaText).trim(),
+                                          );
+                                        const rawLogoSrc =
+                                          storePrice.logo ||
+                                          (storeNameCandidate
+                                            ? getStoreLogo
+                                              ? getStoreLogo(storeNameCandidate)
+                                              : getLogo(storeNameCandidate)
+                                            : null) ||
+                                          device.brandLogo ||
+                                          null;
+                                        const logoSrc =
+                                          normalizeAssetUrl(rawLogoSrc);
+                                        const priceLabel = formatStorePrice(
+                                          storePrice.price,
+                                        );
+
+                                        return (
+                                          <div
+                                            key={`${
+                                              device.id ?? device.model ?? ""
+                                            }-price-${i}`}
+                                            className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 px-2.5 py-2.5 sm:px-3 sm:py-3"
+                                          >
+                                            <div className="flex min-w-0 items-center gap-3">
+                                              {logoSrc ? (
+                                                <div className="flex h-8 w-8 shrink-0 items-center justify-center">
+                                                  <img
+                                                    src={logoSrc}
+                                                    alt={
+                                                      storeObj?.name ||
+                                                      storeNameCandidate
+                                                    }
+                                                    className="h-full w-full object-contain"
+                                                  />
+                                                </div>
+                                              ) : (
+                                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f7fbff] ring-1 ring-[#dbe7f7]">
+                                                  <FaStore className="text-slate-400 text-xs" />
+                                                </div>
+                                              )}
+                                              <span className="truncate text-sm font-medium text-slate-800">
+                                                {storeNameCandidate ||
+                                                  "Online Store"}
+                                              </span>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                              <span className="whitespace-nowrap text-sm font-semibold text-emerald-600">
+                                                {priceLabel}
+                                              </span>
+                                              {storePrice.url ? (
+                                                <a
+                                                  href={storePrice.url}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  onClick={(e) =>
+                                                    e.stopPropagation()
+                                                  }
+                                                  className={`inline-flex items-center gap-1 whitespace-nowrap text-sm font-semibold transition-colors ${
+                                                    isPreorderCta
+                                                      ? "text-blue-600 hover:text-blue-700"
+                                                      : "text-blue-600 hover:text-blue-700"
+                                                  }`}
+                                                >
+                                                  {ctaText || "Buy Now"}
+                                                  <FaExternalLinkAlt className="text-xs" />
+                                                </a>
+                                              ) : (
+                                                <span className="inline-flex items-center gap-1 whitespace-nowrap text-sm font-semibold text-slate-400">
+                                                  {ctaText || "Unavailable"}
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
+                                        );
+                                      },
+                                    )}
+                                  </div>
+                                </div>
+                              ) : null}
+                            </div>
+                          </div>
+
+                          <div className="mt-4 flex items-center justify-between gap-3">
+                            <label
+                              className={`flex cursor-pointer items-center gap-2 ${compareDisabled ? "cursor-not-allowed opacity-50" : ""}`}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={compareItems.includes(device._id)}
+                                disabled={
+                                  compareDisabled ||
+                                  (!compareItems.includes(device._id) &&
+                                    compareItems.length >=
+                                      effectiveCompareLimit)
+                                }
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => handleCompareToggle(device, e)}
+                                className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white transition-all duration-200 checked:border-emerald-600 checked:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-1 disabled:cursor-not-allowed"
+                              />
+                              <span className="text-sm font-semibold text-slate-700">
+                                Add to Compare
+                              </span>
+                            </label>
+                            {hasLaunchDate ? (
+                              <div className="flex items-center gap-1.5 text-sm text-slate-700 lg:hidden">
+                                <FaCalendarAlt className="text-slate-400" />
+                                <span>
+                                  Launched:{" "}
+                                  <span className="font-semibold text-slate-900">
+                                    {launchDateParsed.toLocaleDateString(
+                                      "en-US",
+                                      {
+                                        day: "2-digit",
+                                        month: "short",
+                                        year: "numeric",
+                                      },
+                                    )}
+                                  </span>
+                                </span>
+                              </div>
+                            ) : null}
+                          </div>
+                          <div className="mt-4 space-y-3 lg:hidden">
+                            <div className="text-[13px] leading-6 text-slate-700 sm:text-sm sm:leading-7 sm:text-base">
+                              {compactSpecLine}
+                            </div>
+
+                            {priceRowsForDisplay.length > 0 ? (
+                              <div className="rounded-[20px] border border-blue-100 bg-[#f8fbff] p-3 sm:p-4">
+                                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
+                                  <FaStore className="text-emerald-500" />
+                                  Check Price On
+                                </div>
+                                <div className="space-y-2">
+                                  {priceRowsForDisplay.map((storePrice, i) => {
+                                    const storeObj =
+                                      storePrice.storeObj ||
+                                      (getStore
+                                        ? getStore(
+                                            storePrice.store ||
+                                              storePrice.store_name ||
+                                              storePrice.storeName ||
+                                              "",
+                                          )
+                                        : null);
+                                    const storeNameCandidate =
+                                      storePrice.display_store_name ||
+                                      storePrice.store ||
+                                      storePrice.store_name ||
+                                      storePrice.storeName ||
+                                      storeObj?.name ||
+                                      "";
+                                    const ctaText =
+                                      storePrice.cta_label || "Buy Now";
+                                    const isPreorderCta =
+                                      storePrice.is_prebooking === true ||
+                                      /^(pre(book|order)|coming\s*soon)$/i.test(
+                                        String(ctaText).trim(),
+                                      );
+                                    const rawLogoSrc =
+                                      storePrice.logo ||
+                                      (storeNameCandidate
+                                        ? getStoreLogo
+                                          ? getStoreLogo(storeNameCandidate)
+                                          : getLogo(storeNameCandidate)
+                                        : null) ||
+                                      device.brandLogo ||
+                                      null;
+                                    const logoSrc =
+                                      normalizeAssetUrl(rawLogoSrc);
+                                    const priceLabel = formatStorePrice(
+                                      storePrice.price,
+                                    );
+
+                                    return (
+                                      <div
+                                        key={`${
+                                          device.id ?? device.model ?? ""
+                                        }-mobile-price-${i}`}
+                                        className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-white px-3 py-2.5"
+                                      >
+                                        <div className="flex min-w-0 items-center gap-3">
+                                          {logoSrc ? (
+                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white">
+                                              <img
+                                                src={logoSrc}
+                                                alt={
+                                                  storeObj?.name ||
+                                                  storeNameCandidate
+                                                }
+                                                className="h-full w-full object-contain"
+                                              />
+                                            </div>
+                                          ) : (
+                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f7fbff] ring-1 ring-[#dbe7f7]">
+                                              <FaStore className="text-slate-400 text-xs" />
+                                            </div>
+                                          )}
+                                          <span className="truncate text-sm font-medium text-slate-800">
+                                            {storeNameCandidate ||
+                                              "Online Store"}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                          <span className="whitespace-nowrap text-sm font-semibold text-emerald-600">
+                                            {priceLabel}
+                                          </span>
+                                          {storePrice.url ? (
+                                            <a
+                                              href={storePrice.url}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              onClick={(e) =>
+                                                e.stopPropagation()
+                                              }
+                                              className={`inline-flex items-center gap-1 whitespace-nowrap text-sm font-semibold transition-colors ${
+                                                isPreorderCta
+                                                  ? "text-blue-600 hover:text-blue-700"
+                                                  : "text-blue-600 hover:text-blue-700"
+                                              }`}
+                                            >
+                                              {ctaText || "Buy Now"}
+                                              <FaExternalLinkAlt className="text-xs" />
+                                            </a>
+                                          ) : (
+                                            <span className="inline-flex items-center gap-1 whitespace-nowrap text-sm font-semibold text-slate-400">
+                                              {ctaText || "Unavailable"}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            ) : null}
                           </div>
                         </div>
+                        <div className="hidden" />
                       </div>
                     );
                   })}
@@ -4567,19 +4865,19 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
                 {/* Floating Compare Bar - Appears when 2+ items selected */}
                 {compareItems.length >= 2 && (
-                  <div className="fixed bottom-6 left-4 right-4 md:bottom-8 md:left-auto md:right-8 z-40 max-w-sm bg-white rounded-xl p-4 animate-slide-up md:shadow-2xl md:border-2 md:border-purple-500">
+                  <div className="fixed bottom-6 left-4 right-4 z-40 max-w-sm rounded-xl border border-slate-200 bg-white p-4 shadow-lg animate-slide-up md:bottom-8 md:left-auto md:right-8 md:shadow-2xl">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-sm font-semibold text-gray-900">
+                        <p className="text-sm font-semibold text-slate-900">
                           {compareItems.length} devices selected
                         </p>
-                        <p className="text-xs text-gray-600 mt-0.5">
+                        <p className="mt-0.5 text-xs text-slate-500">
                           Ready to compare specifications
                         </p>
                       </div>
                       <button
                         onClick={handleCompareNavigate}
-                        className="flex-shrink-0 bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:from-purple-600 hover:to-blue-600 transition-all duration-200 whitespace-nowrap text-sm"
+                        className="flex-shrink-0 bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:from-blue-600 hover:to-blue-600 transition-all duration-200 whitespace-nowrap text-sm"
                       >
                         Compare Now
                       </button>
@@ -4589,13 +4887,13 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
                 {/* No Results State */}
                 {sortedVariants.length === 0 && (
-                  <div className="text-center py-16 bg-gradient-to-b from-white to-blue-50 border border-purple-100 rounded-xl transition-all duration-300 ">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 py-16 text-center transition-all duration-300">
                     <div className="max-w-md mx-auto">
-                      <FaSearch className="text-gray-300 text-5xl mx-auto mb-4" />
-                      <h3 className="text-2xl font-semibold text-gray-900 mb-3">
+                      <FaSearch className="mx-auto mb-4 text-5xl text-slate-300" />
+                      <h3 className="mb-3 text-2xl font-semibold text-slate-900">
                         No smartphones found
                       </h3>
-                      <p className="text-gray-600 mb-6">
+                      <p className="mb-6 text-slate-600">
                         Try adjusting your filters or search terms to find what
                         you're looking for. We have a wide range of devices
                         available.
@@ -4603,13 +4901,13 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                       <div className="flex flex-col sm:flex-row gap-3 justify-center">
                         <button
                           onClick={clearFilters}
-                          className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-purple-600 hover:to-blue-600 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 "
+                          className="rounded-lg bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 px-6 py-3 font-semibold text-white transition-all duration-300 hover:from-blue-700 hover:to-blue-600 hover:shadow-lg hover:-translate-y-0.5"
                         >
                           Clear All Filters
                         </button>
                         <button
                           onClick={() => setShowFilters(true)}
-                          className="text-gray-700 px-6 py-3 rounded-lg font-semibold border border-gray-300 hover:bg-gray-50 transition-all duration-300 hover:shadow-md hover:border-gray-400 "
+                          className="rounded-lg border border-slate-300 px-6 py-3 font-semibold text-slate-700 transition-all duration-300 hover:border-slate-400 hover:bg-slate-50 hover:shadow-md"
                         >
                           Adjust Filters
                         </button>
@@ -4620,9 +4918,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
                 {/* Results Footer */}
                 {sortedVariants.length > 0 && (
-                  <div className="mt-8 pt-6 border-t border-gray-200">
+                  <div className="mt-8 border-t border-slate-200 pt-6">
                     <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-slate-500">
                         Showing {sortedVariants.length} of {variantCards.length}{" "}
                         options
                       </div>
@@ -4631,7 +4929,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                           onClick={() =>
                             window.scrollTo({ top: 0, behavior: "smooth" })
                           }
-                          className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                          className="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
                         >
                           <svg
                             className="w-4 h-4"
@@ -4648,12 +4946,12 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                           </svg>
                           Back to top
                         </button>
-                        <div className="text-xs text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full">
+                        <div className="rounded-full bg-slate-100 px-3 py-1.5 text-xs text-slate-500">
                           Last updated: Today
                         </div>
                       </div>
                     </div>
-                    <div className="mt-4 text-center text-xs text-gray-500">
+                    <div className="mt-4 text-center text-xs text-slate-500">
                       <p>
                         Prices and availability are subject to change. Always
                         verify details with the respective stores before making
@@ -4676,7 +4974,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                 <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl transform transition-all duration-300 max-h-[70vh] overflow-hidden">
                   <div className="flex items-center justify-between p-6 border-b border-gray-200  ">
                     <div className="flex items-center gap-3">
-                      <FaSort className="text-purple-600 text-xl" />
+                      <FaSort className="text-blue-600 text-xl" />
                       <div>
                         <h3 className="text-xl font-bold text-gray-900">
                           Sort Options
@@ -4727,7 +5025,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                         onClick={() => handleSortChange(option.value)}
                         className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 ${
                           sortBy === option.value
-                            ? "bg-purple-50 border-purple-500 text-purple-700"
+                            ? "bg-blue-50 border-blue-500 text-blue-700"
                             : "bg-gray-50 border-gray-200 text-gray-700 hover:border-gray-300"
                         }`}
                       >
@@ -4770,7 +5068,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                     </button>
                   </div>
 
-                  <div className="flex-1 p-6 overflow-y-auto space-y-6">
+                  <div className="no-scrollbar flex-1 space-y-6 overflow-y-auto p-6">
                     {/* Brand Filter (mobile) */}
                     <div>
                       <div className="flex items-center justify-between mb-3">
@@ -4791,7 +5089,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                           value={brandFilterQuery}
                           onChange={(e) => setBrandFilterQuery(e.target.value)}
                           placeholder="Search brand..."
-                          className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                       <div className="space-y-2">
@@ -4806,7 +5104,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                               onChange={() =>
                                 handleFilterChange("brand", brand)
                               }
-                              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                              className="w-4 h-4 appearance-none rounded border border-gray-300 bg-white transition-all duration-200 checked:border-blue-600 checked:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
                             />
                             <span className="text-gray-700 font-medium">
                               {brand}
@@ -4831,14 +5129,14 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                           Price Range
                         </h4>
                         <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                          ₹{filters.priceRange.min?.toLocaleString()} - ₹
+                          ₹ {filters.priceRange.min?.toLocaleString()} - ₹
                           {filters.priceRange.max?.toLocaleString()}
                         </span>
                       </div>
                       <div className="text-sm text-gray-600 mb-3">
                         Set your budget range for smartphone purchase
                       </div>
-                      <div className="bg-gradient-to-r from-purple-50 via-blue-50 purple-50 to-white rounded-xl p-4 border border-gray-200">
+                      <div className="rounded-xl border border-gray-200 bg-[#f8fbff] p-4">
                         <div className="flex justify-between text-sm font-medium text-gray-700 mb-4">
                           <div className="text-center">
                             <div className="text-xs text-gray-500">Minimum</div>
@@ -4857,7 +5155,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                         <div className="relative mb-4">
                           <div className="absolute h-2 bg-gray-200 rounded-full w-full top-1/2 transform -translate-y-1/2"></div>
                           <div
-                            className="absolute h-2 bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 rounded-full top-1/2 transform -translate-y-1/2"
+                            className="absolute h-2 bg-gradient-to-r from-blue-900 via-blue-850 to-blue-950 rounded-full top-1/2 transform -translate-y-1/2"
                             style={{
                               left: `${Math.max(
                                 0,
@@ -4911,10 +5209,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
                           <div className="flex justify-between items-center text-xs mb-2">
                             <span className="text-gray-500">
-                              ₹{MIN_PRICE.toLocaleString()}
+                              ₹ {MIN_PRICE.toLocaleString()}
                             </span>
                             <span className="text-gray-500">
-                              ₹{MAX_PRICE.toLocaleString()}
+                              ₹ {MAX_PRICE.toLocaleString()}
                             </span>
                           </div>
                           <div className="flex justify-center">
@@ -4935,7 +5233,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                     <div>
                       <div className="flex items-center justify-between mb-3 ">
                         <h4 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
-                          <FaMemory className="text-purple-500" /> Memory (RAM)
+                          <FaMemory className="text-blue-500" /> Memory (RAM)
                         </h4>
                         <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
                           {filters.ram.length} selected
@@ -4950,7 +5248,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                             key={ram}
                             className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium ${
                               filters.ram.includes(ram)
-                                ? "bg-gradient-to-b from-blue-600 via-purple-500 to-blue-600 text-white  "
+                                ? "bg-gradient-to-b from-blue-600 via-blue-500 to-blue-600 text-white  "
                                 : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300 hover: "
                             }`}
                           >
@@ -4987,7 +5285,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                             key={storage}
                             className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium ${
                               filters.storage.includes(storage)
-                                ? "bg-gradient-to-b from-blue-600 via-purple-500 to-blue-600 text-white  "
+                                ? "bg-gradient-to-b from-blue-600 via-blue-500 to-blue-600 text-white  "
                                 : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300 hover: "
                             }`}
                           >
@@ -5027,7 +5325,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                               key={r.id}
                               className={`flex items-center justify-between gap-2 cursor-pointer px-4 py-3 rounded-xl transition-all duration-200 font-medium ${
                                 filters.battery.includes(r.id)
-                                  ? "bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 text-white  "
+                                  ? "bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 text-white  "
                                   : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300"
                               }`}
                             >
@@ -5134,17 +5432,17 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                   {/* ... [Filter content from original] ... */}
 
                   {/* Apply Button */}
-                  <div className="border-t border-gray-200 p-6 bg-white mt-auto shrink-0">
+                  <div className="mt-auto shrink-0 border-t border-slate-200 bg-white p-6">
                     <div className="flex gap-3">
                       <button
                         onClick={() => setShowFilters(false)}
-                        className="flex-1 bg-gray-100 text-gray-700 py-4 rounded-xl font-semibold hover:bg-gray-200 transition-colors duration-200"
+                        className="flex-1 rounded-xl bg-slate-100 py-4 font-semibold text-slate-700 transition-colors duration-200 hover:bg-slate-200"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={() => setShowFilters(false)}
-                        className="flex-1 bg-gradient-to-r from-indigo-600 to-blue-600 text-white py-4 rounded-xl font-semibold hover:from-indigo-700 hover:to-blue-700 transition-all duration-200  "
+                        className="flex-1 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 py-4 font-semibold text-white transition-all duration-200 hover:from-indigo-700 hover:to-blue-700"
                       >
                         Apply Filters
                       </button>
@@ -5153,20 +5451,19 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                 </div>
               </div>
             )}
-          </div>
+          </section>
         </div>
       </div>
 
       {/* Help Section */}
-
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="bg-gradient-to-r from-purple-200 to-blue-200 rounded-2xl p-6 lg:p-8">
+      <div className="mt-12 lg:mt-16">
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm lg:p-8">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
             <div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
+              <h3 className="mb-2 text-xl font-bold text-slate-900">
                 Need help choosing?
               </h3>
-              <p className="text-gray-600 mb-4 lg:mb-0">
+              <p className="mb-4 text-slate-600 lg:mb-0">
                 Use our comparison tool to side-by-side compare up to 4
                 smartphones and make an informed decision based on your specific
                 requirements.
@@ -5174,7 +5471,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
             </div>
             <button
               onClick={() => navigate("/compare")}
-              className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-indigo-700 hover:to-blue-700 transition-all duration-200   whitespace-nowrap"
+              className="whitespace-nowrap rounded-xl border border-blue-400/50 bg-gradient-to-r from-blue-500 to-sky-500 px-8 py-3 font-semibold text-white transition-all duration-200 hover:from-blue-600 hover:to-sky-600"
             >
               Open Comparison Tool
             </button>

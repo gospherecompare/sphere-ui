@@ -13,6 +13,7 @@ import { useDevice } from "../../hooks/useDevice";
 import Cookies from "js-cookie";
 
 import useTitle from "../../hooks/useTitle";
+import usePageEngagementTracker from "../../hooks/usePageEngagementTracker";
 import {
   FaHeart,
   FaShare,
@@ -40,6 +41,7 @@ import {
   FaTag,
   FaCopy,
   FaCheck,
+  FaPlus,
   FaShareAlt,
   FaInfoCircle,
   FaWhatsapp,
@@ -69,6 +71,95 @@ const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
 const RECENT_STORAGE_KEY = "hooks_recent_smartphones_v1";
 const MAX_RECENT_ITEMS = 12;
 const SITE_ORIGIN = "https://tryhook.shop";
+const CURRENT_MONTH_YEAR = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  year: "numeric",
+}).format(new Date());
+
+// ============================================================================
+// RESPONSIVE SPACING CONFIGURATION - Easy to Edit for Mobile/Tablet/Desktop
+// ============================================================================
+const RESPONSIVE_SPACING = {
+  // Page padding/margin
+  pageMarginX: {
+    mobile: "px-3", // 0.75rem - Mobile
+    tablet: "sm:px-6", // 1.5rem - Tablet (sm and up)
+    desktop: "lg:px-8", // 2rem - Desktop (lg and up)
+  },
+  pageMarginY: {
+    mobile: "py-4", // 1rem - Mobile
+    tablet: "sm:py-5", // 1.25rem - Tablet
+    desktop: "lg:py-6", // 1.5rem - Desktop
+  },
+
+  // Sections padding
+  sectionPadding: {
+    mobile: "p-3", // 0.75rem
+    tablet: "sm:p-5", // 1.25rem
+    desktop: "lg:p-6", // 1.5rem
+  },
+
+  // Card padding
+  cardPadding: {
+    mobile: "p-4", // 1rem
+    tablet: "sm:p-5", // 1.25rem
+    desktop: "lg:p-6", // 1.5rem
+  },
+
+  // Gap between elements
+  gapSmall: "gap-2",
+  gapMedium: "gap-3",
+  gapLarge: "gap-4",
+  gapXLarge: "gap-6",
+
+  // Image section padding
+  imagePadding: {
+    mobile: "p-4", // 1rem
+    tablet: "sm:p-6", // 1.5rem
+    desktop: "lg:p-8", // 2rem
+  },
+
+  // Header section styling
+  headerPadding: {
+    mobile: "p-3",
+    tablet: "sm:p-6",
+    desktop: "lg:p-7",
+  },
+
+  // Content section margin
+  contentMarginY: {
+    mobile: "my-3",
+    tablet: "sm:my-4",
+    desktop: "lg:my-6",
+  },
+
+  // Grid gaps
+  gridGapMobile: "gap-3",
+  gridGapTablet: "sm:gap-4",
+  gridGapDesktop: "lg:gap-6",
+
+  // Key Specifications responsive gap (smaller on mobile)
+  specCardGap: {
+    mobile: "gap-2.5", // 0.625rem - Mobile (smaller)
+    tablet: "sm:gap-4", // 1rem - Tablet
+    desktop: "lg:gap-5", // 1.25rem - Desktop
+  },
+
+  // Key Specifications section spacing (reduced on mobile)
+  specSectionSpacing: {
+    mobile: "mt-3",
+    tablet: "sm:mt-5",
+    desktop: "lg:mt-6",
+  },
+};
+
+// Helper function to combine responsive classes
+const combineResponsiveClasses = (config) => {
+  const classes = [config.mobile];
+  if (config.tablet) classes.push(config.tablet);
+  if (config.desktop) classes.push(config.desktop);
+  return classes.join(" ");
+};
 
 const normalizeScore100 = (value) => {
   const n = Number(value);
@@ -138,15 +229,15 @@ const BaseSpecScoreBadge = ({
   const isGlass = variant === "glass";
   const containerClass = isGlass
     ? "inline-flex flex-col items-center justify-center rounded-xl border border-white/70 bg-white/60 px-2.5 py-1.5 leading-none shadow-[0_8px_24px_rgba(59,130,246,0.10)] backdrop-blur-md ring-1 ring-white/40"
-    : "inline-flex flex-col items-center justify-center rounded-md border border-violet-200 bg-violet-50/95 px-1.5 py-1 leading-none";
+    : "inline-flex flex-col items-center justify-center rounded-md border border-blue-200 bg-blue-50/95 px-1.5 py-1 leading-none";
   const valueClass = isGlass
     ? "text-[11px] font-bold text-slate-700"
-    : "text-[11px] font-bold text-violet-700";
+    : "text-[11px] font-bold text-blue-700";
   const labelClass = isGlass
     ? `text-[8px] font-semibold uppercase tracking-wide text-slate-500 ${
         showValue ? "mt-0.5" : ""
       }`
-    : `text-[8px] font-semibold uppercase tracking-wide text-violet-600 ${
+    : `text-[8px] font-semibold uppercase tracking-wide text-blue-600 ${
         showValue ? "mt-0.5" : ""
       }`;
 
@@ -173,10 +264,9 @@ const BaseSpecScoreBadge = ({
 };
 
 const MobileDetailCard = () => {
-  const [activePrimaryTab, setActivePrimaryTab] = useState("info");
   const [activeTab, setActiveTab] = useState("specifications");
   const [activeImage, setActiveImage] = useState(0);
-  const [showAllSpecs, setShowAllSpecs] = useState(false);
+  const [showAllSpecs, setShowAllSpecs] = useState(true);
   const [showAllStores, setShowAllStores] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState(0);
   const [activeStoreId, setActiveStoreId] = useState(null);
@@ -919,7 +1009,7 @@ const MobileDetailCard = () => {
       return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
     }
     if (launchStatus === "announced") {
-      return "bg-violet-50 text-violet-700 ring-1 ring-violet-200";
+      return "bg-blue-50 text-blue-700 ring-1 ring-blue-200";
     }
     if (launchStatus === "upcoming") {
       return "bg-sky-50 text-sky-700 ring-1 ring-sky-200";
@@ -932,6 +1022,12 @@ const MobileDetailCard = () => {
     }
     return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
   }, [launchStatus]);
+  const launchDateRaw =
+    mobileData?.launch_date ?? mobileData?.launchDate ?? null;
+  const launchDateParsed = launchDateRaw ? new Date(launchDateRaw) : null;
+  const hasLaunchDate =
+    Boolean(launchDateRaw) &&
+    !Number.isNaN(launchDateParsed?.getTime?.() ?? Number.NaN);
   const compareLimit = useMemo(() => {
     if (serverPolicy.allowCompare === false) return 0;
     if (Number.isFinite(serverPolicy.compareLimit))
@@ -945,11 +1041,13 @@ const MobileDetailCard = () => {
       return serverPolicy.competitorLimit;
     return getCompetitorLimitForStage(launchStatus);
   }, [launchStatus, serverPolicy]);
-  const allowSpecScore = useMemo(
-    () => isSpecScoreAllowed(launchStatus),
-    [launchStatus],
-  );
+  const allowSpecScore = false;
   const SpecScoreBadge = allowSpecScore ? BaseSpecScoreBadge : HiddenScoreBadge;
+  const headerSpecScoreValue = useMemo(() => {
+    if (!allowSpecScore || !mobileData) return null;
+    const rawValue = Number(resolveSmartphoneBadgeScore(mobileData));
+    return Number.isFinite(rawValue) ? Math.round(rawValue) : null;
+  }, [allowSpecScore, mobileData]);
   const pickScore100 = useCallback((...values) => {
     for (const value of values) {
       const normalized = normalizeScore100(value);
@@ -1200,9 +1298,16 @@ const MobileDetailCard = () => {
     [allowSpecScore, mobileData, scoreSummary],
   );
 
+  const smartphoneTabTitle = mobileData?.name
+    ? smartphoneMeta.title({
+        name: mobileData?.name || mobileData?.model || "",
+        brand: mobileData?.brand || mobileData?.brand_name || "",
+      })
+    : `Smartphone Details - See full specifications, price & more (${CURRENT_MONTH_YEAR}) - Hooks`;
+
   useTitle({
-    brand: mobileData?.brand,
-    name: mobileData?.name,
+    page: smartphoneTabTitle,
+    siteName: "",
   });
 
   useEffect(() => {
@@ -1332,6 +1437,14 @@ const MobileDetailCard = () => {
   const currentVariant = variants?.[selectedVariant];
   const currentProductId =
     mobileData?.id ?? mobileData?.product_id ?? mobileData?.productId ?? null;
+
+  usePageEngagementTracker({
+    productId: currentProductId,
+    pagePath:
+      typeof window !== "undefined" ? window.location.pathname : "/smartphones",
+    source: "smartphone-detail",
+    enabled: Boolean(currentProductId),
+  });
 
   useEffect(() => {
     if (!currentProductId || !mobileData || typeof window === "undefined") {
@@ -2179,18 +2292,9 @@ Price: ${price}
       .replace(/^-+|-+$/g, "");
 
   const getCanonicalUrl = useMemo(() => {
-    if (!mobileData) return SITE_ORIGIN;
-    const name = mobileData?.name || mobileData?.model;
-    if (!name) return SITE_ORIGIN;
-    try {
-      const slug = generateSlug(name);
-      if (!slug) return SITE_ORIGIN;
-      const path = `/smartphones/${toSeoDetailSlug(slug) || slug}`;
-      return `${SITE_ORIGIN}${path}`;
-    } catch (e) {
-      return SITE_ORIGIN;
-    }
-  }, [mobileData, toSeoDetailSlug]);
+    const path = location?.pathname || "/";
+    return `${SITE_ORIGIN}${path}`;
+  }, [location.pathname]);
   const isSharedLink =
     query.get("shared") === "1" || query.get("shared") === "true";
 
@@ -2422,20 +2526,6 @@ Price: ${price}
   ];
 
   const tabs = window.innerWidth < 768 ? mobileTabs : desktopTabs;
-  const primaryTabs = [
-    { id: "info", label: "Info" },
-    { id: "specs", label: "Specs" },
-    ...(competitorLimit > 0
-      ? [{ id: "competitors", label: "Competitors" }]
-      : []),
-  ];
-
-  useEffect(() => {
-    if (activePrimaryTab === "competitors" && competitorLimit === 0) {
-      setActivePrimaryTab("info");
-    }
-  }, [activePrimaryTab, competitorLimit]);
-
   // Determine whether a piece of spec data actually contains useful content
   const hasContent = (data) => {
     if (data == null || data === false) return false;
@@ -2606,12 +2696,12 @@ Price: ${price}
               {primitiveEntries.map(([key, value]) => (
                 <div
                   key={key}
-                  className="flex justify-between items-center py-3 px-4 bg-gradient-to-r from-purple-600 to-transparent rounded-lg border border-slate-100 hover:border-purple-200 hover:shadow-sm transition-all duration-200"
+                  className="flex items-center justify-between rounded-lg border border-slate-100 bg-gradient-to-r from-blue-600/10 to-transparent px-4 py-3 transition-all duration-200 hover:border-blue-200 hover:shadow-sm"
                 >
                   <span className="text-gray-700 font-semibold text-sm flex-1">
                     {toNormalCase(key)}
                   </span>
-                  <span className="text-gray-900 font-bold text-sm text-right flex-1 break-words text-purple-600">
+                  <span className="text-right text-sm font-bold text-blue-600 break-words flex-1">
                     {formatSpecValue(value, key)}
                   </span>
                 </div>
@@ -2627,21 +2717,21 @@ Price: ${price}
             return (
               <div
                 key={gkey}
-                className="bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl p-4 border border-purple-100 shadow-sm"
+                className="rounded-xl border border-blue-100 bg-gradient-to-br from-blue-600/10 to-white p-4 shadow-sm"
               >
-                <h4 className="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wide text-purple-900">
+                <h4 className="mb-3 text-sm font-bold uppercase tracking-wide text-blue-900">
                   {toNormalCase(gkey)}
                 </h4>
                 <div className="space-y-2">
                   {subEntries.map(([skey, sval]) => (
                     <div
                       key={skey}
-                      className="flex justify-between items-center py-2 px-3 bg-white/60 rounded-lg hover:bg-white/80 transition-all"
+                      className="flex items-center justify-between rounded-lg bg-white/70 px-3 py-2 transition-all hover:bg-white"
                     >
                       <span className="text-gray-700 text-sm flex-1 font-medium">
                         {toNormalCase(skey)}
                       </span>
-                      <span className="text-gray-900 font-semibold text-sm text-right flex-1 break-words text-purple-600">
+                      <span className="text-right text-sm font-semibold text-blue-600 break-words flex-1">
                         {formatSpecValue(sval, skey)}
                       </span>
                     </div>
@@ -2662,12 +2752,12 @@ Price: ${price}
           {displayEntries.map(([key, value]) => (
             <div
               key={key}
-              className="flex justify-between items-center py-3 px-4 bg-gradient-to-r from-purple-600 to-transparent rounded-lg border border-slate-100 hover:border-purple-300 hover:shadow-md hover:bg-purple-50/30 transition-all duration-200"
+              className="flex items-center justify-between rounded-lg border border-slate-100 bg-gradient-to-r from-blue-600/10 to-transparent px-4 py-3 transition-all duration-200 hover:border-blue-200 hover:bg-blue-50/40 hover:shadow-md"
             >
               <span className="text-gray-700 font-semibold text-sm flex-1">
                 {toNormalCase(key)}
               </span>
-              <span className="text-gray-900 font-bold text-sm text-right flex-1 break-words text-purple-600">
+              <span className="text-right text-sm font-bold text-blue-600 break-words flex-1">
                 {formatSpecValue(value, key)}
               </span>
             </div>
@@ -2676,7 +2766,7 @@ Price: ${price}
         {entries.length > limit && (
           <button
             onClick={() => setShowAllSpecs(!showAllSpecs)}
-            className="w-full mt-4 py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-600 hover:to-blue-600 text-white font-bold text-sm rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg"
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 px-4 py-3 text-sm font-bold text-white shadow-md transition-all duration-200 hover:shadow-lg"
           >
             {showAllSpecs
               ? "Show Less"
@@ -2700,128 +2790,432 @@ Price: ${price}
         </div>
       );
 
-    const rows = [];
+    const pickFirstContent = (...values) =>
+      values.find((value) => hasContent(value)) ?? null;
 
-    const normalizeCameraLensLabel = (lensKey) => {
-      const key = String(lensKey || "")
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, "");
-
-      if (
-        ["main", "maincamera", "wide", "primary", "primarycamera"].includes(key)
-      ) {
-        return "Main Camera";
-      }
-      if (["ultrawide", "ultrawidecamera", "ultrawideangle"].includes(key)) {
-        return "Ultra Wide Camera";
-      }
-      if (["telephoto", "periscope", "periscopetelephoto"].includes(key)) {
-        return "Telephoto Camera";
-      }
-      return toNormalCase(lensKey);
-    };
-
-    const normalizeCameraLabel = (rawKey) => {
+    const normalizeCameraMetricLabel = (rawKey) => {
       const key = normalizeSpecToken(rawKey);
-      if (
-        ["maincamera", "maincameramegapixels", "primarycamera"].includes(key)
-      ) {
-        return "Main Camera";
+      if (["focus", "autofocus"].includes(key)) return "Focus";
+      if (["resolution", "megapixels", "maincameramegapixels"].includes(key)) {
+        return "Resolution";
       }
-      if (key === "rearcamera") return "Rear Camera";
-      if (key === "frontcamera") return "Front Camera";
-      if (key === "shootingmodes") return "Shooting Modes";
-      if (key === "videorecording") return "Video Recording";
-      if (key === "aifeatures") return "AI Features";
-      if (key === "camerafeatures") return "Camera Features";
-      if (key === "rearcameraphotographyfeatures")
+      if (key === "aperture") return "Aperture";
+      if (key === "sensor") return "Sensor";
+      if (["stabilization", "ois", "eis"].includes(key)) return "Stabilization";
+      if (key === "zoom") return "Zoom";
+      if (key === "rear") return "Rear";
+      if (key === "front") return "Front";
+      if (["reareis", "rear_eis"].includes(key)) return "Rear EIS";
+      if (["timelapse", "time_lapse"].includes(key)) return "Time Lapse";
+      if (["slowmotion", "slow_motion"].includes(key)) return "Slow Motion";
+      if (["hdrvideo", "hdr_video"].includes(key)) return "HDR Video";
+      if (key === "video_recording" || key === "recording") {
+        return "Video Recording";
+      }
+      if (
+        key === "photographyfeatures" ||
+        key === "photography_features" ||
+        key === "rearcameraphotographyfeatures"
+      ) {
         return "Photography Features";
+      }
+      if (key === "ai_features" || key === "aifeatures") return "AI Features";
+      if (key === "shootingmodes" || key === "shooting_modes") {
+        return "Shooting Modes";
+      }
       return toNormalCase(rawKey);
     };
 
-    const formatCameraObject = (value, key) => {
+    const formatCameraDisplayValue = (value, key = "") => {
       if (!hasContent(value)) return "";
       if (Array.isArray(value)) {
         return value
-          .map((item) => formatCameraObject(item, key))
+          .map((item) => formatCameraDisplayValue(item, key))
           .filter((item) => hasContent(item))
           .join(", ");
       }
       if (typeof value === "object") {
         const parts = Object.entries(value)
-          .filter(([, v]) => hasContent(v))
-          .map(([k, v]) => `${toNormalCase(k)}: ${formatCameraObject(v, k)}`)
+          .filter(
+            ([nestedKey, nestedValue]) =>
+              hasContent(nestedValue) && !isScoreKey(nestedKey),
+          )
+          .map(([nestedKey, nestedValue]) => {
+            const nestedLabel = normalizeCameraMetricLabel(nestedKey);
+            const nestedText = formatCameraDisplayValue(nestedValue, nestedKey);
+            if (!hasContent(nestedText)) return null;
+            return `${nestedLabel}: ${nestedText}`;
+          })
           .filter(Boolean);
         return parts.join(" | ");
       }
-      return formatSpecValue(value, key);
+      const text = String(formatSpecValue(value, key))
+        .replace(/\s+/g, " ")
+        .trim();
+      return hasContent(text) && text !== "Not specified" ? text : "";
     };
 
-    const addRow = (label, value, key = label) => {
-      const formatted = formatCameraObject(value, key);
-      if (!hasContent(formatted) || formatted === "Not specified") return;
-      rows.push([label, formatted]);
+    const formatMegapixelDisplay = (value) => {
+      const parsed = parseMegapixelValue(value);
+      if (parsed != null) return `${parsed} MP`;
+      const text = formatCameraDisplayValue(value, "resolution");
+      if (!hasContent(text)) return "";
+      return /mp\b/i.test(text) ? text : text;
     };
 
-    const mainCandidates = [
-      camera.main_camera,
-      camera.main,
-      camera.primary,
+    const pushCameraItem = (items, label, value, key = label) => {
+      const text =
+        key === "resolution"
+          ? formatMegapixelDisplay(value)
+          : formatCameraDisplayValue(value, key);
+      if (!hasContent(text) || text === "Not specified") return;
+      items.push({ label, value: text, key });
+    };
+
+    const appendRemainingItems = (source, items, skippedKeys = []) => {
+      if (!source || typeof source !== "object" || Array.isArray(source))
+        return;
+      const skipped = new Set([
+        ...skippedKeys,
+        "score",
+        "camera_score",
+        "spec_score",
+        "video_recording",
+        "recording",
+        "features",
+        "ai_features",
+        "shooting_modes",
+        "photography_features",
+        "rear_camera_photography_features",
+      ]);
+      Object.entries(source).forEach(([key, value]) => {
+        if (skipped.has(key) || !hasContent(value)) return;
+        const text = formatCameraDisplayValue(value, key);
+        if (!hasContent(text)) return;
+        items.push({
+          label: normalizeCameraMetricLabel(key),
+          value: text,
+          key,
+        });
+      });
+    };
+
+    const dedupeCameraItems = (items = []) => {
+      const seen = new Set();
+      return items.filter(({ label, value }) => {
+        const key = String(label || "").toLowerCase();
+        if (!hasContent(value) || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    };
+
+    const buildMainCameraItems = (source) => {
+      const items = [];
+      if (source && typeof source === "object" && !Array.isArray(source)) {
+        const handled = [
+          "focus",
+          "autofocus",
+          "resolution",
+          "megapixels",
+          "main_camera_megapixels",
+          "aperture",
+          "sensor",
+          "stabilization",
+          "ois",
+          "eis",
+          "zoom",
+        ];
+        pushCameraItem(
+          items,
+          "Focus",
+          source.focus ?? source.autofocus,
+          "focus",
+        );
+        pushCameraItem(
+          items,
+          "Resolution",
+          source.resolution ??
+            source.megapixels ??
+            source.main_camera_megapixels,
+          "resolution",
+        );
+        pushCameraItem(items, "Aperture", source.aperture, "aperture");
+        pushCameraItem(items, "Sensor", source.sensor, "sensor");
+        pushCameraItem(
+          items,
+          "Stabilization",
+          source.stabilization ?? source.ois ?? source.eis,
+          "stabilization",
+        );
+        pushCameraItem(items, "Zoom", source.zoom, "zoom");
+        appendRemainingItems(source, items, handled);
+      } else if (hasContent(source)) {
+        pushCameraItem(items, "Resolution", source, "main_camera");
+      }
+
+      if (!items.length && hasContent(camera.main_camera_megapixels)) {
+        pushCameraItem(
+          items,
+          "Resolution",
+          `${camera.main_camera_megapixels} MP`,
+          "main_camera_megapixels",
+        );
+      }
+
+      return dedupeCameraItems(items);
+    };
+
+    const buildFrontCameraItems = (source) => {
+      const items = [];
+      if (source && typeof source === "object" && !Array.isArray(source)) {
+        const handled = [
+          "resolution",
+          "megapixels",
+          "focus",
+          "autofocus",
+          "aperture",
+          "sensor",
+          "stabilization",
+          "ois",
+          "eis",
+        ];
+        pushCameraItem(
+          items,
+          "Resolution",
+          source.resolution ??
+            source.megapixels ??
+            source.main_camera_megapixels,
+          "resolution",
+        );
+        pushCameraItem(
+          items,
+          "Focus",
+          source.focus ?? source.autofocus,
+          "focus",
+        );
+        pushCameraItem(items, "Aperture", source.aperture, "aperture");
+        pushCameraItem(items, "Sensor", source.sensor, "sensor");
+        pushCameraItem(
+          items,
+          "Stabilization",
+          source.stabilization ?? source.ois ?? source.eis,
+          "stabilization",
+        );
+        appendRemainingItems(source, items, handled);
+      } else if (hasContent(source)) {
+        pushCameraItem(items, "Resolution", source, "front_camera");
+      }
+
+      return dedupeCameraItems(items);
+    };
+
+    const buildVideoItems = (source) => {
+      const items = [];
+      if (source && typeof source === "object" && !Array.isArray(source)) {
+        const handled = [
+          "rear",
+          "back",
+          "main",
+          "front",
+          "rear_eis",
+          "eis",
+          "time_lapse",
+          "timelapse",
+          "slow_motion",
+          "hdr_video",
+          "hdr",
+        ];
+        pushCameraItem(
+          items,
+          "Rear",
+          source.rear ?? source.back ?? source.main,
+          "rear",
+        );
+        pushCameraItem(items, "Front", source.front, "front");
+        pushCameraItem(
+          items,
+          "Rear EIS",
+          source.rear_eis ?? source.eis,
+          "rear_eis",
+        );
+        pushCameraItem(
+          items,
+          "Time Lapse",
+          source.time_lapse ?? source.timelapse,
+          "time_lapse",
+        );
+        pushCameraItem(items, "Slow Motion", source.slow_motion, "slow_motion");
+        pushCameraItem(
+          items,
+          "HDR Video",
+          source.hdr_video ?? source.hdr,
+          "hdr_video",
+        );
+        appendRemainingItems(source, items, handled);
+      } else if (hasContent(source)) {
+        pushCameraItem(items, "Details", source, "video_recording");
+      }
+
+      return dedupeCameraItems(items);
+    };
+
+    const buildFeatureSummary = (source) => {
+      const values = [];
+      const seen = new Set();
+
+      const push = (entry) => {
+        if (!hasContent(entry)) return;
+        if (Array.isArray(entry)) {
+          entry.forEach(push);
+          return;
+        }
+        if (typeof entry === "object") {
+          const entries = Object.entries(entry);
+          const primitiveValues = entries
+            .map(([, nestedValue]) => nestedValue)
+            .filter((nestedValue) => {
+              if (!hasContent(nestedValue)) return false;
+              if (Array.isArray(nestedValue)) return true;
+              if (typeof nestedValue === "object") return true;
+              const text = String(nestedValue).trim().toLowerCase();
+              return !["true", "false", "null", "undefined", ""].includes(text);
+            });
+
+          if (primitiveValues.length > 0) {
+            primitiveValues.forEach(push);
+            return;
+          }
+
+          entries.forEach(([key, nestedValue]) => {
+            if (typeof nestedValue === "boolean") {
+              if (nestedValue) push(normalizeCameraMetricLabel(key));
+              return;
+            }
+            if (!hasContent(nestedValue)) {
+              push(normalizeCameraMetricLabel(key));
+              return;
+            }
+            push(nestedValue);
+          });
+          return;
+        }
+
+        const text = String(entry)
+          .replace(/_/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+        if (
+          !text ||
+          ["true", "false", "null", "undefined"].includes(text.toLowerCase())
+        ) {
+          return;
+        }
+        const key = text.toLowerCase();
+        if (seen.has(key)) return;
+        seen.add(key);
+        values.push(text);
+      };
+
+      push(source);
+      return values.join(", ");
+    };
+
+    const formatCameraScore = (value) => {
+      const normalized = normalizeScore100(value);
+      if (normalized == null) return "";
+      return Number(normalized).toFixed(1);
+    };
+
+    const mainCameraSource = pickFirstContent(
       camera.rear_camera?.main_camera,
       camera.rear_camera?.main,
       camera.rear_camera?.wide,
       camera.rear_camera?.primary,
-    ];
-
-    const mainCameraMp = getMainCameraMp({ camera });
-    const detailedMain = mainCandidates.find((entry) => hasContent(entry));
-    if (detailedMain) {
-      addRow("Main Camera", detailedMain, "main_camera");
-    } else if (mainCameraMp) {
-      addRow("Main Camera", `${mainCameraMp} MP`, "main_camera_megapixels");
-    }
-
-    // Rear camera can be an object with lenses or a string
-    if (camera.rear_camera) {
-      if (
-        typeof camera.rear_camera === "object" &&
-        !Array.isArray(camera.rear_camera)
-      ) {
-        Object.entries(camera.rear_camera).forEach(([lens, spec]) => {
-          if (hasContent(spec)) {
-            addRow(normalizeCameraLensLabel(lens), spec, lens);
-          }
-        });
-      } else {
-        addRow("Rear Camera", camera.rear_camera, "rear_camera");
-      }
-    }
-
-    // Front camera
-    if (camera.front_camera) {
-      addRow("Front Camera", camera.front_camera, "front_camera");
-    }
-
-    // Add remaining dynamic keys so camera stays future-proof for varying JSON shapes.
-    const handledKeys = new Set([
-      "main_camera",
-      "main",
-      "primary",
-      "main_camera_megapixels",
-      "rear_camera",
-      "front_camera",
-    ]);
-
-    Object.entries(camera).forEach(([key, value]) => {
-      if (handledKeys.has(key)) return;
-      if (!hasContent(value)) return;
-      addRow(normalizeCameraLabel(key), value, key);
-    });
-
-    const uniqueRows = dedupeSpecRowsByLabel(rows).filter(([, value]) =>
-      hasContent(value),
+      camera.main_camera,
+      camera.main,
+      camera.primary,
     );
-    if (!uniqueRows.length) {
+    const frontCameraSource = pickFirstContent(
+      camera.front_camera,
+      camera.front,
+      camera.frontCamera,
+    );
+    const videoRecordingSource = pickFirstContent(
+      camera.video_recording,
+      camera.recording,
+      camera.rear_camera?.video_recording,
+      camera.front_camera?.video_recording,
+    );
+    const photographySource = pickFirstContent(
+      camera.rear_camera_photography_features,
+      camera.photography_features,
+      camera.features,
+      camera.ai_features,
+      camera.shooting_modes,
+      camera.rear_camera?.photography_features,
+      camera.rear_camera?.ai_features,
+      camera.front_camera?.ai_features,
+    );
+    const scoreValue = pickFirstContent(
+      camera.score,
+      camera.camera_score,
+      camera.cameraScore,
+      camera.spec_score,
+    );
+
+    const mainCameraItems = buildMainCameraItems(mainCameraSource);
+    const frontCameraItems = buildFrontCameraItems(frontCameraSource);
+    const videoRecordingItems = buildVideoItems(videoRecordingSource);
+    const photographySummary = buildFeatureSummary(photographySource);
+    const cameraScore = formatCameraScore(scoreValue);
+
+    const groups = [];
+    if (mainCameraItems.length) {
+      groups.push({
+        key: "main",
+        title: "Main Camera",
+        layout: "tiles",
+        columns: "sm:grid-cols-2",
+        items: mainCameraItems,
+      });
+    }
+    if (frontCameraItems.length) {
+      groups.push({
+        key: "front",
+        title: "Front Camera",
+        layout: frontCameraItems.length === 1 ? "inline" : "tiles",
+        columns: "sm:grid-cols-2",
+        items: frontCameraItems,
+      });
+    }
+    if (videoRecordingItems.length) {
+      groups.push({
+        key: "video",
+        title: "Video Recording",
+        layout: "tiles",
+        columns: "sm:grid-cols-2 lg:grid-cols-3",
+        items: videoRecordingItems,
+      });
+    }
+    if (photographySummary) {
+      groups.push({
+        key: "photo",
+        title: "Photography Features",
+        layout: "text",
+        value: photographySummary,
+      });
+    }
+    if (cameraScore) {
+      groups.push({
+        key: "score",
+        title: "Score",
+        layout: "score",
+        value: cameraScore,
+      });
+    }
+
+    if (!groups.length) {
       return (
         <div className="text-center py-4 text-gray-500">
           No camera data available
@@ -2829,67 +3223,89 @@ Price: ${price}
       );
     }
 
-    const renderCameraValueCell = (value) => {
-      const text = String(value ?? "").trim();
-      if (!text) return "Not specified";
+    const renderRowTable = (rows, options = {}) => {
+      if (!rows.length) return null;
+      const { valueClassName = "", singleValue = false } = options;
 
-      // Convert "Key: Value | Key: Value" into a readable mini table.
-      if (text.includes("|") && text.includes(":")) {
-        const pairs = text
-          .split("|")
-          .map((part) => part.trim())
-          .filter(Boolean)
-          .map((part) => {
-            const separatorIndex = part.indexOf(":");
-            if (separatorIndex === -1) return null;
-            const field = part.slice(0, separatorIndex).trim();
-            const fieldValue = part.slice(separatorIndex + 1).trim();
-            if (!field || !fieldValue) return null;
-            return [field, fieldValue];
-          })
-          .filter(Boolean);
+      return (
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <table className="w-full table-fixed">
+            <tbody className="divide-y divide-slate-100">
+              {rows.map((row, idx) => {
+                if (singleValue) {
+                  return (
+                    <tr key={`${row.key}-${idx}`}>
+                      <td
+                        className="px-4 py-3 text-sm leading-7 text-slate-700 break-words sm:px-5"
+                        colSpan={2}
+                      >
+                        {row.value}
+                      </td>
+                    </tr>
+                  );
+                }
 
-        if (pairs.length >= 2) {
-          return (
-            <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
-              {pairs.map(([field, fieldValue]) => (
-                <div
-                  key={`${field}-${fieldValue}`}
-                  className="border border-slate-200 bg-white px-2 py-1.5"
-                >
-                  <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-600">
-                    {field}
-                  </div>
-                  <div className="mt-0.5 text-[12px] leading-snug text-slate-900 break-words">
-                    {fieldValue}
-                  </div>
-                </div>
-              ))}
-            </div>
-          );
-        }
+                return (
+                  <tr key={`${row.label}-${idx}`} className="align-top">
+                    <td className="w-40 px-4 py-3 text-sm font-medium text-slate-600 sm:px-5">
+                      {row.label}
+                    </td>
+                    <td
+                      className={`px-4 py-3 text-sm font-semibold leading-6 text-slate-900 break-words sm:px-5 ${valueClassName}`}
+                    >
+                      {row.value}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      );
+    };
+
+    const renderGroupContent = (group) => {
+      if (group.layout === "text") {
+        return renderRowTable([{ key: group.key, value: group.value }], {
+          singleValue: true,
+        });
       }
 
-      return text;
+      if (group.layout === "score") {
+        return renderRowTable(
+          [{ key: group.key, label: "Score", value: group.value }],
+          {
+            valueClassName:
+              "text-2xl font-semibold tracking-tight text-blue-600",
+          },
+        );
+      }
+
+      return renderRowTable(group.items);
     };
 
     return (
-      <div className="divide-y divide-slate-200 bg-white">
-        {uniqueRows.map(([label, value], idx) => (
-          <section key={idx} className="py-3 first:pt-0 last:pb-0">
-            <h5 className="mb-2 text-sm font-semibold text-slate-800">
-              {label}
-            </h5>
-            <div className="text-sm text-slate-900">
-              {renderCameraValueCell(value)}
+      <div className="space-y-5">
+        {groups.map((group, idx) => (
+          <section
+            key={group.key}
+            className={
+              idx !== groups.length - 1 ? "border-b border-slate-100 pb-5" : ""
+            }
+          >
+            <div className="flex items-center justify-between gap-4">
+              <h5 className="text-sm font-semibold text-slate-900 sm:text-base">
+                {group.title}
+              </h5>
             </div>
+            <div className="mt-4">{renderGroupContent(group)}</div>
           </section>
         ))}
       </div>
     );
   };
 
-  const renderSpecTable = (data) => {
+  const renderSpecTable = (data, limit = 5) => {
     if (!data || (typeof data === "object" && Object.keys(data).length === 0))
       return (
         <div className="text-center py-4 text-gray-500">No data available</div>
@@ -2904,33 +3320,35 @@ Price: ${price}
       ),
     );
 
+    const displayEntries = showAllSpecs ? entries : entries.slice(0, limit);
+
     return (
-      <div className="overflow-x-auto rounded-md">
-        <table className="w-full min-w-[360px] sm:min-w-full shadow-none">
-          <tbody className="bg-white">
-            {entries.map(([key, value], idx) => (
-              <tr
-                key={key}
-                className={`transition-colors ${
-                  idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"
-                } hover:bg-violet-50/30`}
-              >
-                <td className="w-[32%] px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-slate-600 align-top">
-                  {toNormalCase(key)}
-                </td>
-                <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm text-slate-900 align-top">
-                  {formatSpecValue(value, key)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <>
+        <div className="space-y-0">
+          {displayEntries.map(([key, value]) => (
+            <div
+              key={key}
+              className={`grid gap-3 py-3 sm:grid-cols-[180px_minmax(0,1fr)] sm:gap-6 ${
+                key !== displayEntries[displayEntries.length - 1]?.[0]
+                  ? "border-b border-slate-100"
+                  : ""
+              }`}
+            >
+              <p className="text-sm font-medium text-slate-600">
+                {toNormalCase(key)}
+              </p>
+              <div className="text-sm font-semibold leading-6 text-slate-900 break-words">
+                {formatSpecValue(value, key)}
+              </div>
+            </div>
+          ))}
+        </div>
+      </>
     );
   };
 
   // Display-specific renderer â€” fallback to generic spec table when possible
-  const renderDisplayTable = (display) => {
+  const renderDisplayTable = (display, limit = 5) => {
     if (
       !display ||
       (typeof display === "object" && Object.keys(display).length === 0)
@@ -2951,7 +3369,7 @@ Price: ${price}
     }
 
     // Reuse generic table renderer for object-like display data
-    return renderSpecTable(d);
+    return renderSpecTable(d, limit);
   };
 
   const toSectionTableData = (raw, fallbackKey) => {
@@ -2981,21 +3399,116 @@ Price: ${price}
         );
         const audioData = toSectionTableData(mobileData.audio, "audio");
         const sensorsData = toSectionTableData(mobileData.sensors, "sensors");
+        const buildData =
+          mobileData.build_design || mobileData.build_design_json;
         const sectionScore = (key) => getSectionScore(key);
         const sectionScoreDisplay = (key) => getSectionScoreDisplay(key);
+        const specJumpSections = [
+          { id: "spec-general", label: "General", visible: true },
+          {
+            id: "spec-display",
+            label: "Display",
+            visible: hasContent(displayData),
+          },
+          { id: "spec-body", label: "Body", visible: hasContent(buildData) },
+          {
+            id: "spec-performance",
+            label: "Processor",
+            visible: hasContent(performanceData),
+          },
+          {
+            id: "spec-camera",
+            label: "Main Camera",
+            visible: hasContent(cameraData),
+          },
+          {
+            id: "spec-battery",
+            label: "Battery",
+            visible: hasContent(batteryData),
+          },
+          {
+            id: "spec-connectivity",
+            label: "Connectivity",
+            visible: hasContent(connectivityData),
+          },
+          {
+            id: "spec-network",
+            label: "Network",
+            visible: hasContent(networkData),
+          },
+          { id: "spec-audio", label: "Audio", visible: hasContent(audioData) },
+          {
+            id: "spec-sensors",
+            label: "Sensors",
+            visible: hasContent(sensorsData),
+          },
+        ].filter((section) => section.visible);
+        const scrollToSpecSection = (sectionId) => {
+          const el = document.getElementById(sectionId);
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        };
 
         return (
-          <div id="spec-specifications" className="space-y-4">
-            {/* Specs Sections */}
-            <div className="space-y-4">
+          <div
+            id="spec-specifications"
+            className={`mx-auto max-w-7xl ${combineResponsiveClasses(RESPONSIVE_SPACING.contentMarginY)}`}
+          >
+            <div
+              className={`rounded-2xl bg-transparent ${combineResponsiveClasses(RESPONSIVE_SPACING.sectionPadding)}`}
+            >
+              <div
+                className={`flex flex-col gap-4 md:flex-row md:items-start md:justify-between`}
+              >
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-[0.34em] text-blue-600">
+                    Full Specifications
+                  </p>
+                  <h3
+                    className={`mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl`}
+                  >
+                    {metaName}
+                    {currentVariantLabel ? ` (${currentVariantLabel})` : ""}
+                    <span className="text-blue-600"> Specs</span>
+                  </h3>
+                  <p
+                    className={`mt-2 max-w-3xl text-sm leading-6 text-slate-500 sm:text-base`}
+                  >
+                    Explore the key hardware sections below with quick jumps.
+                  </p>
+                </div>
+              </div>
+
+              <div className="relative mt-4">
+                <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-white to-transparent" />
+                <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-white to-transparent" />
+                <div
+                  className={`flex ${RESPONSIVE_SPACING.gapMedium} overflow-x-auto pb-1 no-scrollbar`}
+                >
+                  {specJumpSections.map((section) => (
+                    <button
+                      key={section.id}
+                      type="button"
+                      onClick={() => scrollToSpecSection(section.id)}
+                      className={`inline-flex flex-shrink-0 items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-all hover:border-blue-300 hover:text-blue-600`}
+                    >
+                      {section.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className={`space-y-4 sm:space-y-5`}>
               {/* General Section */}
               <div
                 id="spec-general"
-                className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
+                className={`rounded-lg border border-slate-200 bg-white ${combineResponsiveClasses(RESPONSIVE_SPACING.cardPadding)}`}
               >
                 <div className="mb-3 flex items-center justify-between gap-2">
-                  <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
-                    <FaInfoCircle className="text-sm text-violet-400" />
+                  <h4 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+                    <FaInfoCircle className="text-sm text-blue-500" />
                     General
                   </h4>
                   <div className="flex items-center gap-1.5">
@@ -3006,76 +3519,36 @@ Price: ${price}
                     />
                   </div>
                 </div>
-                <div className="overflow-hidden rounded-md">
-                  <table className="min-w-full">
-                    <tbody className="bg-white">
-                      {[
-                        { label: "Brand", value: mobileData.brand },
-                        { label: "Model", value: mobileData.model },
-                        { label: "Segment", value: mobileData.category },
-                        {
-                          label: "Release Date",
-                          value: formatDateForDisplay(
-                            mobileData.launch_date || mobileData.launchDate,
-                          ),
-                        },
-                        {
-                          label: "Operating System",
-                          value:
-                            mobileData.performance?.operating_system ||
-                            mobileData.performance?.os ||
-                            "N/A",
-                        },
-                        {
-                          label: "Custom UI",
-                          value: mobileData.ui || "Stock",
-                        },
-                        {
-                          label: "Colors",
-                          value: Array.isArray(mobileData.colors)
-                            ? mobileData.colors.join(", ")
-                            : mobileData.build_design?.colors || "N/A",
-                        },
-                        {
-                          label: "Sim Type",
-                          value:
-                            mobileData.network?.sim_type ||
-                            mobileData.sim ||
-                            "Dual Sim",
-                        },
-                        {
-                          label: "Weight",
-                          value: (() => {
-                            const w = mobileData.build_design?.weight;
-                            if (!w) return "N/A";
-                            const ws = String(w).trim();
-                            return /\bg\b/i.test(ws) ? ws : `${ws} g`;
-                          })(),
-                        },
-                      ]
-                        .filter(
-                          (it) =>
-                            it.value !== undefined &&
-                            it.value !== null &&
-                            it.value !== "",
-                        )
-                        .map((item, idx) => (
-                          <tr
-                            key={idx}
-                            className={`transition-colors ${
-                              idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"
-                            } hover:bg-violet-50/30`}
-                          >
-                            <td className="w-[32%] px-3 py-2.5 text-[13px] font-medium text-slate-600 align-top sm:px-4 md:px-5">
-                              {item.label}
-                            </td>
-                            <td className="w-[68%] px-3 py-2.5 text-[13px] text-slate-900 sm:px-4 md:px-5">
-                              {formatSpecValue(item.value, item.label)}
-                            </td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
+                <div className="mt-4">
+                  {renderSpecTable(
+                    {
+                      Brand: mobileData.brand,
+                      Model: mobileData.model,
+                      Segment: mobileData.category,
+                      "Release Date": formatDateForDisplay(
+                        mobileData.launch_date || mobileData.launchDate,
+                      ),
+                      "Operating System":
+                        mobileData.performance?.operating_system ||
+                        mobileData.performance?.os ||
+                        "N/A",
+                      "Custom UI": mobileData.ui || "Stock",
+                      Colors: Array.isArray(mobileData.colors)
+                        ? mobileData.colors.join(", ")
+                        : mobileData.build_design?.colors || "N/A",
+                      "SIM Type":
+                        mobileData.network?.sim_type ||
+                        mobileData.sim ||
+                        "Dual Sim",
+                      Weight: (() => {
+                        const w = mobileData.build_design?.weight;
+                        if (!w) return "N/A";
+                        const ws = String(w).trim();
+                        return /\bg\b/i.test(ws) ? ws : `${ws} g`;
+                      })(),
+                    },
+                    10,
+                  )}
                 </div>
               </div>
 
@@ -3083,11 +3556,11 @@ Price: ${price}
               {hasContent(displayData) && (
                 <div
                   id="spec-display"
-                  className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
+                  className="rounded-lg border border-slate-200 bg-white p-4 sm:p-6"
                 >
                   <div className="mb-3 flex items-center justify-between gap-2">
-                    <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
-                      <FaExpand className="text-purple-400" />
+                    <h4 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+                      <FaExpand className="text-blue-500" />
                       Display
                     </h4>
                     <div className="flex items-center gap-1.5">
@@ -3097,8 +3570,32 @@ Price: ${price}
                       />
                     </div>
                   </div>
+                  <div className="mt-4">
+                    {renderDisplayTable(displayData, 10)}
+                  </div>
+                </div>
+              )}
 
-                  {renderDisplayTable(displayData)}
+              {/* Body Section */}
+              {hasContent(buildData) && (
+                <div
+                  id="spec-body"
+                  className="rounded-lg border border-slate-200 bg-white p-4 sm:p-6"
+                >
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <h4 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+                      <FaMobile className="text-slate-500" />
+                      Body
+                    </h4>
+                    <div className="flex items-center gap-1.5">
+                      <SpecScoreBadge
+                        score={sectionScore("overall")}
+                        displayScore={sectionScoreDisplay("overall")}
+                        size={38}
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4">{renderSpecTable(buildData, 10)}</div>
                 </div>
               )}
 
@@ -3106,10 +3603,10 @@ Price: ${price}
               {hasContent(performanceData) && (
                 <div
                   id="spec-performance"
-                  className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
+                  className="rounded-lg border border-slate-200 bg-white p-4 sm:p-6"
                 >
                   <div className="mb-3 flex items-center justify-between gap-2">
-                    <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
+                    <h4 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
                       <FaBolt className="text-yellow-500" />
                       Performance
                     </h4>
@@ -3120,31 +3617,8 @@ Price: ${price}
                       />
                     </div>
                   </div>
-                  <div className="overflow-hidden rounded-md">
-                    <table className="min-w-full">
-                      <tbody className="bg-white">
-                        {dedupeSpecEntries(
-                          Object.entries(performanceData || {}).filter(
-                            ([k, v]) =>
-                              hasContent(v) &&
-                              !["sphere_rating", "ai_features"].includes(k) &&
-                              !isScoreKey(k),
-                          ),
-                        ).map(([key, value], idx) => (
-                          <tr
-                            key={key}
-                            className={`transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"} hover:bg-violet-50/30`}
-                          >
-                            <td className="w-[32%] px-3 py-2.5 text-[13px] font-medium text-slate-600 sm:px-4 md:px-5 align-top">
-                              {toNormalCase(key)}
-                            </td>
-                            <td className="w-[68%] px-3 py-2.5 text-[13px] text-slate-900 sm:px-4 md:px-5">
-                              {formatSpecValue(value, key)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="mt-4">
+                    {renderSpecTable(performanceData, 10)}
                   </div>
                 </div>
               )}
@@ -3153,12 +3627,12 @@ Price: ${price}
               {hasContent(cameraData) && (
                 <div
                   id="spec-camera"
-                  className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
+                  className="rounded-lg border border-slate-200 bg-white p-4 sm:p-6"
                 >
                   <div className="mb-3 flex items-center justify-between gap-2">
-                    <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
-                      <FaCamera className="text-purple-400" />
-                      Camera
+                    <h4 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+                      <FaCamera className="text-blue-500" />
+                      Main Camera
                     </h4>
                     <div className="flex items-center gap-1.5">
                       <SpecScoreBadge
@@ -3167,8 +3641,7 @@ Price: ${price}
                       />
                     </div>
                   </div>
-
-                  {renderCameraTable(cameraData)}
+                  <div className="mt-4">{renderCameraTable(cameraData)}</div>
                 </div>
               )}
 
@@ -3176,10 +3649,10 @@ Price: ${price}
               {hasContent(batteryData) && (
                 <div
                   id="spec-battery"
-                  className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
+                  className="rounded-lg border border-slate-200 bg-white p-4 sm:p-6"
                 >
                   <div className="mb-3 flex items-center justify-between gap-2">
-                    <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
+                    <h4 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
                       <FaBatteryFull className="text-green-500" />
                       Battery
                     </h4>
@@ -3190,37 +3663,7 @@ Price: ${price}
                       />
                     </div>
                   </div>
-                  <div className="overflow-hidden rounded-md">
-                    <table className="min-w-full">
-                      <tbody className="bg-white">
-                        {dedupeSpecEntries(
-                          Object.entries(batteryData || {}).filter(
-                            ([k, v]) =>
-                              hasContent(v) &&
-                              !/ai[_-]?features?/i.test(k) &&
-                              !isScoreKey(k),
-                          ),
-                        ).map(([key, value], idx) => (
-                          <tr
-                            key={key}
-                            className={`transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"} hover:bg-violet-50/30`}
-                          >
-                            <td className="w-[32%] px-3 py-2.5 text-[13px] font-medium text-slate-600 sm:px-4 md:px-5 align-top">
-                              {toNormalCase(key)}
-                            </td>
-                            <td className="w-[68%] px-3 py-2.5 text-[13px] text-slate-900 sm:px-4 md:px-5">
-                              {[
-                                "battery_capacity_mah",
-                                "battery_capacity",
-                              ].includes(key)
-                                ? `${value} mAh`
-                                : formatSpecValue(value, key)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  <div className="mt-4">{renderSpecTable(batteryData, 10)}</div>
                 </div>
               )}
 
@@ -3228,11 +3671,11 @@ Price: ${price}
               {hasContent(connectivityData) && (
                 <div
                   id="spec-connectivity"
-                  className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
+                  className="rounded-lg border border-slate-200 bg-white p-4 sm:p-6"
                 >
                   <div className="mb-3 flex items-center justify-between gap-2">
-                    <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
-                      <FaWifi className="text-purple-400" />
+                    <h4 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+                      <FaWifi className="text-blue-500" />
                       Connectivity
                     </h4>
                     <div className="flex items-center gap-1.5">
@@ -3242,31 +3685,8 @@ Price: ${price}
                       />
                     </div>
                   </div>
-                  <div className="overflow-hidden rounded-md">
-                    <table className="min-w-full">
-                      <tbody className="bg-white">
-                        {dedupeSpecEntries(
-                          Object.entries(connectivityData || {}).filter(
-                            ([k, v]) =>
-                              hasContent(v) &&
-                              !/ai[_-]?features?/i.test(k) &&
-                              !isScoreKey(k),
-                          ),
-                        ).map(([key, value], idx) => (
-                          <tr
-                            key={key}
-                            className={`transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"} hover:bg-violet-50/30`}
-                          >
-                            <td className="w-[32%] px-3 py-2.5 text-[13px] font-medium text-slate-600 sm:px-4 md:px-5 align-top">
-                              {toNormalCase(key)}
-                            </td>
-                            <td className="w-[68%] px-3 py-2.5 text-[13px] text-slate-900 sm:px-4 md:px-5">
-                              {formatSpecValue(value, key)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="mt-4">
+                    {renderSpecTable(connectivityData, 10)}
                   </div>
                 </div>
               )}
@@ -3275,10 +3695,10 @@ Price: ${price}
               {hasContent(networkData) && (
                 <div
                   id="spec-network"
-                  className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
+                  className="rounded-lg border border-slate-200 bg-white p-4 sm:p-6"
                 >
                   <div className="mb-3 flex items-center justify-between gap-2">
-                    <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
+                    <h4 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
                       <FaWifi className="text-indigo-500" />
                       Network
                     </h4>
@@ -3289,7 +3709,7 @@ Price: ${price}
                       />
                     </div>
                   </div>
-                  {renderSpecTable(networkData)}
+                  <div className="mt-4">{renderSpecTable(networkData, 10)}</div>
                 </div>
               )}
 
@@ -3297,20 +3717,19 @@ Price: ${price}
               {hasContent(audioData) && (
                 <div
                   id="spec-audio"
-                  className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
+                  className="rounded-lg border border-slate-200 bg-white p-4 sm:p-6"
                 >
                   <div className="mb-3 flex items-center justify-between gap-2">
-                    <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
+                    <h4 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
                       <FaVolumeUp className="text-pink-500" />
                       Audio
                     </h4>
                     <SpecScoreBadge
                       score={getSectionScore("overall")}
-                      displayScore={sectionScoreDisplay("overall")}
                       size={38}
                     />
                   </div>
-                  {renderSpecTable(audioData)}
+                  <div className="mt-4">{renderSpecTable(audioData, 10)}</div>
                 </div>
               )}
 
@@ -3318,20 +3737,19 @@ Price: ${price}
               {hasContent(sensorsData) && (
                 <div
                   id="spec-sensors"
-                  className="rounded-xl bg-white px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5"
+                  className="rounded-lg border border-slate-200 bg-white p-4 sm:p-6"
                 >
                   <div className="mb-3 flex items-center justify-between gap-2">
-                    <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
+                    <h4 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
                       <FaShieldAlt className="text-teal-500" />
                       Sensors
                     </h4>
                     <SpecScoreBadge
                       score={getSectionScore("overall")}
-                      displayScore={sectionScoreDisplay("overall")}
                       size={38}
                     />
                   </div>
-                  {renderSpecTable(sensorsData)}
+                  <div className="mt-4">{renderSpecTable(sensorsData, 10)}</div>
                 </div>
               )}
 
@@ -3378,7 +3796,7 @@ Price: ${price}
           <div className="bg-white rounded-lg p-4">
             <div className="mb-4 flex items-center justify-between gap-2">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <FaCamera className="text-purple-400" />
+                <FaCamera className="text-blue-500" />
                 Camera
               </h3>
               <SpecScoreBadge score={getSectionScore("camera")} size={38} />
@@ -3416,7 +3834,7 @@ Price: ${price}
           <div className="bg-white rounded-lg p-4">
             <div className="mb-4 flex items-center justify-between gap-2">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <FaWifi className="text-purple-400" />
+                <FaWifi className="text-blue-500" />
                 Connectivity
               </h3>
               <SpecScoreBadge score={getSectionScore("network")} size={38} />
@@ -3744,10 +4162,6 @@ Price: ${price}
     );
   }
 
-  const infoOsSummary =
-    mobileData?.performance?.operating_system ||
-    mobileData?.performance?.os ||
-    mobileData?.operating_system;
   const rearMainCamera = mobileData?.camera?.rear_camera?.main_camera;
   const rearUltraCamera =
     mobileData?.camera?.rear_camera?.ultra_wide_camera ||
@@ -3776,17 +4190,17 @@ Price: ${price}
     const tone = getSectionTone(score);
     switch (sectionKey) {
       case "performance":
-        return `${tone} processing setup for app handling, multitasking, and stable daily speed.`;
+        return `${tone} chipset setup for smooth daily use.`;
       case "display":
-        return `${tone} display quality for media viewing, readability, and smoother interaction.`;
+        return `${tone} screen for clear, fluid viewing.`;
       case "camera":
-        return `${tone} rear camera setup for daylight details and flexible shooting modes.`;
+        return `${tone} rear camera for everyday shots.`;
       case "camera-front":
-        return `${tone} front camera quality for selfies, social uploads, and video calls.`;
+        return `${tone} selfie camera for calls and portraits.`;
       case "battery":
-        return `${tone} battery and charging setup for longer screen time and quick top-ups.`;
+        return `${tone} battery for longer screen time.`;
       default:
-        return `${tone} section-level hardware profile.`;
+        return `${tone} hardware summary.`;
     }
   };
 
@@ -3857,10 +4271,10 @@ Price: ${price}
         : null;
 
   const highlightIconMap = {
-    performance: { Icon: FaBolt, color: "text-yellow-500" },
-    display: { Icon: FaExpand, color: "text-green-500" },
-    camera: { Icon: FaCamera, color: "text-purple-500" },
-    "camera-front": { Icon: FaCamera, color: "text-pink-500" },
+    performance: { Icon: FaBolt, color: "text-blue-500" },
+    display: { Icon: FaExpand, color: "text-emerald-500" },
+    camera: { Icon: FaCamera, color: "text-sky-500" },
+    "camera-front": { Icon: FaCamera, color: "text-blue-500" },
     battery: { Icon: FaBatteryFull, color: "text-orange-500" },
   };
 
@@ -3974,11 +4388,16 @@ Price: ${price}
     },
   ].filter((section) => section.points.length > 0);
 
+  const compareTarget = popularComparisonTargets[0] || null;
+  const detailInfoSections = infoKeySections.filter(
+    (section) => section.key !== "camera-front",
+  );
+
   // If initial loading state (no mobileData yet), render spinner now
   if (showInitialLoading) {
     return (
-      <div className="max-w-4xl mx-auto p-8">
-        <div className="bg-white rounded-lg p-8 text-center">
+      <div className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
+        <div className="bg-white rounded-lg p-8 text-center shadow-sm">
           <Spinner />
           <div className="text-sm text-gray-500 mt-3">Please waitâ€¦</div>
         </div>
@@ -3987,7 +4406,7 @@ Price: ${price}
   }
 
   return (
-    <div className="px-2 lg:px-4 mx-auto bg-white max-w-4xl w-full m-0">
+    <div className="w-full  px-2 sm:px-4 lg:px-6 m-0">
       <SEO
         title={metaTitle}
         description={metaDescription}
@@ -4001,7 +4420,7 @@ Price: ${price}
         schema={productSchema}
       />
       {isSharedLink && (
-        <div className="max-w-4xl mx-auto px-4">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded">
             Shared link detected â€” showing the shared product details.
           </div>
@@ -4009,15 +4428,15 @@ Price: ${price}
       )}
       {/* Share Menu Modal */}
       {showShareMenu && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-[24px] border border-slate-200 bg-white p-6 shadow-2xl">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className="text-lg font-semibold text-slate-900">
                 Share Device
               </h3>
               <button
                 onClick={() => setShowShareMenu(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-slate-400 transition-colors hover:text-slate-600"
               >
                 Ã—
               </button>
@@ -4025,28 +4444,28 @@ Price: ${price}
             <div className="space-y-3">
               <button
                 onClick={shareToWhatsApp}
-                className="w-full flex items-center gap-3 p-3 bg-green-50 hover:bg-green-100 rounded-lg text-green-700 font-medium"
+                className="w-full flex items-center gap-3 rounded-xl border border-green-100 bg-green-50 p-3 font-medium text-green-700 transition-colors hover:bg-green-100"
               >
                 <FaWhatsapp className="text-xl" />
                 Share on WhatsApp
               </button>
               <button
                 onClick={shareToFacebook}
-                className="w-full flex items-center gap-3 p-3 bg-purple-50 hover:bg-purple-100 rounded-lg text-purple-700 font-medium"
+                className="w-full flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 font-medium text-slate-700 transition-colors hover:bg-slate-100"
               >
-                <FaFacebook className="text-xl text-purple-400" />
+                <FaFacebook className="text-xl text-blue-600" />
                 Share on Facebook
               </button>
               <button
                 onClick={shareToTwitter}
-                className="w-full flex items-center gap-3 p-3 bg-purple-50 hover:bg-purple-100 rounded-lg text-purple-400 font-medium"
+                className="w-full flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 font-medium text-slate-700 transition-colors hover:bg-slate-100"
               >
-                <FaTwitter className="text-xl text-purple-400" />
+                <FaTwitter className="text-xl text-sky-500" />
                 Share on Twitter
               </button>
               <button
                 onClick={shareViaEmail}
-                className="w-full flex items-center gap-3 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg text-gray-700 font-medium"
+                className="w-full flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 font-medium text-slate-700 transition-colors hover:bg-slate-100"
               >
                 <FaEnvelope className="text-xl" />
                 Share via Email
@@ -4055,7 +4474,7 @@ Price: ${price}
             </div>
             <button
               onClick={() => setShowShareMenu(false)}
-              className="w-full mt-4 py-2 text-gray-600 hover:text-gray-800 font-medium"
+              className="mt-4 w-full py-2 font-medium text-slate-600 transition-colors hover:text-slate-800"
             >
               Cancel
             </button>
@@ -4063,713 +4482,756 @@ Price: ${price}
         </div>
       )}
 
-      <div className="bg-white">
-        {/* Mobile Header */}
-        <div className="p-4 bg-white border-b border-gray-200 lg:hidden">
-          <div className="flex justify-between items-start mb-2">
-            <div>
-              {headerDescriptor ? (
-                <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500 mb-1">
-                  {headerDescriptor}
-                </p>
-              ) : null}
-              <h1 className="text-xl font-extrabold tracking-tight mb-1 text-gray-900 leading-tight">
-                {headerTitle}
-              </h1>
-              <p className="text-purple-700 text-sm font-medium flex flex-wrap items-center gap-2">
-                {currentVariantLabel ? (
-                  <span>{currentVariantLabel}</span>
+      <section className="w-full text-slate-900">
+        <div
+          className={`mx-auto max-w-7xl ${combineResponsiveClasses(RESPONSIVE_SPACING.pageMarginX)} ${combineResponsiveClasses(RESPONSIVE_SPACING.pageMarginY)}`}
+        >
+          <div
+            className={combineResponsiveClasses(
+              RESPONSIVE_SPACING.headerPadding,
+            )}
+          >
+            <div
+              className={`flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between`}
+            >
+              <div className="min-w-0 flex-1">
+                {headerDescriptor ? (
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.32em] text-blue-500 sm:text-xs">
+                    {headerDescriptor}
+                  </p>
                 ) : null}
-                {launchStatus &&
-                launchStatus !== "released" &&
-                launchStatus !== "upcoming" ? (
-                  <span
-                    className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold leading-none ${launchStatusBadgeClass}`}
+                <div
+                  className={`flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center ${RESPONSIVE_SPACING.gapMedium}`}
+                >
+                  <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-[2rem]">
+                    {headerTitle}
+                  </h1>
+                  <button
+                    onClick={() => {
+                      if (compareTarget) {
+                        handlePopularCompare(compareTarget);
+                        return;
+                      }
+                      navigate("/compare");
+                    }}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-slate-800 sm:w-auto"
                   >
-                    {launchStatusLabel}
-                  </span>
-                ) : null}
-                {mobileData?.isAiPhone ? (
-                  <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-r from-purple-50 to-blue-100 px-2 py-0.5 text-[10px] font-semibold leading-none text-purple-700 ring-1 ring-purple-200">
-                    <span
-                      className="inline-flex items-center justify-center w-3 h-3"
-                      aria-hidden="true"
-                    >
-                      <svg viewBox="0 0 64 64" className="w-3 h-3">
-                        <path
-                          d="M32 2C34.5 14.5 40 20 52 22C40 24 34.5 29.5 32 42C29.5 29.5 24 24 12 22C24 20 29.5 14.5 32 2Z"
-                          fill="red"
-                        />
-                        <path
-                          d="M50 34C51.5 41.5 55 45 62 46C55 47 51.5 50.5 50 58C48.5 50.5 45 47 38 46C45 45 48.5 41.5 50 34Z"
-                          fill="#7E57C2"
-                        />
-                      </svg>
+                    <FaPlus className="text-sm" />
+                    Compare
+                  </button>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-[13px] sm:text-sm">
+                  {currentVariantLabel ? (
+                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-medium text-slate-700">
+                      {currentVariantLabel}
                     </span>
-                    <span>AI Phone</span>
-                  </span>
-                ) : null}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={toggleFavorite}
-                className="p-2 rounded-full hover:bg-gray-100"
-              >
-                <FaHeart
-                  className={`text-lg ${
-                    isFavorite
-                      ? "text-violet-400 fill-current"
-                      : "text-violet-400"
-                  }`}
-                />
-              </button>
-              <button
-                onClick={handleShare}
-                className="p-2 rounded-full hover:bg-gray-100"
-              >
-                <FaShareAlt className="text-lg text-violet-400" />
-              </button>
-            </div>
-          </div>
-          {currentVariant && (
-            <span className="text-2xl font-bold text-green-600 mt-3">
-              ₹{formatPrice(currentVariant.base_price)}
-            </span>
-          )}
-        </div>
-
-        {/* Popular Comparisons */}
-        {!compareDisabled && popularComparisonTargets.length > 0 && (
-          <div className="px-4 pt-4 pb-1">
-            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-3">
-              {popularComparisonTargets
-                .slice(
-                  0,
-                  compareLimit === 2 ? 2 : popularComparisonTargets.length,
-                )
-                .map((d) => {
-                  const otherId =
-                    d?.id ?? d?.product_id ?? d?.productId ?? null;
-                  const otherName = d?.name || d?.model || "Device";
-                  const otherImg = d?.images?.[0] || d?.image || "";
-
-                  return (
-                    <button
-                      key={String(otherId || otherName)}
-                      type="button"
-                      onClick={() => handlePopularCompare(d)}
-                      className="min-w-[240px] max-w-[280px] flex-shrink-0 rounded-xl border border-gray-200 bg-white p-3 hover:border-purple-200 transition-colors text-left"
+                  ) : null}
+                  {launchStatus &&
+                  launchStatus !== "released" &&
+                  launchStatus !== "upcoming" ? (
+                    <span
+                      className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold leading-none ${launchStatusBadgeClass}`}
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
-                          {otherImg ? (
-                            <img
-                              src={otherImg}
-                              alt={otherName}
-                              className="w-full h-full object-contain"
-                              onError={(e) => {
-                                e.currentTarget.style.display = "none";
-                              }}
-                            />
-                          ) : null}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="text-[11px] text-gray-500 truncate">
-                            Compare with
-                          </div>
-                          <div className="text-sm font-semibold text-gray-900 truncate">
-                            {otherName}
-                          </div>
-                        </div>
-                        <span className="text-xs font-semibold text-purple-700">
-                          Compare
+                      {launchStatusLabel}
+                    </span>
+                  ) : null}
+                  {mobileData?.isAiPhone ? (
+                    <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold leading-none text-sky-700 ring-1 ring-sky-100">
+                      <span
+                        className="inline-flex items-center justify-center h-3 w-3"
+                        aria-hidden="true"
+                      >
+                        <svg viewBox="0 0 64 64" className="h-3 w-3">
+                          <path
+                            d="M32 2C34.5 14.5 40 20 52 22C40 24 34.5 29.5 32 42C29.5 29.5 24 24 12 22C24 20 29.5 14.5 32 2Z"
+                            fill="red"
+                          />
+                          <path
+                            d="M50 34C51.5 41.5 55 45 62 46C55 47 51.5 50.5 50 58C48.5 50.5 45 47 38 46C45 45 48.5 41.5 50 34Z"
+                            fill="#7E57C2"
+                          />
+                        </svg>
+                      </span>
+                      <span>AI Phone</span>
+                    </span>
+                  ) : null}
+                </div>
+
+                {currentVariant ? (
+                  <div className="mt-4 flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-end sm:gap-2">
+                    <div className="text-[2rem] font-bold tracking-tight text-emerald-600 sm:text-3xl">
+                      ₹ {formatPrice(currentVariant.base_price)}
+                    </div>
+                    <div className="text-[13px] text-slate-500 sm:pb-0.5 sm:text-sm">
+                      ({currentVariant.ram} / {currentVariant.storage})
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="flex flex-col items-start gap-3 xl:items-end">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={toggleFavorite}
+                    className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
+                  >
+                    <FaHeart
+                      className={`text-lg ${
+                        isFavorite
+                          ? "text-rose-500 fill-current"
+                          : "text-slate-500"
+                      }`}
+                    />
+                  </button>
+                  <button
+                    onClick={handleShare}
+                    className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
+                  >
+                    <FaShareAlt className="text-lg text-slate-500" />
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 text-[13px] text-slate-600 sm:gap-3 sm:text-sm">
+                  {headerSpecScoreValue != null ? (
+                    <div className="flex items-end gap-1 leading-none">
+                      <span className="text-3xl font-semibold leading-none text-blue-600">
+                        {headerSpecScoreValue}
+                      </span>
+                      <div className="flex flex-col items-start leading-none">
+                        <span className="text-[8px] font-semibold uppercase tracking-[0.32em] text-blue-400">
+                          Spec
+                        </span>
+                        <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-blue-500">
+                          Score
                         </span>
                       </div>
-                    </button>
-                  );
-                })}
-            </div>
-          </div>
-        )}
-
-        {/* Top Tabs Section */}
-        <div className="sticky z-20 top-[var(--mobile-header-height,0px)] md:top-[var(--desktop-header-height,0px)]">
-          <div className="mx-auto max-w-4xl w-full">
-            <div className="border-y border-slate-200 bg-white">
-              <div className="flex overflow-x-auto no-scrollbar bg-white">
-                {primaryTabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActivePrimaryTab(tab.id)}
-                    className={`relative px-4 py-3 font-semibold text-xs uppercase tracking-wide whitespace-nowrap transition-colors duration-200 flex-shrink-0 focus-visible:outline-none ${
-                      activePrimaryTab === tab.id
-                        ? "bg-white"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
-                  >
-                    <span
-                      className={
-                        activePrimaryTab === tab.id
-                          ? "bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent"
-                          : ""
-                      }
-                    >
-                      {tab.label}
+                    </div>
+                  ) : null}
+                  {schemaRatingValue ? (
+                    <span className="pb-0.5 font-medium text-slate-800">
+                      {schemaRatingValue.toFixed(1)}/5
                     </span>
-                    {activePrimaryTab === tab.id ? (
-                      <span className="pointer-events-none absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600" />
-                    ) : null}
-                  </button>
-                ))}
+                  ) : null}
+                  {schemaRatingCount ? (
+                    <span className="pb-0.5 text-slate-500">
+                      ({schemaRatingCount.toLocaleString()} Ratings)
+                    </span>
+                  ) : null}
+                </div>
+
+                {hasLaunchDate ? (
+                  <div className="flex flex-wrap items-center gap-2 text-[13px] text-slate-600 sm:text-sm">
+                    <span
+                      className="hidden h-4 w-px bg-slate-200 sm:inline-block"
+                      aria-hidden="true"
+                    />
+                    <span>
+                      Launched On:{" "}
+                      <span className="font-semibold text-slate-900">
+                        {launchDateParsed.toLocaleDateString("en-US", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </span>
+                    </span>
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
         </div>
+      </section>
 
-        {activePrimaryTab === "info" ? (
-          <>
-            <div className="flex flex-col lg:flex-row">
-              {/* Images Section */}
-              <div className="lg:w-2/5 p-4 border-b lg:border-b-0 lg:border-r border-slate-200">
-                {/* Main Image */}
-                <div className="bg-gray-100 rounded-md p-6 mb-4 relative">
-                  <div className="absolute left-2 top-2 z-10 pointer-events-none">
-                    <SpecScoreBadge
-                      score={getSectionScore("overall")}
-                      displayScore={getSectionScoreDisplay("overall")}
-                      size={40}
-                      showSpecLabel
-                      zeroFallback
-                    />
-                  </div>
+      {/* Popular Comparisons */}
+      {!compareDisabled && popularComparisonTargets.length > 0 && (
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8  pb-1">
+          <div className="mb-3 flex flex-col gap-1 sm:mb-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-500">
+              Recommended Comparisons
+            </p>
+            <h2 className="text-lg font-semibold tracking-tight text-slate-900">
+              Compare with{" "}
+              <span className="text-blue-600">{metaBrand || "this brand"}</span>{" "}
+              devices
+            </h2>
+            <p className="max-w-3xl text-sm leading-6 text-slate-500">
+              Explore popular alternatives and see how this model stacks up
+              against other phones from the same brand.
+            </p>
+          </div>
+          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-3">
+            {popularComparisonTargets
+              .slice(
+                0,
+                compareLimit === 2 ? 2 : popularComparisonTargets.length,
+              )
+              .map((d) => {
+                const otherId = d?.id ?? d?.product_id ?? d?.productId ?? null;
+                const otherName = d?.name || d?.model || "Device";
+                const otherImg = d?.images?.[0] || d?.image || "";
+
+                return (
+                  <button
+                    key={String(otherId || otherName)}
+                    type="button"
+                    onClick={() => handlePopularCompare(d)}
+                    className="min-w-[84vw] max-w-[280px] flex-shrink-0 rounded-lg border border-slate-200 bg-white p-3 text-left transition-all hover:border-blue-200 hover:shadow-sm sm:min-w-[240px]"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-md bg-slate-100">
+                        {otherImg ? (
+                          <img
+                            src={otherImg}
+                            alt={otherName}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                            }}
+                          />
+                        ) : null}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-[11px] text-slate-500">
+                          Compare with
+                        </div>
+                        <div className="truncate text-sm font-semibold text-slate-900">
+                          {otherName}
+                        </div>
+                      </div>
+                      <span className="text-xs font-semibold text-blue-700">
+                        Compare
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+          </div>
+        </div>
+      )}
+
+      <div
+        className={`mx-auto max-w-7xl ${combineResponsiveClasses(RESPONSIVE_SPACING.pageMarginX)} py-6`}
+      >
+        <div
+          className={`flex flex-col lg:flex-row ${RESPONSIVE_SPACING.gapXLarge}`}
+        >
+          {/* Images Section */}
+          <div
+            className={`lg:w-2/5 rounded-md bg-transparent ${combineResponsiveClasses(RESPONSIVE_SPACING.imagePadding)} shadow-none`}
+          >
+            <div className="space-y-5">
+              {/* Main Image */}
+              <div
+                className={`relative overflow-hidden rounded-md border border-slate-200 bg-gradient-to-b from-slate-50 via-white to-slate-50 ${combineResponsiveClasses(RESPONSIVE_SPACING.cardPadding)}`}
+              >
+                <div className="flex min-h-[340px] items-center justify-center sm:min-h-[420px]">
                   <img
                     src={
                       mobileData.images?.[activeImage] ||
                       "/placeholder-image.jpg"
                     }
                     alt={mobileData.name}
-                    className="w-full h-48 object-contain"
+                    className="h-auto max-h-[320px] w-auto object-contain drop-shadow-[0_16px_24px_rgba(15,23,42,0.12)] sm:max-h-[380px]"
                     onError={(e) => {
                       e.target.src =
                         "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23f3f4f6'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='14' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E";
                     }}
                   />
-                  {/* Action buttons on image */}
-                  <div className="absolute top-2 right-2 flex flex-col gap-2">
+                </div>
+              </div>
+
+              {/* Thumbnails */}
+              {mobileData.images && mobileData.images.length > 1 && (
+                <div
+                  className={`flex ${RESPONSIVE_SPACING.gapMedium} overflow-x-auto pb-1 no-scrollbar`}
+                >
+                  {mobileData.images.map((image, index) => (
                     <button
-                      onClick={toggleFavorite}
-                      className="p-2  hover:shadow-lg"
+                      key={index}
+                      type="button"
+                      onClick={() => setActiveImage(index)}
+                      aria-label={`View image ${index + 1}`}
+                      className={`flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-md border p-1.5 transition-all duration-200 ${
+                        activeImage === index
+                          ? "border-blue-500 bg-white shadow-sm ring-2 ring-blue-100"
+                          : "border-slate-200 bg-slate-50 hover:border-blue-300 hover:bg-white"
+                      }`}
                     >
-                      <FaHeart
-                        className={`${
-                          isFavorite
-                            ? "text-gray-500 fill-current"
-                            : "text-gray-500"
-                        }`}
+                      <img
+                        src={image}
+                        alt={`${mobileData.name} view ${index + 1}`}
+                        className="h-full w-full object-contain"
                       />
                     </button>
-                    <button
-                      onClick={handleShare}
-                      className="p-2  hover:shadow-lg"
-                    >
-                      <FaShare className="text-gray-500" />
-                    </button>
-                  </div>
+                  ))}
                 </div>
+              )}
 
-                {/* Thumbnails */}
-                {mobileData.images && mobileData.images.length > 1 && (
-                  <div className="flex gap-2 mb-6 overflow-x-auto no-scrollbar">
-                    {mobileData.images.map((image, index) => (
+              {/* color section */}
+
+              {/* Variant selection */}
+
+              {/* Share and Copy Link Buttons - Mobile */}
+              <div className="lg:hidden flex gap-2 mb-4">
+                <button
+                  type="button"
+                  onClick={handleShare}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-gradient-to-r from-blue-50 to-blue-50 py-3 font-semibold text-slate-700 transition-all hover:from-blue-100 hover:to-blue-100"
+                >
+                  <FaShareAlt className="text-blue-500" />
+                  <span>Share</span>
+                </button>
+              </div>
+
+              {variants && variants.length > 0 && (
+                <div className="mb-2">
+                  <div className="mb-3">
+                    <h4 className="text-base font-semibold text-slate-900">
+                      Available Variants
+                    </h4>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {variants.map((variant, index) => (
                       <button
-                        key={index}
-                        onClick={() => setActiveImage(index)}
-                        className={`flex-shrink-0 w-16 h-16 rounded-lg p-1 border-1 transition-all duration-200 ${
-                          activeImage === index
-                            ? "bg-gray-100 rounded-lg border-slate-300"
-                            : "border-slate-200 hover:border-slate-300"
+                        key={variant.variant_id ?? variant.id ?? index}
+                        type="button"
+                        onClick={() => setSelectedVariant(index)}
+                        aria-pressed={selectedVariant === index}
+                        aria-label={`Select ${variant.ram} / ${variant.storage} variant`}
+                        className={`relative rounded-2xl border p-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
+                          selectedVariant === index
+                            ? "border-blue-600 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-600 text-white shadow-md"
+                            : "border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50"
                         }`}
                       >
-                        <img
-                          src={image}
-                          alt={`${mobileData.name} view ${index + 1}`}
-                          className="w-full h-full object-contain"
-                        />
+                        {selectedVariant === index ? (
+                          <span className="absolute right-2 top-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-blue-600 shadow-sm">
+                            <FaCheck className="text-[9px]" />
+                          </span>
+                        ) : null}
+                        <div className="flex items-start gap-2.5">
+                          <span
+                            className={`mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ring-1 ${
+                              selectedVariant === index
+                                ? "bg-white/15 text-white ring-white/20"
+                                : "bg-slate-50 text-slate-600 ring-slate-200"
+                            }`}
+                          >
+                            <FaMemory className="text-sm" />
+                          </span>
+                          <div className="min-w-0">
+                            <div
+                              className={`text-sm font-semibold leading-tight ${
+                                selectedVariant === index
+                                  ? "text-white"
+                                  : "text-slate-900"
+                              }`}
+                            >
+                              {variant.ram} / {variant.storage}
+                            </div>
+                            <div
+                              className={`mt-1 text-sm font-bold ${
+                                selectedVariant === index
+                                  ? "text-emerald-200"
+                                  : "text-emerald-600"
+                              }`}
+                            >
+                              ₹ {formatPrice(variant.base_price)}
+                            </div>
+                          </div>
+                        </div>
                       </button>
                     ))}
                   </div>
-                )}
+                </div>
+              )}
+            </div>
+          </div>
 
-                {/* color section */}
-
-                {/* Variant selection */}
-
-                {/* Share and Copy Link Buttons - Mobile */}
-                <div className="lg:hidden flex gap-2 mb-4">
+          {/* Details Section - Right Side */}
+          <div className="lg:w-3/5">
+            {/* Desktop Header */}
+            <div className="hidden">
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  {headerDescriptor ? (
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500 mb-1">
+                      {headerDescriptor}
+                    </p>
+                  ) : null}
+                  <h1 className="text-2xl font-extrabold tracking-tight mb-2">
+                    {headerTitle}
+                  </h1>
+                  <h4 className="mb-3 flex items-center gap-2 text-sm font-medium text-slate-700">
+                    {currentVariantLabel ? (
+                      <span>{currentVariantLabel}</span>
+                    ) : null}
+                    {launchStatus &&
+                    launchStatus !== "released" &&
+                    launchStatus !== "upcoming" ? (
+                      <span
+                        className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold leading-none ${launchStatusBadgeClass}`}
+                      >
+                        {launchStatusLabel}
+                      </span>
+                    ) : null}
+                    {mobileData?.isAiPhone ? (
+                      <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-r from-blue-50 to-blue-50 px-2 py-0.5 text-[10px] font-semibold leading-none text-sky-700 ring-1 ring-sky-100">
+                        <span
+                          className="inline-flex items-center justify-center w-3 h-3"
+                          aria-hidden="true"
+                        >
+                          <svg viewBox="0 0 64 64" className="w-3 h-3">
+                            <path
+                              d="M32 2C34.5 14.5 40 20 52 22C40 24 34.5 29.5 32 42C29.5 29.5 24 24 12 22C24 20 29.5 14.5 32 2Z"
+                              fill="red"
+                            />
+                            <path
+                              d="M50 34C51.5 41.5 55 45 62 46C55 47 51.5 50.5 50 58C48.5 50.5 45 47 38 46C45 45 48.5 41.5 50 34Z"
+                              fill="#7E57C2"
+                            />
+                          </svg>
+                        </span>
+                        <span>AI Phone</span>
+                      </span>
+                    ) : null}
+                  </h4>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={toggleFavorite}
+                    className="p-2 rounded-full hover:bg-gray-100"
+                    title="Add to favorites"
+                  >
+                    <FaHeart
+                      className={`text-xl ${
+                        isFavorite
+                          ? "text-gray-500 fill-current"
+                          : "text-gray-500"
+                      }`}
+                    />
+                  </button>
                   <button
                     onClick={handleShare}
-                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-purple-100 hover:bg-purple-200 text-gray-600 rounded-lg font-medium"
+                    className="p-2 rounded-full hover:bg-gray-100"
+                    title="Share"
                   >
-                    <FaShareAlt className="text-gray-500" />
-                    <span>Share</span>
+                    <FaShareAlt className="text-xl text-gray-500" />
                   </button>
+                  {/* Copy link removed â€” share-only */}
                 </div>
-
-                {variants && variants.length > 0 && (
-                  <div className="mb-6">
-                    <h4 className="text-sm font-semibold text-gray-800 mb-2">
-                      Available Variants
-                    </h4>
-                    <div className="grid grid-cols-2 gap-2.5">
-                      {variants.map((variant, index) => (
-                        <button
-                          key={variant.variant_id ?? variant.id ?? index}
-                          onClick={() => setSelectedVariant(index)}
-                          aria-pressed={selectedVariant === index}
-                          className={`relative p-2.5 rounded-xl border text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 ${
-                            selectedVariant === index
-                              ? "border-violet-600 bg-violet-50 shadow-sm"
-                              : "border-slate-200 bg-white hover:border-violet-300 hover:bg-violet-50/40"
-                          }`}
-                        >
-                          {selectedVariant === index ? (
-                            <span className="absolute top-2 right-2 inline-flex items-center justify-center w-4 h-4 rounded-full bg-violet-600 text-white">
-                              <FaCheck className="text-[9px]" />
-                            </span>
-                          ) : null}
-                          <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-                            <FaMemory className="text-gray-600 text-sm" />
-                            <span className="leading-tight">
-                              {variant.ram} / {variant.storage}
-                            </span>
-                          </div>
-                          <div className="mt-1 text-sm font-bold text-green-600">
-                            ₹{formatPrice(variant.base_price)}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+              </div>
+              <div className="flex items-center gap-3 mb-6">
+                {currentVariant && (
+                  <>
+                    <span className="text-3xl font-bold text-green-600">
+                      ₹ {formatPrice(currentVariant.base_price)}
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      ({currentVariant.ram} / {currentVariant.storage} )
+                    </span>
+                  </>
                 )}
               </div>
+            </div>
 
-              {/* Details Section - Right Side */}
-              <div className="lg:w-3/5 p-4">
-                {/* Desktop Header */}
-                <div className="hidden lg:block mb-6">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      {headerDescriptor ? (
-                        <p className="text-xs font-medium uppercase tracking-wide text-slate-500 mb-1">
-                          {headerDescriptor}
-                        </p>
-                      ) : null}
-                      <h1 className="text-2xl font-extrabold tracking-tight mb-2">
-                        {headerTitle}
-                      </h1>
-                      <h4 className="text-purple-700 mb-3 font-medium text-sm flex items-center gap-2">
-                        {currentVariantLabel ? (
-                          <span>{currentVariantLabel}</span>
-                        ) : null}
-                        {launchStatus &&
-                        launchStatus !== "released" &&
-                        launchStatus !== "upcoming" ? (
-                          <span
-                            className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold leading-none ${launchStatusBadgeClass}`}
-                          >
-                            {launchStatusLabel}
-                          </span>
-                        ) : null}
-                        {mobileData?.isAiPhone ? (
-                          <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-r from-purple-50 to-blue-100 px-2 py-0.5 text-[10px] font-semibold leading-none text-purple-700 ring-1 ring-purple-200">
-                            <span
-                              className="inline-flex items-center justify-center w-3 h-3"
-                              aria-hidden="true"
-                            >
-                              <svg viewBox="0 0 64 64" className="w-3 h-3">
-                                <path
-                                  d="M32 2C34.5 14.5 40 20 52 22C40 24 34.5 29.5 32 42C29.5 29.5 24 24 12 22C24 20 29.5 14.5 32 2Z"
-                                  fill="red"
-                                />
-                                <path
-                                  d="M50 34C51.5 41.5 55 45 62 46C55 47 51.5 50.5 50 58C48.5 50.5 45 47 38 46C45 45 48.5 41.5 50 34Z"
-                                  fill="#7E57C2"
-                                />
-                              </svg>
-                            </span>
-                            <span>AI Phone</span>
-                          </span>
-                        ) : null}
-                      </h4>
-                    </div>
-                    <div className="flex items-center gap-2">
+            {/* Ratings Card removed from details column â€” rendered below tabs */}
+
+            {/* Store Prices Section */}
+            {sortedStores.length > 0 && (
+              <div className="mb-5 mt-5">
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+                      <FaStore className="text-green-500" />
+                      Check Price On
+                    </h3>
+                    <p className="text-sm leading-6 text-slate-500">
+                      Compare live offers from trusted stores for{" "}
+                      {metaBrand || "this phone"}.
+                    </p>
+                  </div>
+                  {(storeAvailabilityState.mode === "live" ||
+                    storeAvailabilityState.mode === "prebooking") &&
+                    sortedStores.length > 3 && (
                       <button
-                        onClick={toggleFavorite}
-                        className="p-2 rounded-full hover:bg-gray-100"
-                        title="Add to favorites"
+                        onClick={() => setShowAllStores(!showAllStores)}
+                        className="flex items-center gap-1 text-sm font-medium text-blue-600 transition-colors hover:text-blue-500 "
                       >
-                        <FaHeart
-                          className={`text-xl ${
-                            isFavorite
-                              ? "text-gray-500 fill-current"
-                              : "text-gray-500"
+                        {showAllStores ? "Show Less" : "View All"}
+                        <FaChevronDown
+                          className={`text-xs text-blue-400 transition-transform ${
+                            showAllStores ? "rotate-180" : ""
                           }`}
                         />
                       </button>
-                      <button
-                        onClick={handleShare}
-                        className="p-2 rounded-full hover:bg-gray-100"
-                        title="Share"
-                      >
-                        <FaShareAlt className="text-xl text-gray-500" />
-                      </button>
-                      {/* Copy link removed â€” share-only */}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 mb-6">
-                    {currentVariant && (
-                      <>
-                        <span className="text-3xl font-bold text-green-600">
-                          ₹ {formatPrice(currentVariant.base_price)}
-                        </span>
-                        <span className="text-sm text-gray-500">
-                          ({currentVariant.ram} / {currentVariant.storage} )
-                        </span>
-                      </>
                     )}
-                  </div>
                 </div>
 
-                {/* Ratings Card removed from details column â€” rendered below tabs */}
-
-                {/* Store Prices Section */}
-                {sortedStores.length > 0 && (
-                  <div className="mb-5 mt-5">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                        <FaStore className="text-green-500" />
-                        Check Price On
-                      </h3>
-                      {(storeAvailabilityState.mode === "live" ||
-                        storeAvailabilityState.mode === "prebooking") &&
-                        sortedStores.length > 3 && (
-                          <button
-                            onClick={() => setShowAllStores(!showAllStores)}
-                            className="text-purple-600 text-sm font-medium flex items-center gap-1"
-                          >
-                            {showAllStores ? "Show Less" : "View All"}
-                            <FaChevronDown
-                              className={`text-xs text-purple-400 transition-transform ${
-                                showAllStores ? "rotate-180" : ""
-                              }`}
-                            />
-                          </button>
-                        )}
-                    </div>
-
-                    <div className="space-y-3">
-                      {displayedStores.map((store, index) => {
-                        const isActive =
-                          String(store.id) === String(activeStoreId);
-                        const hasStoreUrl = Boolean(store.url);
-                        const brandKey = normalizeStoreKey(
-                          mobileData?.brand || "",
-                        );
-                        const storeKey = normalizeStoreKey(
-                          store?.store_name || store?.store || "",
-                        );
-                        const isBrandStore =
-                          brandKey &&
-                          storeKey &&
-                          (storeKey === brandKey ||
-                            storeKey.includes(brandKey) ||
-                            brandKey.includes(storeKey));
-                        const logoSrc =
-                          (isBrandStore
-                            ? store.brand_logo ||
-                              mobileData?.brand_logo ||
-                              mobileData?.brandLogo ||
-                              null
-                            : null) ||
-                          (store?.store_name || store?.store
-                            ? getLogo(store.store_name || store.store)
-                            : null) ||
-                          store.brand_logo ||
+                <div className="space-y-3">
+                  {displayedStores.map((store, index) => {
+                    const isActive = String(store.id) === String(activeStoreId);
+                    const hasStoreUrl = Boolean(store.url);
+                    const brandKey = normalizeStoreKey(mobileData?.brand || "");
+                    const storeKey = normalizeStoreKey(
+                      store?.store_name || store?.store || "",
+                    );
+                    const isBrandStore =
+                      brandKey &&
+                      storeKey &&
+                      (storeKey === brandKey ||
+                        storeKey.includes(brandKey) ||
+                        brandKey.includes(storeKey));
+                    const logoSrc =
+                      (isBrandStore
+                        ? store.brand_logo ||
                           mobileData?.brand_logo ||
                           mobileData?.brandLogo ||
-                          getLogo("");
-                        const storeTitle =
-                          store.display_store_name ||
-                          store.store_name ||
-                          mobileData?.brand ||
-                          "Store";
-                        const ctaText = store.cta_label || "Buy Now";
-                        const isPreorderCta =
-                          /^(pre(book|order)|coming\s*soon)$/i.test(
-                            String(ctaText).trim(),
-                          );
-                        return (
-                          <div
-                            key={store.id || index}
-                            className={` border rounded-xl p-2.5 transition-all duration-200 bg-purple-50 ${
-                              isActive
-                                ? "border-violet-500 ring-2 ring-violet-200  bg-violet-50/40"
-                                : "border-slate-200 hover:border-slate-300 hover:shadow-sm"
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              {/* Store Info */}
-                              <div className="flex items-center gap-2.5 flex-1 px-1">
-                                <div
-                                  className={` flex items-center justify-center p-2">
-                                    isPreorderCta
-                                      ? "w-11 h-11 rounded-lg"
-                                      : "w-10 h-10 rounded-md"
-                                  }`}
-                                >
-                                  <img
-                                    src={logoSrc}
-                                    alt={storeTitle}
-                                    className="w-full h-full object-contain "
-                                    onError={(e) => {
-                                      e.target.src = getLogo("");
-                                    }}
-                                  />
-                                </div>
-                                <div className="flex-1">
-                                  <h4 className="font-bold text-gray-900 text-sm capitalize">
-                                    {storeTitle}
-                                  </h4>
-                                  {store.availability_note ? (
-                                    <p className="text-[11px] text-gray-500">
-                                      {store.availability_note}
-                                    </p>
-                                  ) : (
-                                    <p className="text-[11px] text-gray-500">
-                                      {store.variantRam} /{" "}
-                                      {store.variantStorage}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* Price & CTA */}
-                              <div className="flex items-center gap-3">
-                                <div className="text-right">
-                                  <div className="text-sm font-bold text-green-600">
-                                    ₹ {formatPrice(store.price)}
-                                  </div>
-                                </div>
-                                {hasStoreUrl ? (
-                                  <a
-                                    href={store.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer nofollow"
-                                    className="inline-flex rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 p-[1px] transition-all duration-200 hover:shadow-md"
-                                  >
-                                    <span className="inline-flex items-center gap-1.5 rounded-[7px] bg-white px-3 py-1.5 text-xs font-semibold">
-                                      {isPreorderCta ? (
-                                        <FaShoppingCart className="text-[11px] text-violet-400" />
-                                      ) : (
-                                        <FaExternalLinkAlt className="text-[11px] text-violet-400" />
-                                      )}
-                                      <span className="bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
-                                        {ctaText}
-                                      </span>
-                                    </span>
-                                  </a>
-                                ) : (
-                                  <span
-                                    aria-disabled="true"
-                                    className={`inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold ${
-                                      isPreorderCta
-                                        ? "bg-violet-100 text-violet-700"
-                                        : "bg-gray-200 text-gray-500"
-                                    }`}
-                                  >
-                                    {isPreorderCta ? (
-                                      <FaShoppingCart className="text-xs" />
-                                    ) : (
-                                      <FaExternalLinkAlt className="text-xs" />
-                                    )}
-                                    {isPreorderCta ? ctaText : "Unavailable"}
-                                  </span>
-                                )}
-                              </div>
+                          null
+                        : null) ||
+                      (store?.store_name || store?.store
+                        ? getLogo(store.store_name || store.store)
+                        : null) ||
+                      store.brand_logo ||
+                      mobileData?.brand_logo ||
+                      mobileData?.brandLogo ||
+                      getLogo("");
+                    const storeTitle =
+                      store.display_store_name ||
+                      store.store_name ||
+                      mobileData?.brand ||
+                      "Store";
+                    const ctaText = store.cta_label || "Buy Now";
+                    const isPreorderCta =
+                      /^(pre(book|order)|coming\s*soon)$/i.test(
+                        String(ctaText).trim(),
+                      );
+                    return (
+                      <div
+                        key={store.id || index}
+                        className={`rounded-xl border p-2.5 transition-all duration-200 bg-white ${
+                          isActive
+                            ? "border-blue-500 bg-blue-50/40 ring-2 ring-blue-200"
+                            : "border-slate-200 hover:border-blue-200 hover:shadow-sm"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          {/* Store Info */}
+                          <div className="flex items-center gap-2.5 flex-1 px-1">
+                            <div
+                              className={`flex items-center justify-center p-2 ${
+                                isPreorderCta
+                                  ? "w-11 h-11 rounded-lg"
+                                  : "w-10 h-10 rounded-md"
+                              }`}
+                            >
+                              <img
+                                src={logoSrc}
+                                alt={storeTitle}
+                                className="w-full h-full object-contain "
+                                onError={(e) => {
+                                  e.target.src = getLogo("");
+                                }}
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="text-sm font-bold capitalize text-slate-900">
+                                {storeTitle}
+                              </h4>
+                              {store.availability_note ? (
+                                <p className="text-[11px] text-slate-500">
+                                  {store.availability_note}
+                                </p>
+                              ) : (
+                                <p className="text-[11px] text-slate-500">
+                                  {store.variantRam} / {store.variantStorage}
+                                </p>
+                              )}
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
 
-                {infoKeySections.length > 0 ? (
-                  <div className="mt-5 rounded-md border border-white/70 bg-white/70 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 pb-3">
-                      <div>
-                        <h3 className="text-lg font-semibold text-slate-900 tracking-tight">
-                          Key Information
-                        </h3>
-                      </div>
-                      {hasContent(infoOsSummary) ? (
-                        <span className="inline-flex items-center rounded-full border border-white/70 bg-white/60 px-2.5 py-1 text-[11px] font-medium text-violet-700 shadow-sm backdrop-blur-md">
-                          {formatSpecValue(infoOsSummary, "OS")}
-                        </span>
-                      ) : null}
-                    </div>
-                    <div className="mt-3 space-y-3">
-                      {infoKeySections.map((section) => (
-                        <div
-                          key={section.key}
-                          className="group relative overflow-hidden rounded-md border border-white/70 bg-white/65 px-3 py-3  backdrop-blur-xl transition-all duration-200 hover:shadow-[0_14px_30px_rgba(59,130,246,0.08)] sm:px-4 sm:py-3"
-                        >
-                          <span
-                            aria-hidden="true"
-                            className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/80 via-white/35 to-blue-50/40"
-                          />
-                          {(() => {
-                            const iconMeta = highlightIconMap[section.key];
-                            const Icon = iconMeta?.Icon;
-                            return (
-                              <div className="relative flex items-center gap-3">
-                                <div className="min-w-0 flex items-center gap-2">
-                                  <div className="flex items-center">
-                                    {Icon ? (
-                                      <Icon
-                                        className={`mr-2 text-[14px] ${iconMeta.color}`}
-                                      />
-                                    ) : null}
-                                    <h4 className="text-base font-semibold text-slate-900">
-                                      {section.title}
-                                    </h4>
-                                  </div>
-                                </div>
+                          {/* Price & CTA */}
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <div className="text-sm font-bold text-emerald-600">
+                                ₹ {formatPrice(store.price)}
                               </div>
-                            );
-                          })()}
-                          <ul className="relative mt-2 space-y-2 px-1 sm:px-2">
-                            {section.points.map((point, idx) => (
-                              <li
-                                key={idx}
-                                className="flex items-start gap-2.5 text-[14px] text-slate-700 leading-relaxed"
+                            </div>
+                            {hasStoreUrl ? (
+                              <a
+                                href={store.url}
+                                target="_blank"
+                                rel="noopener noreferrer nofollow"
+                                className="inline-flex rounded-lg bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 p-[1px] transition-all duration-200 hover:shadow-md"
                               >
-                                <span className="mt-[7px] h-2 w-2 shrink-0 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 ring-2 ring-white shadow-sm" />
-                                <span className="tracking-tight">
-                                  {formatSpecValue(point, section.title)}
+                                <span className="inline-flex items-center gap-1.5 rounded-[7px] bg-white px-3 py-1.5 text-xs font-semibold">
+                                  {isPreorderCta ? (
+                                    <FaShoppingCart className="text-[11px] text-blue-500" />
+                                  ) : (
+                                    <FaExternalLinkAlt className="text-[11px] text-blue-500" />
+                                  )}
+                                  <span className="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 bg-clip-text text-transparent">
+                                    {ctaText}
+                                  </span>
                                 </span>
-                              </li>
-                            ))}
-                          </ul>
+                              </a>
+                            ) : (
+                              <span
+                                aria-disabled="true"
+                                className={`inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold ${
+                                  isPreorderCta
+                                    ? "bg-blue-100 text-blue-700"
+                                    : "bg-slate-200 text-slate-500"
+                                }`}
+                              >
+                                {isPreorderCta ? (
+                                  <FaShoppingCart className="text-xs" />
+                                ) : (
+                                  <FaExternalLinkAlt className="text-xs" />
+                                )}
+                                {isPreorderCta ? ctaText : "Unavailable"}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          </>
-        ) : null}
+            )}
 
-        {activePrimaryTab === "specs" ? (
-          <div className="border-t border-slate-200">
-            <div className="flex overflow-x-auto no-scrollbar border-b border-slate-200 bg-white">
-              {availableTabs.map((tab) => {
-                const IconComponent = tab.icon;
-                return (
+            {detailInfoSections.length > 0 ? (
+              <div
+                className={`${combineResponsiveClasses(RESPONSIVE_SPACING.specSectionSpacing)} space-y-5 `}
+              >
+                <div className="max-w-2xl ">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-blue-600">
+                    Key Specifications
+                  </p>
+                  <h3 className="mt-2 text-xl font-semibold text-slate-900 sm:text-2xl">
+                    Main hardware highlights
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-500 sm:text-base">
+                    A quick breakdown of the processor, display, camera, and
+                    battery details that matter most.
+                  </p>
+                </div>
+                <div
+                  className={`grid items-stretch ${combineResponsiveClasses(RESPONSIVE_SPACING.specCardGap)} md:grid-cols-2`}
+                >
+                  {detailInfoSections.map((section) => {
+                    const iconMeta = highlightIconMap[section.key];
+                    const Icon = iconMeta?.Icon;
+                    const cardTitle =
+                      section.key === "performance"
+                        ? "Processor"
+                        : section.key === "camera"
+                          ? "Rear Camera"
+                          : section.title;
+                    const cardSubtitle = section.description;
+
+                    return (
+                      <div
+                        key={section.key}
+                        className="flex h-full flex-col rounded-md border border-slate-200  p-5  transition-all duration-200  sm:p-6 bg-gradient-to-r from-white to-transparent"
+                      >
+                        Full Specifications
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-50 ring-1 ring-slate-200">
+                            {Icon ? (
+                              <Icon className={`text-base ${iconMeta.color}`} />
+                            ) : null}
+                          </div>
+                          <div className="min-w-0">
+                            <h4 className="text-[1rem] font-semibold leading-snug text-slate-900 sm:text-[1.08rem]">
+                              {cardTitle}
+                            </h4>
+                            {cardSubtitle ? (
+                              <p className="mt-1 line-clamp-2 text-[13px] leading-5 text-slate-500">
+                                {cardSubtitle}
+                              </p>
+                            ) : null}
+                          </div>
+                        </div>
+                        <ul className="mt-4 space-y-2.5">
+                          {section.points.slice(0, 3).map((point, idx) => (
+                            <li
+                              key={idx}
+                              className="flex items-start gap-2.5 text-sm leading-6 text-slate-700"
+                            >
+                              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-gradient-to-r from-blue-500 via-blue-500 to-blue-500" />
+                              <span className="min-w-0">
+                                {formatSpecValue(point, section.title)}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex justify-center pt-1 sm:justify-end">
                   <button
-                    key={tab.id}
-                    onClick={() => handleTabClick(tab.id)}
-                    className={`group relative flex items-center gap-2 px-4 py-3 font-medium text-sm whitespace-nowrap transition-colors duration-200 flex-shrink-0 focus-visible:outline-none ${
-                      activeTab === tab.id
-                        ? "bg-white"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
+                    type="button"
+                    onClick={() => handleTabClick("specifications")}
+                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 transition-all duration-200 "
                   >
-                    <IconComponent
-                      className={`text-sm ${
-                        activeTab === tab.id
-                          ? "text-violet-400"
-                          : "text-gray-500 group-hover:text-gray-700"
-                      }`}
-                    />
-                    <span
-                      className={
-                        activeTab === tab.id
-                          ? "bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent"
-                          : ""
-                      }
-                    >
-                      {tab.label}
-                    </span>
-                    {activeTab === tab.id ? (
-                      <span className="pointer-events-none absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600" />
-                    ) : null}
+                    See full specifications
+                    <FaChevronRight className="text-xs" />
                   </button>
-                );
-              })}
-            </div>
-            <div className="p-2 sm:p-3">{renderTabContent()}</div>
+                </div>
+              </div>
+            ) : null}
           </div>
-        ) : null}
-
-        {activePrimaryTab === "competitors" && competitorLimit > 0 ? (
-          <div className="p-2 sm:p-3 border-t border-slate-200">
-            <CompetitorCards
-              title={
-                mobileData?.name
-                  ? `Competitors For ${mobileData.name}`
-                  : "Top Competitors"
-              }
-              productName={
-                mobileData?.name || mobileData?.model || "This Device"
-              }
-              productId={currentProductId}
-              onCompare={handlePopularCompare}
-              compareDisabled={compareDisabled}
-              fallbackCompetitors={popularComparisonTargets}
-              currentBrand={mobileData?.brand || ""}
-              currentPrice={
-                currentVariant?.base_price ?? mobileData?.price ?? null
-              }
-              maxCards={competitorLimit}
-            />
-          </div>
-        ) : null}
+        </div>
       </div>
-      {activePrimaryTab === "info" ? (
-        <div className="w-full bg-white">
-          {competitorLimit > 0 ? (
-            <CompetitorCards
-              title={
-                mobileData?.name
-                  ? `Competitors For ${mobileData.name}`
-                  : "Top Competitors"
-              }
-              productName={
-                mobileData?.name || mobileData?.model || "This Device"
-              }
-              productId={currentProductId}
-              onCompare={handlePopularCompare}
-              compareDisabled={compareDisabled}
-              fallbackCompetitors={popularComparisonTargets}
-              currentBrand={mobileData?.brand || ""}
-              currentPrice={
-                currentVariant?.base_price ?? mobileData?.price ?? null
-              }
-              maxCards={competitorLimit}
-              className="w-full"
-            />
-          ) : null}
-          <RecommendedSmartphones />
+
+      <div className="w-full">
+        <div className="mx-auto max-w-7xl px-0 py-0 sm:px-6 sm:py-8 lg:px-8">
+          <div className="space-y-4 sm:space-y-6">
+            {competitorLimit > 0 ? (
+              <CompetitorCards
+                title={
+                  mobileData?.name
+                    ? `Competitors For ${mobileData.name}`
+                    : "Top Competitors"
+                }
+                productName={
+                  mobileData?.name || mobileData?.model || "This Device"
+                }
+                productId={currentProductId}
+                onCompare={handlePopularCompare}
+                compareDisabled={compareDisabled}
+                fallbackCompetitors={popularComparisonTargets}
+                currentBrand={mobileData?.brand || ""}
+                currentPrice={
+                  currentVariant?.base_price ?? mobileData?.price ?? null
+                }
+                maxCards={competitorLimit}
+                className="w-full"
+              />
+            ) : null}
+            <div className="space-y-4 sm:space-y-6">
+              <RecommendedSmartphones />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-0 py-0 sm:p-3">{renderTabContent()}</div>
+
+      <div className="w-full">
+        <div className="mx-auto max-w-7xl px-0 py-0 sm:px-6 sm:py-8 lg:px-8">
           <ProductDiscoverySections
             productId={currentProductId}
             currentBrand={mobileData?.brand || ""}
             className="w-full"
           />
         </div>
-      ) : null}
+      </div>
     </div>
   );
 };

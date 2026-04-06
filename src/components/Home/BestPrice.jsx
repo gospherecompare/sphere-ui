@@ -1,6 +1,6 @@
-// src/components/TrendingSection.jsx
+// src/components/Home/BestPrice.jsx
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { createProductPath } from "../../utils/slugGenerator";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
 import { FaMobileAlt, FaLaptop, FaTv, FaWifi } from "react-icons/fa";
@@ -61,7 +61,7 @@ const TrendSpecScoreBadge = ({ score }) => {
     <div className="inline-flex flex-col items-center justify-center rounded-md border border-violet-200 bg-violet-50/95 px-1.5 py-1 leading-none">
       <span className="text-[10px] font-bold text-violet-700">{label}</span>
       <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide text-violet-600">
-        Spec
+        Score
       </span>
     </div>
   );
@@ -407,9 +407,9 @@ const getRowBadge = (row) =>
     row?.trend_badge,
     row?.trend_label,
     row?.manual_badge,
-  ) || "Trending";
+  ) || "Best Deal";
 
-const TrendingSection = () => {
+const BestPriceSection = () => {
   const [activeCategory, setActiveCategory] = useState("smartphone");
   const [currentDevices, setCurrentDevices] = useState([]);
   const [loadingTrending, setLoadingTrending] = useState(false);
@@ -421,14 +421,17 @@ const TrendingSection = () => {
     {
       id: "smartphone",
       name: "Smartphones",
+      icon: FaMobileAlt,
     },
     {
       id: "laptop",
       name: "Laptops",
+      icon: FaLaptop,
     },
     {
       id: "appliance",
       name: "TVs",
+      icon: FaTv,
     },
   ];
 
@@ -599,175 +602,179 @@ const TrendingSection = () => {
           : FaMobileAlt;
 
   return (
-    <div
-      className={`px-2 lg:px-4 mx-auto bg-white max-w-4xl mb-5 w-full m-0 overflow-hidden pt-5 sm:pt-10 transition-all duration-700 ${
+    <section
+      className={`relative isolate overflow-hidden bg-[radial-gradient(circle_at_top,rgba(219,234,254,0.75),transparent_38%),linear-gradient(180deg,#f8fbff_0%,#ffffff_36%,#f8fafc_100%)] transition-all duration-700 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
-      {/* Header Section */}
-      <div className="mb-6 px-2">
-        <div className="flex items-center gap-2 mb-2">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+      <div className="absolute inset-0 opacity-45 [background-image:linear-gradient(rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.08)_1px,transparent_1px)] [background-size:84px_84px]" />
+      <div className="relative mx-auto max-w-7xl px-4 pb-16 pt-12 sm:px-6 sm:pb-20 sm:pt-16 lg:px-8 lg:pb-24 lg:pt-24">
+        {/* Header Section */}
+        <div className="mx-auto mb-10 max-w-5xl text-center">
+          <h1 className="mt-5 text-3xl font-black leading-tight text-slate-900 sm:text-5xl lg:text-6xl">
             Top Picks{" "}
-            <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent">
-              By Hooks
+            <span className="bg-gradient-to-r from-blue-600 via-violet-500 to-cyan-500 bg-clip-text text-transparent">
+              by Hooks
             </span>
-          </h2>
+          </h1>
+          <p className="mx-auto mt-4 max-w-2xl text-sm font-medium leading-7 text-slate-600 sm:mt-5 sm:text-lg sm:leading-8">
+            Compare the highest-scoring devices across smartphones, laptops,
+            TVs, and networking gear.
+          </p>
         </div>
-        <p className="text-sm text-gray-600">
-          Explore top smartphones, laptops, and TVs based on performance, price,
-          and trends.
-        </p>
-      </div>
 
-      {/* Category Tabs - Single Row */}
-      <div className="mb-3 flex overflow-x-auto gap-2.5 lg:gap-3 hide-scrollbar no-scrollbar scroll-smooth  bg-white p-1.5 ">
-        {categories.map((category, index) => {
-          const isActive = activeCategory === category.id;
+        {/* Category Tabs - Single Row */}
+        <div className="mx-auto mt-10 flex w-full max-w-full justify-start overflow-x-auto rounded-[1.75rem] border border-slate-200 bg-white/85 p-1 backdrop-blur-sm no-scrollbar scroll-smooth sm:w-fit sm:p-2">
+          {categories.map((category, index) => {
+            const isActive = activeCategory === category.id;
+            const Icon = category.icon;
 
-          return (
-            <button
-              type="button"
-              key={category.id}
-              onClick={() => setActiveCategory(category.id)}
-              aria-pressed={isActive}
-              className={`group relative min-w-[140px] shrink-0 rounded-md  px-4 py-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-white lg:min-w-[160px] ${
-                isActive
-                  ? " bg-gray-100 text-blue-700 shadow-md"
-                  : "border-transparent bg-white text-slate-700 hover:border-slate-200 hover:bg-slate-50 hover:shadow-sm"
-              } ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
-              style={{ transitionDelay: `${index * 55}ms` }}
-            >
-              <span
-                className={`relative block text-sm lg:text-base font-semibold leading-tight transition-colors duration-300 ${
+            return (
+              <button
+                type="button"
+                key={category.id}
+                onClick={() => setActiveCategory(category.id)}
+                aria-pressed={isActive}
+                className={`group relative min-w-[100px] shrink-0 rounded-[1.25rem] border px-2 py-1.5 text-left text-[11px] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white sm:min-w-[154px] sm:px-5 sm:py-3 sm:text-[0.95rem] lg:min-w-[174px] ${
                   isActive
-                    ? "bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent"
-                    : "text-slate-800"
-                }`}
+                    ? "border-violet-200 bg-gradient-to-b from-violet-50 to-white text-violet-700 shadow-[0_10px_22px_rgba(124,58,237,0.12)]"
+                    : "border-transparent bg-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900"
+                } ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
+                style={{ transitionDelay: `${index * 55}ms` }}
               >
-                {category.name}
-              </span>
+                <span className="flex items-center gap-2">
+                  <div
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ring-1 transition-all duration-300 sm:h-10 sm:w-10 ${
+                      isActive
+                        ? "bg-violet-100 text-violet-700 ring-violet-200"
+                        : "bg-slate-50 text-slate-500 ring-slate-200 group-hover:bg-white group-hover:text-slate-700"
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5 sm:h-5 sm:w-5" />
+                  </div>
 
-              <div
-                className={`relative mt-4 h-px overflow-hidden rounded-full transition-all duration-300 ${
-                  isActive
-                    ? "bg-purple-100"
-                    : "bg-slate-100 group-hover:bg-slate-200"
-                }`}
-              >
-                <div
-                  className={`relative h-full rounded-full transition-all duration-500 ${
-                    isActive
-                      ? "w-4/5 bg-gradient-to-r from-purple-600 to-blue-600"
-                      : "w-1/4 bg-slate-300"
-                  }`}
-                />
-              </div>
-            </button>
-          );
-        })}
-      </div>
+                  <span
+                    className={`block whitespace-nowrap text-[11px] font-semibold leading-tight transition-colors duration-300 sm:text-[0.95rem] ${
+                      isActive ? "text-violet-700" : "text-slate-700"
+                    }`}
+                  >
+                    {category.name}
+                  </span>
+                </span>
 
-      {/* Trending Products - Single Row */}
-      <div className="mb-4 px-2">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="text-left">
-            <h3 className="text-lg font-semibold text-gray-900">
-              Popular Picks
-            </h3>
-          </div>
-        </div>
-      </div>
-
-      {/* Products Row - Horizontal scroll with fixed-size cards */}
-      <div className="flex overflow-x-auto gap-4 lg:gap-5 hide-scrollbar no-scrollbar scroll-smooth pb-6">
-        {loadingTrending
-          ? // Skeleton Loaders
-            Array.from({ length: 8 }).map((_, i) => (
-              <div
-                key={`skeleton-${i}`}
-                className="w-[220px] h-[200px] shrink-0 animate-pulse"
-              >
-                <div className="rounded-2xl bg-white p-3 shadow-sm">
-                  <div className="bg-gray-200 rounded-xl w-full h-24 sm:h-32 lg:h-40 mb-3"></div>
-                  <div className="h-3 bg-gray-200 rounded mb-2 w-4/5"></div>
-                  <div className="h-4 bg-gray-200 rounded mb-3 w-full"></div>
-                  <div className="h-3 bg-gray-200 rounded mb-2 w-2/3"></div>
-                  <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                <div className="mt-3 h-0.5 overflow-hidden rounded-full bg-slate-200/80">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      isActive
+                        ? "w-full bg-gradient-to-r from-violet-500 to-blue-600"
+                        : "w-1/3 bg-slate-300 group-hover:w-1/2"
+                    }`}
+                  />
                 </div>
-              </div>
-            ))
-          : // Actual Products
-            currentDevices.map((device, i) => (
-              <div
-                key={`${device.id || "noid"}-${i}`}
-                onClick={() => handleDeviceClick(device)}
-                className={`group shrink-0 cursor-pointer transition-all duration-500 ${
-                  isLoaded
-                    ? "opacity-100 translate-y-0"
-                    : "opacity-0 translate-y-2"
-                }`}
-                style={{ transitionDelay: `${i * 45}ms` }}
-              >
-                <div className="relative h-full w-32 rounded-lg overflow-hidden p-2 transition-all duration-300  overflow-hidden transition-all duration-200  group-hover:-translate-y-0.5">
-                  <div className="flex h-full flex-col gap-2">
-                    {/* Image */}
-                    <div className="relative w-full flex-shrink-0">
-                      <div className="absolute left-1 top-1 z-10 pointer-events-none">
-                        <TrendSpecScoreBadge score={device.score} />
-                      </div>
-                      <div className="mx-auto h-28 sm:h-32 w-28 rounded-md shadow-md border border-gray-100 overflow-hidden bg-gray-100 flex items-center justify-center">
-                        {device.image ? (
-                          <img
-                            src={device.image}
-                            alt={device.name}
-                            className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-105"
-                            onError={(e) => {
-                              e.target.style.display = "none";
-                            }}
-                          />
-                        ) : (
-                          <div className="text-center px-3">
-                            <div className="mx-auto mb-1.5 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-200">
-                              <FallbackCardIcon className="text-gray-400 text-sm" />
-                            </div>
-                            <span className="text-[11px] text-gray-500">
-                              No image
-                            </span>
-                          </div>
-                        )}
-                      </div>
+              </button>
+            );
+          })}
+        </div>
 
-                      {/* Trending Badge */}
+        {/* Top Picks by Hooks - Single Row */}
+        <div className="mt-10 flex items-center gap-4">
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
+          <span className="whitespace-nowrap text-xs font-bold uppercase tracking-[0.3em] text-slate-500">
+            Top Picks
+          </span>
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
+        </div>
+
+        {/* Products Row - Horizontal scroll with fixed-size cards */}
+        <div className="no-scrollbar mt-10 flex snap-x snap-mandatory overflow-x-auto gap-2 sm:gap-4 lg:gap-5 scroll-smooth pb-4">
+          {loadingTrending
+            ? // Skeleton Loaders
+              Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={`skeleton-${i}`}
+                  className="w-[74vw] max-w-[17rem] shrink-0 animate-pulse sm:w-[18rem] lg:w-[19rem]"
+                >
+                  <div className="relative overflow-hidden border border-slate-200 bg-white p-3 sm:p-4">
+                    <div className="mb-4 h-40 rounded-[1.5rem] bg-slate-200 sm:h-48"></div>
+                    <div className="h-3 w-4/5 rounded bg-slate-200"></div>
+                    <div className="mt-2 h-3 w-full rounded bg-slate-200"></div>
+                    <div className="mt-4 flex gap-2">
+                      <div className="h-7 w-20 rounded-full bg-slate-200" />
+                      <div className="h-7 w-24 rounded-full bg-slate-200" />
                     </div>
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0 text-left">
-                      {/* Brand - Top Left */}
-
-                      {/* Title */}
-                      <h6
-                        className={`mt-1 text-sm sm:text-base font-semibold text-gray-900 leading-snug line-clamp-2 group-hover:text-purple-600 transition-colors duration-200 
-                            `}
-                      >
-                        <Link
-                          to={getDevicePath(device)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-flex"
-                        >
-                          {device.name}
-                        </Link>
-                      </h6>
-
-                      {/* Price */}
+                    <div className="mt-5 border-t border-slate-100 pt-4">
+                      <div className="h-3 w-24 rounded bg-slate-200" />
+                      <div className="mt-2 h-5 w-28 rounded bg-slate-200" />
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            : // Actual Products
+              currentDevices.map((device, i) => (
+                <button
+                  key={`${device.id || "noid"}-${i}`}
+                  type="button"
+                  aria-label={`Open ${device.name}`}
+                  onClick={() => handleDeviceClick(device)}
+                  className={`group relative flex h-full w-[74vw] max-w-[17rem] shrink-0 snap-start flex-col overflow-hidden bg-white text-left transition-all duration-300 sm:w-[18rem] lg:w-[19rem] ${
+                    isLoaded
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 translate-y-2"
+                  }`}
+                  style={{ transitionDelay: `${i * 60}ms` }}
+                >
+                  <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-blue-500 to-cyan-400" />
+
+                  <div className="relative bg-gradient-to-br from-slate-50 via-white to-blue-50/60 p-3 sm:p-5">
+                    <div className="flex h-40 items-center justify-center overflow-hidden rounded-[1.5rem] bg-white/90 ring-1 ring-slate-200 sm:h-48">
+                      {device.image ? (
+                        <img
+                          src={device.image}
+                          alt={device.name}
+                          className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-110"
+                          loading="lazy"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                          }}
+                        />
+                      ) : (
+                        <FallbackCardIcon className="text-3xl text-slate-300" />
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-1 flex-col p-3 sm:p-5">
+                    {device.brand ? (
+                      <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-blue-600">
+                        {device.brand}
+                      </p>
+                    ) : null}
+
+                    <h6 className="mt-2 line-clamp-2 text-base font-semibold leading-snug text-slate-900 transition-colors duration-200 group-hover:text-blue-600 sm:text-xl">
+                      {device.name}
+                    </h6>
+
+                    <div className="mt-4 flex items-end justify-between gap-3 border-t border-slate-100 pt-3 sm:pt-4">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
+                          price
+                        </p>
+                        <p className="mt-1 text-lg font-black tracking-tight text-slate-900 sm:text-xl">
+                          {device.price || "Price not available"}
+                        </p>
+                      </div>
+
+                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-violet-600 text-sm text-white shadow-lg transition-transform duration-300 group-hover:translate-x-1 sm:h-11 sm:w-11 sm:text-base">
+                        →
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              ))}
+        </div>
       </div>
-    </div>
+    </section>
   );
 };
 
-export default TrendingSection;
+export default BestPriceSection;

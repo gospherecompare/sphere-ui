@@ -1,7 +1,7 @@
 // src/components/MobileFeaturesFinder.jsx
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { FaMobileAlt } from "react-icons/fa";
+import { FaChartLine, FaFire, FaMobileAlt, FaSearch } from "react-icons/fa";
 import { useDevice } from "../../hooks/useDevice";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
 import {
@@ -9,24 +9,75 @@ import {
   SMARTPHONE_FEATURE_CATALOG,
 } from "../../utils/smartphonePopularFeatures";
 
+const FeatureCard = ({ feature, index, isActive, isLoaded, onClick }) => {
+  const Icon = feature.icon;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={isActive}
+      className={`group relative h-[120px] w-[200px] shrink-0 snap-start overflow-hidden rounded-2xl bg-white p-4 text-left text-slate-900 transition-all duration-500 sm:w-[210px] lg:w-[225px] ${
+        isActive
+          ? "ring-2 ring-blue-100 -translate-y-1"
+          : "hover:-translate-y-0.5 hover:bg-blue-50"
+      } ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
+      style={{ transitionDelay: `${index * 45}ms` }}
+    >
+      <div
+        className={`absolute inset-0 bg-gradient-to-r from-blue-500/25 via-cyan-400/20 to-blue-500/25 transition-opacity duration-300 ${
+          isActive ? "opacity-10" : "opacity-0 group-hover:opacity-10"
+        }`}
+      />
+
+      <div className="relative z-10 flex h-full items-center">
+        <div className="flex w-full items-center gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-2.5">
+            <div
+              className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ring-1 transition-all duration-300 ${
+                isActive
+                  ? "bg-gradient-to-br from-blue-600 via-cyan-500 to-blue-600 text-white ring-transparent"
+                  : "bg-slate-100 text-slate-400 ring-slate-200 group-hover:bg-blue-50 group-hover:text-blue-600"
+              }`}
+            >
+              {Icon ? (
+                <Icon className="h-5 w-5" />
+              ) : (
+                <FaMobileAlt className="h-5 w-5" />
+              )}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <span className="block truncate text-base font-bold leading-tight text-slate-900">
+                {feature.name}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </button>
+  );
+};
+
 const MobileFeaturesFinder = () => {
   const navigate = useNavigate();
   const deviceCtx = useDevice();
-  const smartphones =
-    (deviceCtx.smartphoneAll && deviceCtx.smartphoneAll.length
-      ? deviceCtx.smartphoneAll
-      : deviceCtx.smartphone) || [];
+  const smartphones = useMemo(
+    () =>
+      (deviceCtx.smartphoneAll && deviceCtx.smartphoneAll.length
+        ? deviceCtx.smartphoneAll
+        : deviceCtx.smartphone) || [],
+    [deviceCtx.smartphoneAll, deviceCtx.smartphone],
+  );
 
   const [activeFeature, setActiveFeature] = useState();
-
   const [params] = useSearchParams();
-
   const [popularFeatureOrder, setPopularFeatureOrder] = useState([]);
   const [popularFeatureOrderLoaded, setPopularFeatureOrderLoaded] =
     useState(false);
   const isLoaded = useRevealAnimation();
 
-  React.useEffect(() => {
+  useEffect(() => {
     let cancelled = false;
     const controller =
       typeof AbortController !== "undefined" ? new AbortController() : null;
@@ -63,7 +114,7 @@ const MobileFeaturesFinder = () => {
     };
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const f = params.get("feature");
     setActiveFeature(f || undefined);
   }, [params]);
@@ -141,101 +192,95 @@ const MobileFeaturesFinder = () => {
   };
 
   return (
-    <div
-      className={`px-2 lg:px-4 mx-auto bg-white max-w-4xl w-full m-5 overflow-hidden pt-5 sm:pt-10 transition-all duration-700 ${
-        isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
-      }`}
-    >
-      {/* Header Section */}
-      <div className="mb-6 px-2">
-        <div className="flex items-center gap-2 mb-2">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-            Mobiles by{" "}
-            <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent">
+    <section className="relative isolate overflow-hidden bg-white text-slate-900">
+      <div className="relative mx-auto max-w-7xl px-4 pb-14 pt-12 sm:px-6 sm:pb-16 sm:pt-16 lg:px-8 lg:pb-20 lg:pt-20">
+        <div className="mx-auto max-w-5xl text-center">
+          <h1 className="mt-6 text-3xl font-bold leading-tight text-slate-900 sm:text-4xl lg:text-5xl">
+            Mobiles by
+            <span className="ml-2 bg-gradient-to-r from-blue-600 via-purple-500 to-cyan-600 bg-clip-text text-transparent animate-pulse">
               Popular Features
             </span>
-          </h2>
+          </h1>
+
+          <p className="mx-auto mt-4 max-w-3xl text-sm leading-7 text-slate-600 sm:text-base lg:text-lg">
+            {popularFeatureOrderLoaded
+              ? "Popular choices from other users in the last 7 days."
+              : "Find smartphones based on the features people search for most."}
+          </p>
         </div>
-        <p className="text-sm text-gray-600">
-          {popularFeatureOrderLoaded
-            ? "Popular choices from other users (last 7 days)"
-            : "Find smartphones based on your preferred features"}
-        </p>
-      </div>
 
-      {/* Features Grid - Single Row */}
-      <div
-        className="
-    grid grid-cols-4
-    sm:flex sm:overflow-x-auto sm:gap-4 sm:pb-6
-    hide-scrollbar no-scrollbar scroll-smooth
-  "
-      >
-        {popularFeatures.map((feature, index) => {
-          const isActive = activeFeature === feature.id;
-          const Icon = feature.icon;
+        <div className="mt-8 flex items-center justify-center gap-3 overflow-x-auto pb-1 text-slate-700 no-scrollbar">
+          <span className="inline-flex items-center gap-2 whitespace-nowrap text-sm font-semibold uppercase tracking-[0.22em] text-blue-700">
+            <FaChartLine className="h-3.5 w-3.5 text-cyan-500" />
+            Trending
+          </span>
 
-          return (
+          {popularFeatures.slice(0, 6).map((feature) => (
             <button
               key={feature.id}
+              type="button"
               onClick={() => handleFeatureClick(feature.id)}
-              className={`flex flex-col items-center p-2 transition-all duration-500 min-w-[100px] lg:min-w-[120px] shrink-0 group ${
-                isActive
-                  ? "text-gray-900 transform -translate-y-1"
-                  : "text-gray-600 hover:text-gray-900 hover:transform hover:scale-105"
-              } ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
-              style={{ transitionDelay: `${index * 45}ms` }}
+              className="whitespace-nowrap rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700  transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
             >
-              {/* Icon Container */}
-              <div
-                className={`w-14 h-14 lg:w-16 lg:h-16 flex items-center justify-center rounded-2xl p-3 transition-all duration-300 mb-3 ${
-                  isActive
-                    ? "bg-gradient-to-br from-blue-600 via-purple-500 to-blue-600 text-white shadow-lg shadow-red-200/50"
-                    : "bg-gray-100 text-gray-400 group-hover:bg-gray-200 group-hover:shadow-md"
-                }`}
-              >
-                <span
-                  className={`text-xl lg:text-2xl transition-colors duration-300 ${
-                    isActive ? "text-white" : "text-gray-400"
-                  }`}
-                >
-                  {Icon ? <Icon /> : null}
-                </span>
-              </div>
-
-              {/* Feature Name */}
-              <span
-                className={`font-bold text-xs lg:text-sm text-center transition-all duration-300 mb-1 ${
-                  isActive
-                    ? "text-gray-900"
-                    : "text-gray-600 group-hover:text-gray-900"
-                }`}
-              >
-                {feature.name}
-              </span>
-
-              {/* Feature Description */}
-              <span className="text-[10px] text-gray-500 mb-2">
-                {feature.description}
-              </span>
-
-              {/* Count Badge */}
-
-              {/* Active Indicator Dot */}
-              <div
-                className={`mt-2 w-1.5 h-1.5 rounded-full transition-all duration-300 ${
-                  isActive
-                    ? "bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 opacity-100"
-                    : "bg-transparent opacity-0"
-                }`}
-              />
+              {feature.name}
             </button>
-          );
-        })}
+          ))}
+        </div>
       </div>
 
-      {/* View All Button */}
-    </div>
+      <div className="relative mx-auto max-w-7xl px-4 pb-16 sm:px-6 sm:pb-20 lg:px-8 lg:pb-24">
+        <div className="flex items-center gap-4">
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+          <span className="inline-flex items-center gap-2 whitespace-nowrap text-xs font-semibold uppercase tracking-[0.28em] text-slate-700">
+            <FaFire className="h-3.5 w-3.5 text-orange-500" />
+            Featured Picks on Hooks
+          </span>
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+        </div>
+
+        <div className="mx-auto mt-8 max-w-6xl">
+          <div className="no-scrollbar flex w-full flex-nowrap gap-3 overflow-x-auto pb-4 pt-0 snap-x snap-mandatory">
+            {popularFeatures.map((feature, index) => {
+              const isActive = activeFeature === feature.id;
+              return (
+                <FeatureCard
+                  key={feature.id}
+                  feature={feature}
+                  index={index}
+                  isActive={isActive}
+                  isLoaded={isLoaded}
+                  onClick={() => handleFeatureClick(feature.id)}
+                />
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="mt-10 hidden flex-col items-center gap-5 rounded-[1.5rem] border border-slate-200 bg-white px-5 py-5 text-slate-900 sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <div className="text-center sm:text-left">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-700">
+              Need a shortcut?
+            </p>
+            <p className="mt-1 text-sm text-slate-600">
+              Open the full catalog or jump straight to feature filters.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleViewAll}
+            className="group mx-auto inline-flex w-fit rounded-full bg-white p-[1px] transition-all duration-500 hover:shadow-xl sm:mx-0"
+          >
+            <span className="flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3 transition-all duration-300 group-hover:gap-3">
+              <span className="font-semibold leading-none text-blue-600">
+                View All Phones
+              </span>
+              <FaSearch className="h-4 w-4 shrink-0 text-cyan-500 transition-transform duration-300 group-hover:translate-x-1" />
+            </span>
+          </button>
+        </div>
+      </div>
+    </section>
   );
 };
 

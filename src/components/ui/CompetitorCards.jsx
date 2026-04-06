@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import {
   FaArrowDown,
   FaArrowUp,
@@ -323,20 +323,20 @@ const insightMeta = (type) => {
   if (type === "advantage") {
     return {
       Icon: FaThumbsUp,
-      iconClass: "text-emerald-600",
+      iconClass: "text-emerald-500",
     };
   }
 
   if (type === "disadvantage") {
     return {
       Icon: FaThumbsDown,
-      iconClass: "text-rose-600",
+      iconClass: "text-rose-500",
     };
   }
 
   return {
     Icon: FaCheckCircle,
-    iconClass: "text-purple-600",
+    iconClass: "text-blue-500",
   };
 };
 
@@ -387,10 +387,10 @@ const CompetitorCard = ({
     competitor?.best_store_name || competitor?.brand_name || "Hooks";
 
   return (
-    <article className="group relative w-[240px] max-w-[260px] shrink-0 border border-gray-50 bg-white rounded-sm shadow-md backdrop-blur-xl transition">
+    <article className="group relative w-[84vw] max-w-[320px] shrink-0 overflow-hidden rounded-lg border border-slate-200/80 bg-white  transition-colors duration-200 hover:border-blue-200 sm:w-[280px]">
       <div className="flex h-full flex-col">
-        <div className="p-3 pb-2">
-          <div className="mx-auto mt-1 h-24 w-24 overflow-hidden rounded-lg  bg-slate-100 p-1">
+        <div className="p-3 pb-3 sm:p-4">
+          <div className="mx-auto mt-3 h-24 w-24 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-b from-blue-50/70 to-white p-1.5">
             {competitor?.image_url ? (
               <img
                 src={competitor.image_url}
@@ -402,40 +402,41 @@ const CompetitorCard = ({
               />
             ) : null}
           </div>
-          <h3 className="mt-3  line-clamp-2 text-[14px] font-semibold leading-tight text-slate-900">
+          <h3 className="space-grotesk-title mt-3 line-clamp-2 text-[14px] leading-tight text-slate-900 sm:text-[15px]">
             {displayName}
           </h3>
-          <p className="mt-1 text-[12px] text-slate-500">
-            Vist the{" "}
-            <span className="font-semibold text-violet-700">{buyFrom}</span>
+          <p className="mt-1 text-[12px] leading-snug text-slate-600">
+            From <span className="font-semibold text-slate-900">{buyFrom}</span>
           </p>
-          <p className=" text-[16px] font-extrabold text-green-600">
-            {formatPrice(competitor?.price)}
-          </p>
-          <p className="mt-1 line-clamp-2 text-[12px] leading-snug text-slate-600">
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <p className="inline-flex items-center rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[14px] font-semibold text-emerald-600">
+              {formatPrice(competitor?.price)}
+            </p>
+          </div>
+          <p className="mt-2 line-clamp-2 text-[12px] leading-snug text-slate-500">
             {descriptor}
           </p>
         </div>
 
-        <div className=" bg-white p-3">
+        <div className="border-t border-slate-100 bg-slate-50/60 p-3 sm:p-4">
           <div className="mb-2 flex items-center justify-between gap-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-600">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.34em] text-blue-600">
               Quick Comparison
             </p>
           </div>
 
-          <ul className="space-y-1.5">
+          <ul className="space-y-1.5 rounded-2xl border border-slate-200 bg-white px-3 py-3">
             {orderedInsights.map((item, index) => {
               const meta = insightMeta(item.type);
               return (
                 <li
                   key={`insight-${index}`}
-                  className="flex items-start gap-2 px-1 py-1"
+                  className="flex items-start gap-2 py-1 first:pt-0 last:pb-0"
                 >
                   <meta.Icon
                     className={`mt-0.5 shrink-0 text-[12px] ${meta.iconClass}`}
                   />
-                  <span className="text-[12px] leading-snug  font-semibold text-slate-500">
+                  <span className="text-[12px] leading-snug text-slate-600">
                     {item.text}
                   </span>
                 </li>
@@ -449,7 +450,7 @@ const CompetitorCard = ({
               if (expanded) onCollapseSelf?.(competitor?.id);
               else onExpandAll?.();
             }}
-            className="mt-2 inline-flex items-center gap-1 text-[12px] font-semibold text-slate-600 transition hover:text-slate-900"
+            className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-blue-600 transition hover:text-blue-700"
           >
             {expanded ? "Show less" : "Show more"}
             <FaChevronRight
@@ -458,32 +459,52 @@ const CompetitorCard = ({
           </button>
         </div>
 
-        <div className="mt-auto  bg-white px-3 py-3 text-center">
-          <p className="truncate text-[12px] font-semibold text-slate-700">
-            {baseProductName || `This ${productLabel}`}
-          </p>
-          <div className="my-1 border border-purple-700 inline-flex h-6 w-6 items-center justify-center rounded-full  text-[10px] font-bold text-purple-700">
-            VS
+        <div className="mt-auto border-t border-slate-100 bg-white">
+          <div className="border-b border-slate-100 bg-slate-50/80 px-4 py-3">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
+              <div className="min-w-0">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.26em] text-slate-400">
+                  This device
+                </p>
+                <p className="truncate text-[12px] font-semibold text-slate-700">
+                  {baseProductName || `This ${productLabel}`}
+                </p>
+              </div>
+              <div className="relative flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 sm:h-10 sm:w-10 animate-pulse reduced-motion:animate-none">
+                <span className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-500 via-cyan-500 to-blue-600 opacity-10" />
+                <span className="absolute inset-[5px] rounded-full border border-blue-200 bg-white" />
+                <span className="relative space-grotesk-title text-[9px] font-semibold tracking-[0.3em] text-blue-700">
+                  VS
+                </span>
+              </div>
+              <div className="min-w-0 text-right">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.26em] text-slate-400">
+                  Competitor
+                </p>
+                <p className="truncate text-[12px] font-semibold text-slate-700">
+                  {displayName}
+                </p>
+              </div>
+            </div>
           </div>
-          <p className="truncate text-[12px] font-semibold text-slate-700">
-            {displayName}
-          </p>
+          <div className="px-3 py-4 sm:px-4">
+            <button
+              type="button"
+              onClick={() => {
+                if (compareDisabled) return;
+                onCompare?.(competitor);
+              }}
+              disabled={compareDisabled}
+              className={`inline-flex w-full items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-xs font-semibold transition-colors ${
+                compareDisabled
+                  ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
+                  : "border-blue-600 bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 text-white hover:from-blue-700 hover:via-cyan-700 hover:to-blue-700"
+              }`}
+            >
+              Compare Now
+            </button>
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            if (compareDisabled) return;
-            onCompare?.(competitor);
-          }}
-          disabled={compareDisabled}
-          className={`m-3 mt-2 inline-flex items-center justify-center rounded-lg px-3 py-2 text-xs font-semibold shadow-sm transition ${
-            compareDisabled
-              ? "cursor-not-allowed bg-slate-300 text-white"
-              : "bg-violet-600 text-white hover:bg-violet-700"
-          }`}
-        >
-          Compare Now
-        </button>
       </div>
     </article>
   );
@@ -493,11 +514,11 @@ const RecentLaunchesPanel = ({ brandName = "", items = [], onOpenProduct }) => {
   if (!Array.isArray(items) || items.length === 0) return null;
 
   return (
-    <aside className="rounded-md border border-slate-200 bg-slate-50 p-3">
-      <h4 className="mb-2 text-sm font-semibold text-slate-900">
+    <aside className="rounded-2xl border border-slate-200 bg-white p-4">
+      <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.34em] text-blue-600">
         Recent Launches By {brandName || "This Brand"}
       </h4>
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         {items.map((item, index) => {
           const key = String(item?.id ?? item?.name ?? `item-${index}`);
           const launch = formatLaunchDate(
@@ -508,7 +529,7 @@ const RecentLaunchesPanel = ({ brandName = "", items = [], onOpenProduct }) => {
               key={key}
               type="button"
               onClick={() => onOpenProduct?.(item)}
-              className="flex w-full items-center justify-between rounded-md border border-slate-200 bg-white px-2.5 py-2 text-left text-[12px] font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
+              className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-left text-[12px] font-medium text-slate-700 transition-colors hover:border-blue-200 hover:bg-blue-50/50"
             >
               <div className="min-w-0">
                 <p className="truncate">{item?.name || "Device"}</p>
@@ -799,58 +820,61 @@ const CompetitorCards = ({
   const hasRecentLaunches = showRecentLaunches && recentLaunchRows.length > 0;
 
   return (
-    <div className={`w-full bg-white p-3 sm:p-4 ${className}`}>
-      <div className="mb-2 flex items-center justify-between gap-2 pb-2">
-        <div>
-          <h3 className="text-lg font-semibold text-slate-900">
+    <div className={`w-full p-3 sm:p-4 font-sans ${className}`}>
+      <div className=" px-4 py-4 sm:px-5 sm:py-5">
+        <div className="mb-3 border-b border-slate-200/80 pb-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-blue-600">
+            Recommended Comparisons
+          </p>
+          <h3 className="space-grotesk-title mt-2 text-lg tracking-tight text-slate-900 sm:text-2xl">
             {headingParts.prefix}{" "}
             {headingParts.highlight ? (
-              <span className="text-violet-600">{headingParts.highlight}</span>
+              <span className="text-blue-600">{headingParts.highlight}</span>
             ) : null}
           </h3>
-          <p className="mt-0.5 text-sm text-slate-600">
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
             Compare close alternatives by price, specs, and practical
             differences.
           </p>
         </div>
-      </div>
 
-      {error ? (
-        <div className="mb-3 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700">
-          Showing fallback competitors while live competitor insights are
-          syncing.
-        </div>
-      ) : null}
-
-      <div
-        className={`grid gap-3 ${
-          hasRecentLaunches ? "lg:grid-cols-[minmax(0,1fr)_220px]" : ""
-        }`}
-      >
-        <div className="min-w-0">
-          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
-            {limitedCompetitors.map((competitor) => (
-              <CompetitorCard
-                key={String(competitor.id)}
-                competitor={competitor}
-                baseProductName={productName}
-                productLabel={productLabel}
-                expanded={expandAll && !collapsedMap[String(competitor.id)]}
-                onExpandAll={handleExpandAll}
-                onCollapseSelf={handleCollapseSingle}
-                onCompare={handleCompare}
-                compareDisabled={compareDisabled}
-              />
-            ))}
+        {error ? (
+          <div className="mb-3 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700">
+            Showing fallback competitors while live competitor insights are
+            syncing.
           </div>
-        </div>
-        {hasRecentLaunches ? (
-          <RecentLaunchesPanel
-            brandName={currentBrand}
-            items={recentLaunchRows}
-            onOpenProduct={handleOpenRecentProduct}
-          />
         ) : null}
+
+        <div
+          className={`grid gap-3 ${
+            hasRecentLaunches ? "lg:grid-cols-[minmax(0,1fr)_220px]" : ""
+          }`}
+        >
+          <div className="min-w-0">
+            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+              {limitedCompetitors.map((competitor) => (
+                <CompetitorCard
+                  key={String(competitor.id)}
+                  competitor={competitor}
+                  baseProductName={productName}
+                  productLabel={productLabel}
+                  expanded={expandAll && !collapsedMap[String(competitor.id)]}
+                  onExpandAll={handleExpandAll}
+                  onCollapseSelf={handleCollapseSingle}
+                  onCompare={handleCompare}
+                  compareDisabled={compareDisabled}
+                />
+              ))}
+            </div>
+          </div>
+          {hasRecentLaunches ? (
+            <RecentLaunchesPanel
+              brandName={currentBrand}
+              items={recentLaunchRows}
+              onOpenProduct={handleOpenRecentProduct}
+            />
+          ) : null}
+        </div>
       </div>
     </div>
   );

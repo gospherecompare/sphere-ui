@@ -35,8 +35,10 @@ const toAbsoluteUrl = (value, fallbackPath = "/") => {
 const getCanonicalUrl = (customUrl, pathname) => {
   if (customUrl) return toAbsoluteUrl(customUrl);
 
-  if (typeof window !== "undefined" && window.location?.href) {
-    return window.location.href;
+  if (typeof window !== "undefined") {
+    const origin = window.location?.origin || SITE_ORIGIN;
+    const path = pathname || window.location?.pathname || "/";
+    return `${origin}${path.startsWith("/") ? path : `/${path}`}`;
   }
 
   return `${SITE_ORIGIN}${pathname || "/"}`;
@@ -188,7 +190,9 @@ const SEO = ({
     <Helmet prioritizeSeoTags>
       {/* ===== BASIC META TAGS ===== */}
       <title>{normalizedTitle}</title>
-      {description && <meta name="description" content={description} />}
+      {description && (
+        <meta key="description" name="description" content={description} />
+      )}
       {keywords ? <meta name="keywords" content={keywords} /> : null}
       <meta name="robots" content={robots} />
       <meta
@@ -198,13 +202,19 @@ const SEO = ({
       <meta charSet="UTF-8" />
 
       {/* ===== CANONICAL URL ===== */}
-      <link rel="canonical" href={canonicalUrl} />
+      <link key="canonical" rel="canonical" href={canonicalUrl} />
 
       {/* ===== OPEN GRAPH META TAGS ===== */}
-      <meta property="og:title" content={normalizedTitle} />
-      {description && <meta property="og:description" content={description} />}
+      <meta key="og:title" property="og:title" content={normalizedTitle} />
+      {description && (
+        <meta
+          key="og:description"
+          property="og:description"
+          content={description}
+        />
+      )}
       <meta property="og:type" content={ogType} />
-      <meta property="og:url" content={canonicalUrl} />
+      <meta key="og:url" property="og:url" content={canonicalUrl} />
       <meta property="og:site_name" content="Hooks" />
       {imageMeta && <meta property="og:image" content={imageMeta.url} />}
       {imageMeta && (
@@ -227,8 +237,14 @@ const SEO = ({
       {twitterCreator && (
         <meta name="twitter:creator" content={twitterCreator} />
       )}
-      <meta name="twitter:title" content={normalizedTitle} />
-      {description && <meta name="twitter:description" content={description} />}
+      <meta key="twitter:title" name="twitter:title" content={normalizedTitle} />
+      {description && (
+        <meta
+          key="twitter:description"
+          name="twitter:description"
+          content={description}
+        />
+      )}
       {imageMeta && <meta name="twitter:image" content={imageMeta.url} />}
       {imageMeta && imageMeta.alt ? (
         <meta name="twitter:image:alt" content={imageMeta.alt} />

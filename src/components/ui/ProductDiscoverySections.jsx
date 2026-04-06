@@ -133,14 +133,14 @@ const RowVisual = ({ src = "", label = "" }) => {
         src={imageSrc}
         alt={label || "Item"}
         loading="lazy"
-        className="h-10 w-10 shrink-0 rounded-md bg-gray-50 object-contain p-1 shadow-sm"
+        className="h-9 w-9 shrink-0 rounded-xl border border-slate-200 bg-white object-contain p-1.5 sm:h-10 sm:w-10"
         onError={() => setFailed(true)}
       />
     );
   }
 
   return (
-    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white text-xs font-semibold uppercase text-slate-500 shadow-sm">
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white text-xs font-semibold uppercase text-slate-500 sm:h-10 sm:w-10">
       {initial}
     </span>
   );
@@ -152,7 +152,7 @@ const BrandLogo = ({ src = "", label = "" }) => {
   const initial = normalizeText(label).charAt(0).toUpperCase() || "?";
 
   return (
-    <span className="flex h-14 w-14 items-center justify-center rounded-md bg-gray-50 shadow-md">
+    <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white sm:h-14 sm:w-14">
       {imageSrc && !failed ? (
         <img
           src={imageSrc}
@@ -168,26 +168,26 @@ const BrandLogo = ({ src = "", label = "" }) => {
   );
 };
 
-const renderSectionTitle = (title = "") => {
+const renderSectionTitle = (title = "", accentClass = "text-blue-600") => {
   const value = normalizeText(title).toLowerCase();
   if (value === "latest launches") {
     return (
       <>
-        Latest <span className="text-violet-600">Launches</span> in Market
+        Latest <span className={accentClass}>Launches</span> in Market
       </>
     );
   }
   if (value === "by price") {
     return (
       <>
-        Explore by <span className="text-violet-600">Price</span> Range
+        Explore by <span className={accentClass}>Price</span> Range
       </>
     );
   }
   if (value === "smart popular links") {
     return (
       <>
-        Smart <span className="text-violet-600">Popular Links</span>
+        Smart <span className={accentClass}>Popular Links</span>
       </>
     );
   }
@@ -197,7 +197,7 @@ const renderSectionTitle = (title = "") => {
   const highlight = words.pop();
   return (
     <>
-      {words.join(" ")} <span className="text-violet-600">{highlight}</span>
+      {words.join(" ")} <span className={accentClass}>{highlight}</span>
     </>
   );
 };
@@ -222,16 +222,22 @@ const getSectionMeta = (title = "") => {
     return {
       icon: FaBolt,
       badge: "Quick Paths",
-      iconTone: "text-indigo-600",
-      iconBg: "from-indigo-50 to-blue-50",
+      iconTone: "text-blue-600",
+      iconBg: "from-blue-50 to-cyan-50",
+      accentClass: "text-blue-600",
+      badgeClass:
+        "border-blue-100 bg-blue-50 text-blue-700 group-hover:border-blue-200 group-hover:bg-blue-100 group-hover:text-blue-800",
     };
   }
   if (value === "latest launches") {
     return {
       icon: FaFire,
       badge: "Fresh Picks",
-      iconTone: "text-rose-500",
-      iconBg: "from-rose-50 to-orange-50",
+      iconTone: "text-sky-600",
+      iconBg: "from-sky-50 to-blue-50",
+      accentClass: "text-sky-600",
+      badgeClass:
+        "border-sky-100 bg-sky-50 text-sky-700 group-hover:border-sky-200 group-hover:bg-sky-100 group-hover:text-sky-800",
     };
   }
   if (value === "by price") {
@@ -240,13 +246,19 @@ const getSectionMeta = (title = "") => {
       badge: "Budget Guide",
       iconTone: "text-emerald-600",
       iconBg: "from-emerald-50 to-cyan-50",
+      accentClass: "text-emerald-600",
+      badgeClass:
+        "border-emerald-100 bg-emerald-50 text-emerald-700 group-hover:border-emerald-200 group-hover:bg-emerald-100 group-hover:text-emerald-800",
     };
   }
   return {
     icon: FaStore,
     badge: "Discover",
-    iconTone: "text-violet-600",
-    iconBg: "from-violet-50 to-indigo-50",
+    iconTone: "text-blue-600",
+    iconBg: "from-blue-50 to-slate-50",
+    accentClass: "text-blue-600",
+    badgeClass:
+      "border-blue-100 bg-blue-50 text-blue-700 group-hover:border-blue-200 group-hover:bg-blue-100 group-hover:text-blue-800",
   };
 };
 
@@ -262,15 +274,27 @@ const LinkListBlock = ({
   const SectionIcon = sectionMeta.icon;
 
   return (
-    <div className="overflow-hidden bg-transparent">
+    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
       {title ? (
-        <div className="border-b border-slate-200/80 px-4 py-3.5">
+        <div className=" bg-slate-50/60 px-4 py-3 sm:px-5 sm:py-4">
           <div className="flex items-start gap-3">
-            <div className="min-w-0">
-              <h4 className="mt-2 text-base font-semibold text-slate-900">
-                {renderSectionTitle(title)}
-              </h4>
-              <p className="mt-1 text-sm leading-relaxed text-slate-500">
+            <div
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl  ring-1 ring-slate-200/80`}
+            >
+              <SectionIcon className={`text-base ${sectionMeta.iconTone}`} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h4 className="text-[15px] font-semibold tracking-tight text-slate-900 sm:text-base">
+                  {renderSectionTitle(title, sectionMeta.accentClass)}
+                </h4>
+                <span
+                  className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.28em] ${sectionMeta.badgeClass}`}
+                >
+                  {sectionMeta.badge}
+                </span>
+              </div>
+              <p className="mt-1 text-[13px] leading-relaxed text-slate-500 sm:text-sm">
                 {renderSectionSubtitle(title, itemNounLower)}
               </p>
             </div>
@@ -278,76 +302,80 @@ const LinkListBlock = ({
         </div>
       ) : null}
 
-      <div className="bg-transparent p-2">
-        {items.map((item, index) => {
-          const subtitle = normalizeText(item?.subtitle);
-          const meta = normalizeText(item?.meta);
-          const badge = normalizeText(item?.badge);
+      <div className="bg-slate-50 border-t border-slate-100 p-3 sm:p-4">
+        <div className="space-y-2">
+          {items.map((item, index) => {
+            const subtitle = normalizeText(item?.subtitle);
+            const meta = normalizeText(item?.meta);
+            const badge = normalizeText(item?.badge);
 
-          return (
-            <Link
-              key={`${item.path || item.label || "item"}-${index}`}
-              to={normalizeDiscoveryPath(item.path || "", entityType)}
-              aria-label={item.label || "Explore"}
-              className="group mb-1.5 flex items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-sm text-slate-700 no-underline transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-indigo-100 hover:bg-white hover:shadow-sm hover:no-underline focus-visible:border-indigo-100 focus-visible:bg-white"
-            >
-              {withVisual ? null : (
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 transition-all duration-200 group-hover:bg-indigo-100">
-                  <FaChevronRight className="text-[11px] transition-all duration-200 ease-out group-hover:translate-x-0.5" />
-                </span>
-              )}
-
-              <span className="flex min-w-0 items-center gap-3">
-                {withVisual ? (
-                  <RowVisual
-                    src={
-                      item.image_url ||
-                      item.logo_url ||
-                      item.image ||
-                      item.logo ||
-                      ""
-                    }
-                    label={item.label || "Explore"}
-                  />
-                ) : null}
-
-                <span className="min-w-0 pr-2">
-                  <span className="block truncate text-sm font-semibold text-slate-800 transition-colors duration-200 ease-out group-hover:text-indigo-700">
-                    {item.label || "Explore"}
+            return (
+              <Link
+                key={`${item.path || item.label || "item"}-${index}`}
+                to={normalizeDiscoveryPath(item.path || "", entityType)}
+                aria-label={item.label || "Explore"}
+                className="group flex items-center gap-3  px-3 py-3 text-sm text-slate-700 no-underline transition-all duration-200 ease-out hover:-translate-y-px hover:border-blue-200 hover:bg-white hover:no-underline focus-visible:border-blue-200 focus-visible:bg-white sm:py-3.5"
+              >
+                {withVisual ? null : (
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600 transition-all duration-200 group-hover:bg-blue-100">
+                    <FaChevronRight className="text-[11px] transition-all duration-200 ease-out group-hover:translate-x-0.5" />
                   </span>
+                )}
 
-                  {withVisual || subtitle || meta ? (
-                    <span className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500 transition-colors duration-200 ease-out">
-                      {subtitle ? (
-                        <span className="truncate">{subtitle}</span>
-                      ) : null}
-                      {meta ? (
-                        <>
-                          {subtitle ? (
-                            <span className="shrink-0 text-slate-300">
-                              {"\u2022"}
-                            </span>
-                          ) : null}
-                          <span className="truncate">{meta}</span>
-                        </>
-                      ) : null}
-                    </span>
+                <span className="flex min-w-0 flex-1 items-center gap-3">
+                  {withVisual ? (
+                    <RowVisual
+                      src={
+                        item.image_url ||
+                        item.logo_url ||
+                        item.image ||
+                        item.logo ||
+                        ""
+                      }
+                      label={item.label || "Explore"}
+                    />
                   ) : null}
-                </span>
-              </span>
 
-              {badge ? (
-                <span className="ml-auto rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-600 transition-colors duration-200 ease-out group-hover:bg-indigo-50 group-hover:text-indigo-700">
-                  {badge}
+                  <span className="min-w-0 pr-2">
+                    <span className="block truncate text-sm font-semibold text-slate-800 transition-colors duration-200 ease-out group-hover:text-blue-700">
+                      {item.label || "Explore"}
+                    </span>
+
+                    {withVisual || subtitle || meta ? (
+                      <span className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500 transition-colors duration-200 ease-out">
+                        {subtitle ? (
+                          <span className="truncate">{subtitle}</span>
+                        ) : null}
+                        {meta ? (
+                          <>
+                            {subtitle ? (
+                              <span className="shrink-0 text-slate-300">
+                                {"\u2022"}
+                              </span>
+                            ) : null}
+                            <span className="truncate">{meta}</span>
+                          </>
+                        ) : null}
+                      </span>
+                    ) : null}
+                  </span>
                 </span>
-              ) : (
-                <span className="ml-auto text-slate-300 transition-colors duration-200 group-hover:text-indigo-500">
-                  <FaChevronRight className="text-[11px]" />
-                </span>
-              )}
-            </Link>
-          );
-        })}
+
+                {badge ? (
+                  <span
+                    className={`ml-auto rounded-full border px-2.5 py-1 text-[10px] font-semibold transition-colors duration-200 ease-out ${sectionMeta.badgeClass}`}
+                  >
+                    {badge}
+                  </span>
+                ) : (
+                  <span className="ml-auto text-slate-300 transition-colors duration-200 group-hover:text-blue-500">
+                    <FaChevronRight className="text-[11px]" />
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -362,21 +390,31 @@ const TopBrandsBlock = ({
   trimMobilesSuffix = true,
 }) => {
   if (!Array.isArray(items) || items.length === 0) return null;
+  const sectionMeta = getSectionMeta("brand");
+  const SectionIcon = sectionMeta.icon;
 
   return (
-    <div className="overflow-hidden bg-transparent">
-      <div className="flex items-start justify-between gap-3 border-b border-slate-200/80 px-4 py-3.5">
+    <div className="overflow-hidden rounded-lg border border-slate-200">
+      <div className="flex items-start justify-between gap-3 border-b border-slate-200/80 bg-slate-50/60 px-4 py-3.5 sm:px-5 sm:py-4">
         <div className="flex items-start gap-3">
-          <div>
-            <h4 className="mt-2 text-lg font-semibold text-slate-900">
-              Explore by <span className="text-violet-600">{titleText}</span>
+          <div
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${sectionMeta.iconBg} ring-1 ring-slate-200/80`}
+          >
+            <SectionIcon className={`text-base ${sectionMeta.iconTone}`} />
+          </div>
+          <div className="min-w-0">
+            <h4 className="text-[15px] font-semibold tracking-tight text-slate-900 sm:text-base">
+              Explore by{" "}
+              <span className={sectionMeta.accentClass}>{titleText}</span>
             </h4>
-            <p className="mt-1 text-sm text-slate-600">{subtitleText}</p>
+            <p className="mt-1 text-[13px] leading-relaxed text-slate-500 sm:text-sm">
+              {subtitleText}
+            </p>
           </div>
         </div>
         <Link
           to={normalizeDiscoveryPath(viewAllPath, entityType)}
-          className="inline-flex shrink-0 items-center gap-1 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-sm font-semibold text-indigo-700 transition-all duration-200 ease-out hover:border-indigo-200 hover:bg-indigo-100 hover:text-indigo-800"
+          className="inline-flex shrink-0 items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-[11px] font-semibold text-blue-700 transition-colors duration-200 ease-out hover:border-blue-200 hover:bg-blue-100 hover:text-blue-800"
         >
           View all
           <FaChevronRight className="text-[10px]" />
@@ -386,7 +424,7 @@ const TopBrandsBlock = ({
       <div className="relative">
         <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-white to-transparent" />
         <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-white to-transparent" />
-        <div className="no-scrollbar overflow-x-auto px-4 py-4 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="no-scrollbar overflow-x-auto px-4 py-4 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-5">
           <div className="flex min-w-max items-start gap-4 pr-2">
             {items.map((item, index) => {
               const rawBrandName = normalizeText(item?.name || item?.label);
@@ -398,13 +436,13 @@ const TopBrandsBlock = ({
                 <Link
                   key={`${item.path || brandName || "brand"}-${index}`}
                   to={normalizeDiscoveryPath(item.path || "", entityType)}
-                  className="group flex w-[84px] shrink-0 flex-col items-center gap-2 rounded-2xl border border-transparent px-2 py-2 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-100 hover:bg-white hover:shadow-sm"
+                  className="group flex w-[88px] shrink-0 flex-col items-center gap-2 rounded-2xl px-2.5 py-3 text-center transition-all duration-200 ease-out"
                 >
                   <BrandLogo
                     src={item.logo_url || item.image_url || ""}
                     label={brandName || "Brand"}
                   />
-                  <span className="w-full truncate text-[11px] font-semibold text-slate-700 transition-colors group-hover:text-violet-700">
+                  <span className="w-full truncate text-[11px] font-semibold text-slate-700 transition-colors group-hover:text-blue-700">
                     {brandName || "Brand"}
                   </span>
                 </Link>
@@ -478,30 +516,22 @@ const ProductDiscoverySections = ({
 
   const entityConfig = useMemo(() => getEntityConfig(entityType), [entityType]);
 
-  const {
-    newFromBrand,
-    latestReleases,
-    budgetSegments,
-    brandHub,
-    smartDiscoveries,
-  } = useMemo(() => {
-    const sections = payload?.sections || {};
-    return {
-      newFromBrand: Array.isArray(sections.new_from_brand)
-        ? sections.new_from_brand
-        : [],
-      latestReleases: Array.isArray(sections.latest_releases)
-        ? sections.latest_releases
-        : [],
-      budgetSegments: Array.isArray(sections.budget_segments)
-        ? sections.budget_segments
-        : [],
-      brandHub: Array.isArray(sections.brand_hub) ? sections.brand_hub : [],
-      smartDiscoveries: Array.isArray(sections.smart_discoveries)
-        ? sections.smart_discoveries
-        : [],
-    };
-  }, [payload]);
+  const { latestReleases, budgetSegments, brandHub, smartDiscoveries } =
+    useMemo(() => {
+      const sections = payload?.sections || {};
+      return {
+        latestReleases: Array.isArray(sections.latest_releases)
+          ? sections.latest_releases
+          : [],
+        budgetSegments: Array.isArray(sections.budget_segments)
+          ? sections.budget_segments
+          : [],
+        brandHub: Array.isArray(sections.brand_hub) ? sections.brand_hub : [],
+        smartDiscoveries: Array.isArray(sections.smart_discoveries)
+          ? sections.smart_discoveries
+          : [],
+      };
+    }, [payload]);
 
   const brandName = normalizeText(payload?.brand_name || currentBrand);
 
@@ -628,70 +658,77 @@ const ProductDiscoverySections = ({
     popularLinks.length > 0 ||
     byPriceLinks.length > 0 ||
     latestLaunchLinks.length > 0 ||
-    topBrandLinks.length > 0 ||
-    newFromBrand.length > 0;
+    topBrandLinks.length > 0;
 
   if (loading && !hasContent) {
     return (
-      <div
-        className={`w-full bg-transparent p-4 text-sm text-slate-600 sm:p-5 ${className}`}
-      >
-        Loading discovery sections...
-      </div>
+      <section className={`w-full overflow-hidden bg-transparent ${className}`}>
+        <div className="mx-auto max-w-7xl rounded-[28px] border border-slate-200 bg-white px-4 py-4 text-sm text-slate-600 sm:px-5 sm:py-5">
+          Loading discovery sections...
+        </div>
+      </section>
     );
   }
 
   if (!loading && !hasContent && !error) return null;
 
   return (
-    <section className={`w-full overflow-hidden bg-transparent ${className}`}>
-      <div className="flex items-start justify-between gap-3 px-4 py-4 sm:px-5">
-        <div className="flex items-start gap-3">
-          <div>
-            <h3 className="mt-2 text-lg font-semibold text-slate-900">
-              Popular Links
-            </h3>
-            <p className="mt-1 text-sm text-slate-500">
-              Continue exploring with curated shortcuts, fresh launches, and
-              brand-led discovery paths.
-            </p>
+    <section className={`w-full overflow-hidden  ${className}`}>
+      <div className="mx-auto max-w-7xl rounded-[28px] ">
+        <div className="flex items-start justify-between gap-3 border-b border-slate-200/80 px-4 py-4 sm:px-5 sm:py-5">
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-cyan-50 ring-1 ring-slate-200/80">
+              <FaStore className="text-base text-blue-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-blue-600">
+                Discovery Hub
+              </p>
+              <h3 className="mt-2 text-base font-semibold tracking-tight text-slate-900 sm:text-lg">
+                Popular Links
+              </h3>
+              <p className="mt-1 text-[13px] leading-relaxed text-slate-500 sm:text-sm">
+                Continue exploring with curated shortcuts, fresh launches, and
+                brand-led discovery paths.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
-      {error ? (
-        <div className="mx-4 mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 sm:mx-5">
-          {error}
-        </div>
-      ) : null}
+        {error ? (
+          <div className="mx-4 mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 sm:mx-5">
+            {error}
+          </div>
+        ) : null}
 
-      <div className="grid grid-cols-1 gap-4 p-4 sm:p-5 md:grid-cols-2 md:gap-4">
-        <div className="space-y-4 md:pr-1">
-          <LinkListBlock title="Smart Popular Links" items={popularLinks} />
-          <LinkListBlock
-            title="Latest Launches"
-            items={latestLaunchLinks}
-            withVisual
-            entityType={entityConfig.type}
-            itemNounLower={entityConfig.itemNounLower}
-          />
-        </div>
+        <div className="grid grid-cols-1 gap-3 p-3 sm:gap-4 sm:p-5 md:grid-cols-2 md:gap-4">
+          <div className="space-y-3 sm:space-y-4 md:pr-1">
+            <LinkListBlock title="Smart Popular Links" items={popularLinks} />
+            <LinkListBlock
+              title="Latest Launches"
+              items={latestLaunchLinks}
+              withVisual
+              entityType={entityConfig.type}
+              itemNounLower={entityConfig.itemNounLower}
+            />
+          </div>
 
-        <div className="space-y-4">
-          <LinkListBlock
-            title="By Price"
-            items={byPriceLinks}
-            entityType={entityConfig.type}
-            itemNounLower={entityConfig.itemNounLower}
-          />
-          <TopBrandsBlock
-            items={topBrandLinks}
-            viewAllPath={entityConfig.basePath}
-            entityType={entityConfig.type}
-            titleText="Brand"
-            subtitleText={`Explore ${entityConfig.pluralTitle} by key features`}
-            trimMobilesSuffix={entityConfig.type === "smartphones"}
-          />
+          <div className="space-y-3 sm:space-y-4">
+            <LinkListBlock
+              title="By Price"
+              items={byPriceLinks}
+              entityType={entityConfig.type}
+              itemNounLower={entityConfig.itemNounLower}
+            />
+            <TopBrandsBlock
+              items={topBrandLinks}
+              viewAllPath={entityConfig.basePath}
+              entityType={entityConfig.type}
+              titleText="Brand"
+              subtitleText={`Explore ${entityConfig.pluralTitle} by key features`}
+              trimMobilesSuffix={entityConfig.type === "smartphones"}
+            />
+          </div>
         </div>
       </div>
     </section>

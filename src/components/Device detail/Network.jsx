@@ -7,6 +7,7 @@ import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
 import { createProductSchema } from "../../utils/schemaGenerators";
 import { Helmet } from "react-helmet-async";
 import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
+import usePageEngagementTracker from "../../hooks/usePageEngagementTracker";
 
 // Icons
 import {
@@ -451,6 +452,17 @@ const NetworkingDetailCard = () => {
     }
   }, [deviceData?.product_id, deviceData?.productId, deviceData?.id]);
 
+  const currentProductId =
+    deviceData?.product_id ?? deviceData?.productId ?? deviceData?.id ?? null;
+
+  usePageEngagementTracker({
+    productId: currentProductId,
+    pagePath:
+      typeof window !== "undefined" ? window.location.pathname : "/networking",
+    source: "networking-detail",
+    enabled: Boolean(currentProductId),
+  });
+
   // Get device type color
   const getDeviceColor = () => {
     switch (deviceData?.device_type?.toLowerCase()) {
@@ -733,18 +745,9 @@ const NetworkingDetailCard = () => {
       .replace(/^-+|-+$/g, "");
 
   const getCanonicalUrl = useMemo(() => {
-    if (!deviceData) {
-      return SITE_ORIGIN;
-    }
-    try {
-      const slug = generateSlug(deviceData.name || deviceData.model || "");
-      if (!slug) return SITE_ORIGIN;
-      const path = `/networking/${slug}`;
-      return `${SITE_ORIGIN}${path}`;
-    } catch (e) {
-      return SITE_ORIGIN;
-    }
-  }, [deviceData]);
+    const path = location?.pathname || "/";
+    return `${SITE_ORIGIN}${path}`;
+  }, [location.pathname]);
 
   const handleShare = async () => {
     const url = getCanonicalUrl;

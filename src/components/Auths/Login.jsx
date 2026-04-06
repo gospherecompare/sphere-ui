@@ -1,21 +1,17 @@
 // src/components/LoginModal.jsx
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import {
   FaTimes,
   FaEnvelope,
   FaLock,
-  FaUser,
-  FaGoogle,
-  FaFacebookF,
   FaArrowRight,
   FaEye,
   FaEyeSlash,
   FaSpinner,
   FaExclamationCircle,
   FaCheckCircle,
-  FaInfoCircle,
   FaArrowLeft,
 } from "react-icons/fa";
 // store logos now fetched via `useStoreLogos` where needed
@@ -253,16 +249,16 @@ const Login = ({
     const showSuccess = !hasError && formData[name] && touched[name];
 
     return (
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+      <div className="mb-5">
+        <label className="mb-2 block text-sm font-semibold text-slate-700">
           {label} {required && "*"}
         </label>
 
         <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Icon
-              className={`${hasError ? "text-red-400" : "text-gray-400"}`}
-            />
+          <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+            {React.createElement(Icon, {
+              className: hasError ? "text-red-500" : "text-slate-400",
+            })}
           </div>
 
           <input
@@ -272,12 +268,12 @@ const Login = ({
             onChange={handleInputChange}
             onBlur={handleBlur}
             autoComplete={autoComplete}
-            className={`w-full pl-10 pr-10 px-3.5 py-2.5 border rounded-lg bg-white transition-colors duration-200 focus:ring-2 focus:outline-none ${
+            className={`w-full rounded-md border px-4 py-3.5 pl-11 pr-11 text-slate-900 placeholder:text-slate-400 transition-colors duration-200 focus:outline-none focus:ring-2 ${
               hasError
-                ? "border-red-300 bg-red-50 focus:ring-red-500 focus:border-red-500"
+                ? "border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-100"
                 : showSuccess
-                  ? "border-green-300 bg-green-50 focus:ring-green-500 focus:border-green-500"
-                  : "border-gray-300 focus:ring-purple-500 focus:border-purple-500"
+                  ? "border-emerald-300 bg-emerald-50 focus:border-emerald-500 focus:ring-emerald-100"
+                  : "border-slate-200 bg-slate-50 focus:border-blue-500 focus:bg-white focus:ring-blue-100"
             }`}
             placeholder={placeholder}
             required={required}
@@ -294,26 +290,26 @@ const Login = ({
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              className="absolute inset-y-0 right-0 flex items-center pr-4"
             >
               {showPassword ? (
-                <FaEyeSlash className="text-gray-400 hover:text-gray-600" />
+                <FaEyeSlash className="text-slate-400 hover:text-slate-600" />
               ) : (
-                <FaEye className="text-gray-400 hover:text-gray-600" />
+                <FaEye className="text-slate-400 hover:text-slate-600" />
               )}
             </button>
           )}
         </div>
 
         {hasError && (
-          <div className="mt-1 flex items-center text-red-600 text-xs">
+          <div className="mt-2 flex items-center text-xs text-red-600">
             <FaExclamationCircle className="mr-1" />
             {errors[name]}
           </div>
         )}
 
         {showSuccess && !hasError && (
-          <div className="mt-1 flex items-center text-green-600 text-xs">
+          <div className="mt-2 flex items-center text-xs text-emerald-600">
             <FaCheckCircle className="mr-1" />
             Looks good!
           </div>
@@ -325,71 +321,47 @@ const Login = ({
   if (!asPage && !isOpen) return null;
 
   const content = (
-    <div className="bg-white border border-purple-100 shadow-sm ">
-      {/* Header */}
-      <div className="border-b border-gray-100 px-6 py-5">
-        <div className="flex items-center justify-between mb-4">
+    <div className="overflow-hidden rounded-md border border-slate-200 bg-white">
+      <div className="border-b border-slate-200 px-6 py-6 md:px-8">
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 transition-colors hover:text-blue-900"
+          >
+            <FaArrowLeft className="h-3.5 w-3.5" />
+            <span>Back to home</span>
+          </Link>
+
           {onClose && (
             <button
               onClick={onClose}
-              className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-slate-500 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
             >
-              <FaTimes className="w-5 h-5" />
+              <FaTimes className="h-4 w-4" />
             </button>
           )}
         </div>
 
         <div>
-          <h3 className="text-xl font-semibold text-gray-900">Welcome back</h3>
-          <p className="mt-1 text-sm text-gray-500">Sign in to Hooks</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-blue-600">
+            Hooks Access
+          </p>
+          <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+            Welcome back
+          </h3>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            Sign in to continue comparing phones, laptops, TVs, and more.
+          </p>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="px-6 py-6">
-        {/* Social Login (Optional) */}
-        {false && (
-          <>
-            <div className="space-y-3 mb-6">
-              <button
-                onClick={() => handleSocialLogin("google")}
-                className="w-full flex items-center justify-center px-4 py-3 border border-gray-200 rounded-xl hover:border-blue-300 hover:shadow-sm transition-all duration-200 group"
-              >
-                <FaGoogle className="w-5 h-5 text-red-500 mr-3" />
-                <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600">
-                  Continue with Google
-                </span>
-              </button>
-              <button
-                onClick={() => handleSocialLogin("facebook")}
-                className="w-full flex items-center justify-center px-4 py-3 border border-gray-200 rounded-xl hover:border-blue-300 hover:shadow-sm transition-all duration-200 group"
-              >
-                <FaFacebookF className="w-5 h-5 text-blue-600 mr-3" />
-                <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600">
-                  Continue with Facebook
-                </span>
-              </button>
-            </div>
-
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-gray-500 font-medium">
-                  Or sign in with email
-                </span>
-              </div>
-            </div>
-          </>
-        )}
-
+      <div className="px-6 py-6 md:px-8">
         {/* API Error Message */}
         {apiError && (
-          <div className="mb-6 p-3.5 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex items-center">
-              <FaExclamationCircle className="text-red-600 mr-2" />
-              <p className="text-sm text-red-700 font-medium">{apiError}</p>
+          <div className="mb-6 rounded-md border border-red-200 bg-red-50 px-4 py-3.5">
+            <div className="flex items-center gap-2">
+              <FaExclamationCircle className="text-red-600" />
+              <p className="text-sm font-medium text-red-700">{apiError}</p>
             </div>
           </div>
         )}
@@ -401,7 +373,7 @@ const Login = ({
             label: "Email Address",
             type: "email",
             icon: FaEnvelope,
-            placeholder: "your.email@example.com",
+            placeholder: "you@example.com",
             autoComplete: "email",
           })}
 
@@ -410,27 +382,25 @@ const Login = ({
             label: "Password",
             type: showPassword ? "text" : "password",
             icon: FaLock,
-            placeholder: "••••••••",
+            placeholder: "********",
             autoComplete: "current-password",
           })}
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
+          <div className="flex items-center justify-between gap-4">
+            <label className="flex items-center gap-2 text-sm text-slate-700">
               <input
                 type="checkbox"
                 id="remember"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-100"
               />
-              <label htmlFor="remember" className="ml-2 text-sm text-gray-700">
-                Remember me
-              </label>
-            </div>
+              <span>Remember me</span>
+            </label>
             <button
               type="button"
               onClick={handleForgotPassword}
-              className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline"
+              className="text-sm font-medium text-blue-700 hover:text-blue-900"
             >
               Forgot password?
             </button>
@@ -439,11 +409,11 @@ const Login = ({
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full flex items-center justify-center py-2.5 px-4 bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600  text-white font-semibold rounded-full hover:bg-gray-800 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex w-full items-center justify-center rounded-md bg-blue-600 px-4 py-3 font-semibold text-white transition-colors duration-200 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isLoading ? (
               <>
-                <FaSpinner className="animate-spin mr-2" />
+                <FaSpinner className="mr-2 animate-spin" />
                 Signing in...
               </>
             ) : (
@@ -453,13 +423,10 @@ const Login = ({
               </>
             )}
           </button>
-
-          {/* Demo credentials info (for development only) */}
         </form>
 
-        {/* Sign Up Link */}
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <p className="text-center text-sm text-gray-600">
+        <div className="mt-6 border-t border-slate-200 pt-6">
+          <p className="text-center text-sm text-slate-600">
             Don't have an account?{" "}
             <button
               type="button"
@@ -467,7 +434,7 @@ const Login = ({
                 if (typeof onSwitchToSignup === "function") onSwitchToSignup();
                 else navigate("/signup");
               }}
-              className="font-semibold text-blue-600 hover:text-blue-700 hover:underline"
+              className="font-semibold text-blue-700 hover:text-blue-900"
             >
               Sign up now
             </button>
@@ -479,13 +446,9 @@ const Login = ({
 
   if (asPage) {
     return (
-      <div className="min-h-screen bg-white max-w-4xl mx-auto">
-        {/* Header Back Button */}
-
-        <div className="max-w-4xl mx-auto px-4 py-10">
-          <div className="flex items-center justify-center">
-            <div className="w-full max-w-md">{content}</div>
-          </div>
+      <div className="min-h-screen bg-slate-50 px-4 py-10 sm:py-14">
+        <div className="mx-auto flex w-full max-w-xl items-center justify-center">
+          <div className="w-full">{content}</div>
         </div>
       </div>
     );
@@ -494,11 +457,11 @@ const Login = ({
   return (
     <div className="fixed inset-0 z-[9999] overflow-y-auto">
       <div
-        className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm"
+        className="fixed inset-0 bg-slate-950/55 backdrop-blur-sm"
         onClick={onClose}
       ></div>
       <div className="flex items-center justify-center min-h-screen p-4">
-        <div className="relative w-full max-w-md mx-auto">{content}</div>
+        <div className="relative mx-auto w-full max-w-xl">{content}</div>
       </div>
     </div>
   );

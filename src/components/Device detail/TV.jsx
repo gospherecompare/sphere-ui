@@ -1,4 +1,4 @@
-﻿// src/components/TVDetailCard.jsx
+// src/components/TVDetailCard.jsx
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import useDevice from "../../hooks/useDevice";
@@ -6,16 +6,17 @@ import Cookies from "js-cookie";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
 import { createProductSchema } from "../../utils/schemaGenerators";
 import { Helmet } from "react-helmet-async";
+import usePageEngagementTracker from "../../hooks/usePageEngagementTracker";
 
 // Icons
 import {
   FaHeart,
   FaShare,
-  FaCopy,
   FaCheck,
   FaExternalLinkAlt,
   FaStore,
   FaChevronDown,
+  FaChevronRight,
   FaTag,
   FaInfoCircle,
   FaBolt,
@@ -46,6 +47,7 @@ import {
   FaEnvelope,
   FaLink,
   FaSyncAlt,
+  FaPlus,
 } from "react-icons/fa";
 
 import "../../styles/hideScrollbar.css";
@@ -136,69 +138,9 @@ const dedupeTextParts = (parts = []) => {
   return out;
 };
 
-const SpecScoreBadge = ({
-  score,
-  size = 42,
-  showSpecLabel = false,
-  zeroFallback = false,
-}) => {
-  const normalized = normalizeScore100(score);
-  const percentageRaw =
-    normalized != null
-      ? Number(normalized.toFixed(1))
-      : zeroFallback
-        ? 0
-        : null;
-  const percentage = percentageRaw;
-  const label = percentage != null ? `${percentage.toFixed(1)}%` : "--";
-  const compact = size <= 34;
-
-  if (showSpecLabel) {
-    return (
-      <div
-        className="inline-flex flex-col items-center justify-center rounded-2xl border border-violet-200 bg-violet-50/95 px-2 py-1.5 leading-none"
-        style={{ minWidth: `${Math.max(44, Math.round(size * 1.2))}px` }}
-        aria-label={
-          percentage != null
-            ? `Overall score ${percentage.toFixed(1)} percent`
-            : "Overall score unavailable"
-        }
-      >
-        <span
-          className={`${compact ? "text-[11px]" : "text-[12px]"} font-bold text-violet-700`}
-        >
-          {label}
-        </span>
-        <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide text-violet-600">
-          Spec
-        </span>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className="relative inline-flex items-center rounded-[26px] border border-violet-200 bg-violet-50/95 pl-7 pr-3 py-2 leading-none"
-      style={{ minWidth: `${Math.max(88, Math.round(size * 1.9))}px` }}
-      aria-label={
-        percentage != null
-          ? `Overall score ${percentage.toFixed(1)} percent`
-          : "Overall score unavailable"
-      }
-    >
-      <span
-        className={`${compact ? "text-[11px]" : "text-[12px]"} font-bold text-violet-700`}
-      >
-        {label}
-      </span>
-    </div>
-  );
-};
-
 const TVDetailCard = () => {
   const { getLogo } = useStoreLogos();
   const deviceFieldProfiles = useDeviceFieldProfiles();
-  const [activePrimaryTab, setActivePrimaryTab] = useState("info");
   const [activeTab, setActiveTab] = useState("specifications");
   const [activeImage, setActiveImage] = useState(0);
   const [showAllStores, setShowAllStores] = useState(false);
@@ -803,7 +745,7 @@ const TVDetailCard = () => {
         return "cyan";
       case "television":
       case "tv":
-        return "purple";
+        return "blue";
       case "refrigerator":
         return "green";
       case "microwave":
@@ -831,12 +773,6 @@ const TVDetailCard = () => {
       light: "bg-cyan-50",
       border: "border-cyan-500",
     },
-    purple: {
-      bg: "bg-purple-500",
-      text: "text-purple-500",
-      light: "bg-purple-50",
-      border: "border-purple-500",
-    },
     green: {
       bg: "bg-green-500",
       text: "text-green-500",
@@ -856,10 +792,10 @@ const TVDetailCard = () => {
       border: "border-teal-500",
     },
     indigo: {
-      bg: "bg-indigo-500",
-      text: "text-indigo-500",
-      light: "bg-indigo-50",
-      border: "border-indigo-500",
+      bg: "bg-slate-500",
+      text: "text-blue-500",
+      light: "bg-slate-50",
+      border: "border-blue-500",
     },
   };
 
@@ -901,6 +837,14 @@ const TVDetailCard = () => {
     applianceData?.product_id ??
     applianceData?.productId ??
     null;
+
+  usePageEngagementTracker({
+    productId: currentProductId,
+    pagePath:
+      typeof window !== "undefined" ? window.location.pathname : "/tvs",
+    source: "tv-detail",
+    enabled: Boolean(currentProductId),
+  });
   const pickScore100 = (...values) => {
     for (const value of values) {
       const normalized = normalizeScore100(value);
@@ -915,63 +859,6 @@ const TVDetailCard = () => {
     }
     return null;
   };
-  const normalizeScoreSource = (value) =>
-    String(value || "")
-      .trim()
-      .toLowerCase();
-  const resolvePersistedScore = (value, source) => {
-    const normalized = normalizeScore100(value);
-    if (normalized == null) return null;
-
-    const sourceKey = normalizeScoreSource(source);
-    if (sourceKey && sourceKey.includes("fallback")) {
-      return null;
-    }
-
-    return normalized;
-  };
-  const specScoreV2Source =
-    applianceData?.spec_score_v2_source ?? applianceData?.specScoreV2Source;
-  const overallScoreV2Source =
-    applianceData?.overall_score_v2_source ??
-    applianceData?.overallScoreV2Source;
-  const specScoreSource =
-    applianceData?.spec_score_source ?? applianceData?.specScoreSource;
-  const overallScoreSource =
-    applianceData?.overall_score_source ?? applianceData?.overallScoreSource;
-  const persistedSpecScore = pickScore100(
-    resolvePersistedScore(applianceData?.spec_score_v2, specScoreV2Source),
-    resolvePersistedScore(applianceData?.specScoreV2, specScoreV2Source),
-    resolvePersistedScore(applianceData?.spec_score, specScoreSource),
-    resolvePersistedScore(applianceData?.specScore, specScoreSource),
-  );
-  const persistedOverallScore = pickScore100(
-    resolvePersistedScore(
-      applianceData?.overall_score_v2,
-      overallScoreV2Source,
-    ),
-    resolvePersistedScore(applianceData?.overallScoreV2, overallScoreV2Source),
-    resolvePersistedScore(applianceData?.overall_score, overallScoreSource),
-    resolvePersistedScore(applianceData?.overallScore, overallScoreSource),
-  );
-  const persistedOverallScoreDisplay = pickScore100(
-    resolvePersistedScore(
-      applianceData?.overall_score_v2_display_80_98,
-      overallScoreV2Source,
-    ),
-    resolvePersistedScore(
-      applianceData?.overallScoreV2Display8098,
-      overallScoreV2Source,
-    ),
-    resolvePersistedScore(
-      applianceData?.spec_score_v2_display_80_98,
-      specScoreV2Source,
-    ),
-    resolvePersistedScore(
-      applianceData?.specScoreV2Display8098,
-      specScoreV2Source,
-    ),
-  );
   const coreSectionFallback =
     pickPositiveScore100(
       applianceData?.field_profile?.section_scores?.core,
@@ -1117,41 +1004,7 @@ const TVDetailCard = () => {
         coreSectionFallback,
       ) ?? pickScore100(applianceData?.performance?.score, coreSectionFallback),
   };
-  const numericSectionScores = Object.values(sectionScores).filter(
-    (score) => Number.isFinite(score) && score > 0,
-  );
-  const sectionAverageScore = numericSectionScores.length
-    ? numericSectionScores.reduce((sum, score) => sum + score, 0) /
-      numericSectionScores.length
-    : null;
-  const overallScoreRaw =
-    pickPositiveScore100(
-      persistedOverallScore,
-      persistedSpecScore,
-      applianceData?.hook_score,
-      applianceData?.hookScore,
-      applianceData?.field_profile?.score,
-      applianceData?.rating,
-      applianceData?.avg_rating,
-      sectionAverageScore,
-    ) ??
-    pickScore100(
-      persistedOverallScore,
-      persistedSpecScore,
-      applianceData?.hook_score,
-      applianceData?.hookScore,
-      applianceData?.field_profile?.score,
-      applianceData?.rating,
-      applianceData?.avg_rating,
-      sectionAverageScore,
-    );
-  const overallScore = overallScoreRaw;
-  const overallScoreBadge =
-    pickScore100(persistedOverallScoreDisplay, overallScoreRaw) ??
-    overallScoreRaw;
-  const getSectionScore = (key) =>
-    sectionScores[key] != null ? sectionScores[key] : overallScore;
-
+  void sectionScores;
   useEffect(() => {
     setActiveImage(0);
   }, [selectedVariant, galleryImages.length]);
@@ -1213,6 +1066,7 @@ const TVDetailCard = () => {
       .slice(0, 6)
       .map((x) => x.d);
   })();
+  const compareTarget = popularComparisonTargets[0] || null;
 
   const handlePopularCompare = (other) => {
     const otherId = other?.id ?? other?.product_id ?? other?.productId ?? null;
@@ -1585,20 +1439,9 @@ const TVDetailCard = () => {
   };
 
   const getCanonicalUrl = useMemo(() => {
-    if (!applianceData) {
-      return SITE_ORIGIN;
-    }
-    try {
-      const slug = generateSlug(
-        applianceData.product_name || applianceData.model_number || "",
-      );
-      if (!slug) return SITE_ORIGIN;
-      const path = `/tvs/${slug}`;
-      return `${SITE_ORIGIN}${path}`;
-    } catch (e) {
-      return SITE_ORIGIN;
-    }
-  }, [applianceData]);
+    const path = location?.pathname || "/";
+    return `${SITE_ORIGIN}${path}`;
+  }, [location.pathname]);
 
   const getShareUrl = () => {
     try {
@@ -1800,10 +1643,6 @@ const TVDetailCard = () => {
   const desktopTabs = mobileTabs;
 
   const tabs = window.innerWidth < 768 ? mobileTabs : desktopTabs;
-  const primaryTabs = [
-    { id: "info", label: "Info" },
-    { id: "specs", label: "Specs" },
-  ];
 
   const hasContent = (value) => {
     if (value === null || value === undefined) return false;
@@ -2244,41 +2083,22 @@ const TVDetailCard = () => {
     }
 
     return (
-      <div className="rounded-md">
-        <div className="space-y-2 sm:hidden">
-          {rows.map(([key, value], idx) => (
-            <div
-              key={key}
-              className={`${idx % 2 === 0 ? "bg-white" : "bg-gray-50"} px-2.5 py-2`}
-            >
-              <div className="text-[11px] font-semibold text-gray-600 break-words">
-                {toNormalCase(key)}
-              </div>
-              <div className="mt-1 text-xs text-gray-900 break-words whitespace-normal">
-                {renderSpecValue(value)}
-              </div>
+      <div className="space-y-0">
+        {rows.map(([key, value], idx) => (
+          <div
+            key={key}
+            className={`grid gap-3 py-3 sm:grid-cols-[180px_minmax(0,1fr)] sm:gap-6 ${
+              idx !== rows.length - 1 ? "border-b border-slate-100" : ""
+            }`}
+          >
+            <p className="text-sm font-medium text-slate-600">
+              {toNormalCase(key)}
+            </p>
+            <div className="text-sm font-semibold leading-6 text-slate-900 break-words">
+              {renderSpecValue(value)}
             </div>
-          ))}
-        </div>
-        <div className="hidden sm:block">
-          <table className="w-full table-fixed shadow-none">
-            <tbody className="bg-white">
-              {rows.map(([key, value], idx) => (
-                <tr
-                  key={key}
-                  className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                >
-                  <td className="px-2.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-gray-600 w-[34%] align-top break-words">
-                    {toNormalCase(key)}
-                  </td>
-                  <td className="px-2.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm text-gray-900 align-top break-words whitespace-normal">
-                    {renderSpecValue(value)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+          </div>
+        ))}
       </div>
     );
   };
@@ -2337,17 +2157,13 @@ const TVDetailCard = () => {
 
     if (isTvProduct) {
       return (
-        <div id="tv-specifications" className="space-y-6">
-          <div className="bg-white rounded-lg p-3 sm:p-4">
+        <div id="tv-specifications" className="mx-auto max-w-7xl space-y-6">
+          <div className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
             <div className="mb-6 flex items-center justify-between gap-2">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <FaMicrochip className={currentColor.text} />
                 Core Specifications
               </h3>
-              <SpecScoreBadge
-                score={getSectionScore("specifications")}
-                size={38}
-              />
             </div>
             {renderSpecTable(generalSection)}
           </div>
@@ -2355,13 +2171,15 @@ const TVDetailCard = () => {
           {hasContent(
             applianceData.key_specs_json || applianceData.specifications,
           ) && (
-            <div id="tv-display" className="bg-white rounded-lg p-3 sm:p-4">
+            <div
+              id="tv-display"
+              className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
+            >
               <div className="mb-6 flex items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FaTv className={currentColor.text} />
                   Display
                 </h3>
-                <SpecScoreBadge score={getSectionScore("display")} size={38} />
               </div>
               {renderSpecTable(
                 applianceData.display_json ||
@@ -2374,43 +2192,43 @@ const TVDetailCard = () => {
           {hasContent(applianceData.video_engine_json) && (
             <div
               id="tv-video_engine"
-              className="bg-white rounded-lg p-3 sm:p-4"
+              className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
             >
               <div className="mb-6 flex items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FaChartBar className={currentColor.text} />
                   Video Engine
                 </h3>
-                <SpecScoreBadge
-                  score={getSectionScore("video_engine")}
-                  size={38}
-                />
               </div>
               {renderSpecTable(applianceData.video_engine_json)}
             </div>
           )}
 
           {hasContent(applianceData.audio_json) && (
-            <div id="tv-audio" className="bg-white rounded-lg p-3 sm:p-4">
+            <div
+              id="tv-audio"
+              className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
+            >
               <div className="mb-6 flex items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FaVolumeUp className={currentColor.text} />
                   Audio
                 </h3>
-                <SpecScoreBadge score={getSectionScore("audio")} size={38} />
               </div>
               {renderSpecTable(applianceData.audio_json)}
             </div>
           )}
 
           {hasContent(applianceData.smart_tv_json) && (
-            <div id="tv-smart_tv" className="bg-white rounded-lg p-3 sm:p-4">
+            <div
+              id="tv-smart_tv"
+              className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
+            >
               <div className="mb-6 flex items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FaBolt className={currentColor.text} />
                   Smart TV
                 </h3>
-                <SpecScoreBadge score={getSectionScore("smart_tv")} size={38} />
               </div>
               {renderSpecTable(applianceData.smart_tv_json)}
             </div>
@@ -2419,56 +2237,58 @@ const TVDetailCard = () => {
           {hasContent(applianceData.connectivity_json) && (
             <div
               id="tv-connectivity"
-              className="bg-white rounded-lg p-3 sm:p-4"
+              className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
             >
               <div className="mb-6 flex items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FaWifi className={currentColor.text} />
                   Connectivity
                 </h3>
-                <SpecScoreBadge
-                  score={getSectionScore("connectivity")}
-                  size={38}
-                />
               </div>
               {renderSpecTable(applianceData.connectivity_json)}
             </div>
           )}
 
           {hasContent(applianceData.ports_json) && (
-            <div id="tv-ports" className="bg-white rounded-lg p-3 sm:p-4">
+            <div
+              id="tv-ports"
+              className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
+            >
               <div className="mb-6 flex items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FaPlug className={currentColor.text} />
                   Ports
                 </h3>
-                <SpecScoreBadge score={getSectionScore("ports")} size={38} />
               </div>
               {renderSpecTable(applianceData.ports_json)}
             </div>
           )}
 
           {hasContent(applianceData.gaming_json) && (
-            <div id="tv-gaming" className="bg-white rounded-lg p-3 sm:p-4">
+            <div
+              id="tv-gaming"
+              className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
+            >
               <div className="mb-6 flex items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FaGamepad className={currentColor.text} />
                   Gaming
                 </h3>
-                <SpecScoreBadge score={getSectionScore("gaming")} size={38} />
               </div>
               {renderSpecTable(applianceData.gaming_json)}
             </div>
           )}
 
           {hasContent(applianceData.power_json) && (
-            <div id="tv-power" className="bg-white rounded-lg p-3 sm:p-4">
+            <div
+              id="tv-power"
+              className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
+            >
               <div className="mb-6 flex items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FaBatteryFull className={currentColor.text} />
                   Power
                 </h3>
-                <SpecScoreBadge score={getSectionScore("power")} size={38} />
               </div>
               {renderSpecTable(applianceData.power_json)}
             </div>
@@ -2481,17 +2301,13 @@ const TVDetailCard = () => {
           ) && (
             <div
               id="tv-physical_details"
-              className="bg-white rounded-lg p-3 sm:p-4"
+              className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
             >
               <div className="mb-6 flex items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FaRuler className={currentColor.text} />
                   Physical
                 </h3>
-                <SpecScoreBadge
-                  score={getSectionScore("physical_details")}
-                  size={38}
-                />
               </div>
               {renderSpecTable(
                 applianceData.physical_json ||
@@ -2504,33 +2320,28 @@ const TVDetailCard = () => {
           {hasContent(applianceData.product_details_json) && (
             <div
               id="tv-product_details"
-              className="bg-white rounded-lg p-3 sm:p-4"
+              className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
             >
               <div className="mb-6 flex items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FaInfoCircle className={currentColor.text} />
                   Product Details
                 </h3>
-                <SpecScoreBadge
-                  score={getSectionScore("product_details")}
-                  size={38}
-                />
               </div>
               {renderSpecTable(applianceData.product_details_json)}
             </div>
           )}
 
           {hasContent(applianceData.in_the_box_json) && (
-            <div id="tv-in_the_box" className="bg-white rounded-lg p-3 sm:p-4">
+            <div
+              id="tv-in_the_box"
+              className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
+            >
               <div className="mb-6 flex items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FaShoppingCart className={currentColor.text} />
                   In The Box
                 </h3>
-                <SpecScoreBadge
-                  score={getSectionScore("in_the_box")}
-                  size={38}
-                />
               </div>
               {renderSpecTable(applianceData.in_the_box_json)}
             </div>
@@ -2539,13 +2350,15 @@ const TVDetailCard = () => {
           {hasContent(
             applianceData.warranty_json || applianceData.warranty,
           ) && (
-            <div id="tv-warranty" className="bg-white rounded-lg p-3 sm:p-4">
+            <div
+              id="tv-warranty"
+              className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
+            >
               <div className="mb-6 flex items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FaShieldAlt className={currentColor.text} />
                   Warranty
                 </h3>
-                <SpecScoreBadge score={getSectionScore("warranty")} size={38} />
               </div>
               {renderSpecTable(
                 applianceData.warranty_json || applianceData.warranty,
@@ -2558,42 +2371,39 @@ const TVDetailCard = () => {
 
     return (
       <div id="tv-specifications" className="space-y-6">
-        <div className="bg-white rounded-lg p-3 sm:p-4">
+        <div className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
           <div className="mb-6 flex items-center justify-between gap-2">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
               <FaMicrochip className={currentColor.text} />
               Technical Specifications
             </h3>
-            <SpecScoreBadge
-              score={getSectionScore("specifications")}
-              size={38}
-            />
           </div>
           {renderSpecTable(applianceData.specifications || generalSection)}
         </div>
         {hasContent(applianceData.features) && (
-          <div id="tv-features" className="bg-white rounded-lg p-3 sm:p-4">
+          <div
+            id="tv-features"
+            className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
+          >
             <div className="mb-6 flex items-center justify-between gap-2">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <FaBolt className={currentColor.text} />
                 Features
               </h3>
-              <SpecScoreBadge score={getSectionScore("features")} size={38} />
             </div>
             {renderSpecTable(applianceData.features)}
           </div>
         )}
         {hasContent(applianceData.performance) && (
-          <div id="tv-performance" className="bg-white rounded-lg p-3 sm:p-4">
+          <div
+            id="tv-performance"
+            className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
+          >
             <div className="mb-6 flex items-center justify-between gap-2">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <FaChartBar className={currentColor.text} />
                 Performance
               </h3>
-              <SpecScoreBadge
-                score={getSectionScore("performance")}
-                size={38}
-              />
             </div>
             {renderSpecTable(applianceData.performance)}
           </div>
@@ -2601,29 +2411,27 @@ const TVDetailCard = () => {
         {hasContent(applianceData.physical_details) && (
           <div
             id="tv-physical_details"
-            className="bg-white rounded-lg p-3 sm:p-4"
+            className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
           >
             <div className="mb-6 flex items-center justify-between gap-2">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <FaRuler className={currentColor.text} />
                 Physical Details
               </h3>
-              <SpecScoreBadge
-                score={getSectionScore("physical_details")}
-                size={38}
-              />
             </div>
             {renderSpecTable(applianceData.physical_details)}
           </div>
         )}
         {hasContent(applianceData.warranty) && (
-          <div id="tv-warranty" className="bg-white rounded-lg p-3 sm:p-4">
+          <div
+            id="tv-warranty"
+            className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
+          >
             <div className="mb-6 flex items-center justify-between gap-2">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <FaShieldAlt className={currentColor.text} />
                 Warranty
               </h3>
-              <SpecScoreBadge score={getSectionScore("warranty")} size={38} />
             </div>
             {renderSpecTable(applianceData.warranty)}
           </div>
@@ -2638,7 +2446,7 @@ const TVDetailCard = () => {
         <div className="flex flex-col items-center gap-4 rounded-2xl px-8 py-6 shadow-xl">
           <Spinner
             size={40}
-            className="border-4 border-violet-500 border-t-blue-500"
+            className="border-4 border-cyan-500 border-t-blue-500"
           />
           <p className="text-lg font-bold text-white tracking-wide">
             Loading Product Details...
@@ -2650,8 +2458,8 @@ const TVDetailCard = () => {
 
   if (!loading && !applianceData) {
     return (
-      <div className="px-2 lg:px-4 mx-auto max-w-4xl w-full p-4">
-        <div className="bg-white  p-12 text-center border border-gray-200">
+      <div className="mx-auto max-w-7xl w-full px-2 py-4 sm:px-4 sm:py-6 lg:px-6 lg:py-8">
+        <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
           <div className="text-gray-400 text-6xl mb-4">TV</div>
           <h3 className="text-2xl font-semibold text-gray-900 mb-3">
             Product Not Found
@@ -2696,6 +2504,7 @@ const TVDetailCard = () => {
     headerPanel,
     headerRefresh,
   ]).join(" | ");
+  const headerLaunchText = toSafeText(applianceData?.release_year || "");
   const metaName =
     descriptiveTitle || getDisplayProductName(applianceData) || "TV";
   const metaBrand = applianceData?.brand || applianceData?.brand_name || "";
@@ -2779,8 +2588,72 @@ const TVDetailCard = () => {
     return JSON.stringify(schema);
   })();
 
+  const primarySpecs =
+    applianceData?.key_specs_json || applianceData?.specifications || {};
+  const buildSummaryPoints = (...values) =>
+    dedupeTextParts(
+      values
+        .map((value) => formatSpecValueText(value))
+        .filter((value) => value && value !== "Not specified"),
+    );
+  const tvSummarySections = applianceData
+    ? [
+        {
+          key: "display",
+          title: "Display",
+          description: "Basic screen setup for clear, fluid viewing.",
+          Icon: FaTv,
+          color: currentColor.text,
+          points: buildSummaryPoints(
+            applianceData.display_json?.screen_size || primarySpecs.screen_size,
+            applianceData.display_json?.resolution || primarySpecs.resolution,
+            applianceData.display_json?.refresh_rate ||
+              primarySpecs.refresh_rate,
+          ),
+        },
+        {
+          key: "smart_tv",
+          title: "Smart TV",
+          description: "Streaming and app platform details for daily use.",
+          Icon: FaBolt,
+          color: currentColor.text,
+          points: buildSummaryPoints(
+            applianceData.smart_tv_json?.operating_system ||
+              primarySpecs.operating_system,
+            applianceData.smart_tv_json?.voice_assistant,
+            applianceData.smart_tv_json?.app_store,
+          ),
+        },
+        {
+          key: "audio",
+          title: "Audio",
+          description: "Sound output and speaker setup for movies and shows.",
+          Icon: FaVolumeUp,
+          color: currentColor.text,
+          points: buildSummaryPoints(
+            applianceData.audio_json?.output_power || primarySpecs.audio_output,
+            applianceData.audio_json?.speaker_type,
+            applianceData.audio_json?.audio_features,
+          ),
+        },
+        {
+          key: "connectivity",
+          title: "Connectivity",
+          description: "Ports and wireless options for easy setup.",
+          Icon: FaWifi,
+          color: currentColor.text,
+          points: buildSummaryPoints(
+            applianceData.connectivity_json?.wifi,
+            applianceData.connectivity_json?.bluetooth,
+            applianceData.connectivity_json?.hdmi,
+            applianceData.connectivity_json?.usb,
+          ),
+        },
+      ].filter((section) => section.points.length > 0)
+    : [];
+
   return (
-    <div className="px-2 lg:px-4 mx-auto max-w-4xl w-full bg-white">
+    <div className="mx-auto max-w-7xl w-full  px-2 lg:px-4">
       <Helmet prioritizeSeoTags>
         <title>{metaTitleWithMonthYear}</title>
         <meta name="description" content={metaDescription} />
@@ -2792,9 +2665,7 @@ const TVDetailCard = () => {
         <meta property="og:site_name" content="Hooks" />
         {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
         {ogImage && <meta property="og:image" content={ogImage} />}
-        {ogImage && (
-          <meta property="og:image:secure_url" content={ogImage} />
-        )}
+        {ogImage && <meta property="og:image:secure_url" content={ogImage} />}
         {ogImage && <meta property="og:image:type" content="image/jpeg" />}
         {ogImage && <meta property="og:image:width" content="1200" />}
         {ogImage && <meta property="og:image:height" content="630" />}
@@ -2891,57 +2762,108 @@ const TVDetailCard = () => {
         </div>
       )}
 
-      <div className="overflow-hidden  ">
-        {/* Mobile Header */}
-        <div className="p-4 border-b border-gray-200 lg:hidden">
-          <div className="flex justify-between items-start mb-3">
-            <div>
-              {headerDescriptor ? (
-                <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-slate-500">
-                  {headerDescriptor}
-                </p>
-              ) : null}
-              <h1 className="text-xl font-extrabold tracking-tight mb-1 text-gray-900 leading-tight">
-                {headerTitle}
-              </h1>
-              {currentVariantLabel ? (
-                <p className="text-purple-700 text-sm font-medium">
-                  {currentVariantLabel}
-                </p>
-              ) : null}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={toggleFavorite}
-                className="p-2 rounded-full hover:bg-gray-100"
-              >
-                <FaHeart
-                  className={`text-lg ${
-                    isFavorite ? "text-red-500 fill-current" : "text-gray-400"
-                  }`}
-                />
-              </button>
-              <button
-                onClick={handleShare}
-                className="p-2 rounded-full hover:bg-gray-100"
-              >
-                <FaShareAlt className="text-lg text-gray-600" />
-              </button>
+      <div className="overflow-hidden">
+        <section className="w-full text-slate-900">
+          <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
+            <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-slate-50 via-blue-50/50 to-slate-50 p-5 sm:p-6 xl:p-8">
+              <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+                <div className="min-w-0 flex-1">
+                  {headerDescriptor ? (
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.32em] text-blue-600">
+                      {headerDescriptor}
+                    </p>
+                  ) : null}
+                  <div className="flex flex-wrap items-center gap-3">
+                    <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-[2rem]">
+                      {headerTitle}
+                    </h1>
+                    <button
+                      onClick={() => {
+                        if (compareTarget) {
+                          handlePopularCompare(compareTarget);
+                          return;
+                        }
+                        navigate("/compare");
+                      }}
+                      className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-slate-800"
+                    >
+                      <FaPlus className="text-sm" />
+                      Compare
+                    </button>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+                    {currentVariantLabel ? (
+                      <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-medium text-slate-700">
+                        {currentVariantLabel}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  {headlinePrice ? (
+                    <div className="mt-4 flex flex-wrap items-end gap-2">
+                      <div className="text-3xl font-bold tracking-tight text-emerald-600">
+                        {RUPEE_SYMBOL} {formatPrice(headlinePrice)}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="flex flex-col items-start gap-3 xl:items-end">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={toggleFavorite}
+                      className="rounded-full border border-slate-200 bg-white p-2 transition-colors hover:bg-slate-50"
+                    >
+                      <FaHeart
+                        className={`text-lg ${
+                          isFavorite
+                            ? "text-red-500 fill-current"
+                            : "text-slate-400"
+                        }`}
+                      />
+                    </button>
+                    <button
+                      onClick={handleShare}
+                      className="rounded-full border border-slate-200 bg-white p-2 transition-colors hover:bg-slate-50"
+                    >
+                      <FaShareAlt className="text-lg text-slate-600" />
+                    </button>
+                  </div>
+
+                  {headerLaunchText ? (
+                    <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm">
+                      <span className="text-slate-500">Launched On:</span>
+                      <span className="font-semibold text-slate-900">
+                        {headerLaunchText}
+                      </span>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
             </div>
           </div>
-          <div className="flex items-center justify-end mt-4">
-            {headlinePrice ? (
-              <span className="text-2xl font-bold text-green-600">
-                {RUPEE_SYMBOL}
-                {formatPrice(headlinePrice)}
-              </span>
-            ) : null}
-          </div>
-        </div>
+        </section>
 
         {/* Popular Comparisons */}
         {popularComparisonTargets.length > 0 && (
-          <div className="px-4 pt-4 pb-1">
+          <div className="mx-auto max-w-7xl px-4 pb-1 sm:px-6 lg:px-8">
+            <div className="mb-3 flex flex-col gap-1 sm:mb-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-500">
+                Recommended Comparisons
+              </p>
+              <h2 className="text-lg font-semibold tracking-tight text-slate-900">
+                Compare with{" "}
+                <span className="text-blue-600">
+                  {metaBrand || "this brand"}
+                </span>{" "}
+                TVs
+              </h2>
+              <p className="max-w-3xl text-sm leading-6 text-slate-500">
+                Explore popular alternatives and see how this model stacks up
+                against other TVs from the same brand.
+              </p>
+            </div>
             <div className="flex gap-3 overflow-x-auto no-scrollbar pb-3">
               {popularComparisonTargets.map((d) => {
                 const otherId = d?.id ?? d?.product_id ?? d?.productId ?? null;
@@ -2954,32 +2876,32 @@ const TVDetailCard = () => {
                     key={String(otherId || otherName)}
                     type="button"
                     onClick={() => handlePopularCompare(d)}
-                    className="min-w-[240px] max-w-[280px] flex-shrink-0 rounded-xl border border-gray-200 bg-white p-3 hover:border-purple-200 transition-colors text-left"
+                    className="min-w-[240px] max-w-[280px] flex-shrink-0 rounded-xl border border-slate-200 bg-white p-3 text-left  transition-colors hover:border-blue-200"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-slate-100">
                         {otherImg ? (
                           <img
                             src={otherImg}
                             alt={otherName}
-                            className="w-full h-full object-contain"
+                            className="h-full w-full object-contain"
                             onError={(e) => {
                               e.currentTarget.style.display = "none";
                             }}
                           />
                         ) : (
-                          <FaTv className="text-gray-400 text-sm" />
+                          <FaTv className="text-sm text-slate-400" />
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="text-[11px] text-gray-500 truncate">
+                        <div className="truncate text-[11px] text-slate-500">
                           Compare with
                         </div>
-                        <div className="text-sm font-semibold text-gray-900 truncate">
+                        <div className="truncate text-sm font-semibold text-slate-900">
                           {otherName}
                         </div>
                       </div>
-                      <span className="text-xs font-semibold text-purple-700">
+                      <span className="text-xs font-semibold text-blue-700">
                         Compare
                       </span>
                     </div>
@@ -2990,405 +2912,366 @@ const TVDetailCard = () => {
           </div>
         )}
 
-        <div className="border-t border-slate-200 bg-white">
-          <div className="flex overflow-x-auto no-scrollbar border-b border-slate-200 bg-white">
-            {primaryTabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActivePrimaryTab(tab.id)}
-                className={`group relative flex items-center gap-2 px-4 py-3 font-medium text-sm whitespace-nowrap transition-colors duration-200 flex-shrink-0 focus-visible:outline-none ${
-                  activePrimaryTab === tab.id
-                    ? "bg-white"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                <span
-                  className={
-                    activePrimaryTab === tab.id
-                      ? "bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent"
-                      : ""
-                  }
-                >
-                  {tab.label}
-                </span>
-                {activePrimaryTab === tab.id ? (
-                  <span className="pointer-events-none absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600" />
-                ) : null}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex flex-col lg:flex-row">
-          {/* Images Section */}
-          <div className="lg:w-2/5 p-4">
-            {/* Main Image */}
-            <div className="rounded-xl bg-gray-100 p-8 mb-6 relative">
-              <div className="absolute left-2 top-2 z-10 pointer-events-none">
-                <SpecScoreBadge
-                  score={overallScoreBadge}
-                  size={40}
-                  showSpecLabel
-                  zeroFallback
-                />
-              </div>
-              <img
-                src={
-                  galleryImages?.[activeImage] || "/placeholder-appliance.jpg"
-                }
-                alt={applianceData.product_name}
-                className="w-full h-64 object-contain "
-                onError={(e) => {
-                  e.target.src =
-                    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%23ffffff'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='16' fill='%239ca3af'%3ENo Image Available%3C/text%3E%3C/svg%3E";
-                }}
-              />
-              <div className="absolute top-3 right-3 flex flex-col gap-2">
-                <button
-                  onClick={toggleFavorite}
-                  className="p-2 bg-white rounded-full shadow-md hover:shadow-lg"
-                >
-                  <FaHeart
-                    className={`${
-                      isFavorite ? "text-red-500 fill-current" : "text-gray-600"
-                    }`}
-                  />
-                </button>
-                <button
-                  onClick={handleShare}
-                  className="p-2 bg-white rounded-full shadow-md hover:shadow-lg"
-                >
-                  <FaShare className="text-gray-600" />
-                </button>
-              </div>
-            </div>
-
-            {/* Thumbnails */}
-            {galleryImages && galleryImages.length > 1 && (
-              <div className="flex gap-3 mb-8 overflow-x-auto no-scrollbar">
-                {galleryImages.slice(0, 6).map((image, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setActiveImage(index)}
-                    className={`flex-shrink-0 w-20 h-20 rounded-lg p-2 border-2 transition-all duration-200 ${
-                      activeImage === index
-                        ? `${currentColor.border} bg-white`
-                        : "border-gray-100 hover:border-gray-200"
-                    }`}
-                  >
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-6 lg:flex-row">
+            {/* Images Section */}
+            <div className="lg:w-2/5 rounded-md bg-transparent p-4 shadow-none sm:p-6">
+              <div className="space-y-5">
+                {/* Main Image */}
+                <div className="relative overflow-hidden rounded-md border border-slate-200 bg-gradient-to-b from-slate-50 via-white to-slate-50 p-4 sm:p-6">
+                  <div className="flex min-h-[340px] items-center justify-center sm:min-h-[420px]">
                     <img
-                      src={image}
-                      alt={`${applianceData.product_name} view ${index + 1}`}
-                      className="w-full h-full object-contain"
+                      src={
+                        galleryImages?.[activeImage] ||
+                        "/placeholder-appliance.jpg"
+                      }
+                      alt={applianceData.product_name}
+                      className="h-auto max-h-[320px] w-auto object-contain drop-shadow-[0_16px_24px_rgba(15,23,42,0.12)] sm:max-h-[380px]"
+                      onError={(e) => {
+                        e.target.src =
+                          "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%23ffffff'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='16' fill='%239ca3af'%3ENo Image Available%3C/text%3E%3C/svg%3E";
+                      }}
                     />
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Variant Selection */}
-            {variants && variants.length > 0 && (
-              <div className="mb-6">
-                <h4 className="text-sm font-semibold text-gray-800 mb-2">
-                  Available Variants
-                </h4>
-                <div className="grid grid-cols-2 gap-2.5">
-                  {variants.map((variant, index) => (
-                    <button
-                      key={variant.id || index}
-                      onClick={() => setSelectedVariant(index)}
-                      aria-pressed={selectedVariant === index}
-                      className={`relative p-2.5 rounded-xl border-2 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 ${
-                        selectedVariant === index
-                          ? "border-violet-600 bg-violet-50 shadow-sm"
-                          : "border-slate-200 bg-white hover:border-violet-300 hover:bg-violet-50/40"
-                      }`}
-                    >
-                      {selectedVariant === index ? (
-                        <span className="absolute top-2 right-2 inline-flex items-center justify-center w-4 h-4 rounded-full bg-violet-600 text-white">
-                          <FaCheck className="text-[9px]" />
-                        </span>
-                      ) : null}
-                      <div className="font-semibold text-gray-900 text-sm mb-1 leading-tight">
-                        {toSafeText(
-                          variant.capacity ||
-                            variant.screen_size ||
-                            variant.type ||
-                            applianceData.specifications?.screen_size ||
-                            `Variant ${index + 1}`,
-                        ) || `Variant ${index + 1}`}
-                      </div>
-                      <div className="text-[11px] text-gray-500 mb-1.5 leading-tight">
-                        {toSafeText(
-                          variant.resolution ||
-                            variant.specification_summary ||
-                            applianceData.specifications?.resolution ||
-                            applianceData.specifications?.panel_type ||
-                            "",
-                        )}
-                      </div>
-                      <div className="text-sm font-bold text-green-600">
-                        {RUPEE_SYMBOL}
-                        {formatPrice(getVariantBestPrice(variant))}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Details Section */}
-          <div className="lg:w-3/5 p-4">
-            {/* Desktop Header */}
-            <div className="hidden lg:block mb-8">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  {headerDescriptor ? (
-                    <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">
-                      {headerDescriptor}
-                    </p>
-                  ) : null}
-                  <h1 className="text-2xl font-extrabold tracking-tight mb-2 text-gray-900">
-                    {headerTitle}
-                  </h1>
-                  {currentVariantLabel ? (
-                    <h4 className="text-purple-700 mb-3 font-medium text-sm">
-                      {currentVariantLabel}
-                    </h4>
-                  ) : null}
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={toggleFavorite}
-                    className="p-3 rounded-full hover:bg-gray-100"
-                    title="Add to favorites"
-                  >
-                    <FaHeart
-                      className={`text-xl ${
-                        isFavorite
-                          ? "text-red-500 fill-current"
-                          : "text-gray-400"
-                      }`}
-                    />
-                  </button>
-                  <button
-                    onClick={handleShare}
-                    className="p-3 rounded-full hover:bg-gray-100 relative"
-                    title="Share"
-                  >
-                    <FaShareAlt className="text-xl text-gray-600" />
-                  </button>
-                  <button
-                    onClick={handleCopyLink}
-                    className="p-3 rounded-full hover:bg-gray-100 relative"
-                    title="Copy link"
-                  >
-                    {copied && (
-                      <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-3 py-1.5 rounded-lg text-xs whitespace-nowrap shadow-lg">
-                        Link copied!
-                      </div>
-                    )}
-                    {copied ? (
-                      <FaCheck className="text-xl text-green-600" />
-                    ) : (
-                      <FaCopy className="text-xl text-gray-600" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              <div className="mb-4">
-                {headlinePrice ? (
-                  <span className="text-3xl font-bold text-green-600">
-                    {RUPEE_SYMBOL} {formatPrice(headlinePrice)}
-                  </span>
-                ) : null}
-              </div>
-            </div>
-
-            {/* Store Prices Section */}
-            {sortedStores.length > 0 && (
-              <div className="mb-5 mt-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                    <FaStore className="text-purple-500" />
-                    Check Price on
-                  </h3>
-                  {sortedStores.length > 3 && (
-                    <button
-                      onClick={() => setShowAllStores(!showAllStores)}
-                      className="text-purple-600 text-sm font-medium flex items-center gap-1"
-                    >
-                      {showAllStores ? "Show Less" : "View All"}
-                      <FaChevronDown
-                        className={`text-xs transition-transform ${
-                          showAllStores ? "rotate-180" : ""
-                        }`}
-                      />
-                    </button>
-                  )}
-                </div>
-
-                <div className="space-y-3">
-                  {displayedStores.map((store, index) => {
-                    const visitUrl = getStoreVisitUrl(
-                      store.url,
-                      store.store_name,
-                      [
-                        applianceData?.brand,
-                        applianceData?.product_name ||
-                          applianceData?.model_number,
-                        store.variantName || store.variantSpec,
-                        applianceData?.specifications?.screen_size,
-                        applianceData?.specifications?.resolution,
-                      ]
-                        .filter(Boolean)
-                        .join(" "),
-                    );
-                    const hasStoreUrl = Boolean(visitUrl);
-
-                    return (
-                      <div
-                        key={store.id || index}
-                        className="bg-white border rounded-xl p-2.5 transition-all duration-200 border-gray-200 hover:border-violet-300 hover:shadow-sm"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2.5 flex-1">
-                            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center p-2 shadow-sm">
-                              <img
-                                src={getStoreLogo(store.store_name)}
-                                alt={store.store_name}
-                                className="w-full h-full object-contain"
-                                onError={(e) => {
-                                  e.target.src = getLogo("");
-                                }}
-                              />
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="font-bold text-gray-900 text-sm capitalize">
-                                {store.store_name}
-                              </h4>
-                              <p className="text-[11px] text-gray-500">
-                                {store.variantName || store.variantSpec}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <div className="text-right">
-                              <div className="text-sm font-bold text-green-600">
-                                {RUPEE_SYMBOL} {formatPrice(store.price)}
-                              </div>
-                            </div>
-                            <a
-                              href={hasStoreUrl ? visitUrl : undefined}
-                              target="_blank"
-                              rel="noopener noreferrer nofollow"
-                              onClick={(e) => {
-                                if (!hasStoreUrl) e.preventDefault();
-                              }}
-                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs transition-all duration-200 ${
-                                hasStoreUrl
-                                  ? "bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-sm hover:shadow-md"
-                                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                              }`}
-                            >
-                              <FaExternalLinkAlt className="text-xs" />
-                              {hasStoreUrl ? "Buy Now" : "Unavailable"}
-                            </a>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Ratings summary removed */}
-
-        {activePrimaryTab === "info" ? (
-          <div className="border-t border-slate-200">
-            <div className="p-0 sm:p-2">
-              <div className="bg-white p-3 sm:p-4">
-                <div className="mb-3 flex items-center justify-between gap-2 pb-2">
-                  <div>
-                    <h3 className="text-lg font-semibold text-slate-900">
-                      Key Specs
-                    </h3>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      Quick TV essentials for display, audio, and daily
-                      experience.
-                    </p>
                   </div>
-                  <SpecScoreBadge
-                    score={getSectionScore("specifications")}
-                    size={38}
-                  />
                 </div>
-                {renderSpecTable(
-                  applianceData.key_specs_json ||
-                    applianceData.specifications ||
-                    {},
+
+                {/* Thumbnails */}
+                {galleryImages && galleryImages.length > 1 && (
+                  <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
+                    {galleryImages.slice(0, 6).map((image, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setActiveImage(index)}
+                        className={`flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-md border p-1.5 transition-all duration-200 ${
+                          activeImage === index
+                            ? "border-blue-500 bg-white shadow-sm ring-2 ring-blue-100"
+                            : "border-slate-200 bg-slate-50 hover:border-blue-300 hover:bg-white"
+                        }`}
+                      >
+                        <img
+                          src={image}
+                          alt={`${applianceData.product_name} view ${index + 1}`}
+                          className="h-full w-full object-contain"
+                        />
+                      </button>
+                    ))}
+                  </div>
                 )}
               </div>
+
+              {/* Variant Selection */}
+              {variants && variants.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="mb-4 text-lg font-semibold text-slate-900">
+                    Available Variants
+                  </h4>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {variants.map((variant, index) => (
+                      <button
+                        key={variant.id || index}
+                        onClick={() => setSelectedVariant(index)}
+                        aria-pressed={selectedVariant === index}
+                        className={`relative rounded-md border text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 p-2.5 ${
+                          selectedVariant === index
+                            ? "border-blue-600 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-600 text-white shadow-md"
+                            : "border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/40"
+                        }`}
+                      >
+                        {selectedVariant === index ? (
+                          <span className="absolute top-2 right-2 inline-flex h-4 w-4 items-center justify-center rounded-full bg-white text-blue-600">
+                            <FaCheck className="text-[9px]" />
+                          </span>
+                        ) : null}
+                        <div
+                          className={`mb-1 text-sm font-semibold leading-tight ${
+                            selectedVariant === index
+                              ? "text-white"
+                              : "text-gray-900"
+                          }`}
+                        >
+                          {toSafeText(
+                            variant.capacity ||
+                              variant.screen_size ||
+                              variant.type ||
+                              applianceData.specifications?.screen_size ||
+                              `Variant ${index + 1}`,
+                          ) || `Variant ${index + 1}`}
+                        </div>
+                        <div
+                          className={`mb-1.5 text-[11px] leading-tight ${
+                            selectedVariant === index
+                              ? "text-white/80"
+                              : "text-gray-500"
+                          }`}
+                        >
+                          {toSafeText(
+                            variant.resolution ||
+                              variant.specification_summary ||
+                              applianceData.specifications?.resolution ||
+                              applianceData.specifications?.panel_type ||
+                              "",
+                          )}
+                        </div>
+                        <div
+                          className={`text-sm font-bold ${
+                            selectedVariant === index
+                              ? "text-emerald-200"
+                              : "text-green-600"
+                          }`}
+                        >
+                          {RUPEE_SYMBOL}
+                          {formatPrice(getVariantBestPrice(variant))}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
-            {currentProductId ? (
-              <ProductDiscoverySections
-                productId={currentProductId}
-                currentBrand={applianceData?.brand || ""}
-                entityType="tvs"
-                className="w-full border-t border-slate-200"
-              />
-            ) : null}
-          </div>
-        ) : null}
+            {/* Details Section */}
+            <div className="lg:w-3/5 p-4">
+              {/* Store Prices Section */}
+              {sortedStores.length > 0 && (
+                <div className="mb-5 mt-5">
+                  <div className="mb-4 flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+                        <FaStore className="text-green-500" />
+                        Check Price On
+                      </h3>
+                      <p className="text-sm leading-6 text-slate-500">
+                        Compare live offers from trusted stores for{" "}
+                        {metaBrand || "this TV"}.
+                      </p>
+                    </div>
+                    {sortedStores.length > 3 && (
+                      <button
+                        onClick={() => setShowAllStores(!showAllStores)}
+                        className="flex items-center gap-1 text-sm font-medium text-blue-600 transition-colors hover:text-blue-500"
+                      >
+                        {showAllStores ? "Show Less" : "View All"}
+                        <FaChevronDown
+                          className={`text-xs text-blue-400 transition-transform ${
+                            showAllStores ? "rotate-180" : ""
+                          }`}
+                        />
+                      </button>
+                    )}
+                  </div>
 
-        {activePrimaryTab === "specs" ? (
-          <div className="border-t border-indigo-200">
-            <div className="flex overflow-x-auto no-scrollbar border-b border-indigo-200">
-              {tabs.map((tab) => {
-                const IconComponent = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => handleTabClick(tab.id)}
-                    className={`group relative flex items-center gap-2 px-4 py-3 font-medium text-sm whitespace-nowrap transition-colors duration-200 flex-shrink-0 focus-visible:outline-none ${
-                      activeTab === tab.id
-                        ? "bg-white"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
-                  >
-                    <IconComponent
-                      className={`text-sm ${
-                        activeTab === tab.id
-                          ? "text-violet-400"
-                          : "text-gray-500 group-hover:text-gray-700"
-                      }`}
-                    />
-                    <span
-                      className={
-                        activeTab === tab.id
-                          ? "bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent"
-                          : ""
-                      }
+                  <div className="space-y-3">
+                    {displayedStores.map((store, index) => {
+                      const visitUrl = getStoreVisitUrl(
+                        store.url,
+                        store.store_name,
+                        [
+                          applianceData?.brand,
+                          applianceData?.product_name ||
+                            applianceData?.model_number,
+                          store.variantName || store.variantSpec,
+                          applianceData?.specifications?.screen_size,
+                          applianceData?.specifications?.resolution,
+                        ]
+                          .filter(Boolean)
+                          .join(" "),
+                      );
+                      const hasStoreUrl = Boolean(visitUrl);
+
+                      return (
+                        <div
+                          key={store.id || index}
+                          className="rounded-xl border border-slate-200 bg-white p-2.5 transition-all duration-200 hover:border-blue-300 hover:shadow-sm"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2.5 flex-1">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 p-2 shadow-sm">
+                                <img
+                                  src={getStoreLogo(store.store_name)}
+                                  alt={store.store_name}
+                                  className="w-full h-full object-contain"
+                                  onError={(e) => {
+                                    e.target.src = getLogo("");
+                                  }}
+                                />
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="text-sm font-bold capitalize text-slate-900">
+                                  {store.store_name}
+                                </h4>
+                                <p className="text-[11px] text-slate-500">
+                                  {store.variantName || store.variantSpec}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="text-right">
+                                <div className="text-sm font-bold text-green-600">
+                                  {RUPEE_SYMBOL} {formatPrice(store.price)}
+                                </div>
+                              </div>
+                              <a
+                                href={hasStoreUrl ? visitUrl : undefined}
+                                target="_blank"
+                                rel="noopener noreferrer nofollow"
+                                onClick={(e) => {
+                                  if (!hasStoreUrl) e.preventDefault();
+                                }}
+                                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
+                                  hasStoreUrl
+                                    ? "bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 text-white shadow-sm hover:from-blue-700 hover:via-blue-600 hover:to-blue-700 hover:shadow-md"
+                                    : "cursor-not-allowed bg-slate-200 text-slate-500"
+                                }`}
+                              >
+                                <FaExternalLinkAlt className="text-xs" />
+                                {hasStoreUrl ? "Buy Now" : "Unavailable"}
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {tvSummarySections.length > 0 ? (
+                <div className="mt-5 space-y-5">
+                  <div className="max-w-2xl">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-blue-600">
+                      Key Specifications
+                    </p>
+                    <h3 className="mt-2 text-xl font-semibold text-slate-900 sm:text-2xl">
+                      Main hardware highlights
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-500 sm:text-base">
+                      A quick breakdown of the display, audio, smart features,
+                      and connectivity details that matter most.
+                    </p>
+                  </div>
+                  <div className="grid items-stretch gap-4 md:grid-cols-2 xl:gap-5">
+                    {tvSummarySections.map((section) => {
+                      const Icon = section.Icon;
+                      return (
+                        <div
+                          key={section.key}
+                          className="flex h-full flex-col rounded-md border border-slate-200 bg-white p-5 transition-all duration-200 sm:p-6"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-50 ring-1 ring-slate-200">
+                              <Icon className={`text-base ${section.color}`} />
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className="text-[1rem] font-semibold leading-snug text-slate-900 sm:text-[1.08rem]">
+                                {section.title}
+                              </h4>
+                              {section.description ? (
+                                <p className="mt-1 line-clamp-2 text-[13px] leading-5 text-slate-500">
+                                  {section.description}
+                                </p>
+                              ) : null}
+                            </div>
+                          </div>
+
+                          <ul className="mt-4 space-y-2.5">
+                            {section.points.slice(0, 3).map((point, idx) => (
+                              <li
+                                key={idx}
+                                className="flex items-start gap-2.5 text-sm leading-6 text-slate-700"
+                              >
+                                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-gradient-to-r from-blue-500 via-blue-500 to-blue-500" />
+                                <span className="min-w-0">{point}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="flex justify-center pt-1 sm:justify-end">
+                    <button
+                      type="button"
+                      onClick={() => handleTabClick("specifications")}
+                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 transition-all duration-200 hover:border-blue-200 hover:bg-blue-50"
                     >
-                      {tab.label}
-                    </span>
-                    {activeTab === tab.id ? (
-                      <span className="pointer-events-none absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600" />
-                    ) : null}
-                  </button>
-                );
-              })}
+                      See full specifications
+                      <FaChevronRight className="text-xs" />
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="mt-5 rounded-2xl bg-transparent p-4 sm:p-5">
+            <div className="max-w-3xl">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-blue-600">
+                FULL SPECIFICATIONS
+              </p>
+              <h3 className="mt-2 text-xl font-semibold text-slate-900 sm:text-2xl">
+                {headerTitle}
+                {currentVariantLabel ? (
+                  <span className="text-blue-600">
+                    {" "}
+                    ({currentVariantLabel})
+                  </span>
+                ) : null}
+                <span className="text-blue-600"> Specs</span>
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-slate-500 sm:text-base">
+                Explore the key hardware sections below with quick jumps.
+              </p>
             </div>
 
-            <div className="p-0 sm:p-2">{renderTabContent()}</div>
+            <div className="mt-4 rounded-2xl bg-transparent p-4 sm:p-5">
+              <div className="mt-4 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                {tabs.map((tab) => {
+                  const IconComponent = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => handleTabClick(tab.id)}
+                      className={`group relative flex flex-shrink-0 items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors duration-200 focus-visible:outline-none ${
+                        activeTab === tab.id
+                          ? "bg-white text-blue-600 shadow-sm ring-1 ring-slate-200"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      <IconComponent
+                        className={`text-sm ${
+                          activeTab === tab.id
+                            ? "text-blue-500"
+                            : "text-gray-500 group-hover:text-gray-700"
+                        }`}
+                      />
+                      <span
+                        className={
+                          activeTab === tab.id ? "font-semibold" : ""
+                        }
+                      >
+                        {tab.label}
+                      </span>
+                      {activeTab === tab.id ? (
+                        <span className="pointer-events-none absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600" />
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-        ) : null}
+
+          <div className="p-0 sm:p-2">{renderTabContent()}</div>
+
+          {currentProductId ? (
+            <ProductDiscoverySections
+              productId={currentProductId}
+              currentBrand={applianceData?.brand || ""}
+              entityType="tvs"
+              className="w-full border-t border-slate-200"
+            />
+          ) : null}
+        </div>
       </div>
     </div>
   );

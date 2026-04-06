@@ -20,6 +20,7 @@ import Contact from "./components/Static/Contact";
 import PrivacyPolicy from "./components/Static/PrivacyPolicy";
 import Terms from "./components/Static/Terms";
 import NotFound from "./components/Static/NotFound";
+import Blogs from "./components/Static/Blogs";
 import {
   Route,
   Routes,
@@ -38,6 +39,7 @@ import LaptopDetailCard from "./components/Device detail/Laptop";
 import NetworkingDetailCard from "./components/Device detail/Network";
 import Wishlist from "./components/Wishlist";
 import AccountManagement from "./components/AccountManagement";
+import BlogDetail from "./components/Static/BlogDetail";
 import {
   createOrganizationSchema,
   createWebsiteSchema,
@@ -75,6 +77,8 @@ const normalizeSeoPath = (pathname) => {
   if (pathname.length > 1 && pathname.endsWith("/")) {
     return pathname.slice(0, -1);
   }
+  if (pathname === "/smartphones/latest") return "/smartphones/filter/new";
+  if (pathname === "/smartphones/top") return "/trending/smartphones";
   return pathname;
 };
 
@@ -107,11 +111,7 @@ const toCanonicalPath = (path) => {
   if (path === "/smartphones/upcoming") return "/smartphones/upcoming";
   if (path.startsWith("/smartphones/filter/upcoming"))
     return "/smartphones/upcoming";
-  if (path.startsWith("/products/smartphones/upcoming"))
-    return "/smartphones/upcoming";
   if (path.startsWith("/devices/smartphones/upcoming"))
-    return "/smartphones/upcoming";
-  if (path.startsWith("/products/mobiles/upcoming"))
     return "/smartphones/upcoming";
   if (path.startsWith("/devices/mobiles/upcoming"))
     return "/smartphones/upcoming";
@@ -124,8 +124,6 @@ const toCanonicalPath = (path) => {
   if (path === "/trending/smartphone") return "/trending/smartphones";
   if (path === "/trending/laptop") return "/trending/laptops";
   if (path === "/trending/tv") return "/trending/tvs";
-  if (path === "/products" || path === "/products/mobiles")
-    return "/smartphones";
   if (path === "/devices") return "/smartphones";
   if (path === "/laptop") return "/laptops";
   if (path.startsWith("/laptop/")) {
@@ -133,19 +131,9 @@ const toCanonicalPath = (path) => {
   }
 
   if (path === "/mobiles") return "/smartphones";
-  if (path.startsWith("/products/mobiles")) {
-    return ensureSmartphoneSeoDetailPath(
-      path.replace("/products/mobiles", "/smartphones"),
-    );
-  }
   if (path.startsWith("/devices/mobiles")) {
     return ensureSmartphoneSeoDetailPath(
       path.replace("/devices/mobiles", "/smartphones"),
-    );
-  }
-  if (path.startsWith("/products/smartphones")) {
-    return ensureSmartphoneSeoDetailPath(
-      path.replace("/products/smartphones", "/smartphones"),
     );
   }
   if (path.startsWith("/devices/smartphones")) {
@@ -154,12 +142,6 @@ const toCanonicalPath = (path) => {
     );
   }
 
-  if (path.startsWith("/products/laptops")) {
-    return path.replace("/products/laptops", "/laptops");
-  }
-  if (path.startsWith("/products/laptop")) {
-    return path.replace("/products/laptop", "/laptops");
-  }
   if (path.startsWith("/devices/laptops")) {
     return path.replace("/devices/laptops", "/laptops");
   }
@@ -171,21 +153,11 @@ const toCanonicalPath = (path) => {
   if (path.startsWith("/appliances/")) {
     return path.replace("/appliances/", "/tvs/");
   }
-  if (path.startsWith("/products/tvs")) {
-    return path.replace("/products/tvs", "/tvs");
-  }
-  if (path.startsWith("/products/appliances")) {
-    return path.replace("/products/appliances", "/tvs");
-  }
   if (path.startsWith("/devices/tvs")) {
     return path.replace("/devices/tvs", "/tvs");
   }
   if (path.startsWith("/devices/appliances")) {
     return path.replace("/devices/appliances", "/tvs");
-  }
-
-  if (path.startsWith("/products/networking")) {
-    return path.replace("/products/networking", "/networking");
   }
   if (path.startsWith("/devices/networking")) {
     return path.replace("/devices/networking", "/networking");
@@ -455,7 +427,6 @@ const RouteSeoFallback = () => {
   if (pathname.startsWith("/trending")) return null;
   if (pathname.startsWith("/devices")) return null;
   if (pathname.startsWith("/mobiles")) return null;
-  if (pathname.startsWith("/products")) return null;
   if (pathname.startsWith("/about")) return null;
   if (pathname.startsWith("/contact")) return null;
   if (pathname.startsWith("/privacy-policy")) return null;
@@ -490,31 +461,6 @@ const RouteSeoFallback = () => {
 };
 
 function App() {
-  // Router for /products/:category to keep SEO-friendly category paths
-  const CategoryRouter = () => {
-    const { category } = useParams();
-    const location = useLocation();
-    switch (category) {
-      case "smartphones":
-      case "mobiles":
-        return <Navigate to={`/smartphones${location.search || ""}`} replace />;
-      case "laptops":
-      case "laptop":
-        return <Navigate to={`/laptops${location.search || ""}`} replace />;
-      case "tvs":
-      case "tv":
-      case "television":
-      case "televisions":
-        return <Navigate to={`/tvs${location.search || ""}`} replace />;
-      case "appliances":
-        return <Navigate to={`/tvs${location.search || ""}`} replace />;
-      case "networking":
-        return <Navigate to={`/networking${location.search || ""}`} replace />;
-      default:
-        return <NotFound />;
-    }
-  };
-
   const AppliancesListRedirect = () => {
     const location = useLocation();
     return <Navigate to={`/tvs${location.search || ""}`} replace />;
@@ -534,18 +480,19 @@ function App() {
     );
   };
 
+  const BlogDetailRedirect = () => {
+    const { slug } = useParams();
+    const location = useLocation();
+    return <Navigate to={`/blogs/${slug}${location.search || ""}`} replace />;
+  };
+
   return (
     <Router>
       <RouteSeoFallback />
       <div className="min-h-screen w-full overflow-x-hidden bg-gradient-to-br from-blue-50 via-blue-50 to-blue-50">
         <Header />
-        <div className="">
-          <div className="hidden sm:block mx-auto max-w-4xl w-full overflow-hidden mt-3 px-4 sm:px-0 transition-all duration-700">
-            {/* BannerSlot disabled (incomplete). */}
-          </div>
-        </div>
+
         <ScrollToTop />
-        <Breadcrumbs />
         <aside className="hidden xl:block absolute right-45 top-20 h-40 z-30 w-[170px]">
           {/* BannerSlot disabled (incomplete). */}
         </aside>
@@ -571,6 +518,14 @@ function App() {
             path="/smartphones/filter/:filterSlug"
             element={<Smartphones />}
           />
+          <Route
+            path="/smartphones/latest"
+            element={<Navigate to="/smartphones/filter/new" replace />}
+          />
+          <Route
+            path="/smartphones/top"
+            element={<Navigate to="/trending/smartphones" replace />}
+          />
           <Route path="/laptops" element={<Laptops />} />
           <Route path="/laptop" element={<Navigate to="/laptops" replace />} />
           <Route path="/tvs" element={<TVs />} />
@@ -583,13 +538,6 @@ function App() {
             element={<Navigate to="/trending/smartphones" replace />}
           />
           <Route path="/trending/:category" element={<TrendingProductsHub />} />
-
-          {/* Support /products/:category SEO paths */}
-          <Route
-            path="/products"
-            element={<Navigate to="/smartphones" replace />}
-          />
-          <Route path="/products/:category" element={<CategoryRouter />} />
 
           {/* Category shortcuts */}
           <Route path="/mobiles" element={<Smartphones />} />
@@ -620,15 +568,6 @@ function App() {
           />
           <Route path="/networking/:slug" element={<NetworkingDetailCard />} />
 
-          {/* Detail alias redirects to canonical SEO routes */}
-          <Route
-            path="/products/smartphones/:slug"
-            element={<ProductDetailRedirect toBasePath="/smartphones" />}
-          />
-          <Route
-            path="/products/mobiles/:slug"
-            element={<ProductDetailRedirect toBasePath="/smartphones" />}
-          />
           <Route
             path="/devices/smartphones/:slug"
             element={<ProductDetailRedirect toBasePath="/smartphones" />}
@@ -638,28 +577,12 @@ function App() {
             element={<ProductDetailRedirect toBasePath="/smartphones" />}
           />
           <Route
-            path="/products/laptops/:slug"
-            element={<ProductDetailRedirect toBasePath="/laptops" />}
-          />
-          <Route
-            path="/products/laptop/:slug"
-            element={<ProductDetailRedirect toBasePath="/laptops" />}
-          />
-          <Route
             path="/devices/laptops/:slug"
             element={<ProductDetailRedirect toBasePath="/laptops" />}
           />
           <Route
             path="/devices/laptop/:slug"
             element={<ProductDetailRedirect toBasePath="/laptops" />}
-          />
-          <Route
-            path="/products/tvs/:slug"
-            element={<ProductDetailRedirect toBasePath="/tvs" />}
-          />
-          <Route
-            path="/products/appliances/:slug"
-            element={<ProductDetailRedirect toBasePath="/tvs" />}
           />
           <Route
             path="/devices/tvs/:slug"
@@ -685,10 +608,15 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<Terms />} />
+          <Route path="/blogs" element={<Blogs />} />
+          <Route path="/blogs/:slug" element={<BlogDetail />} />
+          <Route path="/blog" element={<Navigate to="/blogs" replace />} />
+          <Route path="/blog/:slug" element={<BlogDetailRedirect />} />
 
           {/* 404 Fallback */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <Breadcrumbs />
         {/* BannerSlot disabled (incomplete). */}
         <Footer />
         {/* BannerSlot disabled (incomplete). */}
