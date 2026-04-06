@@ -20,7 +20,6 @@ import Contact from "./components/Static/Contact";
 import PrivacyPolicy from "./components/Static/PrivacyPolicy";
 import Terms from "./components/Static/Terms";
 import NotFound from "./components/Static/NotFound";
-import Blogs from "./components/Static/Blogs";
 import {
   Route,
   Routes,
@@ -39,7 +38,6 @@ import LaptopDetailCard from "./components/Device detail/Laptop";
 import NetworkingDetailCard from "./components/Device detail/Network";
 import Wishlist from "./components/Wishlist";
 import AccountManagement from "./components/AccountManagement";
-import BlogDetail from "./components/Static/BlogDetail";
 import {
   createOrganizationSchema,
   createWebsiteSchema,
@@ -116,10 +114,8 @@ const toCanonicalPath = (path) => {
   if (path.startsWith("/devices/mobiles/upcoming"))
     return "/smartphones/upcoming";
   if (path === "/career") return "/careers";
-  if (path === "/blog") return "/blogs";
-  if (path.startsWith("/blog/")) {
-    return path.replace("/blog/", "/blogs/");
-  }
+  if (path === "/blog" || path === "/blogs") return "/";
+  if (path.startsWith("/blog/") || path.startsWith("/blogs/")) return "/";
   if (path === "/trending") return "/trending/smartphones";
   if (path === "/trending/smartphone") return "/trending/smartphones";
   if (path === "/trending/laptop") return "/trending/laptops";
@@ -211,7 +207,6 @@ const resolveSeoMeta = (pathname) => {
   })();
   const laptopDetailName = extractDetailSlugName(canonicalPath, "/laptops/");
   const tvDetailName = extractDetailSlugName(canonicalPath, "/tvs/");
-  const blogDetailName = extractDetailSlugName(canonicalPath, "/blogs/");
   const smartphoneFilterSlug = (() => {
     const match = canonicalPath.match(/^\/smartphones\/filter\/([^/]+)$/i);
     if (!match) return "";
@@ -248,12 +243,6 @@ const resolveSeoMeta = (pathname) => {
       title: `${tvDetailName} Price, Specs & TV Comparison in India (${CURRENT_MONTH_YEAR}) - Hooks`,
       description: `Compare ${tvDetailName} TV price in India, size variants, display specs, smart features, and store offers on Hooks.`,
       keywords: `${tvDetailName.toLowerCase()}, ${tvDetailName.toLowerCase()} tv price in india, ${tvDetailName.toLowerCase()} specifications, smart tv comparison india, tv prices list ${CURRENT_YEAR}`,
-    },
-    {
-      test: () => Boolean(blogDetailName),
-      title: `${blogDetailName} - Hooks Blog`,
-      description: `Read ${blogDetailName} and more product insights, specifications, and buying guidance on Hooks.`,
-      keywords: `${blogDetailName.toLowerCase()}, hooks blog, gadget blog, product insights`,
     },
     {
       test: (p) => p === "/smartphones/upcoming",
@@ -326,14 +315,6 @@ const resolveSeoMeta = (pathname) => {
       description:
         "Track trending smartphones, laptops, and TVs based on momentum and user interest to spot what is hot right now.",
       keywords: `trending smartphones india, trending laptops india, trending tvs india, trending phone in india, most popular mobiles, top selling gadgets india, new launch and trending devices, latest smartphones in india ${CURRENT_YEAR}`,
-    },
-    {
-      test: (p) => p.startsWith("/blogs") || p.startsWith("/blog"),
-      title: "Hooks Blogs - Product Insights and Buying Guides",
-      description:
-        "Read Hooks blogs for smartphones, laptops, and TVs with practical product insights and buying guidance.",
-      keywords:
-        "hooks blogs, gadget blog india, smartphone blog, laptop blog, tv buying guide, product insights",
     },
     {
       test: (p) => p.startsWith("/careers") || p.startsWith("/career"),
@@ -480,11 +461,7 @@ function App() {
     );
   };
 
-  const BlogDetailRedirect = () => {
-    const { slug } = useParams();
-    const location = useLocation();
-    return <Navigate to={`/blogs/${slug}${location.search || ""}`} replace />;
-  };
+  const BlogsRedirect = () => <Navigate to="/" replace />;
 
   return (
     <Router>
@@ -608,10 +585,10 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<Terms />} />
-          <Route path="/blogs" element={<Blogs />} />
-          <Route path="/blogs/:slug" element={<BlogDetail />} />
-          <Route path="/blog" element={<Navigate to="/blogs" replace />} />
-          <Route path="/blog/:slug" element={<BlogDetailRedirect />} />
+          <Route path="/blogs" element={<BlogsRedirect />} />
+          <Route path="/blogs/:slug" element={<BlogsRedirect />} />
+          <Route path="/blog" element={<BlogsRedirect />} />
+          <Route path="/blog/:slug" element={<BlogsRedirect />} />
 
           {/* 404 Fallback */}
           <Route path="*" element={<NotFound />} />

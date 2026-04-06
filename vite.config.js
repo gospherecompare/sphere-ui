@@ -90,8 +90,6 @@ const DEFAULT_SEO_KEYWORDS = `hook, best gadget comparison site, mobile price co
 const STATIC_PRERENDER_ROUTES = [
   "/",
   "/career",
-  "/blog",
-  "/blogs",
   "/trending",
   "/laptop",
   "/mobiles",
@@ -226,9 +224,9 @@ const toCanonicalPath = (rawPath) => {
   if (pathName.startsWith("/devices/mobiles/upcoming"))
     return "/smartphones/upcoming";
   if (pathName === "/career") return "/careers";
-  if (pathName === "/blog") return "/blogs";
-  if (pathName.startsWith("/blog/")) {
-    return pathName.replace("/blog/", "/blogs/");
+  if (pathName === "/blog" || pathName === "/blogs") return "/";
+  if (pathName.startsWith("/blog/") || pathName.startsWith("/blogs/")) {
+    return "/";
   }
   if (pathName === "/trending") return "/trending/smartphones";
   if (pathName === "/trending/smartphone") return "/trending/smartphones";
@@ -507,12 +505,6 @@ const fetchDetailRoutesFromApi = async () => {
         item?.basic_info?.model_number ||
         item?.basic_info?.model,
     },
-    {
-      endpoint: `${API_BASE_URL}/public/blogs?limit=${MAX_DETAIL_ROUTES_PER_CATEGORY}`,
-      preferredKeys: ["blogs"],
-      basePath: "/blogs",
-      getName: (item) => item?.slug || item?.title || item?.name,
-    },
   ];
 
   const routes = [];
@@ -581,11 +573,6 @@ const fetchDetailRoutesFromApi = async () => {
     if (routePath.startsWith("/networking/")) {
       const slug = routePath.slice("/networking/".length);
       return [`/products/networking/${slug}`, `/devices/networking/${slug}`];
-    }
-
-    if (routePath.startsWith("/blogs/")) {
-      const slug = routePath.slice("/blogs/".length);
-      return [`/blog/${slug}`];
     }
 
     return [];
@@ -674,8 +661,7 @@ const buildSitemapXml = (routes = []) => {
         routePath.startsWith("/smartphones/") ||
         routePath.startsWith("/laptops/") ||
         routePath.startsWith("/tvs/") ||
-        routePath.startsWith("/networking/") ||
-        routePath.startsWith("/blogs/");
+        routePath.startsWith("/networking/");
       const priority = routePath === "/" ? "1.0" : isDetailPage ? "0.8" : "0.7";
       return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>${priority}</priority>\n  </url>`;
     })
@@ -721,7 +707,6 @@ const resolveSeo = (routePath) => {
   })();
   const laptopDetailName = extractDetailSlugName(canonicalPath, "/laptops/");
   const tvDetailName = extractDetailSlugName(canonicalPath, "/tvs/");
-  const blogDetailName = extractDetailSlugName(canonicalPath, "/blogs/");
   const comparePair = extractComparePairNames(canonicalPath);
   const smartphoneFilterSlug = (() => {
     const match = canonicalPath.match(/^\/smartphones\/filter\/([^/]+)$/i);
@@ -758,12 +743,6 @@ const resolveSeo = (routePath) => {
       title: `${tvDetailName} Price, Specs & TV Comparison in India (${CURRENT_YEAR}) | Hooks`,
       description: `Compare ${tvDetailName} TV price in India, size variants, display specs, smart features, and store offers on Hook.`,
       keywords: `${tvDetailName.toLowerCase()}, ${tvDetailName.toLowerCase()} tv price in india, ${tvDetailName.toLowerCase()} specifications, smart tv comparison india, tv prices list ${CURRENT_YEAR}`,
-    },
-    {
-      test: () => Boolean(blogDetailName),
-      title: `${blogDetailName} | Hooks Blog`,
-      description: `Read ${blogDetailName} on Hook with product insights, specs breakdown, and buying guidance.`,
-      keywords: `${blogDetailName.toLowerCase()}, hook blog, product insights, buying guide, gadget analysis`,
     },
     {
       test: (p) => p === "/smartphones/upcoming",
@@ -821,14 +800,6 @@ const resolveSeo = (routePath) => {
         "Compare routers and networking products with speed, band, and connectivity specs to choose the right setup for your needs.",
       keywords:
         "networking devices, routers, wifi routers, dual band router, compare routers, modem router specs",
-    },
-    {
-      test: (p) => p.startsWith("/blogs"),
-      title: "Hooks Blogs | Product Insights and Buying Guides",
-      description:
-        "Read Hook blogs for smartphones, laptops, and TVs with product insights, key specifications, and practical buying guidance.",
-      keywords:
-        "hook blogs, smartphone blog, laptop buying guide, tv buying guide, gadget insights",
     },
     {
       test: (p) => p.startsWith("/compare"),
