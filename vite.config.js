@@ -49,6 +49,7 @@ const PRELOAD_CANONICAL_PATHS = new Set([
   "/trending/smartphones",
   "/trending/laptops",
   "/trending/tvs",
+  "/trending/networking",
 ]);
 const PRELOAD_API_ENDPOINTS = [
   `${API_BASE_URL}/smartphones`,
@@ -119,6 +120,7 @@ const STATIC_PRERENDER_ROUTES = [
   "/trending/smartphones",
   "/trending/laptops",
   "/trending/tvs",
+  "/trending/networking",
   "/about",
   "/careers",
   "/contact",
@@ -492,6 +494,20 @@ const fetchDetailRoutesFromApi = async () => {
         item?.basic_info?.model,
     },
     {
+      endpoint: `${API_BASE_URL}/networking`,
+      preferredKeys: ["networking"],
+      basePath: "/networking",
+      getName: (item) =>
+        item?.product_name ||
+        item?.name ||
+        item?.model_number ||
+        item?.model ||
+        item?.basic_info?.product_name ||
+        item?.basic_info?.title ||
+        item?.basic_info?.model_number ||
+        item?.basic_info?.model,
+    },
+    {
       endpoint: `${API_BASE_URL}/public/blogs?limit=${MAX_DETAIL_ROUTES_PER_CATEGORY}`,
       preferredKeys: ["blogs"],
       basePath: "/blogs",
@@ -560,6 +576,11 @@ const fetchDetailRoutesFromApi = async () => {
         `/devices/tvs/${slug}`,
         `/devices/appliances/${slug}`,
       ];
+    }
+
+    if (routePath.startsWith("/networking/")) {
+      const slug = routePath.slice("/networking/".length);
+      return [`/products/networking/${slug}`, `/devices/networking/${slug}`];
     }
 
     if (routePath.startsWith("/blogs/")) {
@@ -663,15 +684,23 @@ const buildSitemapXml = (routes = []) => {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
 };
 
+const writeSitemapFile = (outputPath, routes = []) => {
+  const xml = buildSitemapXml(routes);
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+  fs.writeFileSync(outputPath, xml, "utf8");
+  return outputPath;
+};
+
+const syncPublicSitemap = (routes = []) =>
+  writeSitemapFile(path.join(__dirname, "public", "sitemap.xml"), routes);
+
 const createSitemapPlugin = (routes = []) => ({
   name: "hook-generate-sitemap",
   apply: "build",
   closeBundle() {
     const outputDir = path.join(__dirname, "dist");
     const outputPath = path.join(outputDir, "sitemap.xml");
-    const xml = buildSitemapXml(routes);
-    fs.mkdirSync(outputDir, { recursive: true });
-    fs.writeFileSync(outputPath, xml, "utf8");
+    writeSitemapFile(outputPath, routes);
     console.log(`[sitemap] Generated ${outputPath}`);
   },
 });
@@ -1254,6 +1283,7 @@ const processRouteHtml = (html, routePath, preloadedApiPayload) => {
 
 export default defineConfig(async () => {
   const prerenderRoutes = await getPrerenderRoutes();
+  syncPublicSitemap(prerenderRoutes);
   const preloadedApiPayload = await fetchPreloadedApiPayload();
   const processHtml = (html, routePath) =>
     processRouteHtml(html, routePath, preloadedApiPayload);
