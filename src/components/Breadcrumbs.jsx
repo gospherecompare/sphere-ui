@@ -2,6 +2,10 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import useBreadcrumbs from "use-react-router-breadcrumbs";
 import { FaChevronRight, FaHome } from "react-icons/fa";
+import {
+  getSmartphoneFeatureRouteMeta,
+  toReadableListingLabel,
+} from "../utils/smartphoneListingRoutes";
 
 const PRODUCT_DETAIL_PATH_RE =
   /^\/(smartphones|laptops|tvs|appliances|networking)\/[^/]+\/?$/i;
@@ -83,6 +87,13 @@ const renderFilterBreadcrumb = ({ match }) =>
     return slugToTitle(raw || "Filter");
   })();
 
+const renderSmartphoneBrandBreadcrumb = ({ match }) =>
+  toReadableListingLabel(match?.params?.brandSlug || "Brand");
+
+const renderSmartphoneFeatureBreadcrumb = ({ match }) =>
+  getSmartphoneFeatureRouteMeta(match?.params?.featureSlug || "")?.name ||
+  toReadableListingLabel(match?.params?.featureSlug || "Feature");
+
 const getLabelText = (label) => {
   if (typeof label === "string" || typeof label === "number") {
     return String(label);
@@ -128,6 +139,18 @@ const routes = [
   {
     path: "/smartphones/filter/:filterSlug",
     breadcrumb: renderFilterBreadcrumb,
+  },
+  {
+    path: "/smartphones/brand/:brandSlug",
+    breadcrumb: renderSmartphoneBrandBreadcrumb,
+  },
+  {
+    path: "/smartphones/feature/:featureSlug",
+    breadcrumb: renderSmartphoneFeatureBreadcrumb,
+  },
+  {
+    path: "/smartphones/brand/:brandSlug/feature/:featureSlug",
+    breadcrumb: renderSmartphoneFeatureBreadcrumb,
   },
   {
     path: "/smartphones/:slug",

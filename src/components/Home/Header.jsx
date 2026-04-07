@@ -47,6 +47,10 @@ import { useNavigate, Link, useLocation } from "react-router-dom";
 import Cookies from "js-cookie";
 import { useDevice } from "../../hooks/useDevice";
 import { createProductPath } from "../../utils/slugGenerator";
+import {
+  buildSmartphoneBrandPath,
+  buildSmartphoneFeaturePath,
+} from "../../utils/smartphoneListingRoutes";
 
 // Icons - matching Vijay Sales style
 import {
@@ -360,8 +364,16 @@ const Header = () => {
     return `${basePath}${query ? `?${query}` : ""}`;
   };
 
-  const buildBrandListingPath = (brandName, ptype) =>
-    buildCatalogPath(ptype, { brand: brandName });
+  const buildBrandListingPath = (brandName, ptype) => {
+    const category = mapProductTypeToRoute(ptype);
+    if (category === "smartphones") {
+      return buildSmartphoneBrandPath(brandName);
+    }
+    return buildCatalogPath(ptype, { brand: brandName });
+  };
+
+  const buildFeatureListingPath = (featureId) =>
+    buildSmartphoneFeaturePath(featureId);
 
   const buildKeywordSearchPath = (query, ptype) =>
     buildCatalogPath(ptype, { q: query });
@@ -2580,7 +2592,7 @@ const Header = () => {
       .slice(0, 6)
       .map((name) => ({
         label: name,
-        href: `/smartphones?brand=${encodeURIComponent(name)}`,
+        href: buildBrandListingPath(name, "smartphones"),
       }));
 
     const priceItems = [
@@ -2619,12 +2631,21 @@ const Header = () => {
     ];
 
     const featureItems = [
-      { label: "5G Phones", href: "/smartphones?feature=5g" },
-      { label: "AMOLED", href: "/smartphones?feature=amoled" },
-      { label: "120Hz+", href: "/smartphones?feature=high-refresh-rate" },
-      { label: "Long Battery", href: "/smartphones?feature=long-battery" },
-      { label: "Fast Charge", href: "/smartphones?feature=fast-charging" },
-      { label: "Gaming", href: "/smartphones?feature=gaming" },
+      { label: "5G Phones", href: buildFeatureListingPath("5g") },
+      { label: "AMOLED", href: buildFeatureListingPath("amoled") },
+      {
+        label: "120Hz+",
+        href: buildFeatureListingPath("high-refresh-rate"),
+      },
+      {
+        label: "Long Battery",
+        href: buildFeatureListingPath("long-battery"),
+      },
+      {
+        label: "Fast Charge",
+        href: buildFeatureListingPath("fast-charging"),
+      },
+      { label: "Gaming", href: buildFeatureListingPath("gaming") },
     ];
 
     const popularItems = phoneSource.slice(0, 6).map((device) => ({

@@ -44,6 +44,10 @@ import {
   createWebsiteSchema,
 } from "./utils/schemaGenerators";
 import { normalizeSeoTitle } from "./utils/seoTitle";
+import {
+  buildSmartphoneBrandPath,
+  buildSmartphoneListingPath,
+} from "./utils/smartphoneListingRoutes";
 
 const SITE_ORIGIN = "https://tryhook.shop";
 const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/hook-logo.svg`;
@@ -516,11 +520,41 @@ function App() {
       matchedBrand?.category || matchedBrand?.product_type || matchedBrand?.type,
     );
     const params = new URLSearchParams(location.search || "");
+    if (targetPath === "/smartphones") {
+      params.delete("brand");
+      const query = params.toString();
+      return (
+        <Navigate
+          to={buildSmartphoneBrandPath(
+            matchedBrand?.slug || brandName || slug,
+            query,
+          )}
+          replace
+        />
+      );
+    }
+
     if (brandName && !params.get("brand")) {
       params.set("brand", brandName);
     }
     const query = params.toString();
     return <Navigate to={`${targetPath}${query ? `?${query}` : ""}`} replace />;
+  };
+
+  const SmartphoneListingOrderRedirect = () => {
+    const { brandSlug = "", featureSlug = "" } = useParams();
+    const location = useLocation();
+    const query = location.search ? location.search.slice(1) : "";
+    return (
+      <Navigate
+        to={buildSmartphoneListingPath({
+          brand: brandSlug,
+          feature: featureSlug,
+          query,
+        })}
+        replace
+      />
+    );
   };
 
   const AppliancesDetailRedirect = () => {
@@ -566,6 +600,22 @@ function App() {
           <Route path="/brands" element={<BrandsRedirect />} />
           <Route path="/brand/:slug" element={<BrandLandingRedirect />} />
           <Route path="/smartphones" element={<Smartphones />} />
+          <Route
+            path="/smartphones/feature/:featureSlug/brand/:brandSlug"
+            element={<SmartphoneListingOrderRedirect />}
+          />
+          <Route
+            path="/smartphones/brand/:brandSlug/feature/:featureSlug"
+            element={<Smartphones />}
+          />
+          <Route
+            path="/smartphones/brand/:brandSlug"
+            element={<Smartphones />}
+          />
+          <Route
+            path="/smartphones/feature/:featureSlug"
+            element={<Smartphones />}
+          />
           <Route
             path="/smartphones/upcoming"
             element={<UpcomingSmartphonesList />}

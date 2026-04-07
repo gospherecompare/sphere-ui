@@ -1,6 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { FaBolt, FaChevronRight, FaFire, FaStore, FaTag } from "react-icons/fa";
+import {
+  buildSmartphoneBrandPath,
+  buildSmartphoneListingPath,
+} from "../../utils/smartphoneListingRoutes";
 
 const API_BASE = (
   import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in"
@@ -60,7 +64,8 @@ const getEntityConfig = (entityType) => {
     brandSuffix: "Mobiles",
     defaultPriceLabel: "Under \u20B920,000",
     secondaryPopularLabel: "{brand} 5G Phones",
-    secondaryPopularPath: (brand) => `/smartphones?brand=${brand}&network=5G`,
+    secondaryPopularPath: (brand) =>
+      buildSmartphoneBrandPath(brand, { network: "5G" }),
   };
 };
 
@@ -80,6 +85,25 @@ const normalizeDiscoveryPath = (rawPath, entityType = "smartphones") => {
 
   try {
     const url = new URL(pathValue, "https://hook.local");
+    if (
+      config.type === "smartphones" &&
+      url.pathname.replace(/\/+$/g, "") === config.basePath
+    ) {
+      const brand = url.searchParams.get("brand") || "";
+      const feature = url.searchParams.get("feature") || "";
+      if (brand || feature) {
+        if (url.searchParams.get("sort") === "latest") {
+          url.searchParams.set("sort", "newest");
+        }
+        url.searchParams.delete("brand");
+        url.searchParams.delete("feature");
+        return buildSmartphoneListingPath({
+          brand,
+          feature,
+          query: url.searchParams,
+        });
+      }
+    }
     if (url.searchParams.get("sort") === "latest") {
       url.searchParams.set("sort", "newest");
     }
@@ -537,29 +561,26 @@ const ProductDiscoverySections = ({
 
   const popularLinks = useMemo(() => {
     const links = [];
-    const encodedBrand = brandName ? encodeURIComponent(brandName) : "";
 
     if (brandName) {
+      const brandBrowsePath =
+        entityConfig.type === "smartphones"
+          ? buildSmartphoneBrandPath(brandName)
+          : `${entityConfig.basePath}?brand=${encodeURIComponent(brandName)}`;
       links.push({
         label: `All ${brandName} ${entityConfig.pluralTitle}`,
-        path: normalizeDiscoveryPath(
-          `${entityConfig.basePath}?brand=${encodedBrand}`,
-          entityConfig.type,
-        ),
+        path: normalizeDiscoveryPath(brandBrowsePath, entityConfig.type),
       });
       links.push({
         label: entityConfig.secondaryPopularLabel.replace("{brand}", brandName),
         path: normalizeDiscoveryPath(
-          entityConfig.secondaryPopularPath(encodedBrand),
+          entityConfig.secondaryPopularPath(brandName),
           entityConfig.type,
         ),
       });
       links.push({
         label: `${brandName} ${entityConfig.pluralTitle} ${entityConfig.defaultPriceLabel}`,
-        path: normalizeDiscoveryPath(
-          `${entityConfig.basePath}?brand=${encodedBrand}`,
-          entityConfig.type,
-        ),
+        path: normalizeDiscoveryPath(brandBrowsePath, entityConfig.type),
       });
     }
 
@@ -640,13 +661,14 @@ const ProductDiscoverySections = ({
         .map((item) => {
           const labelBrand = normalizeText(item?.brand_name);
           if (!labelBrand) return null;
+          const brandPath =
+            entityConfig.type === "smartphones"
+              ? buildSmartphoneBrandPath(labelBrand)
+              : `${entityConfig.basePath}?brand=${encodeURIComponent(labelBrand)}`;
           return {
             name: labelBrand,
             label: `${labelBrand} ${entityConfig.brandSuffix}`,
-            path: normalizeDiscoveryPath(
-              `${entityConfig.basePath}?brand=${encodeURIComponent(labelBrand)}`,
-              entityConfig.type,
-            ),
+            path: normalizeDiscoveryPath(brandPath, entityConfig.type),
             logo_url: normalizeText(item?.logo_url),
           };
         })

@@ -380,8 +380,11 @@ const MobileDetailCard = () => {
 
     const desiredPath = `/smartphones/${canonicalSeoSlug}`;
     const nextSearchParams = new URLSearchParams(location.search || "");
-    // Clean noisy variant/store query params from detail URL for SEO.
+    // Clean noisy lookup/share query params from detail URL for SEO.
     [
+      "id",
+      "model",
+      "shared",
       "variantId",
       "variant_id",
       "storeId",
@@ -2350,17 +2353,8 @@ Price: ${price}
   };
 
   const handleShare = async () => {
-    // Build a shareable URL that includes product id so the receiving page
-    // can fetch/display the product. We keep the canonical slug path and
-    // append the `id` and `shared=1` params.
     try {
-      const base = getCanonicalUrl;
-      const shareUrl = new URL(base);
-      const productId = mobileData?.id || mobileData?.model || "";
-      if (productId) shareUrl.searchParams.set("id", String(productId));
-      shareUrl.searchParams.set("shared", "1");
-
-      const urlStr = shareUrl.toString();
+      const urlStr = getCanonicalUrl;
       const content = generateShareContent();
       const payload = {
         title: content.title,
@@ -2398,12 +2392,7 @@ Price: ${price}
   // copy link functionality removed â€” share-only flow
 
   const shareToWhatsApp = () => {
-    const base = getCanonicalUrl;
-    const shareUrl = new URL(base);
-    const productId = mobileData?.id || mobileData?.model || "";
-    if (productId) shareUrl.searchParams.set("id", String(productId));
-    shareUrl.searchParams.set("shared", "1");
-    const urlToShare = shareUrl.toString();
+    const urlToShare = getCanonicalUrl;
     const content = generateShareContent();
     const message = `${content.fullDetails}\n\nðŸ”— Check it out: ${urlToShare}`;
     const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
@@ -2411,12 +2400,7 @@ Price: ${price}
   };
 
   const shareToFacebook = () => {
-    const base = getCanonicalUrl;
-    const shareUrl = new URL(base);
-    const productId = mobileData?.id || mobileData?.model || "";
-    if (productId) shareUrl.searchParams.set("id", String(productId));
-    shareUrl.searchParams.set("shared", "1");
-    const urlToShare = shareUrl.toString();
+    const urlToShare = getCanonicalUrl;
     // Facebook uses Open Graph tags, so just share the URL with description
     const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
       urlToShare,
@@ -2425,12 +2409,7 @@ Price: ${price}
   };
 
   const shareToTwitter = () => {
-    const base = getCanonicalUrl;
-    const shareUrl = new URL(base);
-    const productId = mobileData?.id || mobileData?.model || "";
-    if (productId) shareUrl.searchParams.set("id", String(productId));
-    shareUrl.searchParams.set("shared", "1");
-    const urlToShare = shareUrl.toString();
+    const urlToShare = getCanonicalUrl;
     const content = generateShareContent();
     const tweet = `Check out: ${content.title}\n${content.shortDescription}\n\n#Smartphones #Tech`;
     const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
@@ -2440,12 +2419,7 @@ Price: ${price}
   };
 
   const shareViaEmail = () => {
-    const base = getCanonicalUrl;
-    const shareUrl = new URL(base);
-    const productId = mobileData?.id || mobileData?.model || "";
-    if (productId) shareUrl.searchParams.set("id", String(productId));
-    shareUrl.searchParams.set("shared", "1");
-    const urlToShare = shareUrl.toString();
+    const urlToShare = getCanonicalUrl;
     const content = generateShareContent();
     const subject = `Check out: ${content.title}`;
     const body = `${content.fullDetails}\n\nView details: ${urlToShare}`;

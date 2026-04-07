@@ -5,6 +5,7 @@ import { useDevice } from "../../hooks/useDevice";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
 import { FaChartLine, FaFire, FaTag } from "react-icons/fa";
 import RecommendedSmartphones from "./RecommendedSmartphones";
+import { buildSmartphoneBrandPath } from "../../utils/smartphoneListingRoutes";
 
 const BRAND_PLACEHOLDER_LOGO =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Crect width='80' height='80' rx='12' fill='%23f3f4f6'/%3E%3Ctext x='40' y='46' font-family='Arial' font-size='10' text-anchor='middle' fill='%239ca3af'%3ELogo%3C/text%3E%3C/svg%3E";
@@ -89,7 +90,7 @@ const PopularBrands = () => {
       const category = (brandData.originalBrand.category || "").toLowerCase();
 
       if (category.includes("smart") || category.includes("mobile")) {
-        navigate(`/smartphones?brand=${encodeURIComponent(brandSlug)}`);
+        navigate(buildSmartphoneBrandPath(brandSlug));
       } else if (
         category.includes("lap") ||
         category.includes("laptop") ||

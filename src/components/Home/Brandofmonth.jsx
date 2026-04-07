@@ -8,6 +8,7 @@ import {
   computePopularSmartphoneFeatures,
   SMARTPHONE_FEATURE_CATALOG,
 } from "../../utils/smartphonePopularFeatures";
+import { buildSmartphoneFeaturePath } from "../../utils/smartphoneListingRoutes";
 
 const FeatureCard = ({ feature, index, isActive, isLoaded, onClick }) => {
   const Icon = feature.icon;
@@ -184,7 +185,7 @@ const MobileFeaturesFinder = () => {
   const handleFeatureClick = (featureId) => {
     setActiveFeature(featureId);
     trackFeatureClick(featureId);
-    navigate(`/smartphones?feature=${featureId}`);
+    navigate(buildSmartphoneFeaturePath(featureId));
   };
 
   const handleViewAll = () => {

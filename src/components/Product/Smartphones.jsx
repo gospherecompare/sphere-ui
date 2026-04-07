@@ -29,7 +29,6 @@ import { useDevice } from "../../hooks/useDevice";
 import {
   useNavigate,
   useLocation,
-  useSearchParams,
   useParams,
 } from "react-router-dom";
 import { useDispatch } from "react-redux";
@@ -57,6 +56,12 @@ import {
   computePopularSmartphoneFeatures,
   SMARTPHONE_FEATURE_CATALOG,
 } from "../../utils/smartphonePopularFeatures";
+import {
+  buildSmartphoneListingPath,
+  getSmartphoneFeatureRouteMeta,
+  normalizeSmartphoneListingSlug,
+  stripSmartphoneSeoQueryParams,
+} from "../../utils/smartphoneListingRoutes";
 import "../../styles/hideScrollbar.css";
 
 const toFeatureSeoLabel = (value = "") => {
@@ -200,9 +205,19 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const deviceContext = useDevice();
   const deviceFieldProfiles = useDeviceFieldProfiles();
   const { smartphone, smartphoneAll } = deviceContext || {};
-  const [params] = useSearchParams();
-  const { filterSlug } = useParams();
-  const feature = params.get("feature");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const {
+    filterSlug,
+    brandSlug: routeBrandSlug = "",
+    featureSlug: routeFeatureSlug = "",
+  } = useParams();
+  const params = useMemo(
+    () => new URLSearchParams(location.search || ""),
+    [location.search],
+  );
+  const legacyBrandParam = params.get("brand");
+  const legacyFeatureParam = params.get("feature");
   const normalizedFilterSlug = String(filterSlug || "")
     .trim()
     .toLowerCase();
@@ -211,9 +226,12 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     Boolean(onlyUpcoming) ||
     normalizedFilterSlug === "upcoming" ||
     listFilter === "upcoming";
-  const normalizedFeature = feature
-    ? feature.toString().toLowerCase().replace(/\s+/g, "-")
-    : null;
+  const normalizedBrandSlug = normalizeSmartphoneListingSlug(
+    routeBrandSlug || legacyBrandParam || "",
+  );
+  const normalizedFeature = normalizeSmartphoneListingSlug(
+    routeFeatureSlug || legacyFeatureParam || "",
+  );
 
   const [popularFeatureOrder, setPopularFeatureOrder] = useState([]);
   const [popularFeatureOrderLoaded, setPopularFeatureOrderLoaded] =
@@ -308,15 +326,48 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       dispatch(fetchSmartphones());
   }, [listFilter, dispatch, smartphoneAll ? smartphoneAll.length : 0]);
 
-  // When query filters change (feature / list filters), scroll back to top so the
+  // Normalize legacy query-based brand/feature routes into the canonical path shape.
+  useEffect(() => {
+    const hasSeoListingRoute =
+      Boolean(routeBrandSlug) ||
+      Boolean(routeFeatureSlug) ||
+      Boolean(legacyBrandParam) ||
+      Boolean(legacyFeatureParam);
+
+    if (!hasSeoListingRoute) return;
+
+    const nextParams = stripSmartphoneSeoQueryParams(location.search || "");
+    const desiredUrl = buildSmartphoneListingPath({
+      brand: normalizedBrandSlug,
+      feature: normalizedFeature,
+      query: nextParams,
+    });
+    const currentUrl = `${location.pathname}${location.search || ""}`;
+
+    if (desiredUrl !== currentUrl) {
+      navigate(desiredUrl, { replace: true });
+    }
+  }, [
+    location.pathname,
+    location.search,
+    navigate,
+    normalizedBrandSlug,
+    normalizedFeature,
+    routeBrandSlug,
+    routeFeatureSlug,
+    legacyBrandParam,
+    legacyFeatureParam,
+  ]);
+
+  // When route filters change, scroll back to top so the
   // user immediately sees the updated cards.
   useEffect(() => {
     try {
       window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (e) {
+    } catch {
       // ignore scroll errors (SSR / old browsers)
     }
-  }, [feature, listFilter]);
+  }, [normalizedBrandSlug, normalizedFeature, listFilter]);
 
   const { getLogo, getStore, getStoreLogo } = useStoreLogos();
 
@@ -1908,7 +1959,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
   // Brand-based SEO helper
   const filterBrand =
-    Array.isArray(filters?.brand) && filters.brand[0] ? filters.brand[0] : null;
+    normalizedBrandSlug ||
+    (Array.isArray(filters?.brand) && filters.brand[0] ? filters.brand[0] : null);
   const currentBrandObj = (() => {
     const b = filterBrand;
     if (!b) return null;
@@ -1919,8 +1971,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       all.find((br) => {
         if (!br) return false;
         const name = br.name || "";
-        const slug =
-          br.slug || name.toString().toLowerCase().replace(/\s+/g, "-");
+        const slug = normalizeSmartphoneListingSlug(br.slug || name);
         const idMatches =
           typeof br.id === "number"
             ? asNumber !== null && br.id === asNumber
@@ -1928,7 +1979,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
               ? br.id === b || norm(br.id) === norm(b)
               : false;
         return idMatches || slug === norm(b) || norm(name) === norm(b);
-      }) || null
+      }) || {
+        name: toFeatureSeoLabel(b),
+        slug: normalizeSmartphoneListingSlug(b),
+      }
     );
   })();
 
@@ -1953,8 +2007,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     loading,
     filters: contextFilters,
   } = deviceContext || {};
-  const navigate = useNavigate();
-  const location = useLocation();
   const { search } = location;
   const pathname = String(location?.pathname || "").toLowerCase();
   const isSingleSmartphonePath = pathname === "/smartphone";
@@ -1990,16 +2042,19 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     const selected =
       popularFeatures.find((item) => item?.id === normalizedFeature) ||
       SMARTPHONE_FEATURE_CATALOG.find((item) => item?.id === normalizedFeature);
+    const fallbackMeta = getSmartphoneFeatureRouteMeta(normalizedFeature);
 
     const name = String(
-      selected?.name || toFeatureSeoLabel(normalizedFeature),
+      selected?.name || fallbackMeta?.name || toFeatureSeoLabel(normalizedFeature),
     ).trim();
     if (!name) return null;
 
     return {
       id: normalizedFeature,
       name,
-      description: String(selected?.description || "").trim(),
+      description: String(
+        selected?.description || fallbackMeta?.description || "",
+      ).trim(),
     };
   }, [normalizedFeature, popularFeatures]);
 
@@ -2122,7 +2177,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     const qp = new URLSearchParams(search || "");
     return Boolean(
       normalizedFilterSlug ||
-      qp.get("brand") ||
+      normalizedBrandSlug ||
+      normalizedFeature ||
       qp.get("network") ||
       qp.get("ram") ||
       qp.get("processor") ||
@@ -2136,12 +2192,12 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       qp.get("max") ||
       qp.get("max_price"),
     );
-  }, [search, normalizedFilterSlug]);
+  }, [search, normalizedFilterSlug, normalizedBrandSlug, normalizedFeature]);
 
   // Apply query param filters
   useEffect(() => {
     const params = new URLSearchParams(search);
-    const brandParam = params.get("brand");
+    const brandParam = normalizedBrandSlug || null;
     const qParam =
       params.get("q") || params.get("query") || params.get("search") || null;
 
@@ -2197,11 +2253,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         for (const c of candidates) {
           if (!c) continue;
           const name = c.name || (typeof c === "string" ? c : null);
-          const slug =
-            c.slug ||
-            (name || "").toString().toLowerCase().replace(/\s+/g, "-");
+          const slug = normalizeSmartphoneListingSlug(c.slug || name);
           if (
-            slug === paramStr.toString().toLowerCase() ||
+            slug === normalizeSmartphoneListingSlug(paramStr) ||
             (name || "").toString().toLowerCase() ===
               paramStr.toString().toLowerCase()
           ) {
@@ -2212,10 +2266,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
       // Fallback: convert slug-like strings to capitalized words (e.g. "samsung-galaxy" -> "Samsung Galaxy")
       if (paramStr.includes("-")) {
-        return paramStr
-          .split("-")
-          .map((s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s))
-          .join(" ");
+        return toFeatureSeoLabel(paramStr);
       }
 
       return paramStr;
@@ -2266,7 +2317,14 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     if (qParam !== null) {
       setSearchQuery(qParam);
     }
-  }, [search, normalizedFilterSlug]);
+  }, [
+    search,
+    normalizedBrandSlug,
+    normalizedFilterSlug,
+    priceFilter,
+    deviceContext?.brands,
+    brands,
+  ]);
 
   // Sync filters when DeviceContext provides filters
   // Depend only on `contextFilters` so local changes don't trigger an overwrite.
@@ -2476,13 +2534,16 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       setFilters((prev) => ({ ...prev, brand: next }));
 
       try {
-        const params = new URLSearchParams(search);
-        if (next.length > 0) params.set("brand", next[0]);
-        else params.delete("brand");
+        const params = stripSmartphoneSeoQueryParams(search);
         params.delete("sort");
-        const qs = params.toString();
-        const path = `/smartphones${qs ? `?${qs}` : ""}`;
-        navigate(path, { replace: true });
+        navigate(
+          buildSmartphoneListingPath({
+            brand: next[0] || "",
+            feature: normalizedFeature,
+            query: params,
+          }),
+          { replace: true },
+        );
       } catch {
         // ignore
       }
@@ -3084,7 +3145,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
       return true;
     });
-  }, [variantCards, filters, searchQuery, feature]);
+  }, [variantCards, filters, searchQuery, normalizedFeature]);
 
   const parseFirstInt = (val) => {
     if (val === null || val === undefined) return null;
@@ -3355,13 +3416,11 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     setSearchQuery("");
     setBrandFilterQuery("");
     try {
-      const params = new URLSearchParams(search);
+      const params = stripSmartphoneSeoQueryParams(search);
       [
-        "brand",
         "q",
         "query",
         "search",
-        "feature",
         "network",
         "ram",
         "processor",
@@ -3376,9 +3435,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         "max_price",
       ].forEach((key) => params.delete(key));
       params.delete("sort");
-      const qs = params.toString();
-      const path = `/smartphones${qs ? `?${qs}` : ""}`;
-      navigate(path, { replace: true });
+      navigate(buildSmartphoneListingPath({ query: params }), { replace: true });
     } catch {
       // ignore URL update errors
     }
@@ -3442,14 +3499,17 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   };
 
   const setFeatureParam = (featureId) => {
-    const sp = new URLSearchParams(location.search || "");
+    const sp = stripSmartphoneSeoQueryParams(location.search || "");
     if (featureId) trackFeatureClick(featureId);
-    if (featureId) sp.set("feature", featureId);
-    else sp.delete("feature");
     // Feature selection should win over "trending/new" list filters
     sp.delete("filter");
-    const next = sp.toString();
-    navigate(`/smartphones${next ? `?${next}` : ""}`);
+    navigate(
+      buildSmartphoneListingPath({
+        brand: normalizedBrandSlug,
+        feature: featureId || "",
+        query: sp,
+      }),
+    );
   };
 
   const siteOrigin =
@@ -3488,14 +3548,15 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const normalizedSeoTitle = normalizeSeoTitle(seoTitle);
 
   const listSchemaUrl = useMemo(() => {
-    const basePath = location?.pathname ? location.pathname : "/smartphones";
-    const params = new URLSearchParams();
-    if (normalizedFeature) {
-      params.set("feature", normalizedFeature);
-    }
-    const query = params.toString();
-    return `${SITE_ORIGIN}${basePath}${query ? `?${query}` : ""}`;
-  }, [location?.pathname, normalizedFeature]);
+    const basePath =
+      normalizedBrandSlug || normalizedFeature
+        ? buildSmartphoneListingPath({
+            brand: normalizedBrandSlug,
+            feature: normalizedFeature,
+          })
+        : location?.pathname || "/smartphones";
+    return `${SITE_ORIGIN}${basePath}`;
+  }, [location?.pathname, normalizedBrandSlug, normalizedFeature]);
 
   const listSchemaItems = useMemo(() => {
     const items = sortedVariants.slice(0, 20).map((device) => {

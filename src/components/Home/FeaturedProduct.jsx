@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { FaArrowRight, FaChartLine, FaFire, FaRupeeSign } from "react-icons/fa";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
 import { createProductPath } from "../../utils/slugGenerator";
+import { buildSmartphoneFeaturePath } from "../../utils/smartphoneListingRoutes";
 
 const API_BASE = (
   import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in"
@@ -687,7 +688,7 @@ const FeaturedProduct = () => {
   };
 
   const handleFilterClick = (feature) => {
-    navigate(`/smartphones?feature=${feature}`);
+    navigate(buildSmartphoneFeaturePath(feature));
   };
 
   return (

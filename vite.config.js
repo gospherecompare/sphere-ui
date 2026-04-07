@@ -14,6 +14,14 @@ import {
   createWebApplicationSchema,
   createWebPageSchema,
 } from "./src/utils/schemaGenerators.js";
+import {
+  SMARTPHONE_FEATURE_ROUTE_META,
+  buildSmartphoneBrandPath,
+  buildSmartphoneFeaturePath,
+  parseSmartphoneListingPath,
+  getSmartphoneFeatureRouteMeta,
+  toReadableListingLabel,
+} from "./src/utils/smartphoneListingRoutes.js";
 
 const require = createRequire(import.meta.url);
 const vitePrerender = require("vite-plugin-prerender");
@@ -169,6 +177,12 @@ const ensureSmartphoneSeoDetailPath = (path = "") => {
   return seoSlug ? `/smartphones/${seoSlug}` : path;
 };
 
+const canonicalizeSmartphonePath = (path = "") => {
+  const listingRoute = parseSmartphoneListingPath(path);
+  if (listingRoute) return listingRoute.canonicalPath;
+  return ensureSmartphoneSeoDetailPath(path);
+};
+
 const toSeoTextWithoutCommas = (value = "") =>
   String(value || "").replace(/,/g, "");
 
@@ -249,23 +263,27 @@ const toCanonicalPath = (rawPath) => {
     return pathName.replace("/laptop/", "/laptops/");
   }
   if (pathName === "/mobiles") return "/smartphones";
+  const directSmartphoneListing = parseSmartphoneListingPath(pathName);
+  if (directSmartphoneListing) {
+    return directSmartphoneListing.canonicalPath;
+  }
   if (pathName.startsWith("/products/mobiles")) {
-    return ensureSmartphoneSeoDetailPath(
+    return canonicalizeSmartphonePath(
       pathName.replace("/products/mobiles", "/smartphones"),
     );
   }
   if (pathName.startsWith("/devices/mobiles")) {
-    return ensureSmartphoneSeoDetailPath(
+    return canonicalizeSmartphonePath(
       pathName.replace("/devices/mobiles", "/smartphones"),
     );
   }
   if (pathName.startsWith("/products/smartphones")) {
-    return ensureSmartphoneSeoDetailPath(
+    return canonicalizeSmartphonePath(
       pathName.replace("/products/smartphones", "/smartphones"),
     );
   }
   if (pathName.startsWith("/devices/smartphones")) {
-    return ensureSmartphoneSeoDetailPath(
+    return canonicalizeSmartphonePath(
       pathName.replace("/devices/smartphones", "/smartphones"),
     );
   }
@@ -303,7 +321,7 @@ const toCanonicalPath = (rawPath) => {
   if (pathName.startsWith("/devices/networking")) {
     return pathName.replace("/devices/networking", "/networking");
   }
-  return ensureSmartphoneSeoDetailPath(pathName);
+  return canonicalizeSmartphonePath(pathName);
 };
 
 const routesFromSitemap = () => {
@@ -708,10 +726,41 @@ const fetchCompareRoutesFromApi = async () => {
   return [...new Set(routes)];
 };
 
+const fetchSmartphoneListingRoutesFromApi = async () => {
+  const routes = Object.keys(SMARTPHONE_FEATURE_ROUTE_META).map((featureId) =>
+    buildSmartphoneFeaturePath(featureId),
+  );
+  const seen = new Set(routes);
+  const rows = await fetchApiRows(`${API_BASE_URL}/smartphones`, ["smartphones"]);
+  let addedBrandCount = 0;
+
+  for (const row of rows) {
+    const brandName =
+      row?.brand ||
+      row?.brand_name ||
+      row?.basic_info?.brand ||
+      row?.basic_info?.brand_name ||
+      "";
+    const routePath = buildSmartphoneBrandPath(brandName);
+    if (!brandName || routePath === "/smartphones" || seen.has(routePath)) {
+      continue;
+    }
+
+    seen.add(routePath);
+    routes.push(routePath);
+    addedBrandCount += 1;
+
+    if (addedBrandCount >= 160) break;
+  }
+
+  return routes;
+};
+
 const getPrerenderRoutes = async () => {
   const sitemapRoutes = routesFromSitemap();
   const detailRoutes = await fetchDetailRoutesFromApi();
   const compareRoutes = await fetchCompareRoutesFromApi();
+  const smartphoneListingRoutes = await fetchSmartphoneListingRoutesFromApi();
   return [
     ...new Set([
       "/",
@@ -719,6 +768,7 @@ const getPrerenderRoutes = async () => {
       ...sitemapRoutes,
       ...detailRoutes,
       ...compareRoutes,
+      ...smartphoneListingRoutes,
     ]),
   ];
 };
@@ -820,6 +870,13 @@ const resolveSeo = (routePath) => {
   const smartphoneFilterSeoLabel = smartphoneFilterMeta
     ? toSeoTextWithoutCommas(smartphoneFilterMeta.label)
     : "";
+  const smartphoneListingRoute = parseSmartphoneListingPath(canonicalPath);
+  const smartphoneBrandLabel = smartphoneListingRoute?.brandSlug
+    ? toReadableListingLabel(smartphoneListingRoute.brandSlug)
+    : "";
+  const smartphoneFeatureMeta = smartphoneListingRoute?.featureSlug
+    ? getSmartphoneFeatureRouteMeta(smartphoneListingRoute.featureSlug)
+    : null;
   const rules = [
     {
       test: (p) => p === "/",
@@ -853,6 +910,41 @@ const resolveSeo = (routePath) => {
       description:
         "Track upcoming smartphones, expected launch timelines, and preorder-ready devices to plan your next upgrade.",
       keywords: `upcoming smartphones ${CURRENT_YEAR}, preorder phones, expected launch mobiles, new launch phones, smartphones launch calendar india`,
+    },
+    {
+      test: () =>
+        Boolean(smartphoneBrandLabel) && Boolean(smartphoneFeatureMeta?.name),
+      title: `${smartphoneBrandLabel} ${smartphoneFeatureMeta?.name || ""} Smartphones ${CURRENT_YEAR} - Prices Specs & Comparison | Hooks`,
+      description: `Explore ${smartphoneBrandLabel.toLowerCase()} ${String(
+        smartphoneFeatureMeta?.name || "",
+      ).toLowerCase()} smartphones in India with updated prices and detailed specifications covering battery camera display and performance comparisons on Hooks. Discover phones focused on ${String(
+        smartphoneFeatureMeta?.description || smartphoneFeatureMeta?.name || "",
+      ).toLowerCase()}.`,
+      keywords: `${smartphoneBrandLabel.toLowerCase()} ${String(
+        smartphoneFeatureMeta?.name || "",
+      ).toLowerCase()} smartphones, ${smartphoneBrandLabel.toLowerCase()} phones in india, ${String(
+        smartphoneFeatureMeta?.name || "",
+      ).toLowerCase()} phones, mobile price comparison india, compare smartphone specs`,
+    },
+    {
+      test: () => Boolean(smartphoneFeatureMeta?.name),
+      title: `${smartphoneFeatureMeta?.name || ""} Smartphones ${CURRENT_YEAR} - Prices Specs & Comparison | Hooks`,
+      description: `Explore ${String(
+        smartphoneFeatureMeta?.name || "",
+      ).toLowerCase()} smartphones in India with updated prices and detailed specifications covering battery camera display and performance comparisons on Hooks. Discover phones focused on ${String(
+        smartphoneFeatureMeta?.description || smartphoneFeatureMeta?.name || "",
+      ).toLowerCase()}.`,
+      keywords: `${String(
+        smartphoneFeatureMeta?.name || "",
+      ).toLowerCase()} smartphones, best ${String(
+        smartphoneFeatureMeta?.name || "",
+      ).toLowerCase()} phones, mobile price comparison india, compare smartphone specs, ${BUDGET_PHONE_KEYWORDS}`,
+    },
+    {
+      test: () => Boolean(smartphoneBrandLabel),
+      title: `${smartphoneBrandLabel} Smartphones ${CURRENT_YEAR} - Full Specifications Features and Price | Hooks`,
+      description: `Explore ${smartphoneBrandLabel} smartphones on Hooks. Compare models check prices specifications reviews and find the best phone for your needs.`,
+      keywords: `${smartphoneBrandLabel.toLowerCase()} smartphones, ${smartphoneBrandLabel.toLowerCase()} phones in india, ${smartphoneBrandLabel.toLowerCase()} mobile price, compare smartphone specs, mobile price comparison india`,
     },
     {
       test: () => Boolean(smartphoneFilterMeta),
@@ -1357,6 +1449,10 @@ const processRouteHtml = (html, routePath, preloadedApiPayload) => {
 
 const usesSharedPreloadedPayload = (canonicalPath = "/") =>
   PRELOAD_CANONICAL_PATHS.has(canonicalPath) ||
+  Boolean(
+    parseSmartphoneListingPath(canonicalPath)?.canonicalPath &&
+      canonicalPath !== "/smartphones",
+  ) ||
   canonicalPath === "/compare" ||
   canonicalPath.startsWith("/compare/");
 
