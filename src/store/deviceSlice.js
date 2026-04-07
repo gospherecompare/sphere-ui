@@ -1,6 +1,9 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import Cookies from "js-cookie";
 
+const API_BASE_URL = "https://api.apisphere.in/api";
+const WINDOW_PAYLOAD_KEY = "__HOOKS_PRERENDER_DATA__";
+
 // Normalization helpers (copied from previous DeviceContext)
 const toNumber = (v) => {
   if (v == null || v === "") return null;
@@ -201,80 +204,364 @@ const normalizeDate = (d) => {
   return dt.toISOString();
 };
 
+const pickArrayFromBody = (body, preferredKeys = []) => {
+  if (Array.isArray(body)) return body;
+  for (const key of preferredKeys) {
+    if (Array.isArray(body?.[key])) {
+      return body[key];
+    }
+  }
+  if (Array.isArray(body?.data)) return body.data;
+  if (Array.isArray(body?.rows)) return body.rows;
+  return [];
+};
+
+const normalizeSmartphoneCollection = (body, preferredKeys = []) => {
+  const arr = pickArrayFromBody(body, preferredKeys);
+  const publishArr = Array.isArray(body?.publish) ? body.publish : [];
+  const publishMap = {};
+  for (const p of publishArr) {
+    publishMap[p.smartphone_id ?? p.product_id ?? p.id] = p;
+  }
+
+  return (arr || []).map((d) => {
+    const id = d.product_id ?? d.id ?? null;
+    const variants = normalizeVariants(d);
+
+    const aggregatedStorePrices = (variants || []).flatMap(
+      (v) => v.store_prices || [],
+    );
+
+    const priceFromVariants = (variants || []).reduce((acc, v) => {
+      const p =
+        toNumber(v.base_price ?? v.price) ?? v.base_price ?? v.price;
+      if (p == null) return acc;
+      if (acc == null) return p;
+      return Math.min(acc, p);
+    }, null);
+
+    const price = priceFromVariants ?? toNumber(d.price) ?? d.price ?? null;
+
+    return {
+      ...d,
+      id,
+      product_id: d.product_id ?? d.id ?? null,
+      name: d.name ?? d.model ?? null,
+      product_type: d.product_type ?? null,
+      brand: d.brand_name ?? d.brand ?? null,
+      category: d.category ?? null,
+      model: d.model ?? d.name ?? null,
+      published: publishMap[id] ? !!publishMap[id].published : false,
+      sensors: normalizeSensors(d.sensors),
+      colors: normalizeColors(d.colors),
+      images: normalizeImages(d.images),
+      price,
+      store_prices: aggregatedStorePrices,
+      launch_date: normalizeDate(d.launch_date ?? d.created_at),
+      hook_score: toNumber(d.hook_score) ?? null,
+      buyer_intent: toNumber(d.buyer_intent) ?? null,
+      trend_velocity: toNumber(d.trend_velocity) ?? null,
+      freshness: toNumber(d.freshness) ?? null,
+      hook_calculated_at: normalizeDate(d.hook_calculated_at),
+      variants,
+    };
+  });
+};
+
+const normalizeNetworkingCollection = (body, preferredKeys = []) =>
+  pickArrayFromBody(body, preferredKeys);
+
+const normalizeLaptopsCollection = (body, preferredKeys = []) => {
+  const arr = pickArrayFromBody(body, preferredKeys);
+  const toObject = (value) =>
+    value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  const toArray = (value) => (Array.isArray(value) ? value : []);
+
+  return arr.map((row) => {
+    const item =
+      row && typeof row === "object" && !Array.isArray(row) ? row : {};
+    const basicInfo = toObject(item.basic_info);
+    const performance = toObject(item.performance);
+    const display = toObject(item.display);
+    const memory = toObject(item.memory);
+    const storage = toObject(item.storage);
+    const battery = toObject(item.battery);
+    const multimedia = toObject(item.multimedia);
+    const physical = toObject(item.physical);
+    const software = toObject(item.software);
+    const metadata = toObject(item.metadata);
+
+    const sections =
+      item.spec_sections &&
+      typeof item.spec_sections === "object" &&
+      !Array.isArray(item.spec_sections)
+        ? item.spec_sections
+        : {};
+    const metadataConnectivity = toObject(metadata.connectivity);
+    const metadataWarranty = toObject(metadata.warranty);
+
+    const images =
+      Array.isArray(item.images) && item.images.length > 0
+        ? item.images
+        : Array.isArray(metadata.images)
+          ? metadata.images
+          : Array.isArray(sections.images_json)
+            ? sections.images_json
+            : [];
+
+    const variants =
+      Array.isArray(item.variants) && item.variants.length > 0
+        ? item.variants
+        : Array.isArray(metadata.variants)
+          ? metadata.variants
+          : Array.isArray(sections.variants_json)
+            ? sections.variants_json
+            : [];
+
+    const pickFirstObject = (...values) => {
+      for (const v of values) {
+        const obj = toObject(v);
+        if (Object.keys(obj).length) return obj;
+      }
+      return {};
+    };
+
+    const name = item.name || basicInfo.product_name || basicInfo.title || null;
+    const brandName =
+      item.brand_name || basicInfo.brand_name || basicInfo.brand || null;
+    const productType =
+      item.product_type || basicInfo.product_type || "laptop";
+    const model = item.model || basicInfo.model || null;
+    const category = item.category || basicInfo.category || null;
+    const launchDate = item.launch_date || basicInfo.launch_date || null;
+    const colors = toArray(item.colors).length
+      ? toArray(item.colors)
+      : toArray(basicInfo.colors);
+
+    const cpu = pickFirstObject(item.cpu, performance);
+    const connectivity = pickFirstObject(
+      item.connectivity,
+      metadataConnectivity,
+    );
+    const warranty = pickFirstObject(item.warranty, metadataWarranty);
+    const features = Array.isArray(item.features)
+      ? item.features
+      : Array.isArray(multimedia.features)
+        ? multimedia.features
+        : [];
+
+    return {
+      ...item,
+      name,
+      brand_name: brandName,
+      product_type: productType,
+      model,
+      category,
+      launch_date: launchDate,
+      colors,
+      cpu,
+      display: pickFirstObject(item.display, display),
+      memory: pickFirstObject(item.memory, memory),
+      storage: pickFirstObject(item.storage, storage),
+      battery: pickFirstObject(item.battery, battery),
+      connectivity,
+      physical: pickFirstObject(item.physical, physical),
+      software: pickFirstObject(item.software, software),
+      warranty,
+      features,
+      created_at: item.created_at || metadata.created_at || null,
+      rating: item.rating ?? null,
+      images,
+      variants,
+    };
+  });
+};
+
+const normalizeHomeAppliancesCollection = (body, preferredKeys = []) =>
+  pickArrayFromBody(body, preferredKeys);
+
+const normalizeBrandStatus = (s) => {
+  if (typeof s === "boolean") return s;
+  if (s === null || typeof s === "undefined") return false;
+  const str = String(s).toLowerCase();
+  return (
+    str === "true" ||
+    str === "1" ||
+    str === "visible" ||
+    str === "active" ||
+    str === "yes"
+  );
+};
+
+const normalizeBrandItem = (c) => {
+  const id = c?.id ?? c?.brand_id ?? c?._id ?? null;
+  const name = (c?.name ?? c?.brand_name ?? c?.title ?? "") || null;
+  const logo =
+    c?.logo ??
+    c?.image ??
+    c?.logo_url ??
+    c?.thumbnail ??
+    c?.logoUrl ??
+    null;
+  const published_products =
+    toNumber(
+      c?.published_products ??
+        c?.published_products_count ??
+        c?.products_count ??
+        c?.products,
+    ) ??
+    toNumber(c?.published) ??
+    null;
+  const slug =
+    c?.slug ??
+    (name ? String(name).toLowerCase().replace(/\s+/g, "-") : null);
+  const category = c?.category ?? c?.cat ?? c?.type ?? null;
+  const created_at = normalizeDate(c?.created_at ?? c?.createdAt ?? c?.created);
+
+  return {
+    id,
+    name,
+    logo,
+    category,
+    created_at,
+    published_products,
+    status: normalizeBrandStatus(
+      c?.status ?? c?.is_visible ?? c?.published ?? c?.active ?? true,
+    ),
+    slug,
+    raw: c,
+  };
+};
+
+const normalizeBrandsCollection = (body, preferredKeys = []) => {
+  const arr = pickArrayFromBody(body, preferredKeys);
+  const looksLikeCategory = (item) => item && Array.isArray(item.brands);
+  if (arr.length > 0 && looksLikeCategory(arr[0])) {
+    return arr.map((cat) => ({
+      ...cat,
+      status: normalizeBrandStatus(cat.status),
+      brands: Array.isArray(cat.brands)
+        ? cat.brands.map(normalizeBrandItem)
+        : [],
+    }));
+  }
+
+  return arr.map((c) => normalizeBrandItem(c));
+};
+
+const normalizeCategoriesCollection = (body, preferredKeys = []) => {
+  const rows = pickArrayFromBody(body, preferredKeys);
+  return (rows || []).map((c) => ({
+    id: c.id ?? c.category_id ?? c.name ?? null,
+    name:
+      c.name ??
+      c.title ??
+      c.product_type ??
+      String(c.id || "").toLowerCase(),
+    product_type: c.product_type ?? c.type ?? null,
+    description: c.description ?? null,
+    brands: Array.isArray(c.brands) ? c.brands : [],
+    raw: c,
+  }));
+};
+
+const buildPreloadedDeviceState = () => {
+  if (typeof window === "undefined") return {};
+  const payload = window[WINDOW_PAYLOAD_KEY];
+  const byUrl =
+    payload && typeof payload === "object" && payload.byUrl
+      ? payload.byUrl
+      : null;
+
+  if (!byUrl || typeof byUrl !== "object") return {};
+
+  const next = {};
+  const readBody = (url) =>
+    Object.prototype.hasOwnProperty.call(byUrl, url) ? byUrl[url] : undefined;
+
+  try {
+    const smartphoneBody = readBody(`${API_BASE_URL}/smartphones`);
+    if (typeof smartphoneBody !== "undefined") {
+      const smartphones = normalizeSmartphoneCollection(smartphoneBody, [
+        "new",
+        "smartphones",
+      ]);
+      next.smartphone = smartphones;
+      next.smartphoneAll = smartphones;
+      next.loaded = true;
+    }
+  } catch {
+    // Ignore malformed preloaded smartphone payloads.
+  }
+
+  try {
+    const networkingBody = readBody(`${API_BASE_URL}/networking`);
+    if (typeof networkingBody !== "undefined") {
+      next.networking = normalizeNetworkingCollection(networkingBody, [
+        "networking",
+      ]);
+      next.networkingLoaded = true;
+    }
+  } catch {
+    // Ignore malformed preloaded networking payloads.
+  }
+
+  try {
+    const laptopBody = readBody(`${API_BASE_URL}/laptops`);
+    if (typeof laptopBody !== "undefined") {
+      next.laptops = normalizeLaptopsCollection(laptopBody, ["new", "laptops"]);
+      next.laptopsLoaded = true;
+    }
+  } catch {
+    // Ignore malformed preloaded laptop payloads.
+  }
+
+  try {
+    const tvBody = readBody(`${API_BASE_URL}/tvs`);
+    if (typeof tvBody !== "undefined") {
+      next.homeAppliances = normalizeHomeAppliancesCollection(tvBody, ["tvs"]);
+      next.homeAppliancesLoaded = true;
+    }
+  } catch {
+    // Ignore malformed preloaded TV payloads.
+  }
+
+  try {
+    const brandBody = readBody(`${API_BASE_URL}/brand`);
+    if (typeof brandBody !== "undefined") {
+      next.brands = normalizeBrandsCollection(brandBody, ["brands"]);
+      next.brandsLoaded = true;
+    }
+  } catch {
+    // Ignore malformed preloaded brand payloads.
+  }
+
+  try {
+    const categoryBody = readBody(`${API_BASE_URL}/category`);
+    if (typeof categoryBody !== "undefined") {
+      next.categories = normalizeCategoriesCollection(categoryBody, [
+        "categories",
+      ]);
+      next.categoriesLoaded = true;
+    }
+  } catch {
+    // Ignore malformed preloaded category payloads.
+  }
+
+  return next;
+};
+
 export const fetchSmartphones = createAsyncThunk(
   "device/fetchSmartphones",
   // Accept an optional options object: { feature }
   async (opts = {}, { rejectWithValue }) => {
     try {
-      const res = await fetch("https://api.apisphere.in/api/smartphones", {
+      const res = await fetch(`${API_BASE_URL}/smartphones`, {
         cache: "no-store",
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-
-      const arr = Array.isArray(data)
-        ? data
-        : Array.isArray(data.new)
-          ? data.new
-        : Array.isArray(data.smartphones)
-          ? data.smartphones
-          : Array.isArray(data.data)
-            ? data.data
-            : Array.isArray(data.rows)
-              ? data.rows
-              : [];
-
-      const publishArr = Array.isArray(data.publish) ? data.publish : [];
-      const publishMap = {};
-      for (const p of publishArr)
-        publishMap[p.smartphone_id ?? p.product_id ?? p.id] = p;
-
-      const mapped = (arr || []).map((d) => {
-        const id = d.product_id ?? d.id ?? null;
-        const variants = normalizeVariants(d);
-
-        // aggregate store prices from variants (variants already normalize their store_prices)
-        const aggregatedStorePrices = (variants || []).flatMap(
-          (v) => v.store_prices || [],
-        );
-
-        // derive a numeric price (lowest variant price if present, else top-level price)
-        const priceFromVariants = (variants || []).reduce((acc, v) => {
-          const p =
-            toNumber(v.base_price ?? v.price) ?? v.base_price ?? v.price;
-          if (p == null) return acc;
-          if (acc == null) return p;
-          return Math.min(acc, p);
-        }, null);
-
-        const price = priceFromVariants ?? toNumber(d.price) ?? d.price ?? null;
-
-        return {
-          ...d,
-          id,
-          product_id: d.product_id ?? d.id ?? null,
-          name: d.name ?? d.model ?? null,
-          product_type: d.product_type ?? null,
-          brand: d.brand_name ?? d.brand ?? null,
-          category: d.category ?? null,
-          model: d.model ?? d.name ?? null,
-          published: publishMap[id] ? !!publishMap[id].published : false,
-          sensors: normalizeSensors(d.sensors),
-          colors: normalizeColors(d.colors),
-          images: normalizeImages(d.images),
-          price,
-          store_prices: aggregatedStorePrices,
-          launch_date: normalizeDate(d.launch_date ?? d.created_at),
-          hook_score: toNumber(d.hook_score) ?? null,
-          buyer_intent: toNumber(d.buyer_intent) ?? null,
-          trend_velocity: toNumber(d.trend_velocity) ?? null,
-          freshness: toNumber(d.freshness) ?? null,
-          hook_calculated_at: normalizeDate(d.hook_calculated_at),
-          variants,
-        };
-      });
-
-      return mapped;
+      return normalizeSmartphoneCollection(data, ["new", "smartphones"]);
     } catch (err) {
       return rejectWithValue(err.message || String(err));
     }
@@ -293,66 +580,12 @@ export const fetchTrendingSmartphones = createAsyncThunk(
   "device/fetchTrendingSmartphones",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch(
-        "https://api.apisphere.in/api/public/trending/smartphones",
-        { cache: "no-store" },
-      );
+      const res = await fetch(`${API_BASE_URL}/public/trending/smartphones`, {
+        cache: "no-store",
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      const arr = Array.isArray(data)
-        ? data
-        : Array.isArray(data.trending)
-          ? data.trending
-        : Array.isArray(data.smartphones)
-          ? data.smartphones
-          : Array.isArray(data.data)
-            ? data.data
-            : Array.isArray(data.rows)
-              ? data.rows
-              : [];
-
-      const publishArr = Array.isArray(data.publish) ? data.publish : [];
-      const publishMap = {};
-      for (const p of publishArr)
-        publishMap[p.smartphone_id ?? p.product_id ?? p.id] = p;
-
-      const mapped = (arr || []).map((d) => {
-        const id = d.product_id ?? d.id ?? null;
-        const variants = normalizeVariants(d);
-
-        let storePrices = (variants || []).flatMap((v) => v.store_prices || []);
-
-        const priceFromVariants = (variants || []).reduce((acc, v) => {
-          const p =
-            toNumber(v.base_price ?? v.price) ?? v.base_price ?? v.price;
-          if (p == null) return acc;
-          if (acc == null) return p;
-          return Math.min(acc, p);
-        }, null);
-
-        const price = priceFromVariants ?? toNumber(d.price) ?? d.price ?? null;
-
-        return {
-          ...d,
-          id,
-          product_id: d.product_id ?? d.id ?? null,
-          name: d.name ?? d.model ?? null,
-          product_type: d.product_type ?? null,
-          brand: d.brand_name ?? d.brand ?? null,
-          category: d.category ?? null,
-          model: d.model ?? d.name ?? null,
-          published: publishMap[id] ? !!publishMap[id].published : false,
-          sensors: normalizeSensors(d.sensors),
-          colors: normalizeColors(d.colors),
-          images: normalizeImages(d.images),
-          price,
-          store_prices: storePrices,
-          launch_date: normalizeDate(d.launch_date ?? d.created_at),
-          variants,
-        };
-      });
-
-      return mapped;
+      return normalizeSmartphoneCollection(data, ["trending", "smartphones"]);
     } catch (err) {
       return rejectWithValue(err.message || String(err));
     }
@@ -364,63 +597,12 @@ export const fetchNewLaunchSmartphones = createAsyncThunk(
   "device/fetchNewLaunchSmartphones",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch(
-        "https://api.apisphere.in/api/public/new/smartphones",
-        { cache: "no-store" },
-      );
+      const res = await fetch(`${API_BASE_URL}/public/new/smartphones`, {
+        cache: "no-store",
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      const arr = Array.isArray(data)
-        ? data
-        : Array.isArray(data.smartphones)
-          ? data.smartphones
-          : Array.isArray(data.data)
-            ? data.data
-            : Array.isArray(data.rows)
-              ? data.rows
-              : [];
-
-      const publishArr = Array.isArray(data.publish) ? data.publish : [];
-      const publishMap = {};
-      for (const p of publishArr)
-        publishMap[p.smartphone_id ?? p.product_id ?? p.id] = p;
-
-      const mapped = (arr || []).map((d) => {
-        const id = d.product_id ?? d.id ?? null;
-        const variants = normalizeVariants(d);
-        let storePrices = (variants || []).flatMap((v) => v.store_prices || []);
-
-        const priceFromVariants = (variants || []).reduce((acc, v) => {
-          const p =
-            toNumber(v.base_price ?? v.price) ?? v.base_price ?? v.price;
-          if (p == null) return acc;
-          if (acc == null) return p;
-          return Math.min(acc, p);
-        }, null);
-
-        const price = priceFromVariants ?? toNumber(d.price) ?? d.price ?? null;
-
-        return {
-          ...d,
-          id,
-          product_id: d.product_id ?? d.id ?? null,
-          name: d.name ?? d.model ?? null,
-          product_type: d.product_type ?? null,
-          brand: d.brand_name ?? d.brand ?? null,
-          category: d.category ?? null,
-          model: d.model ?? d.name ?? null,
-          published: publishMap[id] ? !!publishMap[id].published : false,
-          sensors: normalizeSensors(d.sensors),
-          colors: normalizeColors(d.colors),
-          images: normalizeImages(d.images),
-          price,
-          store_prices: storePrices,
-          launch_date: normalizeDate(d.launch_date ?? d.created_at),
-          variants,
-        };
-      });
-
-      return mapped;
+      return normalizeSmartphoneCollection(data, ["smartphones", "new"]);
     } catch (err) {
       return rejectWithValue(err.message || String(err));
     }
@@ -431,21 +613,12 @@ export const fetchNetworking = createAsyncThunk(
   "device/fetchNetworking",
   async (opts = {}, { rejectWithValue }) => {
     try {
-      const res = await fetch("https://api.apisphere.in/api/networking", {
+      const res = await fetch(`${API_BASE_URL}/networking`, {
         cache: "no-store",
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
-      const arr = Array.isArray(body)
-        ? body
-        : Array.isArray(body.networking)
-          ? body.networking
-          : Array.isArray(body.data)
-            ? body.data
-            : Array.isArray(body.rows)
-              ? body.rows
-              : [];
-      return arr;
+      return normalizeNetworkingCollection(body, ["networking"]);
     } catch (err) {
       return rejectWithValue(err.message || String(err));
     }
@@ -519,128 +692,12 @@ export const fetchLaptops = createAsyncThunk(
   "device/fetchLaptops",
   async (opts = {}, { rejectWithValue }) => {
     try {
-      const res = await fetch("https://api.apisphere.in/api/laptops", {
+      const res = await fetch(`${API_BASE_URL}/laptops`, {
         cache: "no-store",
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
-      const arr = Array.isArray(body)
-        ? body
-        : Array.isArray(body.new)
-          ? body.new
-        : Array.isArray(body.laptops)
-          ? body.laptops
-          : Array.isArray(body.data)
-            ? body.data
-            : Array.isArray(body.rows)
-              ? body.rows
-              : [];
-      const toObject = (value) =>
-        value && typeof value === "object" && !Array.isArray(value)
-          ? value
-          : {};
-      const toArray = (value) => (Array.isArray(value) ? value : []);
-
-      const normalized = arr.map((row) => {
-        const item =
-          row && typeof row === "object" && !Array.isArray(row) ? row : {};
-        const basicInfo = toObject(item.basic_info);
-        const performance = toObject(item.performance);
-        const display = toObject(item.display);
-        const memory = toObject(item.memory);
-        const storage = toObject(item.storage);
-        const battery = toObject(item.battery);
-        const multimedia = toObject(item.multimedia);
-        const physical = toObject(item.physical);
-        const software = toObject(item.software);
-        const metadata = toObject(item.metadata);
-
-        const sections =
-          item.spec_sections &&
-          typeof item.spec_sections === "object" &&
-          !Array.isArray(item.spec_sections)
-            ? item.spec_sections
-            : {};
-        const metadataConnectivity = toObject(metadata.connectivity);
-        const metadataWarranty = toObject(metadata.warranty);
-
-        const images =
-          Array.isArray(item.images) && item.images.length > 0
-            ? item.images
-            : Array.isArray(metadata.images)
-              ? metadata.images
-              : Array.isArray(sections.images_json)
-                ? sections.images_json
-                : [];
-
-        const variants =
-          Array.isArray(item.variants) && item.variants.length > 0
-            ? item.variants
-            : Array.isArray(metadata.variants)
-              ? metadata.variants
-              : Array.isArray(sections.variants_json)
-                ? sections.variants_json
-                : [];
-
-        const pickFirstObject = (...values) => {
-          for (const v of values) {
-            const obj = toObject(v);
-            if (Object.keys(obj).length) return obj;
-          }
-          return {};
-        };
-
-        const name =
-          item.name || basicInfo.product_name || basicInfo.title || null;
-        const brandName =
-          item.brand_name || basicInfo.brand_name || basicInfo.brand || null;
-        const productType =
-          item.product_type || basicInfo.product_type || "laptop";
-        const model = item.model || basicInfo.model || null;
-        const category = item.category || basicInfo.category || null;
-        const launchDate = item.launch_date || basicInfo.launch_date || null;
-        const colors = toArray(item.colors).length
-          ? toArray(item.colors)
-          : toArray(basicInfo.colors);
-
-        const cpu = pickFirstObject(item.cpu, performance);
-        const connectivity = pickFirstObject(
-          item.connectivity,
-          metadataConnectivity,
-        );
-        const warranty = pickFirstObject(item.warranty, metadataWarranty);
-        const features = Array.isArray(item.features)
-          ? item.features
-          : Array.isArray(multimedia.features)
-            ? multimedia.features
-            : [];
-
-        return {
-          ...item,
-          name,
-          brand_name: brandName,
-          product_type: productType,
-          model,
-          category,
-          launch_date: launchDate,
-          colors,
-          cpu,
-          display: pickFirstObject(item.display, display),
-          memory: pickFirstObject(item.memory, memory),
-          storage: pickFirstObject(item.storage, storage),
-          battery: pickFirstObject(item.battery, battery),
-          connectivity,
-          physical: pickFirstObject(item.physical, physical),
-          software: pickFirstObject(item.software, software),
-          warranty,
-          features,
-          created_at: item.created_at || metadata.created_at || null,
-          rating: item.rating ?? null,
-          images,
-          variants,
-        };
-      });
-      return normalized;
+      return normalizeLaptopsCollection(body, ["new", "laptops"]);
     } catch (err) {
       return rejectWithValue(err.message || String(err));
     }
@@ -714,21 +771,12 @@ export const fetchHomeAppliances = createAsyncThunk(
   "device/fetchHomeAppliances",
   async (opts = {}, { rejectWithValue }) => {
     try {
-      const res = await fetch("https://api.apisphere.in/api/tvs", {
+      const res = await fetch(`${API_BASE_URL}/tvs`, {
         cache: "no-store",
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
-      const arr = Array.isArray(body)
-        ? body
-        : Array.isArray(body.tvs)
-          ? body.tvs
-          : Array.isArray(body.data)
-            ? body.data
-            : Array.isArray(body.rows)
-              ? body.rows
-              : [];
-      return arr;
+      return normalizeHomeAppliancesCollection(body, ["tvs"]);
     } catch (err) {
       return rejectWithValue(err.message || String(err));
     }
@@ -802,91 +850,12 @@ export const fetchBrands = createAsyncThunk(
   "device/fetchBrands",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch("https://api.apisphere.in/api/brand", {
+      const res = await fetch(`${API_BASE_URL}/brand`, {
         cache: "no-store",
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      const arr = Array.isArray(data)
-        ? data
-        : Array.isArray(data.brands)
-          ? data.brands
-        : Array.isArray(data.data)
-          ? data.data
-          : Array.isArray(data.rows)
-            ? data.rows
-            : [];
-      const normalizeStatus = (s) => {
-        if (typeof s === "boolean") return s;
-        if (s === null || typeof s === "undefined") return false;
-        const str = String(s).toLowerCase();
-        return (
-          str === "true" ||
-          str === "1" ||
-          str === "visible" ||
-          str === "active" ||
-          str === "yes"
-        );
-      };
-
-      // Normalize brand objects from various possible API shapes
-      const normalizeBrand = (c) => {
-        const id = c?.id ?? c?.brand_id ?? c?._id ?? null;
-        const name = (c?.name ?? c?.brand_name ?? c?.title ?? "") || null;
-        const logo =
-          c?.logo ??
-          c?.image ??
-          c?.logo_url ??
-          c?.thumbnail ??
-          c?.logoUrl ??
-          null;
-        const published_products =
-          toNumber(
-            c?.published_products ??
-              c?.published_products_count ??
-              c?.products_count ??
-              c?.products,
-          ) ??
-          toNumber(c?.published) ??
-          null;
-        const slug =
-          c?.slug ??
-          (name ? String(name).toLowerCase().replace(/\s+/g, "-") : null);
-        const category = c?.category ?? c?.cat ?? c?.type ?? null;
-        const created_at = normalizeDate(
-          c?.created_at ?? c?.createdAt ?? c?.created,
-        );
-
-        return {
-          id,
-          name,
-          logo,
-          category,
-          created_at,
-          published_products,
-          status: normalizeStatus(
-            c?.status ?? c?.is_visible ?? c?.published ?? c?.active ?? true,
-          ),
-          slug,
-          raw: c,
-        };
-      };
-
-      // If API returned categories that contain `brands` arrays, preserve that structure
-      const looksLikeCategory = (item) => item && Array.isArray(item.brands);
-      if (arr.length > 0 && looksLikeCategory(arr[0])) {
-        return arr.map((cat) => ({
-          ...cat,
-          status: normalizeStatus(cat.status),
-          brands: Array.isArray(cat.brands)
-            ? cat.brands.map(normalizeBrand)
-            : [],
-        }));
-      }
-
-      // Otherwise treat the response as a flat list of brand objects
-      const normalized = arr.map((c) => normalizeBrand(c));
-      return normalized;
+      return normalizeBrandsCollection(data, ["brands"]);
     } catch (err) {
       return rejectWithValue(err.message || String(err));
     }
@@ -905,7 +874,7 @@ export const fetchCategories = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       // Use the public categories endpoint (no auth) to avoid 401 on public site
-      const res = await fetch("https://api.apisphere.in/api/category", {
+      const res = await fetch(`${API_BASE_URL}/category`, {
         method: "GET",
         cache: "no-store",
         headers: {
@@ -914,29 +883,7 @@ export const fetchCategories = createAsyncThunk(
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
-
-      let rows = [];
-      if (Array.isArray(body)) rows = body;
-      else if (Array.isArray(body?.data)) rows = body.data;
-      else if (Array.isArray(body?.categories)) rows = body.categories;
-      else if (Array.isArray(body?.rows)) rows = body.rows;
-      else rows = [];
-
-      // Normalize to a simple category shape
-      const normalized = (rows || []).map((c) => ({
-        id: c.id ?? c.category_id ?? c.name ?? null,
-        name:
-          c.name ??
-          c.title ??
-          c.product_type ??
-          String(c.id || "").toLowerCase(),
-        product_type: c.product_type ?? c.type ?? null,
-        description: c.description ?? null,
-        brands: Array.isArray(c.brands) ? c.brands : [],
-        raw: c,
-      }));
-
-      return normalized;
+      return normalizeCategoriesCollection(body, ["categories"]);
     } catch (err) {
       return rejectWithValue(err.message || String(err));
     }
@@ -1040,6 +987,7 @@ const initialState = {
   laptops: [],
   laptopsLoading: false,
   laptopsLoaded: false,
+  ...buildPreloadedDeviceState(),
 };
 
 const deviceSlice = createSlice({

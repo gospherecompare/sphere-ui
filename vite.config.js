@@ -46,6 +46,7 @@ const PRELOAD_CANONICAL_PATHS = new Set([
   "/laptops",
   "/tvs",
   "/networking",
+  "/compare",
   "/trending/smartphones",
   "/trending/laptops",
   "/trending/tvs",
@@ -69,6 +70,7 @@ const PRELOAD_API_ENDPOINTS = [
   `${API_BASE_URL}/public/trending/tvs?limit=120`,
   `${API_BASE_URL}/public/trending/networking?limit=15`,
   `${API_BASE_URL}/public/trending/networking?limit=120`,
+  `${API_BASE_URL}/public/trending/all`,
   `${API_BASE_URL}/public/trending/most-compared`,
   `${API_BASE_URL}/public/popular-features?deviceType=smartphone&days=7&limit=16`,
   `${API_BASE_URL}/public/popular-features?deviceType=laptop&days=7&limit=16`,
@@ -450,6 +452,97 @@ const fetchPreloadedApiPayload = async () => {
     if (body != null) byUrl[endpoint] = sanitizePreloadValue(body);
   }
   if (Object.keys(byUrl).length === 0) return null;
+  return {
+    version: 1,
+    generatedAt: new Date().toISOString(),
+    apiOrigin: API_ORIGIN,
+    byUrl,
+  };
+};
+
+const toPositiveInteger = (value) => {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+};
+
+const resolveProductId = (row) => {
+  if (!row || typeof row !== "object") return null;
+  return (
+    toPositiveInteger(row.product_id) ||
+    toPositiveInteger(row.productId) ||
+    toPositiveInteger(row.id) ||
+    toPositiveInteger(row?.basic_info?.id)
+  );
+};
+
+const buildDetailWidgetContextMap = (preloadedApiPayload) => {
+  const map = new Map();
+  const smartphoneRows = getPreloadedRows(
+    preloadedApiPayload,
+    `${API_BASE_URL}/smartphones`,
+    ["smartphones"],
+  );
+
+  for (const row of smartphoneRows) {
+    const productId = resolveProductId(row);
+    const rawName = row?.name || row?.model || row?.product_name;
+    const slug = toSmartphoneSeoSlug(toSlug(rawName));
+    if (!productId || !slug) continue;
+    map.set(`/smartphones/${slug}`, {
+      productId,
+      entityType: "smartphones",
+    });
+  }
+
+  return map;
+};
+
+const mergePreloadedPayloads = (...payloads) => {
+  const validPayloads = payloads.filter(
+    (payload) =>
+      payload &&
+      payload.byUrl &&
+      typeof payload.byUrl === "object" &&
+      Object.keys(payload.byUrl).length > 0,
+  );
+
+  if (!validPayloads.length) return null;
+
+  return {
+    version: 1,
+    generatedAt: new Date().toISOString(),
+    apiOrigin: API_ORIGIN,
+    byUrl: Object.assign({}, ...validPayloads.map((payload) => payload.byUrl)),
+  };
+};
+
+const fetchRouteSpecificPreloadedPayload = async (
+  routePath,
+  detailWidgetContextMap,
+) => {
+  const canonicalPath = toCanonicalPath(normalizePath(routePath || "/"));
+  const context = detailWidgetContextMap.get(canonicalPath);
+  if (!context || context.entityType !== "smartphones") return null;
+
+  const encodedId = encodeURIComponent(context.productId);
+  const encodedEntityType = encodeURIComponent(context.entityType);
+  const endpoints = [
+    `${API_BASE_URL}/public/product/${encodedId}/discovery?entity_type=${encodedEntityType}`,
+    `${API_BASE_URL}/public/product/${encodedId}/competitors?entity_type=${encodedEntityType}`,
+  ];
+
+  const byUrl = {};
+  await Promise.all(
+    endpoints.map(async (endpoint) => {
+      const body = await fetchApiBody(endpoint);
+      if (body != null) {
+        byUrl[endpoint] = sanitizePreloadValue(body);
+      }
+    }),
+  );
+
+  if (!Object.keys(byUrl).length) return null;
+
   return {
     version: 1,
     generatedAt: new Date().toISOString(),
@@ -1249,19 +1342,49 @@ const processRouteHtml = (html, routePath, preloadedApiPayload) => {
     preloadedApiPayload,
   );
 
-  if (PRELOAD_CANONICAL_PATHS.has(toCanonicalPath(normalizedRoute))) {
+  if (preloadedApiPayload) {
     nextHtml = injectPreloadedPayload(nextHtml, preloadedApiPayload);
   }
 
   return nextHtml;
 };
 
+const usesSharedPreloadedPayload = (canonicalPath = "/") =>
+  PRELOAD_CANONICAL_PATHS.has(canonicalPath) ||
+  canonicalPath === "/compare" ||
+  canonicalPath.startsWith("/compare/");
+
 export default defineConfig(async () => {
   const prerenderRoutes = await getPrerenderRoutes();
   syncPublicSitemap(prerenderRoutes);
-  const preloadedApiPayload = await fetchPreloadedApiPayload();
-  const processHtml = (html, routePath) =>
-    processRouteHtml(html, routePath, preloadedApiPayload);
+  const sharedPreloadedApiPayload = await fetchPreloadedApiPayload();
+  const detailWidgetContextMap = buildDetailWidgetContextMap(
+    sharedPreloadedApiPayload,
+  );
+  const routePayloadCache = new Map();
+  const getPreloadedPayloadForRoute = async (routePath) => {
+    const canonicalPath = toCanonicalPath(normalizePath(routePath || "/"));
+    if (routePayloadCache.has(canonicalPath)) {
+      return routePayloadCache.get(canonicalPath);
+    }
+
+    const sharedPayload = usesSharedPreloadedPayload(canonicalPath)
+      ? sharedPreloadedApiPayload
+      : null;
+    const routeSpecificPayload = await fetchRouteSpecificPreloadedPayload(
+      canonicalPath,
+      detailWidgetContextMap,
+    );
+    const mergedPayload = mergePreloadedPayloads(
+      sharedPayload,
+      routeSpecificPayload,
+    );
+
+    routePayloadCache.set(canonicalPath, mergedPayload);
+    return mergedPayload;
+  };
+  const processHtml = (html, routePath, payload) =>
+    processRouteHtml(html, routePath, payload);
 
   return {
     plugins: [
@@ -1270,11 +1393,12 @@ export default defineConfig(async () => {
       {
         name: "hooks-route-seo-dev",
         apply: "serve",
-        transformIndexHtml(html, ctx) {
+        async transformIndexHtml(html, ctx) {
           const rawPath = String(ctx?.path || ctx?.url || "/")
             .split("?")[0]
             .split("#")[0];
-          return processHtml(html, rawPath || "/");
+          const payload = await getPreloadedPayloadForRoute(rawPath || "/");
+          return processHtml(html, rawPath || "/", payload);
         },
       },
       vitePrerender({
@@ -1291,11 +1415,16 @@ export default defineConfig(async () => {
             }
           },
         }),
-        postProcess(renderedRoute) {
+        async postProcess(renderedRoute) {
           renderedRoute.route =
             renderedRoute.originalRoute || renderedRoute.route;
           const routePath = renderedRoute.route || "/";
-          renderedRoute.html = processHtml(renderedRoute.html || "", routePath);
+          const payload = await getPreloadedPayloadForRoute(routePath);
+          renderedRoute.html = processHtml(
+            renderedRoute.html || "",
+            routePath,
+            payload,
+          );
           return renderedRoute;
         },
       }),
