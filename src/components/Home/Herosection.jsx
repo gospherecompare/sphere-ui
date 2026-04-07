@@ -910,7 +910,7 @@ const HeroSection = () => {
 
           <div className="mt-8">
             {featuredDevices.length > 0 ? (
-              <div className="grid grid-flow-col auto-cols-[82%] gap-4 overflow-x-auto pb-2 snap-x snap-mandatory sm:grid-flow-row sm:auto-cols-auto sm:overflow-visible sm:pb-0 sm:grid-cols-2 lg:grid-cols-5">
+              <div className="no-scrollbar grid grid-flow-col auto-cols-[minmax(14.5rem,72vw)] gap-4 overflow-x-auto pb-2 snap-x snap-mandatory sm:grid-flow-row sm:auto-cols-auto sm:overflow-visible sm:pb-0 sm:grid-cols-2 lg:grid-cols-5">
                 {featuredDevices.map((phone) => (
                   <button
                     key={phone.name}
@@ -932,12 +932,12 @@ const HeroSection = () => {
                       </div>
                     )}
 
-                    <div className="flex h-50 w-full items-center justify-center overflow-hidden rounded-lg bg-white/10 ring-1 ring-white/15">
+                    <div className="flex h-50 w-full items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-white/20 via-white/10 to-cyan-300/5 ring-1 ring-white/15">
                       {phone.image ? (
                         <img
                           src={phone.image}
                           alt={phone.name}
-                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                          className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-105"
                           loading="lazy"
                           onError={(e) => {
                             e.currentTarget.style.display = "none";

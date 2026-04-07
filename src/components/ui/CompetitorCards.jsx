@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   FaArrowDown,
   FaArrowUp,
@@ -572,6 +572,11 @@ const CompetitorCards = ({
   const [payload, setPayload] = useState(null);
   const [expandAll, setExpandAll] = useState(false);
   const [collapsedMap, setCollapsedMap] = useState({});
+  const railRef = useRef(null);
+  const [railControls, setRailControls] = useState({
+    canScrollLeft: false,
+    canScrollRight: false,
+  });
 
   useEffect(() => {
     const pid = Number(productId);
@@ -728,11 +733,54 @@ const CompetitorCards = ({
     productId,
     recentLaunchesLimit,
   ]);
+  const hasRecentLaunches = showRecentLaunches && recentLaunchRows.length > 0;
 
   useEffect(() => {
     setExpandAll(false);
     setCollapsedMap({});
   }, [productId, limitedCompetitors.length]);
+
+  useEffect(() => {
+    const updateRailControls = () => {
+      const node = railRef.current;
+      if (!node) {
+        setRailControls({
+          canScrollLeft: false,
+          canScrollRight: false,
+        });
+        return;
+      }
+
+      const maxScrollLeft = Math.max(0, node.scrollWidth - node.clientWidth);
+      const threshold = 4;
+
+      setRailControls({
+        canScrollLeft: node.scrollLeft > threshold,
+        canScrollRight: maxScrollLeft - node.scrollLeft > threshold,
+      });
+    };
+
+    const node = railRef.current;
+    if (!node) {
+      setRailControls({
+        canScrollLeft: false,
+        canScrollRight: false,
+      });
+      return undefined;
+    }
+
+    const frameId = window.requestAnimationFrame(updateRailControls);
+    const handleResize = () => updateRailControls();
+
+    node.addEventListener("scroll", updateRailControls, { passive: true });
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      node.removeEventListener("scroll", updateRailControls);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [limitedCompetitors.length, hasRecentLaunches]);
 
   const handleCompare = (competitor) => {
     if (compareDisabled) return;
@@ -779,6 +827,17 @@ const CompetitorCards = ({
     }));
   };
 
+  const scrollRail = (direction) => {
+    const node = railRef.current;
+    if (!node) return;
+
+    const step = Math.max(node.clientWidth * 0.82, 260);
+    node.scrollBy({
+      left: direction * step,
+      behavior: "smooth",
+    });
+  };
+
   if (loading && limitedCompetitors.length === 0) {
     return (
       <div className="w-full border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
@@ -817,7 +876,8 @@ const CompetitorCards = ({
     }
     return { prefix: text, highlight: "" };
   })();
-  const hasRecentLaunches = showRecentLaunches && recentLaunchRows.length > 0;
+  const showRailControls =
+    railControls.canScrollLeft || railControls.canScrollRight;
 
   return (
     <div className={`w-full p-3 sm:p-4 font-sans ${className}`}>
@@ -851,7 +911,32 @@ const CompetitorCards = ({
           }`}
         >
           <div className="min-w-0">
-            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+            {showRailControls ? (
+              <div className="mb-3 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => scrollRail(-1)}
+                  disabled={!railControls.canScrollLeft}
+                  aria-label="Scroll competitors left"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:border-blue-200 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-slate-200 disabled:hover:text-slate-500"
+                >
+                  <FaChevronRight className="rotate-180 text-sm" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollRail(1)}
+                  disabled={!railControls.canScrollRight}
+                  aria-label="Scroll competitors right"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:border-blue-200 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-slate-200 disabled:hover:text-slate-500"
+                >
+                  <FaChevronRight className="text-sm" />
+                </button>
+              </div>
+            ) : null}
+            <div
+              ref={railRef}
+              className="no-scrollbar flex gap-3 overflow-x-auto pb-1 scroll-smooth"
+            >
               {limitedCompetitors.map((competitor) => (
                 <CompetitorCard
                   key={String(competitor.id)}

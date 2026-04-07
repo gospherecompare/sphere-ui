@@ -388,10 +388,10 @@ const createInitialForm = () => ({
 });
 
 const INPUT_CLASS =
-  "w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
+  "w-full rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
 
 const LABEL_CLASS =
-  "mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-slate-600";
+  "mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-600";
 
 const hasValue = (value) => String(value ?? "").trim().length > 0;
 
@@ -421,9 +421,7 @@ const isValidPhone = (value) => {
 
 const isValidYear = (value) => {
   const parsed = Number(value);
-  return (
-    Number.isInteger(parsed) && parsed >= 1980 && parsed <= currentYear
-  );
+  return Number.isInteger(parsed) && parsed >= 1980 && parsed <= currentYear;
 };
 
 const parseMarksValue = (value) => {
@@ -535,14 +533,23 @@ const QuestionInput = ({ question, name, className = "", error, ...props }) => (
       {...props}
     />
     {error ? (
-      <p id={`${name}-error`} className="mt-1 text-xs font-medium text-rose-600">
+      <p
+        id={`${name}-error`}
+        className="mt-1 text-xs font-medium text-rose-600"
+      >
         {error}
       </p>
     ) : null}
   </div>
 );
 
-const QuestionTextArea = ({ question, name, className = "", error, ...props }) => (
+const QuestionTextArea = ({
+  question,
+  name,
+  className = "",
+  error,
+  ...props
+}) => (
   <div>
     <label htmlFor={name} className={LABEL_CLASS}>
       {question}
@@ -556,7 +563,10 @@ const QuestionTextArea = ({ question, name, className = "", error, ...props }) =
       {...props}
     />
     {error ? (
-      <p id={`${name}-error`} className="mt-1 text-xs font-medium text-rose-600">
+      <p
+        id={`${name}-error`}
+        className="mt-1 text-xs font-medium text-rose-600"
+      >
         {error}
       </p>
     ) : null}
@@ -658,14 +668,14 @@ const QuestionSelect = ({
         {isOpen ? (
           <ul
             role="listbox"
-            className="absolute z-30 mt-2 max-h-64 w-full overflow-y-auto rounded-xl border border-slate-200/80 bg-white/95 p-2 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.45)] ring-1 ring-slate-100 backdrop-blur"
+            className="absolute z-30 mt-2 max-h-64 w-full overflow-y-auto rounded-md border border-slate-200 bg-white p-2"
           >
             {!required ? (
               <li>
                 <button
                   type="button"
                   onClick={() => selectValue("")}
-                  className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-slate-500 transition hover:bg-slate-50"
+                  className="w-full rounded-md px-3 py-2.5 text-left text-sm text-slate-500 transition hover:text-slate-700"
                 >
                   {placeholder}
                 </button>
@@ -682,13 +692,13 @@ const QuestionSelect = ({
                     onClick={() => selectValue(option.value)}
                     className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm transition ${
                       isSelected
-                        ? "bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50 text-indigo-700"
-                        : "text-slate-700 hover:bg-slate-50"
+                        ? "border border-slate-200 bg-white text-blue-700"
+                        : "text-slate-700"
                     }`}
                   >
                     <span>{option.label}</span>
                     {isSelected ? (
-                      <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-700">
+                      <span className="rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700">
                         Selected
                       </span>
                     ) : null}
@@ -700,7 +710,10 @@ const QuestionSelect = ({
         ) : null}
       </div>
       {error ? (
-        <p id={`${name}-error`} className="mt-1 text-xs font-medium text-rose-600">
+        <p
+          id={`${name}-error`}
+          className="mt-1 text-xs font-medium text-rose-600"
+        >
           {error}
         </p>
       ) : null}
@@ -817,9 +830,9 @@ const QuestionSearchSelect = ({
         <input type="hidden" name={name} value={normalizedValue} />
 
         {isOpen ? (
-          <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-xl border border-slate-200/80 bg-white/95 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.45)] ring-1 ring-slate-100 backdrop-blur">
+          <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-md border border-slate-200 bg-white">
             <div className="border-b border-slate-100 px-3 py-3">
-              <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-700 shadow-sm">
+              <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-700">
                 <svg
                   className="h-4 w-4 text-slate-400"
                   viewBox="0 0 24 24"
@@ -857,7 +870,7 @@ const QuestionSearchSelect = ({
                   <button
                     type="button"
                     onClick={() => selectValue("")}
-                    className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-slate-500 transition hover:bg-slate-50"
+                    className="w-full rounded-md px-3 py-2.5 text-left text-sm text-slate-500 transition hover:text-slate-700"
                   >
                     {placeholder}
                   </button>
@@ -879,13 +892,13 @@ const QuestionSearchSelect = ({
                         onClick={() => selectValue(option.value)}
                         className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm transition ${
                           isSelected
-                            ? "bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50 text-indigo-700"
-                            : "text-slate-700 hover:bg-slate-50"
+                            ? "border border-slate-200 bg-white text-blue-700"
+                            : "text-slate-700"
                         }`}
                       >
                         <span>{option.label}</span>
                         {isSelected ? (
-                          <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-700">
+                          <span className="rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700">
                             Selected
                           </span>
                         ) : null}
@@ -899,7 +912,10 @@ const QuestionSearchSelect = ({
         ) : null}
       </div>
       {error ? (
-        <p id={`${name}-error`} className="mt-1 text-xs font-medium text-rose-600">
+        <p
+          id={`${name}-error`}
+          className="mt-1 text-xs font-medium text-rose-600"
+        >
           {error}
         </p>
       ) : null}
@@ -1111,13 +1127,13 @@ const QuestionDate = ({
         </button>
 
         {isOpen ? (
-          <div className="absolute z-40 mt-2 w-full min-w-[290px] rounded-lg border border-slate-200 bg-white p-3 ring-1 ring-slate-100">
+          <div className="absolute z-40 mt-2 w-full min-w-[290px] rounded-md border border-slate-200 bg-white p-3">
             <div className="mb-3 flex items-center justify-between gap-2">
               <button
                 type="button"
                 onClick={() => changeMonth(-1)}
                 disabled={isPrevDisabled}
-                className="rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label="Previous month"
               >
                 <svg
@@ -1174,7 +1190,7 @@ const QuestionDate = ({
                 type="button"
                 onClick={() => changeMonth(1)}
                 disabled={isNextDisabled}
-                className="rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label="Next month"
               >
                 <svg
@@ -1225,12 +1241,12 @@ const QuestionDate = ({
                     disabled={disabled}
                     className={`h-8 rounded-md text-sm font-medium transition ${
                       isSelected
-                        ? "bg-blue-600 text-white"
+                        ? "border border-slate-200 bg-white text-blue-700"
                         : disabled
                           ? "cursor-not-allowed text-slate-300"
                           : isToday
-                            ? "border border-blue-200 text-blue-700 hover:bg-blue-50"
-                            : "text-slate-700 hover:bg-blue-50"
+                            ? "border border-slate-200 bg-white text-blue-700"
+                            : "text-slate-700"
                     }`}
                   >
                     {day.getDate()}
@@ -1249,7 +1265,7 @@ const QuestionDate = ({
                 <button
                   type="button"
                   onClick={clearDate}
-                  className="rounded-md border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50"
+                  className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:border-slate-300"
                 >
                   Clear
                 </button>
@@ -1257,14 +1273,14 @@ const QuestionDate = ({
                   type="button"
                   onClick={selectToday}
                   disabled={isDateDisabled(today)}
-                  className="rounded-md border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Today
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  className="rounded-md bg-blue-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-blue-700"
+                  className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-blue-700"
                 >
                   Close
                 </button>
@@ -1279,7 +1295,10 @@ const QuestionDate = ({
         </p>
       ) : null}
       {error ? (
-        <p id={`${name}-error`} className="mt-1 text-xs font-medium text-rose-600">
+        <p
+          id={`${name}-error`}
+          className="mt-1 text-xs font-medium text-rose-600"
+        >
           {error}
         </p>
       ) : null}
@@ -1288,11 +1307,13 @@ const QuestionDate = ({
 };
 
 const SectionCard = ({ title, children, optional = false }) => (
-  <section className="rounded-lg border border-slate-200 bg-slate-50/30 p-4">
+  <section className="rounded-md border border-slate-200 bg-white p-4 sm:p-5">
     <div className="mb-4 flex items-center justify-between">
-      <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
+      <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-900">
+        {title}
+      </h3>
       {optional ? (
-        <span className="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700">
+        <span className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700">
           Optional
         </span>
       ) : null}
@@ -1452,7 +1473,10 @@ const Careers = () => {
         nextErrors.tenthYear = `Enter a year between 1980 and ${currentYear}.`;
       }
 
-      if (hasValue(formData.twelfthYear) && !isValidYear(formData.twelfthYear)) {
+      if (
+        hasValue(formData.twelfthYear) &&
+        !isValidYear(formData.twelfthYear)
+      ) {
         nextErrors.twelfthYear = `Enter a year between 1980 and ${currentYear}.`;
       }
 
@@ -1547,7 +1571,8 @@ const Careers = () => {
         if (!appDate) {
           nextErrors.applicationDate = "Enter a valid application date.";
         } else if (isAfterDay(appDate, today)) {
-          nextErrors.applicationDate = "Application date cannot be in the future.";
+          nextErrors.applicationDate =
+            "Application date cannot be in the future.";
         }
       }
 
@@ -1714,7 +1739,7 @@ const Careers = () => {
   };
 
   return (
-    <main className="min-h-screen bg-slate-100">
+    <main className="min-h-screen bg-white">
       <Helmet>
         <title>Careers at Hooks - Join Hooks Team</title>
         <meta
@@ -1748,577 +1773,582 @@ const Careers = () => {
         )}
       </Helmet>
 
-      <div className="mx-auto max-w-4xl bg-white px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-        <div className=" bg-white p-4 sm:p-6">
-          <p className="inline-flex rounded-md bg-blue-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-blue-700">
-            Hiring Process
-          </p>
-          <h1 className="mt-3 text-2xl font-bold text-slate-900 sm:text-3xl">
-            Join Hooks Team
-          </h1>
-          <p className="mt-2 text-sm text-slate-600">
-            Build your career with us. Complete the 4-step application form to
-            apply for current openings.
-          </p>
-
-          <div className="mt-6">
-            <div className="flex items-start justify-between gap-1 sm:gap-2">
-              {STEPS.map((item, index) => {
-                const isActive = step === index;
-                const isDone = step > index;
-                const labelClass =
-                  isActive || isDone ? "text-blue-700" : "text-slate-400";
-
-                return (
-                  <div key={item.title} className="flex-1 px-1 text-center">
-                    <p
-                      className={`mx-auto max-w-[80px] text-[10px] font-semibold uppercase tracking-wide leading-tight sm:max-w-[140px] sm:text-[11px] ${labelClass}`}
-                    >
-                      {item.subtitle}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="relative mt-3 flex items-center justify-between">
-              <div className="pointer-events-none absolute inset-0 flex items-center px-2 sm:px-3.5">
-                <div className="relative h-0.5 w-full rounded-full bg-slate-200 sm:h-1">
-                  <div
-                    className="absolute left-0 top-0 h-0.5 rounded-full bg-blue-600 sm:h-1"
-                    style={{
-                      width: `${Math.min(
-                        100,
-                        Math.max(
-                          0,
-                          STEPS.length > 1
-                            ? (step / (STEPS.length - 1)) * 100
-                            : 0,
-                        ),
-                      )}%`,
-                    }}
-                  />
-                </div>
-              </div>
-
-              {STEPS.map((item, index) => {
-                const isActive = step === index;
-                const isDone = step > index;
-
-                return (
-                  <div
-                    key={item.title}
-                    className={`relative z-10 flex h-5 w-5 items-center justify-center rounded-full border-2 transition sm:h-7 sm:w-7 ${
-                      isDone
-                        ? "border-blue-600 bg-blue-600 text-white"
-                        : isActive
-                          ? "border-blue-600 bg-white text-blue-600"
-                          : "border-slate-200 bg-white text-slate-300"
-                    }`}
-                    aria-label={item.title}
-                  >
-                    {isDone ? (
-                      <svg
-                        viewBox="0 0 24 24"
-                        className="h-3 w-3 sm:h-4 sm:w-4"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                        aria-hidden="true"
-                      >
-                        <path
-                          d="M5 12.5L9.5 17L19 7.5"
-                          stroke="currentColor"
-                          strokeWidth="2.4"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div className="overflow-hidden">
+          <div className="border-b border-slate-200 bg-white px-4 py-6 sm:px-6 sm:py-8">
+            <p className="inline-flex rounded-md border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-blue-700">
+              Hiring Process
+            </p>
+            <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
+              Join Hooks Team
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+              Build your career with us. Complete the 4-step application form to
+              apply for current openings.
+            </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-            {step === 0 ? (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <QuestionSelect
-                  question="Which role are you applying for?"
-                  name="role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  options={ROLE_OPTIONS}
-                  required
-                  placeholder="Select your role"
-                  error={getError("role")}
-                />
+          <div className="p-4 sm:p-6">
+            <div className=" bg-white p-4 sm:p-5">
+              <div className="flex items-start justify-between gap-1 sm:gap-2">
+                {STEPS.map((item, index) => {
+                  const isActive = step === index;
+                  const isDone = step > index;
+                  const labelClass =
+                    isActive || isDone ? "text-blue-700" : "text-slate-400";
 
-                <QuestionSelect
-                  question="How do you identify your gender?"
-                  name="gender"
-                  value={formData.gender}
-                  onChange={handleChange}
-                  options={GENDER_OPTIONS}
-                  required
-                  placeholder="Select your gender"
-                  error={getError("gender")}
-                />
-
-                <QuestionInput
-                  question="What is your first name?"
-                  type="text"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  placeholder="Enter first name"
-                  required
-                  error={getError("firstName")}
-                />
-
-                <QuestionInput
-                  question="What is your last name?"
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  placeholder="Enter last name"
-                  required
-                  error={getError("lastName")}
-                />
-
-                <QuestionInput
-                  question="What is your email address?"
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="you@example.com"
-                  required
-                  error={getError("email")}
-                />
-
-                <QuestionInput
-                  question="What is your phone number?"
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  placeholder="Enter mobile number"
-                  required
-                  error={getError("phone")}
-                />
-
-                <div className="sm:col-span-2">
-                  <QuestionDate
-                    question="What is your date of birth?"
-                    name="dob"
-                    value={formData.dob}
-                    onChange={handleChange}
-                    min="1900-01-01"
-                    max={new Date().toISOString().slice(0, 10)}
-                    error={getError("dob")}
-                  />
-                </div>
+                  return (
+                    <div key={item.title} className="flex-1 px-1 text-center">
+                      <p
+                        className={`mx-auto max-w-[80px] text-[10px] font-semibold uppercase tracking-wide leading-tight sm:max-w-[140px] sm:text-[11px] ${labelClass}`}
+                      >
+                        {item.subtitle}
+                      </p>
+                    </div>
+                  );
+                })}
               </div>
-            ) : null}
 
-            {step === 1 ? (
-              <div className="space-y-4">
-                <SectionCard title="10th education details">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <QuestionInput
-                      question="Which board or school did you complete 10th from?"
-                      type="text"
-                      name="tenthBoard"
-                      value={formData.tenthBoard}
-                      onChange={handleChange}
-                      placeholder="Board or school name"
-                      required
-                      error={getError("tenthBoard")}
-                    />
-                    <QuestionInput
-                      question="What was your stream in 10th?"
-                      type="text"
-                      name="tenthStream"
-                      value={formData.tenthStream}
-                      onChange={handleChange}
-                      placeholder="General / Science / Other"
-                      required
-                      error={getError("tenthStream")}
-                    />
-                    <QuestionInput
-                      question="What were your 10th marks?"
-                      type="text"
-                      name="tenthMarks"
-                      value={formData.tenthMarks}
-                      onChange={handleChange}
-                      placeholder="Example: 89% or 9.1 CGPA"
-                      required
-                      error={getError("tenthMarks")}
-                    />
-                    <QuestionInput
-                      question="In which year did you complete 10th?"
-                      type="number"
-                      name="tenthYear"
-                      value={formData.tenthYear}
-                      onChange={handleChange}
-                      placeholder="Example: 2018"
-                      min="1980"
-                      max="2099"
-                      required
-                      error={getError("tenthYear")}
+              <div className="relative mt-3 flex items-center justify-between">
+                <div className="pointer-events-none absolute inset-0 flex items-center px-2 sm:px-3.5">
+                  <div className="relative h-0.5 w-full rounded-full bg-slate-200 sm:h-1">
+                    <div
+                      className="absolute left-0 top-0 h-0.5 rounded-full bg-blue-600 sm:h-1"
+                      style={{
+                        width: `${Math.min(
+                          100,
+                          Math.max(
+                            0,
+                            STEPS.length > 1
+                              ? (step / (STEPS.length - 1)) * 100
+                              : 0,
+                          ),
+                        )}%`,
+                      }}
                     />
                   </div>
-                </SectionCard>
-
-                <SectionCard title="12th education details">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <QuestionInput
-                      question="Which board or school did you complete 12th from?"
-                      type="text"
-                      name="twelfthBoard"
-                      value={formData.twelfthBoard}
-                      onChange={handleChange}
-                      placeholder="Board or school name"
-                      required
-                      error={getError("twelfthBoard")}
-                    />
-                    <QuestionInput
-                      question="What was your stream in 12th?"
-                      type="text"
-                      name="twelfthStream"
-                      value={formData.twelfthStream}
-                      onChange={handleChange}
-                      placeholder="Science / Commerce / Arts"
-                      required
-                      error={getError("twelfthStream")}
-                    />
-                    <QuestionInput
-                      question="What were your 12th marks?"
-                      type="text"
-                      name="twelfthMarks"
-                      value={formData.twelfthMarks}
-                      onChange={handleChange}
-                      placeholder="Example: 84% or 8.7 CGPA"
-                      required
-                      error={getError("twelfthMarks")}
-                    />
-                    <QuestionInput
-                      question="In which year did you complete 12th?"
-                      type="number"
-                      name="twelfthYear"
-                      value={formData.twelfthYear}
-                      onChange={handleChange}
-                      placeholder="Example: 2020"
-                      min="1980"
-                      max="2099"
-                      required
-                      error={getError("twelfthYear")}
-                    />
-                  </div>
-                </SectionCard>
-
-                <SectionCard title="UG education details">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <QuestionSearchSelect
-                      question="Which college or university did you complete UG from?"
-                      name="ugInstitute"
-                      value={formData.ugInstitute}
-                      onChange={handleChange}
-                      options={UG_INSTITUTE_OPTIONS}
-                      placeholder="Search institute"
-                      required
-                      error={getError("ugInstitute")}
-                    />
-                    <QuestionSelect
-                      question="What was your UG stream?"
-                      name="ugStream"
-                      value={formData.ugStream}
-                      onChange={handleChange}
-                      options={UG_STREAM_OPTIONS}
-                      placeholder="Select UG stream"
-                      required
-                      error={getError("ugStream")}
-                    />
-                    <QuestionInput
-                      question="What were your UG marks?"
-                      type="text"
-                      name="ugMarks"
-                      value={formData.ugMarks}
-                      onChange={handleChange}
-                      placeholder="Example: 78% or 8.0 CGPA"
-                      required
-                      error={getError("ugMarks")}
-                    />
-                    <QuestionInput
-                      question="In which year did you complete UG?"
-                      type="number"
-                      name="ugYear"
-                      value={formData.ugYear}
-                      onChange={handleChange}
-                      placeholder="Example: 2024"
-                      min="1980"
-                      max="2099"
-                      required
-                      error={getError("ugYear")}
-                    />
-                  </div>
-                </SectionCard>
-
-                <SectionCard title="PG education details" optional>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <QuestionInput
-                      question="If applicable, where did you complete PG?"
-                      type="text"
-                      name="pgInstitute"
-                      value={formData.pgInstitute}
-                      onChange={handleChange}
-                      placeholder="Institute name"
-                      error={getError("pgInstitute")}
-                    />
-                    <QuestionInput
-                      question="If applicable, what was your PG stream?"
-                      type="text"
-                      name="pgStream"
-                      value={formData.pgStream}
-                      onChange={handleChange}
-                      placeholder="Example: M.Tech / MBA"
-                      error={getError("pgStream")}
-                    />
-                    <QuestionInput
-                      question="If applicable, what were your PG marks?"
-                      type="text"
-                      name="pgMarks"
-                      value={formData.pgMarks}
-                      onChange={handleChange}
-                      placeholder="Example: 8.3 CGPA"
-                      error={getError("pgMarks")}
-                    />
-                    <QuestionInput
-                      question="If applicable, in which year did you complete PG?"
-                      type="number"
-                      name="pgYear"
-                      value={formData.pgYear}
-                      onChange={handleChange}
-                      placeholder="Example: 2026"
-                      min="1980"
-                      max="2099"
-                      error={getError("pgYear")}
-                    />
-                  </div>
-                </SectionCard>
-              </div>
-            ) : null}
-
-            {step === 2 ? (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <QuestionSelect
-                  question="How much total work experience do you have?"
-                  name="experienceLevel"
-                  value={formData.experienceLevel}
-                  onChange={handleChange}
-                  options={EXPERIENCE_OPTIONS}
-                  required
-                  placeholder="Select experience"
-                  error={getError("experienceLevel")}
-                />
-
-                <QuestionSelect
-                  question="What is your current employment status?"
-                  name="employmentStatus"
-                  value={formData.employmentStatus}
-                  onChange={handleChange}
-                  options={EMPLOYMENT_OPTIONS}
-                  required
-                  placeholder="Select employment status"
-                  error={getError("employmentStatus")}
-                />
-
-                <QuestionInput
-                  question="Where are you currently working?"
-                  type="text"
-                  name="currentCompany"
-                  value={formData.currentCompany}
-                  onChange={handleChange}
-                  placeholder="Current company name"
-                  required={formData.experienceLevel !== "fresher"}
-                  error={getError("currentCompany")}
-                />
-
-                <QuestionInput
-                  question="What is your current role or designation?"
-                  type="text"
-                  name="currentRole"
-                  value={formData.currentRole}
-                  onChange={handleChange}
-                  placeholder="Current role"
-                  required={formData.experienceLevel !== "fresher"}
-                  error={getError("currentRole")}
-                />
-
-                <QuestionSelect
-                  question="What is your notice period?"
-                  name="noticePeriod"
-                  value={formData.noticePeriod}
-                  onChange={handleChange}
-                  options={NOTICE_OPTIONS}
-                  required
-                  placeholder="Select notice period"
-                  error={getError("noticePeriod")}
-                />
-
-                <QuestionInput
-                  question="Which location do you prefer for work?"
-                  type="text"
-                  name="preferredLocation"
-                  value={formData.preferredLocation}
-                  onChange={handleChange}
-                  placeholder="City or remote"
-                  required
-                  error={getError("preferredLocation")}
-                />
-
-                <QuestionInput
-                  question="What is your expected CTC in INR per year?"
-                  type="number"
-                  name="expectedCtc"
-                  value={formData.expectedCtc}
-                  onChange={handleChange}
-                  placeholder="Example: 850000"
-                  min="0"
-                  error={getError("expectedCtc")}
-                />
-
-                <div className="sm:col-span-2">
-                  <QuestionTextArea
-                    question="Which skills best represent your profile?"
-                    name="skills"
-                    value={formData.skills}
-                    onChange={handleChange}
-                    rows={4}
-                    placeholder="Example: React, Node.js, SQL, SEO writing, CMS"
-                    required
-                    error={getError("skills")}
-                  />
                 </div>
 
-                <div className="sm:col-span-2">
-                  <QuestionTextArea
-                    question="Can you share key project experience or achievements?"
-                    name="projects"
-                    value={formData.projects}
-                    onChange={handleChange}
-                    rows={4}
-                    placeholder="Write short points about your work impact"
-                    error={getError("projects")}
-                  />
-                </div>
+                {STEPS.map((item, index) => {
+                  const isActive = step === index;
+                  const isDone = step > index;
+
+                  return (
+                    <div
+                      key={item.title}
+                      className={`relative z-10 flex h-5 w-5 items-center justify-center rounded-full border-2 transition sm:h-7 sm:w-7 ${
+                        isDone
+                          ? "border-blue-600 bg-white text-blue-600"
+                          : isActive
+                            ? "border-blue-600 bg-white text-blue-600"
+                            : "border-slate-200 bg-white text-slate-300"
+                      }`}
+                      aria-label={item.title}
+                    >
+                      {isDone ? (
+                        <svg
+                          viewBox="0 0 24 24"
+                          className="h-3 w-3 sm:h-4 sm:w-4"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M5 12.5L9.5 17L19 7.5"
+                            stroke="currentColor"
+                            strokeWidth="2.4"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      ) : null}
+                    </div>
+                  );
+                })}
               </div>
-            ) : null}
-
-            {step === 3 ? (
-              <div className="space-y-4">
-                <QuestionTextArea
-                  question="Why do you want to join Hooks?"
-                  name="coverLetter"
-                  value={formData.coverLetter}
-                  onChange={handleChange}
-                  rows={4}
-                  placeholder="Write a short note about your interest"
-                  error={getError("coverLetter")}
-                />
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <QuestionInput
-                    question="From which place are you applying?"
-                    type="text"
-                    name="applicationPlace"
-                    value={formData.applicationPlace}
-                    onChange={handleChange}
-                    placeholder="City"
-                    required
-                    error={getError("applicationPlace")}
-                  />
-
-                  <QuestionDate
-                    question="What is today\'s application date?"
-                    name="applicationDate"
-                    value={formData.applicationDate}
-                    onChange={handleChange}
-                    min="1980-01-01"
-                    max={new Date().toISOString().slice(0, 10)}
-                    error={getError("applicationDate")}
-                  />
-                </div>
-
-                <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                  <input
-                    type="checkbox"
-                    name="agreeTerms"
-                    checked={formData.agreeTerms}
-                    onChange={handleChange}
-                    className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                    required
-                  />
-                  <span className="text-sm text-slate-700">
-                    I confirm that all details provided in this application are
-                    correct, and I agree to be contacted for hiring updates.
-                  </span>
-                </label>
-                {getError("agreeTerms") ? (
-                  <p className="text-xs font-medium text-red-600">
-                    {getError("agreeTerms")}
-                  </p>
-                ) : null}
-              </div>
-            ) : null}
-
-            <div className="flex flex-wrap items-center gap-3 pt-2">
-              {step > 0 ? (
-                <button
-                  type="button"
-                  onClick={goBack}
-                  disabled={isSubmitting}
-                  className="rounded-md border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  Back
-                </button>
-              ) : null}
-
-              {step < STEPS.length - 1 ? (
-                <button
-                  type="button"
-                  onClick={goNext}
-                  disabled={!isStepComplete() || isSubmitting}
-                  className="rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-                >
-                  Continue
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  disabled={!isStepComplete() || isSubmitting}
-                  className="rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-                >
-                  {isSubmitting ? "Submitting..." : "Submit Application"}
-                </button>
-              )}
             </div>
 
-            {submitError ? (
-              <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
-                {submitError}
-              </p>
-            ) : null}
-          </form>
+            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+              {step === 0 ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <QuestionSelect
+                    question="Which role are you applying for?"
+                    name="role"
+                    value={formData.role}
+                    onChange={handleChange}
+                    options={ROLE_OPTIONS}
+                    required
+                    placeholder="Select your role"
+                    error={getError("role")}
+                  />
+
+                  <QuestionSelect
+                    question="How do you identify your gender?"
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleChange}
+                    options={GENDER_OPTIONS}
+                    required
+                    placeholder="Select your gender"
+                    error={getError("gender")}
+                  />
+
+                  <QuestionInput
+                    question="What is your first name?"
+                    type="text"
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    placeholder="Enter first name"
+                    required
+                    error={getError("firstName")}
+                  />
+
+                  <QuestionInput
+                    question="What is your last name?"
+                    type="text"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    placeholder="Enter last name"
+                    required
+                    error={getError("lastName")}
+                  />
+
+                  <QuestionInput
+                    question="What is your email address?"
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="you@example.com"
+                    required
+                    error={getError("email")}
+                  />
+
+                  <QuestionInput
+                    question="What is your phone number?"
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    placeholder="Enter mobile number"
+                    required
+                    error={getError("phone")}
+                  />
+
+                  <div className="sm:col-span-2">
+                    <QuestionDate
+                      question="What is your date of birth?"
+                      name="dob"
+                      value={formData.dob}
+                      onChange={handleChange}
+                      min="1900-01-01"
+                      max={new Date().toISOString().slice(0, 10)}
+                      error={getError("dob")}
+                    />
+                  </div>
+                </div>
+              ) : null}
+
+              {step === 1 ? (
+                <div className="space-y-4">
+                  <SectionCard title="10th education details">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <QuestionInput
+                        question="Which board or school did you complete 10th from?"
+                        type="text"
+                        name="tenthBoard"
+                        value={formData.tenthBoard}
+                        onChange={handleChange}
+                        placeholder="Board or school name"
+                        required
+                        error={getError("tenthBoard")}
+                      />
+                      <QuestionInput
+                        question="What was your stream in 10th?"
+                        type="text"
+                        name="tenthStream"
+                        value={formData.tenthStream}
+                        onChange={handleChange}
+                        placeholder="General / Science / Other"
+                        required
+                        error={getError("tenthStream")}
+                      />
+                      <QuestionInput
+                        question="What were your 10th marks?"
+                        type="text"
+                        name="tenthMarks"
+                        value={formData.tenthMarks}
+                        onChange={handleChange}
+                        placeholder="Example: 89% or 9.1 CGPA"
+                        required
+                        error={getError("tenthMarks")}
+                      />
+                      <QuestionInput
+                        question="In which year did you complete 10th?"
+                        type="number"
+                        name="tenthYear"
+                        value={formData.tenthYear}
+                        onChange={handleChange}
+                        placeholder="Example: 2018"
+                        min="1980"
+                        max="2099"
+                        required
+                        error={getError("tenthYear")}
+                      />
+                    </div>
+                  </SectionCard>
+
+                  <SectionCard title="12th education details">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <QuestionInput
+                        question="Which board or school did you complete 12th from?"
+                        type="text"
+                        name="twelfthBoard"
+                        value={formData.twelfthBoard}
+                        onChange={handleChange}
+                        placeholder="Board or school name"
+                        required
+                        error={getError("twelfthBoard")}
+                      />
+                      <QuestionInput
+                        question="What was your stream in 12th?"
+                        type="text"
+                        name="twelfthStream"
+                        value={formData.twelfthStream}
+                        onChange={handleChange}
+                        placeholder="Science / Commerce / Arts"
+                        required
+                        error={getError("twelfthStream")}
+                      />
+                      <QuestionInput
+                        question="What were your 12th marks?"
+                        type="text"
+                        name="twelfthMarks"
+                        value={formData.twelfthMarks}
+                        onChange={handleChange}
+                        placeholder="Example: 84% or 8.7 CGPA"
+                        required
+                        error={getError("twelfthMarks")}
+                      />
+                      <QuestionInput
+                        question="In which year did you complete 12th?"
+                        type="number"
+                        name="twelfthYear"
+                        value={formData.twelfthYear}
+                        onChange={handleChange}
+                        placeholder="Example: 2020"
+                        min="1980"
+                        max="2099"
+                        required
+                        error={getError("twelfthYear")}
+                      />
+                    </div>
+                  </SectionCard>
+
+                  <SectionCard title="UG education details">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <QuestionSearchSelect
+                        question="Which college or university did you complete UG from?"
+                        name="ugInstitute"
+                        value={formData.ugInstitute}
+                        onChange={handleChange}
+                        options={UG_INSTITUTE_OPTIONS}
+                        placeholder="Search institute"
+                        required
+                        error={getError("ugInstitute")}
+                      />
+                      <QuestionSelect
+                        question="What was your UG stream?"
+                        name="ugStream"
+                        value={formData.ugStream}
+                        onChange={handleChange}
+                        options={UG_STREAM_OPTIONS}
+                        placeholder="Select UG stream"
+                        required
+                        error={getError("ugStream")}
+                      />
+                      <QuestionInput
+                        question="What were your UG marks?"
+                        type="text"
+                        name="ugMarks"
+                        value={formData.ugMarks}
+                        onChange={handleChange}
+                        placeholder="Example: 78% or 8.0 CGPA"
+                        required
+                        error={getError("ugMarks")}
+                      />
+                      <QuestionInput
+                        question="In which year did you complete UG?"
+                        type="number"
+                        name="ugYear"
+                        value={formData.ugYear}
+                        onChange={handleChange}
+                        placeholder="Example: 2024"
+                        min="1980"
+                        max="2099"
+                        required
+                        error={getError("ugYear")}
+                      />
+                    </div>
+                  </SectionCard>
+
+                  <SectionCard title="PG education details" optional>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <QuestionInput
+                        question="If applicable, where did you complete PG?"
+                        type="text"
+                        name="pgInstitute"
+                        value={formData.pgInstitute}
+                        onChange={handleChange}
+                        placeholder="Institute name"
+                        error={getError("pgInstitute")}
+                      />
+                      <QuestionInput
+                        question="If applicable, what was your PG stream?"
+                        type="text"
+                        name="pgStream"
+                        value={formData.pgStream}
+                        onChange={handleChange}
+                        placeholder="Example: M.Tech / MBA"
+                        error={getError("pgStream")}
+                      />
+                      <QuestionInput
+                        question="If applicable, what were your PG marks?"
+                        type="text"
+                        name="pgMarks"
+                        value={formData.pgMarks}
+                        onChange={handleChange}
+                        placeholder="Example: 8.3 CGPA"
+                        error={getError("pgMarks")}
+                      />
+                      <QuestionInput
+                        question="If applicable, in which year did you complete PG?"
+                        type="number"
+                        name="pgYear"
+                        value={formData.pgYear}
+                        onChange={handleChange}
+                        placeholder="Example: 2026"
+                        min="1980"
+                        max="2099"
+                        error={getError("pgYear")}
+                      />
+                    </div>
+                  </SectionCard>
+                </div>
+              ) : null}
+
+              {step === 2 ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <QuestionSelect
+                    question="How much total work experience do you have?"
+                    name="experienceLevel"
+                    value={formData.experienceLevel}
+                    onChange={handleChange}
+                    options={EXPERIENCE_OPTIONS}
+                    required
+                    placeholder="Select experience"
+                    error={getError("experienceLevel")}
+                  />
+
+                  <QuestionSelect
+                    question="What is your current employment status?"
+                    name="employmentStatus"
+                    value={formData.employmentStatus}
+                    onChange={handleChange}
+                    options={EMPLOYMENT_OPTIONS}
+                    required
+                    placeholder="Select employment status"
+                    error={getError("employmentStatus")}
+                  />
+
+                  <QuestionInput
+                    question="Where are you currently working?"
+                    type="text"
+                    name="currentCompany"
+                    value={formData.currentCompany}
+                    onChange={handleChange}
+                    placeholder="Current company name"
+                    required={formData.experienceLevel !== "fresher"}
+                    error={getError("currentCompany")}
+                  />
+
+                  <QuestionInput
+                    question="What is your current role or designation?"
+                    type="text"
+                    name="currentRole"
+                    value={formData.currentRole}
+                    onChange={handleChange}
+                    placeholder="Current role"
+                    required={formData.experienceLevel !== "fresher"}
+                    error={getError("currentRole")}
+                  />
+
+                  <QuestionSelect
+                    question="What is your notice period?"
+                    name="noticePeriod"
+                    value={formData.noticePeriod}
+                    onChange={handleChange}
+                    options={NOTICE_OPTIONS}
+                    required
+                    placeholder="Select notice period"
+                    error={getError("noticePeriod")}
+                  />
+
+                  <QuestionInput
+                    question="Which location do you prefer for work?"
+                    type="text"
+                    name="preferredLocation"
+                    value={formData.preferredLocation}
+                    onChange={handleChange}
+                    placeholder="City or remote"
+                    required
+                    error={getError("preferredLocation")}
+                  />
+
+                  <QuestionInput
+                    question="What is your expected CTC in INR per year?"
+                    type="number"
+                    name="expectedCtc"
+                    value={formData.expectedCtc}
+                    onChange={handleChange}
+                    placeholder="Example: 850000"
+                    min="0"
+                    error={getError("expectedCtc")}
+                  />
+
+                  <div className="sm:col-span-2">
+                    <QuestionTextArea
+                      question="Which skills best represent your profile?"
+                      name="skills"
+                      value={formData.skills}
+                      onChange={handleChange}
+                      rows={4}
+                      placeholder="Example: React, Node.js, SQL, SEO writing, CMS"
+                      required
+                      error={getError("skills")}
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <QuestionTextArea
+                      question="Can you share key project experience or achievements?"
+                      name="projects"
+                      value={formData.projects}
+                      onChange={handleChange}
+                      rows={4}
+                      placeholder="Write short points about your work impact"
+                      error={getError("projects")}
+                    />
+                  </div>
+                </div>
+              ) : null}
+
+              {step === 3 ? (
+                <div className="space-y-4">
+                  <QuestionTextArea
+                    question="Why do you want to join Hooks?"
+                    name="coverLetter"
+                    value={formData.coverLetter}
+                    onChange={handleChange}
+                    rows={4}
+                    placeholder="Write a short note about your interest"
+                    error={getError("coverLetter")}
+                  />
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <QuestionInput
+                      question="From which place are you applying?"
+                      type="text"
+                      name="applicationPlace"
+                      value={formData.applicationPlace}
+                      onChange={handleChange}
+                      placeholder="City"
+                      required
+                      error={getError("applicationPlace")}
+                    />
+
+                    <QuestionDate
+                      question="What is today\'s application date?"
+                      name="applicationDate"
+                      value={formData.applicationDate}
+                      onChange={handleChange}
+                      min="1980-01-01"
+                      max={new Date().toISOString().slice(0, 10)}
+                      error={getError("applicationDate")}
+                    />
+                  </div>
+
+                  <label className="flex items-start gap-3 rounded-md border border-slate-200 bg-white p-4">
+                    <input
+                      type="checkbox"
+                      name="agreeTerms"
+                      checked={formData.agreeTerms}
+                      onChange={handleChange}
+                      className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      required
+                    />
+                    <span className="text-sm text-slate-700">
+                      I confirm that all details provided in this application
+                      are correct, and I agree to be contacted for hiring
+                      updates.
+                    </span>
+                  </label>
+                  {getError("agreeTerms") ? (
+                    <p className="text-xs font-medium text-red-600">
+                      {getError("agreeTerms")}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+
+              <div className="flex flex-wrap items-center gap-3 pt-2">
+                {step > 0 ? (
+                  <button
+                    type="button"
+                    onClick={goBack}
+                    disabled={isSubmitting}
+                    className="rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-300 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Back
+                  </button>
+                ) : null}
+
+                {step < STEPS.length - 1 ? (
+                  <button
+                    type="button"
+                    onClick={goNext}
+                    disabled={!isStepComplete() || isSubmitting}
+                    className="rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-blue-700 transition hover:border-blue-300 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Continue
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={!isStepComplete() || isSubmitting}
+                    className="rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-blue-700 transition hover:border-blue-300 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isSubmitting ? "Submitting..." : "Submit Application"}
+                  </button>
+                )}
+              </div>
+
+              {submitError ? (
+                <p className="rounded-md border border-red-200 bg-white px-4 py-3 text-sm font-medium text-red-700">
+                  {submitError}
+                </p>
+              ) : null}
+            </form>
+          </div>
         </div>
       </div>
 
       {submitted ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
-          <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+          <div className="w-full max-w-md rounded-md border border-slate-200 bg-white p-6">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-md border border-slate-200 bg-white">
               <svg
                 viewBox="0 0 24 24"
                 className="h-7 w-7 text-blue-600"
@@ -2347,7 +2377,7 @@ const Careers = () => {
               onClick={() => {
                 setSubmitted(false);
               }}
-              className="mt-5 w-full rounded-md bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+              className="mt-5 w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-blue-700 transition hover:border-blue-300"
             >
               Close
             </button>

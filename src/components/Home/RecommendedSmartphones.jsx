@@ -592,12 +592,12 @@ const RecommendedSmartphones = ({
           </div>
         ) : null}
 
-        <div className="no-scrollbar mt-8 grid grid-flow-col auto-cols-[84%] gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scroll-smooth sm:gap-4 sm:auto-cols-[calc(50%-0.5rem)] md:auto-cols-[calc(33.333%-0.67rem)] lg:auto-cols-[calc(20%-0.8rem)]">
+        <div className="no-scrollbar mt-8 grid grid-flow-col auto-cols-[11.5rem] gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scroll-smooth sm:gap-4 sm:auto-cols-[calc(50%-0.5rem)] md:auto-cols-[calc(33.333%-0.67rem)] lg:auto-cols-[calc(20%-0.8rem)]">
           {loading
             ? Array.from({ length: 6 }).map((_, i) => (
                 <div key={`skeleton-${i}`} className="w-full animate-pulse">
-                  <div className="relative overflow-hidden rounded-lg bg-white/10 ring-1 ring-white/15 p-4 h-auto flex flex-col gap-3">
-                    <div className="bg-white/20 rounded-lg w-full h-36 sm:h-40"></div>
+                  <div className="relative flex h-auto flex-col gap-3 overflow-hidden rounded-lg bg-white/10 p-4 ring-1 ring-white/15">
+                    <div className="h-36 w-full rounded-lg bg-white/20 sm:h-40"></div>
                     <div className="h-3 bg-white/20 rounded w-4/5"></div>
                     <div className="h-3 bg-white/20 rounded w-3/4"></div>
                     <div className="h-2 bg-white/10 rounded"></div>
@@ -612,7 +612,7 @@ const RecommendedSmartphones = ({
                   key={`${device.id || "noid"}-${i}`}
                   type="button"
                   onClick={() => handleDeviceClick(device)}
-                  className={`group relative flex w-full snap-start flex-col gap-3 p-3 text-left text-white/95 transition-all duration-300 sm:p-4 ${
+                  className={`group relative flex w-full snap-start flex-col gap-2 p-3 text-left text-white/95 transition-all duration-300 sm:p-4 ${
                     isLoaded
                       ? "opacity-100 translate-y-0"
                       : "opacity-0 translate-y-2"
@@ -629,7 +629,7 @@ const RecommendedSmartphones = ({
                   )}
 
                   {/* Image Container */}
-                  <div className="flex h-36 w-full items-center justify-center overflow-hidden rounded-lg bg-white/10 ring-1 ring-white/15 sm:h-40">
+                  <div className="flex h-36  items-center justify-center overflow-hidden rounded-lg bg-white/10 ring-1 ring-white/15 sm:h-40">
                     {device.image ? (
                       <img
                         src={device.image}

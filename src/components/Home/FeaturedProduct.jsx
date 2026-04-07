@@ -462,7 +462,7 @@ const FeaturedFilterChip = ({ label, onClick }) => {
     <button
       type="button"
       onClick={onClick}
-      className="group relative whitespace-nowrap rounded-full border border-white/25 bg-white/8 px-5 py-2.5 text-xs font-semibold text-white/95 backdrop-blur-md transition-all duration-300 hover:border-white/40 hover:bg-white/15 hover:shadow-lg"
+      className="group relative shrink-0 snap-start whitespace-nowrap rounded-full border border-white/25 bg-white/8 px-5 py-2.5 text-xs font-semibold text-white/95 backdrop-blur-md transition-all duration-300 hover:border-white/40 hover:bg-white/15 hover:shadow-lg"
     >
       {label}
     </button>
@@ -498,7 +498,7 @@ const FeaturedPhoneCard = ({ phone, index, isLoaded, onClick }) => {
       type="button"
       onClick={onClick}
       aria-label={`Open ${phone.name}`}
-      className={`group flex items-center gap-3 rounded-lg border border-white/15 bg-white/8 px-4 py-3 text-left text-white/95 shadow-[0_10px_25px_rgba(0,0,0,0.12)] backdrop-blur-md transition-all duration-500 hover:border-white/30 hover:bg-white/12 ${
+      className={`group flex snap-start items-center gap-3 rounded-lg border border-white/15 bg-white/8 px-4 py-3 text-left text-white/95 shadow-[0_10px_25px_rgba(0,0,0,0.12)] backdrop-blur-md transition-all duration-500 hover:border-white/30 hover:bg-white/12 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
       style={{ transitionDelay: `${index * 60}ms` }}
@@ -520,7 +520,7 @@ const FeaturedPhoneCard = ({ phone, index, isLoaded, onClick }) => {
 const FeaturedPhoneSkeleton = ({ index, isLoaded }) => {
   return (
     <div
-      className={`flex items-center gap-3 rounded-lg border border-white/15 bg-white/8 px-4 py-3 text-white/95 shadow-[0_10px_25px_rgba(0,0,0,0.12)] backdrop-blur-md ${
+      className={`flex snap-start items-center gap-3 rounded-lg border border-white/15 bg-white/8 px-4 py-3 text-white/95 shadow-[0_10px_25px_rgba(0,0,0,0.12)] backdrop-blur-md ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       } animate-pulse`}
       style={{ transitionDelay: `${index * 60}ms` }}
@@ -756,7 +756,7 @@ const FeaturedProduct = () => {
           </div>
         </div>
 
-        <div className="mt-6 sm:mt-10 flex items-center justify-center gap-2 overflow-x-auto pb-2 no-scrollbar">
+        <div className="no-scrollbar mt-6 flex w-full items-center justify-start gap-2 overflow-x-auto px-1 pb-2 snap-x snap-mandatory sm:mt-10 sm:justify-center sm:px-0">
           <span className="inline-flex items-center gap-2 whitespace-nowrap text-xs font-bold uppercase tracking-[0.3em] text-white/80">
             <FaChartLine className="h-3.5 w-3.5 text-cyan-200" />
             Trending
@@ -784,7 +784,7 @@ const FeaturedProduct = () => {
             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/35 to-transparent" />
           </div>
 
-          <div className="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+          <div className="no-scrollbar mt-10 grid grid-flow-col auto-cols-[88%] gap-3 overflow-x-auto pb-2 snap-x snap-mandatory sm:grid-flow-row sm:auto-cols-auto sm:overflow-visible sm:pb-0 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
             {loadingFeatured
               ? Array.from({ length: FEATURED_PHONES_LIMIT }).map(
                   (_, index) => (
