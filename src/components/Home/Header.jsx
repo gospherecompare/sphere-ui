@@ -121,6 +121,8 @@ const BrandIdentity = ({ variant = "desktop" }) => {
   );
 };
 
+const SEARCH_SUGGESTION_LIMIT = 5;
+
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState(null);
@@ -906,9 +908,75 @@ const Header = () => {
     (localResults || []).forEach((item) => upsert(item, 1));
 
     return Array.from(merged.values())
-      .sort((a, b) => a.__priority - b.__priority)
-      .map(({ __priority, searchable_text, ...rest }) => rest);
+      .sort((a, b) => a.__priority - b.__priority);
   };
+
+  const getSuggestionMatchRank = (item, query) => {
+    const normalizedQuery = normalizeText(query);
+    if (!normalizedQuery) return Number.MAX_SAFE_INTEGER;
+
+    const name = normalizeText(item?.name);
+    const model = normalizeText(item?.model);
+    const brand = normalizeText(item?.brand_name || item?.brand);
+    const searchableText = normalizeText(
+      item?.searchable_text ||
+        [name, model, brand, item?.product_type].filter(Boolean).join(" "),
+    );
+    const tokens = normalizedQuery.split(/\s+/).filter(Boolean);
+
+    const containsAllTokens =
+      tokens.length > 0 &&
+      tokens.every((token) => searchableText.includes(token));
+    const nameTokens = name.split(/\s+/).filter(Boolean);
+    const modelTokens = model.split(/\s+/).filter(Boolean);
+
+    if (name === normalizedQuery) return 0;
+    if (model && model === normalizedQuery) return 1;
+    if (name.startsWith(normalizedQuery)) return 2;
+    if (model && model.startsWith(normalizedQuery)) return 3;
+    if (brand === normalizedQuery) return 4;
+    if (brand.startsWith(normalizedQuery)) return 5;
+    if (
+      nameTokens.some((token) => token.startsWith(normalizedQuery)) ||
+      modelTokens.some((token) => token.startsWith(normalizedQuery))
+    ) {
+      return 6;
+    }
+    if (containsAllTokens) return 7;
+    if (name.includes(normalizedQuery)) return 8;
+    if (model && model.includes(normalizedQuery)) return 9;
+    if (brand.includes(normalizedQuery)) return 10;
+    if (searchableText.includes(normalizedQuery)) return 11;
+    return Number.MAX_SAFE_INTEGER;
+  };
+
+  const sortSuggestionsByRelevance = (items, query) =>
+    [...(items || [])].sort((a, b) => {
+      const priorityA =
+        Number.isFinite(Number(a?.__priority)) ? Number(a.__priority) : 99;
+      const priorityB =
+        Number.isFinite(Number(b?.__priority)) ? Number(b.__priority) : 99;
+      if (priorityA !== priorityB) return priorityA - priorityB;
+
+      const rankA = getSuggestionMatchRank(a, query);
+      const rankB = getSuggestionMatchRank(b, query);
+      if (rankA !== rankB) return rankA - rankB;
+
+      const nameA = normalizeText(a?.name);
+      const nameB = normalizeText(b?.name);
+      if (nameA.length !== nameB.length) return nameA.length - nameB.length;
+
+      return nameA.localeCompare(nameB);
+    });
+
+  const stripSuggestionInternals = (items) =>
+    (items || []).map((item) => {
+      if (!item || typeof item !== "object") return item;
+      const next = { ...item };
+      delete next.__priority;
+      delete next.searchable_text;
+      return next;
+    });
 
   // Fetch suggestions from server (debounced)
   const handleSearchInputChange = (value) => {
@@ -947,7 +1015,7 @@ const Header = () => {
       try {
         const url = `https://api.apisphere.in/api/search?q=${encodeURIComponent(
           q,
-        )}`;
+        )}&limit=${SEARCH_SUGGESTION_LIMIT}`;
         const r = await fetch(url, {
           signal: controller.signal,
         });
@@ -959,18 +1027,35 @@ const Header = () => {
 
         const localMatches = localSearchSuggestions
           .filter((item) => item.searchable_text.includes(qLower))
-          .slice(0, 12);
+          .sort((a, b) => {
+            const rankA = getSuggestionMatchRank(a, qLower);
+            const rankB = getSuggestionMatchRank(b, qLower);
+            if (rankA !== rankB) return rankA - rankB;
+            return normalizeText(a.name).localeCompare(normalizeText(b.name));
+          })
+          .slice(0, SEARCH_SUGGESTION_LIMIT);
 
-        const merged = mergeSuggestions(apiResults, localMatches).slice(0, 12);
+        const merged = stripSuggestionInternals(
+          sortSuggestionsByRelevance(
+            mergeSuggestions(apiResults, localMatches),
+            qLower,
+          ).slice(0, SEARCH_SUGGESTION_LIMIT),
+        );
         setSearchSuggestions(merged);
       } catch (err) {
         if (err.name === "AbortError") return;
         console.error("Search suggestions error:", err);
         const localMatches = localSearchSuggestions
           .filter((item) => item.searchable_text.includes(qLower))
-          .slice(0, 12)
-          .map(({ searchable_text, ...rest }) => rest);
-        setSearchSuggestions(localMatches);
+          .sort((a, b) => {
+            const rankA = getSuggestionMatchRank(a, qLower);
+            const rankB = getSuggestionMatchRank(b, qLower);
+            if (rankA !== rankB) return rankA - rankB;
+            return normalizeText(a.name).localeCompare(normalizeText(b.name));
+          })
+          .slice(0, SEARCH_SUGGESTION_LIMIT);
+        const cleaned = stripSuggestionInternals(localMatches);
+        setSearchSuggestions(cleaned);
       } finally {
         setIsSearching(false);
       }
@@ -1982,7 +2067,7 @@ const Header = () => {
                           /* Suggestions List */
                           <>
                             {searchSuggestions
-                              .slice(0, 7)
+                              .slice(0, SEARCH_SUGGESTION_LIMIT)
                               .map((sugg, index) => (
                                 <SuggestionRow
                                   key={`${sugg.id || sugg.name || index}-desktop`}
@@ -2030,7 +2115,9 @@ const Header = () => {
                     ) : (
                       /* Suggestions List for Mobile */
                       <div className="space-y-3">
-                        {searchSuggestions.slice(0, 7).map((sugg, index) => (
+                        {searchSuggestions
+                          .slice(0, SEARCH_SUGGESTION_LIMIT)
+                          .map((sugg, index) => (
                           <button
                             key={index}
                             onMouseDown={(e) => {
@@ -2237,7 +2324,9 @@ const Header = () => {
                       </p>
                     </div>
                   ) : (
-                    searchSuggestions.slice(0, 6).map((sugg, index) => (
+                    searchSuggestions
+                      .slice(0, SEARCH_SUGGESTION_LIMIT)
+                      .map((sugg, index) => (
                       <button
                         key={index}
                         onMouseDown={(e) => {

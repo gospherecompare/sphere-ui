@@ -632,7 +632,7 @@ const HeroSection = () => {
       setFeaturedPhonesLoading(true);
       try {
         const url =
-          "https://api.apisphere.in/api/public/search-popularity?productType=smartphone&limit=8";
+          "https://api.apisphere.in/api/public/search-popularity?productType=smartphone&limit=5";
         const response = await fetch(url, {
           signal: controller.signal,
         });
@@ -645,6 +645,7 @@ const HeroSection = () => {
 
         const mappedDevices = devices.length
           ? devices.map((device, index) => ({
+              id: device?.product_id ?? device?.id ?? `device-${index + 1}`,
               name: device?.name || `Device ${index + 1}`,
               short:
                 device?.brand_name ||
@@ -664,7 +665,7 @@ const HeroSection = () => {
             }))
           : [];
 
-        setFeaturedPhones(mappedDevices.slice(0, 8));
+        setFeaturedPhones(mappedDevices.slice(0, 5));
       } catch (error) {
         if (error?.name !== "AbortError") {
           setFeaturedPhones([]);
@@ -913,13 +914,12 @@ const HeroSection = () => {
               <div className="no-scrollbar grid grid-flow-col auto-cols-[minmax(14.5rem,72vw)] gap-4 overflow-x-auto pb-2 snap-x snap-mandatory sm:grid-flow-row sm:auto-cols-auto sm:overflow-visible sm:pb-0 sm:grid-cols-2 lg:grid-cols-5">
                 {featuredDevices.map((phone) => (
                   <button
-                    key={phone.name}
+                    key={phone.id || phone.name}
                     type="button"
                     onClick={() =>
                       navigate(
-                        phone.detailPath
-                          ? `${phone.detailPath}?q=${encodeURIComponent(phone.name)}`
-                          : `/smartphones?q=${encodeURIComponent(phone.name)}`,
+                        phone.detailPath ||
+                          `/smartphones?q=${encodeURIComponent(phone.name)}`,
                       )
                     }
                     className="group relative flex snap-start flex-col gap-3 p-4 text-left text-white/95 transition-all duration-300"

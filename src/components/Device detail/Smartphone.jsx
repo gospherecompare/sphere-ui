@@ -1438,6 +1438,35 @@ const MobileDetailCard = () => {
   const currentProductId =
     mobileData?.id ?? mobileData?.product_id ?? mobileData?.productId ?? null;
 
+  useEffect(() => {
+    const pid = Number(currentProductId);
+    if (!Number.isInteger(pid) || pid <= 0) return;
+
+    try {
+      const viewedKey = `viewed_product_${pid}`;
+      if (
+        typeof sessionStorage !== "undefined" &&
+        sessionStorage.getItem(viewedKey)
+      ) {
+        return;
+      }
+
+      fetch(`https://api.apisphere.in/api/public/product/${pid}/view`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      }).catch((err) => console.error("View insert failed", err));
+
+      try {
+        if (typeof sessionStorage !== "undefined") {
+          sessionStorage.setItem(viewedKey, "true");
+        }
+      } catch {}
+    } catch (err) {
+      console.error("Product view tracking error:", err);
+    }
+  }, [currentProductId]);
+
   usePageEngagementTracker({
     productId: currentProductId,
     pagePath:
