@@ -38,6 +38,7 @@ import LaptopDetailCard from "./components/Device detail/Laptop";
 import NetworkingDetailCard from "./components/Device detail/Network";
 import Wishlist from "./components/Wishlist";
 import AccountManagement from "./components/AccountManagement";
+import { useDevice } from "./hooks/useDevice";
 import {
   createOrganizationSchema,
   createWebsiteSchema,
@@ -104,6 +105,29 @@ const ensureSmartphoneSeoDetailPath = (path = "") => {
   const seoSlug = toSmartphoneSeoSlug(tail);
   return seoSlug ? `/smartphones/${seoSlug}` : path;
 };
+
+const getCatalogBasePath = (value = "") => {
+  const text = String(value || "")
+    .toLowerCase()
+    .trim();
+  if (text.includes("laptop") || text.includes("computer")) return "/laptops";
+  if (
+    text.includes("television") ||
+    text === "tv" ||
+    text === "tvs" ||
+    text.includes("appliance") ||
+    text.includes("home")
+  ) {
+    return "/tvs";
+  }
+  if (text.includes("network") || text.includes("router") || text.includes("wifi")) {
+    return "/networking";
+  }
+  return "/smartphones";
+};
+
+const toSeoTextWithoutCommas = (value = "") =>
+  String(value || "").replace(/,/g, "");
 
 const toCanonicalPath = (path) => {
   if (path === "/smartphones/upcoming") return "/smartphones/upcoming";
@@ -216,6 +240,9 @@ const resolveSeoMeta = (pathname) => {
     smartphoneFilterSlug && SMARTPHONE_FILTER_SEO[smartphoneFilterSlug]
       ? SMARTPHONE_FILTER_SEO[smartphoneFilterSlug]
       : null;
+  const smartphoneFilterSeoLabel = smartphoneFilterMeta
+    ? toSeoTextWithoutCommas(smartphoneFilterMeta.label)
+    : "";
 
   const rules = [
     {
@@ -256,13 +283,13 @@ const resolveSeoMeta = (pathname) => {
       title:
         smartphoneFilterSlug === "new"
           ? `Latest Smartphones (${CURRENT_MONTH_YEAR}) - New Launches & Prices - Hooks`
-          : `Best Smartphones ${smartphoneFilterMeta?.label} (${CURRENT_MONTH_YEAR}) - Reviews, Specs & Deals - Hooks`,
+          : `Best Smartphones ${smartphoneFilterSeoLabel} (${CURRENT_MONTH_YEAR}) - Reviews Specs & Deals - Hooks`,
       description:
         smartphoneFilterSlug === "new"
           ? "Discover newly launched smartphones with updated prices, full specifications, and reviews. Stay updated with the latest mobile releases on Hooks."
           : `Explore the best smartphones ${String(
-              smartphoneFilterMeta?.label || "",
-            ).toLowerCase()} with detailed specs, latest prices, reviews, and comparisons to choose the right phone for your budget.`,
+              smartphoneFilterSeoLabel || "",
+            ).toLowerCase()} with detailed specs latest prices reviews and comparisons to choose the right phone for your budget.`,
       keywords:
         smartphoneFilterSlug === "new"
           ? `latest smartphones ${CURRENT_YEAR}, new launch mobiles, upcoming phones india, smartphone releases`
@@ -447,6 +474,55 @@ function App() {
     return <Navigate to={`/tvs${location.search || ""}`} replace />;
   };
 
+  const LegacySearchRedirect = () => {
+    const location = useLocation();
+    return <Navigate to={`/smartphones${location.search || ""}`} replace />;
+  };
+
+  const BrandsRedirect = () => {
+    const location = useLocation();
+    return <Navigate to={`/smartphones${location.search || ""}`} replace />;
+  };
+
+  const BrandLandingRedirect = () => {
+    const { slug = "" } = useParams();
+    const location = useLocation();
+    const deviceContext = useDevice();
+    const brands = Array.isArray(deviceContext?.brands) ? deviceContext.brands : [];
+    const normalizedSlug = String(slug || "")
+      .toLowerCase()
+      .trim();
+
+    const matchedBrand =
+      brands.find((brand) => {
+        const name = String(brand?.name || "")
+          .toLowerCase()
+          .trim();
+        const brandSlug = String(
+          brand?.slug || brand?.name || brand?.id || "",
+        )
+          .toLowerCase()
+          .trim()
+          .replace(/\s+/g, "-");
+        return (
+          normalizedSlug === brandSlug ||
+          normalizedSlug === name ||
+          normalizedSlug === name.replace(/\s+/g, "-")
+        );
+      }) || null;
+
+    const brandName = matchedBrand?.name || toReadableTitleFromSlug(slug);
+    const targetPath = getCatalogBasePath(
+      matchedBrand?.category || matchedBrand?.product_type || matchedBrand?.type,
+    );
+    const params = new URLSearchParams(location.search || "");
+    if (brandName && !params.get("brand")) {
+      params.set("brand", brandName);
+    }
+    const query = params.toString();
+    return <Navigate to={`${targetPath}${query ? `?${query}` : ""}`} replace />;
+  };
+
   const AppliancesDetailRedirect = () => {
     const { slug } = useParams();
     const location = useLocation();
@@ -486,6 +562,9 @@ function App() {
           <Route path="/wishlist" element={<Wishlist />} />
 
           {/* Product Listings - SEO friendly category paths */}
+          <Route path="/search" element={<LegacySearchRedirect />} />
+          <Route path="/brands" element={<BrandsRedirect />} />
+          <Route path="/brand/:slug" element={<BrandLandingRedirect />} />
           <Route path="/smartphones" element={<Smartphones />} />
           <Route
             path="/smartphones/upcoming"

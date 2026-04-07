@@ -59,6 +59,27 @@ import {
 } from "../../utils/smartphonePopularFeatures";
 import "../../styles/hideScrollbar.css";
 
+const toFeatureSeoLabel = (value = "") => {
+  const normalized = (() => {
+    try {
+      return decodeURIComponent(String(value || ""));
+    } catch {
+      return String(value || "");
+    }
+  })()
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!normalized) return "";
+  return normalized
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
+const toSeoTextWithoutCommas = (value = "") => String(value || "").replace(/,/g, "");
+
 // Enhanced Image Carousel - Simplified without counts/indicators
 const ImageCarousel = ({ images = [] }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -1960,6 +1981,27 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     "above-50000": { min: 50000, max: MAX_PRICE, label: "Above ₹ 50,000" },
   };
   const priceFilter = priceFilterMap[normalizedFilterSlug] || null;
+  const seoPriceFilterLabel = priceFilter
+    ? toSeoTextWithoutCommas(priceFilter.label)
+    : "";
+  const currentFeatureMeta = useMemo(() => {
+    if (!normalizedFeature) return null;
+
+    const selected =
+      popularFeatures.find((item) => item?.id === normalizedFeature) ||
+      SMARTPHONE_FEATURE_CATALOG.find((item) => item?.id === normalizedFeature);
+
+    const name = String(
+      selected?.name || toFeatureSeoLabel(normalizedFeature),
+    ).trim();
+    if (!name) return null;
+
+    return {
+      id: normalizedFeature,
+      name,
+      description: String(selected?.description || "").trim(),
+    };
+  }, [normalizedFeature, popularFeatures]);
 
   const sanitizeDescription = (desc = "") => {
     const text = String(desc || "")
@@ -1986,9 +2028,26 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     seoTitle = `Latest Smartphones (${currentDayMonthYear}) - Full Specifications, Features and Price - Hooks`;
     seoDescription =
       "Browse the latest smartphones across camera, battery, display, and performance with updated prices, full specifications, and launch details on Hooks.";
+  } else if (currentFeatureMeta) {
+    const featureContextParts = [
+      currentBrandObj?.name ? `${currentBrandObj.name}` : "",
+      currentFeatureMeta.name,
+      "Smartphones",
+      seoPriceFilterLabel,
+    ].filter(Boolean);
+    const featureContext = featureContextParts.join(" ");
+    const featureLabel = currentFeatureMeta.name.toLowerCase();
+    const featureDescription = currentFeatureMeta.description
+      ? `${currentFeatureMeta.description.toLowerCase()}`
+      : featureLabel;
+
+    seoTitle = `${featureContext} (${currentMonthYear}) - Prices, Specs & Comparison - Hooks`;
+    seoDescription = sanitizeDescription(
+      `Explore ${featureContext.toLowerCase()} in India with updated prices and detailed specifications covering battery camera display and performance comparisons on Hooks. Discover phones focused on ${featureDescription}.`,
+    );
   } else if (priceFilter) {
-    seoTitle = `Best Smartphones ${priceFilter.label} (${currentMonthYear}) - Full Specifications, Features and Price - Hooks`;
-    seoDescription = `Explore the best smartphones ${priceFilter.label.toLowerCase()} with detailed specs, latest prices, reviews, and comparisons to choose the right phone for your budget.`;
+    seoTitle = `Best Smartphones ${seoPriceFilterLabel} (${currentMonthYear}) - Full Specifications Features and Price - Hooks`;
+    seoDescription = `Explore the best smartphones ${seoPriceFilterLabel.toLowerCase()} with detailed specs latest prices reviews and comparisons to choose the right phone for your budget.`;
   } else if (currentBrandObj) {
     seoTitle = `${currentBrandObj.name} Smartphones (${currentMonthYear}) - Full Specifications, Features and Price - Hooks`;
     seoDescription = sanitizeDescription(
@@ -3255,6 +3314,12 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
           isNewFilterPath ? "latest smartphones" : "",
           priceFilter ? `best smartphones ${priceFilter.label}` : "",
           currentBrandObj?.name ? `${currentBrandObj.name} smartphones` : "",
+          currentFeatureMeta?.name
+            ? `${currentFeatureMeta.name} smartphones`
+            : "",
+          currentFeatureMeta?.name
+            ? `smartphones with ${currentFeatureMeta.name}`
+            : "",
         ],
       }),
     [
@@ -3263,6 +3328,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       isNewFilterPath,
       priceFilter,
       currentBrandObj,
+      currentFeatureMeta,
       sortedVariants,
     ],
   );
@@ -3421,9 +3487,15 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     : null;
   const normalizedSeoTitle = normalizeSeoTitle(seoTitle);
 
-  const listSchemaUrl = `${SITE_ORIGIN}${
-    location?.pathname ? location.pathname : "/smartphones"
-  }`;
+  const listSchemaUrl = useMemo(() => {
+    const basePath = location?.pathname ? location.pathname : "/smartphones";
+    const params = new URLSearchParams();
+    if (normalizedFeature) {
+      params.set("feature", normalizedFeature);
+    }
+    const query = params.toString();
+    return `${SITE_ORIGIN}${basePath}${query ? `?${query}` : ""}`;
+  }, [location?.pathname, normalizedFeature]);
 
   const listSchemaItems = useMemo(() => {
     const items = sortedVariants.slice(0, 20).map((device) => {

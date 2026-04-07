@@ -347,6 +347,25 @@ const Header = () => {
     return "smartphones";
   };
 
+  const getCatalogBasePath = (ptype) => `/${mapProductTypeToRoute(ptype)}`;
+
+  const buildCatalogPath = (ptype, params = {}) => {
+    const queryParams = new URLSearchParams();
+    Object.entries(params || {}).forEach(([key, value]) => {
+      const text = String(value == null ? "" : value).trim();
+      if (text) queryParams.set(key, text);
+    });
+    const query = queryParams.toString();
+    const basePath = getCatalogBasePath(ptype);
+    return `${basePath}${query ? `?${query}` : ""}`;
+  };
+
+  const buildBrandListingPath = (brandName, ptype) =>
+    buildCatalogPath(ptype, { brand: brandName });
+
+  const buildKeywordSearchPath = (query, ptype) =>
+    buildCatalogPath(ptype, { q: query });
+
   const formatINR = (value) => {
     const n = Number(value);
     if (!Number.isFinite(n)) return null;
@@ -1126,15 +1145,23 @@ const Header = () => {
         query: String(item.name || searchQuery || "").trim(),
         source: "brand-suggestion",
       });
-      // Navigate to brand search / results
-      navigate(`/search?brand=${encodeURIComponent(item.name)}`);
+      navigate(
+        buildBrandListingPath(
+          item.name,
+          item.category || item.product_type || item.productType,
+        ),
+      );
     } else {
       trackSearchInterest({
         query: String(item.name || searchQuery || "").trim(),
         source: "search-suggestion",
       });
-      // Fallback: perform a general search
-      navigate(`/search?q=${encodeURIComponent(item.name || item)}`);
+      navigate(
+        buildKeywordSearchPath(
+          item.name || item,
+          item.product_type || item.productType,
+        ),
+      );
     }
     // Cleanup state AFTER navigation is triggered (do not blur input before navigation)
     // Use microtask to let navigation begin; suppression flag prevents accidental restore
@@ -1398,7 +1425,7 @@ const Header = () => {
         query,
         source: "header",
       });
-      navigate(`/search?q=${encodeURIComponent(query)}`);
+      navigate(buildKeywordSearchPath(query));
       setSearchQuery("");
     }
   };
@@ -1590,16 +1617,10 @@ const Header = () => {
                 // `b` may be a brand object from the store or a fallback object {id, name}
                 const name = b && (b.name || b);
                 const id = b && (b.id || b.name || `brand-${idx}`);
-                const slug =
-                  (b &&
-                    (b.slug ||
-                      (b.name && b.name.toLowerCase().replace(/\s+/g, "-")))) ||
-                  String(name || "")
-                    .toLowerCase()
-                    .replace(/\s+/g, "-");
                 const logo = b && (b.logo || b.image_url || null);
 
-                // If the item looks like a 'View All' label, route to /brands
+                // If the item looks like a 'View All' label, route to the
+                // current category listing instead of a missing brands page.
                 if (
                   typeof name === "string" &&
                   name.toLowerCase().includes("view all")
@@ -1607,7 +1628,7 @@ const Header = () => {
                   return (
                     <Link
                       key={id}
-                      to="/brands"
+                      to={getCatalogBasePath(category.id || category.name)}
                       onClick={() => setPinnedCategory(null)}
                       className="flex items-center justify-center p-3 border border-gray-200 rounded-lg hover:border-red-400 hover:bg-red-50 group transition-all duration-200"
                     >
@@ -1621,7 +1642,7 @@ const Header = () => {
                 return (
                   <Link
                     key={id}
-                    to={`/brand/${slug}`}
+                    to={buildBrandListingPath(name, category.id || category.name)}
                     onClick={() => setPinnedCategory(null)}
                     className="flex items-center justify-center p-3 border border-gray-200 rounded-lg hover:border-red-400 hover:bg-red-50 group transition-all duration-200"
                   >
@@ -2028,9 +2049,7 @@ const Header = () => {
                           searchQuery.trim() &&
                           selectedSuggestionIndex < 0
                         ) {
-                          navigate(
-                            `/search?q=${encodeURIComponent(searchQuery)}`,
-                          );
+                          navigate(buildKeywordSearchPath(searchQuery));
                           setSearchQuery("");
                           setShowSearchSuggestions(false);
                           setIsSearchOpen(false);
@@ -2297,7 +2316,7 @@ const Header = () => {
                     searchQuery.trim() &&
                     selectedSuggestionIndex < 0
                   ) {
-                    navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+                    navigate(buildKeywordSearchPath(searchQuery));
                     setSearchQuery("");
                     setShowSearchSuggestions(false);
                   }
@@ -2647,7 +2666,7 @@ const Header = () => {
       },
       {
         label: "Brands",
-        href: "/brands",
+        href: "/smartphones",
         icon: <FaStore className="h-4 w-4" />,
       },
       {
@@ -2672,7 +2691,7 @@ const Header = () => {
         id: "brands",
         title: "Popular Brands",
         items: brandItems,
-        footer: { label: "All Brands", href: "/brands" },
+        footer: { label: "All Brands", href: "/smartphones" },
       },
       { id: "features", title: "Browse by Feature", items: featureItems },
       { id: "popular", title: "Popular Mobiles", items: popularItems },
