@@ -175,9 +175,12 @@ export const stripSmartphoneSeoQueryParams = (search = "") => {
 };
 
 export const parseSmartphoneListingPath = (pathname = "") => {
-  const normalizedPath = String(pathname || "")
-    .trim()
-    .replace(/\/+$/g, "") || SMARTPHONE_LISTING_BASE_PATH;
+  const rawPath = String(pathname || "").trim();
+  if (!rawPath) return null;
+
+  const normalizedPath = rawPath.replace(/\/+$/g, "") || "/";
+
+  if (normalizedPath === "/") return null;
 
   if (normalizedPath === SMARTPHONE_LISTING_BASE_PATH) {
     return {
