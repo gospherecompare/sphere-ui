@@ -83,6 +83,14 @@ const toFeatureSeoLabel = (value = "") => {
     .join(" ");
 };
 
+const areFilterStatesEqual = (left, right) => {
+  try {
+    return JSON.stringify(left) === JSON.stringify(right);
+  } catch {
+    return false;
+  }
+};
+
 const toSeoTextWithoutCommas = (value = "") => String(value || "").replace(/,/g, "");
 
 // Enhanced Image Carousel - Simplified without counts/indicators
@@ -1987,7 +1995,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   })();
 
   // Extract unique brands from devices
-  const brands = [...new Set(devices.map((d) => d.brand).filter(Boolean))];
+  const brands = useMemo(
+    () => [...new Set(devices.map((d) => d.brand).filter(Boolean))],
+    [devices],
+  );
   const filteredBrandOptions = useMemo(() => {
     const q = String(brandFilterQuery || "")
       .trim()
@@ -2307,7 +2318,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         processor: processorArr.length ? processorArr : base.processor,
         refreshRate: refreshArr.length ? refreshArr : base.refreshRate,
       };
-      return next;
+      return areFilterStatesEqual(prev, next) ? prev : next;
     });
 
     if (brandParam) {
@@ -2368,14 +2379,22 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
     setFilters((prev) => {
       try {
-        if (
+        const hasCustomRange =
           prev &&
           prev.priceRange &&
           (Number(prev.priceRange.min) !== MIN_PRICE ||
-            Number(prev.priceRange.max) !== MAX_PRICE)
+            Number(prev.priceRange.max) !== MAX_PRICE);
+        const hasDefaultRange =
+          prev &&
+          prev.priceRange &&
+          Number(prev.priceRange.min) === MIN_PRICE &&
+          Number(prev.priceRange.max) === MAX_PRICE;
+        if (
+          hasCustomRange
         ) {
           return prev;
         }
+        if (hasDefaultRange) return prev;
       } catch {
         // ignore and initialize
       }
@@ -2587,7 +2606,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       if (params.has("sort")) {
         params.delete("sort");
         const qs = params.toString();
-        const path = `/smartphones${qs ? `?${qs}` : ""}`;
+        const path = `${location.pathname}${qs ? `?${qs}` : ""}`;
         navigate(path, { replace: true });
       }
     } catch {

@@ -168,6 +168,15 @@ const toSmartphoneSeoSlug = (slug = "") => {
   return base ? `${base}${SMARTPHONE_SEO_SUFFIX}` : "";
 };
 
+const getSmartphoneRouteSlugs = (row = {}) => {
+  const slugs = new Set();
+  for (const value of [row?.name, row?.product_name, row?.model]) {
+    const slug = toSmartphoneSeoSlug(toSlug(value));
+    if (slug) slugs.add(slug);
+  }
+  return [...slugs];
+};
+
 const ensureSmartphoneSeoDetailPath = (path = "") => {
   if (!path.startsWith("/smartphones/")) return path;
   const tail = path.slice("/smartphones/".length);
@@ -506,13 +515,14 @@ const buildDetailWidgetContextMap = (preloadedApiPayload) => {
 
   for (const row of smartphoneRows) {
     const productId = resolveProductId(row);
-    const rawName = row?.name || row?.model || row?.product_name;
-    const slug = toSmartphoneSeoSlug(toSlug(rawName));
-    if (!productId || !slug) continue;
-    map.set(`/smartphones/${slug}`, {
-      productId,
-      entityType: "smartphones",
-    });
+    const slugs = getSmartphoneRouteSlugs(row);
+    if (!productId || slugs.length === 0) continue;
+    for (const slug of slugs) {
+      map.set(`/smartphones/${slug}`, {
+        productId,
+        entityType: "smartphones",
+      });
+    }
   }
 
   return map;
@@ -578,6 +588,7 @@ const fetchDetailRoutesFromApi = async () => {
       endpoint: `${API_BASE_URL}/smartphones`,
       preferredKeys: ["smartphones"],
       basePath: "/smartphones",
+      getDetailSlugs: (item) => getSmartphoneRouteSlugs(item),
       getName: (item) => item?.name || item?.model || item?.product_name,
       toDetailSlug: (slug) => toSmartphoneSeoSlug(slug),
     },
@@ -632,14 +643,22 @@ const fetchDetailRoutesFromApi = async () => {
     let addedCount = 0;
 
     for (const row of rows) {
-      const baseSlug = toSlug(source.getName(row));
-      if (!baseSlug) continue;
-      const detailSlug = source.toDetailSlug
-        ? source.toDetailSlug(baseSlug, row)
-        : baseSlug;
-      if (!detailSlug) continue;
-      routes.push(`${source.basePath}/${detailSlug}`);
-      addedCount += 1;
+      const detailSlugs = source.getDetailSlugs
+        ? source.getDetailSlugs(row)
+        : (() => {
+            const baseSlug = toSlug(source.getName(row));
+            if (!baseSlug) return [];
+            const detailSlug = source.toDetailSlug
+              ? source.toDetailSlug(baseSlug, row)
+              : baseSlug;
+            return detailSlug ? [detailSlug] : [];
+          })();
+
+      for (const detailSlug of detailSlugs) {
+        routes.push(`${source.basePath}/${detailSlug}`);
+        addedCount += 1;
+        if (addedCount >= MAX_DETAIL_ROUTES_PER_CATEGORY) break;
+      }
       if (addedCount >= MAX_DETAIL_ROUTES_PER_CATEGORY) break;
     }
   }

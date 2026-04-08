@@ -332,7 +332,19 @@ const MobileDetailCard = () => {
       if (!slug || !smartphone) return null;
       const searchSlug = generateSlug(normalizeSeoSlug(slug));
       return (Array.isArray(smartphone) ? smartphone : [smartphone]).find(
-        (d) => generateSlug(d.name || d.model || "") === searchSlug,
+        (d) =>
+          [
+            d?.name,
+            d?.model,
+            d?.product_name,
+            d?.productName,
+            d?.model_number,
+            d?.basic_info?.product_name,
+            d?.basic_info?.model,
+            d?.basic_info?.model_number,
+          ].some(
+            (value) => generateSlug(normalizeSeoSlug(value)) === searchSlug,
+          ),
       );
     },
     [smartphone, normalizeSeoSlug],
