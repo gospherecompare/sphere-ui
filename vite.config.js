@@ -1466,6 +1466,17 @@ const processRouteHtml = (html, routePath, preloadedApiPayload) => {
   return nextHtml;
 };
 
+const resolvePrerenderRoutePath = (renderedRoute) => {
+  if (
+    renderedRoute &&
+    Object.prototype.hasOwnProperty.call(renderedRoute, "originalRoute")
+  ) {
+    return normalizePath(renderedRoute.originalRoute || "/");
+  }
+
+  return normalizePath(renderedRoute?.route || "/");
+};
+
 const usesSharedPreloadedPayload = (canonicalPath = "/") =>
   PRELOAD_CANONICAL_PATHS.has(canonicalPath) ||
   Boolean(
@@ -1537,9 +1548,8 @@ export default defineConfig(async () => {
           },
         }),
         async postProcess(renderedRoute) {
-          renderedRoute.route =
-            renderedRoute.originalRoute || renderedRoute.route;
-          const routePath = renderedRoute.route || "/";
+          const routePath = resolvePrerenderRoutePath(renderedRoute);
+          renderedRoute.route = routePath;
           const payload = await getPreloadedPayloadForRoute(routePath);
           renderedRoute.html = processHtml(
             renderedRoute.html || "",
