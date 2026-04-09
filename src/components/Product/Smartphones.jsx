@@ -64,6 +64,8 @@ import {
 } from "../../utils/smartphoneListingRoutes";
 import "../../styles/hideScrollbar.css";
 
+const ROUTE_FEED_CACHE_KEY = "hooks_smartphone_route_feed_v1";
+
 const toFeatureSeoLabel = (value = "") => {
   const normalized = (() => {
     try {
@@ -325,6 +327,20 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     }
     return phonesForFeatureList;
   }, [isListFilter, smartphone, phonesForFeatureList]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!isListFilter) return;
+    try {
+      window.localStorage.setItem(
+        ROUTE_FEED_CACHE_KEY,
+        JSON.stringify(smartphonesForList || []),
+      );
+    } catch {
+      // ignore cache failures
+    }
+  }, [isListFilter, smartphonesForList]);
+
   const dispatch = useDispatch();
 
   useEffect(() => {

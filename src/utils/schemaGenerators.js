@@ -242,6 +242,74 @@ export const createCollectionSchema = ({
 };
 
 /**
+ * Generate NewsArticle schema for editorial story pages
+ */
+export const createNewsArticleSchema = ({
+  headline,
+  description,
+  url,
+  image,
+  imageWidth = 1200,
+  imageHeight = 630,
+  imageAlt = "",
+  datePublished,
+  dateModified = null,
+  authorName = "Hooks Editorial",
+  publisherName = "Hooks",
+  articleSection = "",
+  keywords = [],
+} = {}) => {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: headline || "",
+    description: description || "",
+    url: url || SITE_ORIGIN,
+    datePublished: datePublished || undefined,
+    dateModified: dateModified || datePublished || undefined,
+    author: {
+      "@type": "Person",
+      name: authorName,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: publisherName,
+      logo: {
+        "@type": "ImageObject",
+        url: `${SITE_ORIGIN}/hook-logo.svg`,
+      },
+    },
+    mainEntityOfPage: url || SITE_ORIGIN,
+  };
+
+  if (image) {
+    const normalized = normalizeImageObject(image, {
+      width: imageWidth,
+      height: imageHeight,
+      alt: imageAlt,
+    });
+    if (normalized) schema.image = normalized;
+  }
+
+  if (articleSection) {
+    schema.articleSection = articleSection;
+  }
+
+  const normalizedKeywords = Array.isArray(keywords)
+    ? keywords.filter(Boolean)
+    : String(keywords || "")
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean);
+
+  if (normalizedKeywords.length) {
+    schema.keywords = normalizedKeywords.join(", ");
+  }
+
+  return schema;
+};
+
+/**
  * Generate Organization schema (place in global layout/root)
  */
 export const createOrganizationSchema = () => {
@@ -396,6 +464,7 @@ export default {
   createItemListSchema,
   createBreadcrumbSchema,
   createCollectionSchema,
+  createNewsArticleSchema,
   createOrganizationSchema,
   createWebsiteSchema,
   createWebApplicationSchema,

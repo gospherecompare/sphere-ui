@@ -10,7 +10,7 @@ export default function HookLogo({
 
   return (
     <img
-      src="/hook-logo.svg"
+      src="/hook-logo.png"
       alt={altText}
       title={title}
       className={className}

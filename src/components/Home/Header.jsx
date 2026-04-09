@@ -100,6 +100,7 @@ import {
   FaTimes,
   FaBalanceScale,
   FaBriefcase,
+  FaRegNewspaper,
 } from "react-icons/fa";
 
 const BrandIdentity = ({ variant = "desktop" }) => {
@@ -1403,8 +1404,8 @@ const Header = () => {
     { name: "Upcoming Mobiles", link: "/smartphones/upcoming" },
     { name: "Latest Mobiles", link: "/smartphones/filter/new" },
     { name: "Trending Mobiles", link: "/trending/smartphones" },
+    { name: "News & Articles", link: "/news" },
     { name: "Phone Finder", link: "/" },
-    // { name: "News & Articles", link: "/blogs", caret: true },
   ];
 
   const isActiveNavLink = (href) => {
@@ -1419,6 +1420,8 @@ const Header = () => {
       return currentPath === "/smartphones/filter/new";
     if (target === "/trending/smartphones")
       return currentPath === "/trending/smartphones";
+    if (target === "/news")
+      return currentPath === "/news" || currentPath.startsWith("/news/");
     if (target === "/laptops") return currentPath === "/laptops";
     if (target === "/tvs") return currentPath === "/tvs";
     return currentPath === target || currentPath.startsWith(`${target}/`);
@@ -2694,6 +2697,11 @@ const Header = () => {
         label: "Explore",
         icon: <FaTag className="h-4 w-4" />,
         dropdownItems: exploreDropdownLinks,
+      },
+      {
+        label: "News & Articles",
+        href: "/news",
+        icon: <FaRegNewspaper className="h-4 w-4" />,
       },
       ...(isLoggedIn
         ? [

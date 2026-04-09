@@ -1,6 +1,7 @@
 ﻿// src/components/Home/RecommendedSmartphones.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { createProductPath } from "../../utils/slugGenerator";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
 import { FaMobileAlt } from "react-icons/fa";
@@ -8,6 +9,7 @@ import { FaMobileAlt } from "react-icons/fa";
 const RECENT_STORAGE_KEY = "hooks_recent_smartphones_v1";
 const FALLBACK_CACHE_KEY = "hooks_reco_fallback_cache_v1";
 const SEED_STORAGE_KEY = "hooks_reco_seed_v1";
+const ROUTE_FEED_CACHE_KEY = "hooks_smartphone_route_feed_v1";
 const MAX_RECOMMENDATIONS = 12;
 const MIN_RECOMMENDATIONS = 5;
 
@@ -169,6 +171,12 @@ const getRowName = (row) =>
     row?.basic_info?.model,
   );
 
+const splitQueryTerms = (value) =>
+  String(value || "")
+    .split(/[\s,./_-]+/)
+    .map((part) => normalizeToken(part))
+    .filter(Boolean);
+
 const getRowSegment = (row) =>
   firstText(
     row?.category,
@@ -193,6 +201,32 @@ const getRowCamera = (row) =>
     row?.specs?.camera,
     row?.camera?.primary,
   );
+
+const buildRecommendationCandidate = (row, index = 0) => {
+  const id =
+    row?.product_id ?? row?.productId ?? row?.id ?? row?.basic_info?.id ?? null;
+  return {
+    id,
+    name: getRowName(row),
+    image: getRowImage(row),
+    price: getRowPrice(row),
+    brand: firstText(
+      row?.brand,
+      row?.brand_name,
+      row?.basic_info?.brand_name,
+    ),
+    segment: getRowSegment(row),
+    processor: getRowProcessor(row),
+    cameraMp: parseCameraMp(getRowCamera(row)),
+    score: getRowDisplayScore(row),
+    _rowIndex: index,
+  };
+};
+
+const buildRecommendationCandidates = (rows) =>
+  (Array.isArray(rows) ? rows : [])
+    .map((row, index) => buildRecommendationCandidate(row, index))
+    .filter((item) => item.name);
 
 const getRowPrice = (row) => {
   const topLevel = parsePriceNumber(
@@ -246,17 +280,77 @@ const scoreSimilarity = (candidate, recent) => {
   return score;
 };
 
+const scoreContextMatch = (candidate, context = {}) => {
+  let score = 0;
+  const candidateBrand = normalizeToken(candidate.brand);
+  const candidateName = normalizeToken(candidate.name);
+  const candidateSegment = normalizeToken(candidate.segment);
+  const contextBrand = normalizeToken(context.brandName);
+  const contextProduct = normalizeToken(context.productName);
+  const contextTerms = Array.isArray(context.productTerms)
+    ? context.productTerms
+    : [];
+
+  if (contextBrand && candidateBrand) {
+    if (candidateBrand === contextBrand) {
+      score += 5;
+    } else if (
+      candidateBrand.includes(contextBrand) ||
+      contextBrand.includes(candidateBrand)
+    ) {
+      score += 3;
+    }
+  }
+
+  if (contextProduct && candidateName) {
+    if (candidateName === contextProduct) {
+      score += 4;
+    } else if (
+      candidateName.includes(contextProduct) ||
+      contextProduct.includes(candidateName)
+    ) {
+      score += 3;
+    }
+  }
+
+  for (const term of contextTerms) {
+    if (!term) continue;
+    if (candidateName.includes(term)) score += 1.5;
+    if (candidateBrand.includes(term)) score += 1;
+    if (candidateSegment.includes(term)) score += 0.5;
+  }
+
+  return score;
+};
+
 const RecommendedSmartphones = ({
   variant = "rail",
   limit = MAX_RECOMMENDATIONS,
   className = "",
+  brandName = "",
+  productName = "",
 }) => {
   const [recentDevices, setRecentDevices] = useState([]);
   const [recommended, setRecommended] = useState([]);
   const [loading, setLoading] = useState(false);
   const [activeFeed, setActiveFeed] = useState("latest");
   const navigate = useNavigate();
+  const { smartphone, smartphoneAll } = useSelector(
+    (state) => state.device || {},
+  );
   const isLoaded = useRevealAnimation();
+  const contextBrandName = normalizeToken(brandName);
+  const contextProductName = normalizeToken(productName);
+  const contextProductTerms = useMemo(
+    () => splitQueryTerms(productName),
+    [productName],
+  );
+  const catalogRows = useMemo(() => {
+    if (Array.isArray(smartphone) && smartphone.length) return smartphone;
+    if (Array.isArray(smartphoneAll) && smartphoneAll.length)
+      return smartphoneAll;
+    return [];
+  }, [smartphone, smartphoneAll]);
 
   useEffect(() => {
     let cancelled = false;
@@ -281,6 +375,16 @@ const RecommendedSmartphones = ({
       }
     };
 
+    const readRouteFeedCache = () => {
+      try {
+        const raw = window.localStorage.getItem(ROUTE_FEED_CACHE_KEY);
+        const parsed = JSON.parse(raw || "[]");
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    };
+
     const writeFallbackCache = (items) => {
       try {
         window.localStorage.setItem(
@@ -292,6 +396,57 @@ const RecommendedSmartphones = ({
       }
     };
 
+    const scoreRows = (rows, recent) => {
+      const recentIds = new Set(recent.map((item) => String(item?.id ?? "")));
+
+      const candidates = buildRecommendationCandidates(rows);
+      const scored = candidates
+        .filter((item) => !recentIds.has(String(item.id ?? "")))
+        .map((item) => {
+          const recentScore = recent.reduce((acc, r) => {
+            const s = scoreSimilarity(item, r);
+            return s > acc ? s : acc;
+          }, 0);
+          const contextScore = scoreContextMatch(item, {
+            brandName: contextBrandName,
+            productName: contextProductName,
+            productTerms: contextProductTerms,
+          });
+          return { ...item, _score: recentScore + contextScore };
+        })
+        .filter((item) => item._score > 0)
+        .sort((a, b) => {
+          if (b._score !== a._score) return b._score - a._score;
+          if (a.price == null && b.price != null) return 1;
+          if (a.price != null && b.price == null) return -1;
+          if (a.price != null && b.price != null) return a.price - b.price;
+          return a._rowIndex - b._rowIndex;
+        });
+
+      const seed = getStableSeed();
+      const randomFallback = pickRandomItems(
+        candidates.filter((item) => !recentIds.has(String(item.id ?? ""))),
+        MAX_RECOMMENDATIONS,
+        seed,
+      );
+
+      let next = scored.slice(0, MAX_RECOMMENDATIONS);
+      if (next.length < MIN_RECOMMENDATIONS) {
+        const filler = randomFallback.filter(
+          (item) =>
+            !next.some((picked) => String(picked.id) === String(item.id)),
+        );
+        next = next.concat(filler.slice(0, MIN_RECOMMENDATIONS - next.length));
+      }
+
+      if (next.length === 0 && recent.length > 0) {
+        next = recent.slice(0, MAX_RECOMMENDATIONS);
+      }
+
+      if (next.length > 0) writeFallbackCache(next);
+      if (!cancelled) setRecommended(next.slice(0, MAX_RECOMMENDATIONS));
+    };
+
     const fetchRecommendations = async () => {
       if (typeof window === "undefined") return;
       const recent = readRecent();
@@ -299,6 +454,22 @@ const RecommendedSmartphones = ({
 
       setLoading(true);
       try {
+        const routeFeedRows = readRouteFeedCache();
+        const hasContext = Boolean(contextBrandName || contextProductName);
+        let sourceRows = [];
+        if (!hasContext && routeFeedRows.length > 0) {
+          sourceRows = routeFeedRows;
+        } else if (catalogRows.length > 0) {
+          sourceRows = catalogRows;
+        } else if (routeFeedRows.length > 0) {
+          sourceRows = routeFeedRows;
+        }
+
+        if (sourceRows.length > 0) {
+          scoreRows(sourceRows, recent);
+          return;
+        }
+
         const r = await fetch(
           "https://api.apisphere.in/api/public/trending/smartphones?limit=120",
         );
@@ -313,78 +484,7 @@ const RecommendedSmartphones = ({
             : Array.isArray(json)
               ? json
               : [];
-
-        const recentIds = new Set(recent.map((item) => String(item?.id ?? "")));
-
-        const candidates = rows
-          .map((row, index) => {
-            const id =
-              row.product_id ??
-              row.productId ??
-              row.id ??
-              row.basic_info?.id ??
-              null;
-            return {
-              id,
-              name: getRowName(row),
-              image: getRowImage(row),
-              price: getRowPrice(row),
-              brand: firstText(
-                row?.brand,
-                row?.brand_name,
-                row?.basic_info?.brand_name,
-              ),
-              segment: getRowSegment(row),
-              processor: getRowProcessor(row),
-              cameraMp: parseCameraMp(getRowCamera(row)),
-              score: getRowDisplayScore(row),
-              _rowIndex: index,
-            };
-          })
-          .filter((item) => item.name);
-
-        const scored = candidates
-          .filter((item) => !recentIds.has(String(item.id ?? "")))
-          .map((item) => {
-            const bestScore = recent.reduce((acc, r) => {
-              const s = scoreSimilarity(item, r);
-              return s > acc ? s : acc;
-            }, 0);
-            return { ...item, _score: bestScore };
-          })
-          .filter((item) => item._score > 0)
-          .sort((a, b) => {
-            if (b._score !== a._score) return b._score - a._score;
-            if (a.price == null && b.price != null) return 1;
-            if (a.price != null && b.price == null) return -1;
-            if (a.price != null && b.price != null) return a.price - b.price;
-            return a._rowIndex - b._rowIndex;
-          });
-
-        const seed = getStableSeed();
-        const randomFallback = pickRandomItems(
-          candidates.filter((item) => !recentIds.has(String(item.id ?? ""))),
-          MAX_RECOMMENDATIONS,
-          seed,
-        );
-
-        let next = scored.slice(0, MAX_RECOMMENDATIONS);
-        if (next.length < MIN_RECOMMENDATIONS) {
-          const filler = randomFallback.filter(
-            (item) =>
-              !next.some((picked) => String(picked.id) === String(item.id)),
-          );
-          next = next.concat(
-            filler.slice(0, MIN_RECOMMENDATIONS - next.length),
-          );
-        }
-
-        if (next.length === 0 && recent.length > 0) {
-          next = recent.slice(0, MAX_RECOMMENDATIONS);
-        }
-
-        if (next.length > 0) writeFallbackCache(next);
-        if (!cancelled) setRecommended(next.slice(0, MAX_RECOMMENDATIONS));
+        scoreRows(rows, recent);
       } catch {
         const cached = readFallbackCache();
         if (!cancelled) setRecommended(cached.slice(0, MAX_RECOMMENDATIONS));
@@ -397,7 +497,12 @@ const RecommendedSmartphones = ({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [
+    catalogRows,
+    contextBrandName,
+    contextProductName,
+    contextProductTerms,
+  ]);
 
   const getDevicePath = (device) => {
     const rawName = device.name || String(device.id || "device");
@@ -426,24 +531,8 @@ const RecommendedSmartphones = ({
     const base = displayItems.slice(0, Math.max(3, Math.min(limit, 8)));
     if (!isSidebar) return base;
 
-    const launchText = (item) =>
-      String(
-        item?.launch_status ||
-          item?.launchStatus ||
-          item?.status ||
-          item?.availability ||
-          item?.badge ||
-          "",
-      ).toLowerCase();
-
     let next = base;
-    if (activeFeed === "upcoming") {
-      next = base.filter((item) =>
-        /(upcoming|coming soon|announced|pre[-\s]?order|pre[-\s]?book)/i.test(
-          launchText(item),
-        ),
-      );
-    } else if (activeFeed === "popular") {
+    if (activeFeed === "popular") {
       next = [...base].sort((a, b) => {
         const scoreA = Number(a?.score ?? a?.rating ?? 0) || 0;
         const scoreB = Number(b?.score ?? b?.rating ?? 0) || 0;
@@ -474,19 +563,29 @@ const RecommendedSmartphones = ({
   };
 
   if (isSidebar) {
+    const sidebarTitle = brandName
+      ? `${brandName} smartphones`
+      : productName
+        ? "Related smartphones"
+        : "Latest smartphones";
+    const sidebarSubtitle =
+      brandName || productName
+        ? `Live picks related to ${productName || brandName}.`
+        : "Live picks from the smartphone catalog.";
+
     return (
       <div className={`mx-auto w-full ${className}`}>
-        <div className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+        <div className="border border-slate-200 bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
           <div className="mb-4 text-center">
             <h3 className="text-2xl font-semibold tracking-tight text-slate-900">
-              Explore Mobile Phones
+              {sidebarTitle}
             </h3>
+            <p className="mt-2 text-sm text-slate-600">{sidebarSubtitle}</p>
           </div>
 
-          <div className="grid grid-cols-3 gap-1 rounded-2xl border border-slate-200 bg-slate-50 p-1">
+          <div className="grid grid-cols-2 gap-1 border border-slate-200 bg-slate-50 p-1">
             {[
               { id: "latest", label: "Latest" },
-              { id: "upcoming", label: "Upcoming" },
               { id: "popular", label: "Popular" },
             ].map((tab) => {
               const active = activeFeed === tab.id;

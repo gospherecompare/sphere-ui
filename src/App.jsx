@@ -17,6 +17,8 @@ import Breadcrumbs from "./components/Breadcrumbs";
 import About from "./components/Static/About";
 import Careers from "./components/Static/Careers";
 import Contact from "./components/Static/Contact";
+import NewsArticlesPage from "./components/Static/NewsArticlesPage";
+import NewsStoryPage from "./components/Static/NewsStoryPage";
 import PrivacyPolicy from "./components/Static/PrivacyPolicy";
 import Terms from "./components/Static/Terms";
 import NotFound from "./components/Static/NotFound";
@@ -142,8 +144,10 @@ const toCanonicalPath = (path) => {
   if (path.startsWith("/devices/mobiles/upcoming"))
     return "/smartphones/upcoming";
   if (path === "/career") return "/careers";
-  if (path === "/blog" || path === "/blogs") return "/";
-  if (path.startsWith("/blog/") || path.startsWith("/blogs/")) return "/";
+  if (path === "/articles") return "/news";
+  if (path.startsWith("/articles/")) return "/news";
+  if (path === "/blog" || path === "/blogs") return "/news";
+  if (path.startsWith("/blog/") || path.startsWith("/blogs/")) return "/news";
   if (path === "/trending") return "/trending/smartphones";
   if (path === "/trending/smartphone") return "/trending/smartphones";
   if (path === "/trending/laptop") return "/trending/laptops";
@@ -249,6 +253,14 @@ const resolveSeoMeta = (pathname) => {
     : "";
 
   const rules = [
+    {
+      test: (p) => p.startsWith("/news"),
+      title: "News & Articles - Latest Mobile News, Gadget Guides & Launch Updates - Hooks",
+      description:
+        "Browse the latest mobile news, gadget updates, launch coverage, and editorial guides on Hooks.",
+      keywords:
+        "news and articles, mobile news, gadget news, launch updates, tech guides, latest gadgets india, smartphone news india",
+    },
     {
       test: (p) => p === "/",
       title:
@@ -432,6 +444,7 @@ const RouteSeoFallback = () => {
   // Skip product pages - let component Helmet handle SEO
   if (pathname.startsWith("/compare")) return null;
   if (pathname.startsWith("/popular-comparisons")) return null;
+  if (pathname.startsWith("/news")) return null;
   if (pathname.startsWith("/smartphones")) return null;
   if (pathname.startsWith("/laptops")) return null;
   if (pathname.startsWith("/tvs")) return null;
@@ -473,6 +486,8 @@ const RouteSeoFallback = () => {
 };
 
 function App() {
+  const NewsRedirect = () => <Navigate to="/news" replace />;
+
   const AppliancesListRedirect = () => {
     const location = useLocation();
     return <Navigate to={`/tvs${location.search || ""}`} replace />;
@@ -570,8 +585,6 @@ function App() {
       <Navigate to={`${toBasePath}/${slug}${location.search || ""}`} replace />
     );
   };
-
-  const BlogsRedirect = () => <Navigate to="/" replace />;
 
   return (
     <Router>
@@ -712,12 +725,15 @@ function App() {
           <Route path="/careers" element={<Careers />} />
           <Route path="/career" element={<Navigate to="/careers" replace />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/news/:slug" element={<NewsStoryPage />} />
+          <Route path="/news" element={<NewsArticlesPage />} />
+          <Route path="/articles" element={<NewsRedirect />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<Terms />} />
-          <Route path="/blogs" element={<BlogsRedirect />} />
-          <Route path="/blogs/:slug" element={<BlogsRedirect />} />
-          <Route path="/blog" element={<BlogsRedirect />} />
-          <Route path="/blog/:slug" element={<BlogsRedirect />} />
+          <Route path="/blogs" element={<NewsRedirect />} />
+          <Route path="/blogs/:slug" element={<NewsRedirect />} />
+          <Route path="/blog" element={<NewsRedirect />} />
+          <Route path="/blog/:slug" element={<NewsRedirect />} />
 
           {/* 404 Fallback */}
           <Route path="*" element={<NotFound />} />

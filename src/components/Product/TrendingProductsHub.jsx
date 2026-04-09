@@ -37,6 +37,7 @@ import {
   matchesTvFeature,
 } from "../../utils/tvPopularFeatures";
 
+const ROUTE_FEED_CACHE_KEY = "hooks_smartphone_route_feed_v1";
 const RUPEE = "\u20B9";
 const API_BASE = "https://api.apisphere.in";
 const SITE_ORIGIN = "https://tryhook.shop";
@@ -1182,6 +1183,19 @@ const TrendingProductsHub = () => {
     sortBy,
     activeCategory,
   ]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (activeCategory !== "smartphones") return;
+    try {
+      window.localStorage.setItem(
+        ROUTE_FEED_CACHE_KEY,
+        JSON.stringify(visible || []),
+      );
+    } catch {
+      // ignore cache failures
+    }
+  }, [activeCategory, visible]);
 
   const brands = useMemo(
     () =>
