@@ -104,6 +104,7 @@ const DEFAULT_SEO_KEYWORDS = `hook, best gadget comparison site, mobile price co
 const STATIC_PRERENDER_ROUTES = [
   "/",
   "/career",
+  "/news",
   "/trending",
   "/laptop",
   "/mobiles",
@@ -745,6 +746,25 @@ const fetchCompareRoutesFromApi = async () => {
   return [...new Set(routes)];
 };
 
+const fetchNewsRoutesFromApi = async () => {
+  const rows = await fetchApiRows(`${API_BASE_URL}/public/blogs?limit=1000`, [
+    "blogs",
+  ]);
+  const routes = [];
+  const seen = new Set();
+
+  for (const row of rows) {
+    const slug = String(row?.slug || "").trim().replace(/^\/+|\/+$/g, "");
+    if (!slug) continue;
+    const routePath = `/news/${slug}`;
+    if (seen.has(routePath)) continue;
+    seen.add(routePath);
+    routes.push(routePath);
+  }
+
+  return routes;
+};
+
 const fetchSmartphoneListingRoutesFromApi = async () => {
   const routes = Object.keys(SMARTPHONE_FEATURE_ROUTE_META).map((featureId) =>
     buildSmartphoneFeaturePath(featureId),
@@ -779,6 +799,7 @@ const getPrerenderRoutes = async () => {
   const sitemapRoutes = routesFromSitemap();
   const detailRoutes = await fetchDetailRoutesFromApi();
   const compareRoutes = await fetchCompareRoutesFromApi();
+  const newsRoutes = await fetchNewsRoutesFromApi();
   const smartphoneListingRoutes = await fetchSmartphoneListingRoutesFromApi();
   return [
     ...new Set([
@@ -787,6 +808,7 @@ const getPrerenderRoutes = async () => {
       ...sitemapRoutes,
       ...detailRoutes,
       ...compareRoutes,
+      ...newsRoutes,
       ...smartphoneListingRoutes,
     ]),
   ];
@@ -1033,6 +1055,14 @@ const resolveSeo = (routePath) => {
       description:
         "Track trending smartphones, laptops, and TVs based on momentum and user interest to spot what is hot right now.",
       keywords: `trending smartphones india, trending laptops india, trending tvs india, trending phone in india, most popular mobiles, top selling gadgets india, new launch and trending devices, latest smartphones in india ${CURRENT_YEAR}`,
+    },
+    {
+      test: (p) => p === "/news",
+      title: "News & Articles | Hooks",
+      description:
+        "Latest mobile news, gadget updates, launch stories, and practical guides from the Hooks newsroom.",
+      keywords:
+        "news and articles, latest mobile news, gadget updates, launch stories, practical guides, hooks newsroom",
     },
     {
       test: (p) => p.startsWith("/careers"),

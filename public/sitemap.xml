@@ -73,6 +73,30 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://tryhook.shop/news</loc>
+    <lastmod>2026-04-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://tryhook.shop/news/oneplus-nord-6-price-specs-launch-india</loc>
+    <lastmod>2026-04-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://tryhook.shop/news/realme-16-5g-price-specs-features-india</loc>
+    <lastmod>2026-04-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://tryhook.shop/news/vivo-v70-fe-price-specs-features-india</loc>
+    <lastmod>2026-04-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://tryhook.shop/privacy-policy</loc>
     <lastmod>2026-04-10</lastmod>
     <changefreq>daily</changefreq>
@@ -854,6 +878,12 @@
   </url>
   <url>
     <loc>https://tryhook.shop/smartphones/v2541-price-in-india</loc>
+    <lastmod>2026-04-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://tryhook.shop/smartphones/v2558-price-in-india</loc>
     <lastmod>2026-04-10</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
