@@ -562,25 +562,25 @@ const RecommendedSmartphones = ({
       : "Price not available";
   };
 
-  if (isSidebar) {
-    const sidebarTitle = brandName
-      ? `${brandName} smartphones`
-      : productName
-        ? "Related smartphones"
-        : "Latest smartphones";
-    const sidebarSubtitle =
-      brandName || productName
-        ? `Live picks related to ${productName || brandName}.`
-        : "Live picks from the smartphone catalog.";
+  const adaptiveTitle = brandName
+    ? `${brandName} smartphones`
+    : productName
+      ? "Related smartphones"
+      : "Latest smartphones";
+  const adaptiveSubtitle =
+    brandName || productName
+      ? `Live picks related to ${productName || brandName}.`
+      : "Live picks from the smartphone catalog.";
 
+  if (isSidebar) {
     return (
       <div className={`mx-auto w-full ${className}`}>
         <div className="border border-slate-200 bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
           <div className="mb-4 text-center">
             <h3 className="text-2xl font-semibold tracking-tight text-slate-900">
-              {sidebarTitle}
+              {adaptiveTitle}
             </h3>
-            <p className="mt-2 text-sm text-slate-600">{sidebarSubtitle}</p>
+            <p className="mt-2 text-sm text-slate-600">{adaptiveSubtitle}</p>
           </div>
 
           <div className="grid grid-cols-2 gap-1 border border-slate-200 bg-slate-50 p-1">

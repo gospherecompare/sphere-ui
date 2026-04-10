@@ -309,6 +309,74 @@ const buildTakeaways = ({ blog, body, category }) => {
     .slice(0, 3);
 };
 
+const readSnapshotText = (snapshot, keys = []) => {
+  const source = toPlainObject(snapshot);
+  for (const key of keys) {
+    const text = cleanPublicStoryText(source?.[key]);
+    if (text) return text;
+  }
+  return "";
+};
+
+const joinSpecParts = (...values) =>
+  values
+    .map((value) => cleanPublicStoryText(value))
+    .filter(Boolean)
+    .join(" · ");
+
+const buildDeviceSpecs = (snapshot) => {
+  const specs = [];
+  const addSpec = (label, value) => {
+    const text = clipWords(cleanPublicStoryText(value), 14);
+    if (!text) return;
+    specs.push({ label, value: text });
+  };
+
+  addSpec(
+    "Display",
+    joinSpecParts(
+      readSnapshotText(snapshot, ["display", "display_size", "screen_size"]),
+      readSnapshotText(snapshot, ["resolution"]),
+      readSnapshotText(snapshot, ["refresh_rate"]),
+    ),
+  );
+
+  addSpec(
+    "OS",
+    readSnapshotText(snapshot, ["os", "operating_system", "software_os"]),
+  );
+
+  addSpec(
+    "Camera",
+    joinSpecParts(
+      readSnapshotText(snapshot, ["main_camera", "camera"]),
+      readSnapshotText(snapshot, ["front_camera"]),
+    ),
+  );
+
+  addSpec(
+    "Connectivity",
+    joinSpecParts(
+      readSnapshotText(snapshot, ["network", "network_type"]),
+      readSnapshotText(snapshot, ["connectivity"]),
+    ),
+  );
+
+  const fallbackSpecs = [
+    ["Processor", ["processor", "chipset"]],
+    ["Battery", ["battery", "battery_capacity", "capacity"]],
+    ["RAM", ["ram", "memory"]],
+    ["Storage", ["storage", "internal_storage"]],
+  ];
+
+  for (const [label, keys] of fallbackSpecs) {
+    if (specs.length >= 4) break;
+    addSpec(label, readSnapshotText(snapshot, keys));
+  }
+
+  return specs.slice(0, 4);
+};
+
 const normalizeBlogStory = (blog) => {
   if (!blog || typeof blog !== "object") return null;
 
@@ -381,6 +449,8 @@ const normalizeBlogStory = (blog) => {
     productType: safeText(blog.product_type).toLowerCase(),
     brandName: safeText(blog.brand_name),
     brandLogo: normalizeBrandLogoUrl(blog.brand_logo),
+    tokenSnapshot,
+    deviceSpecs: buildDeviceSpecs(tokenSnapshot),
     metaTitle: safeText(blog.meta_title),
     metaDescription: safeText(blog.meta_description),
   };

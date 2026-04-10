@@ -1,9 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import {
-  FaArrowRight,
-  FaRegNewspaper,
-} from "react-icons/fa";
+import { FaArrowRight, FaRegNewspaper } from "react-icons/fa";
 import SEO from "../SEO";
 import NotFound from "./NotFound";
 import { HooksSignature, NewsBrandBadge } from "../Home/NewsBrandBadge";
@@ -31,10 +28,18 @@ const STORY_MEDIA_THEMES = {
 const getStoryMediaTheme = (category) =>
   STORY_MEDIA_THEMES[category] || STORY_MEDIA_THEMES.news;
 
-const NewsStoryMedia = ({ story, variant = "hero", className = "" }) => {
+const NewsStoryMedia = ({
+  story,
+  variant = "hero",
+  className = "",
+  overlayItems = [],
+}) => {
   const [imageError, setImageError] = useState(false);
   const isHero = variant === "hero";
   const theme = getStoryMediaTheme(story?.category);
+  const visibleOverlayItems = Array.isArray(overlayItems)
+    ? overlayItems.filter((item) => item?.value)
+    : [];
 
   useEffect(() => {
     setImageError(false);
@@ -85,6 +90,8 @@ const NewsStoryMedia = ({ story, variant = "hero", className = "" }) => {
   );
 
   if (isHero) {
+    const heroSpecItems = visibleOverlayItems.slice(0, 4);
+
     return (
       <div
         className={`relative min-h-[28rem] overflow-hidden bg-slate-950 ${className}`}
@@ -99,14 +106,39 @@ const NewsStoryMedia = ({ story, variant = "hero", className = "" }) => {
         ) : null}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.14),transparent_30%),linear-gradient(135deg,rgba(15,23,42,0.16),rgba(15,23,42,0.02))]" />
 
-        {!imageError && story?.image ? (
-          <img
-            src={story.image}
-            alt={story.title}
-            className="absolute inset-0 h-full w-full object-contain p-3 sm:p-6"
-            loading="lazy"
-            onError={() => setImageError(true)}
-          />
+        {story?.image ? (
+          <div className="relative z-10 grid min-h-[28rem] gap-0 md:grid-cols-[minmax(15rem,18rem)_minmax(0,1fr)]">
+            {heroSpecItems.length ? (
+              <aside className="order-2  border-t text-white  sm:p-5 md:order-1  md:p-6">
+                <div className="space-y-4 border-t border-white/10 bg-slate-950/90 backdrop-blur-sm p-4">
+                  {heroSpecItems.map((item) => (
+                    <div key={item.label} className="min-w-0">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/45">
+                        {item.label}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold leading-snug text-white">
+                        {item.value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </aside>
+            ) : null}
+
+            <div className="order-1 relative flex min-h-[18rem] items-center justify-center p-3 sm:min-h-[22rem] sm:p-5 md:order-2 md:min-h-[28rem] md:p-8">
+              {!imageError ? (
+                <img
+                  src={story.image}
+                  alt={story.title}
+                  className="block max-h-full max-w-full object-contain object-center drop-shadow-[0_18px_40px_rgba(0,0,0,0.28)]"
+                  loading="lazy"
+                  onError={() => setImageError(true)}
+                />
+              ) : (
+                fallbackPanel
+              )}
+            </div>
+          </div>
         ) : (
           fallbackPanel
         )}
@@ -131,7 +163,7 @@ const NewsStoryMedia = ({ story, variant = "hero", className = "" }) => {
 
   return (
     <div
-      className={`relative min-h-[16rem] overflow-hidden bg-slate-950 sm:min-h-[18rem] ${className}`}
+      className={`relative aspect-[4/3] min-h-[16rem] overflow-hidden bg-slate-950 ${className}`}
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${theme}`} />
       {story?.image ? (
@@ -144,18 +176,20 @@ const NewsStoryMedia = ({ story, variant = "hero", className = "" }) => {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.12),transparent_28%),linear-gradient(135deg,rgba(15,23,42,0.1),rgba(15,23,42,0.02))]" />
 
       {!imageError && story?.image ? (
-        <img
-          src={story.image}
-          alt={story.title}
-          className="absolute inset-0 h-full w-full object-contain p-4 sm:p-6 transition-transform duration-300 group-hover:scale-[1.02]"
-          loading="lazy"
-          onError={() => setImageError(true)}
-        />
+        <div className="absolute inset-0 z-0 flex items-center justify-center p-3 sm:p-4">
+          <img
+            src={story.image}
+            alt={story.title}
+            className="block max-h-full max-w-full object-contain object-center transition-transform duration-300 group-hover:scale-[1.02]"
+            loading="lazy"
+            onError={() => setImageError(true)}
+          />
+        </div>
       ) : (
         fallbackPanel
       )}
 
-      <div className="absolute inset-x-0 bottom-0 border-t border-white/10 bg-slate-950/72 px-4 py-2 backdrop-blur-sm">
+      <div className="absolute inset-x-0 bottom-0 border-t border-white/10 bg-slate-950/72 px-0 py-2 backdrop-blur-sm sm:px-4">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[11px] text-white/70">
           <NewsBrandBadge
             brandName={story?.brandName || story?.label || "Hooks"}
@@ -181,7 +215,7 @@ const NewsStoryPage = () => {
   if (loading) {
     return (
       <main className="min-h-screen bg-slate-50 text-slate-900">
-        <section className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+        <section className="mx-auto max-w-5xl px-0 py-12 sm:px-6 lg:px-8">
           <div
             className={`min-h-[24rem] animate-pulse ${NEWS_BRAND_STYLES.cardShell}`}
           />
@@ -197,7 +231,7 @@ const NewsStoryPage = () => {
   if (!story) {
     return (
       <main className="min-h-screen bg-slate-50 text-slate-900">
-        <section className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+        <section className="mx-auto max-w-5xl px-0 py-12 sm:px-6 lg:px-8">
           <div className={`${NEWS_BRAND_STYLES.cardShell} p-6`}>
             <p className="text-base font-semibold text-slate-900">
               Story could not be loaded.
@@ -219,6 +253,7 @@ const NewsStoryPage = () => {
       : Array.isArray(story.body)
         ? story.body
         : [];
+  const deviceSpecs = Array.isArray(story.deviceSpecs) ? story.deviceSpecs : [];
 
   const schema = [
     createBreadcrumbSchema([
@@ -252,19 +287,15 @@ const NewsStoryPage = () => {
       />
 
       <main className="min-h-screen bg-slate-50 text-slate-900">
-        <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-12">
+        <section className="mx-auto max-w-7xl px-0 pt-0 pb-10 sm:px-6 sm:pt-6 sm:pb-10 lg:px-8 lg:py-12">
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
             <article id="story-body" className="min-w-0">
               <div className={`overflow-hidden ${NEWS_BRAND_STYLES.cardShell}`}>
-                <div className="border-b border-slate-200 bg-white p-6 sm:p-8 lg:p-10">
-                  <p
-                    className={`inline-flex items-center gap-2 ${NEWS_BRAND_STYLES.eyebrow}`}
+                <div className=" p-6 sm:p-8 lg:p-10">
+                  <h1
+                    className="mt-4 max-w-4xl text-2xl font-black leading-[1.08] tracking-tight text-slate-950 sm:text-4xl lg:text-5xl"
+                    style={{ textWrap: "balance" }}
                   >
-                    <FaRegNewspaper className="h-3.5 w-3.5" />
-                    {story.label}
-                  </p>
-
-                  <h1 className={`mt-4 ${NEWS_BRAND_STYLES.pageTitle}`}>
                     {story.title}
                   </h1>
 
@@ -272,7 +303,7 @@ const NewsStoryPage = () => {
                     {story.highlights.map((highlight) => (
                       <span
                         key={highlight}
-                        className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600"
+                        className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600"
                       >
                         {highlight}
                       </span>
@@ -297,11 +328,14 @@ const NewsStoryPage = () => {
                   </div>
                 </div>
 
-                <NewsStoryMedia
-                  story={story}
-                  variant="card"
-                  className="border-b border-slate-200"
-                />
+                <div className="border-t border-slate-200 bg-white">
+                  <NewsStoryMedia
+                    story={story}
+                    variant="hero"
+                    className="min-h-[24rem] lg:min-h-[34rem]"
+                    overlayItems={deviceSpecs}
+                  />
+                </div>
 
                 <div className="bg-white p-6 sm:p-8">
                   <p className={NEWS_BRAND_STYLES.eyebrow}>Full story</p>
@@ -351,15 +385,12 @@ const NewsStoryPage = () => {
               </div>
             </article>
 
-            <aside className="space-y-4 lg:sticky lg:top-6">
-              <RecommendedSmartphones
-                variant="sidebar"
-                limit={4}
-              />
+            <aside className="hidden space-y-4 lg:block lg:sticky lg:top-6">
+              <RecommendedSmartphones variant="sidebar" limit={4} />
             </aside>
           </div>
 
-          <section className="mt-12">
+          <section className="mt-12 px-2 sm:px-0">
             <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
               <div className="max-w-3xl">
                 <p className={NEWS_BRAND_STYLES.eyebrow}>Related stories</p>
@@ -377,14 +408,14 @@ const NewsStoryPage = () => {
             {relatedStories.length ? (
               <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                 {relatedStories.map((item) => (
-                    <article
-                      key={item.slug}
+                  <article
+                    key={item.slug}
                     className={`overflow-hidden ${NEWS_BRAND_STYLES.cardShell}`}
+                  >
+                    <Link
+                      to={createNewsStoryPath(item.slug)}
+                      className="group block"
                     >
-                      <Link
-                        to={createNewsStoryPath(item.slug)}
-                        className="group block"
-                      >
                       <NewsStoryMedia story={item} variant="card" />
 
                       <div className="p-5">
