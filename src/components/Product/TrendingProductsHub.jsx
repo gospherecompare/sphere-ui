@@ -608,8 +608,8 @@ const SpecScoreBadge = ({ score }) => {
       className="inline-flex items-end gap-1 leading-none"
       aria-label={
         normalized != null
-          ? `Spec score ${normalized.toFixed(1)} percent`
-          : "Spec score unavailable"
+          ? `Hooks score ${normalized.toFixed(1)} percent`
+          : "Hooks score unavailable"
       }
     >
       <span className="text-3xl font-semibold leading-none text-violet-600 sm:text-4xl">
@@ -617,7 +617,7 @@ const SpecScoreBadge = ({ score }) => {
       </span>
       <div className="flex flex-col items-start leading-none">
         <span className="text-[8px] font-semibold uppercase tracking-[0.32em] text-violet-400">
-          Spec
+          Hooks
         </span>
         <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-violet-500">
           Score

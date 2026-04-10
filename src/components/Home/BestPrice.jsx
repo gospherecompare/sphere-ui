@@ -612,7 +612,7 @@ const BestPriceSection = () => {
         {/* Header Section */}
         <div className="mx-auto mb-10 max-w-5xl text-center">
           <h1 className="mt-5 text-3xl font-black leading-tight text-slate-900 sm:text-5xl lg:text-6xl">
-            Top Picks{" "}
+            Trending{" "}
             <span className="bg-gradient-to-r from-blue-600 via-violet-500 to-cyan-500 bg-clip-text text-transparent">
               by Hooks
             </span>
@@ -676,11 +676,11 @@ const BestPriceSection = () => {
           })}
         </div>
 
-        {/* Top Picks by Hooks - Single Row */}
+        {/* Trending by Hooks - Single Row */}
         <div className="mt-10 flex items-center gap-4">
           <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
           <span className="whitespace-nowrap text-xs font-bold uppercase tracking-[0.3em] text-slate-500">
-            Top Picks
+            Trending
           </span>
           <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
         </div>
@@ -695,7 +695,7 @@ const BestPriceSection = () => {
                   className="w-[74vw] max-w-[17rem] shrink-0 animate-pulse sm:w-[18rem] lg:w-[19rem]"
                 >
                   <div className="relative overflow-hidden border border-slate-200 bg-white p-3 sm:p-4">
-                    <div className="mb-4 h-40 rounded-[1.5rem] bg-slate-200 sm:h-48"></div>
+                    <div className="mb-4 aspect-[4/3] rounded-[1.5rem] bg-slate-200"></div>
                     <div className="h-3 w-4/5 rounded bg-slate-200"></div>
                     <div className="mt-2 h-3 w-full rounded bg-slate-200"></div>
                     <div className="mt-4 flex gap-2">
@@ -726,12 +726,12 @@ const BestPriceSection = () => {
                   <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-blue-500 to-cyan-400" />
 
                   <div className="relative bg-gradient-to-br from-slate-50 via-white to-blue-50/60 p-3 sm:p-5">
-                    <div className="flex h-40 items-center justify-center overflow-hidden rounded-[1.5rem] bg-white/90 ring-1 ring-slate-200 sm:h-48">
+                    <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-[1.5rem] bg-white/90 ring-1 ring-slate-200">
                       {device.image ? (
                         <img
                           src={device.image}
                           alt={device.name}
-                          className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-110"
+                          className="h-full w-full object-contain p-4 transition-transform duration-300 group-hover:scale-105"
                           loading="lazy"
                           onError={(e) => {
                             e.currentTarget.style.display = "none";
