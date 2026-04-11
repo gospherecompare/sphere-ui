@@ -11,6 +11,7 @@ const PRODUCT_DETAIL_PATH_RE =
   /^\/(smartphones|laptops|tvs|appliances|networking)\/[^/]+\/?$/i;
 const LEGACY_DETAILS_PATH_RE =
   /^\/(smartphones|laptops|tvs|appliances|networking)\/details\/?$/i;
+const NEWS_ROUTE_RE = /^\/news(?:\/|$)/i;
 const DETAIL_QUERY_KEYS = ["name", "product_name", "product", "title", "model"];
 
 const safeDecode = (value) => {
@@ -195,6 +196,10 @@ export default function Breadcrumbs() {
 
   useEffect(() => {
     const pathname = String(location.pathname || "");
+    if (NEWS_ROUTE_RE.test(pathname)) {
+      setDetailCrumbLabel("");
+      return;
+    }
     const isProductDetailPath = PRODUCT_DETAIL_PATH_RE.test(pathname);
 
     if (!isProductDetailPath) {
@@ -262,6 +267,9 @@ export default function Breadcrumbs() {
 
   // Do not render breadcrumbs on the root/home page
   if (location && location.pathname === "/") return null;
+
+  const isNewsRoute = NEWS_ROUTE_RE.test(String(location.pathname || ""));
+  if (isNewsRoute) return null;
 
   if (!breadcrumbs || breadcrumbs.length <= 1) return null;
 

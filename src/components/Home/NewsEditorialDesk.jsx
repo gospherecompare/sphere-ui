@@ -1,154 +1,76 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  FaArrowRight,
-  FaFire,
-  FaRegNewspaper,
-} from "react-icons/fa";
+import { FaArrowRight, FaFire, FaRegNewspaper } from "react-icons/fa";
 import { NEWS_HOME_TABS } from "./newsDeskStaticData";
 import { NEWS_BRAND_STYLES } from "./newsBrandStyles";
-import { HooksSignature, NewsBrandBadge } from "./NewsBrandBadge";
 import { createNewsStoryPath } from "../../hooks/usePublicNews";
-
-const FEATURE_MEDIA_THEMES = {
-  news: "from-slate-950 via-blue-950 to-blue-600",
-  mobiles: "from-slate-950 via-cyan-950 to-cyan-600",
-  gadgets: "from-slate-950 via-orange-950 to-orange-500",
-  guides: "from-slate-950 via-violet-950 to-violet-600",
-  launches: "from-slate-950 via-emerald-950 to-emerald-600",
-};
-
-const getFeatureMediaTheme = (category) =>
-  FEATURE_MEDIA_THEMES[category] || FEATURE_MEDIA_THEMES.news;
 
 const NewsFeatureMedia = ({ story }) => {
   const [imageError, setImageError] = useState(false);
-  const theme = getFeatureMediaTheme(story?.category);
 
   useEffect(() => {
     setImageError(false);
   }, [story?.image, story?.slug]);
 
   return (
-    <div className="relative min-h-[22rem] overflow-hidden bg-slate-950 sm:min-h-[28rem] lg:min-h-[34rem]">
-      <div className={`absolute inset-0 bg-gradient-to-br ${theme}`} />
-      {story?.image ? (
-        <div
-          className="absolute inset-0 scale-110 bg-cover bg-center opacity-35 blur-3xl"
-          style={{ backgroundImage: `url(${story.image})` }}
-          aria-hidden="true"
-        />
-      ) : null}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.12),transparent_28%),linear-gradient(135deg,rgba(15,23,42,0.12),rgba(15,23,42,0.02))]" />
-
+    <div className="relative aspect-[7/5] overflow-hidden bg-white">
       {!imageError && story?.image ? (
         <img
           src={story.image}
           alt={story.title}
-          className="absolute inset-0 h-full w-full object-contain p-4 sm:p-6 lg:p-8"
+          className="absolute inset-0 h-full w-full object-contain p-4 sm:p-5 lg:p-6"
           loading="lazy"
           onError={() => setImageError(true)}
         />
       ) : (
-        <div className="relative flex h-full min-h-[22rem] flex-col justify-between p-5 text-white sm:min-h-[28rem] sm:p-8 lg:min-h-[34rem]">
-          <div className="flex items-start justify-between gap-3">
-            <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/75">
+        <div className="flex h-full items-center justify-center bg-slate-50 p-6 text-center">
+          <div className="max-w-md">
+            <p className={NEWS_BRAND_STYLES.eyebrow}>
               {story?.label || "Newsroom"}
-            </span>
-            <span className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/45">
-              Fallback cover
-            </span>
-          </div>
-
-          <div className="max-w-lg">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/55">
-              {story?.brandName || story?.productType || "Hooks newsroom"}
             </p>
-            <h2 className="mt-4 text-xl font-black tracking-tight text-white sm:text-2xl">
+            <h2 className="mt-3 text-lg font-black tracking-tight text-slate-900 sm:text-xl">
               {story?.title}
             </h2>
-            <p className="mt-4 text-sm leading-7 text-white/72">
+            <p className={`mt-3 ${NEWS_BRAND_STYLES.bodySmall}`}>
               {story?.summary}
             </p>
           </div>
         </div>
       )}
-
-      <div className="absolute inset-x-0 bottom-0 border-t border-white/10 bg-slate-950/72 px-4 py-3 backdrop-blur-sm sm:px-5">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-white/70">
-          <NewsBrandBadge
-            brandName={story?.brandName || story?.label || "Hooks"}
-            brandLogo={story?.brandLogo}
-            className="text-white/75"
-            textClassName="text-xs font-semibold text-white/75"
-          />
-          <span>
-            {story?.productName || story?.productType || "Editorial cover"}
-          </span>
-          <HooksSignature />
-        </div>
-      </div>
     </div>
   );
 };
 
 const NewsCardMedia = ({ story }) => {
   const [imageError, setImageError] = useState(false);
-  const theme = getFeatureMediaTheme(story?.category);
 
   useEffect(() => {
     setImageError(false);
   }, [story?.image, story?.slug]);
 
   return (
-    <div className="relative min-h-[12rem] overflow-hidden bg-slate-950 sm:min-h-[14rem] lg:min-h-[16rem]">
-      <div className={`absolute inset-0 bg-gradient-to-br ${theme}`} />
-      {story?.image ? (
-        <div
-          className="absolute inset-0 scale-110 bg-cover bg-center opacity-35 blur-3xl"
-          style={{ backgroundImage: `url(${story.image})` }}
-          aria-hidden="true"
-        />
-      ) : null}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.12),transparent_28%),linear-gradient(135deg,rgba(15,23,42,0.12),rgba(15,23,42,0.02))]" />
-
-      {!imageError && story?.image ? (
-        <img
-          src={story.image}
-          alt={story.title}
-          className="absolute inset-0 h-full w-full object-contain p-3 sm:p-4"
-          loading="lazy"
-          onError={() => setImageError(true)}
-        />
-      ) : (
-        <div className="relative flex h-full min-h-[12rem] flex-col justify-between p-3 text-white sm:min-h-[14rem] sm:p-4 lg:min-h-[16rem]">
-          <div className="flex items-start justify-between gap-3">
-            <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/75">
-              {story?.label || "Newsroom"}
-            </span>
-          </div>
-
-          <div className="max-w-lg">
-            <h3 className="text-sm font-black leading-tight tracking-tight text-white sm:text-base">
-              {story?.title}
-            </h3>
-          </div>
-        </div>
-      )}
-
-      <div className="absolute inset-x-0 bottom-0 border-t border-white/10 bg-slate-950/72 px-3 py-2 backdrop-blur-sm sm:px-4">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[11px] text-white/70">
-          <NewsBrandBadge
-            brandName={story?.brandName || story?.label || "Hooks"}
-            brandLogo={story?.brandLogo}
-            className="text-white/75"
-            textClassName="text-[11px] font-semibold text-white/75"
+    <div className="relative h-full overflow-hidden rounded-2xl bg-slate-100">
+      <div className="absolute inset-0 rounded-2xl overflow-hidden">
+        {!imageError && story?.image ? (
+          <img
+            src={story.image}
+            alt={story.title}
+            className="h-full w-full object-contain"
+            loading="lazy"
+            onError={() => setImageError(true)}
           />
-          <span className="min-w-0 flex-1 truncate">
-            {story?.productName || story?.productType || story?.title}
-          </span>
-          <HooksSignature />
-        </div>
+        ) : (
+          <div className="flex h-full items-center justify-center bg-slate-50 p-4 text-center">
+            <div className="max-w-xs">
+              <p className={NEWS_BRAND_STYLES.eyebrow}>
+                {story?.label || "Newsroom"}
+              </p>
+              <h3 className="mt-3 text-sm font-black leading-tight tracking-tight text-slate-900 sm:text-base">
+                {story?.title}
+              </h3>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -185,7 +107,7 @@ const NewsEditorialDesk = ({ stories = [], loading = false, error = "" }) => {
 
   const storyGrid = visibleStories
     .filter((story) => story.slug !== featuredStory?.slug)
-    .slice(0, 6);
+    .slice(0, 3);
 
   const trendingStories = stories.slice(0, 4).map((story, index) => ({
     rank: String(index + 1).padStart(2, "0"),
@@ -366,54 +288,54 @@ const NewsEditorialDesk = ({ stories = [], loading = false, error = "" }) => {
                 </div>
 
                 <div className="divide-y divide-slate-200">
-                  {trendingStories.map(({ rank, note, story }) => (
+                  {trendingStories.map(({ rank, note, story }) =>
                     (() => {
                       const isActive = featuredStory.slug === story.slug;
 
                       return (
-                    <button
-                      key={story.slug}
-                      type="button"
-                      onClick={() => setFeaturedSlug(story.slug)}
-                      className={`group flex w-full items-start gap-4 px-5 py-4 text-left transition-colors duration-200 ${
-                        isActive
-                          ? NEWS_BRAND_STYLES.activeSurface
-                          : "bg-white text-slate-900 hover:bg-slate-50 hover:text-slate-950"
-                      }`}
-                    >
-                      <span
-                        className={`text-sm font-black tracking-[0.22em] ${
-                          isActive
-                            ? "text-white/55"
-                            : "text-slate-300 group-hover:text-slate-500"
-                        }`}
-                      >
-                        {rank}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span
-                          className={`block text-[11px] font-semibold uppercase tracking-[0.22em] ${
+                        <button
+                          key={story.slug}
+                          type="button"
+                          onClick={() => setFeaturedSlug(story.slug)}
+                          className={`group flex w-full items-start gap-4 px-5 py-4 text-left transition-colors duration-200 ${
                             isActive
-                              ? "text-white/60"
-                              : "text-slate-400 group-hover:text-slate-600"
+                              ? NEWS_BRAND_STYLES.activeSurface
+                              : "bg-white text-slate-900 hover:bg-slate-50 hover:text-slate-950"
                           }`}
                         >
-                          {note}
-                        </span>
-                        <span
-                          className={`mt-1 block text-sm font-semibold leading-6 ${
-                            isActive
-                              ? "text-white"
-                              : "text-slate-900 group-hover:text-slate-950"
-                          }`}
-                        >
-                          {story.title}
-                        </span>
-                      </span>
-                    </button>
+                          <span
+                            className={`text-sm font-black tracking-[0.22em] ${
+                              isActive
+                                ? "text-white/55"
+                                : "text-slate-300 group-hover:text-slate-500"
+                            }`}
+                          >
+                            {rank}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span
+                              className={`block text-[11px] font-semibold uppercase tracking-[0.22em] ${
+                                isActive
+                                  ? "text-white/60"
+                                  : "text-slate-400 group-hover:text-slate-600"
+                              }`}
+                            >
+                              {note}
+                            </span>
+                            <span
+                              className={`mt-1 block text-sm font-semibold leading-6 ${
+                                isActive
+                                  ? "text-white"
+                                  : "text-slate-900 group-hover:text-slate-950"
+                              }`}
+                            >
+                              {story.title}
+                            </span>
+                          </span>
+                        </button>
                       );
-                    })()
-                  ))}
+                    })(),
+                  )}
                 </div>
               </aside>
             </div>
@@ -434,52 +356,25 @@ const NewsEditorialDesk = ({ stories = [], loading = false, error = "" }) => {
               </div>
 
               {storyGrid.length ? (
-                <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                <div className="mt-6 grid gap-5 xl:grid-cols-3">
                   {storyGrid.map((story) => (
                     <article
                       key={story.slug}
                       id={story.slug}
-                      className={`group flex h-full flex-col overflow-hidden ${NEWS_BRAND_STYLES.cardShell} text-left transition-colors duration-200 hover:border-slate-300`}
+                      className="group flex h-full overflow-hidden rounded-2xl border border-slate-200 text-left transition-colors duration-200"
                     >
                       <Link
                         to={createNewsStoryPath(story.slug)}
-                        className="flex h-full flex-col"
+                        className="grid h-full grid-cols-[9.5rem_minmax(0,1fr)] items-stretch sm:grid-cols-[11rem_minmax(0,1fr)]"
                       >
                         <NewsCardMedia story={story} />
 
-                        <div className="flex flex-1 flex-col p-4 sm:p-5">
-                          <div className="flex flex-wrap items-center gap-3">
-                            <span className={NEWS_BRAND_STYLES.labelSmall}>
-                              {story.label}
-                            </span>
-                            <span className={NEWS_BRAND_STYLES.metaSmall}>
-                              {story.publishedAt}
-                            </span>
-                          </div>
-
+                        <div className="flex min-w-0 flex-1 flex-col p-4 sm:p-5">
                           <h4
-                            className={`mt-4 ${NEWS_BRAND_STYLES.cardTitle} transition-colors duration-200 group-hover:text-slate-700`}
+                            className={`text-[15px] font-extrabold leading-6 tracking-tight transition-colors duration-200 group-hover:text-slate-700 sm:text-base lg:text-lg`}
                           >
                             {story.title}
                           </h4>
-
-                          <p
-                            className={`mt-3 line-clamp-3 ${NEWS_BRAND_STYLES.bodySmall} sm:text-[15px]`}
-                          >
-                            {story.summary}
-                          </p>
-
-                          <div className="mt-5 flex items-center justify-between gap-3 border-t border-slate-200 pt-4">
-                            <HooksSignature
-                              variant="light"
-                              className="shrink-0"
-                            />
-
-                            <span className={NEWS_BRAND_STYLES.inlineAction}>
-                              Open story
-                              <FaArrowRight className="h-3.5 w-3.5" />
-                            </span>
-                          </div>
                         </div>
                       </Link>
                     </article>

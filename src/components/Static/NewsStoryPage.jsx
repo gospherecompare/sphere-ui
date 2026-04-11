@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { FaArrowRight, FaRegNewspaper } from "react-icons/fa";
+import { FaArrowRight } from "react-icons/fa";
 import SEO from "../SEO";
 import NotFound from "./NotFound";
-import { HooksSignature, NewsBrandBadge } from "../Home/NewsBrandBadge";
+import { HooksSignature } from "../Home/NewsBrandBadge";
 import RecommendedSmartphones from "../Home/RecommendedSmartphones";
 import {
   createBreadcrumbSchema,
@@ -16,193 +16,49 @@ import {
   usePublicNewsStory,
 } from "../../hooks/usePublicNews";
 import { NEWS_BRAND_STYLES } from "../Home/newsBrandStyles";
+import SocialShareButtons from "../News/SocialShareButtons";
+import NewsHighlights from "../News/NewsHighlights";
 
-const STORY_MEDIA_THEMES = {
-  news: "from-slate-950 via-blue-950 to-blue-600",
-  mobiles: "from-slate-950 via-cyan-950 to-cyan-600",
-  gadgets: "from-slate-950 via-orange-950 to-orange-500",
-  guides: "from-slate-950 via-violet-950 to-violet-600",
-  launches: "from-slate-950 via-emerald-950 to-emerald-600",
-};
-
-const getStoryMediaTheme = (category) =>
-  STORY_MEDIA_THEMES[category] || STORY_MEDIA_THEMES.news;
-
-const NewsStoryMedia = ({
-  story,
-  variant = "hero",
-  className = "",
-  overlayItems = [],
-}) => {
+const NewsStoryMedia = ({ story, variant = "hero", className = "" }) => {
   const [imageError, setImageError] = useState(false);
-  const isHero = variant === "hero";
-  const theme = getStoryMediaTheme(story?.category);
-  const visibleOverlayItems = Array.isArray(overlayItems)
-    ? overlayItems.filter((item) => item?.value)
-    : [];
 
   useEffect(() => {
     setImageError(false);
   }, [story?.image, story?.slug]);
 
-  const fallbackPanel = (
-    <div
-      className={`relative flex h-full min-h-full flex-col justify-between p-6 sm:p-8 text-white ${
-        isHero ? "min-h-[28rem]" : "min-h-[16rem]"
-      }`}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/75">
-          {story?.label || "Newsroom"}
-        </span>
-        <span className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/45">
-          Fallback cover
-        </span>
-      </div>
+  const containerClasses = variant === "hero" ? "aspect-[7/5]" : "aspect-[4/3]";
 
-      <div className="max-w-lg">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/55">
-          {story?.brandName || story?.productType || "Hooks newsroom"}
+  const fallbackPanel = (
+    <div className="flex h-full items-center justify-center bg-slate-50 p-6 text-center">
+      <div className="max-w-md">
+        <p className={NEWS_BRAND_STYLES.eyebrow}>
+          {story?.label || "Newsroom"}
         </p>
-        <h2
-          className={`mt-4 font-black tracking-tight ${
-            isHero
-              ? "text-3xl leading-tight sm:text-4xl"
-              : "text-xl leading-snug"
-          }`}
-        >
+        <h2 className="mt-3 text-lg font-black tracking-tight text-slate-900 sm:text-xl">
           {story?.title}
         </h2>
-        <p className="mt-4 text-sm leading-7 text-white/72">{story?.summary}</p>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        {(story?.highlights || []).slice(0, 3).map((highlight) => (
-          <span
-            key={highlight}
-            className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold tracking-[0.16em] text-white/72"
-          >
-            {highlight}
-          </span>
-        ))}
+        <p className={`mt-3 ${NEWS_BRAND_STYLES.bodySmall}`}>
+          {story?.summary}
+        </p>
       </div>
     </div>
   );
 
-  if (isHero) {
-    const heroSpecItems = visibleOverlayItems.slice(0, 4);
-
-    return (
-      <div
-        className={`relative min-h-[28rem] overflow-hidden bg-slate-950 ${className}`}
-      >
-        <div className={`absolute inset-0 bg-gradient-to-br ${theme}`} />
-        {story?.image ? (
-          <div
-            className="absolute inset-0 bg-cover bg-center blur-3xl scale-110 opacity-35"
-            style={{ backgroundImage: `url(${story.image})` }}
-            aria-hidden="true"
-          />
-        ) : null}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.14),transparent_30%),linear-gradient(135deg,rgba(15,23,42,0.16),rgba(15,23,42,0.02))]" />
-
-        {story?.image ? (
-          <div className="relative z-10 grid min-h-[28rem] gap-0 md:grid-cols-[minmax(15rem,18rem)_minmax(0,1fr)]">
-            {heroSpecItems.length ? (
-              <aside className="order-2  border-t text-white  sm:p-5 md:order-1  md:p-6">
-                <div className="space-y-4 border-t border-white/10 bg-slate-950/90 backdrop-blur-sm p-4">
-                  {heroSpecItems.map((item) => (
-                    <div key={item.label} className="min-w-0">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/45">
-                        {item.label}
-                      </p>
-                      <p className="mt-1 text-sm font-semibold leading-snug text-white">
-                        {item.value}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </aside>
-            ) : null}
-
-            <div className="order-1 relative flex min-h-[18rem] items-center justify-center p-3 sm:min-h-[22rem] sm:p-5 md:order-2 md:min-h-[28rem] md:p-8">
-              {!imageError ? (
-                <img
-                  src={story.image}
-                  alt={story.title}
-                  className="block max-h-full max-w-full object-contain object-center drop-shadow-[0_18px_40px_rgba(0,0,0,0.28)]"
-                  loading="lazy"
-                  onError={() => setImageError(true)}
-                />
-              ) : (
-                fallbackPanel
-              )}
-            </div>
-          </div>
-        ) : (
-          fallbackPanel
-        )}
-
-        <div className="absolute inset-x-0 bottom-0 border-t border-white/10 bg-slate-950/72 px-5 py-3 backdrop-blur-sm">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-white/70">
-            <NewsBrandBadge
-              brandName={story?.brandName || "Hooks"}
-              brandLogo={story?.brandLogo}
-              className="text-white/75"
-              textClassName="text-xs font-semibold text-white/75"
-            />
-            <span>
-              {story?.productName || story?.productType || "Editorial cover"}
-            </span>
-            <HooksSignature />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div
-      className={`relative aspect-[4/3] min-h-[16rem] overflow-hidden bg-slate-950 ${className}`}
+      className={`relative overflow-hidden ${containerClasses} ${className}`}
     >
-      <div className={`absolute inset-0 bg-gradient-to-br ${theme}`} />
-      {story?.image ? (
-        <div
-          className="absolute inset-0 scale-110 bg-cover bg-center opacity-35 blur-3xl"
-          style={{ backgroundImage: `url(${story.image})` }}
-          aria-hidden="true"
-        />
-      ) : null}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.12),transparent_28%),linear-gradient(135deg,rgba(15,23,42,0.1),rgba(15,23,42,0.02))]" />
-
       {!imageError && story?.image ? (
-        <div className="absolute inset-0 z-0 flex items-center justify-center p-3 sm:p-4">
-          <img
-            src={story.image}
-            alt={story.title}
-            className="block max-h-full max-w-full object-contain object-center transition-transform duration-300 group-hover:scale-[1.02]"
-            loading="lazy"
-            onError={() => setImageError(true)}
-          />
-        </div>
+        <img
+          src={story.image}
+          alt={story.title}
+          className="absolute inset-0 h-full w-full rounded-3xl p-2"
+          loading="lazy"
+          onError={() => setImageError(true)}
+        />
       ) : (
         fallbackPanel
       )}
-
-      <div className="absolute inset-x-0 bottom-0 border-t border-white/10 bg-slate-950/72 px-0 py-2 backdrop-blur-sm sm:px-4">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[11px] text-white/70">
-          <NewsBrandBadge
-            brandName={story?.brandName || story?.label || "Hooks"}
-            brandLogo={story?.brandLogo}
-            className="text-white/75"
-            textClassName="text-[11px] font-semibold text-white/75"
-          />
-          <span className="min-w-0 flex-1 truncate">
-            {story?.productName || story?.productType || story?.title}
-          </span>
-          <HooksSignature />
-        </div>
-      </div>
     </div>
   );
 };
@@ -247,13 +103,25 @@ const NewsStoryPage = () => {
 
   const canonical = `https://tryhook.shop${createNewsStoryPath(story.slug)}`;
   const relatedStories = buildRelatedNewsStories(feedStories, story, 3);
+  const sidebarStories = feedStories
+    .filter((item) => item.slug !== story.slug)
+    .slice(0, 5);
+  const storyHighlights = Array.isArray(story.highlights)
+    ? story.highlights
+    : [];
+  const storyKeywords = [
+    story.label,
+    story.category,
+    ...storyHighlights.map((item) =>
+      typeof item === "string" ? item : item?.text,
+    ),
+  ].filter(Boolean);
   const articleParagraphs =
     Array.isArray(story.body) && story.body.length > 1
       ? story.body.slice(1)
       : Array.isArray(story.body)
         ? story.body
         : [];
-  const deviceSpecs = Array.isArray(story.deviceSpecs) ? story.deviceSpecs : [];
 
   const schema = [
     createBreadcrumbSchema([
@@ -270,7 +138,7 @@ const NewsStoryPage = () => {
       dateModified: story.updatedIso,
       authorName: story.author,
       articleSection: story.label,
-      keywords: [story.label, story.category, ...story.highlights],
+      keywords: storyKeywords,
     }),
   ];
 
@@ -288,59 +156,90 @@ const NewsStoryPage = () => {
 
       <main className="min-h-screen bg-slate-50 text-slate-900">
         <section className="mx-auto max-w-7xl px-0 pt-0 pb-10 sm:px-6 sm:pt-6 sm:pb-10 lg:px-8 lg:py-12">
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
+          <div className="grid gap-8 xl:grid-cols-[14rem_minmax(0,1fr)_20rem]">
+            <aside className="hidden space-y-4 xl:block">
+              {storyHighlights.length ? (
+                <NewsHighlights highlights={storyHighlights} variant="full" />
+              ) : null}
+
+              <div className="rounded-md border border-slate-200 bg-white p-4">
+                <p className={NEWS_BRAND_STYLES.eyebrow}>Jump to</p>
+                <div className="mt-3 space-y-2 text-sm text-slate-700">
+                  <a
+                    href="#story-body"
+                    className="block rounded-md px-2 py-1 hover:bg-slate-50 hover:text-slate-950"
+                  >
+                    Full story
+                  </a>
+                  <a
+                    href="#related-stories"
+                    className="block rounded-md px-2 py-1 hover:bg-slate-50 hover:text-slate-950"
+                  >
+                    Related stories
+                  </a>
+                </div>
+              </div>
+            </aside>
+
             <article id="story-body" className="min-w-0">
-              <div className={`overflow-hidden ${NEWS_BRAND_STYLES.cardShell}`}>
-                <div className=" p-6 sm:p-8 lg:p-10">
+              <div
+                className={`overflow-hidden ${NEWS_BRAND_STYLES.cardShell} xl:overflow-visible xl:border-0 xl:bg-transparent`}
+              >
+                <div className="border-b border-slate-200 bg-white p-6 sm:p-8 lg:p-10 xl:border-0 xl:bg-transparent xl:px-0 xl:pt-0">
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                    <Link to="/" className="hover:text-slate-900">
+                      Home
+                    </Link>
+                    <span>/</span>
+                    <Link to="/news" className="hover:text-slate-900">
+                      News
+                    </Link>
+                    <span>/</span>
+                    <span className="truncate text-slate-400">
+                      {story.label}
+                    </span>
+                  </div>
+
+                  <p className={`mt-4 ${NEWS_BRAND_STYLES.eyebrow}`}>
+                    Newsroom
+                  </p>
+
                   <h1
-                    className="mt-4 max-w-4xl text-2xl font-black leading-[1.08] tracking-tight text-slate-950 sm:text-4xl lg:text-5xl"
+                    className="mt-3 max-w-4xl text-2xl font-black leading-[1.08] tracking-tight text-slate-950 sm:text-3xl lg:text-4xl xl:text-4xl"
                     style={{ textWrap: "balance" }}
                   >
                     {story.title}
                   </h1>
 
-                  <div className="mt-6 flex flex-wrap gap-2">
-                    {story.highlights.map((highlight) => (
-                      <span
-                        key={highlight}
-                        className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600"
-                      >
-                        {highlight}
-                      </span>
-                    ))}
+                  <p
+                    className={`mt-4 max-w-4xl ${NEWS_BRAND_STYLES.bodyLarge}`}
+                  >
+                    {story.summary}
+                  </p>
+
+                  <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-600">
+                    <span>By {story.author}</span>
+                    <span>Published: {story.publishedAt}</span>
+                    <span>Updated: {story.updatedAt}</span>
                   </div>
 
-                  <div className="mt-6 flex flex-wrap gap-3">
-                    <a
-                      href="#story-body"
-                      className={NEWS_BRAND_STYLES.primaryButton}
-                    >
-                      Jump to story
-                      <FaArrowRight className="h-3.5 w-3.5" />
-                    </a>
-
-                    <Link
-                      to="/news"
-                      className={NEWS_BRAND_STYLES.secondaryButton}
-                    >
-                      More stories
-                    </Link>
+                  <div className="mt-5">
+                    <SocialShareButtons
+                      title={story.title}
+                      url={`https://tryhook.shop${createNewsStoryPath(story.slug)}`}
+                      description={story.summary}
+                    />
                   </div>
                 </div>
 
-                <div className="border-t border-slate-200 bg-white">
-                  <NewsStoryMedia
-                    story={story}
-                    variant="hero"
-                    className="min-h-[24rem] lg:min-h-[34rem]"
-                    overlayItems={deviceSpecs}
-                  />
-                </div>
+                <NewsStoryMedia
+                  story={story}
+                  variant="hero"
+                  className="mt-3 w-full px-4 sm:px-6 lg:px-10 xl:mt-4 xl:px-0"
+                />
 
-                <div className="bg-white p-6 sm:p-8">
-                  <p className={NEWS_BRAND_STYLES.eyebrow}>Full story</p>
-
-                  <div className="mt-5 max-w-3xl space-y-6">
+                <div className="bg-white p-4 sm:p-8 xl:bg-transparent xl:px-0">
+                  <div className="max-w-3xl space-y-6">
                     {(articleParagraphs.length
                       ? articleParagraphs
                       : story.body.length
@@ -385,12 +284,49 @@ const NewsStoryPage = () => {
               </div>
             </article>
 
-            <aside className="hidden space-y-4 lg:block lg:sticky lg:top-6">
+            <aside className="hidden space-y-4 xl:block xl:sticky xl:top-6">
+              <div className="rounded-md border border-slate-200 bg-white p-4">
+                <p className={NEWS_BRAND_STYLES.eyebrow}>Trending now</p>
+                <h3 className={`mt-2 ${NEWS_BRAND_STYLES.featureTitle}`}>
+                  Fast headlines
+                </h3>
+
+                <div className="mt-4 divide-y divide-slate-200">
+                  {sidebarStories.map((item, index) => (
+                    <Link
+                      key={item.slug}
+                      to={createNewsStoryPath(item.slug)}
+                      className={`block px-0 py-4 transition-colors duration-200 hover:text-slate-700 ${
+                        index === 0 ? "pt-0" : ""
+                      }`}
+                    >
+                      <p className={NEWS_BRAND_STYLES.labelSmall}>
+                        {item.label}
+                      </p>
+                      <h4 className="mt-2 text-sm font-semibold leading-6 text-slate-900">
+                        {item.title}
+                      </h4>
+                      <p className="mt-2 text-xs text-slate-500">
+                        {item.publishedAt}
+                      </p>
+                    </Link>
+                  ))}
+                </div>
+
+                <Link
+                  to="/news"
+                  className="mt-4 inline-flex text-sm font-semibold text-slate-950 hover:text-slate-700"
+                >
+                  View all stories
+                  <FaArrowRight className="ml-2 h-3.5 w-3.5" />
+                </Link>
+              </div>
+
               <RecommendedSmartphones variant="sidebar" limit={4} />
             </aside>
           </div>
 
-          <section className="mt-12 px-2 sm:px-0">
+          <section id="related-stories" className="mt-12 px-2 sm:px-0">
             <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
               <div className="max-w-3xl">
                 <p className={NEWS_BRAND_STYLES.eyebrow}>Related stories</p>

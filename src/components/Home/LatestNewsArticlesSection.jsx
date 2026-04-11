@@ -1,98 +1,50 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { FaArrowRight } from "react-icons/fa";
-import { HooksSignature, NewsBrandBadge } from "./NewsBrandBadge";
+import { HooksSignature } from "./NewsBrandBadge";
 import { NEWS_BRAND_STYLES } from "./newsBrandStyles";
 import {
   createNewsStoryPath,
   usePublicNewsFeed,
 } from "../../hooks/usePublicNews";
 
-const STORY_MEDIA_THEMES = {
-  news: "from-slate-950 via-blue-950 to-blue-600",
-  mobiles: "from-slate-950 via-cyan-950 to-cyan-600",
-  gadgets: "from-slate-950 via-orange-950 to-orange-500",
-  guides: "from-slate-950 via-violet-950 to-violet-600",
-  launches: "from-slate-950 via-emerald-950 to-emerald-600",
-};
-
-const getStoryMediaTheme = (category) =>
-  STORY_MEDIA_THEMES[category] || STORY_MEDIA_THEMES.news;
-
 const NewsStoryMedia = ({ story, variant = "lead" }) => {
   const [imageError, setImageError] = useState(false);
-  const theme = getStoryMediaTheme(story?.category);
 
   useEffect(() => {
     setImageError(false);
   }, [story?.image, story?.slug]);
 
   const isLead = variant === "lead";
-  const containerClasses = isLead
-    ? "min-h-[22rem] lg:min-h-[24rem]"
-    : "min-h-[10rem] sm:min-h-[12rem]";
+  const containerClasses = isLead ? "aspect-[7/5]" : "aspect-[4/3]";
 
   return (
     <div
-      className={`relative overflow-hidden bg-slate-950 ${containerClasses}`}
+      className={`relative overflow-hidden rounded-lg bg-white ${containerClasses}`}
     >
-      <div className={`absolute inset-0 bg-gradient-to-br ${theme}`} />
-      {story?.image ? (
-        <div
-          className="absolute inset-0 scale-110 bg-cover bg-center opacity-35 blur-3xl"
-          style={{ backgroundImage: `url(${story.image})` }}
-          aria-hidden="true"
-        />
-      ) : null}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.12),transparent_28%),linear-gradient(135deg,rgba(15,23,42,0.12),rgba(15,23,42,0.02))]" />
-
       {!imageError && story?.image ? (
         <img
           src={story.image}
           alt={story.title}
-          className={`absolute inset-0 h-full w-full object-contain ${
-            isLead ? "p-4 sm:p-6" : "p-2 sm:p-3"
-          }`}
+          className="absolute inset-0 h-full w-full object-contain p-4 sm:p-5"
           loading="lazy"
           onError={() => setImageError(true)}
         />
       ) : (
-        <div className="relative flex h-full min-h-full flex-col justify-between p-5 text-white sm:p-6">
-          <div className="flex items-start justify-between gap-3">
-            <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/75">
+        <div className="flex h-full items-center justify-center bg-slate-50 p-5 text-center">
+          <div className="max-w-md">
+            <p className={NEWS_BRAND_STYLES.eyebrow}>
               {story?.label || "Newsroom"}
-            </span>
-            <span className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/45">
-              Fallback cover
-            </span>
-          </div>
-
-          <div className="max-w-lg">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/55">
-              {story?.brandName || story?.productType || "Hooks newsroom"}
             </p>
-            <h3 className="mt-3 text-lg font-black leading-tight tracking-tight text-white sm:text-xl">
+            <h3 className="mt-3 text-base font-black leading-tight tracking-tight text-slate-900 sm:text-lg">
               {story?.title}
             </h3>
-            <p className="mt-3 text-sm leading-7 text-white/72">
+            <p className={`mt-3 ${NEWS_BRAND_STYLES.bodySmall}`}>
               {story?.summary}
             </p>
           </div>
         </div>
       )}
-
-      <div className="absolute inset-x-0 bottom-0 border-t border-white/10 bg-slate-950/72 px-4 py-3 backdrop-blur-sm">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-white/70">
-          <NewsBrandBadge
-            brandName={story?.brandName || "Hooks"}
-            brandLogo={story?.brandLogo}
-            className="text-white/75"
-            textClassName="text-xs font-semibold text-white/75"
-          />
-          <span>{story?.productName || story?.productType || "Editorial cover"}</span>
-          <HooksSignature />
-        </div>
-      </div>
     </div>
   );
 };
@@ -107,9 +59,7 @@ const LatestNewsArticlesSection = () => {
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-16">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl">
-            <p className={NEWS_BRAND_STYLES.eyebrow}>
-              Latest stories
-            </p>
+            <p className={NEWS_BRAND_STYLES.eyebrow}>Latest stories</p>
             <h2 className={`mt-3 ${NEWS_BRAND_STYLES.sectionTitle}`}>
               Latest News & Articles
             </h2>
@@ -119,10 +69,7 @@ const LatestNewsArticlesSection = () => {
             </p>
           </div>
 
-          <Link
-            to="/news"
-            className={NEWS_BRAND_STYLES.primaryButton}
-          >
+          <Link to="/news" className={NEWS_BRAND_STYLES.primaryButton}>
             View all news
             <FaArrowRight className="h-3.5 w-3.5" />
           </Link>
@@ -130,8 +77,12 @@ const LatestNewsArticlesSection = () => {
 
         {loading && !leadStory ? (
           <div className="mt-8 grid gap-5 lg:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)]">
-            <div className={`min-h-[28rem] animate-pulse ${NEWS_BRAND_STYLES.softCardShell}`} />
-            <div className={`min-h-[28rem] animate-pulse ${NEWS_BRAND_STYLES.cardShell}`} />
+            <div
+              className={`min-h-[28rem] animate-pulse ${NEWS_BRAND_STYLES.softCardShell}`}
+            />
+            <div
+              className={`min-h-[28rem] animate-pulse ${NEWS_BRAND_STYLES.cardShell}`}
+            />
           </div>
         ) : null}
 
@@ -176,7 +127,9 @@ const LatestNewsArticlesSection = () => {
                   {leadStory.title}
                 </h3>
 
-                <p className={`mt-4 ${NEWS_BRAND_STYLES.bodySmall} sm:text-base`}>
+                <p
+                  className={`mt-4 ${NEWS_BRAND_STYLES.bodySmall} sm:text-base`}
+                >
                   {leadStory.summary}
                 </p>
 
@@ -213,7 +166,9 @@ const LatestNewsArticlesSection = () => {
                         </span>
                       </div>
 
-                      <h3 className={`mt-3 ${NEWS_BRAND_STYLES.cardTitle} text-lg`}>
+                      <h3
+                        className={`mt-3 ${NEWS_BRAND_STYLES.cardTitle} text-lg`}
+                      >
                         {story.title}
                       </h3>
 
