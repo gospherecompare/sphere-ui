@@ -930,7 +930,7 @@ const resolveSeo = (routePath) => {
     {
       test: () => Boolean(smartphoneDetailName),
       title: `${smartphoneDetailName} Price, Specs & Comparison in India (${CURRENT_YEAR}) | Hooks`,
-      description: `Compare ${smartphoneDetailName} price in India, full specifications, variants, launch details, and latest offers on Hook.`,
+      description: `Compare ${smartphoneDetailName} price in India, full specifications, variants, and launch details on Hook.`,
       keywords: `${smartphoneDetailName.toLowerCase()}, ${smartphoneDetailName.toLowerCase()} price in india, ${smartphoneDetailName.toLowerCase()} specifications, ${smartphoneDetailName.toLowerCase()} launch date, compare smartphones, mobile price comparison india`,
     },
     {
@@ -1138,7 +1138,7 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
   const smartphoneDetailName = getSmartphoneDetailName(canonicalPath);
   if (smartphoneDetailName) {
     return [
-      createProductSchema({
+      createWebPageSchema({
         name: smartphoneDetailName,
         description: seo.description,
         url: canonicalUrl,
