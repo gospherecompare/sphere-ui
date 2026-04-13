@@ -1,7 +1,7 @@
 import React from "react";
 import useTitle from "../../hooks/useTitle";
 import BestPriceSection from "./BestPrice";
-import UpcomingSmartphones from "./UpcomingSmartphones";
+import LatestSmartphones from "./UpcomingSmartphones";
 import FeaturedProduct from "./FeaturedProduct";
 import HeroSection from "./Herosection";
 import PopularBrands from "./Popularbrand";
@@ -16,7 +16,7 @@ const Home = () => {
       <Brandofmonth />
       <FeaturedProduct />
       <PopularBrands />
-      <UpcomingSmartphones />
+      <LatestSmartphones />
       <BestPriceSection />
     </div>
   );

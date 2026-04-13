@@ -129,7 +129,7 @@ const PopularBrands = () => {
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
-      <div className="relative px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
+      <div className="relative px-2  mt-12">
         <div className="relative mx-auto max-w-5xl text-center">
           <h1 className="mt-6 text-3xl font-bold leading-tight text-slate-900 sm:text-4xl lg:text-5xl">
             Mobiles by{" "}

@@ -2097,6 +2097,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   let seoDescription = sanitizeDescription(
     "Browse the latest smartphones on Hooks with updated prices, key specifications, and featured launches. Use filters to explore brands, budgets, and performance tiers in one place.",
   );
+  const featureHeroText = currentFeatureMeta
+    ? `Browse smartphones focused on ${currentFeatureMeta.name.toLowerCase()} and compare how different brands approach this feature across budget, mid-range, and flagship models. This page helps you review battery life, charging behavior, display quality, chipset efficiency, camera tradeoffs, RAM, storage, and software support so you can shortlist phones that suit your needs without opening multiple product pages. Use the feature cards to spot the models that stand out, then open the listings that match your priority.`
+    : "";
 
   if (isUpcomingView) {
     seoTitle = `Upcoming Smartphones (${currentDayMonthYear}) - Expected Launches, Features and Prices - Hooks`;
@@ -2148,6 +2151,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     ? "UPCOMING SMARTPHONES"
     : isNewLaunchHeading
       ? "LATEST SMARTPHONES"
+      : currentFeatureMeta
+        ? `${currentFeatureMeta.name.toUpperCase()} SMARTPHONES`
       : priceFilter
         ? `BEST SMARTPHONE ${priceFilter.label.toUpperCase()}`
         : "SMARTPHONE COLLECTION";
@@ -2155,19 +2160,28 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     ? "Upcoming Smartphones"
     : isNewFilterPath
       ? "Latest Smartphones"
+      : currentFeatureMeta
+        ? `${currentFeatureMeta.name} Smartphones`
     : priceFilter
       ? `${priceFilter.label} Smartphones in India`
       : "Browse Smartphones in India";
   const isExpandedHeroDescriptionPath =
     isUpcomingView ||
     isNewFilterPath ||
+    isListFilter ||
+    Boolean(currentFeatureMeta) ||
+    Boolean(priceFilter) ||
     pathname === "/smartphones" ||
     pathname === "/mobiles";
   const heroSubtitleText = isUpcomingView
     ? "Browse upcoming smartphones in India and keep track of devices that are expected to launch soon, all in one place. This page helps you follow new phone announcements, rumored launch windows, preorder-ready models, and early specification leaks without jumping between multiple news posts. Use it to scan expected camera setups, battery sizes, charging speeds, display details, chipset hints, storage variants, and brand lineups so you can plan your next upgrade with a clearer view of what is coming. Whether you are waiting for a flagship launch, a battery-focused phone, a gaming-ready model, or a balanced everyday device, the upcoming collection gives you an easy way to watch the next wave of releases as they build up. You can also use the filters and product cards to follow the brands and categories that matter most, then return later when launch details and prices are confirmed."
     : isNewFilterPath
       ? "Browse the latest smartphones in India and keep up with new launches as they arrive, all in one place. This page brings together updated prices, fresh variants, and the key specifications people care about most, including camera quality, low-light results, portrait shots, video stability, battery life, charging speed, display brightness, refresh rate, chipset performance, RAM, storage, software experience, and long-term update support. Use it to scan the newest phones from leading brands, spot which models are getting attention, and quickly narrow your shortlist without opening dozens of tabs. If you are looking for a flagship camera phone, a balanced all-rounder, a battery-first option, or a gaming-ready device, the latest collection helps you focus on the right candidates at a glance. The filters and product cards make it easy to sort by brand, price, and feature, while the latest-launch focus keeps the page current as new phones arrive. You can also check live prices, offers, and variants so you can judge value before you buy."
-      : "Browse smartphones in India across brands, price ranges, launch windows, and performance tiers so you can quickly find a device that matches your budget and daily use. The collection brings updated prices, key specifications, ratings, and variant details together in one place, making it easier to check camera quality, low-light results, portrait shots, video stability, battery life, charging speed, display brightness, refresh rate, chipset performance, RAM, storage, software support, and long-term update value. Whether you are looking for a flagship camera phone, a balanced all-rounder, a battery-focused option, or a gaming-ready device, the page helps you scan what is new, what is popular, and what is worth shortlisting without opening multiple tabs. Use the filters, search, and product cards to narrow results by brand, budget, or feature, then open the phones that stand out most.";
+      : currentFeatureMeta
+        ? featureHeroText
+        : priceFilter || currentBrandObj
+        ? seoDescription
+        : "Browse smartphones in India across brands, price ranges, launch windows, and performance tiers so you can quickly find a device that matches your budget and daily use. The collection brings updated prices, key specifications, ratings, and variant details together in one place, making it easier to check camera quality, low-light results, portrait shots, video stability, battery life, charging speed, display brightness, refresh rate, chipset performance, RAM, storage, software support, and long-term update value. Whether you are looking for a flagship camera phone, a balanced all-rounder, a battery-focused option, or a gaming-ready device, the page helps you scan what is new, what is popular, and what is worth shortlisting without opening multiple tabs. Use the filters, search, and product cards to narrow results by brand, budget, or feature, then open the phones that stand out most.";
   const heroSubtitleStyle =
     isExpandedHeroDescriptionPath && !showHeroDescription
       ? {
@@ -2184,7 +2198,13 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     if (isExpandedHeroDescriptionPath) {
       setShowHeroDescription(false);
     }
-  }, [isExpandedHeroDescriptionPath]);
+  }, [
+    isExpandedHeroDescriptionPath,
+    normalizedFilterSlug,
+    normalizedBrandSlug,
+    normalizedFeature,
+    pathname,
+  ]);
   const currentPriceRangeLabel =
     priceFilter ||
     Number(filters.priceRange.min) !== MIN_PRICE ||

@@ -939,8 +939,9 @@ const Header = () => {
     (apiResults || []).forEach((item) => upsert(item, 0));
     (localResults || []).forEach((item) => upsert(item, 1));
 
-    return Array.from(merged.values())
-      .sort((a, b) => a.__priority - b.__priority);
+    return Array.from(merged.values()).sort(
+      (a, b) => a.__priority - b.__priority,
+    );
   };
 
   const getSuggestionMatchRank = (item, query) => {
@@ -984,10 +985,12 @@ const Header = () => {
 
   const sortSuggestionsByRelevance = (items, query) =>
     [...(items || [])].sort((a, b) => {
-      const priorityA =
-        Number.isFinite(Number(a?.__priority)) ? Number(a.__priority) : 99;
-      const priorityB =
-        Number.isFinite(Number(b?.__priority)) ? Number(b.__priority) : 99;
+      const priorityA = Number.isFinite(Number(a?.__priority))
+        ? Number(a.__priority)
+        : 99;
+      const priorityB = Number.isFinite(Number(b?.__priority))
+        ? Number(b.__priority)
+        : 99;
       if (priorityA !== priorityB) return priorityA - priorityB;
 
       const rankA = getSuggestionMatchRank(a, query);
@@ -1657,7 +1660,10 @@ const Header = () => {
                 return (
                   <Link
                     key={id}
-                    to={buildBrandListingPath(name, category.id || category.name)}
+                    to={buildBrandListingPath(
+                      name,
+                      category.id || category.name,
+                    )}
                     onClick={() => setPinnedCategory(null)}
                     className="flex items-center justify-center p-3 border border-gray-200 rounded-lg hover:border-red-400 hover:bg-red-50 group transition-all duration-200"
                   >
@@ -2152,103 +2158,104 @@ const Header = () => {
                         {searchSuggestions
                           .slice(0, SEARCH_SUGGESTION_LIMIT)
                           .map((sugg, index) => (
-                          <button
-                            key={index}
-                            onMouseDown={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleSuggestionClick(sugg);
-                            }}
-                            // Fallback for touch/mobile
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleSuggestionClick(sugg);
-                            }}
-                            className="group relative flex w-full items-center gap-3 overflow-hidden rounded-2xl border border-blue-100 bg-white/95 p-4 text-left shadow-[0_12px_30px_rgba(59,130,246,0.08)] transition-all duration-200 hover:border-blue-200 hover:shadow-[0_16px_36px_rgba(59,130,246,0.12)] active:bg-blue-50 min-h-[64px]"
-                          >
-                            {/* Product Thumbnail */}
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-blue-50 via-white to-cyan-50 ring-1 ring-blue-100">
-                              {getSuggestionImage(sugg) ? (
-                                <img
-                                  src={getSuggestionImage(sugg)}
-                                  alt={sugg.name}
-                                  className="w-full h-full object-contain"
-                                  loading="lazy"
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = "none";
-                                  }}
-                                />
-                              ) : (
-                                <span className="font-bold text-sm text-[#345ce3]">
-                                  {(
-                                    sugg.brand_name ||
-                                    sugg.model ||
-                                    sugg.name ||
-                                    ""
-                                  )
-                                    .charAt(0)
-                                    .toUpperCase()}
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Text Content */}
-                            <div className="flex-1 min-w-0">
-                              <div className="truncate text-[13px] font-semibold leading-snug text-slate-900 group-hover:text-[#345ce3]">
-                                <HighlightText
-                                  text={sugg.name}
-                                  query={searchQuery}
-                                />
-                              </div>
-                              <div className="mt-1 text-xs text-slate-500">
-                                {sugg.type === "product" ? (
-                                  <div className="min-w-0">
-                                    <div className="truncate">
-                                      {sugg.brand_name ||
-                                        sugg.model ||
-                                        sugg.product_type ||
-                                        "Product"}
-                                    </div>
-                                    <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                      {getSuggestionVariantTypes(sugg).map(
-                                        (v) => (
-                                          <span
-                                            key={v}
-                                            className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-[#345ce3] ring-1 ring-blue-100"
-                                          >
-                                            {v}
-                                          </span>
-                                        ),
-                                      )}
-                                      {formatINR(
-                                        sugg.min_price ?? sugg.minPrice,
-                                      ) && (
-                                        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-100">
-                                          From{" "}
-                                          {formatINR(
-                                            sugg.min_price ?? sugg.minPrice,
-                                          )}
-                                        </span>
-                                      )}
-                                    </div>
-                                    {getSuggestionFeatures(sugg).length > 0 && (
-                                      <div className="mt-1 truncate text-[11px] text-slate-500">
-                                        {getSuggestionFeatures(sugg).join(
-                                          " • ",
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
+                            <button
+                              key={index}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleSuggestionClick(sugg);
+                              }}
+                              // Fallback for touch/mobile
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleSuggestionClick(sugg);
+                              }}
+                              className="group relative flex w-full items-center gap-3 overflow-hidden rounded-2xl border border-blue-100 bg-white/95 p-4 text-left shadow-[0_12px_30px_rgba(59,130,246,0.08)] transition-all duration-200 hover:border-blue-200 hover:shadow-[0_16px_36px_rgba(59,130,246,0.12)] active:bg-blue-50 min-h-[64px]"
+                            >
+                              {/* Product Thumbnail */}
+                              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-blue-50 via-white to-cyan-50 ring-1 ring-blue-100">
+                                {getSuggestionImage(sugg) ? (
+                                  <img
+                                    src={getSuggestionImage(sugg)}
+                                    alt={sugg.name}
+                                    className="w-full h-full object-contain"
+                                    loading="lazy"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = "none";
+                                    }}
+                                  />
                                 ) : (
-                                  sugg.type || ""
+                                  <span className="font-bold text-sm text-[#345ce3]">
+                                    {(
+                                      sugg.brand_name ||
+                                      sugg.model ||
+                                      sugg.name ||
+                                      ""
+                                    )
+                                      .charAt(0)
+                                      .toUpperCase()}
+                                  </span>
                                 )}
                               </div>
-                            </div>
 
-                            {/* Chevron Icon */}
-                          </button>
-                        ))}
+                              {/* Text Content */}
+                              <div className="flex-1 min-w-0">
+                                <div className="truncate text-[13px] font-semibold leading-snug text-slate-900 group-hover:text-[#345ce3]">
+                                  <HighlightText
+                                    text={sugg.name}
+                                    query={searchQuery}
+                                  />
+                                </div>
+                                <div className="mt-1 text-xs text-slate-500">
+                                  {sugg.type === "product" ? (
+                                    <div className="min-w-0">
+                                      <div className="truncate">
+                                        {sugg.brand_name ||
+                                          sugg.model ||
+                                          sugg.product_type ||
+                                          "Product"}
+                                      </div>
+                                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                        {getSuggestionVariantTypes(sugg).map(
+                                          (v) => (
+                                            <span
+                                              key={v}
+                                              className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-[#345ce3] ring-1 ring-blue-100"
+                                            >
+                                              {v}
+                                            </span>
+                                          ),
+                                        )}
+                                        {formatINR(
+                                          sugg.min_price ?? sugg.minPrice,
+                                        ) && (
+                                          <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-100">
+                                            From{" "}
+                                            {formatINR(
+                                              sugg.min_price ?? sugg.minPrice,
+                                            )}
+                                          </span>
+                                        )}
+                                      </div>
+                                      {getSuggestionFeatures(sugg).length >
+                                        0 && (
+                                        <div className="mt-1 truncate text-[11px] text-slate-500">
+                                          {getSuggestionFeatures(sugg).join(
+                                            " • ",
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    sugg.type || ""
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Chevron Icon */}
+                            </button>
+                          ))}
                       </div>
                     )}
                   </div>
@@ -2361,27 +2368,27 @@ const Header = () => {
                     searchSuggestions
                       .slice(0, SEARCH_SUGGESTION_LIMIT)
                       .map((sugg, index) => (
-                      <button
-                        key={index}
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          handleSuggestionClick(sugg);
-                        }}
-                        onMouseEnter={() => setSelectedSuggestionIndex(index)}
-                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-purple-50 text-left text-sm sm:text-base border-b border-gray-100 last:border-b-0 transition-colors"
-                      >
-                        {sugg.image_url && (
-                          <img
-                            src={sugg.image_url}
-                            alt={sugg.name}
-                            className="w-8 h-8 sm:w-10 sm:h-10 object-contain flex-shrink-0"
-                          />
-                        )}
-                        <span className="font-medium text-gray-900 truncate">
-                          {sugg.name}
-                        </span>
-                      </button>
-                    ))
+                        <button
+                          key={index}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleSuggestionClick(sugg);
+                          }}
+                          onMouseEnter={() => setSelectedSuggestionIndex(index)}
+                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-purple-50 text-left text-sm sm:text-base border-b border-gray-100 last:border-b-0 transition-colors"
+                        >
+                          {sugg.image_url && (
+                            <img
+                              src={sugg.image_url}
+                              alt={sugg.name}
+                              className="w-8 h-8 sm:w-10 sm:h-10 object-contain flex-shrink-0"
+                            />
+                          )}
+                          <span className="font-medium text-gray-900 truncate">
+                            {sugg.name}
+                          </span>
+                        </button>
+                      ))
                   )}
                 </div>
               )}
@@ -2763,14 +2770,6 @@ const Header = () => {
 
                 <div className="flex-1 overflow-y-auto px-3 py-4">
                   <div className="mb-5">
-                    <div className="px-3 pb-2 pt-1">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-blue-600">
-                        Quick Links
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        Start with the most used pages
-                      </p>
-                    </div>
                     <div className="space-y-1">
                       {quickLinks.map((item) =>
                         item.dropdownItems ? (
@@ -2816,7 +2815,7 @@ const Header = () => {
                             className="group flex items-center justify-between rounded-xl px-3 py-3 text-[13px] font-medium text-slate-800 transition-all duration-200 hover:bg-slate-50 hover:text-slate-950"
                           >
                             <span className="flex min-w-0 items-center gap-3">
-                              <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border border-slate-100 bg-gradient-to-br from-blue-50 via-white to-cyan-50 text-blue-700 transition-colors group-hover:border-blue-100 group-hover:text-blue-800">
+                              <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center  text-blue-700 transition-colors group-hover:border-blue-100 group-hover:text-blue-800">
                                 {item.icon}
                               </span>
                               <span className="truncate transition-colors">
