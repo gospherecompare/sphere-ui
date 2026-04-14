@@ -3,7 +3,13 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { createProductPath } from "../../utils/slugGenerator";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
-import { FaMobileAlt, FaLaptop, FaTv, FaWifi } from "react-icons/fa";
+import {
+  FaMobileAlt,
+  FaLaptop,
+  FaTv,
+  FaWifi,
+  FaArrowRight,
+} from "react-icons/fa";
 
 const normalizeScore100 = (value) => {
   const n = Number(value);
@@ -624,7 +630,7 @@ const BestPriceSection = () => {
         </div>
 
         {/* Category Tabs - Single Row */}
-        <div className="mx-auto mt-10 flex w-full max-w-full justify-start overflow-x-auto rounded-[1.75rem] border border-slate-200 bg-white/85 p-1 backdrop-blur-sm no-scrollbar scroll-smooth sm:w-fit sm:p-2">
+        <div className="mx-auto mt-10 flex w-full max-w-full justify-start overflow-x-auto rounded-[1.75rem]  bg-white/85 p-1 backdrop-blur-sm no-scrollbar scroll-smooth sm:w-fit sm:p-2">
           {categories.map((category, index) => {
             const isActive = activeCategory === category.id;
             const Icon = category.icon;
@@ -635,9 +641,9 @@ const BestPriceSection = () => {
                 key={category.id}
                 onClick={() => setActiveCategory(category.id)}
                 aria-pressed={isActive}
-                className={`group relative min-w-[100px] shrink-0 rounded-[1.25rem] border px-2 py-1.5 text-left text-[11px] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white sm:min-w-[154px] sm:px-5 sm:py-3 sm:text-[0.95rem] lg:min-w-[174px] ${
+                className={`group relative min-w-[100px] shrink-0 px-2 py-1.5 text-left text-[11px] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white sm:min-w-[154px] sm:px-5 sm:py-3 sm:text-[0.95rem] lg:min-w-[174px] ${
                   isActive
-                    ? "border-violet-200 bg-gradient-to-b from-violet-50 to-white text-violet-700 shadow-[0_10px_22px_rgba(124,58,237,0.12)]"
+                    ? "border-violet-200 bg-gradient-to-b from-violet-50 to-white text-violet-700 "
                     : "border-transparent bg-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900"
                 } ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
                 style={{ transitionDelay: `${index * 55}ms` }}
@@ -686,7 +692,7 @@ const BestPriceSection = () => {
         </div>
 
         {/* Products Row - Horizontal scroll with fixed-size cards */}
-        <div className="no-scrollbar mt-10 flex snap-x snap-mandatory overflow-x-auto gap-2 sm:gap-4 lg:gap-5 scroll-smooth pb-4">
+        <div className="no-scrollbar mt-10 flex snap-x snap-mandatory overflow-x-auto gap-2 scroll-smooth pb-4 sm:gap-4 lg:gap-5">
           {loadingTrending
             ? // Skeleton Loaders
               Array.from({ length: 8 }).map((_, i) => (
@@ -694,17 +700,16 @@ const BestPriceSection = () => {
                   key={`skeleton-${i}`}
                   className="w-[74vw] max-w-[17rem] shrink-0 animate-pulse sm:w-[18rem] lg:w-[19rem]"
                 >
-                  <div className="relative overflow-hidden border border-slate-200 bg-white p-3 sm:p-4">
-                    <div className="mb-4 aspect-[4/3] rounded-[1.5rem] bg-slate-200"></div>
-                    <div className="h-3 w-4/5 rounded bg-slate-200"></div>
-                    <div className="mt-2 h-3 w-full rounded bg-slate-200"></div>
-                    <div className="mt-4 flex gap-2">
-                      <div className="h-7 w-20 rounded-full bg-slate-200" />
-                      <div className="h-7 w-24 rounded-full bg-slate-200" />
+                  <div className="relative overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white p-3 shadow-sm shadow-slate-100 sm:p-4">
+                    <div className="flex h-36 items-center justify-center rounded-[1.25rem] border border-slate-200 bg-slate-100 sm:h-40">
+                      <div className="h-24 w-20 rounded-[1.25rem] bg-slate-200/90" />
                     </div>
-                    <div className="mt-5 border-t border-slate-100 pt-4">
-                      <div className="h-3 w-24 rounded bg-slate-200" />
-                      <div className="mt-2 h-5 w-28 rounded bg-slate-200" />
+                    <div className="mt-4 h-4 w-4/5 rounded bg-slate-200" />
+                    <div className="mt-4 border-t border-slate-100 pt-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="h-4 w-24 rounded bg-slate-200" />
+                        <div className="h-4 w-4 rounded-full bg-slate-200" />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -716,57 +721,43 @@ const BestPriceSection = () => {
                   type="button"
                   aria-label={`Open ${device.name}`}
                   onClick={() => handleDeviceClick(device)}
-                  className={`group relative flex h-full w-[74vw] max-w-[17rem] shrink-0 snap-start flex-col overflow-hidden bg-white text-left transition-all duration-300 sm:w-[18rem] lg:w-[19rem] ${
+                  className={`group relative flex h-full w-[74vw] max-w-[17rem] shrink-0 snap-start flex-col overflow-hidden  bg-white text-left  transition-all duration-300  sm:w-[18rem] lg:w-[19rem] ${
                     isLoaded
                       ? "opacity-100 translate-y-0"
                       : "opacity-0 translate-y-2"
                   }`}
                   style={{ transitionDelay: `${i * 60}ms` }}
                 >
-                  <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-blue-500 to-cyan-400" />
-
-                  <div className="relative bg-gradient-to-br from-slate-50 via-white to-blue-50/60 p-3 sm:p-5">
-                    <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-[1.5rem] bg-white/90 ring-1 ring-slate-200">
+                  <div className="flex flex-1 flex-col p-3 sm:p-4">
+                    <div className="flex h-36 items-center justify-center overflow-hidden rounded-lg bg-white/10 ring-1 ring-white/15 sm:h-40">
                       {device.image ? (
                         <img
                           src={device.image}
                           alt={device.name}
-                          className="h-full w-full object-contain p-4 transition-transform duration-300 group-hover:scale-105"
+                          className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-110"
                           loading="lazy"
                           onError={(e) => {
                             e.currentTarget.style.display = "none";
                           }}
                         />
                       ) : (
-                        <FallbackCardIcon className="text-3xl text-slate-300" />
+                        <FallbackCardIcon className="text-4xl text-slate-300" />
                       )}
                     </div>
                   </div>
 
-                  <div className="flex flex-1 flex-col p-3 sm:p-5">
-                    {device.brand ? (
-                      <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-blue-600">
-                        {device.brand}
-                      </p>
-                    ) : null}
-
-                    <h6 className="mt-2 line-clamp-2 text-base font-semibold leading-snug text-slate-900 transition-colors duration-200 group-hover:text-blue-600 sm:text-xl">
+                  <div className="flex flex-1 flex-col p-3 pt-0 sm:p-4 sm:pt-0">
+                    <h6 className="mt-4 line-clamp-2 text-base font-bold leading-snug text-slate-900 transition-colors duration-200 group-hover:text-blue-600 sm:text-lg">
                       {device.name}
                     </h6>
 
-                    <div className="mt-4 flex items-end justify-between gap-3 border-t border-slate-100 pt-3 sm:pt-4">
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
-                          price
-                        </p>
-                        <p className="mt-1 text-lg font-black tracking-tight text-slate-900 sm:text-xl">
-                          {device.price || "Price not available"}
-                        </p>
+                    <div className="mt-4 border-t border-slate-100 pt-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-sm font-semibold text-blue-600 transition-colors duration-200 group-hover:text-blue-700">
+                          View Details
+                        </span>
+                        <FaArrowRight className="shrink-0 text-sm text-slate-400 transition-transform duration-300 group-hover:translate-x-1 group-hover:text-blue-600" />
                       </div>
-
-                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-violet-600 text-sm text-white shadow-lg transition-transform duration-300 group-hover:translate-x-1 sm:h-11 sm:w-11 sm:text-base">
-                        →
-                      </span>
                     </div>
                   </div>
                 </button>

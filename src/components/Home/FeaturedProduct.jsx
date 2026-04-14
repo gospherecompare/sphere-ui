@@ -1,7 +1,13 @@
 // src/components/Home/FeaturedProduct.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaArrowRight, FaChartLine, FaFire, FaRupeeSign } from "react-icons/fa";
+import {
+  FaArrowRight,
+  FaChartLine,
+  FaFire,
+  FaMobileAlt,
+  FaRupeeSign,
+} from "react-icons/fa";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
 import { createProductPath } from "../../utils/slugGenerator";
 import { buildSmartphoneFeaturePath } from "../../utils/smartphoneListingRoutes";
@@ -493,27 +499,69 @@ const SpecScoreBadge = ({ score }) => {
 
 const FeaturedPhoneCard = ({ phone, index, isLoaded, onClick }) => {
   const [imageFailed, setImageFailed] = useState(false);
+  const priceLabel =
+    phone.price !== null && phone.price !== undefined
+      ? formatCurrency(phone.price)
+      : "";
+  const scoreLabel =
+    phone.score !== null && phone.score !== undefined
+      ? `Spec score ${Number(phone.score).toFixed(1)}`
+      : "Live pick";
 
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={`Open ${phone.name}`}
-      className={`group flex snap-start items-center gap-3 rounded-lg border border-white/15 bg-white/8 px-4 py-3 text-left text-white/95 shadow-[0_10px_25px_rgba(0,0,0,0.12)] backdrop-blur-md transition-all duration-500 hover:border-white/30 hover:bg-white/12 ${
+      className={`group flex w-full shrink-0 snap-start items-center gap-3 rounded-2xl border border-white/15 bg-white/10 p-3 text-left text-white/95 shadow-[0_10px_25px_rgba(0,0,0,0.12)] backdrop-blur-md transition-all duration-300 hover:border-white/30 hover:bg-white/12 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
       style={{ transitionDelay: `${index * 60}ms` }}
     >
-      <span className="min-w-0 flex-1">
-        <span className="block text-sm font-semibold leading-snug text-white">
-          {phone.name}
-        </span>
-        <span className="mt-1 block line-clamp-2 text-xs leading-snug text-white/70">
-          {phone.note}
-        </span>
-      </span>
+      <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/15 bg-white/10 ring-1 ring-white/15 sm:h-24 sm:w-24">
+        {phone.image && !imageFailed ? (
+          <img
+            src={phone.image}
+            alt={phone.name}
+            className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-105"
+            loading="lazy"
+            onError={() => setImageFailed(true)}
+          />
+        ) : (
+          <FaMobileAlt className="text-2xl text-white/40" />
+        )}
+      </div>
 
-      <FaArrowRight className="h-3.5 w-3.5 shrink-0 text-white/60 transition-transform duration-300 group-hover:translate-x-1" />
+      <div className="min-w-0 flex-1">
+        {phone.brand ? (
+          <p className="truncate text-[10px] font-bold uppercase tracking-[0.24em] text-cyan-100">
+            {phone.brand}
+          </p>
+        ) : null}
+
+        <h6 className="mt-1 line-clamp-2 text-base font-semibold leading-snug text-white transition-colors duration-200 group-hover:text-cyan-100">
+          {phone.name}
+        </h6>
+
+        <p className="mt-2 line-clamp-2 text-xs leading-snug text-white/70">
+          {phone.note}
+        </p>
+
+        <div className="mt-3 flex items-end justify-between gap-3 border-t border-white/10 pt-2">
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/45">
+              {priceLabel ? "price" : "spec score"}
+            </p>
+            <p className="mt-1 truncate text-sm font-black text-white sm:text-base">
+              {priceLabel || scoreLabel}
+            </p>
+          </div>
+
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-transform duration-300 group-hover:translate-x-1">
+            <FaArrowRight className="h-3.5 w-3.5" />
+          </span>
+        </div>
+      </div>
     </button>
   );
 };
@@ -521,21 +569,25 @@ const FeaturedPhoneCard = ({ phone, index, isLoaded, onClick }) => {
 const FeaturedPhoneSkeleton = ({ index, isLoaded }) => {
   return (
     <div
-      className={`flex snap-start items-center gap-3 rounded-lg border border-white/15 bg-white/8 px-4 py-3 text-white/95 shadow-[0_10px_25px_rgba(0,0,0,0.12)] backdrop-blur-md ${
+      className={`flex w-full shrink-0 snap-start items-center gap-3 rounded-2xl border border-white/15 bg-white/10 p-3 text-white/95 shadow-[0_10px_25px_rgba(0,0,0,0.12)] backdrop-blur-md ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       } animate-pulse`}
       style={{ transitionDelay: `${index * 60}ms` }}
     >
-      <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white/10 ring-1 ring-white/15">
-        <span className="h-4 w-4 rounded bg-white/20" />
+      <span className="flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white/10 ring-1 ring-white/15 sm:h-24 sm:w-24">
+        <span className="h-8 w-8 rounded bg-white/20" />
       </span>
 
       <span className="min-w-0 flex-1 space-y-2">
+        <span className="block h-2.5 w-16 rounded bg-white/20" />
         <span className="block h-3 w-4/5 rounded bg-white/20" />
         <span className="block h-2.5 w-full rounded bg-white/10" />
+        <span className="block h-2.5 w-3/4 rounded bg-white/10" />
+        <span className="mt-3 block h-px w-full bg-white/10" />
+        <span className="block h-2.5 w-24 rounded bg-white/20" />
       </span>
 
-      <span className="h-3.5 w-3.5 rounded bg-white/20" />
+      <span className="h-9 w-9 rounded-full bg-white/20" />
     </div>
   );
 };
@@ -602,6 +654,7 @@ const FeaturedProduct = () => {
               name,
               brand,
               image: getRowImage(row),
+              price: getRowPrice(row),
               note: buildFeaturedNote(row),
               short: getShortLabel(name, brand),
               score: getRowScore(row),

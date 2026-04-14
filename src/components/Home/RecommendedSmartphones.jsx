@@ -210,11 +210,7 @@ const buildRecommendationCandidate = (row, index = 0) => {
     name: getRowName(row),
     image: getRowImage(row),
     price: getRowPrice(row),
-    brand: firstText(
-      row?.brand,
-      row?.brand_name,
-      row?.basic_info?.brand_name,
-    ),
+    brand: firstText(row?.brand, row?.brand_name, row?.basic_info?.brand_name),
     segment: getRowSegment(row),
     processor: getRowProcessor(row),
     cameraMp: parseCameraMp(getRowCamera(row)),
@@ -497,12 +493,7 @@ const RecommendedSmartphones = ({
     return () => {
       cancelled = true;
     };
-  }, [
-    catalogRows,
-    contextBrandName,
-    contextProductName,
-    contextProductTerms,
-  ]);
+  }, [catalogRows, contextBrandName, contextProductName, contextProductTerms]);
 
   const getDevicePath = (device) => {
     const rawName = device.name || String(device.id || "device");
@@ -719,13 +710,6 @@ const RecommendedSmartphones = ({
                   style={{ transitionDelay: `${i * 60}ms` }}
                 >
                   {/* NEW Badge */}
-                  {i % 3 === 0 && (
-                    <div className="absolute -top-2 right-3">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-cyan-400 to-blue-400 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white shadow-lg">
-                        NEW
-                      </span>
-                    </div>
-                  )}
 
                   {/* Image Container */}
                   <div className="flex h-36  items-center justify-center overflow-hidden rounded-lg bg-white/10 ring-1 ring-white/15 sm:h-40">

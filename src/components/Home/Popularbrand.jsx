@@ -3,9 +3,9 @@ import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDevice } from "../../hooks/useDevice";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
-import { FaChartLine, FaFire, FaTag } from "react-icons/fa";
 import RecommendedSmartphones from "./RecommendedSmartphones";
 import { buildSmartphoneBrandPath } from "../../utils/smartphoneListingRoutes";
+import { FaArrowRight } from "react-icons/fa";
 
 const BRAND_PLACEHOLDER_LOGO =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Crect width='80' height='80' rx='12' fill='%23f3f4f6'/%3E%3Ctext x='40' y='46' font-family='Arial' font-size='10' text-anchor='middle' fill='%239ca3af'%3ELogo%3C/text%3E%3C/svg%3E";
@@ -15,32 +15,46 @@ const BrandCard = ({ brand, index, isActive, isLoaded, onClick }) => {
     <button
       type="button"
       onClick={onClick}
-      className={`group relative flex h-16 w-[84vw] max-w-[240px] shrink-0 snap-start items-center gap-0 rounded-2xl bg-transparent px-1 text-left transition-all duration-500 hover:-translate-y-0.5 sm:w-[255px] lg:w-[270px] ${
-        isLoaded ? "opacity-100" : "opacity-0 translate-y-2"
-      }`}
+      className={`group relative flex h-16 w-[84vw] max-w-[240px] shrink-0 snap-start items-center gap-3 rounded-2xl border px-4 text-left transition-all duration-300 hover:-translate-y-0.5 sm:w-[255px] lg:w-[270px] ${
+        isActive
+          ? "border-blue-500 bg-blue-50"
+          : "border-slate-200 bg-white  hover:border-slate-300 "
+      } ${isLoaded ? "opacity-100" : "opacity-0 translate-y-2"}`}
       style={{ transitionDelay: `${index * 45}ms` }}
     >
-      <img
-        src={brand.logo || BRAND_PLACEHOLDER_LOGO}
-        alt={brand.name || "brand"}
-        loading="lazy"
-        decoding="async"
-        className={`h-12 w-12 shrink-0 rounded-2xl object-contain p-1.5 transition-transform duration-300 sm:h-14 sm:w-14 sm:p-2 ${
-          isActive ? "scale-105" : "scale-100 opacity-90"
+      <div
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border bg-slate-50 transition-colors duration-300 ${
+          isActive ? "border-blue-200 bg-white" : "border-slate-200"
         }`}
-        onError={(e) => {
-          e.currentTarget.onerror = null;
-          e.currentTarget.src = BRAND_PLACEHOLDER_LOGO;
-        }}
-      />
+      >
+        <img
+          src={brand.logo || BRAND_PLACEHOLDER_LOGO}
+          alt={brand.name || "brand"}
+          loading="lazy"
+          decoding="async"
+          className="h-7 w-7 object-contain"
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = BRAND_PLACEHOLDER_LOGO;
+          }}
+        />
+      </div>
 
-      <div className="min-w-0 flex h-14 flex-1 items-center">
+      <div className="min-w-0 flex flex-1 items-center justify-between gap-3">
         <span
-          className={`block truncate text-xl font-black leading-none sm:text-[2rem] ${
+          className={`block truncate text-sm font-semibold leading-none sm:text-base ${
             isActive ? "text-blue-700" : "text-slate-900"
           }`}
         >
           {brand.name}
+        </span>
+        <span
+          className={`text-sm transition-transform duration-300 group-hover:translate-x-0.5 ${
+            isActive ? "text-blue-600" : "text-slate-400"
+          }`}
+          aria-hidden="true"
+        >
+          <FaArrowRight className="h-3 w-3" />
         </span>
       </div>
     </button>
@@ -125,41 +139,30 @@ const PopularBrands = () => {
 
   return (
     <section
-      className={`relative isolate overflow-hidden transition-all duration-700 ${
+      className={`relative isolate overflow-hidden bg-slate-50 transition-all duration-700 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
-      <div className="relative px-2  mt-12">
-        <div className="relative mx-auto max-w-5xl text-center">
-          <h1 className="mt-6 text-3xl font-bold leading-tight text-slate-900 sm:text-4xl lg:text-5xl">
-            Mobiles by{" "}
-            <span className="bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 bg-clip-text text-transparent">
-              Popular Brands
+      <div className="relative px-4 pt-10 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-5xl text-center">
+          <h1 className="mt-6 sm:mt-8 text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-black leading-tight ">
+            <span className="block">Explore by Popular </span>
+            <span className="bg-gradient-to-r from-cyan-400 via-gray to-sky-500 bg-clip-text text-transparent animate-pulse">
+              Brands
             </span>
           </h1>
 
-          <p className="mx-auto mt-4 max-w-3xl text-sm leading-7 text-slate-600 sm:text-base lg:text-lg">
-            Jump into the brands people search for most and browse straight to
-            their latest devices.
+          <p className="mx-auto mt-4 sm:mt-6 max-w-2xl text-sm sm:text-lg lg:text-xl leading-6 sm:leading-8  font-medium text-gray-600">
+            Browse trusted brands across smartphones, laptops, TVs, and other
+            devices.
           </p>
-        </div>
-
-        <div className="mt-6 flex flex-col items-center justify-center gap-2 sm:flex-row sm:gap-3">
-          <span className="inline-flex items-center gap-2 rounded-full border border-slate-200  px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700 ">
-            <FaChartLine className="h-3.5 w-3.5 text-cyan-500" />
-            Brand shortcuts
-          </span>
-          <span className="hidden h-1 w-1 rounded-full bg-slate-300 sm:inline-block" />
-          <span className="max-w-xs text-center text-xs font-medium text-slate-500 sm:max-w-none sm:text-left">
-            Tap any brand to jump to products instantly
-          </span>
         </div>
       </div>
 
-      <div className="relative mx-auto max-w-7xl px-4 pb-12 sm:px-6 sm:pb-16 lg:px-8 lg:pb-20">
+      <div className="relative mx-auto max-w-7xl px-4 pb-12 pt-8 sm:px-6 sm:pb-16 lg:px-8 lg:pb-20">
         {uniqueBrands.length > 0 && (
           <div className="mx-auto mt-8 max-w-6xl">
-            <div className="no-scrollbar flex w-full flex-nowrap gap-0 overflow-x-auto pb-5 pt-0 snap-x snap-mandatory sm:gap-4">
+            <div className="no-scrollbar flex w-full flex-nowrap gap-3 overflow-x-auto pb-5 pt-0 snap-x snap-mandatory sm:gap-4">
               {uniqueBrands.map((brand, index) => {
                 const isActive = activeBrand === brand.id;
 

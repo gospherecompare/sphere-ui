@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { createProductPath } from "../../utils/slugGenerator";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
-import { FaMobileAlt } from "react-icons/fa";
+import { FaMobileAlt, FaArrowRight } from "react-icons/fa";
 
 const API_BASE = (
   import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in"
@@ -194,7 +194,7 @@ const LatestSmartphoneCard = ({ device, index, isLoaded, onClick }) => {
             View Details
           </span>
           <span className="transition-transform duration-300 group-hover:translate-x-1">
-            {"->"}
+            <FaArrowRight className="h-3 w-3 text-white/70" />
           </span>
         </div>
       </div>

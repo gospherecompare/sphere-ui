@@ -2287,10 +2287,10 @@ const Header = () => {
               <FaBars className="h-5 w-5" />
             </button>
 
-            <Link to="/" className="flex min-w-0 items-center">
-              <BrandIdentity variant="mobile" />
-            </Link>
-          </div>
+          <Link to="/" className="flex min-w-0 items-center">
+            <BrandIdentity variant="mobile" />
+          </Link>
+        </div>
 
           <div className="flex items-center gap-2">
             <button

@@ -15,7 +15,6 @@ import {
   FaStore,
   FaMoneyBill,
   FaWeight,
-  FaSort,
   FaShoppingBag,
   FaCalendarAlt,
   FaMobileAlt,
@@ -26,11 +25,7 @@ import {
   FaPlus,
 } from "react-icons/fa";
 import { useDevice } from "../../hooks/useDevice";
-import {
-  useNavigate,
-  useLocation,
-  useParams,
-} from "react-router-dom";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import {
   fetchSmartphones,
@@ -93,7 +88,8 @@ const areFilterStatesEqual = (left, right) => {
   }
 };
 
-const toSeoTextWithoutCommas = (value = "") => String(value || "").replace(/,/g, "");
+const toSeoTextWithoutCommas = (value = "") =>
+  String(value || "").replace(/,/g, "");
 
 // Enhanced Image Carousel - Simplified without counts/indicators
 const ImageCarousel = ({ images = [] }) => {
@@ -1973,7 +1969,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [brandFilterQuery, setBrandFilterQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [showSort, setShowSort] = useState(false);
   const [showHeroDescription, setShowHeroDescription] = useState(false);
   const [compareItems, setCompareItems] = useState([]);
   const compareLimit = useMemo(
@@ -1984,7 +1979,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   // Brand-based SEO helper
   const filterBrand =
     normalizedBrandSlug ||
-    (Array.isArray(filters?.brand) && filters.brand[0] ? filters.brand[0] : null);
+    (Array.isArray(filters?.brand) && filters.brand[0]
+      ? filters.brand[0]
+      : null);
   const currentBrandObj = (() => {
     const b = filterBrand;
     if (!b) return null;
@@ -2072,7 +2069,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     const fallbackMeta = getSmartphoneFeatureRouteMeta(normalizedFeature);
 
     const name = String(
-      selected?.name || fallbackMeta?.name || toFeatureSeoLabel(normalizedFeature),
+      selected?.name ||
+        fallbackMeta?.name ||
+        toFeatureSeoLabel(normalizedFeature),
     ).trim();
     if (!name) return null;
 
@@ -2153,18 +2152,18 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       ? "LATEST SMARTPHONES"
       : currentFeatureMeta
         ? `${currentFeatureMeta.name.toUpperCase()} SMARTPHONES`
-      : priceFilter
-        ? `BEST SMARTPHONE ${priceFilter.label.toUpperCase()}`
-        : "SMARTPHONE COLLECTION";
+        : priceFilter
+          ? `BEST SMARTPHONE ${priceFilter.label.toUpperCase()}`
+          : "SMARTPHONE COLLECTION";
   const heroTitleText = isUpcomingView
     ? "Upcoming Smartphones"
     : isNewFilterPath
       ? "Latest Smartphones"
       : currentFeatureMeta
         ? `${currentFeatureMeta.name} Smartphones`
-    : priceFilter
-      ? `${priceFilter.label} Smartphones in India`
-      : "Browse Smartphones in India";
+        : priceFilter
+          ? `${priceFilter.label} Smartphones in India`
+          : "Browse Smartphones in India";
   const isExpandedHeroDescriptionPath =
     isUpcomingView ||
     isNewFilterPath ||
@@ -2180,8 +2179,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       : currentFeatureMeta
         ? featureHeroText
         : priceFilter || currentBrandObj
-        ? seoDescription
-        : "Browse smartphones in India across brands, price ranges, launch windows, and performance tiers so you can quickly find a device that matches your budget and daily use. The collection brings updated prices, key specifications, ratings, and variant details together in one place, making it easier to check camera quality, low-light results, portrait shots, video stability, battery life, charging speed, display brightness, refresh rate, chipset performance, RAM, storage, software support, and long-term update value. Whether you are looking for a flagship camera phone, a balanced all-rounder, a battery-focused option, or a gaming-ready device, the page helps you scan what is new, what is popular, and what is worth shortlisting without opening multiple tabs. Use the filters, search, and product cards to narrow results by brand, budget, or feature, then open the phones that stand out most.";
+          ? seoDescription
+          : "Browse smartphones in India across brands, price ranges, launch windows, and performance tiers so you can quickly find a device that matches your budget and daily use. The collection brings updated prices, key specifications, ratings, and variant details together in one place, making it easier to check camera quality, low-light results, portrait shots, video stability, battery life, charging speed, display brightness, refresh rate, chipset performance, RAM, storage, software support, and long-term update value. Whether you are looking for a flagship camera phone, a balanced all-rounder, a battery-focused option, or a gaming-ready device, the page helps you scan what is new, what is popular, and what is worth shortlisting without opening multiple tabs. Use the filters and product cards to narrow results by brand, budget, or feature, then open the phones that stand out most.";
   const heroSubtitleStyle =
     isExpandedHeroDescriptionPath && !showHeroDescription
       ? {
@@ -2425,9 +2424,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
           prev.priceRange &&
           Number(prev.priceRange.min) === MIN_PRICE &&
           Number(prev.priceRange.max) === MAX_PRICE;
-        if (
-          hasCustomRange
-        ) {
+        if (hasCustomRange) {
           return prev;
         }
         if (hasDefaultRange) return prev;
@@ -2632,22 +2629,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     if (min > max) max = min;
     if (max < min) min = max;
     setFilters((prev) => ({ ...prev, priceRange: { min, max } }));
-  };
-
-  const handleSortChange = (value) => {
-    setSortBy(value);
-    setShowSort(false);
-    try {
-      const params = new URLSearchParams(search);
-      if (params.has("sort")) {
-        params.delete("sort");
-        const qs = params.toString();
-        const path = `${location.pathname}${qs ? `?${qs}` : ""}`;
-        navigate(path, { replace: true });
-      }
-    } catch {
-      // ignore
-    }
   };
 
   // Filter logic (operates on variant-level cards) - memoized so it updates
@@ -3490,7 +3471,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         "max_price",
       ].forEach((key) => params.delete(key));
       params.delete("sort");
-      navigate(buildSmartphoneListingPath({ query: params }), { replace: true });
+      navigate(buildSmartphoneListingPath({ query: params }), {
+        replace: true,
+      });
     } catch {
       // ignore URL update errors
     }
@@ -3678,13 +3661,17 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
             <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/10 to-transparent" />
 
             <div className="relative mx-auto max-w-7xl">
-              <div className={isExpandedHeroDescriptionPath ? "max-w-6xl" : "max-w-4xl"}>
+              <div
+                className={
+                  isExpandedHeroDescriptionPath ? "max-w-6xl" : "max-w-4xl"
+                }
+              >
                 <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-100">
                   <FaMobileAlt className="h-3.5 w-3.5" />
                   {headerLabel}
                 </span>
 
-                <h1 className="mt-6 max-w-7xl text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">
+                <h1 className="mt-6 max-w-7xl text-3xl font-black leading-tight sm:text-4xl lg:text-6xl">
                   {heroTitleText}
                 </h1>
 
@@ -3706,17 +3693,17 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                   </button>
                 ) : null}
 
-                <div className="mt-8 flex flex-wrap gap-3">
+                <div className="mt-8 grid grid-cols-2 gap-2 sm:gap-3 lg:hidden">
                   <button
                     onClick={() => navigate("/compare")}
-                    className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition-colors duration-200 hover:bg-slate-100"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-3.5 py-3 text-xs font-semibold text-slate-950 shadow-[0_10px_24px_rgba(15,23,42,0.12)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 sm:px-5 sm:text-sm"
                   >
                     Compare devices
                     <FaExchangeAlt className="h-3.5 w-3.5" />
                   </button>
                   <button
                     onClick={() => navigate("/brands")}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:border-white/25 hover:bg-white/15"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-3 text-xs font-semibold text-white backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/15 sm:px-5 sm:text-sm"
                   >
                     Browse brands
                     <FaChevronRight className="h-3.5 w-3.5" />
@@ -3775,108 +3762,24 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
               </div>
 
               <div className="hidden  rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-5">
-                {/* Desktop Search and Sort */}
-                <div className="hidden items-center justify-between gap-4 lg:flex">
-                  <div className="min-w-0 flex-1 max-w-4xl">
-                    <div className="relative group">
-                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-                        <FaSearch className="text-cyan-100 transition-colors duration-200 group-focus-within:text-white" />
-                      </div>
-                      <input
-                        type="text"
-                        placeholder="Search smartphones by brand, model, or specifications..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full rounded-md border border-white/10 bg-white/10 pl-12 pr-4 py-3 text-sm text-white placeholder:text-white/50 transition-colors duration-200 focus:border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-200/40 sm:text-base disabled:cursor-not-allowed disabled:opacity-50"
-                      />
-                    </div>
-                  </div>
+                {/* Desktop Controls */}
 
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <FaSort className="text-cyan-100" />
-                      <span className="text-sm text-white/75">Sort by:</span>
-                    </div>
-                    <div className="relative min-w-[200px]">
-                      <select
-                        value={sortBy}
-                        onChange={(e) => handleSortChange(e.target.value)}
-                        className="w-full cursor-pointer appearance-none rounded-md border border-white/10 bg-white/10 px-4 py-2.5 pr-10 text-white transition-colors duration-200 hover:border-white/20 focus:border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-200/40"
-                      >
-                        <option value="featured" className="bg-slate-900">
-                          Featured Devices
-                        </option>
-                        <option value="price-low" className="bg-slate-900">
-                          Price: Low to High
-                        </option>
-                        <option value="price-high" className="bg-slate-900">
-                          Price: High to Low
-                        </option>
-                        <option value="rating" className="bg-slate-900">
-                          Highest Rated
-                        </option>
-                        <option value="newest" className="bg-slate-900">
-                          Newest First
-                        </option>
-                      </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-white/70">
-                        <svg
-                          className="h-4 w-4 fill-current"
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 20 20"
-                        >
-                          <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                        </svg>
-                      </div>
-                    </div>
-
-                    {getActiveFiltersCount() > 0 && (
-                      <button
-                        onClick={clearFilters}
-                        className="flex items-center gap-2 rounded-[18px] border border-white/10 px-4 py-2.5 text-sm font-medium text-white transition-colors duration-200 hover:bg-white/10"
-                      >
-                        <FaTimes />
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Mobile Search and Filter Bar */}
-                <div className="space-y-3 sm:space-y-4 lg:hidden">
-                  <div className="relative group">
-                    <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-100 transition-colors duration-200 group-focus-within:text-white" />
-                    <input
-                      type="text"
-                      placeholder="Search smartphones..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="h-12 w-full rounded-xl border border-white/10 bg-white/10 pl-12 pr-4 py-2 text-white placeholder:text-white/50 transition-colors duration-200 focus:border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-200/40"
-                    />
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setShowFilters(true)}
-                      className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 font-semibold text-white transition-colors duration-300 hover:bg-white/15"
-                    >
-                      <FaFilter />
+                {/* Mobile Controls */}
+              <div className="space-y-3 sm:space-y-4 lg:hidden">
+                <div className="flex">
+                  <button
+                    onClick={() => setShowFilters(true)}
+                    className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 font-semibold text-white transition-colors duration-300 hover:bg-white/15"
+                  >
+                    <FaFilter />
                       Filters
                       {getActiveFiltersCount() > 0 && (
                         <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white">
                           {getActiveFiltersCount()}
-                        </span>
-                      )}
-                    </button>
-
-                    <button
-                      onClick={() => setShowSort(true)}
-                      className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 font-semibold text-white transition-colors duration-300 hover:bg-white/15"
-                    >
-                      <FaSort />
-                      Sort
-                    </button>
-                  </div>
+                      </span>
+                    )}
+                  </button>
+                </div>
 
                   {/* Active Filters Badge - Mobile */}
                   {getActiveFiltersCount() > 0 && (
@@ -3902,49 +3805,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                       </button>
                     </div>
                   )}
-                </div>
-
-                {/* Results Count */}
-                <div className="hidden">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-end">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-slate-500">
-                        Sort By:
-                      </span>
-                      <div className="relative min-w-[170px]">
-                        <select
-                          value={sortBy}
-                          onChange={(e) => handleSortChange(e.target.value)}
-                          className="w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 py-2.5 pr-10 font-semibold text-slate-900 shadow-sm transition-all duration-200 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        >
-                          <option value="featured" className="bg-white">
-                            Popularity
-                          </option>
-                          <option value="price-low" className="bg-white">
-                            Price: Low to High
-                          </option>
-                          <option value="price-high" className="bg-white">
-                            Price: High to Low
-                          </option>
-                          <option value="rating" className="bg-white">
-                            Highest Rated
-                          </option>
-                          <option value="newest" className="bg-white">
-                            Newest First
-                          </option>
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
-                          <svg
-                            className="h-4 w-4 fill-current"
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 20 20"
-                          >
-                            <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
@@ -4000,85 +3860,20 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
             </div>
 
             <div className="mb-4 overflow-hidden">
-              <div className="hidden items-center justify-between gap-4 lg:flex">
-                <div className="min-w-0 flex-1 max-w-4xl">
-                  <div className="relative group">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-                      <FaSearch className="text-blue-500 transition-colors duration-200 group-focus-within:text-blue-600" />
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Search smartphones by brand, model, or specifications..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full rounded-md border border-slate-200 bg-white pl-12 pr-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 transition-colors duration-200 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-400 sm:text-base disabled:cursor-not-allowed disabled:opacity-50"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <FaSort className="text-slate-500" />
-                    <span className="text-sm text-slate-600">Sort by:</span>
-                  </div>
-                  <div className="relative min-w-[200px]">
-                    <select
-                      value={sortBy}
-                      onChange={(e) => handleSortChange(e.target.value)}
-                      className="w-full cursor-pointer appearance-none rounded-md border border-slate-200 bg-white px-4 py-2.5 pr-10 text-slate-700 transition-colors duration-200 hover:border-blue-300 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    >
-                      <option value="featured" className="bg-white">
-                        Featured Devices
-                      </option>
-                      <option value="price-low" className="bg-white">
-                        Price: Low to High
-                      </option>
-                      <option value="price-high" className="bg-white">
-                        Price: High to Low
-                      </option>
-                      <option value="rating" className="bg-white">
-                        Highest Rated
-                      </option>
-                      <option value="newest" className="bg-white">
-                        Newest First
-                      </option>
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
-                      <svg
-                        className="fill-current h-4 w-4"
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                      >
-                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                      </svg>
-                    </div>
-                  </div>
-
-                  {getActiveFiltersCount() > 0 && (
-                    <button
-                      onClick={clearFilters}
-                      className="flex items-center gap-2 rounded-[18px] px-4 py-2.5 text-sm font-medium text-blue-600 transition-colors duration-200 hover:bg-blue-50 hover:text-blue-700"
-                    >
-                      <FaTimes />
-                      Clear
-                    </button>
-                  )}
-                </div>
+              <div className="hidden items-center justify-end gap-4 lg:flex">
+                {getActiveFiltersCount() > 0 && (
+                  <button
+                    onClick={clearFilters}
+                    className="flex items-center gap-2 rounded-[18px] px-4 py-2.5 text-sm font-medium text-blue-600 transition-colors duration-200 hover:bg-blue-50 hover:text-blue-700"
+                  >
+                    <FaTimes />
+                    Clear
+                  </button>
+                )}
               </div>
 
               <div className="space-y-3 sm:space-y-4 lg:hidden">
-                <div className="relative group">
-                  <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500 transition-colors duration-200 group-focus-within:text-blue-600" />
-                  <input
-                    type="text"
-                    placeholder="Search smartphones..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-12 pr-4 py-2 text-slate-900 placeholder:text-slate-400 transition-colors duration-200 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  />
-                </div>
-
-                <div className="flex gap-3">
+                <div className="flex">
                   <button
                     onClick={() => setShowFilters(true)}
                     className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-sky-500 px-4 font-semibold text-white transition-colors duration-300 hover:from-blue-600 hover:to-sky-600"
@@ -4090,14 +3885,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                         {getActiveFiltersCount()}
                       </span>
                     )}
-                  </button>
-
-                  <button
-                    onClick={() => setShowSort(true)}
-                    className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 font-semibold text-slate-700 transition-colors duration-300 hover:bg-slate-50"
-                  >
-                    <FaSort />
-                    Sort
                   </button>
                 </div>
 
@@ -5082,9 +4869,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                         No smartphones found
                       </h3>
                       <p className="mb-6 text-slate-600">
-                        Try adjusting your filters or search terms to find what
-                        you're looking for. We have a wide range of devices
-                        available.
+                        Try adjusting your filters to find what you're looking
+                        for. We have a wide range of devices available.
                       </p>
                       <div className="flex flex-col sm:flex-row gap-3 justify-center">
                         <button
@@ -5150,83 +4936,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                 )}
               </div>
             </div>
-
-            {/* Mobile Sort Modal */}
-            {showSort && (
-              <div className="lg:hidden fixed inset-0 z-50">
-                <div
-                  className="absolute inset-0 bg-black bg-opacity-50 transition-all duration-300"
-                  onClick={() => setShowSort(false)}
-                ></div>
-
-                <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl transform transition-all duration-300 max-h-[70vh] overflow-hidden">
-                  <div className="flex items-center justify-between p-6 border-b border-gray-200  ">
-                    <div className="flex items-center gap-3">
-                      <FaSort className="text-blue-600 text-xl" />
-                      <div>
-                        <h3 className="text-xl font-bold text-gray-900">
-                          Sort Options
-                        </h3>
-                        <p className="text-sm text-gray-500">
-                          Arrange smartphones by preference
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setShowSort(false)}
-                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-                    >
-                      <FaTimes className="text-gray-500 text-lg" />
-                    </button>
-                  </div>
-
-                  <div className="p-6 space-y-3">
-                    {[
-                      {
-                        value: "featured",
-                        label: "Featured Devices",
-                        desc: "Curated selection of popular models",
-                      },
-                      {
-                        value: "price-low",
-                        label: "Price: Low to High",
-                        desc: "Budget-friendly options first",
-                      },
-                      {
-                        value: "price-high",
-                        label: "Price: High to Low",
-                        desc: "Premium devices first",
-                      },
-                      {
-                        value: "rating",
-                        label: "Top Rated",
-                        desc: "Highest user ratings",
-                      },
-                      {
-                        value: "newest",
-                        label: "Newest First",
-                        desc: "Latest releases",
-                      },
-                    ].map((option) => (
-                      <button
-                        key={option.value}
-                        onClick={() => handleSortChange(option.value)}
-                        className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 ${
-                          sortBy === option.value
-                            ? "bg-blue-50 border-blue-500 text-blue-700"
-                            : "bg-gray-50 border-gray-200 text-gray-700 hover:border-gray-300"
-                        }`}
-                      >
-                        <div className="font-semibold">{option.label}</div>
-                        <div className="text-sm text-gray-500 mt-1">
-                          {option.desc}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Mobile Filter Overlay - Remains the same but with enhanced descriptions */}
             {showFilters && (

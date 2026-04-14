@@ -11,6 +11,7 @@ import {
   FaStar,
   FaTv,
   FaWifi,
+  FaArrowRight,
 } from "react-icons/fa";
 
 const DEVICE_TYPE_OPTIONS = [
@@ -882,7 +883,9 @@ const HeroSection = () => {
               <button
                 key={item}
                 type="button"
-                onClick={() => navigate(`/smartphones?q=${encodeURIComponent(item)}`)}
+                onClick={() =>
+                  navigate(`/smartphones?q=${encodeURIComponent(item)}`)
+                }
                 className="group relative rounded-3xl whitespace-nowrap border border-white/25  px-4 py-2 text-xs font-semibold text-white/95  transition-all duration-300 hover:border-white/40 hover:bg-white/15 hover:shadow-lg sm:px-5 sm:py-2.5 sm:text-sm"
               >
                 <span className="flex items-center gap-2">
@@ -924,14 +927,6 @@ const HeroSection = () => {
                     }
                     className="group relative flex snap-start flex-col gap-3 p-4 text-left text-white/95 transition-all duration-300"
                   >
-                    {phone.badge && (
-                      <div className="absolute -top-2 right-3">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-cyan-400 to-blue-400 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white shadow-lg">
-                          {phone.badge}
-                        </span>
-                      </div>
-                    )}
-
                     <div className="flex h-50 w-full items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-white/20 via-white/10 to-cyan-300/5 ring-1 ring-white/15">
                       {phone.image ? (
                         <img
@@ -964,7 +959,7 @@ const HeroSection = () => {
                         View Details
                       </span>
                       <span className="transition-transform group-hover:translate-x-1">
-                        &gt;
+                        <FaArrowRight className="h-3 w-3 text-white/70" />
                       </span>
                     </div>
                   </button>

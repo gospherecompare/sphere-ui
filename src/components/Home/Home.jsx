@@ -6,6 +6,7 @@ import FeaturedProduct from "./FeaturedProduct";
 import HeroSection from "./Herosection";
 import PopularBrands from "./Popularbrand";
 import Brandofmonth from "./Brandofmonth";
+import LatestNewsArticlesSection from "./LatestNewsArticlesSection";
 // BannerSlot disabled until completed.
 
 const Home = () => {
@@ -18,6 +19,7 @@ const Home = () => {
       <PopularBrands />
       <LatestSmartphones />
       <BestPriceSection />
+      <LatestNewsArticlesSection />
     </div>
   );
 };
