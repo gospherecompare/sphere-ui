@@ -126,7 +126,11 @@ const getCatalogBasePath = (value = "") => {
   ) {
     return "/tvs";
   }
-  if (text.includes("network") || text.includes("router") || text.includes("wifi")) {
+  if (
+    text.includes("network") ||
+    text.includes("router") ||
+    text.includes("wifi")
+  ) {
     return "/networking";
   }
   return "/smartphones";
@@ -255,7 +259,8 @@ const resolveSeoMeta = (pathname) => {
   const rules = [
     {
       test: (p) => p.startsWith("/news"),
-      title: "News & Articles - Latest Mobile News, Gadget Guides & Launch Updates - Hooks",
+      title:
+        "News & Articles - Latest Mobile News, Gadget Guides & Launch Updates - Hooks",
       description:
         "Browse the latest mobile news, gadget updates, launch coverage, and editorial guides on Hooks.",
       keywords:
@@ -507,7 +512,9 @@ function App() {
     const { slug = "" } = useParams();
     const location = useLocation();
     const deviceContext = useDevice();
-    const brands = Array.isArray(deviceContext?.brands) ? deviceContext.brands : [];
+    const brands = Array.isArray(deviceContext?.brands)
+      ? deviceContext.brands
+      : [];
     const normalizedSlug = String(slug || "")
       .toLowerCase()
       .trim();
@@ -517,9 +524,7 @@ function App() {
         const name = String(brand?.name || "")
           .toLowerCase()
           .trim();
-        const brandSlug = String(
-          brand?.slug || brand?.name || brand?.id || "",
-        )
+        const brandSlug = String(brand?.slug || brand?.name || brand?.id || "")
           .toLowerCase()
           .trim()
           .replace(/\s+/g, "-");
@@ -532,7 +537,9 @@ function App() {
 
     const brandName = matchedBrand?.name || toReadableTitleFromSlug(slug);
     const targetPath = getCatalogBasePath(
-      matchedBrand?.category || matchedBrand?.product_type || matchedBrand?.type,
+      matchedBrand?.category ||
+        matchedBrand?.product_type ||
+        matchedBrand?.type,
     );
     const params = new URLSearchParams(location.search || "");
     if (targetPath === "/smartphones") {
@@ -589,7 +596,7 @@ function App() {
   return (
     <Router>
       <RouteSeoFallback />
-      <div className="min-h-screen w-full overflow-x-hidden bg-gradient-to-br from-blue-50 via-blue-50 to-blue-50">
+      <div className="min-h-screen w-full overflow-x-hidden ">
         <Header />
 
         <ScrollToTop />

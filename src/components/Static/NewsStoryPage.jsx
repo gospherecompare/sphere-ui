@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { FaArrowRight } from "react-icons/fa";
+import { FaArrowRight, FaFire } from "react-icons/fa";
 import SEO from "../SEO";
 import NotFound from "./NotFound";
 import { HooksSignature } from "../Home/NewsBrandBadge";
@@ -154,15 +154,15 @@ const NewsStoryPage = () => {
         schema={schema}
       />
 
-      <main className="min-h-screen bg-slate-50 text-slate-900">
-        <section className="mx-auto max-w-7xl px-0 pt-0 pb-10 sm:px-6 sm:pt-6 sm:pb-10 lg:px-8 lg:py-12">
+      <main className="min-h-screen bg-white text-slate-900">
+        <section className="mx-auto max-w-7xl px-0 pt-6 pb-16 sm:pt-12 sm:px-6 lg:px-8 lg:pt-16 lg:pb-20">
           <div className="grid gap-8 xl:grid-cols-[14rem_minmax(0,1fr)_20rem]">
             <aside className="hidden space-y-4 xl:block">
               {storyHighlights.length ? (
                 <NewsHighlights highlights={storyHighlights} variant="full" />
               ) : null}
 
-              <div className="rounded-md border border-slate-200 bg-white p-4">
+              <div className="rounded-2xl border border-slate-100 bg-white shadow-lg p-5">
                 <p className={NEWS_BRAND_STYLES.eyebrow}>Jump to</p>
                 <div className="mt-3 space-y-2 text-sm text-slate-700">
                   <a
@@ -183,9 +183,9 @@ const NewsStoryPage = () => {
 
             <article id="story-body" className="min-w-0">
               <div
-                className={`overflow-hidden ${NEWS_BRAND_STYLES.cardShell} xl:overflow-visible xl:border-0 xl:bg-transparent`}
+                className={`overflow-hidden md:rounded-2xl md:border md:border-slate-100 bg-white md:shadow-lg xl:overflow-visible xl:border-0 xl:bg-transparent xl:shadow-none`}
               >
-                <div className="border-b border-slate-200 bg-white p-6 sm:p-8 lg:p-10 xl:border-0 xl:bg-transparent xl:px-0 xl:pt-0">
+                <div className="border-b border-slate-100 bg-white p-6 sm:p-8 lg:p-10 xl:border-0 xl:bg-transparent xl:px-0 xl:pt-0">
                   <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
                     <Link to="/" className="hover:text-slate-900">
                       Home
@@ -205,7 +205,7 @@ const NewsStoryPage = () => {
                   </p>
 
                   <h1
-                    className="mt-3 max-w-4xl text-2xl font-black leading-[1.08] tracking-tight text-slate-950 sm:text-3xl lg:text-4xl xl:text-4xl"
+                    className="mt-3 max-w-4xl text-3xl font-black leading-tight tracking-tight text-slate-950 sm:text-4xl lg:text-5xl xl:text-5xl"
                     style={{ textWrap: "balance" }}
                   >
                     {story.title}
@@ -285,40 +285,56 @@ const NewsStoryPage = () => {
             </article>
 
             <aside className="hidden space-y-4 xl:block xl:sticky xl:top-6">
-              <div className="rounded-md border border-slate-200 bg-white p-4">
-                <p className={NEWS_BRAND_STYLES.eyebrow}>Trending now</p>
-                <h3 className={`mt-2 ${NEWS_BRAND_STYLES.featureTitle}`}>
-                  Fast headlines
-                </h3>
+              <div className="rounded-2xl border border-slate-100 bg-white shadow-lg p-5">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p
+                      className={`inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide text-blue-600 bg-blue-50 border border-blue-100`}
+                    >
+                      Trending now
+                    </p>
+                    <h3 className="mt-4 text-xl font-black leading-tight tracking-tight text-slate-950">
+                      Fast headlines
+                    </h3>
+                  </div>
+                  <FaFire className="h-6 w-6 text-orange-500 flex-shrink-0" />
+                </div>
 
-                <div className="mt-4 divide-y divide-slate-200">
+                <div className="mt-6 space-y-3">
                   {sidebarStories.map((item, index) => (
                     <Link
                       key={item.slug}
                       to={createNewsStoryPath(item.slug)}
-                      className={`block px-0 py-4 transition-colors duration-200 hover:text-slate-700 ${
-                        index === 0 ? "pt-0" : ""
+                      className={`block rounded-lg p-4 ${
+                        index === 0
+                          ? "bg-slate-900 text-white"
+                          : "bg-slate-50 text-slate-900"
                       }`}
                     >
-                      <p className={NEWS_BRAND_STYLES.labelSmall}>
-                        {item.label}
-                      </p>
-                      <h4 className="mt-2 text-sm font-semibold leading-6 text-slate-900">
+                      <span
+                        className={`text-xs font-semibold uppercase tracking-[0.18em] ${
+                          index === 0 ? "text-slate-400" : "text-slate-500"
+                        }`}
+                      >
+                        {String(index + 1).padStart(2, "0")} NEWSROOM
+                      </span>
+                      <h4
+                        className={`mt-2 text-sm font-black leading-snug tracking-tight ${
+                          index === 0 ? "text-white" : "text-slate-950"
+                        }`}
+                      >
                         {item.title}
                       </h4>
-                      <p className="mt-2 text-xs text-slate-500">
-                        {item.publishedAt}
-                      </p>
                     </Link>
                   ))}
                 </div>
 
                 <Link
                   to="/news"
-                  className="mt-4 inline-flex text-sm font-semibold text-slate-950 hover:text-slate-700"
+                  className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-900"
                 >
                   View all stories
-                  <FaArrowRight className="ml-2 h-3.5 w-3.5" />
+                  <FaArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
 
@@ -326,51 +342,61 @@ const NewsStoryPage = () => {
             </aside>
           </div>
 
-          <section id="related-stories" className="mt-12 px-2 sm:px-0">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <section
+            id="related-stories"
+            className="mt-16 px-0 pt-10 sm:px-0 sm:pt-12 border-t border-slate-100"
+          >
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
               <div className="max-w-3xl">
-                <p className={NEWS_BRAND_STYLES.eyebrow}>Related stories</p>
-                <h2 className={`mt-3 ${NEWS_BRAND_STYLES.sectionTitle}`}>
+                <p
+                  className={`inline-block px-3 py-1 sm:mr-4 rounded-full text-xs font-semibold uppercase tracking-wide text-blue-600 bg-blue-50 border border-blue-100`}
+                >
+                  Related stories
+                </p>
+                <h2 className="mt-4 text-2xl font-black leading-tight tracking-tight sm:text-3xl lg:text-4xl text-slate-950">
                   More from the newsroom
                 </h2>
               </div>
 
-              <Link to="/news" className={NEWS_BRAND_STYLES.inlineAction}>
+              <Link
+                to="/news"
+                className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900 hover:text-slate-700"
+              >
                 View all stories
                 <FaArrowRight className="h-3.5 w-3.5" />
               </Link>
             </div>
 
             {relatedStories.length ? (
-              <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+              <div className="mt-8 grid gap-6 grid-cols-1">
                 {relatedStories.map((item) => (
                   <article
                     key={item.slug}
-                    className={`overflow-hidden ${NEWS_BRAND_STYLES.cardShell}`}
+                    className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-md flex flex-col md:flex-row"
                   >
                     <Link
                       to={createNewsStoryPath(item.slug)}
-                      className="group block"
+                      className="group flex w-full flex-col md:flex-row"
                     >
-                      <NewsStoryMedia story={item} variant="card" />
+                      <div className="h-48 sm:h-56 md:h-auto md:w-48 lg:w-56 flex-shrink-0 overflow-hidden">
+                        <NewsStoryMedia story={item} variant="card" />
+                      </div>
 
-                      <div className="p-5">
+                      <div className="flex flex-col h-full flex-1 p-4 sm:p-5 md:p-6">
                         <div className="flex flex-wrap items-center gap-3">
-                          <span className={NEWS_BRAND_STYLES.labelSmall}>
+                          <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-blue-600 bg-blue-50 px-2 py-1 rounded">
                             {item.label}
                           </span>
-                          <span className={NEWS_BRAND_STYLES.metaSmall}>
+                          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
                             {item.publishedAt}
                           </span>
                         </div>
 
-                        <h3
-                          className={`mt-3 ${NEWS_BRAND_STYLES.cardTitle} transition-colors duration-200 group-hover:text-slate-700`}
-                        >
+                        <h3 className="mt-4 text-base font-black leading-snug tracking-tight text-slate-950 sm:text-lg">
                           {item.title}
                         </h3>
 
-                        <p className={`mt-3 ${NEWS_BRAND_STYLES.bodySmall}`}>
+                        <p className="mt-3 text-sm leading-6 text-slate-600 flex-1">
                           {item.summary}
                         </p>
                       </div>

@@ -1,7 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { FaArrowRight, FaFire, FaRegNewspaper } from "react-icons/fa";
-import { NEWS_HOME_TABS } from "./newsDeskStaticData";
 import { NEWS_BRAND_STYLES } from "./newsBrandStyles";
 import { createNewsStoryPath } from "../../hooks/usePublicNews";
 
@@ -13,17 +12,17 @@ const NewsFeatureMedia = ({ story }) => {
   }, [story?.image, story?.slug]);
 
   return (
-    <div className="relative aspect-[7/5] overflow-hidden bg-white">
+    <div className="relative aspect-[7/5] overflow-hidden rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 shadow-2xl">
       {!imageError && story?.image ? (
         <img
           src={story.image}
           alt={story.title}
-          className="absolute inset-0 h-full w-full object-contain p-4 sm:p-5 lg:p-6"
+          className="absolute inset-0 h-full w-full object-cover rounded-2xl"
           loading="lazy"
           onError={() => setImageError(true)}
         />
       ) : (
-        <div className="flex h-full items-center justify-center bg-slate-50 p-6 text-center">
+        <div className="flex h-full items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-6 text-center">
           <div className="max-w-md">
             <p className={NEWS_BRAND_STYLES.eyebrow}>
               {story?.label || "Newsroom"}
@@ -49,18 +48,18 @@ const NewsCardMedia = ({ story }) => {
   }, [story?.image, story?.slug]);
 
   return (
-    <div className="relative h-full overflow-hidden rounded-2xl bg-slate-100">
-      <div className="absolute inset-0 rounded-2xl overflow-hidden">
+    <div className="relative h-full overflow-hidden rounded-xl bg-gradient-to-br from-slate-100 to-slate-50">
+      <div className="absolute inset-0 rounded-xl overflow-hidden">
         {!imageError && story?.image ? (
           <img
             src={story.image}
             alt={story.title}
-            className="h-full w-full object-contain"
+            className="h-full w-full object-cover"
             loading="lazy"
             onError={() => setImageError(true)}
           />
         ) : (
-          <div className="flex h-full items-center justify-center bg-slate-50 p-4 text-center">
+          <div className="flex h-full items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4 text-center">
             <div className="max-w-xs">
               <p className={NEWS_BRAND_STYLES.eyebrow}>
                 {story?.label || "Newsroom"}
@@ -77,16 +76,8 @@ const NewsCardMedia = ({ story }) => {
 };
 
 const NewsEditorialDesk = ({ stories = [], loading = false, error = "" }) => {
-  const [activeCategory, setActiveCategory] = useState("all");
   const [featuredSlug, setFeaturedSlug] = useState("");
-
-  const visibleStories = useMemo(
-    () =>
-      activeCategory === "all"
-        ? stories
-        : stories.filter((story) => story.category === activeCategory),
-    [activeCategory, stories],
-  );
+  const visibleStories = stories;
 
   useEffect(() => {
     if (!visibleStories.length) {
@@ -115,25 +106,13 @@ const NewsEditorialDesk = ({ stories = [], loading = false, error = "" }) => {
     story,
   }));
 
-  const handleCategoryChange = (categoryId) => {
-    setActiveCategory(categoryId);
-
-    const nextStories =
-      categoryId === "all"
-        ? stories
-        : stories.filter((story) => story.category === categoryId);
-
-    const nextFeaturedSlug = nextStories[0]?.slug || "";
-    setFeaturedSlug(nextFeaturedSlug);
-  };
-
   const hasAnyStories = stories.length > 0;
   const hasStories = Boolean(featuredStory);
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
-      <section className="border-b border-slate-200 bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-14">
+    <main className="min-h-screen text-slate-900 bg-white">
+      <section className="bg-gradient-to-br from-white via-blue-50/30 to-slate-50/80">
+        <div className="mx-auto max-w-7xl px-4 pt-4 pb-6 sm:pt-14 sm:px-6 sm:pb-10 lg:px-8 lg:pt-20 lg:pb-12">
           <div className="max-w-4xl">
             <p
               className={`inline-flex items-center gap-2 ${NEWS_BRAND_STYLES.eyebrow}`}
@@ -142,43 +121,23 @@ const NewsEditorialDesk = ({ stories = [], loading = false, error = "" }) => {
               Newsroom
             </p>
 
-            <h1 className={`mt-4 ${NEWS_BRAND_STYLES.pageTitle}`}>
+            <h1
+              className={`mt-3 text-3xl font-black leading-tight tracking-tight sm:text-4xl lg:text-5xl text-slate-950`}
+            >
               News & Articles
             </h1>
 
-            <p className={`mt-4 max-w-3xl ${NEWS_BRAND_STYLES.bodyLarge}`}>
+            <p
+              className={`mt-4 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8`}
+            >
               Latest mobile news, gadget updates, launch watch, and cleaner
               guide content in a flatter editorial layout.
             </p>
           </div>
-
-          <div className="mt-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div className="flex flex-nowrap gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
-              {NEWS_HOME_TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => handleCategoryChange(tab.id)}
-                  className={`shrink-0 rounded-md border px-4 py-2 text-sm font-semibold transition-colors duration-200 ${
-                    activeCategory === tab.id
-                      ? NEWS_BRAND_STYLES.activeSurface
-                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            <Link to="/" className={NEWS_BRAND_STYLES.secondaryButton}>
-              Back to home
-              <FaArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-12">
+      <section className="mx-auto max-w-7xl px-4 pt-6 pb-20 sm:pt-12 sm:px-6 lg:px-8 lg:pt-16 lg:pb-28">
         {loading && !hasAnyStories ? (
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_21rem]">
             <div
@@ -213,13 +172,13 @@ const NewsEditorialDesk = ({ stories = [], loading = false, error = "" }) => {
 
         {hasStories ? (
           <>
-            <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_21rem]">
+            <div className="grid gap-8 grid-cols-1 lg:grid-cols-[minmax(0,1.35fr)_22rem]">
               <article
                 id={featuredStory.slug}
-                className={`overflow-hidden ${NEWS_BRAND_STYLES.cardShell}`}
+                className="overflow-hidden md:shadow-lg md:rounded-2xl md:border md:border-slate-100 bg-white"
               >
-                <div className="grid min-h-[22rem] gap-0 lg:min-h-[34rem] lg:grid-cols-[minmax(0,1.02fr)_minmax(280px,0.98fr)]">
-                  <div className="order-2 flex flex-col justify-between border-t border-slate-200 bg-white/95 p-5 backdrop-blur-sm sm:p-6 lg:order-1 lg:border-b-0 lg:border-r lg:border-t-0 lg:p-8">
+                <div className="grid gap-0 grid-cols-1 lg:grid-cols-[minmax(0,1.02fr)_minmax(280px,0.98fr)]">
+                  <div className="order-2 flex flex-col justify-between border-t md:border-slate-100 bg-gradient-to-b from-white to-slate-50 p-4 sm:p-6 md:p-8 lg:order-1 lg:border-b-0 lg:border-r lg:border-t-0 lg:p-10">
                     <div>
                       <div className="flex flex-wrap items-center gap-3">
                         <span className={NEWS_BRAND_STYLES.label}>
@@ -231,7 +190,9 @@ const NewsEditorialDesk = ({ stories = [], loading = false, error = "" }) => {
                         </span>
                       </div>
 
-                      <h2 className={`mt-4 ${NEWS_BRAND_STYLES.sectionTitle}`}>
+                      <h2
+                        className={`mt-4 text-2xl font-black leading-tight tracking-tight sm:text-3xl lg:text-4xl text-slate-950`}
+                      >
                         {featuredStory.title}
                       </h2>
 
@@ -241,7 +202,7 @@ const NewsEditorialDesk = ({ stories = [], loading = false, error = "" }) => {
                         {featuredStory.summary}
                       </p>
 
-                      <div className="mt-6 flex flex-wrap gap-5 border-t border-slate-200 pt-4">
+                      <div className="mt-6 flex flex-wrap gap-5 border-t border-slate-100 pt-4">
                         {featuredStory.highlights.map((highlight) => (
                           <span
                             key={highlight}
@@ -253,7 +214,7 @@ const NewsEditorialDesk = ({ stories = [], loading = false, error = "" }) => {
                       </div>
                     </div>
 
-                    <div className="mt-8 flex flex-wrap items-center gap-4">
+                    <div className="mt-6 flex flex-wrap items-center gap-4">
                       <Link
                         to={createNewsStoryPath(featuredStory.slug)}
                         className={NEWS_BRAND_STYLES.primaryButton}
@@ -268,26 +229,26 @@ const NewsEditorialDesk = ({ stories = [], loading = false, error = "" }) => {
                     </div>
                   </div>
 
-                  <div className="order-1 lg:order-2">
+                  <div className="order-1 lg:order-2 p-4 sm:p-6 lg:p-0">
                     <NewsFeatureMedia story={featuredStory} />
                   </div>
                 </div>
               </article>
 
-              <aside
-                className={`overflow-hidden ${NEWS_BRAND_STYLES.cardShell}`}
-              >
-                <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 sm:px-5">
+              <aside className="hidden md:block overflow-hidden md:shadow-lg md:rounded-2xl md:border md:border-slate-100 bg-white">
+                <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-blue-50 to-white px-6 py-6 sm:px-7 sm:py-7">
                   <div>
                     <p className={NEWS_BRAND_STYLES.eyebrow}>Trending now</p>
-                    <h3 className={`mt-2 ${NEWS_BRAND_STYLES.featureTitle}`}>
+                    <h3
+                      className={`mt-2 text-xl font-black leading-tight tracking-tight sm:text-2xl text-slate-950`}
+                    >
                       Fast headlines
                     </h3>
                   </div>
-                  <FaFire className="h-4 w-4 text-slate-900" />
+                  <FaFire className="h-5 w-5 text-orange-500" />
                 </div>
 
-                <div className="divide-y divide-slate-200">
+                <div className="divide-y divide-slate-100">
                   {trendingStories.map(({ rank, note, story }) =>
                     (() => {
                       const isActive = featuredStory.slug === story.slug;
@@ -297,17 +258,15 @@ const NewsEditorialDesk = ({ stories = [], loading = false, error = "" }) => {
                           key={story.slug}
                           type="button"
                           onClick={() => setFeaturedSlug(story.slug)}
-                          className={`group flex w-full items-start gap-4 px-5 py-4 text-left transition-colors duration-200 ${
+                          className={`group flex w-full items-start gap-4 px-6 py-5 text-left ${
                             isActive
-                              ? NEWS_BRAND_STYLES.activeSurface
-                              : "bg-white text-slate-900 hover:bg-slate-50 hover:text-slate-950"
+                              ? "bg-gradient-to-r from-slate-900 to-slate-800 text-white"
+                              : "bg-white text-slate-900"
                           }`}
                         >
                           <span
                             className={`text-sm font-black tracking-[0.22em] ${
-                              isActive
-                                ? "text-white/55"
-                                : "text-slate-300 group-hover:text-slate-500"
+                              isActive ? "text-white/55" : "text-slate-300"
                             }`}
                           >
                             {rank}
@@ -315,18 +274,14 @@ const NewsEditorialDesk = ({ stories = [], loading = false, error = "" }) => {
                           <span className="min-w-0 flex-1">
                             <span
                               className={`block text-[11px] font-semibold uppercase tracking-[0.22em] ${
-                                isActive
-                                  ? "text-white/60"
-                                  : "text-slate-400 group-hover:text-slate-600"
+                                isActive ? "text-white/60" : "text-slate-400"
                               }`}
                             >
                               {note}
                             </span>
                             <span
                               className={`mt-1 block text-sm font-semibold leading-6 ${
-                                isActive
-                                  ? "text-white"
-                                  : "text-slate-900 group-hover:text-slate-950"
+                                isActive ? "text-white" : "text-slate-900"
                               }`}
                             >
                               {story.title}
@@ -340,15 +295,21 @@ const NewsEditorialDesk = ({ stories = [], loading = false, error = "" }) => {
               </aside>
             </div>
 
-            <div className="mt-10">
-              <div className="max-w-3xl">
-                <p className={NEWS_BRAND_STYLES.eyebrow}>
+            <div className="mt-16 px-4 sm:px-0">
+              <div className="max-w-3xl mb-8">
+                <p
+                  className={`inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide text-blue-600 bg-blue-50 border border-blue-100`}
+                >
                   Latest News & Articles
                 </p>
-                <h3 className={`mt-3 ${NEWS_BRAND_STYLES.sectionTitle}`}>
+                <h3
+                  className={`mt-4 text-2xl font-black leading-tight tracking-tight sm:text-3xl lg:text-4xl text-slate-950`}
+                >
                   Fresh updates, launch notes, and quick guides
                 </h3>
-                <p className={`mt-4 ${NEWS_BRAND_STYLES.body}`}>
+                <p
+                  className={`mt-3 max-w-2xl text-base leading-6 text-slate-600`}
+                >
                   A tighter newsroom feed with clear visuals, short summaries,
                   and fast scanning for mobile news, gadget updates, and
                   launches.
@@ -356,23 +317,21 @@ const NewsEditorialDesk = ({ stories = [], loading = false, error = "" }) => {
               </div>
 
               {storyGrid.length ? (
-                <div className="mt-6 grid gap-5 xl:grid-cols-3">
+                <div className="mt-8 grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                   {storyGrid.map((story) => (
                     <article
                       key={story.slug}
                       id={story.slug}
-                      className="group flex h-full overflow-hidden rounded-2xl border border-slate-200 text-left transition-colors duration-200"
+                      className="group flex h-full overflow-hidden rounded-xl border border-slate-100 text-left bg-white md:shadow-md"
                     >
                       <Link
                         to={createNewsStoryPath(story.slug)}
-                        className="grid h-full grid-cols-[9.5rem_minmax(0,1fr)] items-stretch sm:grid-cols-[11rem_minmax(0,1fr)]"
+                        className="grid h-full grid-cols-1 sm:grid-cols-[9.5rem_minmax(0,1fr)] md:grid-cols-[11rem_minmax(0,1fr)] items-stretch"
                       >
                         <NewsCardMedia story={story} />
 
-                        <div className="flex min-w-0 flex-1 flex-col p-4 sm:p-5">
-                          <h4
-                            className={`text-[15px] font-extrabold leading-6 tracking-tight transition-colors duration-200 group-hover:text-slate-700 sm:text-base lg:text-lg`}
-                          >
+                        <div className="flex min-w-0 flex-1 flex-col justify-between p-5 sm:p-6">
+                          <h4 className="text-sm font-extrabold leading-snug tracking-tight sm:text-base lg:text-lg text-slate-900">
                             {story.title}
                           </h4>
                         </div>
@@ -406,7 +365,7 @@ const NewsEditorialDesk = ({ stories = [], loading = false, error = "" }) => {
         {/*
         <div className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
           <div className={`${NEWS_BRAND_STYLES.cardShell} p-6`}>
-            <div className="flex items-center justify-between gap-3 border-b border-slate-200 pb-4">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
               <div>
                 <p className={NEWS_BRAND_STYLES.eyebrow}>Guide deck</p>
                 <h3 className={`mt-3 ${NEWS_BRAND_STYLES.featureTitle}`}>
