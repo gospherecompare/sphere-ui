@@ -285,7 +285,7 @@ const NewsStoryPage = () => {
             </article>
 
             <aside className="hidden space-y-4 xl:block xl:sticky xl:top-6">
-              <div className="rounded-2xl border border-slate-100 bg-white shadow-lg p-5">
+              <div className="rounded-2xl border border-slate-100 bg-white  p-5">
                 <div className="flex items-start justify-between">
                   <div>
                     <p

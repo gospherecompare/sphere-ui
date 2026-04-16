@@ -81,7 +81,7 @@ const NewsArticleCard = ({
   return (
     <Link
       to={`/news/${slug}`}
-      className={`group flex h-full flex-col overflow-hidden rounded-lg border border-slate-200 bg-white transition-all hover:border-slate-300 hover:shadow-md ${className}`}
+      className={`group flex h-full flex-col overflow-hidden rounded-lg border border-slate-200 bg-yellow-100 transition-all hover:border-slate-300 hover:shadow-md ${className}`}
     >
       {/* Image Section */}
       {image && (

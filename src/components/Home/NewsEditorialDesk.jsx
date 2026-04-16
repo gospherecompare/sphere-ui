@@ -12,7 +12,7 @@ const NewsFeatureMedia = ({ story }) => {
   }, [story?.image, story?.slug]);
 
   return (
-    <div className="relative aspect-[7/5] overflow-hidden rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 shadow-2xl">
+    <div className="relative aspect-[7/5] overflow-hidden rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50">
       {!imageError && story?.image ? (
         <img
           src={story.image}
@@ -175,7 +175,7 @@ const NewsEditorialDesk = ({ stories = [], loading = false, error = "" }) => {
             <div className="grid gap-8 grid-cols-1 lg:grid-cols-[minmax(0,1.35fr)_22rem]">
               <article
                 id={featuredStory.slug}
-                className="overflow-hidden md:shadow-lg md:rounded-2xl md:border md:border-slate-100 bg-white"
+                className="overflow-hidden  md:rounded-2xl md:border md:border-slate-100 bg-white"
               >
                 <div className="grid gap-0 grid-cols-1 lg:grid-cols-[minmax(0,1.02fr)_minmax(280px,0.98fr)]">
                   <div className="order-2 flex flex-col justify-between border-t md:border-slate-100 bg-gradient-to-b from-white to-slate-50 p-4 sm:p-6 md:p-8 lg:order-1 lg:border-b-0 lg:border-r lg:border-t-0 lg:p-10">
@@ -235,7 +235,7 @@ const NewsEditorialDesk = ({ stories = [], loading = false, error = "" }) => {
                 </div>
               </article>
 
-              <aside className="hidden md:block overflow-hidden md:shadow-lg md:rounded-2xl md:border md:border-slate-100 bg-white">
+              <aside className="hidden md:block overflow-hidden  md:rounded-2xl md:border md:border-slate-100 bg-white">
                 <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-blue-50 to-white px-6 py-6 sm:px-7 sm:py-7">
                   <div>
                     <p className={NEWS_BRAND_STYLES.eyebrow}>Trending now</p>
@@ -322,7 +322,7 @@ const NewsEditorialDesk = ({ stories = [], loading = false, error = "" }) => {
                     <article
                       key={story.slug}
                       id={story.slug}
-                      className="group flex h-full overflow-hidden rounded-xl border border-slate-100 text-left bg-white md:shadow-md"
+                      className="group flex h-full overflow-hidden rounded-xl border border-slate-100 text-left bg-white "
                     >
                       <Link
                         to={createNewsStoryPath(story.slug)}

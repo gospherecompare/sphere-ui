@@ -15,18 +15,17 @@ const NewsStoryMedia = ({ story, variant = "lead" }) => {
     setImageError(false);
   }, [story?.image, story?.slug]);
 
-  const isLead = variant === "lead";
-  const containerClasses = isLead ? "aspect-[7/5]" : "aspect-[4/3]";
+  const containerClasses = "aspect-[4/3]";
 
   return (
     <div
-      className={`relative overflow-hidden rounded-lg bg-white ${containerClasses}`}
+      className={`overflow-hidden rounded-2xl bg-slate-50 ${containerClasses}`}
     >
       {!imageError && story?.image ? (
         <img
           src={story.image}
           alt={story.title}
-          className="absolute inset-0 h-full w-full object-contain p-4 sm:p-5"
+          className="h-full w-full object-cover"
           loading="lazy"
           onError={() => setImageError(true)}
         />
@@ -55,138 +54,163 @@ const LatestNewsArticlesSection = () => {
   const listStories = stories.slice(1, 4);
 
   return (
-    <section className="border-t border-slate-200 bg-white">
-      <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-16">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+    <section className="border-t border-slate-200 bg-gradient-to-b from-white via-slate-50 to-white">
+      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl">
-            <p className={NEWS_BRAND_STYLES.eyebrow}>Latest stories</p>
-            <h2 className={`mt-3 ${NEWS_BRAND_STYLES.sectionTitle}`}>
+            <div className="flex items-center gap-2">
+              <span className="inline-block h-1 w-8 rounded-full bg-blue-600"></span>
+              <p className={NEWS_BRAND_STYLES.eyebrow}>Latest stories</p>
+            </div>
+            <h2 className={`mt-4 ${NEWS_BRAND_STYLES.sectionTitle}`}>
               Latest News & Articles
             </h2>
-            <p className={`mt-4 ${NEWS_BRAND_STYLES.body}`}>
-              A lighter home preview with flatter cards and a direct path into
-              the full newsroom page.
+            <p className={`mt-3 max-w-2xl text-slate-600`}>
+              Stay updated with the newest gadget launches, tech reviews,
+              industry news, and buying guides.
             </p>
           </div>
 
-          <Link to="/news" className={NEWS_BRAND_STYLES.primaryButton}>
-            View all news
+          <Link
+            to="/news"
+            className={`${NEWS_BRAND_STYLES.primaryButton} whitespace-nowrap`}
+          >
+            Explore all news
             <FaArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
 
         {loading && !leadStory ? (
-          <div className="mt-8 grid gap-5 lg:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)]">
-            <div
-              className={`min-h-[28rem] animate-pulse ${NEWS_BRAND_STYLES.softCardShell}`}
-            />
-            <div
-              className={`min-h-[28rem] animate-pulse ${NEWS_BRAND_STYLES.cardShell}`}
-            />
+          <div className="mt-10 grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+            <div className="h-96 animate-pulse rounded-2xl border border-slate-200 bg-slate-100" />
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="h-32 animate-pulse rounded-xl border border-slate-200 bg-slate-100"
+                />
+              ))}
+            </div>
           </div>
         ) : null}
 
         {!loading && error && !leadStory ? (
-          <div className={`mt-8 p-5 ${NEWS_BRAND_STYLES.cardShell}`}>
-            <p className="text-sm font-semibold text-slate-900">
-              News feed is not available right now.
-            </p>
-            <p className="mt-2 text-sm text-slate-600">{error}</p>
+          <div className="mt-10 rounded-xl border border-red-200 bg-red-50 p-6 sm:p-8">
+            <p className="font-semibold text-red-900">Unable to load news</p>
+            <p className="mt-2 text-red-700">{error}</p>
           </div>
         ) : null}
 
         {!loading && !error && !leadStory ? (
-          <div className={`mt-8 p-5 ${NEWS_BRAND_STYLES.cardShell}`}>
-            <p className="text-sm font-semibold text-slate-900">
-              No published stories yet.
+          <div className="mt-10 rounded-xl border border-slate-200 bg-slate-50 p-8 text-center">
+            <p className="font-semibold text-slate-900">
+              No stories published yet
             </p>
-            <p className="mt-2 text-sm text-slate-600">
-              Publish a story from the admin newsroom to show it here.
+            <p className="mt-2 text-slate-600">
+              Check back soon for the latest news and articles.
             </p>
           </div>
         ) : null}
 
         {leadStory ? (
-          <div className="mt-8 grid gap-5 lg:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)]">
-            <article
-              className={`overflow-hidden ${NEWS_BRAND_STYLES.softCardShell}`}
-            >
-              <NewsStoryMedia story={leadStory} variant="lead" />
-
-              <div className="p-5 sm:p-6">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className={NEWS_BRAND_STYLES.label}>
-                    {leadStory.label}
-                  </span>
-                  <span className={NEWS_BRAND_STYLES.meta}>
-                    {leadStory.publishedAt}
-                  </span>
+          <div className="mt-10 grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+            {/* Featured Article */}
+            <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+              <div className="grid gap-0 lg:grid-cols-2">
+                <div className="relative overflow-hidden bg-slate-100">
+                  <NewsStoryMedia story={leadStory} variant="lead" />
                 </div>
 
-                <h3 className={`mt-4 ${NEWS_BRAND_STYLES.featureTitle}`}>
-                  {leadStory.title}
-                </h3>
+                <div className="flex flex-col justify-between p-6 sm:p-7 lg:p-8">
+                  {/* Header */}
+                  <div>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-blue-700`}
+                      >
+                        <span className="h-1.5 w-1.5 rounded-full bg-blue-600"></span>
+                        {leadStory.label}
+                      </span>
+                      <span className="text-xs font-medium text-slate-500">
+                        {leadStory.publishedAt}
+                      </span>
+                    </div>
 
-                <p
-                  className={`mt-4 ${NEWS_BRAND_STYLES.bodySmall} sm:text-base`}
-                >
-                  {leadStory.summary}
-                </p>
+                    <h3 className="mt-5 text-2xl font-black leading-tight tracking-tight text-slate-950 sm:text-3xl">
+                      {leadStory.title}
+                    </h3>
 
-                <div className="mt-5 flex items-center justify-between gap-3 border-t border-slate-200 pt-4">
-                  <HooksSignature variant="light" className="shrink-0" />
+                    <p className="mt-4 line-clamp-3 text-base leading-relaxed text-slate-600">
+                      {leadStory.summary}
+                    </p>
+                  </div>
 
-                  <Link
-                    to={createNewsStoryPath(leadStory.slug)}
-                    className={NEWS_BRAND_STYLES.inlineAction}
-                  >
-                    Read story
-                    <FaArrowRight className="h-3.5 w-3.5" />
-                  </Link>
+                  {/* Highlights */}
+                  {leadStory.highlights?.length > 0 && (
+                    <div className="my-6 flex flex-wrap gap-2 border-y border-slate-200 py-4">
+                      {leadStory.highlights.slice(0, 3).map((highlight) => (
+                        <span
+                          key={highlight}
+                          className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700"
+                        >
+                          <span className="h-1 w-1 rounded-full bg-slate-400"></span>
+                          {highlight}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Footer */}
+                  <div className="flex items-center justify-between gap-4 pt-4">
+                    <HooksSignature variant="light" className="shrink-0" />
+                    <Link
+                      to={createNewsStoryPath(leadStory.slug)}
+                      className="inline-flex items-center gap-2 font-semibold text-blue-600 transition-all duration-200 hover:text-blue-700 hover:gap-3"
+                    >
+                      Read Story
+                      <FaArrowRight className="h-3.5 w-3.5" />
+                    </Link>
+                  </div>
                 </div>
               </div>
             </article>
 
-            <div className={`overflow-hidden ${NEWS_BRAND_STYLES.cardShell}`}>
+            {/* Side Articles */}
+            <div className="flex flex-col gap-4">
               {listStories.map((story, index) => (
                 <article
                   key={story.slug}
-                  className={`${index !== 0 ? "border-t border-slate-200" : ""}`}
+                  className="flex gap-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-4"
                 >
-                  <div className="grid gap-0 sm:grid-cols-[160px_minmax(0,1fr)]">
+                  <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-slate-100">
                     <NewsStoryMedia story={story} variant="compact" />
+                  </div>
 
-                    <div className="p-5">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <span className={NEWS_BRAND_STYLES.labelSmall}>
+                  <div className="flex min-w-0 flex-1 flex-col justify-between">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-block h-0.5 w-4 rounded-full bg-blue-600"></span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-blue-700">
                           {story.label}
                         </span>
-                        <span className={NEWS_BRAND_STYLES.metaSmall}>
+                        <span className="text-xs text-slate-500">•</span>
+                        <span className="text-xs text-slate-500">
                           {story.publishedAt}
                         </span>
                       </div>
 
-                      <h3
-                        className={`mt-3 ${NEWS_BRAND_STYLES.cardTitle} text-lg`}
-                      >
+                      <h4 className="mt-2 line-clamp-2 font-bold leading-tight text-slate-900">
                         {story.title}
-                      </h3>
-
-                      <p className={`mt-2 ${NEWS_BRAND_STYLES.bodySmall}`}>
-                        {story.summary}
-                      </p>
-
-                      <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-200 pt-3">
-                        <HooksSignature variant="light" className="shrink-0" />
-                        <Link
-                          to={createNewsStoryPath(story.slug)}
-                          className={NEWS_BRAND_STYLES.inlineAction}
-                        >
-                          Read
-                          <FaArrowRight className="h-3.5 w-3.5" />
-                        </Link>
-                      </div>
+                      </h4>
                     </div>
+
+                    <Link
+                      to={createNewsStoryPath(story.slug)}
+                      className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 transition-all duration-200 hover:text-blue-700 hover:gap-2"
+                    >
+                      Read
+                      <FaArrowRight className="h-3 w-3" />
+                    </Link>
                   </div>
                 </article>
               ))}
