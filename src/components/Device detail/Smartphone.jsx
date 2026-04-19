@@ -32,6 +32,7 @@ import {
   FaVolumeUp,
   FaGamepad,
   FaBalanceScale,
+  FaChevronLeft,
   FaChevronRight,
   FaChevronDown,
   FaTag,
@@ -45,6 +46,8 @@ import {
   FaTwitter,
   FaLink,
   FaEnvelope,
+  FaExternalLinkAlt,
+  FaStore,
 } from "react-icons/fa";
 import "../../styles/hideScrollbar.css";
 import Spinner from "../ui/Spinner";
@@ -54,6 +57,7 @@ import { smartphoneMeta } from "../../constants/meta";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
 import { createWebPageSchema } from "../../utils/schemaGenerators";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
+import useStoreLogos from "../../hooks/useStoreLogos";
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
 import { resolveSmartphoneBadgeScore } from "../../utils/smartphoneBadgeScore";
 import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
@@ -171,7 +175,8 @@ const remapScoreToBand = (value, min = 80, max = 98) => {
 
 const toAbsoluteUrl = (url) => {
   if (!url) return "";
-  if (/^https?:\/\//i.test(url)) return url;
+  if (/^(?:[a-z][a-z0-9+.-]*:)?\/\//i.test(url)) return url;
+  if (/^(?:data:|blob:)/i.test(url)) return url;
   if (typeof window === "undefined") return url;
   const origin = window.location.origin;
   if (!origin) return url;
@@ -181,6 +186,177 @@ const toAbsoluteUrl = (url) => {
 const formatScoreValue = (value) => {
   if (!Number.isFinite(value)) return null;
   return `${Number(value).toFixed(1)}%`;
+};
+
+const formatPrice = (price) => {
+  if (price == null || price === "") return "N/A";
+  const str = String(price);
+  const numericPrice = parseInt(str.replace(/[^0-9]/g, ""), 10) || 0;
+  return new Intl.NumberFormat("en-IN").format(numericPrice);
+};
+
+const extractNumericPrice = (price) => {
+  if (price == null || price === "" || price === "NaN") return 0;
+  if (typeof price === "number" && Number.isFinite(price)) return price;
+  const numeric = parseInt(String(price).replace(/[^0-9]/g, ""), 10);
+  return Number.isFinite(numeric) ? numeric : 0;
+};
+
+const getStorePriceList = (variant) =>
+  Array.isArray(variant?.store_prices)
+    ? variant.store_prices
+    : Array.isArray(variant?.storePrices)
+      ? variant.storePrices
+      : [];
+
+const resolveVariantNumericPrice = (variant) => {
+  if (!variant) return 0;
+  const storeCandidates = getStorePriceList(variant)
+    .map((store) => extractNumericPrice(store?.price))
+    .filter((n) => n > 0);
+  if (storeCandidates.length > 0) {
+    return Math.min(...storeCandidates);
+  }
+
+  return extractNumericPrice(
+    variant.base_price ??
+      variant.basePrice ??
+      variant.price ??
+      variant.base ??
+      variant.numericPrice ??
+      null,
+  );
+};
+
+const resolveDeviceNumericPrice = (device) => {
+  if (!device) return 0;
+
+  const variantCandidates = Array.isArray(device.variants)
+    ? device.variants
+        .map((variant) => resolveVariantNumericPrice(variant))
+        .filter((n) => n > 0)
+    : [];
+  if (variantCandidates.length > 0) {
+    return Math.min(...variantCandidates);
+  }
+
+  const topLevelStores = Array.isArray(device.store_prices)
+    ? device.store_prices
+    : Array.isArray(device.storePrices)
+      ? device.storePrices
+      : [];
+  const storeCandidates = topLevelStores
+    .map((store) => extractNumericPrice(store?.price))
+    .filter((n) => n > 0);
+  if (storeCandidates.length > 0) {
+    return Math.min(...storeCandidates);
+  }
+
+  return extractNumericPrice(
+    device.base_price ??
+      device.price ??
+      device.basePrice ??
+      device.numericPrice ??
+      null,
+  );
+};
+
+const formatPriceLabel = (value) => {
+  const numeric = extractNumericPrice(value);
+  return numeric > 0 ? `₹ ${formatPrice(numeric)}` : "";
+};
+
+const normalizeStorePriceRow = (
+  store = {},
+  fallbackIndex = 0,
+  variant = null,
+) => {
+  const storeName =
+    store?.display_store_name ||
+    store?.displayStoreName ||
+    store?.store ||
+    store?.store_name ||
+    store?.storeName ||
+    `Store ${fallbackIndex + 1}`;
+  const rawUrl = store?.url || store?.url_link || store?.link || "";
+  const price = store?.price ?? store?.base_price ?? store?.basePrice ?? null;
+
+  return {
+    ...store,
+    id:
+      store?.id ??
+      `${variant?.variant_id ?? variant?.id ?? "store"}-${fallbackIndex}`,
+    variant_id: store?.variant_id ?? variant?.variant_id ?? variant?.id ?? null,
+    store: storeName,
+    store_name: storeName,
+    storeName: storeName,
+    display_store_name: storeName,
+    price,
+    numericPrice: extractNumericPrice(price),
+    url: rawUrl,
+    cta_label:
+      store?.cta_label ||
+      store?.ctaLabel ||
+      (rawUrl ? "Buy Now" : "Unavailable"),
+    availability_status:
+      store?.availability_status || store?.availabilityStatus || null,
+    sale_start_date:
+      store?.sale_start_date ||
+      store?.saleStartDate ||
+      store?.sale_date ||
+      null,
+    sale_date: store?.sale_date || store?.saleDate || null,
+    is_prebooking:
+      store?.is_prebooking === true || store?.isPrebooking === true,
+    logo: store?.logo || store?.store_logo || store?.storeLogo || "",
+  };
+};
+
+const getRenderableStorePriceRows = (source) => {
+  if (!source) return [];
+
+  const rows = getStorePriceList(source)
+    .map((store, index) => normalizeStorePriceRow(store, index, source))
+    .filter((row) => row.store || row.numericPrice > 0 || row.url);
+
+  rows.sort((a, b) => {
+    const aPrice = Number(a.numericPrice) || 0;
+    const bPrice = Number(b.numericPrice) || 0;
+    if (aPrice > 0 && bPrice > 0) return aPrice - bPrice;
+    if (aPrice > 0 && bPrice <= 0) return -1;
+    if (aPrice <= 0 && bPrice > 0) return 1;
+    return String(a.store || "").localeCompare(String(b.store || ""));
+  });
+
+  if (rows.length > 0) return rows;
+
+  const fallbackPrice = extractNumericPrice(
+    source.base_price ??
+      source.basePrice ??
+      source.price ??
+      source.numericPrice ??
+      null,
+  );
+  if (fallbackPrice > 0) {
+    return [
+      {
+        id: `${source?.variant_id ?? source?.id ?? "variant"}-fallback`,
+        variant_id: source?.variant_id ?? source?.id ?? null,
+        store: "Variant",
+        store_name: "Variant",
+        storeName: "Variant",
+        display_store_name: "Variant",
+        price: fallbackPrice,
+        numericPrice: fallbackPrice,
+        url: "",
+        cta_label: "Buy Now",
+        is_prebooking: false,
+        logo: "",
+      },
+    ];
+  }
+
+  return [];
 };
 
 const HiddenScoreBadge = () => null;
@@ -259,6 +435,7 @@ const MobileDetailCard = () => {
   const [activeTab, setActiveTab] = useState("specifications");
   const [activeImage, setActiveImage] = useState(0);
   const [showAllSpecs, setShowAllSpecs] = useState(true);
+  const [showHeaderSummaryFull, setShowHeaderSummaryFull] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState(0);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -273,6 +450,7 @@ const MobileDetailCard = () => {
     refreshDevices,
   } = useDevice();
   const deviceFieldProfiles = useDeviceFieldProfiles();
+  const { getLogo, getStore, getStoreLogo } = useStoreLogos();
   const navigate = useNavigate();
 
   const params = useParams();
@@ -319,20 +497,17 @@ const MobileDetailCard = () => {
     (slug) => {
       if (!slug || !smartphone) return null;
       const searchSlug = generateSlug(normalizeSeoSlug(slug));
-      return (Array.isArray(smartphone) ? smartphone : [smartphone]).find(
-        (d) =>
-          [
-            d?.name,
-            d?.model,
-            d?.product_name,
-            d?.productName,
-            d?.model_number,
-            d?.basic_info?.product_name,
-            d?.basic_info?.model,
-            d?.basic_info?.model_number,
-          ].some(
-            (value) => generateSlug(normalizeSeoSlug(value)) === searchSlug,
-          ),
+      return (Array.isArray(smartphone) ? smartphone : [smartphone]).find((d) =>
+        [
+          d?.name,
+          d?.model,
+          d?.product_name,
+          d?.productName,
+          d?.model_number,
+          d?.basic_info?.product_name,
+          d?.basic_info?.model,
+          d?.basic_info?.model_number,
+        ].some((value) => generateSlug(normalizeSeoSlug(value)) === searchSlug),
       );
     },
     [smartphone, normalizeSeoSlug],
@@ -740,6 +915,12 @@ const MobileDetailCard = () => {
       color_code: v.color_code ?? v.colorCode ?? v.hex ?? null,
       ...v,
     }));
+    out.base_price = d.base_price ?? d.basePrice ?? out.base_price ?? null;
+    out.price = d.price ?? out.price ?? null;
+    out.numericPrice = d.numericPrice ?? out.numericPrice ?? null;
+    out.store_prices =
+      d.store_prices ?? d.storePrices ?? out.store_prices ?? [];
+    out.storePrices = d.storePrices ?? d.store_prices ?? out.storePrices ?? [];
 
     // Pick sensible defaults for performance.ram/storage from variants if missing
     if (
@@ -971,6 +1152,46 @@ const MobileDetailCard = () => {
       ),
     [localResolved, selectedDevice],
   );
+  const carouselImages = Array.isArray(mobileData?.images)
+    ? mobileData.images.filter(Boolean)
+    : [];
+
+  useEffect(() => {
+    setActiveImage(0);
+  }, [mobileData]);
+
+  const goToPreviousImage = useCallback(() => {
+    if (carouselImages.length <= 1) return;
+    setActiveImage(
+      (current) =>
+        (current - 1 + carouselImages.length) % carouselImages.length,
+    );
+  }, [carouselImages.length]);
+
+  const goToNextImage = useCallback(() => {
+    if (carouselImages.length <= 1) return;
+    setActiveImage((current) => (current + 1) % carouselImages.length);
+  }, [carouselImages.length]);
+
+  useEffect(() => {
+    if (carouselImages.length <= 1) {
+      if (activeImage !== 0) setActiveImage(0);
+      return;
+    }
+    if (activeImage >= carouselImages.length) {
+      setActiveImage(0);
+    }
+  }, [activeImage, carouselImages.length]);
+
+  useEffect(() => {
+    if (carouselImages.length <= 1) return;
+    const intervalId = window.setInterval(() => {
+      setActiveImage((current) => (current + 1) % carouselImages.length);
+    }, 5000);
+
+    return () => window.clearInterval(intervalId);
+  }, [carouselImages.length]);
+
   const launchStatus = useMemo(
     () => getDeviceLaunchStatus(mobileData),
     [mobileData],
@@ -1406,8 +1627,27 @@ const MobileDetailCard = () => {
   ]);
 
   const currentVariant = variants?.[selectedVariant];
+  const currentVariantNumericPrice = resolveVariantNumericPrice(currentVariant);
+  const currentDeviceNumericPrice = resolveDeviceNumericPrice(mobileData);
+  const resolvedCurrentNumericPrice =
+    currentVariantNumericPrice > 0
+      ? currentVariantNumericPrice
+      : currentDeviceNumericPrice;
+  const currentPriceDisplay =
+    resolvedCurrentNumericPrice > 0
+      ? `₹ ${formatPrice(resolvedCurrentNumericPrice)}`
+      : "";
   const currentProductId =
     mobileData?.id ?? mobileData?.product_id ?? mobileData?.productId ?? null;
+  const currentVariantStoreRows = useMemo(() => {
+    const variantRows = getRenderableStorePriceRows(currentVariant);
+    if (variantRows.length > 0) return variantRows;
+
+    const deviceRows = getRenderableStorePriceRows(mobileData);
+    if (deviceRows.length > 0) return deviceRows;
+
+    return [];
+  }, [currentVariant, mobileData]);
 
   useEffect(() => {
     const pid = Number(currentProductId);
@@ -1465,11 +1705,7 @@ const MobileDetailCard = () => {
         mobileData?.image ||
         mobileData?.image_url ||
         "",
-      price:
-        currentVariant?.base_price ??
-        mobileData?.price ??
-        mobileData?.base_price ??
-        null,
+      price: currentPriceDisplay || null,
       segment: mobileData?.category || mobileData?.product_type || "smartphone",
       processor:
         mobileData?.performance?.processor ||
@@ -1558,13 +1794,6 @@ const MobileDetailCard = () => {
     },
     [navigate, currentProductId, mobileData, compareDisabled],
   );
-
-  const formatPrice = (price) => {
-    if (price == null || price === "") return "N/A";
-    const str = String(price);
-    const numericPrice = parseInt(str.replace(/[^0-9]/g, "")) || 0;
-    return new Intl.NumberFormat("en-IN").format(numericPrice);
-  };
 
   const toNormalCase = (raw) => {
     if (raw == null) return "";
@@ -1982,10 +2211,8 @@ const MobileDetailCard = () => {
     }`,
     text: `Check out ${productDisplayName} - ${
       mobileData?.performance?.processor
-    }, ${shareCameraText}, ${batteryForShare} Battery. Price starts at ₹${
-      currentVariant?.base_price
-        ? formatPrice(currentVariant.base_price)
-        : "N/A"
+    }, ${shareCameraText}, ${batteryForShare} Battery. Price starts at ${
+      currentPriceDisplay || "N/A"
     }`,
     url: window.location.href,
   };
@@ -2016,9 +2243,7 @@ const MobileDetailCard = () => {
     const batteryText = String(battery).toLowerCase().includes("mah")
       ? String(battery)
       : `${battery}mAh`;
-    const price = currentVariant?.base_price
-      ? `₹${formatPrice(currentVariant.base_price)}`
-      : "Price not available";
+    const price = currentPriceDisplay || "Price not available";
     const display =
       mobileData?.display?.size ||
       mobileData?.display ||
@@ -2962,38 +3187,35 @@ Price: ${price}
       const { valueClassName = "", singleValue = false } = options;
 
       return (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-          <table className="w-full table-fixed">
-            <tbody className="divide-y divide-slate-100">
-              {rows.map((row, idx) => {
-                if (singleValue) {
-                  return (
-                    <tr key={`${row.key}-${idx}`}>
-                      <td
-                        className="px-4 py-3 text-sm leading-7 text-slate-700 break-words sm:px-5"
-                        colSpan={2}
-                      >
-                        {row.value}
-                      </td>
-                    </tr>
-                  );
-                }
+        <div className="space-y-3">
+          {rows.map((row, idx) => {
+            if (singleValue) {
+              return (
+                <div
+                  key={`${row.key}-${idx}`}
+                  className="text-sm leading-7 text-slate-700 break-words"
+                >
+                  {row.value}
+                </div>
+              );
+            }
 
-                return (
-                  <tr key={`${row.label}-${idx}`} className="align-top">
-                    <td className="w-40 px-4 py-3 text-sm font-medium text-slate-600 sm:px-5">
-                      {row.label}
-                    </td>
-                    <td
-                      className={`px-4 py-3 text-sm font-semibold leading-6 text-slate-900 break-words sm:px-5 ${valueClassName}`}
-                    >
-                      {row.value}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+            return (
+              <div
+                key={`${row.label}-${idx}`}
+                className="grid gap-2 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] sm:gap-6"
+              >
+                <div className="text-sm font-medium text-slate-600">
+                  {row.label}
+                </div>
+                <div
+                  className={`text-sm font-semibold leading-6 text-slate-900 break-words sm:text-left ${valueClassName}`}
+                >
+                  {row.value}
+                </div>
+              </div>
+            );
+          })}
         </div>
       );
     };
@@ -3042,7 +3264,9 @@ Price: ${price}
   const renderSpecTable = (data, limit = 5) => {
     if (!data || (typeof data === "object" && Object.keys(data).length === 0))
       return (
-        <div className="text-center py-4 text-gray-500">No data available</div>
+        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 py-6 text-center text-sm text-slate-500">
+          No data available
+        </div>
       );
 
     const entries = dedupeSpecEntries(
@@ -3058,20 +3282,16 @@ Price: ${price}
 
     return (
       <>
-        <div className="space-y-0">
+        <div className="space-y-4">
           {displayEntries.map(([key, value]) => (
             <div
               key={key}
-              className={`grid gap-3 py-3 sm:grid-cols-[180px_minmax(0,1fr)] sm:gap-6 ${
-                key !== displayEntries[displayEntries.length - 1]?.[0]
-                  ? "border-b border-slate-100"
-                  : ""
-              }`}
+              className="grid gap-2 sm:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] sm:gap-6"
             >
               <p className="text-sm font-medium text-slate-600">
                 {toNormalCase(key)}
               </p>
-              <div className="text-sm font-semibold leading-6 text-slate-900 break-words">
+              <div className="text-sm font-semibold leading-6 text-slate-900 break-words sm:text-left">
                 {formatSpecValue(value, key)}
               </div>
             </div>
@@ -3135,8 +3355,53 @@ Price: ${price}
         const sensorsData = toSectionTableData(mobileData.sensors, "sensors");
         const buildData =
           mobileData.build_design || mobileData.build_design_json;
-        const sectionScore = (key) => getSectionScore(key);
-        const sectionScoreDisplay = (key) => getSectionScoreDisplay(key);
+        const generalData = {
+          Launch: formatDateForDisplay(
+            mobileData.launch_date || mobileData.launchDate,
+          ),
+          "Launch Country":
+            mobileData.launch_country || mobileData.country || "India",
+          "Launch Price": currentPriceDisplay || "N/A",
+          Colors: Array.isArray(mobileData.colors)
+            ? mobileData.colors.join(", ")
+            : mobileData.build_design?.colors || "N/A",
+          "SIM Type":
+            mobileData.network?.sim_type || mobileData.sim || "Dual Sim",
+          Weight: (() => {
+            const w = mobileData.build_design?.weight;
+            if (!w) return "N/A";
+            const ws = String(w).trim();
+            return /\bg\b/i.test(ws) ? ws : `${ws} g`;
+          })(),
+        };
+        const processorData = {
+          Processor:
+            performanceData?.processor || mobileData.processor || "N/A",
+          Chipset: performanceData?.chipset || mobileData.chipset || "N/A",
+          "CPU Clock":
+            performanceData?.cpu_clock_speed ||
+            performanceData?.cpu_clock ||
+            "N/A",
+          GPU: performanceData?.gpu || mobileData.gpu || "N/A",
+        };
+        const osData = {
+          "Operating System":
+            formatOsHeadline() ||
+            performanceData?.operating_system ||
+            performanceData?.os ||
+            "N/A",
+          Version:
+            performanceData?.os_version ||
+            performanceData?.version ||
+            mobileData.os_version ||
+            "N/A",
+          "Custom UI": mobileData.ui || "Stock",
+          Updates:
+            performanceData?.update_policy ||
+            mobileData.software?.update_policy ||
+            mobileData.updates ||
+            "N/A",
+        };
         const specJumpSections = [
           { id: "spec-general", label: "General", visible: true },
           {
@@ -3148,12 +3413,17 @@ Price: ${price}
           {
             id: "spec-performance",
             label: "Processor",
-            visible: hasContent(performanceData),
+            visible: hasContent(processorData),
           },
           {
             id: "spec-camera",
             label: "Main Camera",
             visible: hasContent(cameraData),
+          },
+          {
+            id: "spec-os",
+            label: "Operating System",
+            visible: hasContent(osData),
           },
           {
             id: "spec-battery",
@@ -3183,312 +3453,139 @@ Price: ${price}
             el.scrollIntoView({ behavior: "smooth", block: "start" });
           }
         };
+        const sectionCardClass =
+          "rounded-lg border border-slate-200 bg-white p-5 sm:p-6";
+        const sectionDividerClass =
+          "mt-4 h-px w-full bg-gradient-to-r from-blue-600 via-sky-500 to-cyan-400";
+        const renderSectionCard = (sectionId, title, content) => (
+          <section id={sectionId} className={sectionCardClass}>
+            <h4 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
+              {title}
+            </h4>
+            <div className={sectionDividerClass} />
+            <div className="mt-5">{content}</div>
+          </section>
+        );
 
         return (
           <div
             id="spec-specifications"
-            className={`mx-auto max-w-7xl ${combineResponsiveClasses(RESPONSIVE_SPACING.contentMarginY)}`}
+            className={`w-full max-w-3xl ${combineResponsiveClasses(RESPONSIVE_SPACING.contentMarginY)}`}
           >
-            <div
-              className={`rounded-2xl bg-transparent ${combineResponsiveClasses(RESPONSIVE_SPACING.sectionPadding)}`}
-            >
-              <div
-                className={`flex flex-col gap-4 md:flex-row md:items-start md:justify-between`}
-              >
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold uppercase tracking-[0.34em] text-blue-600">
+            <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+              <div className="min-w-0">
+                <h3 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-[2rem]">
+                  {metaName}
+                  {currentVariantLabel ? ` (${currentVariantLabel})` : ""}
+                  <span className="ml-2 bg-gradient-to-r from-blue-600 via-sky-500 to-cyan-400 bg-clip-text text-transparent">
                     Full Specifications
-                  </p>
-                  <h3
-                    className={`mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl`}
-                  >
-                    {metaName}
-                    {currentVariantLabel ? ` (${currentVariantLabel})` : ""}
-                    <span className="text-blue-600"> Specs</span>
-                  </h3>
-                  <p
-                    className={`mt-2 max-w-3xl text-sm leading-6 text-slate-500 sm:text-base`}
-                  >
-                    Explore the key hardware sections below with quick jumps.
-                  </p>
-                </div>
+                  </span>
+                </h3>
               </div>
-
-              <div className="relative mt-4">
-                <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-white to-transparent" />
-                <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-white to-transparent" />
-                <div
-                  className={`flex ${RESPONSIVE_SPACING.gapMedium} overflow-x-auto pb-1 no-scrollbar`}
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium text-slate-600">
+                  Expanded View
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowAllSpecs((prev) => !prev)}
+                  aria-pressed={showAllSpecs}
+                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
+                    showAllSpecs ? "bg-blue-600" : "bg-slate-300"
+                  }`}
                 >
-                  {specJumpSections.map((section) => (
-                    <button
-                      key={section.id}
-                      type="button"
-                      onClick={() => scrollToSpecSection(section.id)}
-                      className={`inline-flex flex-shrink-0 items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-all hover:border-blue-300 hover:text-blue-600`}
-                    >
-                      {section.label}
-                    </button>
-                  ))}
-                </div>
+                  <span
+                    className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform duration-200 ${
+                      showAllSpecs ? "translate-x-7" : "translate-x-1"
+                    }`}
+                  />
+                </button>
               </div>
             </div>
 
-            <div className={`space-y-4 sm:space-y-5`}>
-              {/* General Section */}
+            <div className="relative mt-5">
               <div
-                id="spec-general"
-                className={`rounded-lg border border-slate-200 bg-white ${combineResponsiveClasses(RESPONSIVE_SPACING.cardPadding)}`}
+                className={`flex ${RESPONSIVE_SPACING.gapMedium} overflow-x-auto pb-1 no-scrollbar`}
               >
-                <div className="mb-3 flex items-center justify-between gap-2">
-                  <h4 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-                    <FaInfoCircle className="text-sm text-blue-500" />
-                    General
-                  </h4>
-                  <div className="flex items-center gap-1.5">
-                    <SpecScoreBadge
-                      score={getSectionScore("overall")}
-                      displayScore={sectionScoreDisplay("overall")}
-                      size={38}
-                    />
-                  </div>
-                </div>
-                <div className="mt-4">
-                  {renderSpecTable(
-                    {
-                      Brand: mobileData.brand,
-                      Model: mobileData.model,
-                      Segment: mobileData.category,
-                      "Release Date": formatDateForDisplay(
-                        mobileData.launch_date || mobileData.launchDate,
-                      ),
-                      "Operating System":
-                        mobileData.performance?.operating_system ||
-                        mobileData.performance?.os ||
-                        "N/A",
-                      "Custom UI": mobileData.ui || "Stock",
-                      Colors: Array.isArray(mobileData.colors)
-                        ? mobileData.colors.join(", ")
-                        : mobileData.build_design?.colors || "N/A",
-                      "SIM Type":
-                        mobileData.network?.sim_type ||
-                        mobileData.sim ||
-                        "Dual Sim",
-                      Weight: (() => {
-                        const w = mobileData.build_design?.weight;
-                        if (!w) return "N/A";
-                        const ws = String(w).trim();
-                        return /\bg\b/i.test(ws) ? ws : `${ws} g`;
-                      })(),
-                    },
-                    10,
-                  )}
-                </div>
+                {specJumpSections.map((section) => (
+                  <button
+                    key={section.id}
+                    type="button"
+                    onClick={() => scrollToSpecSection(section.id)}
+                    className="inline-flex flex-shrink-0 items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-all hover:border-blue-300 hover:text-blue-600"
+                  >
+                    {section.label}
+                  </button>
+                ))}
               </div>
+            </div>
 
-              {/* Display Section */}
-              {hasContent(displayData) && (
-                <div
-                  id="spec-display"
-                  className="rounded-lg border border-slate-200 bg-white p-4 sm:p-6"
-                >
-                  <div className="mb-3 flex items-center justify-between gap-2">
-                    <h4 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-                      <FaExpand className="text-blue-500" />
-                      Display
-                    </h4>
-                    <div className="flex items-center gap-1.5">
-                      <SpecScoreBadge
-                        score={sectionScore("display")}
-                        size={38}
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    {renderDisplayTable(displayData, 10)}
-                  </div>
-                </div>
+            <div className="mt-6 space-y-5">
+              {renderSectionCard(
+                "spec-general",
+                "General",
+                renderSpecTable(generalData, 5),
               )}
-
-              {/* Body Section */}
-              {hasContent(buildData) && (
-                <div
-                  id="spec-body"
-                  className="rounded-lg border border-slate-200 bg-white p-4 sm:p-6"
-                >
-                  <div className="mb-3 flex items-center justify-between gap-2">
-                    <h4 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-                      <FaMobile className="text-slate-500" />
-                      Body
-                    </h4>
-                    <div className="flex items-center gap-1.5">
-                      <SpecScoreBadge
-                        score={sectionScore("overall")}
-                        displayScore={sectionScoreDisplay("overall")}
-                        size={38}
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-4">{renderSpecTable(buildData, 10)}</div>
-                </div>
-              )}
-
-              {/* Performance Section */}
-              {hasContent(performanceData) && (
-                <div
-                  id="spec-performance"
-                  className="rounded-lg border border-slate-200 bg-white p-4 sm:p-6"
-                >
-                  <div className="mb-3 flex items-center justify-between gap-2">
-                    <h4 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-                      <FaBolt className="text-yellow-500" />
-                      Performance
-                    </h4>
-                    <div className="flex items-center gap-1.5">
-                      <SpecScoreBadge
-                        score={sectionScore("performance")}
-                        size={38}
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    {renderSpecTable(performanceData, 10)}
-                  </div>
-                </div>
-              )}
-
-              {/* Camera Section - Using nested object structure */}
-              {hasContent(cameraData) && (
-                <div
-                  id="spec-camera"
-                  className="rounded-lg border border-slate-200 bg-white p-4 sm:p-6"
-                >
-                  <div className="mb-3 flex items-center justify-between gap-2">
-                    <h4 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-                      <FaCamera className="text-blue-500" />
-                      Main Camera
-                    </h4>
-                    <div className="flex items-center gap-1.5">
-                      <SpecScoreBadge
-                        score={sectionScore("camera")}
-                        size={38}
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-4">{renderCameraTable(cameraData)}</div>
-                </div>
-              )}
-
-              {/* Battery Section */}
-              {hasContent(batteryData) && (
-                <div
-                  id="spec-battery"
-                  className="rounded-lg border border-slate-200 bg-white p-4 sm:p-6"
-                >
-                  <div className="mb-3 flex items-center justify-between gap-2">
-                    <h4 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-                      <FaBatteryFull className="text-green-500" />
-                      Battery
-                    </h4>
-                    <div className="flex items-center gap-1.5">
-                      <SpecScoreBadge
-                        score={sectionScore("battery")}
-                        size={38}
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-4">{renderSpecTable(batteryData, 10)}</div>
-                </div>
-              )}
-
-              {/* Connectivity Section */}
-              {hasContent(connectivityData) && (
-                <div
-                  id="spec-connectivity"
-                  className="rounded-lg border border-slate-200 bg-white p-4 sm:p-6"
-                >
-                  <div className="mb-3 flex items-center justify-between gap-2">
-                    <h4 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-                      <FaWifi className="text-blue-500" />
-                      Connectivity
-                    </h4>
-                    <div className="flex items-center gap-1.5">
-                      <SpecScoreBadge
-                        score={sectionScore("network")}
-                        size={38}
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    {renderSpecTable(connectivityData, 10)}
-                  </div>
-                </div>
-              )}
-
-              {/* Network Section */}
-              {hasContent(networkData) && (
-                <div
-                  id="spec-network"
-                  className="rounded-lg border border-slate-200 bg-white p-4 sm:p-6"
-                >
-                  <div className="mb-3 flex items-center justify-between gap-2">
-                    <h4 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-                      <FaWifi className="text-indigo-500" />
-                      Network
-                    </h4>
-                    <div className="flex items-center gap-1.5">
-                      <SpecScoreBadge
-                        score={sectionScore("network")}
-                        size={38}
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-4">{renderSpecTable(networkData, 10)}</div>
-                </div>
-              )}
-
-              {/* Audio Section */}
-              {hasContent(audioData) && (
-                <div
-                  id="spec-audio"
-                  className="rounded-lg border border-slate-200 bg-white p-4 sm:p-6"
-                >
-                  <div className="mb-3 flex items-center justify-between gap-2">
-                    <h4 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-                      <FaVolumeUp className="text-pink-500" />
-                      Audio
-                    </h4>
-                    <SpecScoreBadge
-                      score={getSectionScore("overall")}
-                      size={38}
-                    />
-                  </div>
-                  <div className="mt-4">{renderSpecTable(audioData, 10)}</div>
-                </div>
-              )}
-
-              {/* Sensors Section */}
-              {hasContent(sensorsData) && (
-                <div
-                  id="spec-sensors"
-                  className="rounded-lg border border-slate-200 bg-white p-4 sm:p-6"
-                >
-                  <div className="mb-3 flex items-center justify-between gap-2">
-                    <h4 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-                      <FaShieldAlt className="text-teal-500" />
-                      Sensors
-                    </h4>
-                    <SpecScoreBadge
-                      score={getSectionScore("overall")}
-                      size={38}
-                    />
-                  </div>
-                  <div className="mt-4">{renderSpecTable(sensorsData, 10)}</div>
-                </div>
-              )}
-
-              {/* Available colors removed */}
-              {/* Price Comparison Call to Action */}
+              {hasContent(displayData) &&
+                renderSectionCard(
+                  "spec-display",
+                  "Display",
+                  renderDisplayTable(displayData, 5),
+                )}
+              {hasContent(buildData) &&
+                renderSectionCard(
+                  "spec-body",
+                  "Body",
+                  renderSpecTable(buildData, 5),
+                )}
+              {hasContent(processorData) &&
+                renderSectionCard(
+                  "spec-performance",
+                  "Processor",
+                  renderSpecTable(processorData, 5),
+                )}
+              {hasContent(cameraData) &&
+                renderSectionCard(
+                  "spec-camera",
+                  "Main Camera",
+                  renderCameraTable(cameraData),
+                )}
+              {hasContent(osData) &&
+                renderSectionCard(
+                  "spec-os",
+                  "Operating System",
+                  renderSpecTable(osData, 5),
+                )}
+              {hasContent(batteryData) &&
+                renderSectionCard(
+                  "spec-battery",
+                  "Battery",
+                  renderSpecTable(batteryData, 5),
+                )}
+              {hasContent(connectivityData) &&
+                renderSectionCard(
+                  "spec-connectivity",
+                  "Connectivity",
+                  renderSpecTable(connectivityData, 5),
+                )}
+              {hasContent(networkData) &&
+                renderSectionCard(
+                  "spec-network",
+                  "Network",
+                  renderSpecTable(networkData, 5),
+                )}
+              {hasContent(audioData) &&
+                renderSectionCard(
+                  "spec-audio",
+                  "Audio",
+                  renderSpecTable(audioData, 5),
+                )}
+              {hasContent(sensorsData) &&
+                renderSectionCard(
+                  "spec-sensors",
+                  "Sensors",
+                  renderSpecTable(sensorsData, 5),
+                )}
             </div>
           </div>
         );
@@ -3580,10 +3677,6 @@ Price: ${price}
               <div className="mt-5">
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <h4 className="font-semibold text-gray-800">Network</h4>
-                  <SpecScoreBadge
-                    score={getSectionScore("network")}
-                    size={34}
-                  />
                 </div>
                 {renderSpecTable(networkData)}
               </div>
@@ -3592,11 +3685,6 @@ Price: ${price}
               <div className="mt-5">
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <h4 className="font-semibold text-gray-800">Ports</h4>
-                  <SpecScoreBadge
-                    score={getSectionScore("overall")}
-                    displayScore={getSectionScoreDisplay("overall")}
-                    size={34}
-                  />
                 </div>
                 {renderSpecTable(portsData)}
               </div>
@@ -3620,11 +3708,6 @@ Price: ${price}
                 <FaFilm className="text-indigo-500" />
                 Multimedia
               </h3>
-              <SpecScoreBadge
-                score={getSectionScore("overall")}
-                displayScore={getSectionScoreDisplay("overall")}
-                size={38}
-              />
             </div>
             {hasContent(multimediaData)
               ? renderSpecTable(multimediaData)
@@ -3633,11 +3716,6 @@ Price: ${price}
               <div className="mt-5">
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <h4 className="font-semibold text-gray-800">Audio</h4>
-                  <SpecScoreBadge
-                    score={getSectionScore("overall")}
-                    displayScore={getSectionScoreDisplay("overall")}
-                    size={34}
-                  />
                 </div>
                 {renderSpecTable(audioData)}
               </div>
@@ -3646,11 +3724,6 @@ Price: ${price}
               <div className="mt-5">
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <h4 className="font-semibold text-gray-800">Sensors</h4>
-                  <SpecScoreBadge
-                    score={getSectionScore("overall")}
-                    displayScore={getSectionScoreDisplay("overall")}
-                    size={34}
-                  />
                 </div>
                 {renderSpecTable(sensorsData)}
               </div>
@@ -3667,11 +3740,6 @@ Price: ${price}
                 <FaMobile className="text-indigo-500" />
                 Build & Design
               </h3>
-              <SpecScoreBadge
-                score={getSectionScore("overall")}
-                displayScore={getSectionScoreDisplay("overall")}
-                size={38}
-              />
             </div>
             {renderSpecTable(mobileData.build_design)}
           </div>
@@ -3746,6 +3814,54 @@ Price: ${price}
         .filter(Boolean)
         .slice(0, 3),
     });
+  const headerSummaryPrice = resolvedCurrentNumericPrice;
+  const headerSummary = useMemo(() => {
+    const processorText = headerProcessor || "a capable chipset";
+    const displayText = headerDisplay
+      ? `a ${headerDisplay} display`
+      : "a clear display";
+    const variantText = currentVariantLabel
+      ? `the ${currentVariantLabel} configuration`
+      : "multiple memory options";
+    const cameraText = currentMainCameraMp
+      ? `${currentMainCameraMp} MP main camera`
+      : "balanced camera hardware";
+    const batteryText = batteryForShare
+      ? `${batteryForShare} battery`
+      : "reliable battery life";
+    const priceText =
+      headerSummaryPrice > 0 ? `₹ ${formatPrice(headerSummaryPrice)}` : "";
+
+    const intro = `${headerTitle} is powered by ${processorText} and brings ${displayText}, ${variantText}, ${cameraText}, and ${batteryText} together in one balanced package.`;
+    const priceSentence = priceText
+      ? `Price starts at ${priceText} for the selected configuration, and the cards below make it easy to compare other storage and pricing options.`
+      : "Pricing details are shown in the cards below, making it easy to compare available storage options.";
+    const closing =
+      "It is designed for users who want a balanced everyday smartphone experience with smooth performance, clear media viewing, dependable photography, and enough battery life to get through a full day without feeling overcomplicated.";
+
+    return `${intro} ${priceSentence} ${closing}`;
+  }, [
+    batteryForShare,
+    currentMainCameraMp,
+    currentVariantLabel,
+    headerDisplay,
+    headerProcessor,
+    headerTitle,
+    headerSummaryPrice,
+  ]);
+  const headerSummaryWords = headerSummary.trim().split(/\s+/).filter(Boolean);
+  const headerSummaryLimit = 50;
+  const headerSummaryHasMore = headerSummaryWords.length > headerSummaryLimit;
+  const headerSummaryPreview = headerSummaryHasMore
+    ? `${headerSummaryWords.slice(0, headerSummaryLimit).join(" ")}...`
+    : headerSummary;
+  const visibleHeaderSummary = showHeaderSummaryFull
+    ? headerSummary
+    : headerSummaryPreview;
+
+  useEffect(() => {
+    setShowHeaderSummaryFull(false);
+  }, [mobileData?.id, currentVariant?.ram, currentVariant?.storage]);
 
   const primaryImage = Array.isArray(mobileData?.images)
     ? mobileData.images[0]
@@ -3763,13 +3879,7 @@ Price: ${price}
       description: metaDescription,
       url: canonicalUrl,
     });
-  }, [
-    metaName,
-    metaTitleBase,
-    metaTitle,
-    metaDescription,
-    canonicalUrl,
-  ]);
+  }, [metaName, metaTitleBase, metaTitle, metaDescription, canonicalUrl]);
   const metaKeywords = useMemo(
     () =>
       buildDeviceSeoKeywords({
@@ -3805,7 +3915,7 @@ Price: ${price}
       <div className="max-w-4xl mx-auto p-8">
         <div className="bg-white rounded-lg p-8 text-center">
           <Spinner />
-          <div className="text-sm text-gray-500 mt-3">Please waitâ€¦</div>
+          <div className="text-sm text-gray-500 mt-3">Please wait</div>
         </div>
       </div>
     );
@@ -3916,16 +4026,94 @@ Price: ${price}
     return `Refresh rate: ${text}`;
   };
 
-  const performanceRamPoint = formatMemoryPoint(
-    currentVariant?.ram || mobileData?.performance?.ram,
-    "RAM",
-  );
-  const performanceStoragePoint = formatMemoryPoint(
-    currentVariant?.storage ||
-      mobileData?.performance?.storage ||
-      mobileData?.performance?.ROM_storage,
-    "Storage",
-  );
+  const formatMegapixelHeadline = (value) => {
+    const text = normalizePointText(value);
+    if (!text) return null;
+    return text.replace(/\b(\d+(?:\.\d+)?)\s*MP\b/gi, "$1MP");
+  };
+
+  const formatCapacityHeadline = (value) => {
+    const text = normalizePointText(value);
+    if (!text) return null;
+    return text
+      .replace(/\b(\d+(?:\.\d+)?)\s*mAh\b/gi, "$1mAh")
+      .replace(/\b(\d+(?:\.\d+)?)\s*Wh\b/gi, "$1Wh");
+  };
+
+  const formatMemoryHeadline = (value, typeValue = "") => {
+    const text = normalizePointText(value);
+    if (!text) return null;
+    const compact = text.replace(/\b(\d+(?:\.\d+)?)\s*(GB|MB|TB)\b/gi, "$1$2");
+    const typeText = normalizePointText(typeValue);
+    return typeText ? `${compact} (${typeText})` : compact;
+  };
+
+  const formatDisplayHeadline = () => {
+    const rawSize =
+      mobileData?.display?.size || mobileData?.display?.screen_size;
+    const sizeMatch = String(rawSize || "").match(/(\d+(?:\.\d+)?)/);
+    const size = sizeMatch
+      ? `${Number(sizeMatch[1]).toFixed(1)}"`
+      : getCompactDisplayLabel(rawSize);
+    const refresh = normalizePointText(
+      mobileData?.display?.refresh_rate ||
+        mobileData?.display?.refreshRate ||
+        "",
+    );
+    if (size && refresh) {
+      return `${size} (${refresh.replace(/\s+Hz\b/i, "Hz")})`;
+    }
+    return size || refresh?.replace(/\s+Hz\b/i, "Hz") || null;
+  };
+
+  const formatDimensionHeadline = (design = {}) => {
+    const parts = [design.height, design.width, design.thickness]
+      .flatMap((value) => (Array.isArray(value) ? value : [value]))
+      .map((value) => normalizePointText(value))
+      .filter(Boolean);
+    if (parts.length === 0) return null;
+    return parts.join(" × ");
+  };
+
+  const formatWeightHeadline = (value) => {
+    const text = normalizePointText(value);
+    if (!text) return null;
+    return /\b(g|kg)\b/i.test(text) ? text : `${text} g`;
+  };
+
+  const formatColorsHeadline = (colors) => {
+    if (Array.isArray(colors)) {
+      const items = colors
+        .map((item) => normalizePointText(item))
+        .filter(Boolean);
+      return items.length ? items.join(" / ") : null;
+    }
+    return normalizePointText(colors);
+  };
+
+  const formatDesignHeadline = (design = {}) =>
+    formatDimensionHeadline(design) ||
+    formatColorsHeadline(design.colors) ||
+    formatWeightHeadline(design.weight) ||
+    normalizePointText(design.water_dust_resistance) ||
+    null;
+
+  const formatOsHeadline = () => {
+    const os = normalizePointText(
+      mobileData?.performance?.operating_system ||
+        mobileData?.performance?.os ||
+        "",
+    );
+    const ui = normalizePointText(mobileData?.ui);
+    if (os && ui && !os.toLowerCase().includes(ui.toLowerCase())) {
+      return `${os} (${ui})`;
+    }
+    return os || ui || null;
+  };
+
+  const buildDesignData =
+    mobileData?.build_design || mobileData?.build_design_json || {};
+  const osLeadText = formatOsHeadline();
 
   const frontCameraModePoint = frontCamera?.focus
     ? withPrefix(frontCamera.focus, "Focus")
@@ -3936,28 +4124,26 @@ Price: ${price}
         : null;
 
   const highlightIconMap = {
-    performance: { Icon: FaBolt, color: "text-blue-500" },
-    display: { Icon: FaExpand, color: "text-emerald-500" },
-    camera: { Icon: FaCamera, color: "text-sky-500" },
-    "camera-front": { Icon: FaCamera, color: "text-blue-500" },
+    performance: { Icon: FaMicrochip, color: "text-blue-600" },
+    memory: { Icon: FaMemory, color: "text-sky-600" },
+    display: { Icon: FaExpand, color: "text-emerald-600" },
+    camera: { Icon: FaCamera, color: "text-sky-600" },
+    "camera-front": { Icon: FaCamera, color: "text-blue-600" },
     battery: { Icon: FaBatteryFull, color: "text-orange-500" },
+    design: { Icon: FaMobile, color: "text-violet-600" },
+    os: { Icon: FaSync, color: "text-cyan-600" },
   };
 
   const infoKeySections = [
     {
       key: "performance",
       scoreKey: "performance",
-      title: "Performance",
-      score: getSectionScore("performance"),
-      description: getSectionDescription(
-        "performance",
-        getSectionScore("performance"),
+      title: "Processor",
+      leadPoint: normalizePointText(
+        mobileData?.performance?.processor || mobileData?.processor,
       ),
       points: toUniquePoints([
-        mobileData?.performance?.processor || mobileData?.processor,
         withPrefix(mobileData?.performance?.cpu_clock_speed, "Clock speed"),
-        performanceRamPoint,
-        performanceStoragePoint,
         withPrefix(mobileData?.performance?.gpu, "GPU"),
         withPrefix(
           mobileData?.performance?.operating_system ||
@@ -3967,19 +4153,30 @@ Price: ${price}
       ]),
     },
     {
+      key: "memory",
+      title: "RAM/Storage",
+      leadPoint: formatMemoryHeadline(
+        currentVariant?.ram || mobileData?.performance?.ram,
+        mobileData?.performance?.ram_type || mobileData?.ram_type,
+      ),
+      points: toUniquePoints([
+        formatMemoryHeadline(
+          currentVariant?.storage ||
+            mobileData?.performance?.storage ||
+            mobileData?.performance?.ROM_storage,
+          mobileData?.performance?.storage_type || mobileData?.storage_type,
+        ),
+      ]),
+    },
+    {
       key: "display",
       scoreKey: "display",
       title: "Display",
-      score: getSectionScore("display"),
-      description: getSectionDescription("display", getSectionScore("display")),
+      leadPoint: formatDisplayHeadline(),
       points: toUniquePoints([
-        [mobileData?.display?.size, mobileData?.display?.panel]
-          .filter(Boolean)
-          .join(" | "),
+        withPrefix(mobileData?.display?.panel, "Panel"),
         withPrefix(mobileData?.display?.resolution, "Resolution"),
-        formatRefreshRatePoint(mobileData?.display?.refresh_rate),
         withPrefix(mobileData?.display?.touch_sampling_rate, "Touch sampling"),
-        withPrefix(mobileData?.display?.pixel_density, "Pixel density"),
         withPrefix(mobileData?.display?.protection, "Protection"),
       ]),
     },
@@ -3987,17 +4184,18 @@ Price: ${price}
       key: "camera",
       scoreKey: "camera",
       title: "Rear Camera",
-      score: getSectionScore("camera"),
-      description: getSectionDescription("camera", getSectionScore("camera")),
+      leadPoint: formatMegapixelHeadline(
+        rearMainCamera?.resolution ||
+          (getMainCameraMp(mobileData) != null
+            ? `${getMainCameraMp(mobileData)} MP main camera`
+            : null),
+      ),
       points: toUniquePoints([
-        getMainCameraMp(mobileData) != null
-          ? `${getMainCameraMp(mobileData)} MP main camera`
-          : rearMainCamera?.resolution,
         rearUltraCamera?.resolution
-          ? `${rearUltraCamera.resolution} ultra-wide`
+          ? `${formatMegapixelHeadline(rearUltraCamera.resolution)} ultra-wide`
           : null,
         rearTeleCamera?.resolution
-          ? `${rearTeleCamera.resolution} telephoto`
+          ? `${formatMegapixelHeadline(rearTeleCamera.resolution)} telephoto`
           : null,
         rearVideoSummary ? `Video: ${rearVideoSummary}` : null,
         withPrefix(rearMainCamera?.aperture, "Aperture"),
@@ -4008,15 +4206,8 @@ Price: ${price}
       key: "camera-front",
       scoreKey: "camera",
       title: "Front Camera",
-      score: getSectionScore("camera"),
-      description: getSectionDescription(
-        "camera-front",
-        getSectionScore("camera"),
-      ),
+      leadPoint: formatMegapixelHeadline(frontCamera?.resolution),
       points: toUniquePoints([
-        frontCamera?.resolution
-          ? `${frontCamera.resolution} selfie camera`
-          : null,
         frontCameraModePoint,
         frontVideoSummary ? `Video: ${frontVideoSummary}` : null,
         withPrefix(frontCamera?.aperture, "Aperture"),
@@ -4027,12 +4218,12 @@ Price: ${price}
       key: "battery",
       scoreKey: "battery",
       title: "Battery",
-      score: getSectionScore("battery"),
-      description: getSectionDescription("battery", getSectionScore("battery")),
-      points: toUniquePoints([
+      leadPoint: formatCapacityHeadline(
         getBatteryCapacityMah(mobileData) != null
           ? `${getBatteryCapacityMah(mobileData)} mAh`
           : getBatteryCapacityRaw(mobileData),
+      ),
+      points: toUniquePoints([
         withPrefix(
           mobileData?.battery?.charging_power ||
             mobileData?.battery?.fast_charging,
@@ -4051,12 +4242,41 @@ Price: ${price}
         ),
       ]),
     },
-  ].filter((section) => section.points.length > 0);
+    {
+      key: "design",
+      title: "Design",
+      leadPoint: formatDesignHeadline(buildDesignData),
+      points: toUniquePoints([
+        formatWeightHeadline(buildDesignData.weight),
+        formatColorsHeadline(buildDesignData.colors),
+        withPrefix(buildDesignData.water_dust_resistance, "Water resistance"),
+      ]),
+    },
+    {
+      key: "os",
+      title: "OS",
+      leadPoint: osLeadText,
+      points: toUniquePoints([
+        withPrefix(
+          mobileData?.performance?.os_version ||
+            mobileData?.performance?.version ||
+            mobileData?.os_version,
+          "Version",
+        ),
+        withPrefix(
+          mobileData?.performance?.update_policy ||
+            mobileData?.software?.update_policy ||
+            mobileData?.updates,
+          "Updates",
+        ),
+      ]),
+    },
+  ].filter(
+    (section) => hasContent(section.leadPoint) || section.points.length > 0,
+  );
 
   const compareTarget = popularComparisonTargets[0] || null;
-  const detailInfoSections = infoKeySections.filter(
-    (section) => section.key !== "camera-front",
-  );
+  const detailInfoSections = infoKeySections.filter(Boolean);
 
   // If initial loading state (no mobileData yet), render spinner now
   if (showInitialLoading) {
@@ -4064,14 +4284,14 @@ Price: ${price}
       <div className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
         <div className="bg-white rounded-lg p-8 text-center shadow-sm">
           <Spinner />
-          <div className="text-sm text-gray-500 mt-3">Please waitâ€¦</div>
+          <div className="text-sm text-gray-500 mt-3">Please wait</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full  px-2 sm:px-4 lg:px-6 m-0">
+    <div className="w-full sm:px-4 lg:px-6 m-0">
       <SEO
         title={metaTitle}
         description={metaDescription}
@@ -4185,6 +4405,25 @@ Price: ${price}
                     Compare
                   </button>
                 </div>
+                {headerSummary ? (
+                  <div className="mt-2 max-w-3xl">
+                    <p className="text-sm leading-6 text-slate-600 sm:text-base">
+                      {visibleHeaderSummary}
+                    </p>
+                    {headerSummaryHasMore ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowHeaderSummaryFull((prev) => !prev)
+                        }
+                        className="mt-2 inline-flex items-center text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700"
+                        aria-expanded={showHeaderSummaryFull}
+                      >
+                        {showHeaderSummaryFull ? "Show less" : "Read more"}
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
 
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-[13px] sm:text-sm">
                   {currentVariantLabel ? (
@@ -4226,16 +4465,54 @@ Price: ${price}
                 {currentVariant ? (
                   <div className="mt-4 flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-end sm:gap-2">
                     <div className="text-[2rem] font-bold tracking-tight text-emerald-600 sm:text-3xl">
-                      ₹ {formatPrice(currentVariant.base_price)}
+                      {currentPriceDisplay || "Price not available"}
                     </div>
                     <div className="text-[13px] text-slate-500 sm:pb-0.5 sm:text-sm">
                       ({currentVariant.ram} / {currentVariant.storage})
                     </div>
                   </div>
                 ) : null}
+
+                <div className="mt-5 flex flex-col gap-3 xl:hidden">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={toggleFavorite}
+                      className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
+                    >
+                      <FaHeart
+                        className={`text-lg ${
+                          isFavorite
+                            ? "text-rose-500 fill-current"
+                            : "text-slate-500"
+                        }`}
+                      />
+                    </button>
+                    <button
+                      onClick={handleShare}
+                      className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
+                    >
+                      <FaShareAlt className="text-lg text-slate-500" />
+                    </button>
+                  </div>
+
+                  {hasLaunchDate ? (
+                    <div className="flex flex-wrap items-center gap-2 text-[13px] text-slate-600 sm:text-sm">
+                      <span>
+                        Launched On:{" "}
+                        <span className="font-semibold text-slate-900">
+                          {launchDateParsed.toLocaleDateString("en-US", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </span>
+                      </span>
+                    </div>
+                  ) : null}
+                </div>
               </div>
 
-              <div className="flex flex-col items-start gap-3 xl:items-end">
+              <div className="hidden flex-col items-start gap-3 xl:flex xl:items-end">
                 <div className="flex items-center gap-2">
                   <button
                     onClick={toggleFavorite}
@@ -4378,51 +4655,62 @@ Price: ${price}
           >
             <div className="space-y-5">
               {/* Main Image */}
-              <div
-                className={`relative overflow-hidden rounded-md border border-slate-200 bg-gradient-to-b from-slate-50 via-white to-slate-50 ${combineResponsiveClasses(RESPONSIVE_SPACING.cardPadding)}`}
-              >
+              <div className="relative overflow-hidden rounded-[28px] bg-white px-4 py-8 sm:px-10 sm:py-12">
+                {carouselImages.length > 1 ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={goToPreviousImage}
+                      aria-label="Previous image"
+                      className="absolute left-4 top-1/2 z-10 -translate-y-1/2 rounded-full border border-slate-200 bg-white/95 p-3 text-slate-600 shadow-md transition-all hover:border-blue-300 hover:text-blue-700"
+                    >
+                      <FaChevronLeft className="text-sm" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={goToNextImage}
+                      aria-label="Next image"
+                      className="absolute right-4 top-1/2 z-10 -translate-y-1/2 rounded-full border border-slate-200 bg-white/95 p-3 text-slate-600 shadow-md transition-all hover:border-blue-300 hover:text-blue-700"
+                    >
+                      <FaChevronRight className="text-sm" />
+                    </button>
+                  </>
+                ) : null}
+
                 <div className="flex min-h-[340px] items-center justify-center sm:min-h-[420px]">
                   <img
                     src={
-                      mobileData.images?.[activeImage] ||
+                      carouselImages[activeImage] ||
+                      carouselImages[0] ||
                       "/placeholder-image.jpg"
                     }
                     alt={mobileData.name}
-                    className="h-auto max-h-[320px] w-auto object-contain drop-shadow-[0_16px_24px_rgba(15,23,42,0.12)] sm:max-h-[380px]"
+                    className="h-auto max-h-[260px] w-auto object-contain drop-shadow-[0_16px_24px_rgba(15,23,42,0.12)] sm:max-h-[360px]"
                     onError={(e) => {
                       e.target.src =
                         "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23f3f4f6'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='14' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E";
                     }}
                   />
                 </div>
-              </div>
 
-              {/* Thumbnails */}
-              {mobileData.images && mobileData.images.length > 1 && (
-                <div
-                  className={`flex ${RESPONSIVE_SPACING.gapMedium} overflow-x-auto pb-1 no-scrollbar`}
-                >
-                  {mobileData.images.map((image, index) => (
-                    <button
-                      key={index}
-                      type="button"
-                      onClick={() => setActiveImage(index)}
-                      aria-label={`View image ${index + 1}`}
-                      className={`flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-md border p-1.5 transition-all duration-200 ${
-                        activeImage === index
-                          ? "border-blue-500 bg-white shadow-sm ring-2 ring-blue-100"
-                          : "border-slate-200 bg-slate-50 hover:border-blue-300 hover:bg-white"
-                      }`}
-                    >
-                      <img
-                        src={image}
-                        alt={`${mobileData.name} view ${index + 1}`}
-                        className="h-full w-full object-contain"
+                {carouselImages.length > 1 ? (
+                  <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2">
+                    {carouselImages.map((_, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => setActiveImage(index)}
+                        aria-label={`Go to image ${index + 1}`}
+                        className={`h-2 rounded-full transition-all duration-300 ${
+                          activeImage === index
+                            ? "w-10 bg-slate-700"
+                            : "w-2.5 bg-slate-300 hover:bg-slate-400"
+                        }`}
                       />
-                    </button>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                ) : null}
+              </div>
 
               {/* color section */}
 
@@ -4447,7 +4735,7 @@ Price: ${price}
                       Available Variants
                     </h4>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     {variants.map((variant, index) => (
                       <button
                         key={variant.variant_id ?? variant.id ?? index}
@@ -4455,7 +4743,7 @@ Price: ${price}
                         onClick={() => setSelectedVariant(index)}
                         aria-pressed={selectedVariant === index}
                         aria-label={`Select ${variant.ram} / ${variant.storage} variant`}
-                        className={`relative rounded-2xl border p-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
+                        className={`relative w-full rounded-2xl border p-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 sm:p-4 ${
                           selectedVariant === index
                             ? "border-blue-600 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-600 text-white shadow-md"
                             : "border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50"
@@ -4466,19 +4754,19 @@ Price: ${price}
                             <FaCheck className="text-[9px]" />
                           </span>
                         ) : null}
-                        <div className="flex items-start gap-2.5">
+                        <div className="flex items-start gap-2 sm:gap-2.5">
                           <span
-                            className={`mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ring-1 ${
+                            className={`mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ring-1 sm:h-8 sm:w-8 ${
                               selectedVariant === index
                                 ? "bg-white/15 text-white ring-white/20"
                                 : "bg-slate-50 text-slate-600 ring-slate-200"
                             }`}
                           >
-                            <FaMemory className="text-sm" />
+                            <FaMemory className="text-[13px] sm:text-sm" />
                           </span>
                           <div className="min-w-0">
                             <div
-                              className={`text-sm font-semibold leading-tight ${
+                              className={`text-[13px] font-semibold leading-tight sm:text-sm ${
                                 selectedVariant === index
                                   ? "text-white"
                                   : "text-slate-900"
@@ -4487,13 +4775,15 @@ Price: ${price}
                               {variant.ram} / {variant.storage}
                             </div>
                             <div
-                              className={`mt-1 text-sm font-bold ${
+                              className={`mt-1 text-[13px] font-bold sm:text-sm ${
                                 selectedVariant === index
                                   ? "text-emerald-200"
                                   : "text-emerald-600"
                               }`}
                             >
-                              ₹ {formatPrice(variant.base_price)}
+                              {formatPriceLabel(
+                                resolveVariantNumericPrice(variant),
+                              ) || "Price not available"}
                             </div>
                           </div>
                         </div>
@@ -4502,6 +4792,118 @@ Price: ${price}
                   </div>
                 </div>
               )}
+
+              {currentVariantStoreRows.length > 0 ? (
+                <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">
+                        Store Prices
+                      </p>
+                      <h4 className="mt-1 text-base font-semibold text-slate-900">
+                        Buy {currentVariantLabel || "this variant"} from a store
+                      </h4>
+                    </div>
+                    <span className="shrink-0 text-xs font-medium text-slate-500">
+                      {currentVariantStoreRows.length} offers
+                    </span>
+                  </div>
+
+                  <div className="mt-4 space-y-2">
+                    {currentVariantStoreRows.map((storePrice, index) => {
+                      const storeObj =
+                        storePrice.storeObj ||
+                        (storePrice.store ||
+                        storePrice.store_name ||
+                        storePrice.storeName
+                          ? getStore?.(
+                              storePrice.store ||
+                                storePrice.store_name ||
+                                storePrice.storeName ||
+                                "",
+                            )
+                          : null);
+                      const storeName =
+                        storePrice.display_store_name ||
+                        storePrice.store ||
+                        storePrice.store_name ||
+                        storePrice.storeName ||
+                        storeObj?.name ||
+                        "Online Store";
+                      const ctaText = storePrice.cta_label || "Buy Now";
+                      const isPreorderCta =
+                        storePrice.is_prebooking === true ||
+                        /^(pre(book|order)|coming\s*soon)$/i.test(
+                          String(ctaText).trim(),
+                        );
+                      const rawLogoSrc =
+                        storePrice.logo ||
+                        (storeName ? getStoreLogo?.(storeName) : null) ||
+                        (storeName ? getLogo?.(storeName) : null) ||
+                        storeObj?.logo ||
+                        "";
+                      const logoSrc = rawLogoSrc
+                        ? toAbsoluteUrl(rawLogoSrc)
+                        : "";
+
+                      return (
+                        <div
+                          key={`${storePrice.id || storeName || index}`}
+                          className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 px-3 py-3"
+                        >
+                          <div className="flex min-w-0 items-center gap-3">
+                            {logoSrc ? (
+                              <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white ring-1 ring-slate-200">
+                                <img
+                                  src={logoSrc}
+                                  alt={storeName}
+                                  className="h-full w-full object-contain"
+                                />
+                              </div>
+                            ) : (
+                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 ring-1 ring-slate-200">
+                                <FaStore className="text-xs text-slate-400" />
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <div className="truncate text-sm font-semibold text-slate-900">
+                                {storeName}
+                              </div>
+                              <div className="mt-0.5 text-sm font-bold text-emerald-600">
+                                {formatPriceLabel(storePrice.price) ||
+                                  "Price not available"}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex shrink-0 items-center gap-3">
+                            {storePrice.url ? (
+                              <a
+                                href={toAbsoluteUrl(storePrice.url)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-2 text-xs font-semibold transition-colors ${
+                                  isPreorderCta
+                                    ? "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                                    : "bg-blue-600 text-white hover:bg-blue-700"
+                                }`}
+                              >
+                                {ctaText || "Buy Now"}
+                                <FaExternalLinkAlt className="text-[10px]" />
+                              </a>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-400">
+                                {ctaText || "Unavailable"}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -4582,7 +4984,7 @@ Price: ${price}
                 {currentVariant && (
                   <>
                     <span className="text-3xl font-bold text-green-600">
-                      ₹ {formatPrice(currentVariant.base_price)}
+                      {currentPriceDisplay || "Price not available"}
                     </span>
                     <span className="text-sm text-gray-500">
                       ({currentVariant.ram} / {currentVariant.storage} )
@@ -4594,7 +4996,7 @@ Price: ${price}
 
             {detailInfoSections.length > 0 ? (
               <div
-                className={`${combineResponsiveClasses(RESPONSIVE_SPACING.specSectionSpacing)} space-y-5 `}
+                className={`${combineResponsiveClasses(RESPONSIVE_SPACING.specSectionSpacing)} space-y-5`}
               >
                 <div className="max-w-2xl ">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-blue-600">
@@ -4608,59 +5010,76 @@ Price: ${price}
                     battery details that matter most.
                   </p>
                 </div>
-                <div
-                  className={`grid items-stretch ${combineResponsiveClasses(RESPONSIVE_SPACING.specCardGap)} md:grid-cols-2`}
-                >
-                  {detailInfoSections.map((section) => {
-                    const iconMeta = highlightIconMap[section.key];
-                    const Icon = iconMeta?.Icon;
-                    const cardTitle =
-                      section.key === "performance"
-                        ? "Processor"
-                        : section.key === "camera"
-                          ? "Rear Camera"
-                          : section.title;
-                    const cardSubtitle = section.description;
+                <div className="rounded-2xl bg-white p-4 sm:p-5">
+                  <div
+                    className={`grid grid-cols-1 items-stretch ${combineResponsiveClasses(RESPONSIVE_SPACING.specCardGap)} md:grid-cols-2`}
+                  >
+                    {detailInfoSections.map((section) => {
+                      const iconMeta = highlightIconMap[section.key];
+                      const Icon = iconMeta?.Icon;
+                      const cardTitle =
+                        section.key === "performance"
+                          ? "Processor"
+                          : section.key === "memory"
+                            ? "RAM/Storage"
+                            : section.key === "camera"
+                              ? "Rear Camera"
+                              : section.key === "design"
+                                ? "Design"
+                                : section.key === "os"
+                                  ? "OS"
+                                  : section.title;
+                      const leadPoint =
+                        section.leadPoint || section.points?.[0] || null;
+                      const bulletPoints = section.leadPoint
+                        ? section.points
+                        : section.points?.slice(1) || [];
 
-                    return (
-                      <div
-                        key={section.key}
-                        className="flex h-full flex-col rounded-md border border-slate-200  p-5  transition-all duration-200  sm:p-6 bg-gradient-to-r from-white to-transparent"
-                      >
-                        Full Specifications
-                        <div className="flex items-start gap-3">
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-50 ring-1 ring-slate-200">
-                            {Icon ? (
-                              <Icon className={`text-base ${iconMeta.color}`} />
-                            ) : null}
-                          </div>
-                          <div className="min-w-0">
-                            <h4 className="text-[1rem] font-semibold leading-snug text-slate-900 sm:text-[1.08rem]">
-                              {cardTitle}
-                            </h4>
-                            {cardSubtitle ? (
-                              <p className="mt-1 line-clamp-2 text-[13px] leading-5 text-slate-500">
-                                {cardSubtitle}
-                              </p>
-                            ) : null}
-                          </div>
-                        </div>
-                        <ul className="mt-4 space-y-2.5">
-                          {section.points.slice(0, 3).map((point, idx) => (
-                            <li
-                              key={idx}
-                              className="flex items-start gap-2.5 text-sm leading-6 text-slate-700"
+                      return (
+                        <div
+                          key={section.key}
+                          className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-4 transition-all duration-200 sm:p-5"
+                        >
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-50`}
                             >
-                              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-gradient-to-r from-blue-500 via-blue-500 to-blue-500" />
-                              <span className="min-w-0">
-                                {formatSpecValue(point, section.title)}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    );
-                  })}
+                              {Icon ? (
+                                <Icon
+                                  className={`text-[11px] ${iconMeta.color}`}
+                                />
+                              ) : null}
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className="text-sm font-medium leading-none text-slate-600">
+                                {cardTitle}
+                              </h4>
+                            </div>
+                          </div>
+                          {leadPoint ? (
+                            <div className="mt-3 text-[1.05rem] font-bold leading-snug text-slate-900 sm:text-[1.12rem]">
+                              {formatSpecValue(leadPoint, section.title)}
+                            </div>
+                          ) : null}
+                          {bulletPoints.length > 0 ? (
+                            <ul className="mt-3 space-y-1.5">
+                              {bulletPoints.slice(0, 3).map((point, idx) => (
+                                <li
+                                  key={idx}
+                                  className="flex items-start gap-2 text-[13px] leading-5 text-slate-600"
+                                >
+                                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-500" />
+                                  <span className="min-w-0">
+                                    {formatSpecValue(point, section.title)}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
                 <div className="flex justify-center pt-1 sm:justify-end">
                   <button
@@ -4696,9 +5115,7 @@ Price: ${price}
                 compareDisabled={compareDisabled}
                 fallbackCompetitors={popularComparisonTargets}
                 currentBrand={mobileData?.brand || ""}
-                currentPrice={
-                  currentVariant?.base_price ?? mobileData?.price ?? null
-                }
+                currentPrice={resolvedCurrentNumericPrice}
                 maxCards={competitorLimit}
                 className="w-full"
               />
@@ -4710,17 +5127,40 @@ Price: ${price}
         </div>
       </div>
 
-      <div className="px-0 py-0 sm:p-3">{renderTabContent()}</div>
-
-      <div className="w-full">
-        <div className="mx-auto max-w-7xl px-0 py-0 sm:px-6 sm:py-8 lg:px-8">
-          <ProductDiscoverySections
-            productId={currentProductId}
-            currentBrand={mobileData?.brand || ""}
-            className="w-full"
-          />
+      {activeTab === "specifications" ? (
+        <div className="w-full">
+          <div className="mx-auto max-w-7xl px-0 py-0 sm:px-6 sm:py-8 lg:px-8">
+            <div className="min-w-0">{renderTabContent()}</div>
+            <div className="mt-6">
+              <ProductDiscoverySections
+                productId={currentProductId}
+                currentBrand={mobileData?.brand || ""}
+                className="w-full"
+                layout="latestPhones"
+              />
+            </div>
+          </div>
         </div>
-      </div>
+      ) : (
+        <>
+          <div className="w-full">
+            <div className="mx-auto max-w-7xl px-0 py-0 sm:px-6 sm:py-8 lg:px-8">
+              {renderTabContent()}
+            </div>
+          </div>
+
+          <div className="w-full">
+            <div className="mx-auto max-w-7xl px-0 py-0 sm:px-6 sm:py-8 lg:px-8">
+              <ProductDiscoverySections
+                productId={currentProductId}
+                currentBrand={mobileData?.brand || ""}
+                className="w-full"
+                layout="latestPhones"
+              />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };

@@ -513,54 +513,54 @@ const FeaturedPhoneCard = ({ phone, index, isLoaded, onClick }) => {
       type="button"
       onClick={onClick}
       aria-label={`Open ${phone.name}`}
-      className={`group flex w-full shrink-0 snap-start items-center gap-3 rounded-2xl border border-white/15 bg-white/10 p-3 text-left text-white/95 shadow-[0_10px_25px_rgba(0,0,0,0.12)] backdrop-blur-md transition-all duration-300 hover:border-white/30 hover:bg-white/12 ${
+      className={`group flex w-full shrink-0 snap-start flex-col gap-4 rounded-3xl border border-white/30 bg-gradient-to-br from-white/15 to-white/8 backdrop-blur-2xl p-5 text-left text-white/95 shadow-2xl transition-all duration-300 hover:border-white/50 hover:from-white/20 hover:to-white/12 hover:shadow-3xl sm:flex-row sm:items-center sm:gap-5 sm:p-6 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
       style={{ transitionDelay: `${index * 60}ms` }}
     >
-      <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/15 bg-white/10 ring-1 ring-white/15 sm:h-24 sm:w-24">
+      <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/30 bg-gradient-to-br from-white/10 to-white/5 ring-1 ring-white/30 backdrop-blur-md sm:h-24 sm:w-24">
         {phone.image && !imageFailed ? (
           <img
             src={phone.image}
             alt={phone.name}
-            className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-105"
+            className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-110 sm:p-2"
             loading="lazy"
             onError={() => setImageFailed(true)}
           />
         ) : (
-          <FaMobileAlt className="text-2xl text-white/40" />
+          <FaMobileAlt className="text-4xl text-white/40 sm:text-2xl" />
         )}
       </div>
 
       <div className="min-w-0 flex-1">
         {phone.brand ? (
-          <p className="truncate text-[10px] font-bold uppercase tracking-[0.24em] text-cyan-100">
+          <p className="truncate text-[11px] font-bold uppercase tracking-[0.28em] text-cyan-200">
             {phone.brand}
           </p>
         ) : null}
 
-        <h6 className="mt-1 line-clamp-2 text-base font-semibold leading-snug text-white transition-colors duration-200 group-hover:text-cyan-100">
+        <h6 className="mt-1 line-clamp-2 text-lg font-bold leading-snug text-white transition-colors duration-200 group-hover:text-cyan-50 sm:text-base">
           {phone.name}
         </h6>
 
-        <p className="mt-2 line-clamp-2 text-xs leading-snug text-white/70">
+        <p className="mt-2 line-clamp-2 text-xs leading-snug text-white/70 sm:text-xs">
           {phone.note}
         </p>
+      </div>
 
-        <div className="mt-3 flex items-end justify-between gap-3 border-t border-white/10 pt-2">
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/45">
-              {priceLabel ? "price" : "spec score"}
-            </p>
-            <p className="mt-1 truncate text-sm font-black text-white sm:text-base">
-              {priceLabel || scoreLabel}
-            </p>
-          </div>
-
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-transform duration-300 group-hover:translate-x-1">
-            <FaArrowRight className="h-3.5 w-3.5" />
-          </span>
+      <div className="flex w-full items-center justify-between gap-3 border-t border-white/15 pt-3 sm:border-0 sm:border-l sm:border-l-white/15 sm:pl-3 sm:pt-0">
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/60">
+            {priceLabel ? "Price" : "Score"}
+          </p>
+          <p className="mt-1 truncate text-base font-black text-white sm:text-sm">
+            {priceLabel || scoreLabel}
+          </p>
         </div>
+
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-white/20 to-white/10 text-white/90 transition-all duration-300 group-hover:from-white/30 group-hover:to-white/15 group-hover:translate-x-1 sm:h-9 sm:w-9">
+          <FaArrowRight className="h-3.5 w-3.5" />
+        </span>
       </div>
     </button>
   );
@@ -569,25 +569,25 @@ const FeaturedPhoneCard = ({ phone, index, isLoaded, onClick }) => {
 const FeaturedPhoneSkeleton = ({ index, isLoaded }) => {
   return (
     <div
-      className={`flex w-full shrink-0 snap-start items-center gap-3 rounded-2xl border border-white/15 bg-white/10 p-3 text-white/95 shadow-[0_10px_25px_rgba(0,0,0,0.12)] backdrop-blur-md ${
+      className={`flex w-full shrink-0 snap-start flex-col gap-4 rounded-3xl border border-white/30 bg-gradient-to-br from-white/15 to-white/8 p-5 text-white/95 backdrop-blur-2xl transition-all duration-300 sm:flex-row sm:items-center sm:gap-5 sm:p-6 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       } animate-pulse`}
       style={{ transitionDelay: `${index * 60}ms` }}
     >
-      <span className="flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white/10 ring-1 ring-white/15 sm:h-24 sm:w-24">
-        <span className="h-8 w-8 rounded bg-white/20" />
+      <span className="flex h-28 w-28 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/12 ring-1 ring-white/30 sm:h-24 sm:w-24">
+        <span className="h-12 w-12 rounded bg-white/20 sm:h-10 sm:w-10" />
       </span>
 
-      <span className="min-w-0 flex-1 space-y-2">
-        <span className="block h-2.5 w-16 rounded bg-white/20" />
-        <span className="block h-3 w-4/5 rounded bg-white/20" />
-        <span className="block h-2.5 w-full rounded bg-white/10" />
-        <span className="block h-2.5 w-3/4 rounded bg-white/10" />
-        <span className="mt-3 block h-px w-full bg-white/10" />
+      <span className="min-w-0 flex-1 space-y-3">
+        <span className="block h-2 w-16 rounded bg-white/20" />
+        <span className="block h-3.5 w-4/5 rounded bg-white/20" />
+        <span className="block h-2 w-full rounded bg-white/10" />
+        <span className="block h-2 w-3/4 rounded bg-white/10" />
+        <span className="mt-4 block h-px w-full bg-white/15" />
         <span className="block h-2.5 w-24 rounded bg-white/20" />
       </span>
 
-      <span className="h-9 w-9 rounded-full bg-white/20" />
+      <span className="h-10 w-10 rounded-full bg-white/15 sm:h-9 sm:w-9" />
     </div>
   );
 };
@@ -746,14 +746,58 @@ const FeaturedProduct = () => {
 
   return (
     <section
-      className={`relative isolate overflow-hidden bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950 transition-all duration-700 ${
+      className={`relative isolate overflow-hidden bg-gradient-to-br from-slate-950 via-blue-900 to-indigo-950 transition-all duration-700 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
-      <div className="absolute inset-0 opacity-35 [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:72px_72px]" />
-      <div className="absolute -left-20 top-0 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
-      <div className="absolute right-0 top-20 h-80 w-80 rounded-full bg-cyan-300/10 blur-3xl" />
-      <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/10 to-transparent" />
+      <style>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-20px); }
+        }
+        @keyframes float-slow {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-30px); }
+        }
+        .animate-float {
+          animation: float 3s ease-in-out infinite;
+        }
+        .animate-float-slow {
+          animation: float-slow 4s ease-in-out infinite;
+        }
+      `}</style>
+
+      {/* Animated gradient orbs */}
+      <div className="absolute inset-0 opacity-50 [background-image:linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:72px_72px]" />
+      <div className="absolute -top-40 -left-32 h-96 w-96 rounded-full bg-gradient-to-br from-cyan-500/30 to-blue-500/20 blur-3xl animate-pulse" />
+      <div
+        className="absolute -bottom-20 -right-20 h-80 w-80 rounded-full bg-gradient-to-tl from-purple-600/25 to-pink-500/15 blur-3xl animate-pulse"
+        style={{ animationDelay: "1s" }}
+      />
+      <div
+        className="absolute top-1/2 left-1/3 h-72 w-72 rounded-full bg-gradient-to-r from-indigo-600/20 to-transparent blur-3xl animate-pulse"
+        style={{ animationDelay: "2s" }}
+      />
+
+      {/* Animated accent circles */}
+      <div
+        className="absolute top-20 right-1/4 h-48 w-48 rounded-full border border-cyan-400/20 blur-sm animate-pulse"
+        style={{ animationDelay: "1.5s" }}
+      />
+      <div
+        className="absolute bottom-1/3 left-1/4 h-64 w-64 rounded-full border border-purple-400/15 blur-sm animate-pulse"
+        style={{ animationDelay: "0.5s" }}
+      />
+
+      {/* Floating dots */}
+      <div className="absolute top-1/4 left-10 h-3 w-3 rounded-full bg-cyan-400/60 blur-sm animate-float" />
+      <div
+        className="absolute top-1/3 right-1/3 h-2 w-2 rounded-full bg-blue-400/50 blur-sm animate-float"
+        style={{ animationDelay: "0.5s" }}
+      />
+      <div className="absolute bottom-1/4 right-1/4 h-3 w-3 rounded-full bg-purple-400/50 blur-sm animate-float-slow" />
+
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
       <div className="relative mx-auto max-w-7xl px-3 sm:px-4 pb-12 sm:pb-16 md:pb-20 lg:pb-24 pt-8 sm:pt-12 md:pt-16 lg:pt-24">
         <div className="mx-auto max-w-5xl text-center">
@@ -811,8 +855,8 @@ const FeaturedProduct = () => {
         </div>
 
         <div className="no-scrollbar mt-6 flex w-full items-center justify-start gap-2 overflow-x-auto px-1 pb-2 snap-x snap-mandatory sm:mt-10 sm:justify-center sm:px-0">
-          <span className="inline-flex items-center gap-2 whitespace-nowrap text-xs font-bold uppercase tracking-[0.3em] text-white/80">
-            <FaChartLine className="h-3.5 w-3.5 text-cyan-200" />
+          <span className="inline-flex items-center gap-2 whitespace-nowrap text-xs font-bold uppercase tracking-[0.3em] text-white/90">
+            <FaChartLine className="h-3.5 w-3.5 text-cyan-300" />
             Trending
           </span>
 
@@ -827,15 +871,15 @@ const FeaturedProduct = () => {
 
         <div className="mt-10 sm:mt-16">
           <div className="flex items-center gap-2 sm:gap-4">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/35 to-transparent" />
-            <span className="inline-flex items-center gap-2 whitespace-nowrap text-xs font-bold uppercase tracking-[0.2em] text-white/80 sm:text-sm sm:tracking-[0.3em]">
-              <FaFire className="h-3.5 w-3.5 text-cyan-200" />
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+            <span className="inline-flex items-center gap-2 whitespace-nowrap text-xs font-bold uppercase tracking-[0.2em] text-white/90 sm:text-sm sm:tracking-[0.3em]">
+              <FaFire className="h-3.5 w-3.5 text-cyan-300" />
               Featured Picks on Hooks
             </span>
-            <span className="hidden rounded-full border border-white/15 bg-white/8 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-100 backdrop-blur-md sm:inline-flex">
+            <span className="hidden rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-200 backdrop-blur-md sm:inline-flex">
               Live feed
             </span>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/35 to-transparent" />
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
           </div>
 
           <div className="no-scrollbar mt-10 grid grid-flow-col auto-cols-[88%] gap-3 overflow-x-auto pb-2 snap-x snap-mandatory sm:grid-flow-row sm:auto-cols-auto sm:overflow-visible sm:pb-0 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
@@ -861,7 +905,7 @@ const FeaturedProduct = () => {
           </div>
 
           {!loadingFeatured && displayPhones.length === 0 ? (
-            <div className="mt-6 rounded-lg border border-white/15 bg-white/8 px-4 py-5 text-center text-sm text-white/75 backdrop-blur-md">
+            <div className="mt-6 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md px-4 py-5 text-center text-sm text-white/80">
               {featuredError ||
                 "Live featured picks are unavailable right now."}
             </div>

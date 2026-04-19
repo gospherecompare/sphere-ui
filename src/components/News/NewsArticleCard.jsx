@@ -12,7 +12,6 @@ const NewsArticleCard = ({
 
   const {
     title = "Untitled Article",
-    summary = "Read the full story for insights.",
     image = "",
     author = "Hooks Editorial",
     publishedAt = "",
@@ -50,10 +49,6 @@ const NewsArticleCard = ({
           >
             {title}
           </h2>
-
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-200/90">
-            {summary}
-          </p>
 
           <div className="mt-6 flex items-center justify-between">
             <div className="flex items-center gap-4 text-xs text-slate-300">
@@ -114,15 +109,6 @@ const NewsArticleCard = ({
         >
           {title}
         </h3>
-
-        {/* Summary */}
-        <p
-          className={`mt-2 text-slate-600 line-clamp-2 ${
-            compact ? "text-xs" : "text-sm"
-          }`}
-        >
-          {summary}
-        </p>
 
         {/* Meta Info */}
         <div

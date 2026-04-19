@@ -2076,7 +2076,7 @@ const Header = () => {
                           setIsSearchOpen(false);
                         }
                       }}
-                      className="w-full px-4 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base bg-gradient-to-r from-blue-50/80 via-white to-cyan-50/60 border border-blue-100 rounded-full shadow-sm focus:outline-none focus:border-[#345ce3] focus:ring-2 focus:ring-[#345ce3]/10 transition-all placeholder-slate-400 font-medium"
+                      className="w-full px-4 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base bg-gradient-to-r from-blue-50/80 via-white to-cyan-50/60 border border-blue-100 rounded-full focus:outline-none focus:border-[#345ce3] focus:ring-2 focus:ring-[#345ce3]/10 transition-all placeholder-slate-400 font-medium"
                     />
 
                     {/* Suggestions Dropdown - Flipkart Style with Images & Highlighting */}
@@ -2274,23 +2274,23 @@ const Header = () => {
       {/* MOBILE HEADER (≤ 768px) */}
       <div
         ref={mobileHeaderRef}
-        className="md:hidden border-b bg-white border-gray-200 z-40"
+        className="md:hidden border-b bg-gradient-to-b from-white to-blue-50/30 border-slate-100/60 z-40 shadow-[0_1px_3px_rgba(15,23,42,0.08)]"
       >
         {/* Mobile Top Row: Menu | Logo | Actions */}
         <div className="flex items-center justify-between gap-3 px-4 py-3">
           <div className="flex min-w-0 items-center gap-2">
             <button
-              className="inline-flex h-10 w-10 items-center justify-center  text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
+              className="inline-flex h-10 w-10 items-center justify-center  text-slate-600 transition-all hover:bg-slate-100/60 hover:text-slate-900 rounded-lg"
               onClick={() => setIsMenuOpen(true)}
               aria-label="Open menu"
             >
               <FaBars className="h-5 w-5" />
             </button>
 
-          <Link to="/" className="flex min-w-0 items-center">
-            <BrandIdentity variant="mobile" />
-          </Link>
-        </div>
+            <Link to="/" className="flex min-w-0 items-center">
+              <BrandIdentity variant="mobile" />
+            </Link>
+          </div>
 
           <div className="flex items-center gap-2">
             <button
@@ -2300,7 +2300,7 @@ const Header = () => {
                 setSelectedSuggestionIndex(-1);
                 setIsSearchOpen(true);
               }}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200/80 text-slate-600 transition-all hover:bg-slate-100/60 hover:text-slate-900 hover:border-slate-300"
               aria-label="Open search"
             >
               <FaSearch className="h-4 w-4" />
@@ -2310,7 +2310,7 @@ const Header = () => {
       </div>
 
       {/* DESKTOP HEADER (> 768px) - Clean Minimal Design like Beebom */}
-      <div className="hidden md:block bg-white sticky top-0 z-40 border-b border-gray-200">
+      <div className="hidden md:block bg-gradient-to-br from-white via-white to-blue-50/30 sticky top-0 z-40 border-b border-slate-100/60">
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3 lg:py-4">
           {/* Header Row: Logo | Search | Login */}
           <div className="flex items-center justify-between gap-3 sm:gap-4 lg:gap-6">
@@ -2343,12 +2343,12 @@ const Header = () => {
                     setShowSearchSuggestions(false);
                   }
                 }}
-                className="w-full rounded-full border border-blue-100 bg-gradient-to-r from-blue-50/80 via-white to-cyan-50/60 py-2 pl-9 pr-3 text-sm placeholder-slate-400  transition-all focus:outline-none focus:border-[#345ce3] focus:ring-2 focus:ring-[#345ce3]/10 sm:py-2.5 sm:text-base"
+                className="w-full rounded-lg border border-blue-100/70 bg-gradient-to-r from-blue-50/60 via-white to-cyan-50/40 py-2 pl-9 pr-3 text-sm placeholder-slate-400  transition-all focus:outline-none focus:border-blue-200 focus:ring-2 focus:ring-blue-500/15 sm:py-2.5 sm:text-base"
               />
 
               {/* Desktop Suggestions Dropdown */}
               {showSearchSuggestions && searchQuery.trim() && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-100/80 rounded-xl shadow-[0_10px_40px_rgba(15,23,42,0.12)] z-50 max-h-96 overflow-y-auto backdrop-blur-sm">
                   {isSearching ? (
                     <div className="p-3 space-y-2">
                       {[...Array(3)].map((_, i) => (
@@ -2375,7 +2375,7 @@ const Header = () => {
                             handleSuggestionClick(sugg);
                           }}
                           onMouseEnter={() => setSelectedSuggestionIndex(index)}
-                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-purple-50 text-left text-sm sm:text-base border-b border-gray-100 last:border-b-0 transition-colors"
+                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50/60 text-left text-sm sm:text-base border-b border-slate-100/50 last:border-b-0 transition-all"
                         >
                           {sugg.image_url && (
                             <img
@@ -2399,7 +2399,7 @@ const Header = () => {
               <button
                 type="button"
                 onClick={() => setShowAuthDropdown((prev) => !prev)}
-                className="auth-button inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-200 hover:bg-slate-50 hover:text-slate-900"
+                className="auth-button inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-gradient-to-br from-white to-slate-50/60 px-4 py-2 text-sm font-semibold text-slate-700 transition-all duration-200 hover:border-blue-200 hover:bg-slate-50 hover:text-slate-900 shadow-[0_1px_3px_rgba(15,23,42,0.08)]"
                 aria-haspopup="menu"
                 aria-expanded={showAuthDropdown}
               >
@@ -2417,7 +2417,7 @@ const Header = () => {
           </div>
         </div>
         {/* Navigation Links */}
-        <div className="w-full bg-blue-50">
+        <div className="w-full bg-gradient-to-r from-white via-blue-50/20 to-white border-t border-slate-100/40">
           <div className="mx-auto max-w-7xl px-6">
             <div className="flex items-center gap-2 py-1 overflow-visible">
               {directLinks.map((link) =>
@@ -2745,12 +2745,12 @@ const Header = () => {
             />
 
             <div
-              className={`fixed inset-y-0 left-0 z-50 w-[296px] max-w-[84vw] transform overflow-hidden rounded-none border-r border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] shadow-[24px_0_60px_rgba(15,23,42,0.18)] transition-transform duration-300 lg:hidden ${
+              className={`fixed inset-y-0 left-0 z-50 w-[296px] max-w-[84vw] transform overflow-hidden rounded-none border-r border-slate-100/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] shadow-[24px_0_60px_rgba(15,23,42,0.18)] transition-transform duration-300 lg:hidden ${
                 isMenuOpen ? "translate-x-0" : "-translate-x-full"
               }`}
             >
               <div className="flex h-full flex-col">
-                <div className="flex items-center justify-between border-b border-slate-200 bg-[linear-gradient(135deg,#ffffff_0%,#f3f8ff_100%)] px-4 py-4">
+                <div className="flex items-center justify-between border-b border-slate-100/80 bg-[linear-gradient(135deg,#ffffff_0%,#f3f8ff_100%)] px-4 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.05)]">
                   <Link
                     to="/"
                     className="flex items-center min-w-0"
@@ -2760,7 +2760,7 @@ const Header = () => {
                   </Link>
                   <button
                     type="button"
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition-colors duration-200 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200/80 bg-white text-slate-700 transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
                     onClick={() => setIsMenuOpen(false)}
                     aria-label="Close menu"
                   >
@@ -2918,7 +2918,7 @@ const Header = () => {
 
       <header
         ref={headerRef}
-        className="sticky top-0 left-0 right-0 z-40 bg-white"
+        className="sticky top-0 left-0 right-0 z-40 bg-gradient-to-b from-white via-white to-blue-50/40 border-b border-slate-100/60 shadow-[0_1px_3px_rgba(15,23,42,0.08)]"
       >
         <MainHeader />
         <CategoryNavBar />

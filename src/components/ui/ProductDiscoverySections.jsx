@@ -228,6 +228,9 @@ const renderSectionTitle = (title = "", accentClass = "text-blue-600") => {
 
 const renderSectionSubtitle = (title = "", itemNounLower = "devices") => {
   const value = normalizeText(title).toLowerCase();
+  if (value === "latest phones") {
+    return "Freshly launched phones you can compare right now.";
+  }
   if (value === "smart popular links") {
     return "Quick shortcuts users explore most on Hooks.";
   }
@@ -242,6 +245,17 @@ const renderSectionSubtitle = (title = "", itemNounLower = "devices") => {
 
 const getSectionMeta = (title = "") => {
   const value = normalizeText(title).toLowerCase();
+  if (value === "latest phones") {
+    return {
+      icon: FaFire,
+      badge: "Fresh Picks",
+      iconTone: "text-sky-600",
+      iconBg: "from-sky-50 to-blue-50",
+      accentClass: "text-sky-600",
+      badgeClass:
+        "border-sky-100 bg-sky-50 text-sky-700 group-hover:border-sky-200 group-hover:bg-sky-100 group-hover:text-sky-800",
+    };
+  }
   if (value === "smart popular links") {
     return {
       icon: FaBolt,
@@ -292,15 +306,29 @@ const LinkListBlock = ({
   withVisual = false,
   entityType = "smartphones",
   itemNounLower = "device",
+  surface = "card",
 }) => {
   if (!Array.isArray(items) || items.length === 0) return null;
   const sectionMeta = getSectionMeta(title);
   const SectionIcon = sectionMeta.icon;
+  const isPlainSurface = surface === "plain";
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+    <div
+      className={
+        isPlainSurface
+          ? "overflow-hidden rounded-2xl"
+          : "overflow-hidden rounded-lg border border-slate-200 bg-white"
+      }
+    >
       {title ? (
-        <div className=" bg-slate-50/60 px-4 py-3 sm:px-5 sm:py-4">
+        <div
+          className={
+            isPlainSurface
+              ? "px-4 py-3 sm:px-5 sm:py-4"
+              : "bg-slate-50/60 px-4 py-3 sm:px-5 sm:py-4"
+          }
+        >
           <div className="flex items-start gap-3">
             <div
               className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl  ring-1 ring-slate-200/80`}
@@ -326,7 +354,13 @@ const LinkListBlock = ({
         </div>
       ) : null}
 
-      <div className="bg-slate-50 border-t border-slate-100 p-3 sm:p-4">
+      <div
+        className={
+          isPlainSurface
+            ? "p-0"
+            : "border-t border-slate-100 bg-slate-50 p-3 sm:p-4"
+        }
+      >
         <div className="space-y-2">
           {items.map((item, index) => {
             const subtitle = normalizeText(item?.subtitle);
@@ -338,7 +372,11 @@ const LinkListBlock = ({
                 key={`${item.path || item.label || "item"}-${index}`}
                 to={normalizeDiscoveryPath(item.path || "", entityType)}
                 aria-label={item.label || "Explore"}
-                className="group flex items-center gap-3  px-3 py-3 text-sm text-slate-700 no-underline transition-all duration-200 ease-out hover:-translate-y-px hover:border-blue-200 hover:bg-white hover:no-underline focus-visible:border-blue-200 focus-visible:bg-white sm:py-3.5"
+                className={
+                  isPlainSurface
+                    ? "group flex items-center gap-3 px-3 py-3 text-sm text-slate-700 no-underline transition-all duration-200 ease-out hover:-translate-y-px hover:bg-white hover:no-underline focus-visible:bg-white sm:py-3.5"
+                    : "group flex items-center gap-3 px-3 py-3 text-sm text-slate-700 no-underline transition-all duration-200 ease-out hover:-translate-y-px hover:border-blue-200 hover:bg-white hover:no-underline focus-visible:border-blue-200 focus-visible:bg-white sm:py-3.5"
+                }
               >
                 {withVisual ? null : (
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600 transition-all duration-200 group-hover:bg-blue-100">
@@ -412,14 +450,28 @@ const TopBrandsBlock = ({
   titleText = "Brand",
   subtitleText = "Explore products by key features",
   trimMobilesSuffix = true,
+  surface = "card",
 }) => {
   if (!Array.isArray(items) || items.length === 0) return null;
   const sectionMeta = getSectionMeta("brand");
   const SectionIcon = sectionMeta.icon;
+  const isPlainSurface = surface === "plain";
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200">
-      <div className="flex items-start justify-between gap-3 border-b border-slate-200/80 bg-slate-50/60 px-4 py-3.5 sm:px-5 sm:py-4">
+    <div
+      className={
+        isPlainSurface
+          ? "overflow-hidden rounded-2xl"
+          : "overflow-hidden rounded-lg border border-slate-200"
+      }
+    >
+      <div
+        className={
+          isPlainSurface
+            ? "flex items-start justify-between gap-3 px-4 py-3.5 sm:px-5 sm:py-4"
+            : "flex items-start justify-between gap-3 border-b border-slate-200/80 bg-slate-50/60 px-4 py-3.5 sm:px-5 sm:py-4"
+        }
+      >
         <div className="flex items-start gap-3">
           <div
             className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${sectionMeta.iconBg} ring-1 ring-slate-200/80`}
@@ -445,9 +497,7 @@ const TopBrandsBlock = ({
         </Link>
       </div>
 
-      <div className="relative">
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-white to-transparent" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-white to-transparent" />
+      <div>
         <div className="no-scrollbar overflow-x-auto px-4 py-4 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-5">
           <div className="flex min-w-max items-start gap-4 pr-2">
             {items.map((item, index) => {
@@ -483,6 +533,7 @@ const ProductDiscoverySections = ({
   productId,
   currentBrand = "",
   entityType = "smartphones",
+  layout = "full",
   className = "",
 }) => {
   const [loading, setLoading] = useState(false);
@@ -539,6 +590,9 @@ const ProductDiscoverySections = ({
   }, [productId, entityType]);
 
   const entityConfig = useMemo(() => getEntityConfig(entityType), [entityType]);
+  const isLatestPhonesLayout =
+    layout === "latestPhones" && entityConfig.type === "smartphones";
+  const HeaderIcon = isLatestPhonesLayout ? FaFire : FaStore;
 
   const { latestReleases, budgetSegments, brandHub, smartDiscoveries } =
     useMemo(() => {
@@ -553,7 +607,7 @@ const ProductDiscoverySections = ({
         brandHub: Array.isArray(sections.brand_hub) ? sections.brand_hub : [],
         smartDiscoveries: Array.isArray(sections.smart_discoveries)
           ? sections.smart_discoveries
-          : [],
+        : [],
       };
     }, [payload]);
 
@@ -676,16 +730,23 @@ const ProductDiscoverySections = ({
     [brandHub, entityConfig],
   );
 
-  const hasContent =
-    popularLinks.length > 0 ||
-    byPriceLinks.length > 0 ||
-    latestLaunchLinks.length > 0 ||
-    topBrandLinks.length > 0;
+  const hasContent = isLatestPhonesLayout
+    ? byPriceLinks.length > 0 || topBrandLinks.length > 0
+    : popularLinks.length > 0 ||
+      byPriceLinks.length > 0 ||
+      latestLaunchLinks.length > 0 ||
+      topBrandLinks.length > 0;
 
   if (loading && !hasContent) {
     return (
       <section className={`w-full overflow-hidden bg-transparent ${className}`}>
-        <div className="mx-auto max-w-7xl rounded-[28px] border border-slate-200 bg-white px-4 py-4 text-sm text-slate-600 sm:px-5 sm:py-5">
+        <div
+          className={
+            isLatestPhonesLayout
+              ? "mx-auto max-w-7xl px-4 py-4 text-sm text-slate-600 sm:px-5 sm:py-5"
+              : "mx-auto max-w-7xl rounded-[28px] border border-slate-200 bg-white px-4 py-4 text-sm text-slate-600 sm:px-5 sm:py-5"
+          }
+        >
           Loading discovery sections...
         </div>
       </section>
@@ -697,25 +758,27 @@ const ProductDiscoverySections = ({
   return (
     <section className={`w-full overflow-hidden  ${className}`}>
       <div className="mx-auto max-w-7xl rounded-[28px] ">
-        <div className="flex items-start justify-between gap-3 border-b border-slate-200/80 px-4 py-4 sm:px-5 sm:py-5">
-          <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-cyan-50 ring-1 ring-slate-200/80">
-              <FaStore className="text-base text-blue-600" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-blue-600">
-                Discovery Hub
-              </p>
-              <h3 className="mt-2 text-base font-semibold tracking-tight text-slate-900 sm:text-lg">
-                Popular Links
-              </h3>
-              <p className="mt-1 text-[13px] leading-relaxed text-slate-500 sm:text-sm">
-                Continue exploring with curated shortcuts, fresh launches, and
-                brand-led discovery paths.
-              </p>
+        {!isLatestPhonesLayout ? (
+          <div className="flex items-start justify-between gap-3 border-b border-slate-200/80 px-4 py-4 sm:px-5 sm:py-5">
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-cyan-50 ring-1 ring-slate-200/80">
+                <HeaderIcon className="text-base text-blue-600" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-blue-600">
+                  Discovery Hub
+                </p>
+                <h3 className="mt-2 text-base font-semibold tracking-tight text-slate-900 sm:text-lg">
+                  Popular Links
+                </h3>
+                <p className="mt-1 text-[13px] leading-relaxed text-slate-500 sm:text-sm">
+                  Continue exploring with curated shortcuts, fresh launches, and
+                  brand-led discovery paths.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        ) : null}
 
         {error ? (
           <div className="mx-4 mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 sm:mx-5">
@@ -723,24 +786,14 @@ const ProductDiscoverySections = ({
           </div>
         ) : null}
 
-        <div className="grid grid-cols-1 gap-3 p-3 sm:gap-4 sm:p-5 md:grid-cols-2 md:gap-4">
-          <div className="space-y-3 sm:space-y-4 md:pr-1">
-            <LinkListBlock title="Smart Popular Links" items={popularLinks} />
-            <LinkListBlock
-              title="Latest Launches"
-              items={latestLaunchLinks}
-              withVisual
-              entityType={entityConfig.type}
-              itemNounLower={entityConfig.itemNounLower}
-            />
-          </div>
-
-          <div className="space-y-3 sm:space-y-4">
+        {isLatestPhonesLayout ? (
+          <div className="space-y-3 p-3 sm:space-y-4 sm:p-5">
             <LinkListBlock
               title="By Price"
               items={byPriceLinks}
               entityType={entityConfig.type}
               itemNounLower={entityConfig.itemNounLower}
+              surface="plain"
             />
             <TopBrandsBlock
               items={topBrandLinks}
@@ -749,9 +802,40 @@ const ProductDiscoverySections = ({
               titleText="Brand"
               subtitleText={`Explore ${entityConfig.pluralTitle} by key features`}
               trimMobilesSuffix={entityConfig.type === "smartphones"}
+              surface="plain"
             />
           </div>
-        </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 p-3 sm:gap-4 sm:p-5 md:grid-cols-2 md:gap-4">
+            <div className="space-y-3 sm:space-y-4 md:pr-1">
+              <LinkListBlock title="Smart Popular Links" items={popularLinks} />
+              <LinkListBlock
+                title="Latest Launches"
+                items={latestLaunchLinks}
+                withVisual
+                entityType={entityConfig.type}
+                itemNounLower={entityConfig.itemNounLower}
+              />
+            </div>
+
+            <div className="space-y-3 sm:space-y-4">
+              <LinkListBlock
+                title="By Price"
+                items={byPriceLinks}
+                entityType={entityConfig.type}
+                itemNounLower={entityConfig.itemNounLower}
+              />
+              <TopBrandsBlock
+                items={topBrandLinks}
+                viewAllPath={entityConfig.basePath}
+                entityType={entityConfig.type}
+                titleText="Brand"
+                subtitleText={`Explore ${entityConfig.pluralTitle} by key features`}
+                trimMobilesSuffix={entityConfig.type === "smartphones"}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );

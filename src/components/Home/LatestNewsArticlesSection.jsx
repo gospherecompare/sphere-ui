@@ -8,7 +8,7 @@ import {
   usePublicNewsFeed,
 } from "../../hooks/usePublicNews";
 
-const NewsStoryMedia = ({ story, variant = "lead" }) => {
+const NewsStoryMedia = ({ story }) => {
   const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
@@ -38,9 +38,6 @@ const NewsStoryMedia = ({ story, variant = "lead" }) => {
             <h3 className="mt-3 text-base font-black leading-tight tracking-tight text-slate-900 sm:text-lg">
               {story?.title}
             </h3>
-            <p className={`mt-3 ${NEWS_BRAND_STYLES.bodySmall}`}>
-              {story?.summary}
-            </p>
           </div>
         </div>
       )}
@@ -118,7 +115,7 @@ const LatestNewsArticlesSection = () => {
             <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
               <div className="grid gap-0 lg:grid-cols-2">
                 <div className="relative overflow-hidden bg-slate-100">
-                  <NewsStoryMedia story={leadStory} variant="lead" />
+                  <NewsStoryMedia story={leadStory} />
                 </div>
 
                 <div className="flex flex-col justify-between p-6 sm:p-7 lg:p-8">
@@ -139,10 +136,6 @@ const LatestNewsArticlesSection = () => {
                     <h3 className="mt-5 text-2xl font-black leading-tight tracking-tight text-slate-950 sm:text-3xl">
                       {leadStory.title}
                     </h3>
-
-                    <p className="mt-4 line-clamp-3 text-base leading-relaxed text-slate-600">
-                      {leadStory.summary}
-                    </p>
                   </div>
 
                   {/* Highlights */}
@@ -177,13 +170,13 @@ const LatestNewsArticlesSection = () => {
 
             {/* Side Articles */}
             <div className="flex flex-col gap-4">
-              {listStories.map((story, index) => (
+              {listStories.map((story) => (
                 <article
                   key={story.slug}
                   className="flex gap-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-4"
                 >
                   <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-slate-100">
-                    <NewsStoryMedia story={story} variant="compact" />
+                    <NewsStoryMedia story={story} />
                   </div>
 
                   <div className="flex min-w-0 flex-1 flex-col justify-between">

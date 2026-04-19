@@ -439,55 +439,53 @@ const SearchDropdown = ({
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         onClick={onToggle}
-        className="group flex min-h-16 w-full flex-col justify-center bg-white px-4 py-3 text-left transition-colors duration-300 hover:bg-slate-50 sm:min-h-20 sm:px-6 sm:py-4"
+        className="group flex min-h-16 w-full flex-col justify-center border-0 bg-blue-900/40 px-4 py-3 text-left transition-all duration-300 hover:bg-blue-900/60 backdrop-blur-sm sm:min-h-20 sm:px-6 sm:py-4"
       >
-        <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 sm:text-[11px]">
+        <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-100/80 sm:text-[11px]">
           {label}
         </span>
         <span className="mt-1.5 flex items-center justify-between gap-3 sm:mt-2 sm:gap-4">
           <span className="flex min-w-0 items-center gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 ring-1 ring-slate-200 transition group-hover:bg-white sm:h-10 sm:w-10">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/30 text-white ring-1 ring-white/50 transition group-hover:bg-white/40 sm:h-10 sm:w-10">
               <Icon className="h-4 w-4" />
             </span>
-            <span className="truncate text-sm font-semibold text-slate-900 sm:text-base">
+            <span className="truncate text-sm font-semibold text-white sm:text-base">
               {value}
             </span>
           </span>
           <FaChevronDown
-            className={`h-4 w-4 shrink-0 text-slate-400 transition ${
-              isOpen
-                ? "rotate-180 text-slate-500"
-                : "group-hover:text-slate-500"
+            className={`h-4 w-4 shrink-0 text-white/70 transition ${
+              isOpen ? "rotate-180 text-white/90" : "group-hover:text-white/90"
             }`}
           />
         </span>
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-full left-0 z-[80] mb-2 w-full overflow-hidden border border-slate-200/80 bg-gradient-to-br from-white via-white to-slate-50 shadow-[0_28px_70px_rgba(15,23,42,0.18)] backdrop-blur lg:bottom-full lg:top-auto lg:mb-2 lg:mt-0">
+        <div className="absolute bottom-full left-0 z-[80] mb-2 w-full overflow-hidden rounded-2xl border border-white/30 bg-white/20 shadow-2xl backdrop-blur-2xl lg:bottom-full lg:top-auto lg:mb-2 lg:mt-0">
           <div className="p-2">
             {selectedOption && (
               <button
                 type="button"
                 onClick={() => onSelect(selectedOption.id)}
-                className="flex w-full flex-col items-start gap-2 border border-blue-100 bg-gradient-to-r from-blue-50 via-white to-cyan-50 px-3 py-3 text-left text-slate-900 shadow-sm transition hover:border-blue-200 hover:shadow-md sm:flex-row sm:items-center sm:justify-between sm:px-4"
+                className="flex w-full flex-col items-start gap-2 rounded-xl border border-white/40 bg-white/20 px-3 py-3 text-left text-white shadow-sm transition hover:border-white/50 hover:bg-white/25 backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between sm:px-4"
               >
                 <span className="flex min-w-0 flex-1 items-center gap-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-blue-600 ring-1 ring-blue-100 sm:h-10 sm:w-10">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/30 text-white ring-1 ring-white/40 sm:h-10 sm:w-10">
                     <SelectedIcon className="h-4 w-4" />
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-sm font-semibold leading-tight">
+                    <span className="block text-sm font-semibold leading-tight text-white">
                       {selectedOption.optionLabel || selectedOption.label}
                     </span>
                     {selectedOption.description && (
-                      <span className="mt-0.5 block text-[11px] text-slate-500 sm:text-xs">
+                      <span className="mt-0.5 block text-[11px] text-white/75 sm:text-xs">
                         {selectedOption.description}
                       </span>
                     )}
                   </span>
                 </span>
-                <span className="self-start whitespace-nowrap bg-blue-600/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-blue-600 sm:ml-3 sm:self-auto sm:px-3 sm:text-[10px]">
+                <span className="self-start whitespace-nowrap bg-white/20 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-white ring-1 ring-white/30 rounded-lg sm:ml-3 sm:self-auto sm:px-3 sm:text-[10px]">
                   Selected
                 </span>
               </button>
@@ -506,9 +504,9 @@ const SearchDropdown = ({
                     key={option.id}
                     type="button"
                     onClick={() => onSelect(option.id)}
-                    className="flex w-full items-center gap-3 border border-transparent px-3 py-2.5 text-left text-slate-700 transition hover:border-slate-200/80 hover:bg-slate-50 hover:shadow-sm sm:px-4 sm:py-3"
+                    className="flex w-full items-center gap-3 border border-transparent rounded-lg px-3 py-2.5 text-left text-white transition hover:border-white/30 hover:bg-white/15 backdrop-blur-sm sm:px-4 sm:py-3"
                   >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 ring-1 ring-slate-200 transition sm:h-10 sm:w-10">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white ring-1 ring-white/30 transition sm:h-10 sm:w-10">
                       <OptionIcon className="h-4 w-4" />
                     </span>
                     <span className="min-w-0 flex-1">
@@ -516,7 +514,7 @@ const SearchDropdown = ({
                         {option.optionLabel || option.label}
                       </span>
                       {option.description && (
-                        <span className="mt-0.5 block text-[11px] text-slate-500 sm:text-xs">
+                        <span className="mt-0.5 block text-[11px] text-white/70 sm:text-xs">
                           {option.description}
                         </span>
                       )}
@@ -737,14 +735,72 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="relative isolate overflow-visible bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950">
-      <div className="absolute inset-0 opacity-40 [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:72px_72px]" />
-      <div className="absolute -left-20 top-0 h-72 w-72 rounded-full bg-[#1e40af]/20 blur-3xl animate-pulse" />
+    <section className="relative isolate overflow-visible bg-gradient-to-br from-slate-950 via-blue-900 to-indigo-950">
+      {/* Animated gradient orbs */}
+      <div className="absolute inset-0 opacity-50 [background-image:linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:72px_72px]" />
+
+      {/* Main orbs */}
+      <div className="absolute -top-40 -left-32 h-96 w-96 rounded-full bg-gradient-to-br from-cyan-500/30 to-blue-500/20 blur-3xl animate-pulse" />
       <div
-        className="absolute right-0 top-20 h-80 w-80 rounded-full bg-[#06b6b4]/20 blur-3xl animate-pulse"
+        className="absolute -bottom-20 -right-20 h-80 w-80 rounded-full bg-gradient-to-tl from-purple-600/25 to-pink-500/15 blur-3xl animate-pulse"
         style={{ animationDelay: "1s" }}
       />
-      <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-white/10 to-transparent" />
+      <div
+        className="absolute top-1/2 left-1/3 h-72 w-72 rounded-full bg-gradient-to-r from-indigo-600/20 to-transparent blur-3xl animate-pulse"
+        style={{ animationDelay: "2s" }}
+      />
+
+      {/* Animated accent circles */}
+      <div
+        className="absolute top-20 right-1/4 h-48 w-48 rounded-full border border-cyan-400/20 blur-sm animate-pulse"
+        style={{ animationDelay: "1.5s" }}
+      />
+      <div
+        className="absolute bottom-1/3 left-1/4 h-64 w-64 rounded-full border border-purple-400/15 blur-sm animate-pulse"
+        style={{ animationDelay: "0.5s" }}
+      />
+      <div
+        className="absolute top-2/3 right-20 h-56 w-56 rounded-full border border-indigo-400/15 blur-sm animate-pulse"
+        style={{ animationDelay: "2.5s" }}
+      />
+
+      {/* Floating dots */}
+      <style>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-20px); }
+        }
+        @keyframes float-slow {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-30px); }
+        }
+        @keyframes rotate-slow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .animate-float {
+          animation: float 3s ease-in-out infinite;
+        }
+        .animate-float-slow {
+          animation: float-slow 4s ease-in-out infinite;
+        }
+        .animate-rotate-slow {
+          animation: rotate-slow 20s linear infinite;
+        }
+      `}</style>
+
+      <div className="absolute top-1/4 left-10 h-3 w-3 rounded-full bg-cyan-400/60 blur-sm animate-float" />
+      <div
+        className="absolute top-1/3 right-1/3 h-2 w-2 rounded-full bg-blue-400/50 blur-sm animate-float"
+        style={{ animationDelay: "0.5s" }}
+      />
+      <div className="absolute bottom-1/4 right-1/4 h-3 w-3 rounded-full bg-purple-400/50 blur-sm animate-float-slow" />
+      <div
+        className="absolute top-3/4 left-1/3 h-2 w-2 rounded-full bg-indigo-400/60 blur-sm animate-float-slow"
+        style={{ animationDelay: "1s" }}
+      />
+
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
       <div className="relative mx-auto max-w-7xl px-4 pb-12 pt-10 sm:px-6 sm:pb-20 sm:pt-16 lg:px-8 lg:pb-24 lg:pt-24">
         <div className="mx-auto max-w-5xl text-center">
@@ -767,9 +823,9 @@ const HeroSection = () => {
             {stats.map((stat, idx) => (
               <div
                 key={idx}
-                className="flex items-center gap-2 border-0 bg-transparent px-0 py-0 text-left sm:gap-3 sm:rounded-2xl sm:border sm:border-white/10 sm:bg-white/5 sm:px-4 sm:py-3 lg:rounded-none lg:border-0 lg:bg-transparent lg:px-0 lg:py-0"
+                className="group flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-left backdrop-blur-xl transition-all duration-300 hover:border-white/30 hover:bg-white/15 sm:gap-3 lg:rounded-2xl"
               >
-                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/20 sm:h-12 sm:w-12">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white/20 ring-1 ring-white/30 transition-colors group-hover:bg-white/25 sm:h-12 sm:w-12">
                   <span className="text-base font-bold text-cyan-200">✓</span>
                 </div>
                 <div className="min-w-0">
@@ -793,9 +849,9 @@ const HeroSection = () => {
         <div ref={heroSearchRef} className="mx-auto mt-10 max-w-5xl sm:mt-14">
           <form
             onSubmit={handleSearch}
-            className="overflow-visible bg-white/10 shadow-2xl  backdrop-blur"
+            className="overflow-hidden rounded-3xl border border-white/30 bg-white/10 shadow-2xl backdrop-blur-2xl transition-all duration-300 hover:border-white/40"
           >
-            <div className="border-b border-slate-100 bg-white px-4 py-3 sm:px-6 sm:py-4">
+            <div className="border-b border-white/20 bg-white px-4 py-3 sm:px-6 sm:py-4">
               <p className="text-sm font-semibold text-slate-900">
                 Quick Search
               </p>
@@ -815,7 +871,7 @@ const HeroSection = () => {
                   )
                 }
                 onSelect={selectAndClose(setSelectedDeviceType)}
-                className="border-b border-slate-100 lg:border-b-0 lg:border-r"
+                className="border-b border-white/20 lg:border-b-0 lg:border-r"
               />
 
               <SearchDropdown
@@ -831,7 +887,7 @@ const HeroSection = () => {
                   )
                 }
                 onSelect={selectAndClose(setSelectedPriceRange)}
-                className="border-b border-slate-100 lg:border-b-0 lg:border-r"
+                className="border-b border-white/20 lg:border-b-0 lg:border-r"
               />
 
               <SearchDropdown
@@ -847,12 +903,12 @@ const HeroSection = () => {
                   )
                 }
                 onSelect={selectAndClose(setSelectedFeature)}
-                className="border-b border-slate-100 lg:border-b-0 lg:border-r"
+                className="border-b border-white/20 lg:border-b-0 lg:border-r"
               />
 
               <button
                 type="submit"
-                className="group relative flex w-full min-h-16 items-center justify-center gap-3 bg-gradient-to-br from-[#1e40af] to-[#3962e7] px-4 py-3 text-white transition-all duration-300  active:scale-95 sm:min-h-20 sm:px-8 sm:py-4 lg:w-auto"
+                className="group relative flex w-full min-h-16 items-center justify-center gap-3 bg-gradient-to-br from-cyan-400 via-blue-400 to-blue-500 px-4 py-3 text-white transition-all duration-300 hover:from-cyan-300 hover:to-blue-400 active:scale-95 shadow-lg backdrop-blur-sm sm:min-h-20 sm:px-8 sm:py-4 lg:w-auto"
               >
                 <span className="flex h-12 w-12 items-center justify-center  transition group-hover:bg-white/25 sm:h-14 sm:w-14">
                   <FaSearch className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -886,7 +942,7 @@ const HeroSection = () => {
                 onClick={() =>
                   navigate(`/smartphones?q=${encodeURIComponent(item)}`)
                 }
-                className="group relative rounded-3xl whitespace-nowrap border border-white/25  px-4 py-2 text-xs font-semibold text-white/95  transition-all duration-300 hover:border-white/40 hover:bg-white/15 hover:shadow-lg sm:px-5 sm:py-2.5 sm:text-sm"
+                className="group relative rounded-full whitespace-nowrap border border-white/40 bg-white/15 px-4 py-2 text-xs font-semibold text-white backdrop-blur-md transition-all duration-300 hover:border-white/60 hover:bg-white/25 hover:shadow-lg sm:px-5 sm:py-2.5 sm:text-sm"
               >
                 <span className="flex items-center gap-2">
                   {idx === 0 && <FaFire className="h-3 w-3 text-yellow-300" />}
@@ -925,14 +981,14 @@ const HeroSection = () => {
                           `/smartphones?q=${encodeURIComponent(phone.name)}`,
                       )
                     }
-                    className="group relative flex snap-start flex-col gap-3 p-4 text-left text-white/95 transition-all duration-300"
+                    className="group relative flex snap-start flex-col gap-3 rounded-3xl backdrop-blur-md p-4 text-left text-white/95 transition-all duration-300 hover:shadow-lg sm:p-5"
                   >
-                    <div className="flex h-50 w-full items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-white/20 via-white/10 to-cyan-300/5 ring-1 ring-white/15">
+                    <div className="flex h-50 w-full items-center justify-center overflow-hidden rounded-2xl border border-white/30 bg-gradient-to-br from-white/10 to-white/5 ring-1 ring-white/30 backdrop-blur-md">
                       {phone.image ? (
                         <img
                           src={phone.image}
                           alt={phone.name}
-                          className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-105"
+                          className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-110 sm:p-4"
                           loading="lazy"
                           onError={(e) => {
                             e.currentTarget.style.display = "none";
@@ -946,27 +1002,27 @@ const HeroSection = () => {
                     </div>
 
                     <div className="flex-1">
-                      <p className="text-sm font-bold leading-snug text-white">
+                      <p className="text-sm font-bold leading-snug text-white sm:text-base">
                         {phone.name}
                       </p>
-                      <p className="mt-1 text-[11px] font-medium text-white/65">
+                      <p className="mt-1 text-[11px] font-medium text-white/65 sm:text-xs">
                         {phone.brandName}
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between gap-2 border-t border-white/10 pt-2">
-                      <span className="text-xs font-medium text-white/70">
+                    <div className="flex items-center justify-between gap-2 border-t border-white/15 pt-3">
+                      <span className="text-xs font-medium text-white/70 sm:text-sm">
                         View Details
                       </span>
-                      <span className="transition-transform group-hover:translate-x-1">
-                        <FaArrowRight className="h-3 w-3 text-white/70" />
+                      <span className="transition-transform duration-300 group-hover:translate-x-1">
+                        <FaArrowRight className="h-3 w-3 text-white/70 sm:h-3.5 sm:w-3.5" />
                       </span>
                     </div>
                   </button>
                 ))}
               </div>
             ) : (
-              <div className="rounded-3xl border border-white/15 bg-white/5 p-6 text-center text-white/80">
+              <div className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md p-6 text-center text-white/80 transition-all duration-300 hover:border-white/30 hover:bg-white/15">
                 {featuredPhonesLoading
                   ? "Loading live devices..."
                   : "No live devices available right now."}

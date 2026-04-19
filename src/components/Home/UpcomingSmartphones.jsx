@@ -156,47 +156,46 @@ const getRowImage = (row) => {
 
 const LatestSmartphoneCard = ({ device, index, isLoaded, onClick }) => {
   const deviceName = device?.name || "Latest smartphone";
-  const showBadge = index % 3 === 0;
 
   return (
     <button
       type="button"
       aria-label={`Open ${deviceName}`}
       onClick={onClick}
-      className={`group relative flex w-full snap-start flex-col gap-2 p-3 text-left text-white/95 transition-all duration-300 sm:p-4 ${
+      className={`group relative flex w-full snap-start flex-col gap-3 rounded-3xl backdrop-blur-md p-5 text-left text-white/95 transition-all duration-300 hover:shadow-lg sm:p-6 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
       style={{ transitionDelay: `${index * 60}ms` }}
     >
-      <div className="flex h-36 items-center justify-center overflow-hidden rounded-lg bg-white/10 ring-1 ring-white/15 sm:h-40">
+      <div className="flex h-40 items-center justify-center overflow-hidden rounded-2xl border border-white/30 bg-gradient-to-br from-white/10 to-white/5 ring-1 ring-white/30 backdrop-blur-md sm:h-44">
         {device.image ? (
           <img
             src={device.image}
             alt={deviceName}
-            className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-110"
+            className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-110 sm:p-4"
             loading="lazy"
             onError={(e) => {
               e.currentTarget.style.display = "none";
             }}
           />
         ) : (
-          <FaMobileAlt className="text-2xl text-white/40" />
+          <FaMobileAlt className="text-3xl text-white/40 sm:text-4xl" />
         )}
       </div>
 
       <div className="flex-1">
-        <p className="line-clamp-2 mb-2 text-sm font-bold leading-snug text-white">
+        <p className="line-clamp-2 text-base font-bold leading-snug text-white sm:text-lg">
           {deviceName}
         </p>
+      </div>
 
-        <div className="flex items-center justify-between gap-2 border-t border-white/10 pt-2">
-          <span className="text-xs font-medium text-white/70">
-            View Details
-          </span>
-          <span className="transition-transform duration-300 group-hover:translate-x-1">
-            <FaArrowRight className="h-3 w-3 text-white/70" />
-          </span>
-        </div>
+      <div className="flex items-center justify-between gap-2 border-t border-white/15 pt-3">
+        <span className="text-xs font-medium text-white/70 sm:text-sm">
+          View Details
+        </span>
+        <span className="transition-transform duration-300 group-hover:translate-x-1">
+          <FaArrowRight className="h-3.5 w-3.5 text-white/70 sm:h-4 sm:w-4" />
+        </span>
       </div>
     </button>
   );
@@ -266,15 +265,58 @@ const LatestSmartphones = () => {
 
   return (
     <section
-      className={`relative isolate overflow-hidden bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950 transition-all duration-700 ${
+      className={`relative isolate overflow-hidden bg-gradient-to-br from-slate-950 via-blue-900 to-indigo-950 transition-all duration-700 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
-      {/* Animated background elements */}
-      <div className="absolute inset-0 opacity-35 [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:72px_72px]" />
-      <div className="absolute -left-20 top-0 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
-      <div className="absolute right-0 top-20 h-80 w-80 rounded-full bg-cyan-300/10 blur-3xl" />
-      <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-white/10 to-transparent" />
+      <style>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-20px); }
+        }
+        @keyframes float-slow {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-30px); }
+        }
+        .animate-float {
+          animation: float 3s ease-in-out infinite;
+        }
+        .animate-float-slow {
+          animation: float-slow 4s ease-in-out infinite;
+        }
+      `}</style>
+
+      {/* Animated gradient orbs */}
+      <div className="absolute inset-0 opacity-50 [background-image:linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:72px_72px]" />
+      <div className="absolute -top-40 -left-32 h-96 w-96 rounded-full bg-gradient-to-br from-cyan-500/30 to-blue-500/20 blur-3xl animate-pulse" />
+      <div
+        className="absolute -bottom-20 -right-20 h-80 w-80 rounded-full bg-gradient-to-tl from-purple-600/25 to-pink-500/15 blur-3xl animate-pulse"
+        style={{ animationDelay: "1s" }}
+      />
+      <div
+        className="absolute top-1/2 left-1/3 h-72 w-72 rounded-full bg-gradient-to-r from-indigo-600/20 to-transparent blur-3xl animate-pulse"
+        style={{ animationDelay: "2s" }}
+      />
+
+      {/* Animated accent circles */}
+      <div
+        className="absolute top-20 right-1/4 h-48 w-48 rounded-full border border-cyan-400/20 blur-sm animate-pulse"
+        style={{ animationDelay: "1.5s" }}
+      />
+      <div
+        className="absolute bottom-1/3 left-1/4 h-64 w-64 rounded-full border border-purple-400/15 blur-sm animate-pulse"
+        style={{ animationDelay: "0.5s" }}
+      />
+
+      {/* Floating dots */}
+      <div className="absolute top-1/4 left-10 h-3 w-3 rounded-full bg-cyan-400/60 blur-sm animate-float" />
+      <div
+        className="absolute top-1/3 right-1/3 h-2 w-2 rounded-full bg-blue-400/50 blur-sm animate-float"
+        style={{ animationDelay: "0.5s" }}
+      />
+      <div className="absolute bottom-1/4 right-1/4 h-3 w-3 rounded-full bg-purple-400/50 blur-sm animate-float-slow" />
+
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
       <div className="relative mx-auto max-w-7xl px-4 pb-14 pt-10 sm:px-6 sm:pb-20 sm:pt-16 lg:px-8 lg:pb-24 lg:pt-24">
         {/* Header Section */}
@@ -312,12 +354,12 @@ const LatestSmartphones = () => {
           {loadingLatest
             ? Array.from({ length: 6 }).map((_, i) => (
                 <div key={`skeleton-${i}`} className="w-full animate-pulse">
-                  <div className="relative flex h-auto flex-col gap-3 overflow-hidden rounded-lg bg-white/10 p-4 ring-1 ring-white/15">
-                    <div className="h-36 w-full rounded-lg bg-white/20 sm:h-40" />
-                    <div className="h-3 bg-white/20 rounded w-4/5" />
-                    <div className="h-3 bg-white/20 rounded w-3/4" />
-                    <div className="border-t border-white/10 pt-2">
-                      <div className="h-2 bg-white/20 rounded w-20" />
+                  <div className="relative flex h-auto flex-col gap-3 overflow-hidden rounded-3xl backdrop-blur-md p-5 sm:p-6">
+                    <div className="h-40 w-full rounded-2xl bg-white/20 sm:h-44" />
+                    <div className="h-4 bg-white/20 rounded w-4/5" />
+                    <div className="h-4 bg-white/20 rounded w-3/4" />
+                    <div className="border-t border-white/15 pt-3">
+                      <div className="h-3 bg-white/20 rounded w-24" />
                     </div>
                   </div>
                 </div>

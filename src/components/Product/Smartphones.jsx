@@ -2163,7 +2163,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         ? `${currentFeatureMeta.name} Smartphones`
         : priceFilter
           ? `${priceFilter.label} Smartphones in India`
-          : "Browse Smartphones in India";
+          : "Popular Mobile Phone";
   const isExpandedHeroDescriptionPath =
     isUpcomingView ||
     isNewFilterPath ||
@@ -2180,18 +2180,18 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         ? featureHeroText
         : priceFilter || currentBrandObj
           ? seoDescription
-          : "Browse smartphones in India across brands, price ranges, launch windows, and performance tiers so you can quickly find a device that matches your budget and daily use. The collection brings updated prices, key specifications, ratings, and variant details together in one place, making it easier to check camera quality, low-light results, portrait shots, video stability, battery life, charging speed, display brightness, refresh rate, chipset performance, RAM, storage, software support, and long-term update value. Whether you are looking for a flagship camera phone, a balanced all-rounder, a battery-focused option, or a gaming-ready device, the page helps you scan what is new, what is popular, and what is worth shortlisting without opening multiple tabs. Use the filters and product cards to narrow results by brand, budget, or feature, then open the phones that stand out most.";
+          : "Browse popular mobile phones in India with updated prices, specs, and launch details. Use the filters to narrow brands, budgets, and features, then quickly shortlist the phones that matter most.";
   const heroSubtitleStyle =
     isExpandedHeroDescriptionPath && !showHeroDescription
       ? {
           display: "-webkit-box",
           WebkitBoxOrient: "vertical",
-          WebkitLineClamp: 3,
+          WebkitLineClamp: 2,
           overflow: "hidden",
         }
       : undefined;
   const heroSubtitleWidthClass = isExpandedHeroDescriptionPath
-    ? "max-w-6xl"
+    ? "max-w-4xl"
     : "max-w-3xl";
   useEffect(() => {
     if (isExpandedHeroDescriptionPath) {
@@ -3654,29 +3654,19 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       {/* Main Content */}
       <div className="relative mx-auto max-w-7xl px-4 pt-0 pb-8 sm:px-6 sm:pb-12 md:pb-16 lg:px-8 lg:pb-20">
         <div className="relative">
-          <section className="relative left-1/2 isolate w-screen -translate-x-1/2 overflow-hidden bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950 px-4 py-6 text-white sm:px-6 sm:py-8 lg:px-8 lg:py-10">
-            <div className="absolute inset-0 opacity-35 [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:72px_72px]" />
-            <div className="absolute -left-20 top-0 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
-            <div className="absolute right-0 top-20 h-80 w-80 rounded-full bg-cyan-300/10 blur-3xl" />
-            <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/10 to-transparent" />
-
+          <section className="relative left-1/2 isolate w-screen -translate-x-1/2 overflow-hidden px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
             <div className="relative mx-auto max-w-7xl">
               <div
                 className={
-                  isExpandedHeroDescriptionPath ? "max-w-6xl" : "max-w-4xl"
+                  isExpandedHeroDescriptionPath ? "max-w-4xl" : "max-w-3xl"
                 }
               >
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-100">
-                  <FaMobileAlt className="h-3.5 w-3.5" />
-                  {headerLabel}
-                </span>
-
-                <h1 className="mt-6 max-w-7xl text-3xl font-black leading-tight sm:text-4xl lg:text-6xl">
+                <h1 className="max-w-3xl text-3xl font-bold tracking-tight text-[#14255e] sm:text-4xl lg:text-5xl">
                   {heroTitleText}
                 </h1>
 
                 <h4
-                  className={`mt-4 ${heroSubtitleWidthClass} text-base leading-7 text-white/80 sm:text-lg sm:leading-8`}
+                  className={`mt-3 ${heroSubtitleWidthClass} text-sm leading-7 text-slate-600 sm:text-base sm:leading-8`}
                   style={heroSubtitleStyle}
                 >
                   {heroSubtitleText}
@@ -3686,133 +3676,19 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                   <button
                     type="button"
                     onClick={() => setShowHeroDescription((prev) => !prev)}
-                    className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-cyan-100 transition-colors duration-200 hover:text-white"
+                    className="mt-2.5 inline-flex items-center gap-2 text-sm font-semibold text-blue-700 transition-colors duration-200 hover:text-blue-900"
                     aria-expanded={showHeroDescription}
                   >
                     {showHeroDescription ? "Show less" : "Read more"}
                   </button>
                 ) : null}
-
-                <div className="mt-8 grid grid-cols-2 gap-2 sm:gap-3 lg:hidden">
-                  <button
-                    onClick={() => navigate("/compare")}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-3.5 py-3 text-xs font-semibold text-slate-950 shadow-[0_10px_24px_rgba(15,23,42,0.12)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 sm:px-5 sm:text-sm"
-                  >
-                    Compare devices
-                    <FaExchangeAlt className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    onClick={() => navigate("/brands")}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-3 text-xs font-semibold text-white backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/15 sm:px-5 sm:text-sm"
-                  >
-                    Browse brands
-                    <FaChevronRight className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="hidden  rounded-2xl border border-white/10 p-4 sm:p-5">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <FaFilter className="text-cyan-100" />
-                    <h3 className="text-sm font-semibold text-white sm:text-base">
-                      Popular Features
-                    </h3>
-                  </div>
-                  {normalizedFeature && (
-                    <button
-                      onClick={() => setFeatureParam(null)}
-                      className="text-xs font-semibold text-cyan-100 transition-colors duration-200 hover:text-white"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-                {popularFeatureOrderLoaded && (
-                  <p className="mb-3 text-xs text-white/60">
-                    Popular choices from other users (last 7 days)
-                  </p>
-                )}
-                <div className="flex gap-2.5 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                  {popularFeatures.map((pf) => {
-                    const isActive = normalizedFeature === pf.id;
-                    const Icon = pf.icon;
-                    return (
-                      <button
-                        key={pf.id}
-                        onClick={() => setFeatureParam(pf.id)}
-                        className={`flex items-center gap-2 rounded-full border px-3 py-2 text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors duration-200 ${
-                          isActive
-                            ? "border-white bg-white text-slate-950"
-                            : "border-white/10 bg-white/10 text-white hover:bg-white/15"
-                        }`}
-                      >
-                        <span
-                          className={
-                            isActive ? "text-slate-950" : "text-cyan-100"
-                          }
-                        >
-                          {Icon ? <Icon className="text-base" /> : null}
-                        </span>
-                        <span>{pf.name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="hidden  rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-5">
-                {/* Desktop Controls */}
-
-                {/* Mobile Controls */}
-              <div className="space-y-3 sm:space-y-4 lg:hidden">
-                <div className="flex">
-                  <button
-                    onClick={() => setShowFilters(true)}
-                    className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 font-semibold text-white transition-colors duration-300 hover:bg-white/15"
-                  >
-                    <FaFilter />
-                      Filters
-                      {getActiveFiltersCount() > 0 && (
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white">
-                          {getActiveFiltersCount()}
-                      </span>
-                    )}
-                  </button>
-                </div>
-
-                  {/* Active Filters Badge - Mobile */}
-                  {getActiveFiltersCount() > 0 && (
-                    <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-4">
-                      <div className="flex items-center gap-3">
-                        <FaInfoCircle className="text-cyan-100" />
-                        <div>
-                          <span className="text-sm font-medium text-white">
-                            {getActiveFiltersCount()} filter
-                            {getActiveFiltersCount() > 1 ? "s" : ""} applied
-                          </span>
-                          <p className="mt-0.5 text-xs text-white/60">
-                            Showing {filteredVariants.length} of{" "}
-                            {variantCards.length} options
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={clearFilters}
-                        className="rounded-lg px-3 py-1.5 text-sm font-medium text-cyan-100 transition-colors duration-200 hover:bg-white/10 hover:text-white"
-                      >
-                        Clear all
-                      </button>
-                    </div>
-                  )}
-                </div>
               </div>
             </div>
           </section>
 
-          <div className="mt-6">
-            <div className="overflow-hidden pt-0 pb-4 sm:pb-5">
-              <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="mt-4">
+            <div className="overflow-hidden pt-0 pb-2 sm:pb-3">
+              <div className="mb-2 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <FaFilter className="text-blue-600" />
                   <h3 className="text-sm font-semibold text-slate-900 sm:text-base">
@@ -3829,7 +3705,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                 )}
               </div>
               {popularFeatureOrderLoaded && (
-                <p className="mb-3 text-xs text-slate-500">
+                <p className="mb-2 text-xs text-slate-500">
                   Popular choices from other users (last 7 days)
                 </p>
               )}
@@ -3841,10 +3717,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                     <button
                       key={pf.id}
                       onClick={() => setFeatureParam(pf.id)}
-                      className={`flex items-center gap-2 rounded-full border px-3 py-2 text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors duration-200 ${
+                      className={`flex items-center gap-2 rounded-full px-3 py-2 text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors duration-200 ${
                         isActive
-                          ? "border-blue-600 bg-blue-600 text-white"
-                          : "border-slate-200 bg-slate-50 text-slate-700 hover:border-blue-200 hover:bg-white"
+                          ? "bg-blue-600 text-white"
+                          : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                       }`}
                     >
                       <span
@@ -3859,7 +3735,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
               </div>
             </div>
 
-            <div className="mb-4 overflow-hidden">
+            <div className="mb-3 overflow-hidden">
               <div className="hidden items-center justify-end gap-4 lg:flex">
                 {getActiveFiltersCount() > 0 && (
                   <button
@@ -3916,10 +3792,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
           </div>
 
           <section className="">
-            <div className="mt-8 flex flex-col lg:flex-row gap-6 md:gap-8">
+              <div className="mt-4 flex flex-col gap-4 lg:flex-row md:gap-6">
               {/* Desktop Filter Sidebar */}
               <div className="hidden lg:block lg:w-72 flex-shrink-0">
-                <div className="sticky top-6  p-5 border border-gray-100 bg-white border border-slate-200 lg:p-6">
+                <div className="sticky top-6 rounded-lg border border-slate-200 bg-transparent p-5 lg:p-6">
                   {/* Filters Header */}
                   <div className="mb-6 flex items-center justify-between border-b border-slate-200 px-2 pb-4 sm:mb-8 sm:px-3 md:px-4">
                     <div>
@@ -4450,10 +4326,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                       <div
                         key={`${device.id ?? device.model ?? ""}-${_idx}`}
                         onClick={(e) => handleView(device, e)}
-                        className={`h-full w-full mx-auto smooth-transition fade-in-up overflow-hidden bg-white border border-slate-200 cursor-pointer transition-all duration-300 ${
+                        className={`h-full w-full mx-auto smooth-transition fade-in-up overflow-hidden rounded-lg bg-white cursor-pointer transition-all duration-300 ${
                           isCompareSelected(device)
-                            ? "ring-2 ring-blue-400 border-blue-400 bg-blue-50"
-                            : "hover:border-blue-200  "
+                            ? "ring-2 ring-blue-400 bg-blue-50"
+                            : "hover:bg-slate-50"
                         }`}
                       >
                         <div className="p-5 sm:p-6 transition-all duration-300">
