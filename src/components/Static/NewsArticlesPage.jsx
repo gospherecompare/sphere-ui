@@ -1,6 +1,6 @@
 import React from "react";
 import SEO from "../SEO";
-import NewsEditorialDesk from "../Home/NewsEditorialDesk";
+import NewEditorial from "../Home/NewEditorial";
 import {
   createCollectionSchema,
   createItemListSchema,
@@ -41,7 +41,7 @@ const NewsArticlesPage = () => {
         image="https://tryhook.shop/hook-logo.svg"
         schema={pageSchema}
       />
-      <NewsEditorialDesk stories={stories} loading={loading} error={error} />
+      <NewEditorial stories={stories} loading={loading} error={error} />
     </>
   );
 };

@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 
 // ScrollToTop ensures the window scrolls to top (or to an anchor) on navigation.
 // Place this inside a Router so it can observe location changes.
-export default function ScrollToTop({ behavior = "auto" }) {
+export default function ScrollToTop({ behavior = "smooth" }) {
   const { pathname, search, hash } = useLocation();
 
   useEffect(() => {

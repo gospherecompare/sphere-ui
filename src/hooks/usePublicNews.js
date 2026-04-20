@@ -445,6 +445,7 @@ const normalizeBlogStory = (blog) => {
     }),
     body: body.length ? body : [summary],
     image: image || DEFAULT_STORY_IMAGE,
+    heroImageSource: safeText(blog.hero_image_source),
     productName: safeText(blog.product_name),
     productType: safeText(blog.product_type).toLowerCase(),
     brandName: safeText(blog.brand_name),

@@ -18,7 +18,7 @@ import About from "./components/Static/About";
 import Careers from "./components/Static/Careers";
 import Contact from "./components/Static/Contact";
 import NewsArticlesPage from "./components/Static/NewsArticlesPage";
-import NewsStoryPage from "./components/Static/NewsStoryPage";
+import NewsStoryPage from "./components/Static/NewsStoryArticlePage";
 import PrivacyPolicy from "./components/Static/PrivacyPolicy";
 import Terms from "./components/Static/Terms";
 import NotFound from "./components/Static/NotFound";

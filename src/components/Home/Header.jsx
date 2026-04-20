@@ -87,7 +87,6 @@ import {
   FaSignInAlt,
   FaUserPlus,
   FaStore,
-  FaHome,
   FaCreditCard,
   FaShippingFast,
   FaTruck,
@@ -97,10 +96,7 @@ import {
   FaHandsHelping,
   FaAlignJustify,
   FaStream,
-  FaTimes,
-  FaBalanceScale,
   FaBriefcase,
-  FaRegNewspaper,
 } from "react-icons/fa";
 
 const BrandIdentity = ({ variant = "desktop" }) => {
@@ -2274,7 +2270,7 @@ const Header = () => {
       {/* MOBILE HEADER (≤ 768px) */}
       <div
         ref={mobileHeaderRef}
-        className="md:hidden border-b bg-gradient-to-b from-white to-blue-50/30 border-slate-100/60 z-40 shadow-[0_1px_3px_rgba(15,23,42,0.08)]"
+        className="md:hidden border-b border-slate-100 bg-gradient-to-b from-white to-blue-50/30 z-40"
       >
         {/* Mobile Top Row: Menu | Logo | Actions */}
         <div className="flex items-center justify-between gap-3 px-4 py-3">
@@ -2310,7 +2306,7 @@ const Header = () => {
       </div>
 
       {/* DESKTOP HEADER (> 768px) - Clean Minimal Design like Beebom */}
-      <div className="hidden md:block bg-gradient-to-br from-white via-white to-blue-50/30 sticky top-0 z-40 border-b border-slate-100/60">
+      <div className="hidden md:block bg-gradient-to-br from-white via-white to-blue-50/30 sticky top-0 z-40">
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3 lg:py-4">
           {/* Header Row: Logo | Search | Login */}
           <div className="flex items-center justify-between gap-3 sm:gap-4 lg:gap-6">
@@ -2417,7 +2413,7 @@ const Header = () => {
           </div>
         </div>
         {/* Navigation Links */}
-        <div className="w-full bg-gradient-to-r from-white via-blue-50/20 to-white border-t border-slate-100/40">
+        <div className="w-full bg-gradient-to-r from-white via-blue-50/20 to-white border-b border-slate-100">
           <div className="mx-auto max-w-7xl px-6">
             <div className="flex items-center gap-2 py-1 overflow-visible">
               {directLinks.map((link) =>
@@ -2688,51 +2684,26 @@ const Header = () => {
         }))
       : [{ label: "View upcoming phones", href: "/smartphones/upcoming" }];
 
-    const quickLinks = [
-      { label: "Home", href: "/", icon: <FaHome className="h-4 w-4" /> },
-      {
-        label: "Compare",
-        href: "/compare",
-        icon: <FaBalanceScale className="h-4 w-4" />,
-      },
-      {
-        label: "Brands",
-        href: "/smartphones",
-        icon: <FaStore className="h-4 w-4" />,
-      },
-      {
-        label: "Explore",
-        icon: <FaTag className="h-4 w-4" />,
-        dropdownItems: exploreDropdownLinks,
-      },
-      {
-        label: "News & Articles",
-        href: "/news",
-        icon: <FaRegNewspaper className="h-4 w-4" />,
-      },
-      ...(isLoggedIn
-        ? [
-            {
-              label: "Wishlist",
-              href: "/wishlist",
-              icon: <FaHeart className="h-4 w-4" />,
-            },
-          ]
-        : []),
-    ];
-
-    const sections = [
-      { id: "price", title: "Best Phones by Price", items: priceItems },
+    const drawerItems = [
+      { id: "price", title: "Best Phones by Price", kind: "accordion", items: priceItems },
       {
         id: "brands",
         title: "Popular Brands",
+        kind: "accordion",
         items: brandItems,
         footer: { label: "All Brands", href: "/smartphones" },
       },
-      { id: "features", title: "Browse by Feature", items: featureItems },
-      { id: "popular", title: "Popular Mobiles", items: popularItems },
-      { id: "latest", title: "Latest Phones", items: latestItems },
-      { id: "upcoming", title: "Upcoming Mobiles", items: upcomingItems },
+      { id: "features", title: "Browse by Feature", kind: "accordion", items: featureItems },
+      { id: "popular", title: "Popular Mobiles", kind: "accordion", items: popularItems },
+      { id: "latest", title: "Latest Phones", kind: "accordion", items: latestItems },
+      { id: "upcoming", title: "Upcoming Mobiles", kind: "accordion", items: upcomingItems },
+      { id: "compare", title: "Compare Mobiles", kind: "link", href: "/compare" },
+      { id: "finder", title: "Phone Finder", kind: "link", href: "/" },
+      { id: "news", title: "News & Articles", kind: "link", href: "/news" },
+      { id: "trending", title: "Trending Mobiles", kind: "link", href: "/trending/smartphones" },
+      ...(isLoggedIn
+        ? [{ id: "wishlist", title: "Wishlist", kind: "link", href: "/wishlist" }]
+        : []),
     ];
 
     return (
@@ -2745,12 +2716,12 @@ const Header = () => {
             />
 
             <div
-              className={`fixed inset-y-0 left-0 z-50 w-[296px] max-w-[84vw] transform overflow-hidden rounded-none border-r border-slate-100/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] shadow-[24px_0_60px_rgba(15,23,42,0.18)] transition-transform duration-300 lg:hidden ${
+              className={`fixed inset-y-0 left-0 z-50 w-[296px] max-w-[84vw] transform overflow-hidden rounded-none border-r border-slate-100 bg-white transition-transform duration-300 lg:hidden ${
                 isMenuOpen ? "translate-x-0" : "-translate-x-full"
               }`}
             >
               <div className="flex h-full flex-col">
-                <div className="flex items-center justify-between border-b border-slate-100/80 bg-[linear-gradient(135deg,#ffffff_0%,#f3f8ff_100%)] px-4 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.05)]">
+                <div className="flex items-center justify-between border-b border-slate-100 px-4 py-4">
                   <Link
                     to="/"
                     className="flex items-center min-w-0"
@@ -2764,145 +2735,85 @@ const Header = () => {
                     onClick={() => setIsMenuOpen(false)}
                     aria-label="Close menu"
                   >
-                    <FaTimes className="h-4 w-4" />
+                    <span className="text-2xl leading-none font-light">X</span>
                   </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto px-3 py-4">
-                  <div className="mb-5">
-                    <div className="space-y-1">
-                      {quickLinks.map((item) =>
-                        item.dropdownItems ? (
-                          <div
-                            key={item.label}
-                            className="overflow-hidden border border-slate-100 bg-slate-50/60"
+                <div className="flex-1 overflow-y-auto px-4 py-4">
+                  <nav>
+                    {drawerItems.map((item) => {
+                      const isOpen = openSection === item.id;
+
+                      if (item.kind === "accordion") {
+                        return (
+                          <section
+                            key={item.id}
+                            className="border-b border-slate-100"
                           >
                             <button
                               type="button"
-                              className="group flex w-full cursor-default items-center justify-between px-3 py-3 text-[13px] font-medium text-slate-800 transition-all duration-200 hover:bg-slate-100 hover:text-slate-950"
+                              onClick={() =>
+                                setOpenSection(isOpen ? "" : item.id)
+                              }
+                              className="flex w-full items-center justify-between py-4 text-left"
                             >
-                              <span className="flex min-w-0 items-center gap-3">
-                                <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border border-slate-100 bg-gradient-to-br from-blue-50 via-white to-cyan-50 text-blue-700 transition-colors group-hover:border-blue-100 group-hover:text-blue-800">
-                                  {item.icon}
-                                </span>
-                                <span className="truncate transition-colors">
-                                  {item.label}
-                                </span>
+                              <span className="text-[15px] font-medium text-[#163b7d]">
+                                {item.title}
                               </span>
-                              <FaChevronDown className="h-3.5 w-3.5 flex-shrink-0 text-slate-400" />
+                              <span className="text-sm leading-none text-slate-500">
+                                {isOpen ? "v" : ">"}
+                              </span>
                             </button>
-                            <div className="border-t border-slate-100 bg-white p-2">
-                              <div className="grid grid-cols-1 gap-1">
-                                {item.dropdownItems.map((dropdownItem) => (
-                                  <Link
-                                    key={dropdownItem.link}
-                                    to={dropdownItem.link}
-                                    onClick={() => setIsMenuOpen(false)}
-                                    className="group flex items-center justify-between rounded-lg px-3 py-2.5 text-[13px] font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700"
-                                  >
-                                    <span>{dropdownItem.name}</span>
-                                    <FaChevronRight className="h-3 w-3 text-slate-400 transition-colors group-hover:text-blue-600" />
-                                  </Link>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <Link
-                            key={item.label}
-                            to={item.href}
-                            onClick={() => setIsMenuOpen(false)}
-                            className="group flex items-center justify-between rounded-xl px-3 py-3 text-[13px] font-medium text-slate-800 transition-all duration-200 hover:bg-slate-50 hover:text-slate-950"
-                          >
-                            <span className="flex min-w-0 items-center gap-3">
-                              <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center  text-blue-700 transition-colors group-hover:border-blue-100 group-hover:text-blue-800">
-                                {item.icon}
-                              </span>
-                              <span className="truncate transition-colors">
-                                {item.label}
-                              </span>
-                            </span>
-                            <FaChevronRight className="h-3.5 w-3.5 flex-shrink-0 text-slate-400 transition-colors group-hover:text-blue-600" />
-                          </Link>
-                        ),
-                      )}
-                    </div>
-                  </div>
 
-                  <div className="space-y-3">
-                    {sections.map((section) => {
-                      const isOpen = openSection === section.id;
+                            {isOpen ? (
+                              <div className="pb-3 pl-1">
+                                <ul className="space-y-0.5 pl-1">
+                                  {item.items.map((subItem) => (
+                                    <li key={`${item.id}-${subItem.label}`}>
+                                      <Link
+                                        to={subItem.href}
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className="flex items-center justify-between py-2.5 text-[13px] text-slate-700 transition-colors hover:text-blue-700"
+                                      >
+                                        <span>{subItem.label}</span>
+                                        <span className="text-sm leading-none text-slate-400">
+                                          &gt;
+                                        </span>
+                                      </Link>
+                                    </li>
+                                  ))}
+                                </ul>
+                                {item.footer ? (
+                                  <Link
+                                    to={item.footer.href}
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className="mt-2 inline-flex items-center gap-2 text-[13px] font-medium text-blue-700"
+                                  >
+                                    <span>{item.footer.label}</span>
+                                    <span className="text-sm leading-none">&gt;</span>
+                                  </Link>
+                                ) : null}
+                              </div>
+                            ) : null}
+                          </section>
+                        );
+                      }
 
                       return (
-                        <section
-                          key={section.id}
-                          className="overflow-hidden bg-white transition-all duration-200"
+                        <Link
+                          key={item.id}
+                          to={item.href}
+                          onClick={() => setIsMenuOpen(false)}
+                          className="flex items-center justify-between border-b border-slate-100 py-4 text-[15px] font-medium text-[#163b7d]"
                         >
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setOpenSection(isOpen ? "" : section.id)
-                            }
-                            className={`flex w-full items-center justify-between px-4 py-4 text-left transition-colors duration-200 ${
-                              isOpen ? "bg-blue-50/70" : "hover:bg-slate-50"
-                            }`}
-                          >
-                            <span
-                              className={`text-[15px] font-semibold ${
-                                isOpen ? "text-blue-900" : "text-slate-900"
-                              }`}
-                            >
-                              {section.title}
-                            </span>
-                            <span
-                              className={`flex h-8 w-8 items-center justify-center rounded-full border transition-all duration-200 ${
-                                isOpen
-                                  ? "border-blue-200 bg-white text-blue-700"
-                                  : "border-slate-200 bg-slate-50 text-slate-700"
-                              }`}
-                            >
-                              <FaChevronDown
-                                className={`h-4 w-4 transition-transform duration-200 ${
-                                  isOpen ? "rotate-180" : ""
-                                }`}
-                              />
-                            </span>
-                          </button>
-
-                          {isOpen ? (
-                            <div className="bg-slate-50/80 p-2">
-                              <ul className="space-y-0.5">
-                                {section.items.map((item) => (
-                                  <li key={`${section.id}-${item.label}`}>
-                                    <Link
-                                      to={item.href}
-                                      onClick={() => setIsMenuOpen(false)}
-                                      className="group flex items-start gap-3 rounded-xl px-3 py-2.5 text-[14px] leading-6 text-slate-800 transition-all duration-200 hover:bg-white hover:text-blue-700 hover:shadow-sm"
-                                    >
-                                      <span className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-blue-600/80 transition-colors group-hover:bg-blue-700" />
-                                      <span className="font-medium">
-                                        {item.label}
-                                      </span>
-                                    </Link>
-                                  </li>
-                                ))}
-                              </ul>
-                              {section.footer ? (
-                                <Link
-                                  to={section.footer.href}
-                                  onClick={() => setIsMenuOpen(false)}
-                                  className="mt-2 inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-[14px] font-semibold text-blue-700 transition-colors hover:bg-blue-50 hover:text-blue-800"
-                                >
-                                  <span>{section.footer.label}</span>
-                                  <FaChevronRight className="h-3.5 w-3.5" />
-                                </Link>
-                              ) : null}
-                            </div>
-                          ) : null}
-                        </section>
+                          <span>{item.title}</span>
+                          <span className="text-sm leading-none text-slate-500">
+                            &gt;
+                          </span>
+                        </Link>
                       );
                     })}
-                  </div>
+                  </nav>
                 </div>
               </div>
             </div>
@@ -2918,7 +2829,7 @@ const Header = () => {
 
       <header
         ref={headerRef}
-        className="sticky top-0 left-0 right-0 z-40 bg-gradient-to-b from-white via-white to-blue-50/40 border-b border-slate-100/60 shadow-[0_1px_3px_rgba(15,23,42,0.08)]"
+        className="sticky top-0 left-0 right-0 z-40 bg-gradient-to-b from-white via-white to-blue-50/40"
       >
         <MainHeader />
         <CategoryNavBar />
