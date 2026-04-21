@@ -33,6 +33,30 @@ const PRODUCT_TYPE_LABELS = {
 
 const safeText = (value) => String(value || "").trim();
 
+const parseBlogTags = (value) => {
+  if (Array.isArray(value)) {
+    return Array.from(
+      new Set(
+        value
+          .map((item) => safeText(item))
+          .filter(Boolean),
+      ),
+    );
+  }
+
+  const raw = safeText(value);
+  if (!raw) return [];
+
+  return Array.from(
+    new Set(
+      raw
+        .split(/[,;\n]+/)
+        .map((item) => safeText(item))
+        .filter(Boolean),
+    ),
+  );
+};
+
 const toPlainObject = (value) => {
   if (value && typeof value === "object" && !Array.isArray(value)) return value;
   if (typeof value === "string") {
@@ -398,6 +422,7 @@ const normalizeBlogStory = (blog) => {
     safeText(blog.meta_description) ||
     body.find(isUsefulParagraph) ||
     null;
+  const authorName = safeText(blog.author_name);
   const fallbackSummaryByCategory = {
     news: `${title} is the latest newsroom update from Hooks.`,
     mobiles: `${title} keeps the mobile section focused on the most useful device details.`,
@@ -413,7 +438,9 @@ const normalizeBlogStory = (blog) => {
   );
   const publishedIso = safeText(blog.published_at) || safeText(blog.updated_at);
   const updatedIso = safeText(blog.updated_at) || publishedIso;
-  const author = CATEGORY_AUTHORS[category] || CATEGORY_AUTHORS.news;
+  const author = authorName
+    ? { name: authorName, role: "Editorial byline" }
+    : CATEGORY_AUTHORS[category] || CATEGORY_AUTHORS.news;
   const highlights = buildHighlights(blog, category);
   const image = safeText(blog.hero_image)
     ? safeText(blog.hero_image)
@@ -446,6 +473,12 @@ const normalizeBlogStory = (blog) => {
     body: body.length ? body : [summary],
     image: image || DEFAULT_STORY_IMAGE,
     heroImageSource: safeText(blog.hero_image_source),
+    heroImageAlt: safeText(blog.hero_image_alt) || title,
+    heroImageCaption: safeText(blog.hero_image_caption),
+    tags: parseBlogTags(blog.tags),
+    featured: Boolean(blog.featured),
+    trending: Boolean(blog.trending),
+    pinned: Boolean(blog.pinned),
     productName: safeText(blog.product_name),
     productType: safeText(blog.product_type).toLowerCase(),
     brandName: safeText(blog.brand_name),

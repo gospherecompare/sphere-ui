@@ -55,7 +55,9 @@ const getInitials = (name = "") => {
 };
 
 const formatImageCredit = (story) => {
-  const raw = String(story?.heroImageSource || "").trim();
+  const raw = String(
+    story?.heroImageCaption || story?.heroImageSource || "",
+  ).trim();
   if (!raw) return "Hooks newsroom";
   if (/^(asset|url)$/i.test(raw)) return "Hooks newsroom";
   if (/^https?:\/\//i.test(raw)) {
@@ -110,7 +112,7 @@ const HeroNewsImage = ({ story, eager = false }) => {
       {hasImage ? (
         <img
           src={story.image}
-          alt={story.title}
+          alt={story.heroImageAlt || story.title}
           className="block h-full w-full object-cover object-center"
           loading={eager ? "eager" : "lazy"}
           onError={() => setImageError(true)}
@@ -131,7 +133,7 @@ const TrendingNewsImage = ({ story }) => {
       {hasImage ? (
         <img
           src={story.image}
-          alt={story.title}
+          alt={story.heroImageAlt || story.title}
           className="block h-full w-full object-cover object-center"
           loading="lazy"
           onError={() => setImageError(true)}
@@ -152,7 +154,7 @@ const RecommendedNewsImage = ({ story }) => {
       {hasImage ? (
         <img
           src={story.image}
-          alt={story.title}
+          alt={story.heroImageAlt || story.title}
           className="block h-full w-full object-cover object-center"
           loading="lazy"
           onError={() => setImageError(true)}
@@ -495,6 +497,8 @@ const NewsStoryArticlePage = () => {
     .filter(Boolean)
     .filter((value, index, list) => list.indexOf(value) === index)
     .slice(0, 3);
+  const storyAuthor =
+    String(story?.author || "Hooks newsroom").trim() || "Hooks newsroom";
 
   const schema = story
     ? [
@@ -503,18 +507,18 @@ const NewsStoryArticlePage = () => {
           { label: "News", url: "https://tryhook.shop/news" },
           { label: story.title, url: canonicalUrl },
         ]),
-        createNewsArticleSchema({
-          headline: story.title,
-          description: articleDescription,
-          url: canonicalUrl,
-          image: story.image,
-          datePublished: story.publishedIso,
-          dateModified: story.updatedIso,
-          authorName: story.author,
-          articleSection: story.label,
-          keywords: [story.label, story.category, ...storyTags].filter(Boolean),
-        }),
-      ]
+          createNewsArticleSchema({
+            headline: story.title,
+            description: articleDescription,
+            url: canonicalUrl,
+            image: story.image,
+            datePublished: story.publishedIso,
+            dateModified: story.updatedIso,
+            authorName: storyAuthor,
+            articleSection: story.label,
+            keywords: [story.label, story.category, ...storyTags].filter(Boolean),
+          }),
+        ]
     : [];
 
   if (loading) return <LoadingState />;
@@ -553,19 +557,19 @@ const NewsStoryArticlePage = () => {
               </p>
 
               <div className="mt-7 flex flex-wrap items-center justify-between gap-5">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full border border-white/30 bg-white/10 text-sm font-black uppercase tracking-wide">
-                    {getInitials(story.author)}
-                  </div>
-                  <div>
-                    <p className="text-sm text-white/80">
-                      by{" "}
-                      <span className="font-semibold text-white">
-                        {story.author}
-                      </span>
-                    </p>
-                    <p className="text-sm text-white/65">
-                      {formatPublishedLabel(story)}
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full border border-white/30 bg-white/10 text-sm font-black uppercase tracking-wide">
+                      {getInitials(storyAuthor)}
+                    </div>
+                    <div>
+                      <p className="text-sm text-white/80">
+                        by{" "}
+                        <span className="font-semibold text-white">
+                          {storyAuthor}
+                        </span>
+                      </p>
+                      <p className="text-sm text-white/65">
+                        {formatPublishedLabel(story)}
                     </p>
                   </div>
                 </div>
@@ -611,6 +615,17 @@ const NewsStoryArticlePage = () => {
                     <h2 className="text-2xl font-black tracking-[-0.04em] text-[#173570] sm:text-3xl lg:text-[2.35rem]">
                       {story.title}
                     </h2>
+
+                    <div className="flex flex-wrap items-center gap-3 text-[13px] text-slate-500 sm:text-sm">
+                      <span className="inline-flex items-center gap-2 font-medium text-[#173570]">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-[11px] font-black uppercase tracking-wide text-slate-700">
+                          {getInitials(storyAuthor)}
+                        </span>
+                        {storyAuthor}
+                      </span>
+                      <span className="hidden h-4 w-px bg-slate-300 sm:block" />
+                      <span>{formatPublishedLabel(story)}</span>
+                    </div>
 
                     <div className="space-y-6 text-[17px] leading-8 text-slate-700 sm:text-[18px] sm:leading-9">
                       {summaryParagraphs.map((paragraph, index) => (
