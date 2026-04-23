@@ -1,6 +1,7 @@
 import React from "react";
 import SEO from "../SEO";
 import NewEditorial from "../Home/NewEditorial";
+import NewsPushOptInCard from "../News/NewsPushOptInCard";
 import {
   createCollectionSchema,
   createItemListSchema,
@@ -41,6 +42,7 @@ const NewsArticlesPage = () => {
         image="https://tryhook.shop/hook-logo.svg"
         schema={pageSchema}
       />
+      <NewsPushOptInCard />
       <NewEditorial stories={stories} loading={loading} error={error} />
     </>
   );
