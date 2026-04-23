@@ -16,6 +16,7 @@ const NEWS_PUSH_TOPIC = "news-all";
 const TOKEN_STORAGE_KEY = "hooks.news_push.token";
 const ENABLED_STORAGE_KEY = "hooks.news_push.enabled";
 const SW_PATH = "/firebase-messaging-sw.js";
+const SW_READY_TIMEOUT_MS = 10000;
 
 const postJson = async (url, body) => {
   const response = await fetch(url, {
@@ -60,6 +61,13 @@ const ensureBrowserSupport = async () => {
     return { supported: false, reason: "Push notifications are browser-only." };
   }
 
+  if (!window.isSecureContext) {
+    return {
+      supported: false,
+      reason: "Push notifications require HTTPS or localhost.",
+    };
+  }
+
   if (!isFirebaseMessagingConfigured) {
     return {
       supported: false,
@@ -90,6 +98,18 @@ const ensureBrowserSupport = async () => {
   }
 
   return { supported: true, reason: "" };
+};
+
+const waitForServiceWorkerReady = async (timeoutMs = SW_READY_TIMEOUT_MS) => {
+  const timeoutPromise = new Promise((_, reject) => {
+    window.setTimeout(() => {
+      reject(
+        new Error("Service worker did not become active in time."),
+      );
+    }, timeoutMs);
+  });
+
+  return Promise.race([navigator.serviceWorker.ready, timeoutPromise]);
 };
 
 export const getNewsPushStatus = async () => {
@@ -133,10 +153,13 @@ export const registerForNewsPush = async () => {
   const registration = await navigator.serviceWorker.register(SW_PATH, {
     scope: "/",
   });
+  const readyRegistration = registration.active
+    ? registration
+    : await waitForServiceWorkerReady();
 
   const token = await getToken(messaging, {
     vapidKey: firebaseVapidKey,
-    serviceWorkerRegistration: registration,
+    serviceWorkerRegistration: readyRegistration,
   });
 
   if (!token) {
