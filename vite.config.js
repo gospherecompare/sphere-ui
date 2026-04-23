@@ -32,6 +32,10 @@ const __dirname = path.dirname(__filename);
 const SITE_ORIGIN = "https://tryhook.shop";
 const API_BASE_URL = "https://api.apisphere.in/api";
 const API_ORIGIN = "https://api.apisphere.in";
+const ENABLE_PUPPETEER_PRERENDER =
+  String(process.env.HOOKS_ENABLE_PUPPETEER_PRERENDER || "")
+    .trim()
+    .toLowerCase() === "true";
 const MAX_DETAIL_ROUTES_PER_CATEGORY = 1000;
 const MAX_COMPARE_ROUTES = 300;
 const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
@@ -882,6 +886,54 @@ const createSitemapPlugin = (routes = []) => ({
   },
 });
 
+const createStaticRouteHtmlPlugin = ({
+  routes = [],
+  getPreloadedPayloadForRoute,
+  processHtml,
+}) => ({
+  name: "hook-generate-route-html",
+  apply: "build",
+  async closeBundle() {
+    const outputDir = path.join(__dirname, "dist");
+    const rootHtmlPath = path.join(outputDir, "index.html");
+
+    if (!fs.existsSync(rootHtmlPath)) {
+      console.warn(
+        `[route-html] Skipped route HTML generation because ${rootHtmlPath} was not found.`,
+      );
+      return;
+    }
+
+    const baseHtml = fs.readFileSync(rootHtmlPath, "utf8");
+    const uniqueRoutes = [
+      ...new Set(routes.map((routePath) => normalizePath(routePath)).filter(Boolean)),
+    ];
+    let generatedCount = 0;
+
+    for (const routePath of uniqueRoutes) {
+      const payload = await getPreloadedPayloadForRoute(routePath);
+      const html = processHtml(baseHtml, routePath, payload);
+
+      if (routePath === "/") {
+        fs.writeFileSync(rootHtmlPath, html, "utf8");
+        generatedCount += 1;
+        continue;
+      }
+
+      const outputPath = path.join(
+        outputDir,
+        routePath.replace(/^\/+/, ""),
+        "index.html",
+      );
+      fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+      fs.writeFileSync(outputPath, html, "utf8");
+      generatedCount += 1;
+    }
+
+    console.log(`[route-html] Generated ${generatedCount} route HTML files.`);
+  },
+});
+
 const resolveSeo = (routePath) => {
   const canonicalPath = toCanonicalPath(routePath);
   const smartphoneDetailName = (() => {
@@ -1563,31 +1615,40 @@ export default defineConfig(async () => {
           return processHtml(html, rawPath || "/", payload);
         },
       },
-      vitePrerender({
-        staticDir: path.join(__dirname, "dist"),
+      ...(ENABLE_PUPPETEER_PRERENDER
+        ? [
+            vitePrerender({
+              staticDir: path.join(__dirname, "dist"),
+              routes: prerenderRoutes,
+              renderer: new Renderer({
+                renderAfterTime: 1500,
+                maxConcurrentRoutes: 4,
+                consoleHandler(route, message) {
+                  const type = message?.type?.() || "log";
+                  const text = message?.text?.() || "";
+                  if (type === "error" || text.includes("Error")) {
+                    console.log(`[prerender:${route}] ${type}: ${text}`);
+                  }
+                },
+              }),
+              async postProcess(renderedRoute) {
+                const routePath = resolvePrerenderRoutePath(renderedRoute);
+                renderedRoute.route = routePath;
+                const payload = await getPreloadedPayloadForRoute(routePath);
+                renderedRoute.html = processHtml(
+                  renderedRoute.html || "",
+                  routePath,
+                  payload,
+                );
+                return renderedRoute;
+              },
+            }),
+          ]
+        : []),
+      createStaticRouteHtmlPlugin({
         routes: prerenderRoutes,
-        renderer: new Renderer({
-          renderAfterTime: 1500,
-          maxConcurrentRoutes: 4,
-          consoleHandler(route, message) {
-            const type = message?.type?.() || "log";
-            const text = message?.text?.() || "";
-            if (type === "error" || text.includes("Error")) {
-              console.log(`[prerender:${route}] ${type}: ${text}`);
-            }
-          },
-        }),
-        async postProcess(renderedRoute) {
-          const routePath = resolvePrerenderRoutePath(renderedRoute);
-          renderedRoute.route = routePath;
-          const payload = await getPreloadedPayloadForRoute(routePath);
-          renderedRoute.html = processHtml(
-            renderedRoute.html || "",
-            routePath,
-            payload,
-          );
-          return renderedRoute;
-        },
+        getPreloadedPayloadForRoute,
+        processHtml,
       }),
       createSitemapPlugin(prerenderRoutes),
     ],
