@@ -45,7 +45,22 @@ const getApiBaseCandidates = () => {
   candidates.add(DEFAULT_API_BASE);
 
   if (typeof window !== "undefined" && window.location?.origin) {
-    candidates.add(normalizeApiBase(window.location.origin));
+    const currentOrigin = normalizeApiBase(window.location.origin);
+
+    try {
+      const hostname = new URL(currentOrigin).hostname.toLowerCase();
+      const isLocalDevHost =
+        hostname === "localhost" ||
+        hostname === "127.0.0.1" ||
+        hostname === "[::1]";
+      const isApiHost = hostname.startsWith("api.");
+
+      if (isLocalDevHost || isApiHost) {
+        candidates.add(currentOrigin);
+      }
+    } catch (_error) {
+      // Ignore invalid origins and rely on explicit API bases instead.
+    }
   }
 
   return [...candidates].filter(Boolean);
@@ -116,8 +131,16 @@ const postJson = async (routePath, body) => {
   }
 
   if (sawRouteMissing) {
+    const targetHost = (() => {
+      try {
+        return new URL(urls[0] || DEFAULT_API_BASE).origin;
+      } catch (_error) {
+        return DEFAULT_API_BASE;
+      }
+    })();
+
     throw createRequestError(
-      "Push notifications are not available on this server yet.",
+      `Push notifications are not available on ${targetHost} yet.`,
       404,
       urls[urls.length - 1] || "",
     );

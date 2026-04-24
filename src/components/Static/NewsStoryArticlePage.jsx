@@ -2,9 +2,9 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { FaFacebookF, FaInstagram, FaLink, FaWhatsapp } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
-import { FcGoogle } from "react-icons/fc";
 import SEO from "../SEO";
 import NotFound from "./NotFound";
+import NewsPushOptInCard from "../News/NewsPushOptInCard";
 import {
   createBreadcrumbSchema,
   createNewsArticleSchema,
@@ -536,6 +536,7 @@ const NewsStoryArticlePage = () => {
         image={story.image}
         schema={schema}
       />
+      <NewsPushOptInCard />
 
       <main className="min-h-screen bg-white text-slate-900">
         <section className="relative isolate overflow-hidden bg-gradient-to-br from-slate-950 via-blue-900 to-indigo-950 text-white">
@@ -597,20 +598,6 @@ const NewsStoryArticlePage = () => {
             <div className="mx-auto max-w-[1240px] px-4 pb-16 sm:px-6 lg:px-8 lg:pb-24">
               <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
                 <div className="min-w-0 space-y-8">
-                  <div className="rounded-[18px] border-2 border-slate-900 bg-[#fae7d8] p-4">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                      <p className="text-[18px] font-semibold leading-7 tracking-[-0.03em] text-[#173570]">
-                        Click Here to Add Hooks Gadgets As A Trusted Source
-                      </p>
-                      <span className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm">
-                        <FcGoogle className="h-5 w-5 shrink-0" />
-                        <span className="max-w-[8rem] leading-tight">
-                          Add as a preferred source on Google
-                        </span>
-                      </span>
-                    </div>
-                  </div>
-
                   <article className="space-y-6">
                     <h2 className="text-2xl font-black tracking-[-0.04em] text-[#173570] sm:text-3xl lg:text-[2.35rem]">
                       {story.title}
