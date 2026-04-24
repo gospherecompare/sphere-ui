@@ -6,11 +6,7 @@ import {
   isFirebaseMessagingSupported,
 } from "./firebase";
 
-const API_BASE = (() => {
-  const configuredBase = String(import.meta.env.VITE_API_BASE_URL || "").trim();
-  if (configuredBase) return configuredBase.replace(/\/$/, "");
-  return "https://api.apisphere.in";
-})();
+const DEFAULT_API_BASE = "https://api.apisphere.in";
 
 const NEWS_PUSH_TOPIC = "news-all";
 const TOKEN_STORAGE_KEY = "hooks.news_push.token";
@@ -18,26 +14,116 @@ const ENABLED_STORAGE_KEY = "hooks.news_push.enabled";
 const SW_PATH = "/firebase-messaging-sw.js";
 const SW_READY_TIMEOUT_MS = 10000;
 
-const postJson = async (url, body) => {
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify(body),
-  });
+const normalizeApiBase = (value = "") => String(value || "").trim().replace(/\/+$/, "");
 
-  const contentType = String(response.headers.get("content-type") || "").toLowerCase();
-  const payload = contentType.includes("application/json")
-    ? await response.json().catch(() => ({}))
-    : {};
+const buildApiUrl = (base, routePath) => {
+  const normalizedBase = normalizeApiBase(base);
+  const normalizedPath = `/${String(routePath || "")
+    .trim()
+    .replace(/^\/+/, "")}`;
 
-  if (!response.ok) {
-    throw new Error(payload?.message || "Push notification request failed");
+  if (!normalizedBase) return normalizedPath;
+
+  if (
+    /\/api$/i.test(normalizedBase) &&
+    /^\/api(?:\/|$)/i.test(normalizedPath)
+  ) {
+    return `${normalizedBase}${normalizedPath.replace(/^\/api/i, "")}`;
   }
 
-  return payload;
+  return `${normalizedBase}${normalizedPath}`;
+};
+
+const getApiBaseCandidates = () => {
+  const candidates = new Set();
+  const configuredBase = normalizeApiBase(import.meta.env.VITE_API_BASE_URL);
+
+  if (configuredBase) {
+    candidates.add(configuredBase);
+  }
+
+  candidates.add(DEFAULT_API_BASE);
+
+  if (typeof window !== "undefined" && window.location?.origin) {
+    candidates.add(normalizeApiBase(window.location.origin));
+  }
+
+  return [...candidates].filter(Boolean);
+};
+
+const readJsonPayload = async (response) => {
+  const contentType = String(response.headers.get("content-type") || "").toLowerCase();
+  if (!contentType.includes("application/json")) return {};
+  return response.json().catch(() => ({}));
+};
+
+const createRequestError = (message, status, url) => {
+  const error = new Error(message || "Push notification request failed");
+  error.status = status;
+  error.url = url;
+  return error;
+};
+
+const postJson = async (routePath, body) => {
+  const urls = [...new Set(getApiBaseCandidates().map((base) => buildApiUrl(base, routePath)))];
+  let lastError = null;
+  let sawRouteMissing = false;
+
+  for (let index = 0; index < urls.length; index += 1) {
+    const url = urls[index];
+
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      const payload = await readJsonPayload(response);
+
+      if (response.ok) {
+        return payload;
+      }
+
+      const error = createRequestError(
+        payload?.message || "Push notification request failed",
+        response.status,
+        url,
+      );
+
+      if (response.status === 404) {
+        sawRouteMissing = true;
+        lastError = error;
+        continue;
+      }
+
+      throw error;
+    } catch (error) {
+      lastError = error;
+
+      if (
+        index < urls.length - 1 &&
+        (error?.status === 404 || typeof error?.status === "undefined")
+      ) {
+        continue;
+      }
+
+      break;
+    }
+  }
+
+  if (sawRouteMissing) {
+    throw createRequestError(
+      "Push notifications are not available on this server yet.",
+      404,
+      urls[urls.length - 1] || "",
+    );
+  }
+
+  throw lastError || new Error("Push notification request failed");
 };
 
 const getStoredToken = () => {
@@ -166,7 +252,7 @@ export const registerForNewsPush = async () => {
     throw new Error("Unable to create a browser push token.");
   }
 
-  await postJson(`${API_BASE}/api/public/push/fcm/register`, {
+  await postJson("/api/public/push/fcm/register", {
     token,
     topic: NEWS_PUSH_TOPIC,
     permission,
@@ -188,7 +274,7 @@ export const unregisterFromNewsPush = async () => {
     : null;
 
   if (token) {
-    await postJson(`${API_BASE}/api/public/push/fcm/unregister`, {
+    await postJson("/api/public/push/fcm/unregister", {
       token,
       topic: NEWS_PUSH_TOPIC,
     }).catch(() => undefined);
