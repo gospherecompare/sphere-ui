@@ -668,59 +668,10 @@ const fetchDetailRoutesFromApi = async () => {
     }
   }
 
-  const aliasRoutes = routes.flatMap((routePath) => {
-    if (routePath.startsWith("/smartphones/")) {
-      const slug = routePath.slice("/smartphones/".length);
-      const baseSlug = stripSmartphoneSeoSuffix(slug);
-      const aliases = [
-        `/products/smartphones/${slug}`,
-        `/products/mobiles/${slug}`,
-        `/devices/smartphones/${slug}`,
-        `/devices/mobiles/${slug}`,
-      ];
-      if (baseSlug && baseSlug !== slug) {
-        aliases.push(
-          `/smartphones/${baseSlug}`,
-          `/products/smartphones/${baseSlug}`,
-          `/products/mobiles/${baseSlug}`,
-          `/devices/smartphones/${baseSlug}`,
-          `/devices/mobiles/${baseSlug}`,
-        );
-      }
-      return aliases;
-    }
-
-    if (routePath.startsWith("/laptops/")) {
-      const slug = routePath.slice("/laptops/".length);
-      return [
-        `/laptop/${slug}`,
-        `/products/laptop/${slug}`,
-        `/products/laptops/${slug}`,
-        `/devices/laptop/${slug}`,
-        `/devices/laptops/${slug}`,
-      ];
-    }
-
-    if (routePath.startsWith("/tvs/")) {
-      const slug = routePath.slice("/tvs/".length);
-      return [
-        `/appliances/${slug}`,
-        `/products/tvs/${slug}`,
-        `/products/appliances/${slug}`,
-        `/devices/tvs/${slug}`,
-        `/devices/appliances/${slug}`,
-      ];
-    }
-
-    if (routePath.startsWith("/networking/")) {
-      const slug = routePath.slice("/networking/".length);
-      return [`/products/networking/${slug}`, `/devices/networking/${slug}`];
-    }
-
-    return [];
-  });
-
-  return [...new Set([...routes, ...aliasRoutes])];
+  // Only prerender canonical detail routes. Alias routes should resolve through
+  // the SPA router when requested, but should not exist as standalone static
+  // HTML files because that creates duplicate crawlable URLs.
+  return [...new Set(routes)];
 };
 
 const fetchCompareRoutesFromApi = async () => {
