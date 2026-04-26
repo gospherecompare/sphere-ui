@@ -14,6 +14,7 @@ import {
   FaCheckCircle,
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import { createProductPath } from "../../utils/slugGenerator";
 import { resolveSmartphoneBadgeScore } from "../../utils/smartphoneBadgeScore";
 
 const API_BASE = (
@@ -804,7 +805,7 @@ const CompetitorCards = ({
       "",
     );
     if (slug) {
-      navigate(`${basePath}/${slug}`);
+      navigate(createProductPath(basePath, slug));
       return;
     }
     if (Number.isInteger(id) && id > 0) {

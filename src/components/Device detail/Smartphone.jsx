@@ -485,6 +485,10 @@ const MobileDetailCard = () => {
     () => normalizeSeoSlug(routeSlug),
     [normalizeSeoSlug, routeSlug],
   );
+  const canonicalRouteSlug = useMemo(
+    () => (routeSlug ? toSeoDetailSlug(routeSlug) : ""),
+    [routeSlug, toSeoDetailSlug],
+  );
 
   // Convert slug to searchable model name
   const modelFromSlug = routeBaseSlug
@@ -512,6 +516,24 @@ const MobileDetailCard = () => {
     },
     [smartphone, normalizeSeoSlug],
   );
+
+  useEffect(() => {
+    if (!canonicalRouteSlug) return;
+    const currentPath =
+      typeof window !== "undefined"
+        ? window.location.pathname
+        : location.pathname || "";
+    const normalizedCurrentPath =
+      currentPath && currentPath.length > 1
+        ? currentPath.replace(/\/+$/g, "")
+        : currentPath || "/";
+    const desiredPath = `/smartphones/${canonicalRouteSlug}`;
+
+    if (normalizedCurrentPath !== desiredPath) {
+      navigate(`${desiredPath}${location.search || ""}`, { replace: true });
+    }
+  }, [canonicalRouteSlug, location.pathname, location.search, navigate]);
+
   useEffect(() => {
     // If an explicit numeric id is present, fetch that exact device.
     if (id) {
@@ -2280,9 +2302,14 @@ Price: ${price}
       .replace(/^-+|-+$/g, "");
 
   const getCanonicalUrl = useMemo(() => {
+    if (canonicalRouteSlug) {
+      return `${SITE_ORIGIN}/smartphones/${canonicalRouteSlug}`;
+    }
     const path = location?.pathname || "/";
-    return `${SITE_ORIGIN}${path}`;
-  }, [location.pathname]);
+    const normalizedPath =
+      path && path.length > 1 ? path.replace(/\/+$/g, "") : path;
+    return `${SITE_ORIGIN}${normalizedPath || "/"}`;
+  }, [canonicalRouteSlug, location.pathname]);
   const isSharedLink =
     query.get("shared") === "1" || query.get("shared") === "true";
 

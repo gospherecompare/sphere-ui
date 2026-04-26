@@ -1142,17 +1142,14 @@ const Header = () => {
         category,
         path,
       });
-      // Navigate to canonical slug path. Keep `id` as optional query param for
-      // servers that prefer numeric lookup, but rely on model-based routing.
-      const finalPath = item.id
-        ? `${path}?id=${encodeURIComponent(item.id)}`
-        : path;
+      // Navigate directly to the canonical detail path so crawlers do not
+      // discover duplicate query-string variants for the same product.
       trackSearchInterest({
         query: String(item.name || item.model || searchQuery || "").trim(),
         product_id: item.id,
         source: "suggestion",
       });
-      navigate(finalPath);
+      navigate(path);
     } else if (item.type === "brand") {
       trackSearchInterest({
         query: String(item.name || searchQuery || "").trim(),

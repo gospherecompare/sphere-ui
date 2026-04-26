@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { FaBolt, FaChevronRight, FaFire, FaStore, FaTag } from "react-icons/fa";
+import { createProductPath } from "../../utils/slugGenerator";
 import {
   buildSmartphoneBrandPath,
   buildSmartphoneListingPath,
@@ -23,6 +24,13 @@ const normalizeEntityType = (value) => {
 
 const supportsDiscoveryApi = (entityType) =>
   normalizeEntityType(entityType) === "smartphones";
+
+const SMARTPHONE_DETAIL_RESERVED_SEGMENTS = new Set([
+  "brand",
+  "feature",
+  "filter",
+  "upcoming",
+]);
 
 const getEntityConfig = (entityType) => {
   const type = normalizeEntityType(entityType);
@@ -71,11 +79,25 @@ const getEntityConfig = (entityType) => {
 
 const toProductPath = (item, entityType = "smartphones") => {
   const config = getEntityConfig(entityType);
-  const slug = normalizeText(item?.slug);
-  if (slug) return `${config.basePath}/${slug}`;
+  const productLabel = normalizeText(
+    item?.name || item?.product_name || item?.model || item?.title || item?.slug,
+  );
+  if (productLabel) return createProductPath(config.basePath, productLabel);
   const id = Number(item?.id);
   if (Number.isInteger(id) && id > 0) return `${config.basePath}?id=${id}`;
   return config.basePath;
+};
+
+const normalizeSmartphoneDetailPath = (pathname = "") => {
+  const normalizedPath =
+    String(pathname || "").replace(/\/+$/g, "") || "/smartphones";
+  if (!normalizedPath.startsWith("/smartphones/")) return normalizedPath;
+  const tail = normalizedPath.slice("/smartphones/".length);
+  if (!tail || tail.includes("/")) return normalizedPath;
+  if (SMARTPHONE_DETAIL_RESERVED_SEGMENTS.has(tail.toLowerCase())) {
+    return normalizedPath;
+  }
+  return createProductPath("smartphones", tail);
 };
 
 const normalizeDiscoveryPath = (rawPath, entityType = "smartphones") => {
@@ -107,9 +129,16 @@ const normalizeDiscoveryPath = (rawPath, entityType = "smartphones") => {
     if (url.searchParams.get("sort") === "latest") {
       url.searchParams.set("sort", "newest");
     }
-    return `${url.pathname}${url.search}${url.hash}`;
+    const normalizedPathname =
+      config.type === "smartphones"
+        ? normalizeSmartphoneDetailPath(url.pathname)
+        : url.pathname.replace(/\/+$/g, "") || config.basePath;
+    return `${normalizedPathname}${url.search}${url.hash}`;
   } catch {
-    return pathValue.startsWith("/") ? pathValue : `/${pathValue}`;
+    const fallbackPath = pathValue.startsWith("/") ? pathValue : `/${pathValue}`;
+    return config.type === "smartphones"
+      ? normalizeSmartphoneDetailPath(fallbackPath)
+      : fallbackPath;
   }
 };
 

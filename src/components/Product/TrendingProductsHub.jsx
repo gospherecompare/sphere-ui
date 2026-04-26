@@ -15,7 +15,7 @@ import Spinner from "../ui/Spinner";
 import useDevice from "../../hooks/useDevice";
 import useStoreLogos from "../../hooks/useStoreLogos";
 import SEO from "../SEO";
-import { generateSlug } from "../../utils/slugGenerator";
+import { createProductPath, generateSlug } from "../../utils/slugGenerator";
 import {
   createCollectionSchema,
   createItemListSchema,
@@ -1288,17 +1288,11 @@ const TrendingProductsHub = () => {
   };
 
   const openDetail = (p) => {
-    const slug = generateSlug(p.name || `product-${p.id || ""}`);
-    const params = new URLSearchParams();
-    if (p.id != null) params.set("id", String(p.id));
-    if (p.variantId != null) params.set("variantId", String(p.variantId));
-    const isSmartphone = p.detailPath === "/smartphones";
-    const detailPath = isSmartphone
-      ? `/smartphones/${slug}-price-in-india`
-      : `${p.detailPath}/${slug}`;
-    navigate(
-      `${detailPath}${params.toString() ? `?${params.toString()}` : ""}`,
+    const detailPath = createProductPath(
+      p.detailPath || "/smartphones",
+      p.name || `product-${p.id || ""}`,
     );
+    navigate(detailPath);
   };
 
   const seoTitle = `${config.metaTitle} - Hooks`;

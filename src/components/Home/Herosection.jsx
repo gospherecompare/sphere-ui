@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { createProductPath } from "../../utils/slugGenerator";
 import {
   FaBolt,
   FaChevronDown,
@@ -95,6 +96,28 @@ const PRICE_RANGE_OPTIONS = [
     smartphoneSlug: "above-50000",
   },
 ];
+
+const normalizeSmartphoneDetailPath = (rawPath = "", fallbackName = "") => {
+  const pathValue = String(rawPath || "").trim();
+  if (pathValue) {
+    try {
+      const url = new URL(pathValue, "https://hook.local");
+      const pathname = url.pathname.replace(/\/+$/g, "");
+      if (pathname.startsWith("/smartphones/")) {
+        const tail = pathname.slice("/smartphones/".length);
+        if (tail && !tail.includes("/")) {
+          return createProductPath("smartphones", tail);
+        }
+      }
+    } catch {
+      // Ignore malformed path values and fall back to the product name.
+    }
+  }
+
+  return fallbackName
+    ? createProductPath("smartphones", fallbackName)
+    : "/smartphones";
+};
 
 const FEATURE_OPTIONS_BY_DEVICE = {
   smartphones: [
@@ -653,7 +676,10 @@ const HeroSection = () => {
                 `D${index + 1}`,
               image: device?.image_url || "",
               badge: device?.badge || "Popular",
-              detailPath: device?.detail_path || "/smartphones",
+              detailPath: normalizeSmartphoneDetailPath(
+                device?.detail_path,
+                device?.name,
+              ),
               brandName: device?.brand_name || "Smartphone",
               searchCount: device?.search_count_30d || 0,
               score: device?.search_popularity_score || 0,
