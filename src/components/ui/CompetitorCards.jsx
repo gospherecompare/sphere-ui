@@ -808,9 +808,7 @@ const CompetitorCards = ({
       navigate(createProductPath(basePath, slug));
       return;
     }
-    if (Number.isInteger(id) && id > 0) {
-      navigate(`${basePath}?id=${id}`);
-    }
+    navigate(basePath);
   };
 
   const handleExpandAll = () => {

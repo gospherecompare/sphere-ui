@@ -83,8 +83,6 @@ const toProductPath = (item, entityType = "smartphones") => {
     item?.name || item?.product_name || item?.model || item?.title || item?.slug,
   );
   if (productLabel) return createProductPath(config.basePath, productLabel);
-  const id = Number(item?.id);
-  if (Number.isInteger(id) && id > 0) return `${config.basePath}?id=${id}`;
   return config.basePath;
 };
 
