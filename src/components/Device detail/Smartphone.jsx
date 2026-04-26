@@ -2310,6 +2310,28 @@ Price: ${price}
       path && path.length > 1 ? path.replace(/\/+$/g, "") : path;
     return `${SITE_ORIGIN}${normalizedPath || "/"}`;
   }, [canonicalRouteSlug, location.pathname]);
+  const normalizedPathname = useMemo(() => {
+    const path = location?.pathname || "/";
+    return path && path.length > 1 ? path.replace(/\/+$/g, "") : path || "/";
+  }, [location.pathname]);
+  const canonicalPathname = canonicalRouteSlug
+    ? `/smartphones/${canonicalRouteSlug}`
+    : normalizedPathname;
+  const hasDuplicateQueryParams = [
+    "id",
+    "model",
+    "shared",
+    "variantId",
+    "variant_id",
+    "storeId",
+    "store_id",
+    "storeName",
+    "store",
+  ].some((key) => query.has(key));
+  const seoRobots =
+    normalizedPathname !== canonicalPathname || hasDuplicateQueryParams
+      ? "noindex, follow"
+      : "index, follow";
   const isSharedLink =
     query.get("shared") === "1" || query.get("shared") === "true";
 
@@ -4328,6 +4350,7 @@ Price: ${price}
         imageHeight={ogImageHeight}
         imageAlt={ogImageAlt}
         url={canonicalUrl}
+        robots={seoRobots}
         ogType="product"
         schema={pageSchema}
       />
