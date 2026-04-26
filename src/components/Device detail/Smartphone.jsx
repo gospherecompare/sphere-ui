@@ -586,6 +586,7 @@ const MobileDetailCard = () => {
 
   // Update URL to match canonical slug-based path if needed
   useEffect(() => {
+    if (shouldRenderAliasNotFound) return;
     const mobileDataLocal = selectedDevice?.smartphones?.[0] || selectedDevice;
     if (!mobileDataLocal || !routeSlug) return;
 
@@ -619,7 +620,14 @@ const MobileDetailCard = () => {
     if (currentUrl !== desiredUrl) {
       navigate(desiredUrl, { replace: true });
     }
-  }, [selectedDevice, routeSlug, toSeoDetailSlug, navigate, location.search]);
+  }, [
+    selectedDevice,
+    routeSlug,
+    toSeoDetailSlug,
+    navigate,
+    location.search,
+    shouldRenderAliasNotFound,
+  ]);
 
   // Prefer a locally-resolved device (by slug) before falling back to
   // `selectedDevice` which may have been set via other flows.
