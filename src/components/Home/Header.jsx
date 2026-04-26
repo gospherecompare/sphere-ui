@@ -57,6 +57,7 @@ import {
   FaSearch,
   FaBars,
   FaArrowLeft,
+  FaArrowRight,
   FaHeart,
   FaUser,
   FaShoppingCart,
@@ -109,7 +110,7 @@ const BrandIdentity = ({ variant = "desktop" }) => {
       ? "text-[18px] sm:text-[20px]"
       : "text-[18px]";
   const wrapperClass = isDesktop ? "gap-3" : "gap-2.5";
-  const brandTone = "text-[#345ce3] font-normal";
+  const brandTone = "text-[#345ce3] font-semibold";
 
   return (
     <span className={`flex items-center min-w-0 ${wrapperClass} group`}>
@@ -2296,7 +2297,7 @@ const Header = () => {
                 setSelectedSuggestionIndex(-1);
                 setIsSearchOpen(true);
               }}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200/80 text-slate-600 transition-all hover:bg-slate-100/60 hover:text-slate-900 hover:border-slate-300"
+              className="inline-flex h-10 w-10 items-center justify-center   text-slate-600 transition-all hover:bg-slate-100/60 hover:text-slate-900 hover:border-slate-300"
               aria-label="Open search"
             >
               <FaSearch className="h-4 w-4" />
@@ -2685,7 +2686,12 @@ const Header = () => {
       : [{ label: "View upcoming phones", href: "/smartphones/upcoming" }];
 
     const drawerItems = [
-      { id: "price", title: "Best Phones by Price", kind: "accordion", items: priceItems },
+      {
+        id: "price",
+        title: "Best Phones by Price",
+        kind: "accordion",
+        items: priceItems,
+      },
       {
         id: "brands",
         title: "Popular Brands",
@@ -2693,16 +2699,53 @@ const Header = () => {
         items: brandItems,
         footer: { label: "All Brands", href: "/smartphones" },
       },
-      { id: "features", title: "Browse by Feature", kind: "accordion", items: featureItems },
-      { id: "popular", title: "Popular Mobiles", kind: "accordion", items: popularItems },
-      { id: "latest", title: "Latest Phones", kind: "accordion", items: latestItems },
-      { id: "upcoming", title: "Upcoming Mobiles", kind: "accordion", items: upcomingItems },
-      { id: "compare", title: "Compare Mobiles", kind: "link", href: "/compare" },
+      {
+        id: "features",
+        title: "Browse by Feature",
+        kind: "accordion",
+        items: featureItems,
+      },
+      {
+        id: "popular",
+        title: "Popular Mobiles",
+        kind: "accordion",
+        items: popularItems,
+      },
+      {
+        id: "latest",
+        title: "Latest Phones",
+        kind: "accordion",
+        items: latestItems,
+      },
+      {
+        id: "upcoming",
+        title: "Upcoming Mobiles",
+        kind: "accordion",
+        items: upcomingItems,
+      },
+      {
+        id: "compare",
+        title: "Compare Mobiles",
+        kind: "link",
+        href: "/compare",
+      },
       { id: "finder", title: "Phone Finder", kind: "link", href: "/" },
       { id: "news", title: "News & Articles", kind: "link", href: "/news" },
-      { id: "trending", title: "Trending Mobiles", kind: "link", href: "/trending/smartphones" },
+      {
+        id: "trending",
+        title: "Trending Mobiles",
+        kind: "link",
+        href: "/trending/smartphones",
+      },
       ...(isLoggedIn
-        ? [{ id: "wishlist", title: "Wishlist", kind: "link", href: "/wishlist" }]
+        ? [
+            {
+              id: "wishlist",
+              title: "Wishlist",
+              kind: "link",
+              href: "/wishlist",
+            },
+          ]
         : []),
     ];
 
@@ -2757,12 +2800,14 @@ const Header = () => {
                               }
                               className="flex w-full items-center justify-between py-4 text-left"
                             >
-                              <span className="text-[15px] font-medium text-[#163b7d]">
+                              <span className="text-[15px] font-semibold text-[#163b7d]">
                                 {item.title}
                               </span>
-                              <span className="text-sm leading-none text-slate-500">
-                                {isOpen ? "v" : ">"}
-                              </span>
+                              {isOpen ? (
+                                <FaChevronDown className="h-3 w-3 text-slate-500" />
+                              ) : (
+                                <FaArrowRight className="h-3 w-3 text-slate-500" />
+                              )}
                             </button>
 
                             {isOpen ? (
@@ -2776,9 +2821,7 @@ const Header = () => {
                                         className="flex items-center justify-between py-2.5 text-[13px] text-slate-700 transition-colors hover:text-blue-700"
                                       >
                                         <span>{subItem.label}</span>
-                                        <span className="text-sm leading-none text-slate-400">
-                                          &gt;
-                                        </span>
+                                        <FaArrowRight className="h-3 w-3 text-slate-400" />
                                       </Link>
                                     </li>
                                   ))}
@@ -2790,7 +2833,7 @@ const Header = () => {
                                     className="mt-2 inline-flex items-center gap-2 text-[13px] font-medium text-blue-700"
                                   >
                                     <span>{item.footer.label}</span>
-                                    <span className="text-sm leading-none">&gt;</span>
+                                    <FaArrowRight className="h-3 w-3" />
                                   </Link>
                                 ) : null}
                               </div>
@@ -2804,12 +2847,10 @@ const Header = () => {
                           key={item.id}
                           to={item.href}
                           onClick={() => setIsMenuOpen(false)}
-                          className="flex items-center justify-between border-b border-slate-100 py-4 text-[15px] font-medium text-[#163b7d]"
+                          className="flex items-center justify-between border-b border-slate-100 py-4 text-[15px] font-semibold text-[#163b7d]"
                         >
                           <span>{item.title}</span>
-                          <span className="text-sm leading-none text-slate-500">
-                            &gt;
-                          </span>
+                          <FaArrowRight className="h-3 w-3 text-slate-500" />
                         </Link>
                       );
                     })}

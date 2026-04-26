@@ -1,16 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { FaFire } from "react-icons/fa";
+import { FaArrowRight, FaFire } from "react-icons/fa";
 import { createNewsStoryPath } from "../../hooks/usePublicNews";
-import { NEWS_BRAND_STYLES } from "./newsBrandStyles";
 
-const DEFAULT_TOPIC_TAGS = ["#vivo", "#tecno", "#samsung", "#apple", "#iphone"];
-
-const dateFormatter = new Intl.DateTimeFormat("en-US", {
+const DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",
   year: "numeric",
 });
+
+const TOPIC_IGNORE_LIST = new Set(["news", "newsroom", "hooks"]);
 
 const parseStoryDate = (story) => {
   const rawDate =
@@ -25,9 +24,40 @@ const compareStoriesByDate = (left, right) => {
   return rightDate - leftDate;
 };
 
+const stripMarkup = (value) =>
+  String(value || "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const clipText = (value, maxWords = 26) => {
+  const words = stripMarkup(value).split(/\s+/).filter(Boolean);
+
+  if (words.length <= maxWords) return words.join(" ");
+  return `${words.slice(0, maxWords).join(" ")}...`;
+};
+
+const getStoryCategory = (story) =>
+  stripMarkup(story?.label || story?.category || "News");
+
+const getStorySummary = (story, maxWords = 28) => {
+  const summary =
+    stripMarkup(story?.summary) ||
+    stripMarkup(story?.excerpt) ||
+    stripMarkup(story?.description);
+
+  if (summary) return clipText(summary, maxWords);
+
+  if (Array.isArray(story?.highlights) && story.highlights.length) {
+    return clipText(story.highlights.join(" "), maxWords);
+  }
+
+  return clipText(story?.title, maxWords);
+};
+
 const formatRelativeLabel = (story) => {
   const date = parseStoryDate(story);
-  if (!date) return story?.publishedAt || "Recent update";
+  if (!date) return story?.publishedAt || "Recently";
 
   const diffHours = Math.round(
     (Date.now() - date.getTime()) / (1000 * 60 * 60),
@@ -35,37 +65,64 @@ const formatRelativeLabel = (story) => {
 
   if (diffHours < 1) return "Just now";
   if (diffHours < 24) {
-    return `${diffHours} Hour${diffHours === 1 ? "" : "s"} Ago`;
+    return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
   }
 
-  return dateFormatter.format(date);
+  return DATE_FORMATTER.format(date);
 };
 
-const formatAbsoluteDate = (story) => {
+const formatAbsoluteLabel = (story) => {
   const date = parseStoryDate(story);
   if (!date) return story?.publishedAt || "Recent update";
-  return dateFormatter.format(date);
+  return DATE_FORMATTER.format(date);
 };
 
-const buildTopicTags = (stories = []) => {
-  const derivedTags = [];
+const formatByline = (story) => `Written by ${story?.author || "Hooks Desk"}`;
+
+const extractTopicCandidates = (story) =>
+  [
+    story?.brandName,
+    story?.productName,
+    story?.label,
+    story?.category,
+    ...(Array.isArray(story?.tags) ? story.tags : []),
+  ]
+    .map((value) => stripMarkup(value))
+    .filter((value) => value && !TOPIC_IGNORE_LIST.has(value.toLowerCase()));
+
+const buildTopicCollections = (stories = []) => {
+  const latest = [];
+  const counts = new Map();
 
   stories.forEach((story) => {
-    const source =
-      story?.brandName || story?.productName || story?.label || story?.category;
-    const normalized = String(source || "")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "");
+    extractTopicCandidates(story).forEach((label) => {
+      const key = label.toLowerCase();
 
-    if (!normalized) return;
+      if (!latest.some((topic) => topic.key === key)) {
+        latest.push({ key, label });
+      }
 
-    const tag = `#${normalized}`;
-    if (!derivedTags.includes(tag)) derivedTags.push(tag);
+      const current = counts.get(key) || { label, count: 0 };
+      counts.set(key, {
+        label: current.label || label,
+        count: current.count + 1,
+      });
+    });
   });
 
-  return [...derivedTags, ...DEFAULT_TOPIC_TAGS]
-    .filter((tag, index, list) => list.indexOf(tag) === index)
-    .slice(0, 5);
+  const popular = [...counts.entries()]
+    .sort((left, right) => {
+      if (right[1].count !== left[1].count) {
+        return right[1].count - left[1].count;
+      }
+      return left[1].label.localeCompare(right[1].label);
+    })
+    .map(([key, value]) => ({ key, label: value.label }));
+
+  return {
+    latest: latest.slice(0, 10),
+    popular: popular.slice(0, 10),
+  };
 };
 
 const StoryMedia = ({ story, className = "", eager = false }) => {
@@ -78,7 +135,7 @@ const StoryMedia = ({ story, className = "", eager = false }) => {
   const hasImage = Boolean(story?.image) && !imageError;
 
   return (
-    <div className={`relative overflow-hidden bg-slate-100 ${className}`}>
+    <div className={`relative overflow-hidden bg-[#ededed] ${className}`}>
       {hasImage ? (
         <img
           src={story.image}
@@ -88,13 +145,13 @@ const StoryMedia = ({ story, className = "", eager = false }) => {
           onError={() => setImageError(true)}
         />
       ) : (
-        <div className="flex h-full items-center justify-center bg-gradient-to-br from-slate-950 via-blue-950 to-fuchsia-900 p-4 text-center">
-          <div className="max-w-[12rem]">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/75">
-              {story?.label || "Newsroom"}
+        <div className="flex h-full items-end bg-gradient-to-br from-[#0f172a] via-[#1e3a8a] to-[#2563eb] p-5 text-white">
+          <div className="max-w-[15rem]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/70">
+              {getStoryCategory(story)}
             </p>
-            <h3 className="mt-3 text-sm font-black leading-tight tracking-tight text-white sm:text-base">
-              {story?.title || "Editorial coverage"}
+            <h3 className="mt-3 text-base font-black leading-tight">
+              {story?.title || "Hooks Newsroom"}
             </h3>
           </div>
         </div>
@@ -104,134 +161,136 @@ const StoryMedia = ({ story, className = "", eager = false }) => {
 };
 
 const LoadingState = () => (
-  <div className="mt-8 space-y-8">
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
-      <div className="h-[440px] animate-pulse rounded-[30px] bg-white/35" />
+  <div className="mt-8 space-y-10">
+    <div className="grid gap-8 xl:grid-cols-[minmax(0,1.5fr)_360px]">
+      <div className="h-[400px] animate-pulse rounded-[22px] bg-[#e9edf4]" />
       <div className="space-y-4">
-        <div className="h-[160px] animate-pulse rounded-[26px] bg-white/30" />
-        <div className="h-[160px] animate-pulse rounded-[26px] bg-white/30" />
-        <div className="h-[160px] animate-pulse rounded-[26px] bg-white/30" />
+        {[1, 2, 3, 4].map((item) => (
+          <div
+            key={item}
+            className="h-[92px] animate-pulse rounded-lg bg-[#eef2f7]"
+          />
+        ))}
       </div>
     </div>
 
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
-      <div className="space-y-8">
-        <div className="h-[360px] animate-pulse rounded-[24px] bg-slate-100" />
-        <div className="h-[360px] animate-pulse rounded-[24px] bg-slate-100" />
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="space-y-5">
+        {[1, 2, 3, 4].map((item) => (
+          <div
+            key={item}
+            className="h-[200px] animate-pulse rounded-lg bg-[#eef2f7]"
+          />
+        ))}
       </div>
-      <div className="h-[760px] animate-pulse rounded-[28px] bg-amber-100" />
+      <div className="space-y-5">
+        {[1, 2, 3].map((item) => (
+          <div
+            key={item}
+            className="h-[200px] animate-pulse rounded-lg bg-[#f3f6fb]"
+          />
+        ))}
+      </div>
     </div>
   </div>
 );
 
 const EmptyState = () => (
-  <div className="mt-8 rounded-[30px] border border-white/70 bg-white/60 p-8 backdrop-blur-sm">
-    <p className="text-sm font-semibold uppercase tracking-[0.22em] text-blue-700">
-      Newsroom
+  <div className="mt-8 rounded-lg bg-[#f7faff] p-8">
+    <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#1d4ed8]">
+      Hooks Newsroom
     </p>
-    <h2 className="mt-3 text-2xl font-black tracking-[-0.04em] text-[#173570] sm:text-3xl">
+    <h2 className="mt-3 text-3xl font-black tracking-[-0.04em] text-[#111111]">
       No stories published yet
     </h2>
-    <p className={`mt-3 max-w-2xl ${NEWS_BRAND_STYLES.bodyLarge}`}>
+    <p className="mt-4 max-w-2xl text-[15px] leading-7 text-[#575757]">
       Publish a story from the admin newsroom and it will appear here
       automatically.
     </p>
     <Link
-      to="/news"
-      className="mt-6 inline-flex items-center rounded-full bg-[#173570] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#102750]"
+      to="/"
+      className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[#111111] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#22304d]"
     >
-      View the newsroom
+      Go back home
+      <FaArrowRight className="h-3.5 w-3.5" />
     </Link>
   </div>
 );
 
 const ErrorState = ({ error = "" }) => (
-  <div className="mt-8 rounded-[30px] border border-rose-200 bg-rose-50 p-8">
-    <p className="text-sm font-semibold uppercase tracking-[0.22em] text-rose-700">
-      Newsroom
+  <div className="mt-8 rounded-lg bg-[#f7faff] p-8">
+    <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#1d4ed8]">
+      Hooks Newsroom
     </p>
-    <h2 className="mt-3 text-2xl font-black tracking-[-0.04em] text-rose-900 sm:text-3xl">
-      We could not load the stories
+    <h2 className="mt-3 text-3xl font-black tracking-[-0.04em] text-[#111111]">
+      We could not load the news feed
     </h2>
-    <p className="mt-3 max-w-2xl text-sm leading-7 text-rose-700">{error}</p>
+    <p className="mt-4 max-w-2xl text-[15px] leading-7 text-[#4b5f82]">
+      {error || "Please try again in a moment."}
+    </p>
     <Link
-      to="/news"
-      className="mt-6 inline-flex items-center rounded-full bg-rose-700 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-rose-800"
+      to="/"
+      className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[#1d4ed8] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#1e40af]"
     >
-      Try again later
+      Return home
+      <FaArrowRight className="h-3.5 w-3.5" />
     </Link>
   </div>
 );
 
-const HeroStoryCard = ({ story }) => {
+const LeadStoryCard = ({ story }) => {
   if (!story) return null;
 
   return (
     <Link
       to={createNewsStoryPath(story.slug)}
-      className="relative block overflow-hidden rounded-[18px] bg-slate-950"
-    >
-      <div className="relative min-h-[300px] sm:min-h-[440px]">
-        <StoryMedia
-          story={story}
-          className="absolute inset-0 h-full w-full"
-          eager
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
-
-        <div className="absolute inset-x-2.5 bottom-2.5 rounded-[18px] bg-[#f5f4f0]/95 p-3 backdrop-blur-sm sm:inset-x-4 sm:bottom-4 sm:rounded-[22px] sm:p-5">
-          <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
-            {story.label || "News"}
-          </span>
-
-          <h2
-            className="mt-3 text-[20px] font-black leading-[1.18] tracking-[-0.05em] text-[#173570] sm:mt-4 sm:text-[28px] lg:text-[32px]"
-            style={{ textWrap: "balance" }}
-          >
-            {story.title}
-          </h2>
-
-          <div className="mt-4 flex items-center justify-between gap-3 sm:mt-6">
-            <span className="text-sm font-semibold text-blue-700">
-              {story.author}
-            </span>
-            <span className="text-sm text-slate-500">
-              {formatRelativeLabel(story)}
-            </span>
-          </div>
-        </div>
-      </div>
-    </Link>
-  );
-};
-
-const SideStoryCard = ({ story }) => {
-  if (!story) return null;
-
-  return (
-    <Link
-      to={createNewsStoryPath(story.slug)}
-      className="flex gap-2.5 rounded-[14px] bg-[#ebe3ff] p-2 backdrop-blur-sm sm:gap-3 sm:p-3"
+      className="group overflow-hidden rounded-[22px] bg-white lg:grid lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]"
     >
       <StoryMedia
         story={story}
-        className="h-[76px] w-[76px] shrink-0 rounded-[12px] sm:h-[124px] sm:w-[124px]"
+        className="aspect-[16/9] w-full lg:h-full lg:min-h-[320px] lg:aspect-auto"
+        eager
       />
 
-      <div className="min-w-0 flex-1">
-        <h3
-          className="line-clamp-3 text-[14px] font-semibold leading-5 tracking-[-0.03em] text-[#173570] sm:text-[18px] sm:font-bold sm:leading-6"
+      <div className="p-4 sm:p-5 lg:p-6">
+        <div className="flex flex-wrap items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#767676]">
+          <span className="inline-flex rounded-full bg-[#e8f0ff] px-3 py-1 text-[#1d4ed8]">
+            {getStoryCategory(story)}
+          </span>
+          <span>{formatAbsoluteLabel(story)}</span>
+        </div>
+
+        <h2
+          className="mt-3 text-[22px] font-black leading-[1.08] tracking-[-0.04em] text-[#121212] transition-colors group-hover:text-[#1d4ed8] sm:text-[28px] lg:text-[32px]"
           style={{ textWrap: "balance" }}
         >
           {story.title}
-        </h3>
+        </h2>
 
-        <div className="mt-3 flex items-center justify-between gap-3 text-[11px] sm:mt-5 sm:text-[14px]">
-          <span className="truncate font-medium text-blue-700">
-            {story.author}
+        <p className="mt-3 max-w-3xl text-[14px] leading-7 text-[#555555] sm:text-base">
+          {getStorySummary(story, 30)}
+        </p>
+
+        {Array.isArray(story?.highlights) && story.highlights.length ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {story.highlights.slice(0, 3).map((highlight) => (
+              <span
+                key={highlight}
+                className="rounded-full border border-[#dde5f1] bg-[#f7f9fc] px-3 py-1.5 text-[12px] font-medium text-[#4a4a4a]"
+              >
+                {highlight}
+              </span>
+            ))}
+          </div>
+        ) : null}
+
+        <div className="mt-5 flex flex-col items-start gap-3 border-t border-[#ebeff5] pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <span className="text-sm font-semibold text-[#252525]">
+            {formatByline(story)}
           </span>
-          <span className="shrink-0 text-slate-500">
-            {formatRelativeLabel(story)}
+          <span className="inline-flex items-center gap-2 text-sm font-semibold text-[#1d4ed8]">
+            Read story
+            <FaArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
           </span>
         </div>
       </div>
@@ -239,120 +298,191 @@ const SideStoryCard = ({ story }) => {
   );
 };
 
-const TimelineStoryCard = ({ story }) => {
+const TopStoryCard = ({ story, index }) => {
   if (!story) return null;
 
   return (
-    <article>
-      <div className="flex items-center gap-3 pl-1">
-        <span className="h-6 w-[2px] rounded-full bg-blue-600" />
-        <time className="text-[15px] font-semibold tracking-[-0.01em] text-blue-700">
-          {formatRelativeLabel(story)}
-        </time>
-      </div>
+    <Link
+      to={createNewsStoryPath(story.slug)}
+      className="group block border-b border-[#dfe5ee] py-4 transition-colors last:border-b-0 last:pb-0 first:pt-0"
+    >
+      <div className="min-w-0">
+        <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#1d4ed8]">
+          Top Story {index + 1}
+        </p>
 
-      <Link
-        to={createNewsStoryPath(story.slug)}
-        className="mt-3 block overflow-hidden rounded-[12px] border border-slate-200 bg-white p-2.5 sm:p-3"
-      >
-        <div className="grid grid-cols-[minmax(0,1fr)_78px] items-start gap-2.5 sm:grid-cols-[minmax(0,1fr)_128px] sm:gap-4 lg:grid-cols-[minmax(0,1fr)_210px] lg:items-center">
-          <div className="min-w-0">
-            <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600 sm:px-3 sm:text-[11px]">
-              {story.label || "News"}
-            </span>
+        <h3 className="mt-2 text-[15px] font-bold leading-[1.32] text-[#171717] transition-colors group-hover:text-[#1d4ed8] sm:text-[16px]">
+          {story.title}
+        </h3>
 
-            <h3
-              className="mt-1 text-[15px] font-semibold leading-[1.25] tracking-[-0.04em] text-[#173570] sm:mt-4 sm:text-[24px] sm:font-black"
-              style={{ textWrap: "balance" }}
-            >
-              {story.title}
-            </h3>
-
-            <div className="mt-2.5 flex items-center justify-between gap-3 sm:mt-8">
-              <span className="text-[11px] font-semibold text-blue-700 sm:text-[15px]">
-                {story.author}
-              </span>
-              <span className="text-[11px] text-slate-500 sm:text-[14px]">
-                {formatAbsoluteDate(story)}
-              </span>
-            </div>
-          </div>
+        <div className="mt-4 grid grid-cols-[minmax(0,1fr)_84px] items-start gap-3 sm:grid-cols-[minmax(0,1fr)_104px]">
+          <p className="line-clamp-2 text-[13px] leading-6 text-[#5d5d5d] sm:line-clamp-3">
+            {getStorySummary(story, 18)}
+          </p>
 
           <StoryMedia
             story={story}
-            className="h-[74px] rounded-[10px] sm:h-[128px] lg:h-[210px] lg:w-[210px] lg:justify-self-end"
+            className="aspect-[4/3] w-full rounded-lg border border-[#e9edf3]"
           />
         </div>
+
+        <p className="mt-4 text-[11px] uppercase tracking-[0.18em] text-[#828282]">
+          {getStoryCategory(story)} | {formatAbsoluteLabel(story)}
+        </p>
+      </div>
+    </Link>
+  );
+};
+
+const FeedStoryCard = ({ story }) => {
+  if (!story) return null;
+
+  return (
+    <article className="py-4 first:pt-0 sm:py-6">
+      <Link
+        to={createNewsStoryPath(story.slug)}
+        className="group grid gap-4 rounded-lg bg-[#fbfdff] p-4 transition-all duration-300 hover:bg-white sm:grid-cols-[minmax(0,1fr)_190px] sm:gap-5 sm:rounded-none sm:bg-transparent sm:p-0"
+      >
+        <div className="order-2 min-w-0 sm:order-1">
+          <h3
+            className="text-[18px] font-black leading-[1.16] tracking-[-0.035em] text-[#171717] transition-colors group-hover:text-[#1d4ed8] sm:text-[22px]"
+            style={{ textWrap: "balance" }}
+          >
+            {story.title}
+          </h3>
+
+          <p className="mt-3 text-[14px] leading-7 text-[#555555] sm:text-[15px]">
+            {getStorySummary(story, 28)}
+          </p>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2.5 text-[13px] text-[#646464] sm:gap-3 sm:text-sm">
+            <span className="font-semibold text-[#242424]">
+              {formatByline(story)}
+            </span>
+            <span className="h-1 w-1 rounded-full bg-[#cccccc]" />
+            <span>{formatRelativeLabel(story)}</span>
+          </div>
+        </div>
+
+        <StoryMedia
+          story={story}
+          className="order-1 aspect-[16/10] w-full rounded-lg border border-[#e9edf3] sm:order-2"
+        />
       </Link>
     </article>
   );
 };
 
-const TrendingStoryCard = ({ story }) => {
+const PopularStoryCard = ({ story, index }) => {
   if (!story) return null;
 
   return (
     <Link
       to={createNewsStoryPath(story.slug)}
-      className="block border-b border-amber-200/80 py-4 last:border-b-0 last:pb-0 first:pt-0"
+      className="group grid grid-cols-[2.25rem_minmax(0,1fr)] items-start gap-3 border-b border-[#e2e8f0] py-4 transition-colors last:border-b-0 last:pb-0 first:pt-0 sm:grid-cols-[2.75rem_minmax(0,1fr)] sm:gap-4 sm:py-5"
     >
-      <div className="flex gap-3">
-        <StoryMedia
-          story={story}
-          className="h-[74px] w-[74px] shrink-0 rounded-[12px] border border-amber-100"
-        />
+      <span className="pt-0.5 text-[21px] font-black leading-none tracking-[-0.04em] text-[#1d4ed8] tabular-nums sm:text-[24px]">
+        {String(index + 1).padStart(2, "0")}
+      </span>
 
-        <div className="min-w-0 flex-1">
-          <h3 className="line-clamp-2 text-[17px] font-semibold leading-6 tracking-[-0.03em] text-[#173570]">
-            {story.title}
-          </h3>
+      <div className="min-w-0">
+        <h3 className="text-[14px] font-semibold leading-[1.32] text-[#161616] transition-colors group-hover:text-[#1d4ed8] sm:text-[16px]">
+          {story.title}
+        </h3>
 
-          <div className="mt-2 flex items-center gap-2 text-[13px] text-slate-700">
-            <span className="truncate max-w-[7rem]">{story.author}</span>
-            <span className="shrink-0">|</span>
-            <span className="shrink-0">{formatAbsoluteDate(story)}</span>
-          </div>
+        <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] font-medium uppercase tracking-[0.18em] text-[#7d8898] sm:text-[11px]">
+          <span>{getStoryCategory(story)}</span>
+          <span className="h-1 w-1 rounded-full bg-[#c6d1df]" />
+          <span className="whitespace-nowrap">
+            {formatAbsoluteLabel(story)}
+          </span>
         </div>
       </div>
     </Link>
   );
 };
 
+const SidebarStoryCard = ({ story }) => {
+  if (!story) return null;
+
+  return (
+    <Link
+      to={createNewsStoryPath(story.slug)}
+      className="group grid grid-cols-[68px_minmax(0,1fr)] items-start gap-3 border-b border-[#e2e8f0] py-4 transition-colors last:border-b-0 last:pb-0 first:pt-0 sm:grid-cols-[76px_minmax(0,1fr)]"
+    >
+      <StoryMedia
+        story={story}
+        className="aspect-[4/3] w-full rounded-lg border border-[#e9edf3]"
+      />
+
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] font-medium uppercase tracking-[0.18em] text-[#7d8898] sm:text-[11px]">
+          <span className="text-[#1d4ed8]">{getStoryCategory(story)}</span>
+          <span className="h-1 w-1 rounded-full bg-[#c6d1df]" />
+          <span className="whitespace-nowrap">
+            {formatAbsoluteLabel(story)}
+          </span>
+        </div>
+
+        <h3 className="mt-2 text-[13px] font-semibold leading-[1.3] text-[#171717] transition-colors group-hover:text-[#1d4ed8] sm:text-[15px]">
+          {story.title}
+        </h3>
+      </div>
+    </Link>
+  );
+};
+
+const TopicChip = ({ label }) => (
+  <span className="inline-flex rounded-full border border-[#dbe5f4] bg-[#f3f7ff] px-3 py-2 text-[12px] font-medium text-[#344256] sm:text-[13px]">
+    {label}
+  </span>
+);
+
 const NewEditorial = ({ stories = [], loading = false, error = "" }) => {
-  const normalizedStories = useMemo(
-    () => (Array.isArray(stories) ? stories.filter(Boolean) : []),
+  const orderedStories = useMemo(
+    () =>
+      Array.isArray(stories)
+        ? [...stories].filter(Boolean).sort(compareStoriesByDate)
+        : [],
     [stories],
   );
 
-  const orderedStories = useMemo(
-    () => [...normalizedStories].sort(compareStoriesByDate),
-    [normalizedStories],
-  );
-
-  const topicTags = useMemo(
-    () => buildTopicTags(orderedStories),
+  const topicCollections = useMemo(
+    () => buildTopicCollections(orderedStories),
     [orderedStories],
   );
 
   const heroStory = orderedStories[0] || null;
-  const sideStories = orderedStories.slice(1, 4);
-  const timelineStories = orderedStories.slice(1, 5).length
-    ? orderedStories.slice(1, 5)
-    : orderedStories.slice(0, 4);
+  const topStories = orderedStories.slice(1, 5);
+  const promotedCount = 1 + topStories.length;
+  const feedStories = orderedStories.slice(promotedCount);
+  const fallbackFeedStories =
+    feedStories.length > 0
+      ? feedStories
+      : orderedStories.slice(topStories.length + 1);
 
-  const trendingStories = useMemo(() => {
-    const pool = sideStories.length ? sideStories : orderedStories;
+  const popularStories = useMemo(
+    () =>
+      [...orderedStories]
+        .sort((left, right) => {
+          const leftScore = Array.isArray(left?.highlights)
+            ? left.highlights.length
+            : 0;
+          const rightScore = Array.isArray(right?.highlights)
+            ? right.highlights.length
+            : 0;
 
-    return [...pool]
-      .sort((left, right) => {
-        const leftScore = left?.highlights?.length || 0;
-        const rightScore = right?.highlights?.length || 0;
+          if (rightScore !== leftScore) return rightScore - leftScore;
+          return compareStoriesByDate(left, right);
+        })
+        .slice(0, 5),
+    [orderedStories],
+  );
 
-        if (rightScore !== leftScore) return rightScore - leftScore;
-        return compareStoriesByDate(left, right);
-      })
-      .slice(0, 3);
-  }, [orderedStories, sideStories]);
+  const sidebarPicks = orderedStories.slice(1, 4);
+  const headerTopics = topicCollections.latest.slice(0, 7);
+  const latestTopics = topicCollections.latest.slice(0, 8);
+  const popularTopics = topicCollections.popular.slice(0, 8);
 
   const hasStories = orderedStories.length > 0;
   const showLoadingState = loading && !hasStories;
@@ -360,94 +490,198 @@ const NewEditorial = ({ stories = [], loading = false, error = "" }) => {
   const showEmptyState = !loading && !error && !hasStories;
 
   return (
-    <main className="min-h-screen bg-[#eef3ff] text-slate-900">
-      <section
-        className="relative isolate overflow-hidden"
-        style={{
-          backgroundImage:
-            "linear-gradient(180deg, #fbf2ff 0%, #e9ddff 38%, #d8d8ff 100%)",
-        }}
-      >
-        <div className="absolute inset-0 opacity-70 [background-image:radial-gradient(circle_at_top_left,rgba(255,255,255,0.92),transparent_32%),radial-gradient(circle_at_top_right,rgba(199,210,254,0.65),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.45),transparent_35%)]" />
-        <div className="absolute -left-16 top-10 h-52 w-52 rounded-full bg-white/45 blur-3xl" />
-        <div className="absolute right-0 top-0 h-72 w-72 rounded-full bg-indigo-300/20 blur-3xl" />
-
-        <div className="relative mx-auto max-w-[1240px] p-1 pb-16 sm:pb-20">
-          <div className="flex items-end gap-4">
-            <h1 className="text-[clamp(2.4rem,5vw,4rem)]  font-black leading-none tracking-[-0.06em] text-[#163b7d]">
-              News
-            </h1>
-            <span className="hidden h-px flex-1 bg-gradient-to-r from-[#c6b7ff] via-[#cfd0ff] to-transparent sm:block" />
+    <main className="min-h-screen bg-[#f6f8fc] text-[#111111]">
+      <section className="border-b border-[#e2e2e2]">
+        <div className="mx-auto max-w-[1280px] px-4 pb-10 pt-6 sm:px-6 sm:pb-12 sm:pt-8 lg:px-8">
+          <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8a8a8a]">
+            <Link to="/" className="transition-colors hover:text-[#1d4ed8]">
+              Home
+            </Link>
+            <span>/</span>
+            <span className="text-[#1a1a1a]">News</span>
           </div>
 
-          <div className="mt-2 flex items-center gap-4 overflow-hidden  p-2 backdrop-blur-xl">
-            <div className="flex items-center gap-2 px-4 text-sm font-semibold text-orange-500">
-              <FaFire className="h-4 w-4" />
-              Trending
-            </div>
-
-            <div className="flex gap-3 overflow-x-auto pr-3">
-              {topicTags.map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex min-w-[108px] shrink-0 items-center justify-center rounded-full border border-slate-200/70 bg-[#eef0ff] px-6 py-3 text-[15px] font-semibold text-[#173570]"
-                >
-                  {tag}
-                </span>
-              ))}
+          <div className="mt-5">
+            <div className="max-w-4xl">
+              <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-[#1d4ed8]">
+                Hooks Newsroom
+              </p>
+              <h1 className="mt-3 text-[28px] font-black leading-[1.02] tracking-[-0.05em] text-[#121212] sm:text-[44px] lg:text-[50px]">
+                Technology News & Articles
+              </h1>
+              <p className="mt-4 max-w-3xl text-[14px] leading-7 text-[#575757] sm:text-base">
+                Fresh gadget launches, mobile updates, reviews, buying guides,
+                and editorial coverage arranged in a cleaner, more
+                newspaper-like reading flow.
+              </p>
             </div>
           </div>
+
+          {headerTopics.length ? (
+            <div className="mt-8 border-t border-[#ececec] pt-5">
+              <div className="no-scrollbar -mx-4 overflow-x-auto px-4 sm:mx-0 sm:overflow-visible sm:px-0">
+                <div className="flex min-w-max gap-2.5 sm:min-w-0 sm:flex-wrap sm:gap-3">
+                  {headerTopics.map((topic) => (
+                    <TopicChip key={topic.key} label={topic.label} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           {showLoadingState ? <LoadingState /> : null}
           {showErrorState ? <ErrorState error={error} /> : null}
           {showEmptyState ? <EmptyState /> : null}
 
           {hasStories ? (
-            <div className="mt-2 grid gap-4 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
-              <HeroStoryCard story={heroStory} />
+            <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_360px] xl:gap-8">
+              <div>
+                <div className="mb-4 flex items-center justify-between gap-4 border-b border-[#e5e5e5] pb-3">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#1d4ed8]">
+                      Top Story
+                    </p>
+                    <h2 className="mt-2 text-[24px] font-black tracking-[-0.04em] text-[#141414]">
+                      Lead Coverage
+                    </h2>
+                  </div>
+                </div>
 
-              <div className="space-y-4">
-                {(sideStories.length
-                  ? sideStories
-                  : orderedStories.slice(0, 3)
-                ).map((story) => (
-                  <SideStoryCard key={story.slug} story={story} />
-                ))}
+                <LeadStoryCard story={heroStory} />
               </div>
+
+              <aside>
+                <div className="rounded-lg bg-[#f8fbff] p-4 sm:p-5">
+                  <div className="flex items-center gap-2 text-[#1d4ed8]">
+                    <FaFire className="h-4 w-4" />
+                    <p className="text-[11px] font-bold uppercase tracking-[0.24em]">
+                      Top Stories
+                    </p>
+                  </div>
+
+                  <h2 className="mt-3 text-[20px] font-black tracking-[-0.04em] text-[#171717] sm:text-[22px]">
+                    Most Recent Coverage
+                  </h2>
+
+                  <div className="mt-4">
+                    {(topStories.length
+                      ? topStories
+                      : orderedStories.slice(1, 5)
+                    ).map((story, index) => (
+                      <TopStoryCard
+                        key={story.slug || `${story.title}-${index}`}
+                        story={story}
+                        index={index}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </aside>
             </div>
           ) : null}
         </div>
       </section>
 
       {hasStories ? (
-        <section className="relative -mt-10 rounded-t-[1.8rem] bg-white pt-14 sm:-mt-16 sm:rounded-t-[5rem] sm:pt-16">
-          <div className="mx-auto max-w-[1240px] p-1">
-            <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
-              <div className="space-y-8">
-                <div className="max-w-3xl">
-                  <h2 className="text-2xl font-black tracking-[-0.04em] text-[#173570] sm:text-3xl">
-                    Latest News
-                  </h2>
-                  <div className="mt-4 h-[2px] w-full bg-gradient-to-r from-blue-600 via-fuchsia-500 to-orange-500" />
+        <section className="bg-white">
+          <div className="mx-auto max-w-[1280px] px-4 py-10 sm:px-6 lg:px-8 lg:py-12">
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-10">
+              <div className="order-2 lg:order-1">
+                <div className="flex items-end justify-between gap-4 border-b border-[#dfdfdf] pb-4">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#1d4ed8]">
+                      Technology News
+                    </p>
+                    <h2 className="mt-2 text-[22px] font-black tracking-[-0.04em] text-[#151515] sm:text-[24px]">
+                      Latest Updates
+                    </h2>
+                  </div>
+
+                  <span className="hidden text-sm text-[#727272] sm:block">
+                    {fallbackFeedStories.length} stories in the main feed
+                  </span>
                 </div>
 
-                <div className="space-y-8">
-                  {timelineStories.map((story) => (
-                    <TimelineStoryCard key={story.slug} story={story} />
+                <div className="divide-y divide-[#e3e3e3] pt-2">
+                  {fallbackFeedStories.map((story) => (
+                    <FeedStoryCard key={story.slug} story={story} />
                   ))}
                 </div>
               </div>
 
-              <aside className="lg:sticky lg:top-6">
-                <div className="rounded-[16px] border border-amber-200 bg-[#fae7c5] p-5">
-                  <h2 className="text-center text-2xl font-black tracking-[-0.04em] text-[#173570]">
-                    Trending News
+              <aside className="order-1 space-y-6 lg:order-2 lg:sticky lg:top-6 lg:self-start">
+                <div className="rounded-lg bg-[#f8fbff] p-5">
+                  <div className="flex items-center gap-2 text-[#1d4ed8]">
+                    <FaFire className="h-4 w-4" />
+                    <p className="text-[11px] font-bold uppercase tracking-[0.24em]">
+                      Popular
+                    </p>
+                  </div>
+
+                  <h2 className="mt-3 text-[20px] font-black tracking-[-0.04em] text-[#171717] sm:text-[21px]">
+                    Trending Reads
                   </h2>
 
-                  <div className="mt-6 space-y-0 divide-y divide-amber-200/80">
-                    {trendingStories.map((story) => (
-                      <TrendingStoryCard key={story.slug} story={story} />
+                  <div className="mt-5">
+                    {popularStories.map((story, index) => (
+                      <PopularStoryCard
+                        key={story.slug || `${story.title}-${index}`}
+                        story={story}
+                        index={index}
+                      />
                     ))}
+                  </div>
+                  {sidebarPicks.length ? (
+                    <div className="mt-6 border-t border-[#d9e4f1] pt-6">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#1d4ed8]">
+                        More Stories
+                      </p>
+
+                      <div className="mt-4">
+                        {sidebarPicks.map((story) => (
+                          <SidebarStoryCard key={story.slug} story={story} />
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="hidden rounded-lg bg-white p-5 md:block">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#1d4ed8]">
+                    Topics
+                  </p>
+                  <h2 className="mt-3 text-[20px] font-black tracking-[-0.04em] text-[#171717] sm:text-[21px]">
+                    Trending Gadgets & Topics
+                  </h2>
+
+                  <div className="mt-5 space-y-5">
+                    <div>
+                      <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#8a8a8a]">
+                        Latest
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {latestTopics.map((topic) => (
+                          <TopicChip
+                            key={`latest-${topic.key}`}
+                            label={topic.label}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="border-t border-[#ededed] pt-5">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#8a8a8a]">
+                        Popular
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {popularTopics.map((topic) => (
+                          <TopicChip
+                            key={`popular-${topic.key}`}
+                            label={topic.label}
+                          />
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </aside>

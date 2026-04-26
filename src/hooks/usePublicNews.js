@@ -413,9 +413,8 @@ const normalizeBlogStory = (blog) => {
   const sourceContent = safeText(blog.content_template)
     ? blog.content_template
     : blog.content_rendered;
-  const renderedContent = cleanPublicStoryText(
-    renderTokenizedContent(sourceContent, tokenSnapshot),
-  );
+  const renderedTemplate = renderTokenizedContent(sourceContent, tokenSnapshot);
+  const renderedContent = cleanPublicStoryText(renderedTemplate);
   const body = splitParagraphs(renderedContent).filter(Boolean);
   const summarySource =
     safeText(blog.excerpt) ||
@@ -461,7 +460,7 @@ const normalizeBlogStory = (blog) => {
     publishedAt: formatDateLabel(publishedIso || updatedIso),
     publishedIso: publishedIso || new Date().toISOString(),
     updatedIso: updatedIso || publishedIso || new Date().toISOString(),
-    readTime: estimateReadTime(blog.content_rendered || summarySource),
+    readTime: estimateReadTime(renderedTemplate || summarySource),
     author: author.name,
     authorRole: author.role,
     highlights,
@@ -471,6 +470,7 @@ const normalizeBlogStory = (blog) => {
       category,
     }),
     body: body.length ? body : [summary],
+    contentHtml: safeText(renderedTemplate),
     image: image || DEFAULT_STORY_IMAGE,
     heroImageSource: safeText(blog.hero_image_source),
     heroImageAlt: safeText(blog.hero_image_alt) || title,

@@ -424,6 +424,7 @@ const SearchDropdown = ({
   onToggle,
   onSelect,
   className = "",
+  buttonClassName = "",
 }) => {
   const selectedOption =
     options.find((option) => option.id === selectedId) || options[0];
@@ -439,60 +440,56 @@ const SearchDropdown = ({
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         onClick={onToggle}
-        className="group flex min-h-16 w-full flex-col justify-center border-0 bg-blue-900/40 px-4 py-3 text-left transition-all duration-300 hover:bg-blue-900/60 backdrop-blur-sm sm:min-h-20 sm:px-6 sm:py-4"
+        className={`group flex min-h-[92px] w-full flex-col justify-center rounded-[22px] border border-slate-200 bg-white px-5 py-4 text-left transition-all duration-300 hover:border-sky-300 hover:shadow-[0_10px_30px_rgba(14,165,233,0.08)] sm:min-h-[96px] sm:px-6 ${buttonClassName}`}
       >
-        <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-100/80 sm:text-[11px]">
+        <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 sm:text-[11px]">
           {label}
         </span>
         <span className="mt-1.5 flex items-center justify-between gap-3 sm:mt-2 sm:gap-4">
           <span className="flex min-w-0 items-center gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/30 text-white ring-1 ring-white/50 transition group-hover:bg-white/40 sm:h-10 sm:w-10">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sky-500 transition group-hover:text-sky-600 sm:h-10 sm:w-10">
               <Icon className="h-4 w-4" />
             </span>
-            <span className="truncate text-sm font-semibold text-white sm:text-base">
+            <span className="truncate text-sm font-semibold text-slate-900 sm:text-base">
               {value}
             </span>
           </span>
           <FaChevronDown
-            className={`h-4 w-4 shrink-0 text-white/70 transition ${
-              isOpen ? "rotate-180 text-white/90" : "group-hover:text-white/90"
+            className={`h-4 w-4 shrink-0 text-slate-400 transition ${
+              isOpen ? "rotate-180 text-slate-600" : "group-hover:text-slate-600"
             }`}
           />
         </span>
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-full left-0 z-[80] mb-2 w-full overflow-hidden rounded-2xl border border-white/30 bg-white/20 shadow-2xl backdrop-blur-2xl lg:bottom-full lg:top-auto lg:mb-2 lg:mt-0">
+        <div className="absolute bottom-full left-0 z-[80] mb-2 w-full overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-2xl lg:bottom-full lg:top-auto lg:mb-2 lg:mt-0">
           <div className="p-2">
             {selectedOption && (
               <button
                 type="button"
                 onClick={() => onSelect(selectedOption.id)}
-                className="flex w-full flex-col items-start gap-2 rounded-xl border border-white/40 bg-white/20 px-3 py-3 text-left text-white shadow-sm transition hover:border-white/50 hover:bg-white/25 backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between sm:px-4"
+                className="flex w-full flex-col items-start gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 text-left text-slate-900 transition hover:border-sky-300 hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between sm:px-4"
               >
                 <span className="flex min-w-0 flex-1 items-center gap-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/30 text-white ring-1 ring-white/40 sm:h-10 sm:w-10">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sky-500 sm:h-10 sm:w-10">
                     <SelectedIcon className="h-4 w-4" />
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-sm font-semibold leading-tight text-white">
+                    <span className="block text-sm font-semibold leading-tight text-slate-900">
                       {selectedOption.optionLabel || selectedOption.label}
                     </span>
                     {selectedOption.description && (
-                      <span className="mt-0.5 block text-[11px] text-white/75 sm:text-xs">
+                      <span className="mt-0.5 block text-[11px] text-slate-500 sm:text-xs">
                         {selectedOption.description}
                       </span>
                     )}
                   </span>
                 </span>
-                <span className="self-start whitespace-nowrap bg-white/20 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-white ring-1 ring-white/30 rounded-lg sm:ml-3 sm:self-auto sm:px-3 sm:text-[10px]">
+                <span className="self-start px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-sky-600 sm:ml-3 sm:self-auto sm:px-3 sm:text-[10px]">
                   Selected
                 </span>
               </button>
-            )}
-
-            {suggestionOptions.length > 0 && (
-              <div className="my-2 h-px bg-slate-200/80" />
             )}
 
             <div className="max-h-56 space-y-1 overflow-y-auto pr-1 sm:max-h-64">
@@ -504,9 +501,9 @@ const SearchDropdown = ({
                     key={option.id}
                     type="button"
                     onClick={() => onSelect(option.id)}
-                    className="flex w-full items-center gap-3 border border-transparent rounded-lg px-3 py-2.5 text-left text-white transition hover:border-white/30 hover:bg-white/15 backdrop-blur-sm sm:px-4 sm:py-3"
+                    className="flex w-full items-center gap-3 rounded-lg border border-transparent bg-white px-3 py-2.5 text-left text-slate-900 transition hover:border-slate-200 hover:bg-slate-50 hover:text-sky-600 sm:px-4 sm:py-3"
                   >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white ring-1 ring-white/30 transition sm:h-10 sm:w-10">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sky-500 transition sm:h-10 sm:w-10">
                       <OptionIcon className="h-4 w-4" />
                     </span>
                     <span className="min-w-0 flex-1">
@@ -514,7 +511,7 @@ const SearchDropdown = ({
                         {option.optionLabel || option.label}
                       </span>
                       {option.description && (
-                        <span className="mt-0.5 block text-[11px] text-white/70 sm:text-xs">
+                        <span className="mt-0.5 block text-[11px] text-slate-500 sm:text-xs">
                           {option.description}
                         </span>
                       )}
@@ -750,20 +747,6 @@ const HeroSection = () => {
         style={{ animationDelay: "2s" }}
       />
 
-      {/* Animated accent circles */}
-      <div
-        className="absolute top-20 right-1/4 h-48 w-48 rounded-full border border-cyan-400/20 blur-sm animate-pulse"
-        style={{ animationDelay: "1.5s" }}
-      />
-      <div
-        className="absolute bottom-1/3 left-1/4 h-64 w-64 rounded-full border border-purple-400/15 blur-sm animate-pulse"
-        style={{ animationDelay: "0.5s" }}
-      />
-      <div
-        className="absolute top-2/3 right-20 h-56 w-56 rounded-full border border-indigo-400/15 blur-sm animate-pulse"
-        style={{ animationDelay: "2.5s" }}
-      />
-
       {/* Floating dots */}
       <style>{`
         @keyframes float {
@@ -806,7 +789,7 @@ const HeroSection = () => {
         <div className="mx-auto max-w-5xl text-center">
           <h1 className="mt-6 text-3xl font-black leading-[1.05] text-white sm:mt-8 sm:text-5xl lg:text-6xl">
             <span className="block">Find Your Perfect</span>
-            <span className="bg-gradient-to-r from-yellow-200 via-blue-200 to-purple-100 bg-clip-text text-transparent animate-pulse">
+            <span className="bg-gradient-to-r from-purple-500 via-purple-200 to-purple-500 bg-clip-text text-transparent animate-pulse">
               Device
             </span>
           </h1>
@@ -823,9 +806,9 @@ const HeroSection = () => {
             {stats.map((stat, idx) => (
               <div
                 key={idx}
-                className="group flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-left backdrop-blur-xl transition-all duration-300 hover:border-white/30 hover:bg-white/15 sm:gap-3 lg:rounded-2xl"
+                className="group flex items-center gap-2 rounded-2xl border border-white/15 px-4 py-3 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-white/30 sm:gap-3 lg:rounded-2xl"
               >
-                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white/20 ring-1 ring-white/30 transition-colors group-hover:bg-white/25 sm:h-12 sm:w-12">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-cyan-200 transition-colors group-hover:text-cyan-100 sm:h-12 sm:w-12">
                   <span className="text-base font-bold text-cyan-200">✓</span>
                 </div>
                 <div className="min-w-0">
@@ -849,15 +832,15 @@ const HeroSection = () => {
         <div ref={heroSearchRef} className="mx-auto mt-10 max-w-5xl sm:mt-14">
           <form
             onSubmit={handleSearch}
-            className="overflow-hidden rounded-3xl border border-white/30 bg-white/10 shadow-2xl backdrop-blur-2xl transition-all duration-300 hover:border-white/40"
+            className="overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-[0_30px_80px_rgba(15,23,42,0.18)] transition-all duration-300 hover:border-slate-300"
           >
-            <div className="border-b border-white/20 bg-white px-4 py-3 sm:px-6 sm:py-4">
-              <p className="text-sm font-semibold text-slate-900">
+            <div className="border-b border-slate-200 px-6 py-4">
+              <p className="text-[1.05rem] font-semibold text-slate-900">
                 Quick Search
               </p>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_auto]">
+            <div className="grid grid-cols-1 gap-3 p-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_220px]">
               <SearchDropdown
                 label="Device Type"
                 icon={selectedDevice.icon}
@@ -871,7 +854,8 @@ const HeroSection = () => {
                   )
                 }
                 onSelect={selectAndClose(setSelectedDeviceType)}
-                className="border-b border-white/20 lg:border-b-0 lg:border-r"
+                className=""
+                buttonClassName="h-full"
               />
 
               <SearchDropdown
@@ -887,7 +871,8 @@ const HeroSection = () => {
                   )
                 }
                 onSelect={selectAndClose(setSelectedPriceRange)}
-                className="border-b border-white/20 lg:border-b-0 lg:border-r"
+                className=""
+                buttonClassName="h-full"
               />
 
               <SearchDropdown
@@ -903,14 +888,15 @@ const HeroSection = () => {
                   )
                 }
                 onSelect={selectAndClose(setSelectedFeature)}
-                className="border-b border-white/20 lg:border-b-0 lg:border-r"
+                className="sm:col-span-2 lg:col-span-1"
+                buttonClassName="h-full"
               />
 
               <button
                 type="submit"
-                className="group relative flex w-full min-h-16 items-center justify-center gap-3 bg-gradient-to-br from-cyan-400 via-blue-400 to-blue-500 px-4 py-3 text-white transition-all duration-300 hover:from-cyan-300 hover:to-blue-400 active:scale-95 shadow-lg backdrop-blur-sm sm:min-h-20 sm:px-8 sm:py-4 lg:w-auto"
+                className="group relative flex w-full min-h-[92px] items-center justify-center gap-3 rounded-[22px] bg-gradient-to-br from-cyan-500 via-sky-500 to-blue-600 px-6 py-4 text-white shadow-[0_18px_45px_rgba(2,132,199,0.28)] transition-all duration-300 hover:from-cyan-400 hover:to-blue-500 active:scale-[0.99] sm:col-span-2 sm:min-h-[96px] lg:col-span-1"
               >
-                <span className="flex h-12 w-12 items-center justify-center  transition group-hover:bg-white/25 sm:h-14 sm:w-14">
+                <span className="flex h-12 w-12 items-center justify-center rounded-full transition sm:h-14 sm:w-14">
                   <FaSearch className="h-4 w-4 sm:h-5 sm:w-5" />
                 </span>
                 <div className="text-left">
@@ -942,7 +928,7 @@ const HeroSection = () => {
                 onClick={() =>
                   navigate(`/smartphones?q=${encodeURIComponent(item)}`)
                 }
-                className="group relative rounded-full whitespace-nowrap border border-white/40 bg-white/15 px-4 py-2 text-xs font-semibold text-white backdrop-blur-md transition-all duration-300 hover:border-white/60 hover:bg-white/25 hover:shadow-lg sm:px-5 sm:py-2.5 sm:text-sm"
+                className="group relative rounded-full whitespace-nowrap border border-white/20 px-4 py-2 text-xs font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:border-white/35 hover:text-cyan-100 sm:px-5 sm:py-2.5 sm:text-sm"
               >
                 <span className="flex items-center gap-2">
                   {idx === 0 && <FaFire className="h-3 w-3 text-yellow-300" />}
@@ -981,9 +967,9 @@ const HeroSection = () => {
                           `/smartphones?q=${encodeURIComponent(phone.name)}`,
                       )
                     }
-                    className="group relative flex snap-start flex-col gap-3 rounded-3xl backdrop-blur-md p-4 text-left text-white/95 transition-all duration-300 hover:shadow-lg sm:p-5"
+                    className="group relative flex snap-start flex-col gap-3 rounded-3xl p-4 text-left text-white/95 transition-all duration-300 hover:-translate-y-1 sm:p-5"
                   >
-                    <div className="flex h-50 w-full items-center justify-center overflow-hidden rounded-2xl border border-white/30 bg-gradient-to-br from-white/10 to-white/5 ring-1 ring-white/30 backdrop-blur-md">
+                    <div className="flex h-50 w-full items-center justify-center overflow-hidden rounded-2xl border border-white/10">
                       {phone.image ? (
                         <img
                           src={phone.image}
@@ -1010,19 +996,19 @@ const HeroSection = () => {
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between gap-2 border-t border-white/15 pt-3">
-                      <span className="text-xs font-medium text-white/70 sm:text-sm">
+                    <div className="flex items-center justify-between gap-2 border-t border-white/10 pt-3">
+                      <span className="text-xs font-medium text-slate-300 sm:text-sm">
                         View Details
                       </span>
                       <span className="transition-transform duration-300 group-hover:translate-x-1">
-                        <FaArrowRight className="h-3 w-3 text-white/70 sm:h-3.5 sm:w-3.5" />
+                        <FaArrowRight className="h-3 w-3 text-slate-300 sm:h-3.5 sm:w-3.5" />
                       </span>
                     </div>
                   </button>
                 ))}
               </div>
             ) : (
-              <div className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md p-6 text-center text-white/80 transition-all duration-300 hover:border-white/30 hover:bg-white/15">
+              <div className="rounded-2xl border border-white/15 p-6 text-center text-white/80 transition-all duration-300">
                 {featuredPhonesLoading
                   ? "Loading live devices..."
                   : "No live devices available right now."}
