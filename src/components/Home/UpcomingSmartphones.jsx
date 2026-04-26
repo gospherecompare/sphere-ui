@@ -252,11 +252,7 @@ const LatestSmartphones = () => {
 
   const getDevicePath = (device) => {
     const rawName = device.name || String(device.id || "device");
-    const basePath = createProductPath("smartphones", rawName);
-    const params = new URLSearchParams();
-    if (device.id) params.set("id", String(device.id));
-    const qs = params.toString();
-    return `${basePath}${qs ? `?${qs}` : ""}`;
+    return createProductPath("smartphones", rawName);
   };
 
   const handleDeviceClick = (device) => {

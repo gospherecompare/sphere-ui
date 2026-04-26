@@ -391,11 +391,7 @@ const getShortLabel = (name, brand) => {
 
 const getDevicePath = (device) => {
   const rawName = device.name || device.brand || "smartphone";
-  const basePath = createProductPath("smartphones", rawName);
-  const params = new URLSearchParams();
-  if (device.id) params.set("id", String(device.id));
-  const query = params.toString();
-  return `${basePath}${query ? `?${query}` : ""}`;
+  return createProductPath("smartphones", rawName);
 };
 
 const BudgetCard = ({

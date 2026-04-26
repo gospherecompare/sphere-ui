@@ -586,12 +586,7 @@ const BestPriceSection = () => {
     const category = routeMap[activeCategory] || "smartphones";
     const rawName =
       device.name || device.model || device.product_name || device.brand || "";
-    const basePath = createProductPath(category, rawName);
-    const params = new URLSearchParams();
-    if (device.id) params.set("id", String(device.id));
-    if (device.variantId) params.set("variantId", String(device.variantId));
-    const qs = params.toString();
-    return `${basePath}${qs ? `?${qs}` : ""}`;
+    return createProductPath(category, rawName);
   };
 
   const handleDeviceClick = (device) => {
