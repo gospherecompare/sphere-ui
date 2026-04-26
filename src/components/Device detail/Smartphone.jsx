@@ -51,6 +51,7 @@ import {
 } from "react-icons/fa";
 import "../../styles/hideScrollbar.css";
 import Spinner from "../ui/Spinner";
+import NotFound from "../Static/NotFound";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import SEO from "../SEO";
 import { smartphoneMeta } from "../../constants/meta";
@@ -481,6 +482,10 @@ const MobileDetailCard = () => {
 
   // Extract slug from route params (SEO-friendly slug-based URL)
   const routeSlug = params.slug || null;
+  const normalizedRouteSlug = useMemo(
+    () => String(routeSlug || "").toLowerCase().trim().replace(/\/+$/g, ""),
+    [routeSlug],
+  );
   const routeBaseSlug = useMemo(
     () => normalizeSeoSlug(routeSlug),
     [normalizeSeoSlug, routeSlug],
@@ -488,6 +493,9 @@ const MobileDetailCard = () => {
   const canonicalRouteSlug = useMemo(
     () => (routeSlug ? toSeoDetailSlug(routeSlug) : ""),
     [routeSlug, toSeoDetailSlug],
+  );
+  const shouldRenderAliasNotFound = Boolean(
+    routeSlug && canonicalRouteSlug && normalizedRouteSlug !== canonicalRouteSlug,
   );
 
   // Convert slug to searchable model name
@@ -518,7 +526,7 @@ const MobileDetailCard = () => {
   );
 
   useEffect(() => {
-    if (!canonicalRouteSlug) return;
+    if (!canonicalRouteSlug || shouldRenderAliasNotFound) return;
     const currentPath =
       typeof window !== "undefined"
         ? window.location.pathname
@@ -532,9 +540,16 @@ const MobileDetailCard = () => {
     if (normalizedCurrentPath !== desiredPath) {
       navigate(`${desiredPath}${location.search || ""}`, { replace: true });
     }
-  }, [canonicalRouteSlug, location.pathname, location.search, navigate]);
+  }, [
+    canonicalRouteSlug,
+    location.pathname,
+    location.search,
+    navigate,
+    shouldRenderAliasNotFound,
+  ]);
 
   useEffect(() => {
+    if (shouldRenderAliasNotFound) return;
     // If an explicit numeric id is present, fetch that exact device.
     if (id) {
       fetchDevice(id);
@@ -559,7 +574,15 @@ const MobileDetailCard = () => {
       }
     }
     // If nothing else, no-op; the global loader will fetch lists on mount.
-  }, [id, routeSlug, searchModel, fetchDevice, findDeviceBySlug, smartphone]);
+  }, [
+    id,
+    routeSlug,
+    searchModel,
+    fetchDevice,
+    findDeviceBySlug,
+    smartphone,
+    shouldRenderAliasNotFound,
+  ]);
 
   // Update URL to match canonical slug-based path if needed
   useEffect(() => {
@@ -4326,6 +4349,10 @@ Price: ${price}
 
   const compareTarget = popularComparisonTargets[0] || null;
   const detailInfoSections = infoKeySections.filter(Boolean);
+
+  if (shouldRenderAliasNotFound) {
+    return <NotFound />;
+  }
 
   // If initial loading state (no mobileData yet), render spinner now
   if (showInitialLoading) {
