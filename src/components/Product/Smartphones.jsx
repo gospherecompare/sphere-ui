@@ -37,6 +37,7 @@ import useStoreLogos from "../../hooks/useStoreLogos";
 import Spinner from "../ui/Spinner";
 import Breadcrumbs from "../Breadcrumbs";
 import SEO from "../SEO";
+import ProductDiscoverySections from "../ui/ProductDiscoverySections";
 import { generateSlug } from "../../utils/slugGenerator";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
@@ -60,6 +61,7 @@ import {
 import "../../styles/hideScrollbar.css";
 
 const ROUTE_FEED_CACHE_KEY = "hooks_smartphone_route_feed_v1";
+const SMARTPHONES_PER_PAGE = 20;
 
 const toFeatureSeoLabel = (value = "") => {
   const normalized = (() => {
@@ -1971,6 +1973,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const [showFilters, setShowFilters] = useState(false);
   const [showHeroDescription, setShowHeroDescription] = useState(false);
   const [compareItems, setCompareItems] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
   const compareLimit = useMemo(
     () => getCompareLimitForDevices(compareItems),
     [compareItems],
@@ -2180,7 +2183,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         ? featureHeroText
         : priceFilter || currentBrandObj
           ? seoDescription
-          : "Browse popular mobile phones in India with updated prices, specs, and launch details. Use the filters to narrow brands, budgets, and features, then quickly shortlist the phones that matter most.";
+          : "Browse popular mobile phones in India with updated prices, detailed specifications, launch timelines, and key highlights from leading brands. Use the filters to narrow phones by budget, features, network support, battery, RAM, storage, and refresh rate, then compare your shortlisted options faster and focus on the models that best match your daily needs and buying priorities.";
   const heroSubtitleStyle =
     isExpandedHeroDescriptionPath && !showHeroDescription
       ? {
@@ -3395,6 +3398,59 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         return 0;
     }
   });
+  const totalPages = Math.max(
+    1,
+    Math.ceil(sortedVariants.length / SMARTPHONES_PER_PAGE),
+  );
+  const currentPageSafe = Math.min(currentPage, totalPages);
+  const paginatedVariants = useMemo(() => {
+    const startIndex = (currentPageSafe - 1) * SMARTPHONES_PER_PAGE;
+    return sortedVariants.slice(
+      startIndex,
+      startIndex + SMARTPHONES_PER_PAGE,
+    );
+  }, [currentPageSafe, sortedVariants]);
+  const visibleResultsStart = sortedVariants.length
+    ? (currentPageSafe - 1) * SMARTPHONES_PER_PAGE + 1
+    : 0;
+  const visibleResultsEnd = sortedVariants.length
+    ? visibleResultsStart + paginatedVariants.length - 1
+    : 0;
+  const featuredDiscoveryProduct = useMemo(
+    () =>
+      paginatedVariants.find((device) => {
+        const productId = Number(
+          device?.productId ?? device?.product_id ?? device?.baseId ?? NaN,
+        );
+        return Number.isInteger(productId) && productId > 0;
+      }) || null,
+    [paginatedVariants],
+  );
+
+  useEffect(() => {
+    setCurrentPage((prev) => Math.min(prev, totalPages));
+  }, [totalPages]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    filters,
+    searchQuery,
+    sortBy,
+    normalizedFilterSlug,
+    normalizedBrandSlug,
+    normalizedFeature,
+    pathname,
+  ]);
+
+  const handlePageChange = (nextPage) => {
+    const targetPage = Math.max(1, Math.min(totalPages, nextPage));
+    if (targetPage === currentPageSafe) return;
+    setCurrentPage(targetPage);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
   const seoKeywords = useMemo(
     () =>
       buildListSeoKeywords({
@@ -3597,7 +3653,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   }, [location?.pathname, normalizedBrandSlug, normalizedFeature]);
 
   const listSchemaItems = useMemo(() => {
-    const items = sortedVariants.slice(0, 20).map((device) => {
+    const items = paginatedVariants.map((device) => {
       const name = String(
         device?.name || device?.model || device?.title || "",
       ).trim();
@@ -3614,7 +3670,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       };
     });
     return items.filter(Boolean);
-  }, [sortedVariants]);
+  }, [paginatedVariants]);
 
   const listSchema = useMemo(() => {
     const collectionSchema = createCollectionSchema({
@@ -3774,7 +3830,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                           {getActiveFiltersCount() > 1 ? "s" : ""} applied
                         </span>
                         <p className="mt-0.5 text-xs text-slate-500">
-                          Showing {filteredVariants.length} of{" "}
+                          Found {filteredVariants.length} of{" "}
                           {variantCards.length} options
                         </p>
                       </div>
@@ -4137,7 +4193,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
               <div className="flex-1">
                 {/* Products Grid */}
                 <div className="grid grid-cols-1 gap-4 sm:gap-5 md:gap-6 auto-rows-max">
-                  {sortedVariants.map((device, _idx) => {
+                  {paginatedVariants.map((device, _idx) => {
                     const devicePolicy = resolveDevicePolicy(device);
                     const availabilityState = getAvailabilityState(
                       device.storePrices || [],
@@ -4771,10 +4827,37 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                   <div className="mt-8 border-t border-slate-200 pt-6">
                     <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                       <div className="text-sm text-slate-500">
-                        Showing {sortedVariants.length} of {variantCards.length}{" "}
-                        options
+                        Showing {visibleResultsStart}-{visibleResultsEnd} of{" "}
+                        {sortedVariants.length} options
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center justify-center gap-3 sm:justify-end">
+                        {totalPages > 1 ? (
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handlePageChange(currentPageSafe - 1)
+                              }
+                              disabled={currentPageSafe === 1}
+                              className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              Previous
+                            </button>
+                            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
+                              Page {currentPageSafe} of {totalPages}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handlePageChange(currentPageSafe + 1)
+                              }
+                              disabled={currentPageSafe === totalPages}
+                              className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              Next
+                            </button>
+                          </div>
+                        ) : null}
                         <button
                           onClick={() =>
                             window.scrollTo({ top: 0, behavior: "smooth" })
@@ -5228,29 +5311,15 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         </div>
       </div>
 
-      {/* Help Section */}
-      <div className="mt-12 lg:mt-16">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm lg:p-8">
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
-            <div>
-              <h3 className="mb-2 text-xl font-bold text-slate-900">
-                Need help choosing?
-              </h3>
-              <p className="mb-4 text-slate-600 lg:mb-0">
-                Use our comparison tool to side-by-side compare up to 4
-                smartphones and make an informed decision based on your specific
-                requirements.
-              </p>
-            </div>
-            <button
-              onClick={() => navigate("/compare")}
-              className="whitespace-nowrap rounded-xl border border-blue-400/50 bg-gradient-to-r from-blue-500 to-sky-500 px-8 py-3 font-semibold text-white transition-all duration-200 hover:from-blue-600 hover:to-sky-600"
-            >
-              Open Comparison Tool
-            </button>
-          </div>
-        </div>
-      </div>
+      {featuredDiscoveryProduct ? (
+        <section className="mx-auto mt-8 max-w-7xl px-4 pb-8 sm:mt-10 sm:px-6 sm:pb-12 md:pb-16 lg:px-8 lg:pb-20">
+          <ProductDiscoverySections
+            productId={featuredDiscoveryProduct.productId}
+            currentBrand={currentBrandObj?.name || featuredDiscoveryProduct.brand || ""}
+            entityType="smartphones"
+          />
+        </section>
+      ) : null}
     </div>
   );
 };

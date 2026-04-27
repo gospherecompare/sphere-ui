@@ -32,6 +32,7 @@ import {
   FaVolumeUp,
   FaGamepad,
   FaBalanceScale,
+  FaArrowRight,
   FaChevronLeft,
   FaChevronRight,
   FaChevronDown,
@@ -52,13 +53,14 @@ import {
 import "../../styles/hideScrollbar.css";
 import Spinner from "../ui/Spinner";
 import NotFound from "../Static/NotFound";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import SEO from "../SEO";
 import { smartphoneMeta } from "../../constants/meta";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
 import { createWebPageSchema } from "../../utils/schemaGenerators";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import useStoreLogos from "../../hooks/useStoreLogos";
+import { createNewsStoryPath, usePublicNewsFeed } from "../../hooks/usePublicNews";
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
 import { resolveSmartphoneBadgeScore } from "../../utils/smartphoneBadgeScore";
 import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
@@ -68,6 +70,7 @@ const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
 const RECENT_STORAGE_KEY = "hooks_recent_smartphones_v1";
 const MAX_RECENT_ITEMS = 12;
 const SITE_ORIGIN = "https://tryhook.shop";
+const LINKED_NEWS_LIMIT = 3;
 const CURRENT_MONTH_YEAR = new Intl.DateTimeFormat("en-US", {
   month: "short",
   year: "numeric",
@@ -432,6 +435,95 @@ const BaseSpecScoreBadge = ({
   );
 };
 
+const formatLinkedNewsDate = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Recent update";
+
+  const month = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+  }).format(date);
+  const day = new Intl.DateTimeFormat("en-US", {
+    day: "numeric",
+  }).format(date);
+  const year = new Intl.DateTimeFormat("en-US", {
+    year: "2-digit",
+  }).format(date);
+
+  return `${month} ${day}, '${year}`;
+};
+
+const LinkedNewsStoryCard = ({ story, compact = false }) => {
+  if (!story?.slug || !story?.title) return null;
+
+  const storyPath = createNewsStoryPath(story.slug);
+  const authorLabel = story?.author || "Hooks newsroom";
+  const dateLabel = formatLinkedNewsDate(
+    story?.publishedIso || story?.updatedIso || story?.publishedAt,
+  );
+  const baseCardClass = compact
+    ? "group grid h-full gap-3 rounded-[22px] border border-white/80 bg-white/90 p-3 shadow-[0_10px_28px_rgba(90,108,179,0.10)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(90,108,179,0.16)] sm:grid-cols-[96px,1fr]"
+    : "group flex h-full flex-col rounded-[24px] border border-[#e8edfb] bg-white p-3 shadow-[0_14px_34px_rgba(90,108,179,0.12)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(90,108,179,0.18)]";
+  const imageWrapClass = compact
+    ? "aspect-[6/5] overflow-hidden rounded-[16px] border border-[#edf1fc] bg-[#eef2ff] sm:h-full"
+    : "aspect-[5/3] overflow-hidden rounded-[16px] border border-[#edf1fc] bg-[#eef2ff]";
+  const titleClass = compact
+    ? "text-[0.98rem] leading-6 text-[#082a72] line-clamp-3"
+    : "text-[1.15rem] leading-8 text-[#082a72] line-clamp-3";
+
+  return (
+    <Link to={storyPath} className={baseCardClass}>
+      <div className={imageWrapClass}>
+        {story?.image ? (
+          <img
+            src={story.image}
+            alt={story?.heroImageAlt || story.title}
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+          />
+        ) : (
+          <div className="flex h-full items-end bg-gradient-to-br from-[#ed174c] via-[#f35b4f] to-[#f7b267] p-4 text-white">
+            <div className="max-w-[11rem]">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/80">
+                {story?.label || "News"}
+              </p>
+              <h3 className="mt-3 text-base font-black leading-tight">
+                {story.title}
+              </h3>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className={compact ? "min-w-0 self-stretch py-1" : "flex flex-1 flex-col px-1 pb-1 pt-4"}>
+        {!compact ? (
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#5f74c6]">
+            {story?.label || "News"}
+          </p>
+        ) : null}
+
+        <h3
+          className={`font-bold transition-colors group-hover:text-[#3557d3] ${titleClass} ${
+            compact ? "" : "mt-2"
+          }`}
+        >
+          {story.title}
+        </h3>
+
+        <div
+          className={`flex items-center justify-between gap-3 text-[13px] ${
+            compact ? "mt-3" : "mt-auto pt-5"
+          }`}
+        >
+          <span className="min-w-0 truncate font-medium text-[#946739]">
+            {authorLabel}
+          </span>
+          <span className="shrink-0 text-[#6f7d9f]">{dateLabel}</span>
+        </div>
+      </div>
+    </Link>
+  );
+};
+
 const MobileDetailCard = () => {
   const [activeTab, setActiveTab] = useState("specifications");
   const [activeImage, setActiveImage] = useState(0);
@@ -442,6 +534,7 @@ const MobileDetailCard = () => {
   const [isFavorite, setIsFavorite] = useState(false);
   const variantInitKeyRef = useRef("");
   const recentStoreKeyRef = useRef("");
+  const detailFetchKeyRef = useRef("");
   const {
     selectedDevice,
     fetchDevice,
@@ -632,6 +725,57 @@ const MobileDetailCard = () => {
   // Prefer a locally-resolved device (by slug) before falling back to
   // `selectedDevice` which may have been set via other flows.
   const localResolved = routeSlug ? findDeviceBySlug(routeBaseSlug) : null;
+  const selectedResolved =
+    selectedDevice?.smartphones?.[0] || selectedDevice || null;
+  const doesDeviceMatchRoute = useCallback(
+    (device) => {
+      if (!device || !routeBaseSlug) return false;
+      const searchSlug = generateSlug(normalizeSeoSlug(routeBaseSlug));
+      return [
+        device?.name,
+        device?.model,
+        device?.product_name,
+        device?.productName,
+        device?.model_number,
+        device?.basic_info?.product_name,
+        device?.basic_info?.model,
+        device?.basic_info?.model_number,
+      ].some((value) => generateSlug(normalizeSeoSlug(value)) === searchSlug);
+    },
+    [normalizeSeoSlug, routeBaseSlug],
+  );
+  const selectedResolvedForRoute = useMemo(
+    () =>
+      routeSlug
+        ? doesDeviceMatchRoute(selectedResolved)
+          ? selectedResolved
+          : null
+        : selectedResolved,
+    [doesDeviceMatchRoute, routeSlug, selectedResolved],
+  );
+
+  useEffect(() => {
+    if (shouldRenderAliasNotFound || id || !routeSlug) return;
+    const resolvedId = localResolved?.id ?? localResolved?.product_id ?? null;
+    if (resolvedId == null) return;
+    const fetchKey = `${routeSlug}:${resolvedId}`;
+    const selectedId =
+      selectedResolvedForRoute?.id ?? selectedResolvedForRoute?.product_id ?? null;
+    if (selectedId != null && String(selectedId) === String(resolvedId)) {
+      detailFetchKeyRef.current = fetchKey;
+      return;
+    }
+    if (detailFetchKeyRef.current === fetchKey) return;
+    detailFetchKeyRef.current = fetchKey;
+    fetchDevice(resolvedId);
+  }, [
+    fetchDevice,
+    id,
+    localResolved,
+    routeSlug,
+    selectedResolvedForRoute,
+    shouldRenderAliasNotFound,
+  ]);
   // Normalize incoming device object into a shape the UI expects.
   const detectAiPhone = (d) => {
     if (!d) return false;
@@ -1201,9 +1345,9 @@ const MobileDetailCard = () => {
   const mobileData = useMemo(
     () =>
       normalizeSmartphone(
-        localResolved || selectedDevice?.smartphones?.[0] || selectedDevice,
+        selectedResolvedForRoute || localResolved || selectedResolved,
       ),
-    [localResolved, selectedDevice],
+    [localResolved, selectedResolved, selectedResolvedForRoute],
   );
   const carouselImages = Array.isArray(mobileData?.images)
     ? mobileData.images.filter(Boolean)
@@ -1254,6 +1398,8 @@ const MobileDetailCard = () => {
       mobileData?.allowCompare ?? mobileData?.allow_compare ?? null;
     const allowCompetitorsRaw =
       mobileData?.allowCompetitors ?? mobileData?.allow_competitors ?? null;
+    const allowSpecScoreRaw =
+      mobileData?.allowSpecScore ?? mobileData?.allow_spec_score ?? null;
     const compareLimitRaw = Number(
       mobileData?.compareLimit ?? mobileData?.compare_limit ?? NaN,
     );
@@ -1266,6 +1412,8 @@ const MobileDetailCard = () => {
         typeof allowCompareRaw === "boolean" ? allowCompareRaw : null,
       allowCompetitors:
         typeof allowCompetitorsRaw === "boolean" ? allowCompetitorsRaw : null,
+      allowSpecScore:
+        typeof allowSpecScoreRaw === "boolean" ? allowSpecScoreRaw : null,
       compareLimit: Number.isFinite(compareLimitRaw) ? compareLimitRaw : null,
       competitorLimit: Number.isFinite(competitorLimitRaw)
         ? competitorLimitRaw
@@ -1318,13 +1466,32 @@ const MobileDetailCard = () => {
       return serverPolicy.competitorLimit;
     return getCompetitorLimitForStage(launchStatus);
   }, [launchStatus, serverPolicy]);
-  const allowSpecScore = false;
+  const allowSpecScore =
+    typeof serverPolicy.allowSpecScore === "boolean"
+      ? serverPolicy.allowSpecScore
+      : isSpecScoreAllowed(launchStatus);
   const SpecScoreBadge = allowSpecScore ? BaseSpecScoreBadge : HiddenScoreBadge;
   const headerSpecScoreValue = useMemo(() => {
     if (!allowSpecScore || !mobileData) return null;
     const rawValue = Number(resolveSmartphoneBadgeScore(mobileData));
     return Number.isFinite(rawValue) ? Math.round(rawValue) : null;
   }, [allowSpecScore, mobileData]);
+  const headerSpecScoreBlock =
+    headerSpecScoreValue != null ? (
+      <div className="flex items-end gap-1 leading-none">
+        <span className="text-3xl font-semibold leading-none text-blue-600">
+          {headerSpecScoreValue}
+        </span>
+        <div className="flex flex-col items-start leading-none">
+          <span className="text-[8px] font-semibold uppercase tracking-[0.32em] text-blue-400">
+            Spec
+          </span>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-blue-500">
+            Score
+          </span>
+        </div>
+      </div>
+    ) : null;
   const pickScore100 = useCallback((...values) => {
     for (const value of values) {
       const normalized = normalizeScore100(value);
@@ -1692,6 +1859,39 @@ const MobileDetailCard = () => {
       : "";
   const currentProductId =
     mobileData?.id ?? mobileData?.product_id ?? mobileData?.productId ?? null;
+  const {
+    stories: linkedNewsStories,
+  } = usePublicNewsFeed({
+    limit: LINKED_NEWS_LIMIT,
+    category: "",
+    productId: currentProductId,
+    enabled: Boolean(currentProductId),
+  });
+  const exactLinkedNewsStories = useMemo(() => {
+    const resolvedProductId = Number(currentProductId);
+    if (!Number.isInteger(resolvedProductId) || resolvedProductId <= 0) {
+      return [];
+    }
+
+    return linkedNewsStories.filter((story) => {
+      const storyProductId = Number(story?.productId);
+      const storyProductType = String(story?.productType || "")
+        .trim()
+        .toLowerCase();
+
+      return (
+        Number.isInteger(storyProductId) &&
+        storyProductId === resolvedProductId &&
+        Boolean(story?.productLinked) &&
+        (!storyProductType || storyProductType === "smartphone")
+      );
+    });
+  }, [currentProductId, linkedNewsStories]);
+  const linkedNewsHeroStory = exactLinkedNewsStories[0] || null;
+  const linkedNewsSecondaryStories = exactLinkedNewsStories.slice(1, 3);
+  const linkedNewsHeading =
+    mobileData?.name || mobileData?.model || "Smartphone";
+  const shouldShowLinkedNews = exactLinkedNewsStories.length > 0;
   const currentVariantStoreRows = useMemo(() => {
     const variantRows = getRenderableStorePriceRows(currentVariant);
     if (variantRows.length > 0) return variantRows;
@@ -3550,7 +3750,7 @@ Price: ${price}
         return (
           <div
             id="spec-specifications"
-            className={`w-full max-w-3xl ${combineResponsiveClasses(RESPONSIVE_SPACING.contentMarginY)}`}
+            className={`w-full max-w-3xl p-2 sm:p-0 ${combineResponsiveClasses(RESPONSIVE_SPACING.contentMarginY)}`}
           >
             <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
               <div className="min-w-0">
@@ -4547,14 +4747,25 @@ Price: ${price}
                   ) : null}
                 </div>
 
-                {currentVariant ? (
-                  <div className="mt-4 flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-end sm:gap-2">
-                    <div className="text-[2rem] font-bold tracking-tight text-emerald-600 sm:text-3xl">
-                      {currentPriceDisplay || "Price not available"}
+                {currentVariant || headerSpecScoreBlock ? (
+                  <div className="mt-4 flex items-start justify-between gap-3 sm:block">
+                    <div className="min-w-0">
+                      {currentVariant ? (
+                        <>
+                          <div className="text-[2rem] font-bold tracking-tight text-emerald-600 sm:text-3xl">
+                            {currentPriceDisplay || "Price not available"}
+                          </div>
+                          <div className="text-[13px] text-slate-500 sm:pb-0.5 sm:text-sm">
+                            ({currentVariant.ram} / {currentVariant.storage})
+                          </div>
+                        </>
+                      ) : null}
                     </div>
-                    <div className="text-[13px] text-slate-500 sm:pb-0.5 sm:text-sm">
-                      ({currentVariant.ram} / {currentVariant.storage})
-                    </div>
+                    {headerSpecScoreBlock ? (
+                      <div className="shrink-0 sm:hidden">
+                        {headerSpecScoreBlock}
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
 
@@ -4579,6 +4790,12 @@ Price: ${price}
                       <FaShareAlt className="text-lg text-slate-500" />
                     </button>
                   </div>
+
+                  {headerSpecScoreBlock ? (
+                    <div className="hidden flex-wrap items-center gap-2 text-[13px] text-slate-600 sm:flex sm:gap-3 sm:text-sm">
+                      {headerSpecScoreBlock}
+                    </div>
+                  ) : null}
 
                   {hasLaunchDate ? (
                     <div className="flex flex-wrap items-center gap-2 text-[13px] text-slate-600 sm:text-sm">
@@ -4620,21 +4837,7 @@ Price: ${price}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 text-[13px] text-slate-600 sm:gap-3 sm:text-sm">
-                  {headerSpecScoreValue != null ? (
-                    <div className="flex items-end gap-1 leading-none">
-                      <span className="text-3xl font-semibold leading-none text-blue-600">
-                        {headerSpecScoreValue}
-                      </span>
-                      <div className="flex flex-col items-start leading-none">
-                        <span className="text-[8px] font-semibold uppercase tracking-[0.32em] text-blue-400">
-                          Spec
-                        </span>
-                        <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-blue-500">
-                          Score
-                        </span>
-                      </div>
-                    </div>
-                  ) : null}
+                  {headerSpecScoreBlock}
                 </div>
 
                 {hasLaunchDate ? (
@@ -5211,6 +5414,64 @@ Price: ${price}
           </div>
         </div>
       </div>
+
+      {shouldShowLinkedNews ? (
+        <div className="w-full">
+          <div className="mx-auto max-w-7xl px-0 py-0 sm:px-6 sm:py-8 lg:px-8">
+            <section className="overflow-hidden rounded-[30px] border border-white/70 bg-gradient-to-br from-[#eef1ff] via-[#f4f7ff] to-[#eef5ff] p-4 shadow-[0_18px_44px_rgba(90,108,179,0.10)] sm:p-6 lg:p-8">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold tracking-tight text-[#082a72] sm:text-[2.1rem]">
+                    {linkedNewsHeading}{" "}
+                    <span className="bg-gradient-to-r from-[#4a66ff] via-[#8b63ff] to-[#ff7b39] bg-clip-text text-transparent">
+                      News
+                    </span>
+                  </h2>
+                  <p className="mt-2 max-w-2xl text-sm text-[#5f6d8f]">
+                    This block appears only when the newsroom has a
+                    product-linked story saved for this exact smartphone.
+                  </p>
+                </div>
+                {linkedNewsSecondaryStories.length > 0 ? (
+                  <div className="inline-flex items-center rounded-full border border-white/80 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[#6373a0] shadow-[0_10px_24px_rgba(90,108,179,0.08)]">
+                    {exactLinkedNewsStories.length} Linked Stories
+                  </div>
+                ) : null}
+              </div>
+              <div className="mt-5 h-px w-full bg-[#cfd8f1]" />
+
+              {linkedNewsHeroStory ? (
+                <div className="mt-6 grid items-start gap-4 xl:grid-cols-[264px,minmax(0,1fr)]">
+                  <div className="max-w-[264px]">
+                    <LinkedNewsStoryCard story={linkedNewsHeroStory} />
+                  </div>
+                  {linkedNewsSecondaryStories.length > 0 ? (
+                    <div className="grid gap-4 sm:grid-cols-2 xl:max-w-[420px]">
+                      {linkedNewsSecondaryStories.map((story) => (
+                        <LinkedNewsStoryCard
+                          key={story.slug}
+                          story={story}
+                          compact={true}
+                        />
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              <div className="mt-8 flex justify-center">
+                <Link
+                  to="/news"
+                  className="inline-flex items-center gap-3 text-lg font-semibold text-[#082a72] transition-colors hover:text-[#3557d3]"
+                >
+                  View All News
+                  <FaArrowRight className="text-base" />
+                </Link>
+              </div>
+            </section>
+          </div>
+        </div>
+      ) : null}
 
       {activeTab === "specifications" ? (
         <div className="w-full">

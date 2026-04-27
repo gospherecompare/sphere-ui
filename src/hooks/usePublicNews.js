@@ -408,6 +408,9 @@ const normalizeBlogStory = (blog) => {
   const title = safeText(blog.title);
   if (!slug || !title) return null;
 
+  const rawProductId = Number(blog.product_id);
+  const linkedProductId =
+    Number.isInteger(rawProductId) && rawProductId > 0 ? rawProductId : null;
   const category = normalizeCategory(blog.category);
   const tokenSnapshot = toPlainObject(blog.token_snapshot);
   const sourceContent = safeText(blog.content_template)
@@ -452,6 +455,8 @@ const normalizeBlogStory = (blog) => {
 
   return {
     id: Number(blog.id) || slug,
+    productId: linkedProductId,
+    productLinked: Boolean(linkedProductId),
     slug,
     category,
     label: CATEGORY_LABELS[category] || CATEGORY_LABELS.news,
@@ -536,12 +541,24 @@ export const buildRelatedNewsStories = (stories = [], currentStory = null, limit
   return [...sameCategory, ...otherStories].slice(0, limit);
 };
 
-export const usePublicNewsFeed = ({ limit = 12, category = "" } = {}) => {
+export const usePublicNewsFeed = ({
+  limit = 12,
+  category = "",
+  productId = null,
+  enabled = true,
+} = {}) => {
   const [stories, setStories] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(enabled));
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (!enabled) {
+      setStories([]);
+      setLoading(false);
+      setError("");
+      return undefined;
+    }
+
     const controller = new AbortController();
     let active = true;
 
@@ -553,6 +570,9 @@ export const usePublicNewsFeed = ({ limit = 12, category = "" } = {}) => {
         const params = new URLSearchParams();
         params.set("limit", String(limit));
         if (safeText(category)) params.set("category", safeText(category));
+        if (productId != null && productId !== "") {
+          params.set("productId", String(productId));
+        }
 
         const data = await fetchJson(
           `${API_BASE}/api/public/blogs?${params.toString()}`,
@@ -581,7 +601,7 @@ export const usePublicNewsFeed = ({ limit = 12, category = "" } = {}) => {
       active = false;
       controller.abort();
     };
-  }, [category, limit]);
+  }, [category, enabled, limit, productId]);
 
   return { stories, loading, error };
 };

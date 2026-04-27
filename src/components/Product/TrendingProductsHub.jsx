@@ -4,6 +4,7 @@ import {
   FaCalendarAlt,
   FaExternalLinkAlt,
   FaFilter,
+  FaInfoCircle,
   FaLaptop,
   FaMobileAlt,
   FaSearch,
@@ -15,6 +16,7 @@ import Spinner from "../ui/Spinner";
 import useDevice from "../../hooks/useDevice";
 import useStoreLogos from "../../hooks/useStoreLogos";
 import SEO from "../SEO";
+import ProductDiscoverySections from "../ui/ProductDiscoverySections";
 import { createProductPath, generateSlug } from "../../utils/slugGenerator";
 import {
   createCollectionSchema,
@@ -38,6 +40,7 @@ import {
 } from "../../utils/tvPopularFeatures";
 
 const ROUTE_FEED_CACHE_KEY = "hooks_smartphone_route_feed_v1";
+const TRENDING_PRODUCTS_PER_PAGE = 20;
 const RUPEE = "\u20B9";
 const API_BASE = "https://api.apisphere.in";
 const SITE_ORIGIN = "https://tryhook.shop";
@@ -984,6 +987,7 @@ const TrendingProductsHub = () => {
   const [brandFilterQuery, setBrandFilterQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const smartphoneCatalog = useMemo(() => {
     if (arr(deviceStore?.smartphoneAll).length)
@@ -1006,10 +1010,10 @@ const TrendingProductsHub = () => {
     : {
         display: "-webkit-box",
         WebkitBoxOrient: "vertical",
-        WebkitLineClamp: 3,
+        WebkitLineClamp: 2,
         overflow: "hidden",
       };
-  const heroDescriptionWidthClass = "max-w-6xl";
+  const heroDescriptionWidthClass = "max-w-4xl";
 
   const catalogLookup = useMemo(() => {
     const source =
@@ -1231,6 +1235,48 @@ const TrendingProductsHub = () => {
     if (!query) return brands;
     return brands.filter((brand) => brand.toLowerCase().includes(query));
   }, [brands, brandFilterQuery]);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(visible.length / TRENDING_PRODUCTS_PER_PAGE),
+  );
+  const currentPageSafe = Math.min(currentPage, totalPages);
+  const paginatedVisible = useMemo(() => {
+    const startIndex = (currentPageSafe - 1) * TRENDING_PRODUCTS_PER_PAGE;
+    return visible.slice(startIndex, startIndex + TRENDING_PRODUCTS_PER_PAGE);
+  }, [currentPageSafe, visible]);
+  const visibleResultsStart = visible.length
+    ? (currentPageSafe - 1) * TRENDING_PRODUCTS_PER_PAGE + 1
+    : 0;
+  const visibleResultsEnd = visible.length
+    ? visibleResultsStart + paginatedVisible.length - 1
+    : 0;
+  const featuredDiscoveryProduct = useMemo(() => {
+    if (activeCategory !== "smartphones") return null;
+    return (
+      paginatedVisible.find((item) => {
+        const productId = Number(item?.id);
+        return Number.isInteger(productId) && productId > 0;
+      }) || null
+    );
+  }, [activeCategory, paginatedVisible]);
+
+  useEffect(() => {
+    setCurrentPage((prev) => Math.min(prev, totalPages));
+  }, [totalPages]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    activeCategory,
+    search,
+    sortBy,
+    selectedFeature,
+    selectedBrands,
+    selectedRam,
+    selectedStorage,
+    selectedScreen,
+    selectedResolution,
+  ]);
 
   const ramOptions = useMemo(
     () =>
@@ -1285,6 +1331,17 @@ const TrendingProductsHub = () => {
     setSelectedStorage([]);
     setSelectedScreen([]);
     setSelectedResolution([]);
+    setSearch("");
+    setBrandFilterQuery("");
+  };
+
+  const handlePageChange = (nextPage) => {
+    const targetPage = Math.max(1, Math.min(totalPages, nextPage));
+    if (targetPage === currentPageSafe) return;
+    setCurrentPage(targetPage);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   const openDetail = (p) => {
@@ -1371,7 +1428,7 @@ const TrendingProductsHub = () => {
   ]);
 
   return (
-    <div className="min-h-screen bg-[#eef2ff] text-slate-900">
+    <div className="min-h-screen text-slate-900" data-page-label={config.badge}>
       <SEO
         title={seoTitle}
         description={seoDescription}
@@ -1384,25 +1441,20 @@ const TrendingProductsHub = () => {
 
       <div className="relative mx-auto max-w-7xl px-4 pt-0 pb-8 sm:px-6 sm:pb-12 md:pb-16 lg:px-8 lg:pb-20">
         <div className="relative">
-          <section className="relative left-1/2 isolate w-screen -translate-x-1/2 overflow-hidden bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950 px-4 py-6 text-white sm:px-6 sm:py-8 lg:px-8 lg:py-10">
-            <div className="absolute inset-0 opacity-35 [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:72px_72px]" />
-            <div className="absolute -left-20 top-0 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
-            <div className="absolute right-0 top-20 h-80 w-80 rounded-full bg-cyan-300/10 blur-3xl" />
-            <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/10 to-transparent" />
-
+          <section className="relative left-1/2 isolate w-screen -translate-x-1/2 overflow-hidden px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
             <div className="relative mx-auto max-w-7xl">
-              <div className="max-w-6xl">
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-100">
+              <div className={heroDescriptionWidthClass}>
+                <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.32em] text-blue-600">
                   <HeroIcon className="h-3.5 w-3.5" />
                   {config.badge}
                 </span>
 
-                <h1 className="mt-6 max-w-7xl text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">
+                <h1 className="mt-4 max-w-3xl text-3xl font-bold tracking-tight text-[#14255e] sm:text-4xl lg:text-5xl">
                   {heroTitleText}
                 </h1>
 
                 <h4
-                  className={`mt-4 ${heroDescriptionWidthClass} text-base leading-7 text-white/80 sm:text-lg sm:leading-8`}
+                  className="mt-3 text-sm leading-7 text-slate-600 sm:text-base sm:leading-8"
                   style={heroDescriptionStyle}
                 >
                   {heroDescription}
@@ -1410,7 +1462,7 @@ const TrendingProductsHub = () => {
                 <button
                   type="button"
                   onClick={() => setShowFullDescription((prev) => !prev)}
-                  className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-cyan-100 transition-colors duration-200 hover:text-white"
+                  className="mt-2.5 inline-flex items-center gap-2 text-sm font-semibold text-blue-700 transition-colors duration-200 hover:text-blue-900"
                   aria-expanded={showFullDescription}
                 >
                   {showFullDescription ? "Show less" : "Read more"}
@@ -1420,8 +1472,8 @@ const TrendingProductsHub = () => {
           </section>
         </div>
 
-        <div className="mt-6 rounded-2xl border-b border-slate-100 sm:p-5">
-          <div className="overflow-hidden pt-0 pb-4 sm:pb-5">
+        <div className="mt-4">
+          <div className="overflow-hidden pt-0 pb-2 sm:pb-3">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <FaFilter className="text-blue-600" />
@@ -1466,8 +1518,8 @@ const TrendingProductsHub = () => {
           </div>
         </div>
 
-        <div className="overflow-hidden sm:p-5">
-          <div className="hidden lg:flex items-center justify-between mb-6">
+        <div className="mb-3 overflow-hidden">
+          <div className="hidden items-center justify-between gap-4 lg:flex">
             <div className="relative flex-1 min-w-0 max-w-4xl">
               <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
                 <FaSearch className="text-blue-500" />
@@ -1528,7 +1580,7 @@ const TrendingProductsHub = () => {
             </div>
           </div>
 
-          <div className="lg:hidden space-y-3 sm:space-y-4 mb-6 sm:mb-8">
+          <div className="space-y-3 sm:space-y-4 lg:hidden">
             <div className="relative group">
               <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-500 group-focus-within:text-blue-600 transition-colors duration-200" />
               <input
@@ -1587,7 +1639,7 @@ const TrendingProductsHub = () => {
                       {activeFilterCount > 1 ? "s" : ""} applied
                     </span>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Showing {visible.length} of {products.length} options
+                      Found {visible.length} of {products.length} options
                     </p>
                   </div>
                 </div>
@@ -1640,9 +1692,9 @@ const TrendingProductsHub = () => {
             </div>
           </div>
 
-          <div className="flex flex-col gap-6 md:gap-8 lg:flex-row lg:items-start">
+          <div className="mt-4 flex flex-col gap-4 lg:flex-row md:gap-6">
             <div className="hidden lg:block lg:w-72 flex-shrink-0">
-              <div className="sticky top-6 border border-slate-200 bg-white p-5 lg:p-6">
+              <div className="sticky top-6 rounded-lg border border-slate-200 bg-transparent p-5 lg:p-6">
                 <div className="mb-6 flex items-center justify-between border-b border-slate-200 px-2 pb-4 sm:mb-8 sm:px-3 md:px-4">
                   <div>
                     <h3 className="flex items-center gap-2 text-xl font-bold text-slate-900">
@@ -1959,9 +2011,39 @@ const TrendingProductsHub = () => {
                 </div>
               ) : null}
 
-              {!loading && !error && (
-                <div className="grid grid-cols-1 gap-4 sm:gap-5 md:gap-6 auto-rows-max">
-                  {visible.map((p) => {
+              {!loading && !error && visible.length === 0 ? (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 py-16 text-center transition-all duration-300">
+                  <div className="mx-auto max-w-md">
+                    <FaSearch className="mx-auto mb-4 text-5xl text-slate-300" />
+                    <h3 className="mb-3 text-2xl font-semibold text-slate-900">
+                      No trending {config.label.toLowerCase()} found
+                    </h3>
+                    <p className="mb-6 text-slate-600">
+                      Try adjusting your filters or search to explore more
+                      devices from this trending collection.
+                    </p>
+                    <div className="flex flex-col justify-center gap-3 sm:flex-row">
+                      <button
+                        onClick={clearAllFilters}
+                        className="rounded-lg bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 px-6 py-3 font-semibold text-white transition-all duration-300 hover:from-blue-700 hover:to-blue-600 hover:shadow-lg hover:-translate-y-0.5"
+                      >
+                        Clear All Filters
+                      </button>
+                      <button
+                        onClick={() => setShowFilters(true)}
+                        className="rounded-lg border border-slate-300 px-6 py-3 font-semibold text-slate-700 transition-all duration-300 hover:border-slate-400 hover:bg-slate-50 hover:shadow-md lg:hidden"
+                      >
+                        Adjust Filters
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              {!loading && !error && visible.length > 0 ? (
+                <>
+                  <div className="grid grid-cols-1 gap-4 sm:gap-5 md:gap-6 auto-rows-max">
+                    {paginatedVisible.map((p) => {
                     const dedupedStoreMap = new Map();
                     arr(p.stores).forEach((s) => {
                       const storeName =
@@ -2325,11 +2407,91 @@ const TrendingProductsHub = () => {
                         </div>
                       </article>
                     );
-                  })}
-                </div>
-              )}
+                    })}
+                  </div>
+
+                  <div className="mt-8 border-t border-slate-200 pt-6">
+                    <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+                      <div className="text-sm text-slate-500">
+                        Showing {visibleResultsStart}-{visibleResultsEnd} of{" "}
+                        {visible.length} options
+                      </div>
+                      <div className="flex flex-wrap items-center justify-center gap-3 sm:justify-end">
+                        {totalPages > 1 ? (
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handlePageChange(currentPageSafe - 1)
+                              }
+                              disabled={currentPageSafe === 1}
+                              className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              Previous
+                            </button>
+                            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
+                              Page {currentPageSafe} of {totalPages}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handlePageChange(currentPageSafe + 1)
+                              }
+                              disabled={currentPageSafe === totalPages}
+                              className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              Next
+                            </button>
+                          </div>
+                        ) : null}
+                        <button
+                          onClick={() =>
+                            window.scrollTo({ top: 0, behavior: "smooth" })
+                          }
+                          className="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
+                        >
+                          <svg
+                            className="h-4 w-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 10l7-7m0 0l7 7m-7-7v18"
+                            />
+                          </svg>
+                          Back to top
+                        </button>
+                        <div className="rounded-full bg-slate-100 px-3 py-1.5 text-xs text-slate-500">
+                          Last updated: Today
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-4 text-center text-xs text-slate-500">
+                      <p>
+                        Prices and availability are subject to change. Always
+                        verify details with the respective stores before making
+                        a purchase.
+                      </p>
+                    </div>
+                  </div>
+                </>
+              ) : null}
             </div>
           </div>
+
+          {featuredDiscoveryProduct ? (
+            <section className="mx-auto mt-8 max-w-7xl px-4 pb-8 sm:mt-10 sm:px-6 sm:pb-12 md:pb-16 lg:px-8 lg:pb-20">
+              <ProductDiscoverySections
+                productId={Number(featuredDiscoveryProduct.id)}
+                currentBrand={featuredDiscoveryProduct.brand || ""}
+                entityType="smartphones"
+              />
+            </section>
+          ) : null}
 
           {showFilters && (
             <div className="lg:hidden fixed inset-0 z-50">

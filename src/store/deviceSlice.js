@@ -932,7 +932,6 @@ export const fetchSmartphone = createAsyncThunk(
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const body = await res.json();
-        console.log("Public product response:", body);
 
         if (!body || !body.id) {
           throw new Error("Invalid product data");

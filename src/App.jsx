@@ -682,6 +682,10 @@ function App() {
 
           {/* Product Detail Pages - SEO-friendly slug-based routes */}
           <Route path="/smartphones/:slug" element={<MobileDetailCard />} />
+          <Route
+            path="/smartphone/:slug"
+            element={<ProductDetailRedirect toBasePath="/smartphones" />}
+          />
           <Route path="/laptops/:slug" element={<LaptopDetailCard />} />
           <Route
             path="/laptop/:slug"
