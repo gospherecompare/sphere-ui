@@ -2067,7 +2067,9 @@ const TVDetailCard = () => {
   const renderSpecTable = (data) => {
     if (!data || typeof data !== "object") {
       return (
-        <div className="text-center py-4 text-gray-500">No data available</div>
+        <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/70 py-6 text-center text-sm text-slate-500">
+          No data available
+        </div>
       );
     }
 
@@ -2078,28 +2080,64 @@ const TVDetailCard = () => {
 
     if (!rows.length) {
       return (
-        <div className="text-center py-4 text-gray-500">No data available</div>
+        <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/70 py-6 text-center text-sm text-slate-500">
+          No data available
+        </div>
       );
     }
 
     return (
-      <div className="space-y-0">
-        {rows.map(([key, value], idx) => (
-          <div
-            key={key}
-            className={`grid gap-3 py-3 sm:grid-cols-[180px_minmax(0,1fr)] sm:gap-6 ${
-              idx !== rows.length - 1 ? "border-b border-slate-100" : ""
-            }`}
-          >
-            <p className="text-sm font-medium text-slate-600">
-              {toNormalCase(key)}
-            </p>
-            <div className="text-sm font-semibold leading-6 text-slate-900 break-words">
-              {renderSpecValue(value)}
+      <>
+        {/* Mobile: Stacked Layout */}
+        <div className="sm:hidden space-y-2 px-1">
+          {rows.map(([key, value]) => (
+            <div
+              key={key}
+              className="rounded-md border border-slate-200 bg-white p-2.5"
+            >
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-600 mb-0.5">
+                {toNormalCase(key)}
+              </div>
+              <div className="text-sm font-semibold text-slate-900 break-words">
+                {renderSpecValue(value)}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+
+        {/* Desktop: Table Layout */}
+        <div className="hidden sm:block overflow-hidden rounded-lg border border-slate-200 bg-white">
+          <table className="w-full">
+            <thead className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+              <tr>
+                <th className="px-5 py-3 text-left text-sm font-semibold text-slate-700">
+                  Spec
+                </th>
+                <th className="px-5 py-3 text-left text-sm font-semibold text-slate-700">
+                  Details
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {rows.map(([key, value], idx) => (
+                <tr
+                  key={key}
+                  className={`transition-colors hover:bg-blue-50 ${
+                    idx % 2 === 0 ? "bg-white" : "bg-slate-50"
+                  }`}
+                >
+                  <td className="px-5 py-4 text-sm font-medium text-slate-600 w-1/3 align-top">
+                    {toNormalCase(key)}
+                  </td>
+                  <td className="px-5 py-4 text-sm font-semibold text-slate-900 break-words w-2/3">
+                    {renderSpecValue(value)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </>
     );
   };
 
@@ -3268,7 +3306,7 @@ const TVDetailCard = () => {
               productId={currentProductId}
               currentBrand={applianceData?.brand || ""}
               entityType="tvs"
-              className="w-full border-t border-slate-200"
+              className="w-full border-t border-slate-200 px-4 sm:px-0"
             />
           ) : null}
         </div>

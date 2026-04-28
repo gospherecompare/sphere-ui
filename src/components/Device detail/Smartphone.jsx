@@ -60,7 +60,10 @@ import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
 import { createWebPageSchema } from "../../utils/schemaGenerators";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import useStoreLogos from "../../hooks/useStoreLogos";
-import { createNewsStoryPath, usePublicNewsFeed } from "../../hooks/usePublicNews";
+import {
+  createNewsStoryPath,
+  usePublicNewsFeed,
+} from "../../hooks/usePublicNews";
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
 import { resolveSmartphoneBadgeScore } from "../../utils/smartphoneBadgeScore";
 import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
@@ -494,7 +497,13 @@ const LinkedNewsStoryCard = ({ story, compact = false }) => {
         )}
       </div>
 
-      <div className={compact ? "min-w-0 self-stretch py-1" : "flex flex-1 flex-col px-1 pb-1 pt-4"}>
+      <div
+        className={
+          compact
+            ? "min-w-0 self-stretch py-1"
+            : "flex flex-1 flex-col px-1 pb-1 pt-4"
+        }
+      >
         {!compact ? (
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#5f74c6]">
             {story?.label || "News"}
@@ -576,7 +585,11 @@ const MobileDetailCard = () => {
   // Extract slug from route params (SEO-friendly slug-based URL)
   const routeSlug = params.slug || null;
   const normalizedRouteSlug = useMemo(
-    () => String(routeSlug || "").toLowerCase().trim().replace(/\/+$/g, ""),
+    () =>
+      String(routeSlug || "")
+        .toLowerCase()
+        .trim()
+        .replace(/\/+$/g, ""),
     [routeSlug],
   );
   const routeBaseSlug = useMemo(
@@ -588,7 +601,9 @@ const MobileDetailCard = () => {
     [routeSlug, toSeoDetailSlug],
   );
   const shouldRenderAliasNotFound = Boolean(
-    routeSlug && canonicalRouteSlug && normalizedRouteSlug !== canonicalRouteSlug,
+    routeSlug &&
+    canonicalRouteSlug &&
+    normalizedRouteSlug !== canonicalRouteSlug,
   );
 
   // Convert slug to searchable model name
@@ -760,7 +775,9 @@ const MobileDetailCard = () => {
     if (resolvedId == null) return;
     const fetchKey = `${routeSlug}:${resolvedId}`;
     const selectedId =
-      selectedResolvedForRoute?.id ?? selectedResolvedForRoute?.product_id ?? null;
+      selectedResolvedForRoute?.id ??
+      selectedResolvedForRoute?.product_id ??
+      null;
     if (selectedId != null && String(selectedId) === String(resolvedId)) {
       detailFetchKeyRef.current = fetchKey;
       return;
@@ -1859,9 +1876,7 @@ const MobileDetailCard = () => {
       : "";
   const currentProductId =
     mobileData?.id ?? mobileData?.product_id ?? mobileData?.productId ?? null;
-  const {
-    stories: linkedNewsStories,
-  } = usePublicNewsFeed({
+  const { stories: linkedNewsStories } = usePublicNewsFeed({
     limit: LINKED_NEWS_LIMIT,
     category: "",
     productId: currentProductId,
@@ -3562,20 +3577,54 @@ Price: ${price}
 
     return (
       <>
-        <div className="space-y-4">
+        {/* Mobile: Stacked Layout */}
+        <div className="sm:hidden space-y-2 px-1">
           {displayEntries.map(([key, value]) => (
             <div
               key={key}
-              className="grid gap-2 sm:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] sm:gap-6"
+              className="rounded-md border border-slate-200 bg-white p-2.5"
             >
-              <p className="text-sm font-medium text-slate-600">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-600 mb-0.5">
                 {toNormalCase(key)}
-              </p>
-              <div className="text-sm font-semibold leading-6 text-slate-900 break-words sm:text-left">
+              </div>
+              <div className="text-sm font-semibold text-slate-900 break-words">
                 {formatSpecValue(value, key)}
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Desktop: Table Layout */}
+        <div className="hidden sm:block overflow-hidden rounded-lg border border-slate-200 bg-white">
+          <table className="w-full">
+            <thead className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+              <tr>
+                <th className="px-5 py-3 text-left text-sm font-semibold text-slate-700">
+                  Spec
+                </th>
+                <th className="px-5 py-3 text-left text-sm font-semibold text-slate-700">
+                  Details
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {displayEntries.map(([key, value], idx) => (
+                <tr
+                  key={key}
+                  className={`transition-colors hover:bg-blue-50 ${
+                    idx % 2 === 0 ? "bg-white" : "bg-slate-50"
+                  }`}
+                >
+                  <td className="px-5 py-4 text-sm font-medium text-slate-600 w-1/3">
+                    {toNormalCase(key)}
+                  </td>
+                  <td className="px-5 py-4 text-sm font-semibold text-slate-900 break-words w-2/3">
+                    {formatSpecValue(value, key)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </>
     );
@@ -5477,7 +5526,7 @@ Price: ${price}
         <div className="w-full">
           <div className="mx-auto max-w-7xl px-0 py-0 sm:px-6 sm:py-8 lg:px-8">
             <div className="min-w-0">{renderTabContent()}</div>
-            <div className="mt-6">
+            <div className="mt-6 px-1 sm:px-0">
               <ProductDiscoverySections
                 productId={currentProductId}
                 currentBrand={mobileData?.brand || ""}
@@ -5497,12 +5546,14 @@ Price: ${price}
 
           <div className="w-full">
             <div className="mx-auto max-w-7xl px-0 py-0 sm:px-6 sm:py-8 lg:px-8">
-              <ProductDiscoverySections
-                productId={currentProductId}
-                currentBrand={mobileData?.brand || ""}
-                className="w-full"
-                layout="latestPhones"
-              />
+              <div className="px-4 sm:px-0">
+                <ProductDiscoverySections
+                  productId={currentProductId}
+                  currentBrand={mobileData?.brand || ""}
+                  className="w-full"
+                  layout="latestPhones"
+                />
+              </div>
             </div>
           </div>
         </>

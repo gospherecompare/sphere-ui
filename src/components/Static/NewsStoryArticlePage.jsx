@@ -56,11 +56,45 @@ const clipText = (value, maxWords = 18) => {
   return `${words.slice(0, maxWords).join(" ")}...`;
 };
 
+const normalizeTagKey = (value) =>
+  stripMarkup(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const decodeHtmlEntities = (value) => {
+  let text = String(value || "");
+  if (!text) return "";
+
+  const replacements = [
+    ["&lt;", "<"],
+    ["&gt;", ">"],
+    ["&quot;", '"'],
+    ["&#39;", "'"],
+    ["&nbsp;", " "],
+    ["&amp;", "&"],
+  ];
+
+  for (let pass = 0; pass < 2; pass += 1) {
+    let next = text;
+    replacements.forEach(([encoded, decoded]) => {
+      next = next.split(encoded).join(decoded);
+    });
+    if (next === text) break;
+    text = next;
+  }
+
+  return text;
+};
+
 const hasStructuredArticleMarkup = (value) =>
-  /<\s*(?:p|h[1-6]|ul|ol|table|blockquote)\b/i.test(String(value || ""));
+  /<\s*(?:p|h[1-6]|ul|ol|table|blockquote)\b/i.test(
+    decodeHtmlEntities(value),
+  );
 
 const sanitizeArticleHtml = (value) => {
-  const normalized = String(value || "")
+  const normalized = decodeHtmlEntities(value)
     .replace(/\r\n?/g, "\n")
     .replace(/<!--[\s\S]*?-->/g, "")
     .replace(
@@ -603,16 +637,26 @@ const NewsStoryArticlePage = () => {
     [story?.contentHtml],
   );
 
-  const storyTags = [
-    story?.label,
-    story?.category,
-    story?.brandName,
-    story?.productName,
-  ]
-    .map((value) => stripMarkup(value))
-    .filter(Boolean)
-    .filter((value, index, list) => list.indexOf(value) === index)
-    .slice(0, 4);
+  const storyTags = (() => {
+    const candidates = [
+      ...(Array.isArray(story?.tags) ? story.tags : []),
+      story?.label,
+      story?.brandName,
+      story?.productName,
+    ]
+      .map((value) => stripMarkup(value))
+      .filter(Boolean);
+
+    const seen = new Set();
+    return candidates
+      .filter((value) => {
+        const key = normalizeTagKey(value);
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 4);
+  })();
 
   const storyAuthor =
     String(story?.author || "Hooks newsroom").trim() || "Hooks newsroom";
@@ -626,6 +670,16 @@ const NewsStoryArticlePage = () => {
 
     return articleParagraphs.map((paragraph) => clipText(paragraph, 16)).slice(0, 4);
   }, [articleParagraphs, story?.highlights]);
+
+  const storySpecs = useMemo(
+    () =>
+      (Array.isArray(story?.deviceSpecs) ? story.deviceSpecs : [])
+        .filter(
+          (item) => stripMarkup(item?.label) && stripMarkup(item?.value),
+        )
+        .slice(0, 4),
+    [story?.deviceSpecs],
+  );
 
   const trendingStories = useMemo(() => {
     const pool = feedStoriesOrdered.filter((item) => item.slug !== story?.slug);
@@ -818,17 +872,49 @@ const NewsStoryArticlePage = () => {
           <div className="mx-auto max-w-[1280px] px-4 py-10 sm:px-6 lg:px-8 lg:py-12">
             <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-10">
               <article className="min-w-0 lg:max-w-[780px]">
+                <section className="border-y border-[#e8edf5] py-5">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <span className="inline-flex items-center rounded-full bg-[#eaf1ff] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[#1d4ed8]">
+                      {getStoryCategory(story)}
+                    </span>
+                    <span className="inline-flex items-center rounded-full border border-[#dfe7f2] px-3 py-1 text-[12px] font-medium text-[#526173]">
+                      {story.readTime}
+                    </span>
+                    <span className="inline-flex items-center rounded-full border border-[#dfe7f2] px-3 py-1 text-[12px] font-medium text-[#526173]">
+                      {formatAbsoluteDate(story)}
+                    </span>
+                  </div>
+
+                  {storySpecs.length ? (
+                    <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                      {storySpecs.map((item) => (
+                        <div
+                          key={`${item.label}-${item.value}`}
+                          className="border-l-2 border-[#dbe7ff] pl-3"
+                        >
+                          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6f86a6]">
+                            {item.label}
+                          </p>
+                          <p className="mt-1 text-[14px] leading-6 text-[#273445]">
+                            {item.value}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </section>
+
                 {hasStructuredArticle && articleHtml ? (
                   <div
-                    className="text-[16px] leading-7 text-[#4d5868] sm:text-[18px] sm:leading-9 [&_p]:mb-5 [&_p:last-child]:mb-0 [&_p:first-of-type]:text-[18px] [&_p:first-of-type]:text-[#3f4b5a] sm:[&_p:first-of-type]:text-[19px] [&_h2]:mt-10 [&_h2]:text-[24px] [&_h2]:font-black [&_h2]:leading-[1.15] [&_h2]:tracking-[-0.04em] [&_h2]:text-[#151515] sm:[&_h2]:text-[28px] [&_h3]:mt-8 [&_h3]:text-[20px] [&_h3]:font-black [&_h3]:leading-[1.2] [&_h3]:tracking-[-0.03em] [&_h3]:text-[#151515] sm:[&_h3]:text-[23px] [&_h4]:mt-8 [&_h4]:text-[18px] [&_h4]:font-bold [&_h4]:text-[#151515] sm:[&_h4]:text-[20px] [&_ul]:my-6 [&_ul]:list-disc [&_ul]:space-y-3 [&_ul]:pl-5 [&_ol]:my-6 [&_ol]:list-decimal [&_ol]:space-y-3 [&_ol]:pl-5 [&_li]:pl-1 [&_blockquote]:my-8 [&_blockquote]:border-l-4 [&_blockquote]:border-[#1d4ed8] [&_blockquote]:bg-[#f7faff] [&_blockquote]:px-4 [&_blockquote]:py-3 [&_blockquote]:text-[#334155] [&_a]:font-semibold [&_a]:text-[#1d4ed8] [&_a]:underline [&_a]:decoration-[#bfdbfe] [&_a]:underline-offset-4 [&_strong]:font-semibold [&_strong]:text-[#171717] [&_div.article-table-wrap]:my-6 [&_div.article-table-wrap]:overflow-x-auto [&_table]:min-w-[560px] [&_table]:w-full [&_table]:border-collapse [&_table]:text-left [&_table]:text-[14px] sm:[&_table]:text-[15px] [&_thead]:bg-[#f3f7ff] [&_th]:border [&_th]:border-[#dbe6f3] [&_th]:px-3 [&_th]:py-2.5 [&_th]:font-semibold [&_th]:text-[#173570] [&_td]:border [&_td]:border-[#e6ebf2] [&_td]:px-3 [&_td]:py-2.5 [&_td]:align-top [&_td]:text-[#4d5868]"
+                    className="pt-4 text-[16px] leading-8 text-[#4d5868] sm:text-[18px] sm:leading-9 [&_p]:mb-6 [&_p:last-child]:mb-0 [&_p]:text-[16px] [&_p]:leading-8 sm:[&_p]:text-[18px] sm:[&_p]:leading-9 [&_h2]:scroll-mt-28 [&_h2]:mt-12 [&_h2]:border-t [&_h2]:border-[#e8edf5] [&_h2]:pt-8 [&_h2]:text-[26px] [&_h2]:font-black [&_h2]:leading-[1.12] [&_h2]:tracking-[-0.04em] [&_h2]:text-[#101828] [&_h2:first-child]:mt-0 [&_h2:first-child]:border-t-0 [&_h2:first-child]:pt-0 sm:[&_h2]:text-[31px] [&_h3]:scroll-mt-28 [&_h3]:mt-9 [&_h3]:text-[21px] [&_h3]:font-black [&_h3]:leading-[1.2] [&_h3]:tracking-[-0.03em] [&_h3]:text-[#17202c] [&_h3:first-child]:mt-0 sm:[&_h3]:text-[24px] [&_h4]:mt-8 [&_h4]:text-[18px] [&_h4]:font-bold [&_h4]:text-[#151515] [&_h4:first-child]:mt-0 sm:[&_h4]:text-[20px] [&_ul]:my-6 [&_ul]:list-disc [&_ul]:space-y-3 [&_ul]:pl-5 [&_ol]:my-6 [&_ol]:list-decimal [&_ol]:space-y-3 [&_ol]:pl-5 [&_li]:pl-1 [&_blockquote]:my-8 [&_blockquote]:rounded-r-[6px] [&_blockquote]:border-l-4 [&_blockquote]:border-[#1d4ed8] [&_blockquote]:bg-[#f7faff] [&_blockquote]:px-5 [&_blockquote]:py-4 [&_blockquote]:text-[#334155] [&_a]:font-semibold [&_a]:text-[#1d4ed8] [&_a]:underline [&_a]:decoration-[#bfdbfe] [&_a]:underline-offset-4 [&_strong]:font-semibold [&_strong]:text-[#171717] [&_div.article-table-wrap]:my-7 [&_div.article-table-wrap]:overflow-x-auto [&_div.article-table-wrap]:rounded-[10px] [&_div.article-table-wrap]:border [&_div.article-table-wrap]:border-[#e2e8f0] [&_table]:min-w-[560px] [&_table]:w-full [&_table]:border-collapse [&_table]:text-left [&_table]:text-[14px] sm:[&_table]:text-[15px] [&_thead]:bg-[#f3f7ff] [&_th]:border-b [&_th]:border-[#dbe6f3] [&_th]:px-4 [&_th]:py-3 [&_th]:font-semibold [&_th]:text-[#173570] [&_td]:border-b [&_td]:border-[#e6ebf2] [&_td]:px-4 [&_td]:py-3 [&_td]:align-top [&_td]:text-[#4d5868] [&_tbody_tr:last-child_td]:border-b-0 [&_tbody_tr:nth-child(even)]:bg-[#fbfdff]"
                     dangerouslySetInnerHTML={{ __html: articleHtml }}
                   />
                 ) : (
-                  <div className="space-y-5 text-[16px] leading-7 text-[#4d5868] sm:space-y-6 sm:text-[18px] sm:leading-9">
+                  <div className="space-y-6 pt-4 text-[16px] leading-8 text-[#4d5868] sm:space-y-7 sm:text-[18px] sm:leading-9">
                     {articleParagraphs.map((paragraph, index) => (
                       <p
                         key={`${story.slug}-paragraph-${index + 1}`}
-                        className={index === 0 ? "text-[18px] sm:text-[19px]" : ""}
+                        className="text-[16px] leading-8 sm:text-[18px] sm:leading-9"
                       >
                         {paragraph}
                       </p>
@@ -840,17 +926,22 @@ const NewsStoryArticlePage = () => {
                   <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#1d4ed8]">
-                        Source
+                        Byline
                       </p>
                       <p className="mt-2 text-[15px] font-semibold text-[#171717]">
-                        {story?.authorRole || storyAuthor}
+                        {storyAuthor}
                       </p>
+                      {story?.authorRole && story.authorRole !== storyAuthor ? (
+                        <p className="mt-1 text-sm text-[#6b7787]">
+                          {story.authorRole}
+                        </p>
+                      ) : null}
                     </div>
 
                     {storyTags.length ? (
                       <div className="sm:max-w-[60%]">
                         <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#1d4ed8]">
-                          Tags
+                          Topics
                         </p>
                         <div className="mt-3 flex flex-wrap gap-2">
                           {storyTags.map((tag) => (

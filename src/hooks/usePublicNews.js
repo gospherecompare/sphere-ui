@@ -33,6 +33,34 @@ const PRODUCT_TYPE_LABELS = {
 
 const safeText = (value) => String(value || "").trim();
 
+const decodeHtmlEntities = (value) => {
+  let text = String(value || "");
+  if (!text) return "";
+
+  const replacements = [
+    ["&lt;", "<"],
+    ["&gt;", ">"],
+    ["&quot;", '"'],
+    ["&#39;", "'"],
+    ["&nbsp;", " "],
+    ["&amp;", "&"],
+  ];
+
+  for (let pass = 0; pass < 2; pass += 1) {
+    let next = text;
+    replacements.forEach(([encoded, decoded]) => {
+      next = next.split(encoded).join(decoded);
+    });
+    if (next === text) break;
+    text = next;
+  }
+
+  return text;
+};
+
+const normalizeHtmlContent = (value) =>
+  decodeHtmlEntities(String(value || "").replace(/\r\n?/g, "\n")).trim();
+
 const parseBlogTags = (value) => {
   if (Array.isArray(value)) {
     return Array.from(
@@ -100,12 +128,40 @@ const stripMarkup = (value) =>
     .replace(/\s+/g, " ")
     .trim();
 
-const renderTokenizedContent = (content, tokenMap = {}) =>
-  String(content || "").replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (full, key) => {
-    const normalizedKey = safeText(key).toLowerCase().replace(/[^a-z0-9_]+/g, "_");
-    const value = toPlainObject(tokenMap)[normalizedKey];
-    return value == null || value === "" ? "" : String(value);
-  });
+const renderTokenizedContent = (
+  content,
+  tokenMap = {},
+  { preserveUnknown = true } = {},
+) => {
+  const normalizedTokens = toPlainObject(tokenMap);
+
+  return String(content || "").replace(
+    /\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g,
+    (full, key) => {
+      const normalizedKey = safeText(key)
+        .toLowerCase()
+        .replace(/[^a-z0-9_]+/g, "_");
+      const value = normalizedTokens[normalizedKey];
+      return value == null || value === ""
+        ? preserveUnknown
+          ? full
+          : ""
+        : String(value);
+    },
+  );
+};
+
+const resolveBlogContentHtml = (blog, tokenSnapshot = {}) => {
+  const rendered = normalizeHtmlContent(blog?.content_rendered);
+  if (rendered) return rendered;
+
+  const template = normalizeHtmlContent(blog?.content_template);
+  if (!template) return "";
+
+  return normalizeHtmlContent(
+    renderTokenizedContent(template, tokenSnapshot, { preserveUnknown: true }),
+  );
+};
 
 const cleanPublicStoryText = (value) =>
   String(value || "")
@@ -261,7 +317,12 @@ const clipWords = (value, maxWords = 28) => {
 };
 
 const splitParagraphs = (value) =>
-  String(value || "")
+  normalizeHtmlContent(value)
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(
+      /<\/(p|h[1-6]|li|blockquote|tr|table|div|section|article)>/gi,
+      "$&\n\n",
+    )
     .split(/\n\s*\n/)
     .map((entry) => stripMarkup(entry))
     .filter(Boolean);
@@ -413,12 +474,9 @@ const normalizeBlogStory = (blog) => {
     Number.isInteger(rawProductId) && rawProductId > 0 ? rawProductId : null;
   const category = normalizeCategory(blog.category);
   const tokenSnapshot = toPlainObject(blog.token_snapshot);
-  const sourceContent = safeText(blog.content_template)
-    ? blog.content_template
-    : blog.content_rendered;
-  const renderedTemplate = renderTokenizedContent(sourceContent, tokenSnapshot);
-  const renderedContent = cleanPublicStoryText(renderedTemplate);
-  const body = splitParagraphs(renderedContent).filter(Boolean);
+  const articleHtml = resolveBlogContentHtml(blog, tokenSnapshot);
+  const renderedContent = cleanPublicStoryText(articleHtml);
+  const body = splitParagraphs(articleHtml).filter(Boolean);
   const summarySource =
     safeText(blog.excerpt) ||
     safeText(blog.meta_description) ||
@@ -440,9 +498,13 @@ const normalizeBlogStory = (blog) => {
   );
   const publishedIso = safeText(blog.published_at) || safeText(blog.updated_at);
   const updatedIso = safeText(blog.updated_at) || publishedIso;
+  const fallbackAuthor = CATEGORY_AUTHORS[category] || CATEGORY_AUTHORS.news;
   const author = authorName
-    ? { name: authorName, role: "Editorial byline" }
-    : CATEGORY_AUTHORS[category] || CATEGORY_AUTHORS.news;
+    ? {
+        name: authorName,
+        role: fallbackAuthor?.role || "Hooks newsroom",
+      }
+    : fallbackAuthor;
   const highlights = buildHighlights(blog, category);
   const image = safeText(blog.hero_image)
     ? safeText(blog.hero_image)
@@ -465,7 +527,7 @@ const normalizeBlogStory = (blog) => {
     publishedAt: formatDateLabel(publishedIso || updatedIso),
     publishedIso: publishedIso || new Date().toISOString(),
     updatedIso: updatedIso || publishedIso || new Date().toISOString(),
-    readTime: estimateReadTime(renderedTemplate || summarySource),
+    readTime: estimateReadTime(articleHtml || summarySource),
     author: author.name,
     authorRole: author.role,
     highlights,
@@ -475,7 +537,7 @@ const normalizeBlogStory = (blog) => {
       category,
     }),
     body: body.length ? body : [summary],
-    contentHtml: safeText(renderedTemplate),
+    contentHtml: articleHtml,
     image: image || DEFAULT_STORY_IMAGE,
     heroImageSource: safeText(blog.hero_image_source),
     heroImageAlt: safeText(blog.hero_image_alt) || title,

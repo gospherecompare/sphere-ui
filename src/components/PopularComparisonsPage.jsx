@@ -822,7 +822,7 @@ const PopularComparisonsPage = () => {
                 <ProductDiscoverySections
                   productId={featuredDiscoveryProduct.productId}
                   entityType="smartphones"
-                  className="pt-1"
+                  className="px-4 pt-1 sm:px-0"
                 />
               </section>
             )}

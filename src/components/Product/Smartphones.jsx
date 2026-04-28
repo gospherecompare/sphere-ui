@@ -3405,10 +3405,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const currentPageSafe = Math.min(currentPage, totalPages);
   const paginatedVariants = useMemo(() => {
     const startIndex = (currentPageSafe - 1) * SMARTPHONES_PER_PAGE;
-    return sortedVariants.slice(
-      startIndex,
-      startIndex + SMARTPHONES_PER_PAGE,
-    );
+    return sortedVariants.slice(startIndex, startIndex + SMARTPHONES_PER_PAGE);
   }, [currentPageSafe, sortedVariants]);
   const visibleResultsStart = sortedVariants.length
     ? (currentPageSafe - 1) * SMARTPHONES_PER_PAGE + 1
@@ -3848,7 +3845,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
           </div>
 
           <section className="">
-              <div className="mt-4 flex flex-col gap-4 lg:flex-row md:gap-6">
+            <div className="mt-4 flex flex-col gap-4 lg:flex-row md:gap-6">
               {/* Desktop Filter Sidebar */}
               <div className="hidden lg:block lg:w-72 flex-shrink-0">
                 <div className="sticky top-6 rounded-lg border border-slate-200 bg-transparent p-5 lg:p-6">
@@ -5312,10 +5309,12 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       </div>
 
       {featuredDiscoveryProduct ? (
-        <section className="mx-auto mt-8 max-w-7xl px-4 pb-8 sm:mt-10 sm:px-6 sm:pb-12 md:pb-16 lg:px-8 lg:pb-20">
+        <section className="mx-auto mt-8 max-w-7xl pb-8 sm:mt-10 sm:px-6 sm:pb-12 md:pb-16 lg:px-8 lg:pb-20">
           <ProductDiscoverySections
             productId={featuredDiscoveryProduct.productId}
-            currentBrand={currentBrandObj?.name || featuredDiscoveryProduct.brand || ""}
+            currentBrand={
+              currentBrandObj?.name || featuredDiscoveryProduct.brand || ""
+            }
             entityType="smartphones"
           />
         </section>

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { FaBolt, FaChevronRight, FaFire, FaStore, FaTag } from "react-icons/fa";
+// Icons removed - removed from headings
 import { createProductPath } from "../../utils/slugGenerator";
 import {
   buildSmartphoneBrandPath,
@@ -80,7 +80,11 @@ const getEntityConfig = (entityType) => {
 const toProductPath = (item, entityType = "smartphones") => {
   const config = getEntityConfig(entityType);
   const productLabel = normalizeText(
-    item?.name || item?.product_name || item?.model || item?.title || item?.slug,
+    item?.name ||
+      item?.product_name ||
+      item?.model ||
+      item?.title ||
+      item?.slug,
   );
   if (productLabel) return createProductPath(config.basePath, productLabel);
   return config.basePath;
@@ -133,7 +137,9 @@ const normalizeDiscoveryPath = (rawPath, entityType = "smartphones") => {
         : url.pathname.replace(/\/+$/g, "") || config.basePath;
     return `${normalizedPathname}${url.search}${url.hash}`;
   } catch {
-    const fallbackPath = pathValue.startsWith("/") ? pathValue : `/${pathValue}`;
+    const fallbackPath = pathValue.startsWith("/")
+      ? pathValue
+      : `/${pathValue}`;
     return config.type === "smartphones"
       ? normalizeSmartphoneDetailPath(fallbackPath)
       : fallbackPath;
@@ -274,10 +280,7 @@ const getSectionMeta = (title = "") => {
   const value = normalizeText(title).toLowerCase();
   if (value === "latest phones") {
     return {
-      icon: FaFire,
       badge: "Fresh Picks",
-      iconTone: "text-sky-600",
-      iconBg: "from-sky-50 to-blue-50",
       accentClass: "text-sky-600",
       badgeClass:
         "border-sky-100 bg-sky-50 text-sky-700 group-hover:border-sky-200 group-hover:bg-sky-100 group-hover:text-sky-800",
@@ -285,10 +288,7 @@ const getSectionMeta = (title = "") => {
   }
   if (value === "smart popular links") {
     return {
-      icon: FaBolt,
       badge: "Quick Paths",
-      iconTone: "text-blue-600",
-      iconBg: "from-blue-50 to-cyan-50",
       accentClass: "text-blue-600",
       badgeClass:
         "border-blue-100 bg-blue-50 text-blue-700 group-hover:border-blue-200 group-hover:bg-blue-100 group-hover:text-blue-800",
@@ -296,10 +296,7 @@ const getSectionMeta = (title = "") => {
   }
   if (value === "latest launches") {
     return {
-      icon: FaFire,
       badge: "Fresh Picks",
-      iconTone: "text-sky-600",
-      iconBg: "from-sky-50 to-blue-50",
       accentClass: "text-sky-600",
       badgeClass:
         "border-sky-100 bg-sky-50 text-sky-700 group-hover:border-sky-200 group-hover:bg-sky-100 group-hover:text-sky-800",
@@ -307,20 +304,14 @@ const getSectionMeta = (title = "") => {
   }
   if (value === "by price") {
     return {
-      icon: FaTag,
       badge: "Budget Guide",
-      iconTone: "text-emerald-600",
-      iconBg: "from-emerald-50 to-cyan-50",
       accentClass: "text-emerald-600",
       badgeClass:
         "border-emerald-100 bg-emerald-50 text-emerald-700 group-hover:border-emerald-200 group-hover:bg-emerald-100 group-hover:text-emerald-800",
     };
   }
   return {
-    icon: FaStore,
     badge: "Discover",
-    iconTone: "text-blue-600",
-    iconBg: "from-blue-50 to-slate-50",
     accentClass: "text-blue-600",
     badgeClass:
       "border-blue-100 bg-blue-50 text-blue-700 group-hover:border-blue-200 group-hover:bg-blue-100 group-hover:text-blue-800",
@@ -337,7 +328,6 @@ const LinkListBlock = ({
 }) => {
   if (!Array.isArray(items) || items.length === 0) return null;
   const sectionMeta = getSectionMeta(title);
-  const SectionIcon = sectionMeta.icon;
   const isPlainSurface = surface === "plain";
 
   return (
@@ -345,23 +335,18 @@ const LinkListBlock = ({
       className={
         isPlainSurface
           ? "overflow-hidden rounded-2xl"
-          : "overflow-hidden rounded-lg border border-slate-200 bg-white"
+          : "overflow-hidden rounded-lg bg-white"
       }
     >
       {title ? (
         <div
           className={
             isPlainSurface
-              ? "px-4 py-3 sm:px-5 sm:py-4"
-              : "bg-slate-50/60 px-4 py-3 sm:px-5 sm:py-4"
+              ? "px-1 py-3 sm:px-5 sm:py-4"
+              : "bg-white px-1 py-3 sm:px-5 sm:py-4"
           }
         >
           <div className="flex items-start gap-3">
-            <div
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl  ring-1 ring-slate-200/80`}
-            >
-              <SectionIcon className={`text-base ${sectionMeta.iconTone}`} />
-            </div>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h4 className="text-[15px] font-semibold tracking-tight text-slate-900 sm:text-base">
@@ -385,7 +370,7 @@ const LinkListBlock = ({
         className={
           isPlainSurface
             ? "p-0"
-            : "border-t border-slate-100 bg-slate-50 p-3 sm:p-4"
+            : "border-t border-slate-100 bg-white p-3 sm:p-4"
         }
       >
         <div className="space-y-2">
@@ -405,11 +390,7 @@ const LinkListBlock = ({
                     : "group flex items-center gap-3 px-3 py-3 text-sm text-slate-700 no-underline transition-all duration-200 ease-out hover:-translate-y-px hover:border-blue-200 hover:bg-white hover:no-underline focus-visible:border-blue-200 focus-visible:bg-white sm:py-3.5"
                 }
               >
-                {withVisual ? null : (
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600 transition-all duration-200 group-hover:bg-blue-100">
-                    <FaChevronRight className="text-[11px] transition-all duration-200 ease-out group-hover:translate-x-0.5" />
-                  </span>
-                )}
+                {withVisual ? null : null}
 
                 <span className="flex min-w-0 flex-1 items-center gap-3">
                   {withVisual ? (
@@ -456,11 +437,7 @@ const LinkListBlock = ({
                   >
                     {badge}
                   </span>
-                ) : (
-                  <span className="ml-auto text-slate-300 transition-colors duration-200 group-hover:text-blue-500">
-                    <FaChevronRight className="text-[11px]" />
-                  </span>
-                )}
+                ) : null}
               </Link>
             );
           })}
@@ -481,7 +458,6 @@ const TopBrandsBlock = ({
 }) => {
   if (!Array.isArray(items) || items.length === 0) return null;
   const sectionMeta = getSectionMeta("brand");
-  const SectionIcon = sectionMeta.icon;
   const isPlainSurface = surface === "plain";
 
   return (
@@ -489,22 +465,17 @@ const TopBrandsBlock = ({
       className={
         isPlainSurface
           ? "overflow-hidden rounded-2xl"
-          : "overflow-hidden rounded-lg border border-slate-200"
+          : "overflow-hidden rounded-lg bg-white "
       }
     >
       <div
         className={
           isPlainSurface
-            ? "flex items-start justify-between gap-3 px-4 py-3.5 sm:px-5 sm:py-4"
-            : "flex items-start justify-between gap-3 border-b border-slate-200/80 bg-slate-50/60 px-4 py-3.5 sm:px-5 sm:py-4"
+            ? "flex items-start justify-between gap-3 px-1 py-3.5 sm:px-5 sm:py-4"
+            : "flex items-start justify-between gap-3 border-b border-slate-200/80  px-1 py-3.5 sm:px-5 sm:py-4"
         }
       >
         <div className="flex items-start gap-3">
-          <div
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${sectionMeta.iconBg} ring-1 ring-slate-200/80`}
-          >
-            <SectionIcon className={`text-base ${sectionMeta.iconTone}`} />
-          </div>
           <div className="min-w-0">
             <h4 className="text-[15px] font-semibold tracking-tight text-slate-900 sm:text-base">
               Explore by{" "}
@@ -520,12 +491,11 @@ const TopBrandsBlock = ({
           className="inline-flex shrink-0 items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-[11px] font-semibold text-blue-700 transition-colors duration-200 ease-out hover:border-blue-200 hover:bg-blue-100 hover:text-blue-800"
         >
           View all
-          <FaChevronRight className="text-[10px]" />
         </Link>
       </div>
 
       <div>
-        <div className="no-scrollbar overflow-x-auto px-4 py-4 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-5">
+        <div className="no-scrollbar overflow-x-auto px-1 py-4 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-5">
           <div className="flex min-w-max items-start gap-4 pr-2">
             {items.map((item, index) => {
               const rawBrandName = normalizeText(item?.name || item?.label);
@@ -619,7 +589,6 @@ const ProductDiscoverySections = ({
   const entityConfig = useMemo(() => getEntityConfig(entityType), [entityType]);
   const isLatestPhonesLayout =
     layout === "latestPhones" && entityConfig.type === "smartphones";
-  const HeaderIcon = isLatestPhonesLayout ? FaFire : FaStore;
 
   const { latestReleases, budgetSegments, brandHub, smartDiscoveries } =
     useMemo(() => {
@@ -634,7 +603,7 @@ const ProductDiscoverySections = ({
         brandHub: Array.isArray(sections.brand_hub) ? sections.brand_hub : [],
         smartDiscoveries: Array.isArray(sections.smart_discoveries)
           ? sections.smart_discoveries
-        : [],
+          : [],
       };
     }, [payload]);
 
@@ -770,8 +739,8 @@ const ProductDiscoverySections = ({
         <div
           className={
             isLatestPhonesLayout
-              ? "mx-auto max-w-7xl px-4 py-4 text-sm text-slate-600 sm:px-5 sm:py-5"
-              : "mx-auto max-w-7xl rounded-[28px] border border-slate-200 bg-white px-4 py-4 text-sm text-slate-600 sm:px-5 sm:py-5"
+              ? "mx-auto max-w-7xl px-1 py-4 text-sm text-slate-600 sm:px-5 sm:py-5"
+              : "mx-auto max-w-7xl rounded-[28px] border border-slate-200 bg-white px-1 py-4 text-sm text-slate-600 sm:px-5 sm:py-5"
           }
         >
           Loading discovery sections...
@@ -784,13 +753,10 @@ const ProductDiscoverySections = ({
 
   return (
     <section className={`w-full overflow-hidden  ${className}`}>
-      <div className="mx-auto max-w-7xl rounded-[28px] ">
+      <div className="mx-auto max-w-7xl ">
         {!isLatestPhonesLayout ? (
-          <div className="flex items-start justify-between gap-3 border-b border-slate-200/80 px-4 py-4 sm:px-5 sm:py-5">
+          <div className="flex items-start justify-between gap-3 border-b border-slate-200/80 px-1 py-4 sm:px-5 sm:py-5">
             <div className="flex items-start gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-cyan-50 ring-1 ring-slate-200/80">
-                <HeaderIcon className="text-base text-blue-600" />
-              </div>
               <div className="min-w-0">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-blue-600">
                   Discovery Hub
@@ -836,13 +802,6 @@ const ProductDiscoverySections = ({
           <div className="grid grid-cols-1 gap-3 p-3 sm:gap-4 sm:p-5 md:grid-cols-2 md:gap-4">
             <div className="space-y-3 sm:space-y-4 md:pr-1">
               <LinkListBlock title="Smart Popular Links" items={popularLinks} />
-              <LinkListBlock
-                title="Latest Launches"
-                items={latestLaunchLinks}
-                withVisual
-                entityType={entityConfig.type}
-                itemNounLower={entityConfig.itemNounLower}
-              />
             </div>
 
             <div className="space-y-3 sm:space-y-4">

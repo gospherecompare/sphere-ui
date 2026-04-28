@@ -1317,18 +1317,48 @@ const LaptopDetailCard = () => {
 
     return (
       <>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-100 shadow-none">
-            <tbody className="bg-white">
+        {/* Mobile: Stacked Layout */}
+        <div className="sm:hidden space-y-2 px-1">
+          {displayEntries.map(([key, value]) => (
+            <div
+              key={key}
+              className="rounded-md border border-slate-200 bg-white p-2.5"
+            >
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-600 mb-0.5">
+                {toNormalCase(key)}
+              </div>
+              <div className="text-sm font-semibold text-slate-900 break-words">
+                {toDisplayValue(value)}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop: Table Layout */}
+        <div className="hidden sm:block overflow-hidden rounded-lg border border-slate-200 bg-white">
+          <table className="w-full">
+            <thead className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+              <tr>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-700">
+                  Spec
+                </th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-700">
+                  Details
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
               {displayEntries.map(([key, value], idx) => (
                 <tr
                   key={key}
-                  className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                  className={`transition-colors hover:bg-blue-50 ${
+                    idx % 2 === 0 ? "bg-white" : "bg-slate-50"
+                  }`}
                 >
-                  <td className="px-6 py-2 text-sm font-medium text-gray-600 w-1/3 align-top">
+                  <td className="px-6 py-4 text-sm font-medium text-slate-600 w-1/3 align-top">
                     {toNormalCase(key)}
                   </td>
-                  <td className="px-6 py-2 text-sm text-gray-900 w-2/3">
+                  <td className="px-6 py-4 text-sm font-semibold text-slate-900 w-2/3">
                     {toDisplayValue(value)}
                   </td>
                 </tr>
