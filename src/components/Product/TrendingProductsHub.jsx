@@ -19,6 +19,7 @@ import SEO from "../SEO";
 import ProductDiscoverySections from "../ui/ProductDiscoverySections";
 import PopularMobileComparisonsStrip from "../ui/PopularMobileComparisonsStrip";
 import MobilePhoneHighlights from "../ui/MobilePhoneHighlights";
+import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
 import { createProductPath, generateSlug } from "../../utils/slugGenerator";
 import {
   createCollectionSchema,
@@ -2513,6 +2514,10 @@ const TrendingProductsHub = () => {
 
           {activeCategory === "smartphones" ? (
             <MobilePhoneHighlights devices={products} className="mt-6" />
+          ) : null}
+
+          {activeCategory === "smartphones" ? (
+            <LatestNewsRouteSection className="mt-6" />
           ) : null}
 
           {featuredDiscoveryProduct ? (

@@ -41,6 +41,7 @@ import SEO from "../SEO";
 import ProductDiscoverySections from "../ui/ProductDiscoverySections";
 import PopularMobileComparisonsStrip from "../ui/PopularMobileComparisonsStrip";
 import MobilePhoneHighlights from "../ui/MobilePhoneHighlights";
+import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
 import { generateSlug } from "../../utils/slugGenerator";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
@@ -4936,6 +4937,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
             ) : null}
 
             <MobilePhoneHighlights devices={baseDevices} className="mt-6" />
+
+            <LatestNewsRouteSection className="mt-6" />
 
             {/* Mobile Filter Overlay - Remains the same but with enhanced descriptions */}
             {showFilters && (
