@@ -23,6 +23,7 @@ import {
   FaExternalLinkAlt,
   FaExchangeAlt,
   FaPlus,
+  FaHeart,
 } from "react-icons/fa";
 import { useDevice } from "../../hooks/useDevice";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
@@ -38,6 +39,8 @@ import Spinner from "../ui/Spinner";
 import Breadcrumbs from "../Breadcrumbs";
 import SEO from "../SEO";
 import ProductDiscoverySections from "../ui/ProductDiscoverySections";
+import PopularMobileComparisonsStrip from "../ui/PopularMobileComparisonsStrip";
+import MobilePhoneHighlights from "../ui/MobilePhoneHighlights";
 import { generateSlug } from "../../utils/slugGenerator";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
@@ -1973,11 +1976,43 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const [showFilters, setShowFilters] = useState(false);
   const [showHeroDescription, setShowHeroDescription] = useState(false);
   const [compareItems, setCompareItems] = useState([]);
+  const [likedItems, setLikedItems] = useState(() => {
+    try {
+      const stored = localStorage.getItem("likedSmartphones");
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
   const [currentPage, setCurrentPage] = useState(1);
   const compareLimit = useMemo(
     () => getCompareLimitForDevices(compareItems),
     [compareItems],
   );
+
+  // Like/Unlike handler
+  const handleLikeToggle = (device, e) => {
+    e.stopPropagation();
+    const deviceId = device._id || device.id || device.model;
+    setLikedItems((prevLiked) => {
+      const isCurrentlyLiked = prevLiked.includes(deviceId);
+      const updated = isCurrentlyLiked
+        ? prevLiked.filter((id) => id !== deviceId)
+        : [...prevLiked, deviceId];
+      try {
+        localStorage.setItem("likedSmartphones", JSON.stringify(updated));
+      } catch {
+        // Handle localStorage quota exceeded
+      }
+      return updated;
+    });
+  };
+
+  // Check if device is liked
+  const isDeviceLiked = (device) => {
+    const deviceId = device._id || device.id || device.model;
+    return likedItems.includes(deviceId);
+  };
 
   // Brand-based SEO helper
   const filterBrand =
@@ -4892,6 +4927,15 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                 )}
               </div>
             </div>
+
+            {sortedVariants.length > 1 ? (
+              <PopularMobileComparisonsStrip
+                devices={sortedVariants}
+                className="mt-8"
+              />
+            ) : null}
+
+            <MobilePhoneHighlights devices={baseDevices} className="mt-6" />
 
             {/* Mobile Filter Overlay - Remains the same but with enhanced descriptions */}
             {showFilters && (

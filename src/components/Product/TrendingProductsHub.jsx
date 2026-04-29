@@ -17,6 +17,8 @@ import useDevice from "../../hooks/useDevice";
 import useStoreLogos from "../../hooks/useStoreLogos";
 import SEO from "../SEO";
 import ProductDiscoverySections from "../ui/ProductDiscoverySections";
+import PopularMobileComparisonsStrip from "../ui/PopularMobileComparisonsStrip";
+import MobilePhoneHighlights from "../ui/MobilePhoneHighlights";
 import { createProductPath, generateSlug } from "../../utils/slugGenerator";
 import {
   createCollectionSchema,
@@ -762,6 +764,9 @@ const buildProduct = (row, cat, index) => {
   return {
     key: row.product_id ?? row.id ?? `${cat}-${index}`,
     id: row.product_id ?? row.id ?? null,
+    productId: row.product_id ?? row.id ?? null,
+    product_id: row.product_id ?? row.id ?? null,
+    productType: "smartphone",
     name: first(row.name, row.product_name, row.model, "Smartphone"),
     brand: first(row.brand_name, row.brand),
     brand_logo: first(row.brand_logo, row.brandLogo),
@@ -772,6 +777,25 @@ const buildProduct = (row, cat, index) => {
     price: lowest,
     priceText: priceLabel(lowest),
     release: first(row.launch_date, row.created_at),
+    launchDate: first(row.launch_date, row.launchDate, row.created_at),
+    launchStatus: first(
+      row.launch_status,
+      row.launchStatus,
+      row.launch_status_override,
+      row.launchStatusOverride,
+      row.status,
+      row.availability,
+    ),
+    is_prebooking: row.is_prebooking === true || row.isPrebooking === true,
+    Hookss_score: num(
+      row.Hookss_score ?? row.HookssScore ?? row.hook_score ?? row.hookScore,
+    ),
+    hook_score: num(
+      row.hook_score ?? row.hookScore ?? row.Hookss_score ?? row.HookssScore,
+    ),
+    buyer_intent: num(row.buyer_intent ?? row.buyerIntent),
+    trend_velocity: num(row.trend_velocity ?? row.trendVelocity),
+    freshness: num(row.freshness),
     specLine: [
       ram,
       storage,
@@ -2482,6 +2506,14 @@ const TrendingProductsHub = () => {
               ) : null}
             </div>
           </div>
+
+          {activeCategory === "smartphones" && visible.length > 1 ? (
+            <PopularMobileComparisonsStrip devices={visible} className="mt-8" />
+          ) : null}
+
+          {activeCategory === "smartphones" ? (
+            <MobilePhoneHighlights devices={products} className="mt-6" />
+          ) : null}
 
           {featuredDiscoveryProduct ? (
             <section className="mx-auto mt-8 max-w-7xl px-4 pb-8 sm:mt-10 sm:px-6 sm:pb-12 md:pb-16 lg:px-8 lg:pb-20">
