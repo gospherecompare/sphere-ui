@@ -463,6 +463,8 @@ const RouteSeoFallback = () => {
   if (pathname.startsWith("/terms")) return null;
   if (pathname.startsWith("/careers")) return null;
 
+  //welcome to the SEO fallback - this will handle all non-product, non-news routes and set basic SEO tags based on the path
+
   return (
     <Helmet prioritizeSeoTags>
       <title>{normalizedTitle}</title>
