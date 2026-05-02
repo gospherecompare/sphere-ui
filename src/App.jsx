@@ -469,7 +469,7 @@ const RouteSeoFallback = () => {
       <meta name="description" content={seo.description} />
       <meta name="keywords" content={seo.keywords} />
       <meta name="robots" content={seo.robots} />
-      <link rel="canonical" href={canonicalUrl} />
+      <link key="canonical" rel="canonical" href={canonicalUrl} />
       <meta property="og:type" content="website" />
       <meta property="og:title" content={normalizedTitle} />
       <meta property="og:description" content={seo.description} />
