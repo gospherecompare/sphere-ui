@@ -506,9 +506,9 @@ const NewEditorial = ({ stories = [], loading = false, error = "" }) => {
               <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-[#1d4ed8]">
                 Hooks Newsroom
               </p>
-              <h1 className="mt-3 text-[28px] font-black leading-[1.02] tracking-[-0.05em] text-[#121212] sm:text-[44px] lg:text-[50px]">
+              <h2 className="mt-3 text-[28px] font-black leading-[1.02] tracking-[-0.05em] text-[#121212] sm:text-[44px] lg:text-[50px]">
                 Technology News & Articles
-              </h1>
+              </h2>
               <p className="mt-4 max-w-3xl text-[14px] leading-7 text-[#575757] sm:text-base">
                 Fresh gadget launches, mobile updates, reviews, buying guides,
                 and editorial coverage arranged in a cleaner, more

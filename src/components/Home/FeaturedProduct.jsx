@@ -797,12 +797,12 @@ const FeaturedProduct = () => {
 
       <div className="relative mx-auto max-w-7xl px-3 sm:px-4 pb-12 sm:pb-16 md:pb-20 lg:pb-24 pt-8 sm:pt-12 md:pt-16 lg:pt-24">
         <div className="mx-auto max-w-5xl text-center">
-          <h1 className="mt-6 sm:mt-8 text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-black leading-tight text-white">
+          <h2 className="mt-6 sm:mt-8 text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-black leading-tight text-white">
             <span className="block">Discover Featured Phones by</span>
             <span className="bg-gradient-to-r from-cyan-200 via-white to-sky-100 bg-clip-text text-transparent animate-pulse">
               Budget
             </span>
-          </h1>
+          </h2>
 
           <p className="mx-auto mt-4 sm:mt-6 max-w-2xl text-sm sm:text-lg lg:text-xl leading-6 sm:leading-8 text-white/85 font-medium">
             Use the budget lanes below to jump into curated phones, then tap the

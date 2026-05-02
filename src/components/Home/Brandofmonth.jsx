@@ -248,12 +248,12 @@ const MobileFeaturesFinder = () => {
 
       <div className="relative mx-auto max-w-7xl px-4 pb-14 pt-12 sm:px-6 sm:pb-16 sm:pt-16 lg:px-8 lg:pb-20 lg:pt-20">
         <div className="mx-auto max-w-5xl text-center">
-          <h1 className="mt-6 text-3xl font-bold leading-tight text-slate-900 sm:text-4xl lg:text-5xl">
+          <h2 className="mt-6 text-3xl font-bold leading-tight text-slate-900 sm:text-4xl lg:text-5xl">
             Mobiles by
             <span className="ml-2 bg-gradient-to-r from-blue-600 via-purple-500 to-cyan-600 bg-clip-text text-transparent animate-pulse">
               Popular Features
             </span>
-          </h1>
+          </h2>
 
           <p className="mx-auto mt-4 max-w-3xl text-sm leading-7 text-slate-600 sm:text-base lg:text-lg">
             {popularFeatureOrderLoaded

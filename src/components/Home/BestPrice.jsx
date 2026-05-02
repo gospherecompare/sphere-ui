@@ -667,12 +667,12 @@ const BestPriceSection = () => {
               Premium Devices
             </span>
           </div>
-          <h1 className="mt-2 text-4xl font-black leading-tight text-slate-900 sm:text-6xl lg:text-7xl">
+          <h2 className="mt-2 text-4xl font-black leading-tight text-slate-900 sm:text-6xl lg:text-7xl">
             Trending{" "}
             <span className="bg-gradient-to-r from-blue-600 via-slate-700 to-blue-600 bg-clip-text text-transparent animate-pulse">
               by Hooks
             </span>
-          </h1>
+          </h2>
           <p className="mx-auto mt-6 max-w-2xl text-sm font-medium leading-7 text-slate-600 sm:mt-7 sm:text-lg sm:leading-8">
             Compare the highest-scoring devices across smartphones, laptops,
             TVs, and networking gear.

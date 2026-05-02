@@ -317,12 +317,12 @@ const LatestSmartphones = () => {
       <div className="relative mx-auto max-w-7xl px-4 pb-14 pt-10 sm:px-6 sm:pb-20 sm:pt-16 lg:px-8 lg:pb-24 lg:pt-24">
         {/* Header Section */}
         <div className="mx-auto max-w-5xl text-center">
-          <h1 className="mt-8 text-3xl font-black leading-tight text-white sm:text-5xl lg:text-6xl">
+          <h2 className="mt-8 text-3xl font-black leading-tight text-white sm:text-5xl lg:text-6xl">
             Latest{" "}
             <span className="bg-gradient-to-r from-cyan-200 via-white to-sky-100 bg-clip-text text-transparent animate-pulse">
               Smartphones
             </span>
-          </h1>
+          </h2>
           <p className="mx-auto mt-4 max-w-2xl text-sm font-medium leading-7 text-white/85 sm:mt-6 sm:text-xl sm:leading-8">
             Discover the newest released phones.
           </p>

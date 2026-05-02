@@ -199,12 +199,12 @@ const PopularBrands = () => {
 
       <div className="relative px-4 pt-10 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-5xl text-center">
-          <h1 className="mt-6 sm:mt-8 text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-black leading-tight text-slate-900">
+          <h2 className="mt-6 sm:mt-8 text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-black leading-tight text-slate-900">
             <span className="block">Explore by Popular </span>
             <span className="bg-gradient-to-r from-cyan-600 via-blue-600 to-sky-600 bg-clip-text text-transparent animate-pulse">
               Brands
             </span>
-          </h1>
+          </h2>
 
           <p className="mx-auto mt-4 sm:mt-6 max-w-2xl text-sm sm:text-lg lg:text-xl leading-6 sm:leading-8 font-medium text-slate-600">
             Browse trusted brands across smartphones, laptops, TVs, and other
