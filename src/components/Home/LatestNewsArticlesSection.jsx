@@ -7,6 +7,10 @@ import {
   createNewsStoryPath,
   usePublicNewsFeed,
 } from "../../hooks/usePublicNews";
+import {
+  HOME_SECTION_LEAD_LIGHT,
+  HOME_SECTION_TITLE_LIGHT,
+} from "./homeSectionTypography";
 
 const NewsStoryMedia = ({ story }) => {
   const [imageError, setImageError] = useState(false);
@@ -59,10 +63,15 @@ const LatestNewsArticlesSection = () => {
               <span className="inline-block h-1 w-8 rounded-full bg-blue-600"></span>
               <p className={NEWS_BRAND_STYLES.eyebrow}>Latest stories</p>
             </div>
-            <h2 className={`mt-4 ${NEWS_BRAND_STYLES.sectionTitle}`}>
-              Latest News & Articles
+            <h2
+              className={`${HOME_SECTION_TITLE_LIGHT} mt-4 tracking-tight text-slate-950`}
+            >
+              <span className="block">Latest News &</span>
+              <span className="bg-gradient-to-r from-blue-600 via-cyan-500 to-sky-600 bg-clip-text text-transparent animate-pulse">
+                Articles
+              </span>
             </h2>
-            <p className={`mt-3 max-w-2xl text-slate-600`}>
+            <p className={HOME_SECTION_LEAD_LIGHT}>
               Stay updated with the newest gadget launches, tech reviews,
               industry news, and buying guides.
             </p>

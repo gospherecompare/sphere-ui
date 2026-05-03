@@ -10,6 +10,10 @@ import {
   FaWifi,
   FaArrowRight,
 } from "react-icons/fa";
+import {
+  HOME_SECTION_LEAD_LIGHT,
+  HOME_SECTION_TITLE_LIGHT,
+} from "./homeSectionTypography";
 
 const normalizeScore100 = (value) => {
   const n = Number(value);
@@ -604,83 +608,32 @@ const BestPriceSection = () => {
 
   return (
     <section
-      className={`relative isolate overflow-hidden bg-gradient-to-br from-white via-slate-50 to-white transition-all duration-700 ${
+      className={`relative overflow-hidden border-t border-slate-200 bg-white transition-all duration-700 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
-      <style>{`
-        @keyframes float-slow {
-          0%, 100% { transform: translateY(0px) translateX(0px); }
-          50% { transform: translateY(-30px) translateX(10px); }
-        }
-        @keyframes float-slower {
-          0%, 100% { transform: translateY(0px) translateX(0px); }
-          50% { transform: translateY(-40px) translateX(-15px); }
-        }
-        @keyframes glow-pulse {
-          0%, 100% { opacity: 0.5; }
-          50% { opacity: 0.8; }
-        }
-        .animate-float-slow {
-          animation: float-slow 6s ease-in-out infinite;
-        }
-        .animate-float-slower {
-          animation: float-slower 8s ease-in-out infinite;
-        }
-        .animate-glow-pulse {
-          animation: glow-pulse 4s ease-in-out infinite;
-        }
-      `}</style>
-
-      {/* Premium animated glass orbs */}
-      <div className="absolute -top-20 -left-32 h-96 w-96 rounded-full bg-gradient-to-br from-slate-300/35 to-slate-200/15 blur-3xl animate-float-slow" />
-      <div
-        className="absolute -bottom-32 -right-40 h-96 w-96 rounded-full bg-gradient-to-tl from-slate-400/30 to-slate-300/10 blur-3xl animate-float-slower"
-        style={{ animationDelay: "1s" }}
-      />
-      <div
-        className="absolute top-1/3 left-1/4 h-72 w-72 rounded-full bg-gradient-to-r from-slate-300/25 to-transparent blur-3xl animate-glow-pulse"
-        style={{ animationDelay: "0.5s" }}
-      />
-      <div
-        className="absolute top-1/2 right-1/4 h-80 w-80 rounded-full bg-gradient-to-l from-slate-300/20 to-transparent blur-3xl animate-float-slow"
-        style={{ animationDelay: "2s" }}
-      />
-
-      {/* Accent floating elements */}
-      <div
-        className="absolute top-1/4 right-1/3 h-2 w-2 rounded-full bg-slate-400/40 blur-sm animate-float-slow"
-        style={{ animationDelay: "0.3s" }}
-      />
-      <div
-        className="absolute bottom-1/3 left-1/3 h-3 w-3 rounded-full bg-slate-300/30 blur-sm animate-float-slower"
-        style={{ animationDelay: "1.5s" }}
-      />
-
-      {/* Enhanced grid pattern */}
-      <div className="absolute inset-0 opacity-40 [background-image:linear-gradient(rgba(100,116,139,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(100,116,139,0.1)_1px,transparent_1px)] [background-size:60px_60px]" />
       <div className="relative mx-auto max-w-7xl px-4 pb-16 pt-12 sm:px-6 sm:pb-20 sm:pt-16 lg:px-8 lg:pb-24 lg:pt-24">
         {/* Header Section */}
         <div className="mx-auto mb-12 max-w-5xl text-center">
-          <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-full bg-white/40 backdrop-blur-lg border border-slate-300/30">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-4 py-2">
             <span className="text-xs font-semibold uppercase tracking-widest text-slate-600">
               Premium Devices
             </span>
           </div>
-          <h2 className="mt-2 text-4xl font-black leading-tight text-slate-900 sm:text-6xl lg:text-7xl">
-            Trending{" "}
+          <h2 className={HOME_SECTION_TITLE_LIGHT}>
+            <span className="block">Trending</span>
             <span className="bg-gradient-to-r from-blue-600 via-slate-700 to-blue-600 bg-clip-text text-transparent animate-pulse">
               by Hooks
             </span>
           </h2>
-          <p className="mx-auto mt-6 max-w-2xl text-sm font-medium leading-7 text-slate-600 sm:mt-7 sm:text-lg sm:leading-8">
+          <p className={HOME_SECTION_LEAD_LIGHT}>
             Compare the highest-scoring devices across smartphones, laptops,
             TVs, and networking gear.
           </p>
         </div>
 
         {/* Category Tabs - Single Row */}
-        <div className="mx-auto mt-10 flex w-full max-w-full justify-start overflow-x-auto rounded-2xl bg-white/40 backdrop-blur-xl p-2 border border-slate-300/40 no-scrollbar scroll-smooth sm:w-fit sm:p-3">
+        <div className="mx-auto mt-10 flex w-full max-w-full justify-start overflow-x-auto rounded-2xl border border-slate-200 bg-slate-100 p-2 no-scrollbar scroll-smooth sm:w-fit sm:p-3">
           {categories.map((category, index) => {
             const isActive = activeCategory === category.id;
             const Icon = category.icon;
@@ -693,8 +646,8 @@ const BestPriceSection = () => {
                 aria-pressed={isActive}
                 className={`group relative min-w-[100px] shrink-0 px-2 py-1.5 text-left text-[11px] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 focus-visible:ring-offset-2 focus-visible:ring-offset-white sm:min-w-[154px] sm:px-5 sm:py-3 sm:text-[0.95rem] lg:min-w-[174px] border rounded-2xl ${
                   isActive
-                    ? "border-blue-400/50 bg-gradient-to-br from-blue-50 to-blue-100/50 backdrop-blur-xl text-slate-900 shadow-lg shadow-blue-200/40"
-                    : "border-slate-300/40 bg-white/20 backdrop-blur-lg text-slate-700 hover:border-blue-300/50 hover:bg-white/40 hover:text-slate-900"
+                    ? "border-blue-200 bg-white text-slate-900 shadow-sm"
+                    : "border-transparent bg-transparent text-slate-700 hover:border-slate-200 hover:bg-white hover:text-slate-900"
                 } ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
                 style={{ transitionDelay: `${index * 55}ms` }}
               >
@@ -702,8 +655,8 @@ const BestPriceSection = () => {
                   <div
                     className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ring-1 transition-all duration-300 sm:h-10 sm:w-10 ${
                       isActive
-                        ? "bg-blue-600/40 text-blue-700 ring-blue-400/50"
-                        : "bg-white/30 text-slate-600 ring-slate-300/40 group-hover:bg-blue-100/40 group-hover:text-blue-600"
+                        ? "bg-blue-100 text-blue-700 ring-blue-200"
+                        : "bg-white text-slate-600 ring-slate-200 group-hover:bg-blue-50 group-hover:text-blue-600"
                     }`}
                   >
                     <Icon className="h-3.5 w-3.5 sm:h-5 sm:w-5" />
@@ -750,15 +703,15 @@ const BestPriceSection = () => {
                   key={`skeleton-${i}`}
                   className="w-[74vw] max-w-[17rem] shrink-0 animate-pulse sm:w-[18rem] lg:w-[19rem]"
                 >
-                  <div className="relative overflow-hidden rounded-2xl backdrop-blur-lg p-3 sm:p-4">
-                    <div className="flex h-36 items-center justify-center rounded-xl border border-slate-300/40 bg-white/30 backdrop-blur-md sm:h-40">
-                      <div className="h-24 w-20 rounded-xl bg-slate-200/50" />
+                  <div className="relative overflow-hidden rounded-2xl p-3 sm:p-4">
+                    <div className="flex h-36 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 sm:h-40">
+                      <div className="h-24 w-20 rounded-xl bg-slate-200" />
                     </div>
-                    <div className="mt-4 h-4 w-4/5 rounded bg-slate-200/50" />
+                    <div className="mt-4 h-4 w-4/5 rounded bg-slate-200" />
                     <div className="mt-4 border-t border-slate-200 pt-3">
                       <div className="flex items-center justify-between gap-3">
-                        <div className="h-4 w-24 rounded bg-slate-200/50" />
-                        <div className="h-4 w-4 rounded-full bg-slate-200/50" />
+                        <div className="h-4 w-24 rounded bg-slate-200" />
+                        <div className="h-4 w-4 rounded-full bg-slate-200" />
                       </div>
                     </div>
                   </div>
@@ -771,7 +724,7 @@ const BestPriceSection = () => {
                   type="button"
                   aria-label={`Open ${device.name}`}
                   onClick={() => handleDeviceClick(device)}
-                  className={`group relative flex h-full w-[74vw] max-w-[17rem] shrink-0 snap-start flex-col rounded-2xl backdrop-blur-lg overflow-hidden text-left transition-all duration-300 hover:shadow-lg sm:w-[18rem] lg:w-[19rem] ${
+                  className={`group relative flex h-full w-[74vw] max-w-[17rem] shrink-0 snap-start flex-col overflow-hidden rounded-2xl text-left transition-all duration-300 hover:-translate-y-0.5 sm:w-[18rem] lg:w-[19rem] ${
                     isLoaded
                       ? "opacity-100 translate-y-0"
                       : "opacity-0 translate-y-2"
@@ -779,7 +732,7 @@ const BestPriceSection = () => {
                   style={{ transitionDelay: `${i * 60}ms` }}
                 >
                   <div className="flex flex-1 flex-col p-4 sm:p-5">
-                    <div className="flex h-36 items-center justify-center overflow-hidden rounded-xl border border-slate-300/40 bg-white/30 backdrop-blur-lg sm:h-40">
+                    <div className="flex h-36 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50 sm:h-40">
                       {device.image ? (
                         <img
                           src={device.image}

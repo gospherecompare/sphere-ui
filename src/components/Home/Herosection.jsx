@@ -14,6 +14,10 @@ import {
   FaWifi,
   FaArrowRight,
 } from "react-icons/fa";
+import {
+  HOME_SECTION_LEAD_DARK,
+  HOME_SECTION_TITLE_DARK,
+} from "./homeSectionTypography";
 
 const DEVICE_TYPE_OPTIONS = [
   { id: "smartphones", label: "Mobile", path: "/smartphones", icon: FaMobile },
@@ -758,69 +762,17 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="relative isolate overflow-visible bg-gradient-to-br from-slate-950 via-blue-900 to-indigo-950">
-      {/* Animated gradient orbs */}
-      <div className="absolute inset-0 opacity-50 [background-image:linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:72px_72px]" />
-
-      {/* Main orbs */}
-      <div className="absolute -top-40 -left-32 h-96 w-96 rounded-full bg-gradient-to-br from-cyan-500/30 to-blue-500/20 blur-3xl animate-pulse" />
-      <div
-        className="absolute -bottom-20 -right-20 h-80 w-80 rounded-full bg-gradient-to-tl from-purple-600/25 to-pink-500/15 blur-3xl animate-pulse"
-        style={{ animationDelay: "1s" }}
-      />
-      <div
-        className="absolute top-1/2 left-1/3 h-72 w-72 rounded-full bg-gradient-to-r from-indigo-600/20 to-transparent blur-3xl animate-pulse"
-        style={{ animationDelay: "2s" }}
-      />
-
-      {/* Floating dots */}
-      <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-20px); }
-        }
-        @keyframes float-slow {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-30px); }
-        }
-        @keyframes rotate-slow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        .animate-float {
-          animation: float 3s ease-in-out infinite;
-        }
-        .animate-float-slow {
-          animation: float-slow 4s ease-in-out infinite;
-        }
-        .animate-rotate-slow {
-          animation: rotate-slow 20s linear infinite;
-        }
-      `}</style>
-
-      <div className="absolute top-1/4 left-10 h-3 w-3 rounded-full bg-cyan-400/60 blur-sm animate-float" />
-      <div
-        className="absolute top-1/3 right-1/3 h-2 w-2 rounded-full bg-blue-400/50 blur-sm animate-float"
-        style={{ animationDelay: "0.5s" }}
-      />
-      <div className="absolute bottom-1/4 right-1/4 h-3 w-3 rounded-full bg-purple-400/50 blur-sm animate-float-slow" />
-      <div
-        className="absolute top-3/4 left-1/3 h-2 w-2 rounded-full bg-indigo-400/60 blur-sm animate-float-slow"
-        style={{ animationDelay: "1s" }}
-      />
-
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-
+    <section className="relative overflow-visible border-t border-slate-800 bg-slate-950">
       <div className="relative mx-auto max-w-7xl px-4 pb-12 pt-10 sm:px-6 sm:pb-20 sm:pt-16 lg:px-8 lg:pb-24 lg:pt-24">
         <div className="mx-auto max-w-5xl text-center">
-          <h1 className="mt-6 text-3xl font-black leading-[1.05] text-white sm:mt-8 sm:text-5xl lg:text-6xl">
+          <h1 className={HOME_SECTION_TITLE_DARK}>
             <span className="block">Find Your Perfect</span>
             <span className="bg-gradient-to-r from-purple-500 via-purple-200 to-purple-500 bg-clip-text text-transparent animate-pulse">
               Device
             </span>
           </h1>
 
-          <p className="mx-auto mt-4 max-w-2xl text-base font-medium leading-7 text-white/85 sm:mt-6 sm:text-xl sm:leading-8">
+          <p className={HOME_SECTION_LEAD_DARK}>
             Smart comparisons, real-time prices, and expert insights to help you
             make the right choice - instantly.
           </p>
@@ -832,7 +784,7 @@ const HeroSection = () => {
             {stats.map((stat, idx) => (
               <div
                 key={idx}
-                className="group flex items-center gap-2 rounded-2xl border border-white/15 px-4 py-3 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-white/30 sm:gap-3 lg:rounded-2xl"
+                className="group flex items-center gap-2 rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-700 sm:gap-3 lg:rounded-2xl"
               >
                 <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-cyan-200 transition-colors group-hover:text-cyan-100 sm:h-12 sm:w-12">
                   <span className="text-base font-bold text-cyan-200">✓</span>
@@ -954,7 +906,7 @@ const HeroSection = () => {
                 onClick={() =>
                   navigate(`/smartphones?q=${encodeURIComponent(item)}`)
                 }
-                className="group relative rounded-full whitespace-nowrap border border-white/20 px-4 py-2 text-xs font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:border-white/35 hover:text-cyan-100 sm:px-5 sm:py-2.5 sm:text-sm"
+                className="group relative rounded-full whitespace-nowrap border border-slate-700 bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-600 hover:bg-slate-800 hover:text-cyan-100 sm:px-5 sm:py-2.5 sm:text-sm"
               >
                 <span className="flex items-center gap-2">
                   {idx === 0 && <FaFire className="h-3 w-3 text-yellow-300" />}
@@ -993,9 +945,9 @@ const HeroSection = () => {
                           `/smartphones?q=${encodeURIComponent(phone.name)}`,
                       )
                     }
-                    className="group relative flex snap-start flex-col gap-3 rounded-3xl p-4 text-left text-white/95 transition-all duration-300 hover:-translate-y-1 sm:p-5"
+                    className="group relative flex snap-start flex-col gap-3 rounded-3xl p-4 text-left text-white transition-all duration-300 hover:-translate-y-1 sm:p-5"
                   >
-                    <div className="flex h-50 w-full items-center justify-center overflow-hidden rounded-2xl border border-white/10">
+                    <div className="flex h-50 w-full items-center justify-center overflow-hidden rounded-2xl border border-slate-700 bg-slate-800">
                       {phone.image ? (
                         <img
                           src={phone.image}
@@ -1007,7 +959,7 @@ const HeroSection = () => {
                           }}
                         />
                       ) : (
-                        <span className="text-lg font-bold tracking-wide text-white/60">
+                        <span className="text-lg font-bold tracking-wide text-slate-500">
                           {phone.short}
                         </span>
                       )}
@@ -1017,12 +969,12 @@ const HeroSection = () => {
                       <p className="text-sm font-bold leading-snug text-white sm:text-base">
                         {phone.name}
                       </p>
-                      <p className="mt-1 text-[11px] font-medium text-white/65 sm:text-xs">
+                      <p className="mt-1 text-[11px] font-medium text-slate-400 sm:text-xs">
                         {phone.brandName}
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between gap-2 border-t border-white/10 pt-3">
+                    <div className="flex items-center justify-between gap-2 border-t border-slate-700 pt-3">
                       <span className="text-xs font-medium text-slate-300 sm:text-sm">
                         View Details
                       </span>
@@ -1034,7 +986,7 @@ const HeroSection = () => {
                 ))}
               </div>
             ) : (
-              <div className="rounded-2xl border border-white/15 p-6 text-center text-white/80 transition-all duration-300">
+              <div className="rounded-2xl p-6 text-center text-slate-300 transition-all duration-300">
                 {featuredPhonesLoading
                   ? "Loading live devices..."
                   : "No live devices available right now."}

@@ -5,6 +5,10 @@ import { useSelector } from "react-redux";
 import { createProductPath } from "../../utils/slugGenerator";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
 import { FaMobileAlt } from "react-icons/fa";
+import {
+  HOME_SECTION_LEAD_LIGHT,
+  HOME_SECTION_TITLE_LIGHT,
+} from "./homeSectionTypography";
 
 const RECENT_STORAGE_KEY = "hooks_recent_smartphones_v1";
 const FALLBACK_CACHE_KEY = "hooks_reco_fallback_cache_v1";
@@ -614,7 +618,7 @@ const RecommendedSmartphones = ({
                   key={`${device.id || "noid"}-${i}`}
                   type="button"
                   onClick={() => handleDeviceClick(device)}
-                  className="group flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 text-left transition-all duration-300 hover:border-slate-300 hover:shadow-[0_8px_20px_rgba(15,23,42,0.08)]"
+                  className="group flex w-full items-center gap-3 rounded-2xl bg-white p-3 text-left transition-all duration-300"
                 >
                   <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
                     {device.image ? (
@@ -658,72 +662,26 @@ const RecommendedSmartphones = ({
 
   return (
     <section
-      className={`relative isolate overflow-hidden bg-gradient-to-br from-slate-950 via-blue-900 to-indigo-950 transition-all duration-700 ${
+      className={`relative mt-12 overflow-hidden rounded-3xl border border-slate-200 bg-white transition-all duration-700 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
-      <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-20px); }
-        }
-        @keyframes float-slow {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-30px); }
-        }
-        .animate-float {
-          animation: float 3s ease-in-out infinite;
-        }
-        .animate-float-slow {
-          animation: float-slow 4s ease-in-out infinite;
-        }
-      `}</style>
-
-      {/* Animated gradient orbs */}
-      <div className="absolute inset-0 opacity-50 [background-image:linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:72px_72px]" />
-      <div className="absolute -top-40 -left-32 h-96 w-96 rounded-full bg-gradient-to-br from-cyan-500/30 to-blue-500/20 blur-3xl animate-pulse" />
-      <div
-        className="absolute -bottom-20 -right-20 h-80 w-80 rounded-full bg-gradient-to-tl from-purple-600/25 to-pink-500/15 blur-3xl animate-pulse"
-        style={{ animationDelay: "1s" }}
-      />
-      <div
-        className="absolute top-1/2 left-1/3 h-72 w-72 rounded-full bg-gradient-to-r from-indigo-600/20 to-transparent blur-3xl animate-pulse"
-        style={{ animationDelay: "2s" }}
-      />
-
-      {/* Animated accent circles */}
-      <div
-        className="absolute top-20 right-1/4 h-48 w-48 rounded-full border border-cyan-400/20 blur-sm animate-pulse"
-        style={{ animationDelay: "1.5s" }}
-      />
-      <div
-        className="absolute bottom-1/3 left-1/4 h-64 w-64 rounded-full border border-purple-400/15 blur-sm animate-pulse"
-        style={{ animationDelay: "0.5s" }}
-      />
-
-      {/* Floating dots */}
-      <div className="absolute top-1/4 left-10 h-3 w-3 rounded-full bg-cyan-400/60 blur-sm animate-float" />
-      <div
-        className="absolute top-1/3 right-1/3 h-2 w-2 rounded-full bg-blue-400/50 blur-sm animate-float"
-        style={{ animationDelay: "0.5s" }}
-      />
-      <div className="absolute bottom-1/4 right-1/4 h-3 w-3 rounded-full bg-purple-400/50 blur-sm animate-float-slow" />
-
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-
       <div className="relative mx-auto w-full px-4 py-10 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
         <div className="mx-auto max-w-7xl">
           <div className="mx-auto mb-8 max-w-7xl text-center">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-4">
-              Recommended Smartphones
+            <h2 className={`${HOME_SECTION_TITLE_LIGHT} mb-4`}>
+              <span className="block">Recommended</span>
+              <span className="bg-gradient-to-r from-blue-600 via-cyan-500 to-sky-600 bg-clip-text text-transparent animate-pulse">
+                Smartphones
+              </span>
             </h2>
-            <p className="text-sm sm:text-base text-white/80">
+            <p className={HOME_SECTION_LEAD_LIGHT}>
               Recommendations tailored to your recent browsing.
             </p>
           </div>
 
           {showEmpty ? (
-            <div className="rounded-2xl border border-white/15 bg-white/10 backdrop-blur-md px-6 py-8 text-center text-sm text-white/70">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-6 py-8 text-center text-sm text-slate-600">
               Browse a smartphone to unlock recommendations.
             </div>
           ) : null}
@@ -732,12 +690,12 @@ const RecommendedSmartphones = ({
             {loading
               ? Array.from({ length: 6 }).map((_, i) => (
                   <div key={`skeleton-${i}`} className="w-full animate-pulse">
-                    <div className="relative flex h-auto flex-col gap-3 overflow-hidden rounded-3xl backdrop-blur-md p-5 sm:p-6">
-                      <div className="h-36 w-full rounded-2xl bg-white/20 sm:h-40"></div>
-                      <div className="h-4 bg-white/20 rounded w-4/5"></div>
-                      <div className="h-4 bg-white/20 rounded w-3/4"></div>
-                      <div className="border-t border-white/15 pt-3">
-                        <div className="h-3 bg-white/20 rounded w-24"></div>
+                    <div className="relative flex h-auto flex-col gap-3 overflow-hidden rounded-3xl p-5 sm:p-6">
+                      <div className="h-36 w-full rounded-2xl bg-slate-100 sm:h-40"></div>
+                      <div className="h-4 w-4/5 rounded bg-slate-200"></div>
+                      <div className="h-4 w-3/4 rounded bg-slate-200"></div>
+                      <div className="border-t border-slate-200 pt-3">
+                        <div className="h-3 w-24 rounded bg-slate-200"></div>
                       </div>
                     </div>
                   </div>
@@ -747,7 +705,7 @@ const RecommendedSmartphones = ({
                     key={`${device.id || "noid"}-${i}`}
                     type="button"
                     onClick={() => handleDeviceClick(device)}
-                    className={`group relative flex w-full snap-start flex-col gap-3 rounded-3xl backdrop-blur-md p-5 text-left text-white/95 transition-all duration-300 hover:shadow-lg sm:p-6 ${
+                    className={`group relative flex w-full snap-start flex-col gap-3 rounded-3xl p-5 text-left text-slate-900 transition-all duration-300 hover:-translate-y-0.5 sm:p-6 ${
                       isLoaded
                         ? "opacity-100 translate-y-0"
                         : "opacity-0 translate-y-2"
@@ -755,7 +713,7 @@ const RecommendedSmartphones = ({
                     style={{ transitionDelay: `${i * 60}ms` }}
                   >
                     {/* Image Container */}
-                    <div className="flex h-36 items-center justify-center overflow-hidden rounded-2xl border border-white/30 bg-gradient-to-br from-white/10 to-white/5 ring-1 ring-white/30 backdrop-blur-md sm:h-40">
+                    <div className="flex h-36 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 sm:h-40">
                       {device.image ? (
                         <img
                           src={device.image}
@@ -767,23 +725,23 @@ const RecommendedSmartphones = ({
                           }}
                         />
                       ) : (
-                        <FaMobileAlt className="text-2xl text-white/40 sm:text-3xl" />
+                        <FaMobileAlt className="text-2xl text-slate-400 sm:text-3xl" />
                       )}
                     </div>
 
                     {/* Content */}
                     <div className="flex-1">
-                      <p className="text-sm font-bold leading-snug text-white line-clamp-2 sm:text-base">
+                      <p className="line-clamp-2 text-sm font-bold leading-snug text-slate-900 sm:text-base">
                         {device.name}
                       </p>
                     </div>
 
                     {/* Divider & View Details */}
-                    <div className="flex items-center justify-between gap-2 border-t border-white/15 pt-3">
-                      <span className="text-xs font-medium text-white/70 sm:text-sm">
+                    <div className="flex items-center justify-between gap-2 border-t border-slate-200 pt-3">
+                      <span className="text-xs font-medium text-slate-600 sm:text-sm">
                         View Details
                       </span>
-                      <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      <span className="text-slate-400 transition-transform duration-300 group-hover:translate-x-1">
                         →
                       </span>
                     </div>

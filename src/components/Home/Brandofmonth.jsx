@@ -9,6 +9,10 @@ import {
   SMARTPHONE_FEATURE_CATALOG,
 } from "../../utils/smartphonePopularFeatures";
 import { buildSmartphoneFeaturePath } from "../../utils/smartphoneListingRoutes";
+import {
+  HOME_SECTION_LEAD_LIGHT,
+  HOME_SECTION_TITLE_LIGHT,
+} from "./homeSectionTypography";
 
 const FeatureCard = ({ feature, index, isActive, isLoaded, onClick }) => {
   const Icon = feature.icon;
@@ -18,16 +22,16 @@ const FeatureCard = ({ feature, index, isActive, isLoaded, onClick }) => {
       type="button"
       onClick={onClick}
       aria-pressed={isActive}
-      className={`group relative h-[120px] w-[200px] shrink-0 snap-start overflow-hidden rounded-2xl backdrop-blur-xl p-4 text-left transition-all duration-500 sm:w-[210px] lg:w-[225px] ${
+      className={`group relative h-[120px] w-[200px] shrink-0 snap-start overflow-hidden rounded-2xl border p-4 text-left shadow-sm transition-all duration-500 sm:w-[210px] lg:w-[225px] ${
         isActive
-          ? "bg-white/25 text-slate-900 -translate-y-1 shadow-lg"
-          : "bg-white/15 text-slate-700 hover:-translate-y-0.5 hover:bg-white/25"
+          ? "border-blue-200 bg-blue-50 text-slate-900 -translate-y-1 shadow-md"
+          : "border-slate-200 bg-white text-slate-700 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50"
       } ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
       style={{ transitionDelay: `${index * 45}ms` }}
     >
       <div
-        className={`absolute inset-0 bg-gradient-to-r from-slate-400/10 via-slate-300/5 to-slate-400/10 transition-opacity duration-300 ${
-          isActive ? "opacity-20" : "opacity-0 group-hover:opacity-15"
+        className={`absolute inset-0 bg-gradient-to-r from-blue-50 via-transparent to-cyan-50 transition-opacity duration-300 ${
+          isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
         }`}
       />
 
@@ -37,8 +41,8 @@ const FeatureCard = ({ feature, index, isActive, isLoaded, onClick }) => {
             <div
               className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ring-1 transition-all duration-300 ${
                 isActive
-                  ? "bg-gradient-to-br from-slate-700 to-slate-600 text-white ring-slate-500/40"
-                  : "bg-white/30 text-slate-600 ring-slate-400/40 group-hover:bg-white/50 group-hover:text-slate-700"
+                  ? "bg-blue-600 text-white ring-blue-100"
+                  : "bg-slate-100 text-slate-600 ring-slate-200 group-hover:bg-blue-50 group-hover:text-blue-600"
               }`}
             >
               {Icon ? (
@@ -193,69 +197,17 @@ const MobileFeaturesFinder = () => {
   };
 
   return (
-    <section className="relative isolate overflow-hidden bg-gradient-to-br from-white via-slate-50 to-white text-slate-900">
-      <style>{`
-        @keyframes float-slow {
-          0%, 100% { transform: translateY(0px) translateX(0px); }
-          50% { transform: translateY(-30px) translateX(10px); }
-        }
-        @keyframes float-slower {
-          0%, 100% { transform: translateY(0px) translateX(0px); }
-          50% { transform: translateY(-40px) translateX(-15px); }
-        }
-        @keyframes glow-pulse {
-          0%, 100% { opacity: 0.5; }
-          50% { opacity: 0.8; }
-        }
-        .animate-float-slow {
-          animation: float-slow 6s ease-in-out infinite;
-        }
-        .animate-float-slower {
-          animation: float-slower 8s ease-in-out infinite;
-        }
-        .animate-glow-pulse {
-          animation: glow-pulse 4s ease-in-out infinite;
-        }
-      `}</style>
-
-      {/* Premium animated glass orbs */}
-      <div className="absolute -top-20 -left-32 h-96 w-96 rounded-full bg-gradient-to-br from-slate-300/35 to-slate-200/15 blur-3xl animate-float-slow" />
-      <div
-        className="absolute -bottom-32 -right-40 h-96 w-96 rounded-full bg-gradient-to-tl from-slate-400/30 to-slate-300/10 blur-3xl animate-float-slower"
-        style={{ animationDelay: "1s" }}
-      />
-      <div
-        className="absolute top-1/3 left-1/4 h-72 w-72 rounded-full bg-gradient-to-r from-slate-300/25 to-transparent blur-3xl animate-glow-pulse"
-        style={{ animationDelay: "0.5s" }}
-      />
-      <div
-        className="absolute top-1/2 right-1/4 h-80 w-80 rounded-full bg-gradient-to-l from-slate-300/20 to-transparent blur-3xl animate-float-slow"
-        style={{ animationDelay: "2s" }}
-      />
-
-      {/* Accent floating elements */}
-      <div
-        className="absolute top-1/4 right-1/3 h-2 w-2 rounded-full bg-slate-400/40 blur-sm animate-float-slow"
-        style={{ animationDelay: "0.3s" }}
-      />
-      <div
-        className="absolute bottom-1/3 left-1/3 h-3 w-3 rounded-full bg-slate-300/30 blur-sm animate-float-slower"
-        style={{ animationDelay: "1.5s" }}
-      />
-
-      {/* Enhanced grid pattern */}
-      <div className="absolute inset-0 opacity-40 [background-image:linear-gradient(rgba(100,116,139,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(100,116,139,0.1)_1px,transparent_1px)] [background-size:60px_60px]" />
-
+    <section className="relative overflow-hidden border-t border-slate-200 bg-white text-slate-900">
       <div className="relative mx-auto max-w-7xl px-4 pb-14 pt-12 sm:px-6 sm:pb-16 sm:pt-16 lg:px-8 lg:pb-20 lg:pt-20">
         <div className="mx-auto max-w-5xl text-center">
-          <h2 className="mt-6 text-3xl font-bold leading-tight text-slate-900 sm:text-4xl lg:text-5xl">
-            Mobiles by
-            <span className="ml-2 bg-gradient-to-r from-blue-600 via-purple-500 to-cyan-600 bg-clip-text text-transparent animate-pulse">
+          <h2 className={HOME_SECTION_TITLE_LIGHT}>
+            <span className="block">Find Phones by</span>
+            <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-cyan-600 bg-clip-text text-transparent animate-pulse">
               Popular Features
             </span>
           </h2>
 
-          <p className="mx-auto mt-4 max-w-3xl text-sm leading-7 text-slate-600 sm:text-base lg:text-lg">
+          <p className={HOME_SECTION_LEAD_LIGHT}>
             {popularFeatureOrderLoaded
               ? "Popular choices from other users in the last 7 days."
               : "Find smartphones based on the features people search for most."}
@@ -273,7 +225,7 @@ const MobileFeaturesFinder = () => {
               key={feature.id}
               type="button"
               onClick={() => handleFeatureClick(feature.id)}
-              className="whitespace-nowrap rounded-full border border-slate-400/40 bg-white/20 backdrop-blur-lg px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-500/60 hover:bg-white/35 hover:text-slate-900"
+              className="whitespace-nowrap rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-50 hover:text-slate-900"
             >
               {feature.name}
             </button>
@@ -309,7 +261,7 @@ const MobileFeaturesFinder = () => {
           </div>
         </div>
 
-        <div className="mt-10 hidden flex-col items-center gap-5 rounded-2xl border border-slate-400/40 bg-white/20 backdrop-blur-lg px-5 py-5 text-slate-900 transition-all duration-300 hover:border-slate-500/60 hover:bg-white/30 sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="mt-10 hidden flex-col items-center gap-5 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-5 text-slate-900 shadow-sm transition-all duration-300 hover:border-slate-300 sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div className="text-center sm:text-left">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-700">
               Need a shortcut?

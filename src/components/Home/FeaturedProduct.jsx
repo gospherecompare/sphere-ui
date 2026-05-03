@@ -11,6 +11,10 @@ import {
 import useRevealAnimation from "../../hooks/useRevealAnimation";
 import { createProductPath } from "../../utils/slugGenerator";
 import { buildSmartphoneFeaturePath } from "../../utils/smartphoneListingRoutes";
+import {
+  HOME_SECTION_LEAD_DARK,
+  HOME_SECTION_TITLE_DARK,
+} from "./homeSectionTypography";
 
 const API_BASE = (
   import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in"
@@ -465,7 +469,7 @@ const FeaturedFilterChip = ({ label, onClick }) => {
     <button
       type="button"
       onClick={onClick}
-      className="group relative shrink-0 snap-start whitespace-nowrap rounded-full border border-white/25 bg-white/8 px-5 py-2.5 text-xs font-semibold text-white/95 backdrop-blur-md transition-all duration-300 hover:border-white/40 hover:bg-white/15 hover:shadow-lg"
+      className="group relative shrink-0 snap-start whitespace-nowrap rounded-full border border-slate-700 bg-slate-900 px-5 py-2.5 text-xs font-semibold text-slate-100 transition-all duration-300 hover:border-slate-600 hover:bg-slate-800"
     >
       {label}
     </button>
@@ -509,12 +513,12 @@ const FeaturedPhoneCard = ({ phone, index, isLoaded, onClick }) => {
       type="button"
       onClick={onClick}
       aria-label={`Open ${phone.name}`}
-      className={`group flex w-full shrink-0 snap-start flex-col gap-4 rounded-3xl border border-white/30 bg-gradient-to-br from-white/15 to-white/8 backdrop-blur-2xl p-5 text-left text-white/95 shadow-2xl transition-all duration-300 hover:border-white/50 hover:from-white/20 hover:to-white/12 hover:shadow-3xl sm:flex-row sm:items-center sm:gap-5 sm:p-6 ${
+      className={`group flex w-full shrink-0 snap-start flex-col gap-4 rounded-3xl p-5 text-left text-slate-100 transition-all duration-300 hover:-translate-y-0.5 sm:flex-row sm:items-center sm:gap-5 sm:p-6 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
       style={{ transitionDelay: `${index * 60}ms` }}
     >
-      <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/30 bg-gradient-to-br from-white/10 to-white/5 ring-1 ring-white/30 backdrop-blur-md sm:h-24 sm:w-24">
+      <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 sm:h-24 sm:w-24">
         {phone.image && !imageFailed ? (
           <img
             src={phone.image}
@@ -524,29 +528,29 @@ const FeaturedPhoneCard = ({ phone, index, isLoaded, onClick }) => {
             onError={() => setImageFailed(true)}
           />
         ) : (
-          <FaMobileAlt className="text-4xl text-white/40 sm:text-2xl" />
+          <FaMobileAlt className="text-4xl text-slate-500 sm:text-2xl" />
         )}
       </div>
 
       <div className="min-w-0 flex-1">
         {phone.brand ? (
-          <p className="truncate text-[11px] font-bold uppercase tracking-[0.28em] text-cyan-200">
+          <p className="truncate text-[11px] font-bold uppercase tracking-[0.28em] text-cyan-300">
             {phone.brand}
           </p>
         ) : null}
 
-        <h6 className="mt-1 line-clamp-2 text-lg font-bold leading-snug text-white transition-colors duration-200 group-hover:text-cyan-50 sm:text-base">
+        <h6 className="mt-1 line-clamp-2 text-lg font-bold leading-snug text-white transition-colors duration-200 group-hover:text-cyan-200 sm:text-base">
           {phone.name}
         </h6>
 
-        <p className="mt-2 line-clamp-2 text-xs leading-snug text-white/70 sm:text-xs">
+        <p className="mt-2 line-clamp-2 text-xs leading-snug text-slate-400 sm:text-xs">
           {phone.note}
         </p>
       </div>
 
-      <div className="flex w-full items-center justify-between gap-3 border-t border-white/15 pt-3 sm:border-0 sm:border-l sm:border-l-white/15 sm:pl-3 sm:pt-0">
+      <div className="flex w-full items-center justify-between gap-3 border-t border-slate-700 pt-3 sm:border-0 sm:border-l sm:border-l-slate-700 sm:pl-3 sm:pt-0">
         <div className="min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/60">
+          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
             {priceLabel ? "Price" : "Score"}
           </p>
           <p className="mt-1 truncate text-base font-black text-white sm:text-sm">
@@ -554,7 +558,7 @@ const FeaturedPhoneCard = ({ phone, index, isLoaded, onClick }) => {
           </p>
         </div>
 
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-white/20 to-white/10 text-white/90 transition-all duration-300 group-hover:from-white/30 group-hover:to-white/15 group-hover:translate-x-1 sm:h-9 sm:w-9">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-800 text-slate-100 transition-all duration-300 group-hover:translate-x-1 group-hover:bg-slate-700 sm:h-9 sm:w-9">
           <FaArrowRight className="h-3.5 w-3.5" />
         </span>
       </div>
@@ -565,25 +569,25 @@ const FeaturedPhoneCard = ({ phone, index, isLoaded, onClick }) => {
 const FeaturedPhoneSkeleton = ({ index, isLoaded }) => {
   return (
     <div
-      className={`flex w-full shrink-0 snap-start flex-col gap-4 rounded-3xl border border-white/30 bg-gradient-to-br from-white/15 to-white/8 p-5 text-white/95 backdrop-blur-2xl transition-all duration-300 sm:flex-row sm:items-center sm:gap-5 sm:p-6 ${
+      className={`flex w-full shrink-0 snap-start flex-col gap-4 rounded-3xl p-5 text-slate-100 transition-all duration-300 sm:flex-row sm:items-center sm:gap-5 sm:p-6 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       } animate-pulse`}
       style={{ transitionDelay: `${index * 60}ms` }}
     >
-      <span className="flex h-28 w-28 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/12 ring-1 ring-white/30 sm:h-24 sm:w-24">
-        <span className="h-12 w-12 rounded bg-white/20 sm:h-10 sm:w-10" />
+      <span className="flex h-28 w-28 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-800 sm:h-24 sm:w-24">
+        <span className="h-12 w-12 rounded bg-slate-700 sm:h-10 sm:w-10" />
       </span>
 
       <span className="min-w-0 flex-1 space-y-3">
-        <span className="block h-2 w-16 rounded bg-white/20" />
-        <span className="block h-3.5 w-4/5 rounded bg-white/20" />
-        <span className="block h-2 w-full rounded bg-white/10" />
-        <span className="block h-2 w-3/4 rounded bg-white/10" />
-        <span className="mt-4 block h-px w-full bg-white/15" />
-        <span className="block h-2.5 w-24 rounded bg-white/20" />
+        <span className="block h-2 w-16 rounded bg-slate-700" />
+        <span className="block h-3.5 w-4/5 rounded bg-slate-700" />
+        <span className="block h-2 w-full rounded bg-slate-800" />
+        <span className="block h-2 w-3/4 rounded bg-slate-800" />
+        <span className="mt-4 block h-px w-full bg-slate-800" />
+        <span className="block h-2.5 w-24 rounded bg-slate-700" />
       </span>
 
-      <span className="h-10 w-10 rounded-full bg-white/15 sm:h-9 sm:w-9" />
+      <span className="h-10 w-10 rounded-full bg-slate-800 sm:h-9 sm:w-9" />
     </div>
   );
 };
@@ -742,69 +746,20 @@ const FeaturedProduct = () => {
 
   return (
     <section
-      className={`relative isolate overflow-hidden bg-gradient-to-br from-slate-950 via-blue-900 to-indigo-950 transition-all duration-700 ${
+      className={`relative overflow-hidden border-t border-slate-800 bg-slate-950 transition-all duration-700 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
-      <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-20px); }
-        }
-        @keyframes float-slow {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-30px); }
-        }
-        .animate-float {
-          animation: float 3s ease-in-out infinite;
-        }
-        .animate-float-slow {
-          animation: float-slow 4s ease-in-out infinite;
-        }
-      `}</style>
-
-      {/* Animated gradient orbs */}
-      <div className="absolute inset-0 opacity-50 [background-image:linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:72px_72px]" />
-      <div className="absolute -top-40 -left-32 h-96 w-96 rounded-full bg-gradient-to-br from-cyan-500/30 to-blue-500/20 blur-3xl animate-pulse" />
-      <div
-        className="absolute -bottom-20 -right-20 h-80 w-80 rounded-full bg-gradient-to-tl from-purple-600/25 to-pink-500/15 blur-3xl animate-pulse"
-        style={{ animationDelay: "1s" }}
-      />
-      <div
-        className="absolute top-1/2 left-1/3 h-72 w-72 rounded-full bg-gradient-to-r from-indigo-600/20 to-transparent blur-3xl animate-pulse"
-        style={{ animationDelay: "2s" }}
-      />
-
-      {/* Animated accent circles */}
-      <div
-        className="absolute top-20 right-1/4 h-48 w-48 rounded-full border border-cyan-400/20 blur-sm animate-pulse"
-        style={{ animationDelay: "1.5s" }}
-      />
-      <div
-        className="absolute bottom-1/3 left-1/4 h-64 w-64 rounded-full border border-purple-400/15 blur-sm animate-pulse"
-        style={{ animationDelay: "0.5s" }}
-      />
-
-      {/* Floating dots */}
-      <div className="absolute top-1/4 left-10 h-3 w-3 rounded-full bg-cyan-400/60 blur-sm animate-float" />
-      <div
-        className="absolute top-1/3 right-1/3 h-2 w-2 rounded-full bg-blue-400/50 blur-sm animate-float"
-        style={{ animationDelay: "0.5s" }}
-      />
-      <div className="absolute bottom-1/4 right-1/4 h-3 w-3 rounded-full bg-purple-400/50 blur-sm animate-float-slow" />
-
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-
       <div className="relative mx-auto max-w-7xl px-3 sm:px-4 pb-12 sm:pb-16 md:pb-20 lg:pb-24 pt-8 sm:pt-12 md:pt-16 lg:pt-24">
         <div className="mx-auto max-w-5xl text-center">
-          <h2 className="mt-6 sm:mt-8 text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-black leading-tight text-white">
+          <h2 className={HOME_SECTION_TITLE_DARK}>
             <span className="block">Discover Featured Phones by</span>
             <span className="bg-gradient-to-r from-cyan-200 via-white to-sky-100 bg-clip-text text-transparent animate-pulse">
               Budget
             </span>
           </h2>
 
-          <p className="mx-auto mt-4 sm:mt-6 max-w-2xl text-sm sm:text-lg lg:text-xl leading-6 sm:leading-8 text-white/85 font-medium">
+          <p className={HOME_SECTION_LEAD_DARK}>
             Use the budget lanes below to jump into curated phones, then tap the
             trending feature filters to narrow things down even faster.
           </p>
@@ -872,7 +827,7 @@ const FeaturedProduct = () => {
               <FaFire className="h-3.5 w-3.5 text-cyan-300" />
               Featured Picks on Hooks
             </span>
-            <span className="hidden rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-200 backdrop-blur-md sm:inline-flex">
+            <span className="hidden rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-200 sm:inline-flex">
               Live feed
             </span>
             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
@@ -901,7 +856,7 @@ const FeaturedProduct = () => {
           </div>
 
           {!loadingFeatured && displayPhones.length === 0 ? (
-            <div className="mt-6 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md px-4 py-5 text-center text-sm text-white/80">
+            <div className="mt-6 rounded-2xl px-4 py-5 text-center text-sm text-slate-300">
               {featuredError ||
                 "Live featured picks are unavailable right now."}
             </div>

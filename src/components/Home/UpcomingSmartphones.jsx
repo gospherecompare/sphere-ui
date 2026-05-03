@@ -4,6 +4,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { createProductPath } from "../../utils/slugGenerator";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
 import { FaMobileAlt, FaArrowRight } from "react-icons/fa";
+import {
+  HOME_SECTION_LEAD_DARK,
+  HOME_SECTION_TITLE_DARK,
+} from "./homeSectionTypography";
 
 const API_BASE = (
   import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in"
@@ -162,12 +166,12 @@ const LatestSmartphoneCard = ({ device, index, isLoaded, onClick }) => {
       type="button"
       aria-label={`Open ${deviceName}`}
       onClick={onClick}
-      className={`group relative flex w-full snap-start flex-col gap-3 rounded-3xl backdrop-blur-md p-5 text-left text-white/95 transition-all duration-300 hover:shadow-lg sm:p-6 ${
+      className={`group relative flex w-full snap-start flex-col gap-3 rounded-3xl p-5 text-left text-white transition-all duration-300 hover:-translate-y-0.5 sm:p-6 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
       style={{ transitionDelay: `${index * 60}ms` }}
     >
-      <div className="flex h-40 items-center justify-center overflow-hidden rounded-2xl border border-white/30 bg-gradient-to-br from-white/10 to-white/5 ring-1 ring-white/30 backdrop-blur-md sm:h-44">
+      <div className="flex h-40 items-center justify-center overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 sm:h-44">
         {device.image ? (
           <img
             src={device.image}
@@ -179,7 +183,7 @@ const LatestSmartphoneCard = ({ device, index, isLoaded, onClick }) => {
             }}
           />
         ) : (
-          <FaMobileAlt className="text-3xl text-white/40 sm:text-4xl" />
+          <FaMobileAlt className="text-3xl text-slate-500 sm:text-4xl" />
         )}
       </div>
 
@@ -189,12 +193,12 @@ const LatestSmartphoneCard = ({ device, index, isLoaded, onClick }) => {
         </p>
       </div>
 
-      <div className="flex items-center justify-between gap-2 border-t border-white/15 pt-3">
-        <span className="text-xs font-medium text-white/70 sm:text-sm">
+      <div className="flex items-center justify-between gap-2 border-t border-slate-700 pt-3">
+        <span className="text-xs font-medium text-slate-300 sm:text-sm">
           View Details
         </span>
         <span className="transition-transform duration-300 group-hover:translate-x-1">
-          <FaArrowRight className="h-3.5 w-3.5 text-white/70 sm:h-4 sm:w-4" />
+          <FaArrowRight className="h-3.5 w-3.5 text-slate-300 sm:h-4 sm:w-4" />
         </span>
       </div>
     </button>
@@ -261,69 +265,20 @@ const LatestSmartphones = () => {
 
   return (
     <section
-      className={`relative isolate overflow-hidden bg-gradient-to-br from-slate-950 via-blue-900 to-indigo-950 transition-all duration-700 ${
+      className={`relative overflow-hidden border-t border-slate-800 bg-slate-950 transition-all duration-700 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
-      <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-20px); }
-        }
-        @keyframes float-slow {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-30px); }
-        }
-        .animate-float {
-          animation: float 3s ease-in-out infinite;
-        }
-        .animate-float-slow {
-          animation: float-slow 4s ease-in-out infinite;
-        }
-      `}</style>
-
-      {/* Animated gradient orbs */}
-      <div className="absolute inset-0 opacity-50 [background-image:linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:72px_72px]" />
-      <div className="absolute -top-40 -left-32 h-96 w-96 rounded-full bg-gradient-to-br from-cyan-500/30 to-blue-500/20 blur-3xl animate-pulse" />
-      <div
-        className="absolute -bottom-20 -right-20 h-80 w-80 rounded-full bg-gradient-to-tl from-purple-600/25 to-pink-500/15 blur-3xl animate-pulse"
-        style={{ animationDelay: "1s" }}
-      />
-      <div
-        className="absolute top-1/2 left-1/3 h-72 w-72 rounded-full bg-gradient-to-r from-indigo-600/20 to-transparent blur-3xl animate-pulse"
-        style={{ animationDelay: "2s" }}
-      />
-
-      {/* Animated accent circles */}
-      <div
-        className="absolute top-20 right-1/4 h-48 w-48 rounded-full border border-cyan-400/20 blur-sm animate-pulse"
-        style={{ animationDelay: "1.5s" }}
-      />
-      <div
-        className="absolute bottom-1/3 left-1/4 h-64 w-64 rounded-full border border-purple-400/15 blur-sm animate-pulse"
-        style={{ animationDelay: "0.5s" }}
-      />
-
-      {/* Floating dots */}
-      <div className="absolute top-1/4 left-10 h-3 w-3 rounded-full bg-cyan-400/60 blur-sm animate-float" />
-      <div
-        className="absolute top-1/3 right-1/3 h-2 w-2 rounded-full bg-blue-400/50 blur-sm animate-float"
-        style={{ animationDelay: "0.5s" }}
-      />
-      <div className="absolute bottom-1/4 right-1/4 h-3 w-3 rounded-full bg-purple-400/50 blur-sm animate-float-slow" />
-
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-
       <div className="relative mx-auto max-w-7xl px-4 pb-14 pt-10 sm:px-6 sm:pb-20 sm:pt-16 lg:px-8 lg:pb-24 lg:pt-24">
         {/* Header Section */}
         <div className="mx-auto max-w-5xl text-center">
-          <h2 className="mt-8 text-3xl font-black leading-tight text-white sm:text-5xl lg:text-6xl">
-            Latest{" "}
+          <h2 className={HOME_SECTION_TITLE_DARK}>
+            <span className="block">Latest</span>
             <span className="bg-gradient-to-r from-cyan-200 via-white to-sky-100 bg-clip-text text-transparent animate-pulse">
               Smartphones
             </span>
           </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-sm font-medium leading-7 text-white/85 sm:mt-6 sm:text-xl sm:leading-8">
+          <p className={HOME_SECTION_LEAD_DARK}>
             Discover the newest released phones.
           </p>
         </div>
@@ -350,12 +305,12 @@ const LatestSmartphones = () => {
           {loadingLatest
             ? Array.from({ length: 6 }).map((_, i) => (
                 <div key={`skeleton-${i}`} className="w-full animate-pulse">
-                  <div className="relative flex h-auto flex-col gap-3 overflow-hidden rounded-3xl backdrop-blur-md p-5 sm:p-6">
-                    <div className="h-40 w-full rounded-2xl bg-white/20 sm:h-44" />
-                    <div className="h-4 bg-white/20 rounded w-4/5" />
-                    <div className="h-4 bg-white/20 rounded w-3/4" />
-                    <div className="border-t border-white/15 pt-3">
-                      <div className="h-3 bg-white/20 rounded w-24" />
+                  <div className="relative flex h-auto flex-col gap-3 overflow-hidden rounded-3xl p-5 sm:p-6">
+                    <div className="h-40 w-full rounded-2xl bg-slate-800 sm:h-44" />
+                    <div className="h-4 w-4/5 rounded bg-slate-800" />
+                    <div className="h-4 w-3/4 rounded bg-slate-800" />
+                    <div className="border-t border-slate-700 pt-3">
+                      <div className="h-3 w-24 rounded bg-slate-800" />
                     </div>
                   </div>
                 </div>
@@ -376,7 +331,7 @@ const LatestSmartphones = () => {
           <div className="mt-10 flex justify-center">
             <Link
               to="/smartphones/latest"
-              className="group rounded-full border border-white/25 bg-white/8 px-6 py-3 text-white/95 backdrop-blur-md transition-all duration-300 hover:border-white/40 hover:bg-white/15 hover:shadow-lg font-semibold"
+              className="group rounded-full border border-slate-700 bg-slate-900 px-6 py-3 font-semibold text-white transition-all duration-300 hover:border-slate-600 hover:bg-slate-800 hover:shadow-lg"
             >
               View all latest smartphones {"->"}
             </Link>
