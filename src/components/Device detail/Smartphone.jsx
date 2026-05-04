@@ -577,7 +577,6 @@ const MobileDetailCard = () => {
   );
   const query = new URLSearchParams(location.search);
   const model = query.get("model");
-  let id = query.get("id");
   const variantQuery = query.get("variantId") || query.get("variant_id");
   const ramParam = query.get("ram");
   const storageParam = query.get("storage");
@@ -658,15 +657,8 @@ const MobileDetailCard = () => {
 
   useEffect(() => {
     if (shouldRenderAliasNotFound) return;
-    // If an explicit numeric id is present, fetch that exact device.
-    if (id) {
-      fetchDevice(id);
-      return;
-    }
-
-    // If we have a slug/model route, try to resolve locally first. If not
-    // present, refresh the smartphone list (API fallback) so the device can be
-    // resolved after the list loads.
+    // Resolve smartphone details from the canonical slug instead of query ids
+    // so legacy `?id=` URLs do not become a separate route source.
     if (routeSlug) {
       const localDevice = findDeviceBySlug(routeSlug);
       if (localDevice) return; // already available locally
@@ -683,11 +675,9 @@ const MobileDetailCard = () => {
     }
     // If nothing else, no-op; the global loader will fetch lists on mount.
   }, [
-    id,
     routeSlug,
-    searchModel,
-    fetchDevice,
     findDeviceBySlug,
+    refreshDevices,
     smartphone,
     shouldRenderAliasNotFound,
   ]);
@@ -709,7 +699,10 @@ const MobileDetailCard = () => {
 
     const desiredPath = `/smartphones/${canonicalSeoSlug}`;
     const nextSearchParams = new URLSearchParams(location.search || "");
-    // Clean noisy lookup/share query params from detail URL for SEO.
+    // Strip lookup/share-only params only when we truly need to correct the
+    // pathname. If the user requested the canonical path with extra params like
+    // `?id=146`, keep the page in place and rely on canonical/noindex tags
+    // instead of client-side redirecting.
     [
       "id",
       "model",
@@ -721,11 +714,14 @@ const MobileDetailCard = () => {
       "storeName",
       "store",
     ].forEach((key) => nextSearchParams.delete(key));
-    const nextSearch = nextSearchParams.toString();
-    const desiredUrl = `${desiredPath}${nextSearch ? `?${nextSearch}` : ""}`;
-    const currentUrl = `${window.location.pathname}${window.location.search}`;
+    const normalizedCurrentPath =
+      window.location.pathname && window.location.pathname.length > 1
+        ? window.location.pathname.replace(/\/+$/g, "")
+        : window.location.pathname || "/";
 
-    if (currentUrl !== desiredUrl) {
+    if (normalizedCurrentPath !== desiredPath) {
+      const nextSearch = nextSearchParams.toString();
+      const desiredUrl = `${desiredPath}${nextSearch ? `?${nextSearch}` : ""}`;
       navigate(desiredUrl, { replace: true });
     }
   }, [
@@ -770,7 +766,7 @@ const MobileDetailCard = () => {
   );
 
   useEffect(() => {
-    if (shouldRenderAliasNotFound || id || !routeSlug) return;
+    if (shouldRenderAliasNotFound || !routeSlug) return;
     const resolvedId = localResolved?.id ?? localResolved?.product_id ?? null;
     if (resolvedId == null) return;
     const fetchKey = `${routeSlug}:${resolvedId}`;
@@ -787,7 +783,6 @@ const MobileDetailCard = () => {
     fetchDevice(resolvedId);
   }, [
     fetchDevice,
-    id,
     localResolved,
     routeSlug,
     selectedResolvedForRoute,

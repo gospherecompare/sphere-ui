@@ -526,6 +526,66 @@ const TopBrandsBlock = ({
   );
 };
 
+const SidebarTileVisual = ({ src = "", label = "" }) => {
+  const [failed, setFailed] = useState(false);
+  const imageSrc = normalizeText(src);
+  const initial = normalizeText(label).charAt(0).toUpperCase() || "?";
+
+  return (
+    <div className="relative h-[5.5rem] w-24 shrink-0 overflow-hidden rounded-[22px] bg-gradient-to-br from-sky-100 via-blue-50 to-violet-100">
+      <div className="absolute -left-6 top-1/2 h-24 w-24 -translate-y-1/2 rounded-full bg-white/40" />
+      {imageSrc && !failed ? (
+        <img
+          src={imageSrc}
+          alt={label || "Explore"}
+          loading="lazy"
+          className="relative z-10 h-full w-full object-contain p-2.5"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <span className="relative z-10 flex h-full w-full items-center justify-center text-lg font-semibold text-slate-500">
+          {initial}
+        </span>
+      )}
+    </div>
+  );
+};
+
+const BudgetSidebarBlock = ({ items = [], entityType = "smartphones" }) => {
+  if (!Array.isArray(items) || items.length === 0) return null;
+
+  return (
+    <div className="w-full">
+      <div className="px-3 pb-4 pt-1 text-center">
+        <h3 className="text-[2rem] font-semibold leading-tight tracking-tight text-blue-600">
+          Feeling these phones?{" "}
+          <span className="italic text-blue-600">Check out more here</span>
+        </h3>
+      </div>
+
+      <div className="space-y-3.5">
+        {items.map((item, index) => (
+          <Link
+            key={`${item.path || item.label || "sidebar"}-${index}`}
+            to={normalizeDiscoveryPath(item.path || "", entityType)}
+            className="group flex items-center gap-4 rounded-[24px] border border-[#cfdcf6] bg-white/90 px-4 py-3 text-slate-800 shadow-[0_10px_28px_rgba(148,163,184,0.10)] transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_14px_36px_rgba(59,130,246,0.12)]"
+          >
+            <SidebarTileVisual
+              src={item.image_url || item.logo_url || ""}
+              label={item.label || "Explore"}
+            />
+            <div className="min-w-0 flex-1">
+              <p className="line-clamp-2 text-[1.02rem] font-semibold leading-snug text-slate-800 transition-colors duration-200 group-hover:text-blue-700">
+                {item.label || "Explore"}
+              </p>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const ProductDiscoverySections = ({
   productId,
   currentBrand = "",
@@ -589,6 +649,8 @@ const ProductDiscoverySections = ({
   const entityConfig = useMemo(() => getEntityConfig(entityType), [entityType]);
   const isLatestPhonesLayout =
     layout === "latestPhones" && entityConfig.type === "smartphones";
+  const isBudgetSidebarLayout =
+    layout === "budgetSidebar" && entityConfig.type === "smartphones";
 
   const { latestReleases, budgetSegments, brandHub, smartDiscoveries } =
     useMemo(() => {
@@ -726,19 +788,71 @@ const ProductDiscoverySections = ({
     [brandHub, entityConfig],
   );
 
-  const hasContent = isLatestPhonesLayout
-    ? byPriceLinks.length > 0 || topBrandLinks.length > 0
-    : popularLinks.length > 0 ||
-      byPriceLinks.length > 0 ||
-      latestLaunchLinks.length > 0 ||
-      topBrandLinks.length > 0;
+  const budgetSidebarLinks = useMemo(() => {
+    const links = [];
+    const seen = new Set();
+    const latestImages = latestLaunchLinks
+      .map((item) => normalizeText(item?.image_url))
+      .filter(Boolean);
+
+    const pushLink = (item, imageOverride = "", fallbackLabel = "") => {
+      const label = fixCurrencyText(
+        fallbackLabel ||
+          item?.label ||
+          item?.name ||
+          item?.subtitle ||
+          "Explore",
+      );
+      const path = normalizeText(item?.path);
+      if (!label || !path) return;
+      const key = `${label}|${path}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      links.push({
+        label,
+        path,
+        image_url:
+          normalizeText(imageOverride) ||
+          normalizeText(item?.image_url) ||
+          normalizeText(item?.logo_url) ||
+          "",
+      });
+    };
+
+    popularLinks.slice(0, 2).forEach((item, index) => {
+      pushLink(item, latestImages[index] || "");
+    });
+
+    topBrandLinks.slice(0, 2).forEach((item, index) => {
+      pushLink(
+        item,
+        latestImages[index + 2] || item?.logo_url || "",
+        item?.name ? `${item.name} Mobile Phones` : item?.label,
+      );
+    });
+
+    if (!links.length) {
+      latestLaunchLinks.slice(0, 4).forEach((item) => pushLink(item));
+    }
+
+    return links.slice(0, 4);
+  }, [latestLaunchLinks, popularLinks, topBrandLinks]);
+
+  const hasContent = isBudgetSidebarLayout
+    ? budgetSidebarLinks.length > 0
+    : isLatestPhonesLayout
+      ? byPriceLinks.length > 0 || topBrandLinks.length > 0
+      : popularLinks.length > 0 ||
+        byPriceLinks.length > 0 ||
+        latestLaunchLinks.length > 0 ||
+        topBrandLinks.length > 0;
 
   if (loading && !hasContent) {
     return (
       <section className={`w-full overflow-hidden bg-transparent ${className}`}>
         <div
           className={
-            isLatestPhonesLayout
+            isLatestPhonesLayout || isBudgetSidebarLayout
               ? "mx-auto max-w-7xl px-1 py-4 text-sm text-slate-600 sm:px-5 sm:py-5"
               : "mx-auto max-w-7xl rounded-[28px] border border-slate-200 bg-white px-1 py-4 text-sm text-slate-600 sm:px-5 sm:py-5"
           }
@@ -779,7 +893,14 @@ const ProductDiscoverySections = ({
           </div>
         ) : null}
 
-        {isLatestPhonesLayout ? (
+        {isBudgetSidebarLayout ? (
+          <div className="p-0">
+            <BudgetSidebarBlock
+              items={budgetSidebarLinks}
+              entityType={entityConfig.type}
+            />
+          </div>
+        ) : isLatestPhonesLayout ? (
           <div className="space-y-3 p-3 sm:space-y-4 sm:p-5">
             <LinkListBlock
               title="By Price"

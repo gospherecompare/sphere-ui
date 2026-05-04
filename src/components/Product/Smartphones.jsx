@@ -2093,9 +2093,12 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     "under-30000": { min: 0, max: 30000, label: "Under ₹ 30,000" },
     "under-40000": { min: 0, max: 40000, label: "Under ₹ 40,000" },
     "under-50000": { min: 0, max: 50000, label: "Under ₹ 50,000" },
-    "above-50000": { min: 50000, max: MAX_PRICE, label: "Above ₹ 50,000" },
+    "above-50000": { min: 50001, max: MAX_PRICE, label: "Above ₹ 50,000" },
   };
   const priceFilter = priceFilterMap[normalizedFilterSlug] || null;
+  const isBudgetCollectionRoute = Boolean(priceFilter);
+  const shouldHideInteractiveFilters = isBudgetCollectionRoute;
+  const shouldShowAllMatches = isBudgetCollectionRoute;
   const seoPriceFilterLabel = priceFilter
     ? toSeoTextWithoutCommas(priceFilter.label)
     : "";
@@ -2229,9 +2232,22 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
           overflow: "hidden",
         }
       : undefined;
-  const heroSubtitleWidthClass = isExpandedHeroDescriptionPath
+  const heroContentWidthClass = shouldHideInteractiveFilters
+    ? "max-w-5xl"
+    : isExpandedHeroDescriptionPath
+      ? "max-w-4xl"
+      : "max-w-3xl";
+  const heroTitleWidthClass = shouldHideInteractiveFilters
     ? "max-w-4xl"
     : "max-w-3xl";
+  const heroSubtitleWidthClass = shouldHideInteractiveFilters
+    ? "max-w-4xl"
+    : isExpandedHeroDescriptionPath
+      ? "max-w-4xl"
+      : "max-w-3xl";
+  const productColumnWidthClass = shouldHideInteractiveFilters
+    ? "w-full max-w-5xl"
+    : "flex-1";
   useEffect(() => {
     if (isExpandedHeroDescriptionPath) {
       setShowHeroDescription(false);
@@ -3443,21 +3459,28 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     const startIndex = (currentPageSafe - 1) * SMARTPHONES_PER_PAGE;
     return sortedVariants.slice(startIndex, startIndex + SMARTPHONES_PER_PAGE);
   }, [currentPageSafe, sortedVariants]);
+  const visibleVariants = shouldShowAllMatches
+    ? sortedVariants
+    : paginatedVariants;
   const visibleResultsStart = sortedVariants.length
-    ? (currentPageSafe - 1) * SMARTPHONES_PER_PAGE + 1
+    ? shouldShowAllMatches
+      ? 1
+      : (currentPageSafe - 1) * SMARTPHONES_PER_PAGE + 1
     : 0;
   const visibleResultsEnd = sortedVariants.length
-    ? visibleResultsStart + paginatedVariants.length - 1
+    ? shouldShowAllMatches
+      ? sortedVariants.length
+      : visibleResultsStart + paginatedVariants.length - 1
     : 0;
   const featuredDiscoveryProduct = useMemo(
     () =>
-      paginatedVariants.find((device) => {
+      visibleVariants.find((device) => {
         const productId = Number(
           device?.productId ?? device?.product_id ?? device?.baseId ?? NaN,
         );
         return Number.isInteger(productId) && productId > 0;
       }) || null,
-    [paginatedVariants],
+    [visibleVariants],
   );
 
   useEffect(() => {
@@ -3686,7 +3709,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   }, [location?.pathname, normalizedBrandSlug, normalizedFeature]);
 
   const listSchemaItems = useMemo(() => {
-    const items = paginatedVariants.map((device) => {
+    const items = visibleVariants.map((device) => {
       const name = String(
         device?.name || device?.model || device?.title || "",
       ).trim();
@@ -3703,7 +3726,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       };
     });
     return items.filter(Boolean);
-  }, [paginatedVariants]);
+  }, [visibleVariants]);
 
   const listSchema = useMemo(() => {
     const collectionSchema = createCollectionSchema({
@@ -3745,17 +3768,15 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         <div className="relative">
           <section className="relative left-1/2 isolate w-screen -translate-x-1/2 overflow-hidden px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
             <div className="relative mx-auto max-w-7xl">
-              <div
-                className={
-                  isExpandedHeroDescriptionPath ? "max-w-4xl" : "max-w-3xl"
-                }
-              >
-                <h1 className="max-w-3xl text-3xl font-bold tracking-tight text-[#14255e] sm:text-4xl lg:text-5xl">
+              <div className={heroContentWidthClass}>
+                <h1
+                  className={`${heroTitleWidthClass} text-3xl font-bold tracking-tight text-[#14255e] sm:text-4xl lg:text-15xl`}
+                >
                   {heroTitleText}
                 </h1>
 
                 <h4
-                  className={`mt-3 ${heroSubtitleWidthClass} text-sm leading-7 text-slate-600 sm:text-base sm:leading-8`}
+                  className={`mt-3 ${heroSubtitleWidthClass} text-sm leading-7  text-slate-600 sm:text-base sm:leading-8`}
                   style={heroSubtitleStyle}
                 >
                   {heroSubtitleText}
@@ -3776,457 +3797,471 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
           </section>
 
           <div className="mt-4">
-            <div className="overflow-hidden pt-0 pb-2 sm:pb-3">
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <FaFilter className="text-blue-600" />
-                  <h3 className="text-sm font-semibold text-slate-900 sm:text-base">
-                    Popular Features
-                  </h3>
-                </div>
-                {normalizedFeature && (
-                  <button
-                    onClick={() => setFeatureParam(null)}
-                    className="text-xs font-semibold text-blue-700 transition-colors duration-200 hover:text-blue-900"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-              {popularFeatureOrderLoaded && (
-                <p className="mb-2 text-xs text-slate-500">
-                  Popular choices from other users (last 7 days)
-                </p>
-              )}
-              <div className="flex gap-2.5 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {popularFeatures.map((pf) => {
-                  const isActive = normalizedFeature === pf.id;
-                  const Icon = pf.icon;
-                  return (
-                    <button
-                      key={pf.id}
-                      onClick={() => setFeatureParam(pf.id)}
-                      className={`flex items-center gap-2 rounded-full px-3 py-2 text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors duration-200 ${
-                        isActive
-                          ? "bg-blue-600 text-white"
-                          : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                      }`}
-                    >
-                      <span
-                        className={isActive ? "text-white" : "text-blue-600"}
-                      >
-                        {Icon ? <Icon className="text-base" /> : null}
-                      </span>
-                      <span>{pf.name}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="mb-3 overflow-hidden">
-              <div className="hidden items-center justify-end gap-4 lg:flex">
-                {getActiveFiltersCount() > 0 && (
-                  <button
-                    onClick={clearFilters}
-                    className="flex items-center gap-2 rounded-[18px] px-4 py-2.5 text-sm font-medium text-blue-600 transition-colors duration-200 hover:bg-blue-50 hover:text-blue-700"
-                  >
-                    <FaTimes />
-                    Clear
-                  </button>
-                )}
-              </div>
-
-              <div className="space-y-3 sm:space-y-4 lg:hidden">
-                <div className="flex">
-                  <button
-                    onClick={() => setShowFilters(true)}
-                    className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-sky-500 px-4 font-semibold text-white transition-colors duration-300 hover:from-blue-600 hover:to-sky-600"
-                  >
-                    <FaFilter />
-                    Filters
-                    {getActiveFiltersCount() > 0 && (
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white">
-                        {getActiveFiltersCount()}
-                      </span>
-                    )}
-                  </button>
-                </div>
-
-                {getActiveFiltersCount() > 0 && (
-                  <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <div className="flex items-center gap-3">
-                      <FaInfoCircle className="text-blue-500" />
-                      <div>
-                        <span className="text-sm font-medium text-slate-900">
-                          {getActiveFiltersCount()} filter
-                          {getActiveFiltersCount() > 1 ? "s" : ""} applied
-                        </span>
-                        <p className="mt-0.5 text-xs text-slate-500">
-                          Found {filteredVariants.length} of{" "}
-                          {variantCards.length} options
-                        </p>
-                      </div>
+            {!shouldHideInteractiveFilters ? (
+              <>
+                <div className="overflow-hidden pt-0 pb-2 sm:pb-3">
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <FaFilter className="text-blue-600" />
+                      <h3 className="text-sm font-semibold text-slate-900 sm:text-base">
+                        Popular Features
+                      </h3>
                     </div>
-                    <button
-                      onClick={clearFilters}
-                      className="rounded-lg px-3 py-1.5 text-sm font-medium text-blue-600 transition-colors duration-200 hover:bg-slate-100 hover:text-blue-700"
-                    >
-                      Clear all
-                    </button>
+                    {normalizedFeature && (
+                      <button
+                        onClick={() => setFeatureParam(null)}
+                        className="text-xs font-semibold text-blue-700 transition-colors duration-200 hover:text-blue-900"
+                      >
+                        Clear
+                      </button>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
+                  {popularFeatureOrderLoaded && (
+                    <p className="mb-2 text-xs text-slate-500">
+                      Popular choices from other users (last 7 days)
+                    </p>
+                  )}
+                  <div className="flex gap-2.5 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    {popularFeatures.map((pf) => {
+                      const isActive = normalizedFeature === pf.id;
+                      const Icon = pf.icon;
+                      return (
+                        <button
+                          key={pf.id}
+                          onClick={() => setFeatureParam(pf.id)}
+                          className={`flex items-center gap-2 rounded-full px-3 py-2 text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors duration-200 ${
+                            isActive
+                              ? "bg-blue-600 text-white"
+                              : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                          }`}
+                        >
+                          <span
+                            className={
+                              isActive ? "text-white" : "text-blue-600"
+                            }
+                          >
+                            {Icon ? <Icon className="text-base" /> : null}
+                          </span>
+                          <span>{pf.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="mb-3 overflow-hidden">
+                  <div className="hidden items-center justify-end gap-4 lg:flex">
+                    {getActiveFiltersCount() > 0 && (
+                      <button
+                        onClick={clearFilters}
+                        className="flex items-center gap-2 rounded-[18px] px-4 py-2.5 text-sm font-medium text-blue-600 transition-colors duration-200 hover:bg-blue-50 hover:text-blue-700"
+                      >
+                        <FaTimes />
+                        Clear
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="space-y-3 sm:space-y-4 lg:hidden">
+                    <div className="flex">
+                      <button
+                        onClick={() => setShowFilters(true)}
+                        className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-sky-500 px-4 font-semibold text-white transition-colors duration-300 hover:from-blue-600 hover:to-sky-600"
+                      >
+                        <FaFilter />
+                        Filters
+                        {getActiveFiltersCount() > 0 && (
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white">
+                            {getActiveFiltersCount()}
+                          </span>
+                        )}
+                      </button>
+                    </div>
+
+                    {getActiveFiltersCount() > 0 && (
+                      <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <div className="flex items-center gap-3">
+                          <FaInfoCircle className="text-blue-500" />
+                          <div>
+                            <span className="text-sm font-medium text-slate-900">
+                              {getActiveFiltersCount()} filter
+                              {getActiveFiltersCount() > 1 ? "s" : ""} applied
+                            </span>
+                            <p className="mt-0.5 text-xs text-slate-500">
+                              Found {filteredVariants.length} of{" "}
+                              {variantCards.length} options
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={clearFilters}
+                          className="rounded-lg px-3 py-1.5 text-sm font-medium text-blue-600 transition-colors duration-200 hover:bg-slate-100 hover:text-blue-700"
+                        >
+                          Clear all
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            ) : null}
           </div>
 
           <section className="">
             <div className="mt-4 flex flex-col gap-4 lg:flex-row md:gap-6">
               {/* Desktop Filter Sidebar */}
-              <div className="hidden lg:block lg:w-72 flex-shrink-0">
-                <div className="sticky top-6 rounded-lg border border-slate-200 bg-transparent p-5 lg:p-6">
-                  {/* Filters Header */}
-                  <div className="mb-6 flex items-center justify-between border-b border-slate-200 px-2 pb-4 sm:mb-8 sm:px-3 md:px-4">
-                    <div>
-                      <h3 className="flex items-center gap-2 text-xl font-bold text-slate-900">
-                        Filters
-                      </h3>
-                      <p className="mt-1 text-sm text-slate-500">
-                        Narrow down by specifications
-                      </p>
-                    </div>
-                    {getActiveFiltersCount() > 0 && (
-                      <button
-                        onClick={clearFilters}
-                        className="flex items-center gap-2 rounded-lg px-3 py-1 text-sm font-semibold text-blue-600 transition-colors duration-200 hover:bg-slate-50 hover:text-blue-500"
-                      >
-                        <FaTimes />
-                        RESET
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Active Filters Badge */}
-                  {getActiveFiltersCount() > 0 && (
-                    <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 shadow-sm sm:mb-8">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-semibold text-slate-900">
-                          Active Filters
-                        </span>
-                        <span className="text-xs font-bold text-blue-300 bg-blue-500/20 px-2 py-1 rounded-full border border-blue-400/30">
-                          {getActiveFiltersCount()}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-500">
-                        {filteredVariants.length} devices match
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Brand Filter */}
-                  <div className="mb-8">
-                    <div className="flex items-center justify-between mb-4">
+              {!shouldHideInteractiveFilters ? (
+                <div className="hidden lg:block lg:w-72 flex-shrink-0">
+                  <div className="sticky top-6 rounded-lg border border-slate-200 bg-transparent p-5 lg:p-6">
+                    {/* Filters Header */}
+                    <div className="mb-6 flex items-center justify-between border-b border-slate-200 px-2 pb-4 sm:mb-8 sm:px-3 md:px-4">
                       <div>
-                        <h4 className="text-base font-bold text-slate-900">
-                          Brands
-                        </h4>
-                        <p className="mt-1 text-xs text-slate-500">
-                          Select by manufacturer
+                        <h3 className="flex items-center gap-2 text-xl font-bold text-slate-900">
+                          Filters
+                        </h3>
+                        <p className="mt-1 text-sm text-slate-500">
+                          Narrow down by specifications
                         </p>
                       </div>
-                      <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
-                        {filters.brand.length}
-                      </span>
-                    </div>
-                    <div className="relative mb-4">
-                      <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
-                      <input
-                        type="text"
-                        value={brandFilterQuery}
-                        onChange={(e) => setBrandFilterQuery(e.target.value)}
-                        placeholder="Search brand..."
-                        className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                      />
-                    </div>
-                    <div className="no-scrollbar space-y-2 max-h-60 overflow-y-auto pr-2">
-                      {filteredBrandOptions.map((brand) => (
-                        <label
-                          key={brand}
-                          className="group flex cursor-pointer items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 transition-all duration-200 hover:border-slate-200 hover:bg-slate-50"
+                      {getActiveFiltersCount() > 0 && (
+                        <button
+                          onClick={clearFilters}
+                          className="flex items-center gap-2 rounded-lg px-3 py-1 text-sm font-semibold text-blue-600 transition-colors duration-200 hover:bg-slate-50 hover:text-blue-500"
                         >
-                          <div className="relative">
-                            <input
-                              type="checkbox"
-                              checked={filters.brand.includes(brand)}
-                              onChange={() =>
-                                handleFilterChange("brand", brand)
-                              }
-                              className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white transition-all duration-200 checked:border-blue-500 checked:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1"
-                            />
-                          </div>
-                          <span className="flex-1 font-medium text-slate-700 group-hover:text-slate-900">
-                            {brand}
-                          </span>
-                          <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-500">
-                            {devices.filter((d) => d.brand === brand).length}
-                          </div>
-                        </label>
-                      ))}
-                      {filteredBrandOptions.length === 0 && (
-                        <div className="px-2 py-1 text-sm text-slate-400">
-                          No brands found
-                        </div>
+                          <FaTimes />
+                          RESET
+                        </button>
                       )}
                     </div>
-                  </div>
 
-                  {/* Price Range Filter */}
-                  <div className="mb-8">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h4 className="text-base font-bold text-slate-900">
-                          Price Range
-                        </h4>
-                        <p className="mt-1 text-xs text-slate-500">
-                          Set your budget
+                    {/* Active Filters Badge */}
+                    {getActiveFiltersCount() > 0 && (
+                      <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 shadow-sm sm:mb-8">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-semibold text-slate-900">
+                            Active Filters
+                          </span>
+                          <span className="text-xs font-bold text-blue-300 bg-blue-500/20 px-2 py-1 rounded-full border border-blue-400/30">
+                            {getActiveFiltersCount()}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500">
+                          {filteredVariants.length} devices match
                         </p>
                       </div>
-                      <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
-                        ₹ {filters.priceRange.min?.toLocaleString()}
-                      </span>
-                    </div>
+                    )}
 
-                    <div className="rounded-xl border border-slate-200 bg-[#f8fbff] p-4">
-                      <div className="mb-4 flex justify-between text-sm font-medium text-slate-900">
-                        <div className="text-center">
-                          <div className="text-xs text-slate-500">Minimum</div>
-                          <div className="font-bold">
-                            ₹ {filters.priceRange.min?.toLocaleString()}
-                          </div>
+                    {/* Brand Filter */}
+                    <div className="mb-8">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h4 className="text-base font-bold text-slate-900">
+                            Brands
+                          </h4>
+                          <p className="mt-1 text-xs text-slate-500">
+                            Select by manufacturer
+                          </p>
                         </div>
-                        <div className="text-center">
-                          <div className="text-xs text-slate-500">Maximum</div>
-                          <div className="font-bold">
-                            ₹ {filters.priceRange.max?.toLocaleString()}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Dual Range Slider */}
-                      <div className="relative mb-8">
-                        <div className="absolute top-1/2 h-2 w-full -translate-y-1/2 rounded-full bg-slate-200"></div>
-                        <div
-                          className="absolute h-2 bg-gradient-to-r from-blue-300 via-blue-700 to-blue-900 rounded-full top-1/2 transform -translate-y-1/2"
-                          style={{
-                            left: `${Math.max(
-                              0,
-                              Math.min(
-                                100,
-                                ((filters.priceRange.min || 0) /
-                                  (MAX_PRICE || 1)) *
-                                  100,
-                              ),
-                            )}%`,
-                            width: `${Math.max(
-                              0,
-                              Math.min(
-                                100,
-                                ((filters.priceRange.max -
-                                  filters.priceRange.min) /
-                                  (MAX_PRICE || 1)) *
-                                  100,
-                              ),
-                            )}%`,
-                          }}
-                        ></div>
-
-                        <input
-                          type="range"
-                          min={MIN_PRICE}
-                          max={MAX_PRICE}
-                          value={filters.priceRange.min}
-                          onChange={(e) =>
-                            updatePriceRange(
-                              Number(e.target.value),
-                              filters.priceRange.max,
-                            )
-                          }
-                          className="absolute w-full top-1/2 h-4 -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-400 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-blue-500/30 [&::-webkit-slider-thumb]:cursor-pointer"
-                        />
-
-                        <input
-                          type="range"
-                          min={MIN_PRICE}
-                          max={MAX_PRICE}
-                          value={filters.priceRange.max}
-                          onChange={(e) =>
-                            updatePriceRange(
-                              filters.priceRange.min,
-                              Number(e.target.value),
-                            )
-                          }
-                          className="absolute w-full top-1/2 h-4 -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-400 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-blue-500/30 [&::-webkit-slider-thumb]:cursor-pointer"
-                        />
-                      </div>
-
-                      <div className="flex justify-between items-center text-xs mb-3">
-                        <span className="text-slate-500">
-                          ₹ {MIN_PRICE.toLocaleString()}
-                        </span>
-                        <span className="text-slate-500">
-                          ₹ {MAX_PRICE.toLocaleString()}
+                        <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
+                          {filters.brand.length}
                         </span>
                       </div>
-                      <div className="flex justify-center">
-                        <button
-                          onClick={() => updatePriceRange(MIN_PRICE, MAX_PRICE)}
-                          className="rounded-lg px-3 py-1.5 font-medium text-blue-600 transition-colors duration-200 hover:bg-slate-100 hover:text-blue-500"
-                        >
-                          Reset Range
-                        </button>
+                      <div className="relative mb-4">
+                        <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
+                        <input
+                          type="text"
+                          value={brandFilterQuery}
+                          onChange={(e) => setBrandFilterQuery(e.target.value)}
+                          placeholder="Search brand..."
+                          className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        />
                       </div>
-                    </div>
-                  </div>
-
-                  {/* RAM Filter */}
-                  <div className="mb-8">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h4 className="text-base font-bold text-slate-900">
-                          Memory (RAM)
-                        </h4>
-                        <p className="mt-1 text-xs text-slate-500">
-                          Multitasking performance
-                        </p>
-                      </div>
-                      <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
-                        {filters.ram.length}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {ramOptions.map((ram) => (
-                        <label
-                          key={ram}
-                          className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium border ${
-                            filters.ram.includes(ram)
-                              ? "bg-gradient-to-b from-blue-500 to-sky-500 text-white border-blue-400"
-                              : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-slate-50"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={filters.ram.includes(ram)}
-                            onChange={() => handleFilterChange("ram", ram)}
-                            className="sr-only"
-                          />
-                          <span>{ram}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Storage Filter */}
-                  <div className="mb-8">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h4 className="text-base font-bold text-slate-900">
-                          Storage Capacity
-                        </h4>
-                        <p className="mt-1 text-xs text-slate-500">
-                          Apps and media space
-                        </p>
-                      </div>
-                      <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
-                        {filters.storage.length}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {storageOptions.map((storage) => (
-                        <label
-                          key={storage}
-                          className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium border ${
-                            filters.storage.includes(storage)
-                              ? "bg-gradient-to-b from-blue-500 to-sky-500 text-white border-blue-400"
-                              : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-slate-50"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={filters.storage.includes(storage)}
-                            onChange={() =>
-                              handleFilterChange("storage", storage)
-                            }
-                            className="sr-only"
-                          />
-                          <span>{storage}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Battery Filter */}
-                  <div className="mb-8">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h4 className="text-base font-bold text-slate-900">
-                          Battery Capacity
-                        </h4>
-                        <p className="mt-1 text-xs text-slate-500">
-                          Usage time and endurance
-                        </p>
-                      </div>
-                      <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
-                        {filters.battery.length}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-1 gap-2">
-                      {BATTERY_RANGES.map((r) => {
-                        return (
+                      <div className="no-scrollbar space-y-2 max-h-60 overflow-y-auto pr-2">
+                        {filteredBrandOptions.map((brand) => (
                           <label
-                            key={r.id}
-                            className={`flex items-center justify-between gap-2 cursor-pointer px-4 py-3 rounded-xl transition-all duration-300 font-medium border ${
-                              filters.battery.includes(r.id)
-                                ? "bg-gradient-to-r from-blue-500 to-sky-500 text-white border-blue-400"
+                            key={brand}
+                            className="group flex cursor-pointer items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 transition-all duration-200 hover:border-slate-200 hover:bg-slate-50"
+                          >
+                            <div className="relative">
+                              <input
+                                type="checkbox"
+                                checked={filters.brand.includes(brand)}
+                                onChange={() =>
+                                  handleFilterChange("brand", brand)
+                                }
+                                className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white transition-all duration-200 checked:border-blue-500 checked:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1"
+                              />
+                            </div>
+                            <span className="flex-1 font-medium text-slate-700 group-hover:text-slate-900">
+                              {brand}
+                            </span>
+                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-500">
+                              {devices.filter((d) => d.brand === brand).length}
+                            </div>
+                          </label>
+                        ))}
+                        {filteredBrandOptions.length === 0 && (
+                          <div className="px-2 py-1 text-sm text-slate-400">
+                            No brands found
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Price Range Filter */}
+                    <div className="mb-8">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h4 className="text-base font-bold text-slate-900">
+                            Price Range
+                          </h4>
+                          <p className="mt-1 text-xs text-slate-500">
+                            Set your budget
+                          </p>
+                        </div>
+                        <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
+                          ₹ {filters.priceRange.min?.toLocaleString()}
+                        </span>
+                      </div>
+
+                      <div className="rounded-xl border border-slate-200 bg-[#f8fbff] p-4">
+                        <div className="mb-4 flex justify-between text-sm font-medium text-slate-900">
+                          <div className="text-center">
+                            <div className="text-xs text-slate-500">
+                              Minimum
+                            </div>
+                            <div className="font-bold">
+                              ₹ {filters.priceRange.min?.toLocaleString()}
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-xs text-slate-500">
+                              Maximum
+                            </div>
+                            <div className="font-bold">
+                              ₹ {filters.priceRange.max?.toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Dual Range Slider */}
+                        <div className="relative mb-8">
+                          <div className="absolute top-1/2 h-2 w-full -translate-y-1/2 rounded-full bg-slate-200"></div>
+                          <div
+                            className="absolute h-2 bg-gradient-to-r from-blue-300 via-blue-700 to-blue-900 rounded-full top-1/2 transform -translate-y-1/2"
+                            style={{
+                              left: `${Math.max(
+                                0,
+                                Math.min(
+                                  100,
+                                  ((filters.priceRange.min || 0) /
+                                    (MAX_PRICE || 1)) *
+                                    100,
+                                ),
+                              )}%`,
+                              width: `${Math.max(
+                                0,
+                                Math.min(
+                                  100,
+                                  ((filters.priceRange.max -
+                                    filters.priceRange.min) /
+                                    (MAX_PRICE || 1)) *
+                                    100,
+                                ),
+                              )}%`,
+                            }}
+                          ></div>
+
+                          <input
+                            type="range"
+                            min={MIN_PRICE}
+                            max={MAX_PRICE}
+                            value={filters.priceRange.min}
+                            onChange={(e) =>
+                              updatePriceRange(
+                                Number(e.target.value),
+                                filters.priceRange.max,
+                              )
+                            }
+                            className="absolute w-full top-1/2 h-4 -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-400 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-blue-500/30 [&::-webkit-slider-thumb]:cursor-pointer"
+                          />
+
+                          <input
+                            type="range"
+                            min={MIN_PRICE}
+                            max={MAX_PRICE}
+                            value={filters.priceRange.max}
+                            onChange={(e) =>
+                              updatePriceRange(
+                                filters.priceRange.min,
+                                Number(e.target.value),
+                              )
+                            }
+                            className="absolute w-full top-1/2 h-4 -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-400 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-blue-500/30 [&::-webkit-slider-thumb]:cursor-pointer"
+                          />
+                        </div>
+
+                        <div className="flex justify-between items-center text-xs mb-3">
+                          <span className="text-slate-500">
+                            ₹ {MIN_PRICE.toLocaleString()}
+                          </span>
+                          <span className="text-slate-500">
+                            ₹ {MAX_PRICE.toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex justify-center">
+                          <button
+                            onClick={() =>
+                              updatePriceRange(MIN_PRICE, MAX_PRICE)
+                            }
+                            className="rounded-lg px-3 py-1.5 font-medium text-blue-600 transition-colors duration-200 hover:bg-slate-100 hover:text-blue-500"
+                          >
+                            Reset Range
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* RAM Filter */}
+                    <div className="mb-8">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h4 className="text-base font-bold text-slate-900">
+                            Memory (RAM)
+                          </h4>
+                          <p className="mt-1 text-xs text-slate-500">
+                            Multitasking performance
+                          </p>
+                        </div>
+                        <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
+                          {filters.ram.length}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {ramOptions.map((ram) => (
+                          <label
+                            key={ram}
+                            className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium border ${
+                              filters.ram.includes(ram)
+                                ? "bg-gradient-to-b from-blue-500 to-sky-500 text-white border-blue-400"
                                 : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-slate-50"
                             }`}
                           >
                             <input
                               type="checkbox"
-                              checked={filters.battery.includes(r.id)}
+                              checked={filters.ram.includes(ram)}
+                              onChange={() => handleFilterChange("ram", ram)}
+                              className="sr-only"
+                            />
+                            <span>{ram}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Storage Filter */}
+                    <div className="mb-8">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h4 className="text-base font-bold text-slate-900">
+                            Storage Capacity
+                          </h4>
+                          <p className="mt-1 text-xs text-slate-500">
+                            Apps and media space
+                          </p>
+                        </div>
+                        <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
+                          {filters.storage.length}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {storageOptions.map((storage) => (
+                          <label
+                            key={storage}
+                            className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium border ${
+                              filters.storage.includes(storage)
+                                ? "bg-gradient-to-b from-blue-500 to-sky-500 text-white border-blue-400"
+                                : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-slate-50"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={filters.storage.includes(storage)}
                               onChange={() =>
-                                handleFilterChange("battery", r.id)
+                                handleFilterChange("storage", storage)
                               }
                               className="sr-only"
                             />
-                            <span>{r.label}</span>
-                            <div
-                              className={`w-2 h-2 rounded-full ${
-                                filters.battery.includes(r.id)
-                                  ? "bg-white/80"
-                                  : "bg-slate-300"
-                              }`}
-                            ></div>
+                            <span>{storage}</span>
                           </label>
-                        );
-                      })}
+                        ))}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Additional filters button */}
-                  <button
-                    onClick={() => setShowFilters(true)}
-                    className="mt-6 w-full rounded-xl bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 py-3 font-semibold text-white transition-all duration-300 hover:from-blue-700 hover:to-blue-600 hover:shadow-lg lg:hidden"
-                  >
-                    Show More Filters
-                  </button>
+                    {/* Battery Filter */}
+                    <div className="mb-8">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h4 className="text-base font-bold text-slate-900">
+                            Battery Capacity
+                          </h4>
+                          <p className="mt-1 text-xs text-slate-500">
+                            Usage time and endurance
+                          </p>
+                        </div>
+                        <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
+                          {filters.battery.length}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 gap-2">
+                        {BATTERY_RANGES.map((r) => {
+                          return (
+                            <label
+                              key={r.id}
+                              className={`flex items-center justify-between gap-2 cursor-pointer px-4 py-3 rounded-xl transition-all duration-300 font-medium border ${
+                                filters.battery.includes(r.id)
+                                  ? "bg-gradient-to-r from-blue-500 to-sky-500 text-white border-blue-400"
+                                  : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-slate-50"
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={filters.battery.includes(r.id)}
+                                onChange={() =>
+                                  handleFilterChange("battery", r.id)
+                                }
+                                className="sr-only"
+                              />
+                              <span>{r.label}</span>
+                              <div
+                                className={`w-2 h-2 rounded-full ${
+                                  filters.battery.includes(r.id)
+                                    ? "bg-white/80"
+                                    : "bg-slate-300"
+                                }`}
+                              ></div>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Additional filters button */}
+                    <button
+                      onClick={() => setShowFilters(true)}
+                      className="mt-6 w-full rounded-xl bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 py-3 font-semibold text-white transition-all duration-300 hover:from-blue-700 hover:to-blue-600 hover:shadow-lg lg:hidden"
+                    >
+                      Show More Filters
+                    </button>
+                  </div>
                 </div>
-              </div>
+              ) : null}
 
               {/* Products List - Right */}
-              <div className="flex-1">
+              <div className={productColumnWidthClass}>
                 {/* Products Grid */}
                 <div className="grid grid-cols-1 gap-4 sm:gap-5 md:gap-6 auto-rows-max">
-                  {paginatedVariants.map((device, _idx) => {
+                  {visibleVariants.map((device, _idx) => {
                     const devicePolicy = resolveDevicePolicy(device);
                     const availabilityState = getAvailabilityState(
                       device.storePrices || [],
@@ -4834,22 +4869,27 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                         No smartphones found
                       </h3>
                       <p className="mb-6 text-slate-600">
-                        Try adjusting your filters to find what you're looking
-                        for. We have a wide range of devices available.
+                        {shouldHideInteractiveFilters
+                          ? "No smartphones are available in this price range right now. Try browsing the full smartphone collection for more options."
+                          : "Try adjusting your filters to find what you're looking for. We have a wide range of devices available."}
                       </p>
                       <div className="flex flex-col sm:flex-row gap-3 justify-center">
                         <button
                           onClick={clearFilters}
                           className="rounded-lg bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 px-6 py-3 font-semibold text-white transition-all duration-300 hover:from-blue-700 hover:to-blue-600 hover:shadow-lg hover:-translate-y-0.5"
                         >
-                          Clear All Filters
+                          {shouldHideInteractiveFilters
+                            ? "Browse All Smartphones"
+                            : "Clear All Filters"}
                         </button>
-                        <button
-                          onClick={() => setShowFilters(true)}
-                          className="rounded-lg border border-slate-300 px-6 py-3 font-semibold text-slate-700 transition-all duration-300 hover:border-slate-400 hover:bg-slate-50 hover:shadow-md"
-                        >
-                          Adjust Filters
-                        </button>
+                        {!shouldHideInteractiveFilters ? (
+                          <button
+                            onClick={() => setShowFilters(true)}
+                            className="rounded-lg border border-slate-300 px-6 py-3 font-semibold text-slate-700 transition-all duration-300 hover:border-slate-400 hover:bg-slate-50 hover:shadow-md"
+                          >
+                            Adjust Filters
+                          </button>
+                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -4860,11 +4900,12 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                   <div className="mt-8 border-t border-slate-200 pt-6">
                     <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                       <div className="text-sm text-slate-500">
-                        Showing {visibleResultsStart}-{visibleResultsEnd} of{" "}
-                        {sortedVariants.length} options
+                        {shouldShowAllMatches
+                          ? `Showing all ${sortedVariants.length} options`
+                          : `Showing ${visibleResultsStart}-${visibleResultsEnd} of ${sortedVariants.length} options`}
                       </div>
                       <div className="flex flex-wrap items-center justify-center gap-3 sm:justify-end">
-                        {totalPages > 1 ? (
+                        {!shouldShowAllMatches && totalPages > 1 ? (
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
@@ -4941,7 +4982,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
             <LatestNewsRouteSection className="mt-6" />
 
             {/* Mobile Filter Overlay - Remains the same but with enhanced descriptions */}
-            {showFilters && (
+            {showFilters && !shouldHideInteractiveFilters && (
               <div className="lg:hidden fixed inset-0 z-50">
                 <div
                   className="absolute inset-0 bg-black bg-opacity-50 transition-opacity duration-300"

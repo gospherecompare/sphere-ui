@@ -51,10 +51,16 @@ const SMARTPHONE_FILTER_SEO = {
   "above-50000": { label: "Above ₹50,000" },
   new: { label: "Latest" },
 };
+const SMARTPHONE_FILTER_ROUTE_PATHS = new Set(
+  Object.keys(SMARTPHONE_FILTER_SEO).map(
+    (slug) => `/smartphones/filter/${slug}`,
+  ),
+);
 const PRELOAD_CANONICAL_PATHS = new Set([
   "/",
   "/smartphones",
   "/smartphones/upcoming",
+  ...SMARTPHONE_FILTER_ROUTE_PATHS,
   "/laptops",
   "/tvs",
   "/networking",
@@ -130,6 +136,7 @@ const STATIC_PRERENDER_ROUTES = [
   "/devices/networking",
   "/smartphones",
   "/smartphones/upcoming",
+  ...SMARTPHONE_FILTER_ROUTE_PATHS,
   "/laptops",
   "/tvs",
   "/networking",
@@ -150,11 +157,27 @@ const STATIC_PRERENDER_ROUTES = [
 ];
 
 const normalizePath = (routePath = "/") => {
-  if (!routePath) return "/";
-  if (routePath.length > 1 && routePath.endsWith("/")) {
-    return routePath.slice(0, -1);
+  const rawPath = String(routePath || "").trim();
+  if (!rawPath) return "/";
+
+  let pathName = rawPath;
+  try {
+    pathName = /^https?:\/\//i.test(rawPath)
+      ? new URL(rawPath).pathname || "/"
+      : new URL(rawPath, SITE_ORIGIN).pathname || rawPath;
+  } catch {
+    pathName = rawPath.split(/[?#]/, 1)[0] || "/";
   }
-  return routePath;
+
+  if (!pathName.startsWith("/")) {
+    pathName = `/${pathName}`;
+  }
+
+  if (pathName.length > 1) {
+    return pathName.replace(/\/+$/g, "");
+  }
+
+  return pathName || "/";
 };
 
 const stripSmartphoneSeoSuffix = (slug = "") => {
@@ -475,7 +498,16 @@ const sanitizePreloadValue = (value) => {
   const next = {};
   for (const [key, child] of Object.entries(value)) {
     if (shouldStripPreloadKey(key)) continue;
-    next[key] = sanitizePreloadValue(child);
+    const sanitizedChild = sanitizePreloadValue(child);
+    if (
+      (key === "detail_path" || key === "detailPath") &&
+      typeof sanitizedChild === "string"
+    ) {
+      const rawRoute = sanitizedChild.trim();
+      next[key] = rawRoute ? toCanonicalPath(normalizePath(rawRoute)) : rawRoute;
+      continue;
+    }
+    next[key] = sanitizedChild;
   }
   return next;
 };
@@ -1512,6 +1544,7 @@ const resolvePrerenderRoutePath = (renderedRoute) => {
 
 const usesSharedPreloadedPayload = (canonicalPath = "/") =>
   PRELOAD_CANONICAL_PATHS.has(canonicalPath) ||
+  SMARTPHONE_FILTER_ROUTE_PATHS.has(canonicalPath) ||
   Boolean(
     parseSmartphoneListingPath(canonicalPath)?.canonicalPath &&
       canonicalPath !== "/smartphones",
