@@ -8,7 +8,7 @@ import React, {
 } from "react";
 import CompetitorCards from "../ui/CompetitorCards";
 import ProductDiscoverySections from "../ui/ProductDiscoverySections";
-import RecommendedSmartphones from "../Home/RecommendedSmartphones";
+// import RecommendedSmartphones from "../Home/RecommendedSmartphones";
 import { useDevice } from "../../hooks/useDevice";
 import Cookies from "js-cookie";
 
@@ -464,8 +464,8 @@ const LinkedNewsStoryCard = ({ story, compact = false }) => {
     story?.publishedIso || story?.updatedIso || story?.publishedAt,
   );
   const baseCardClass = compact
-    ? "group grid h-full gap-3 rounded-[22px] border border-white/80 bg-white/90 p-3 shadow-[0_10px_28px_rgba(90,108,179,0.10)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(90,108,179,0.16)] sm:grid-cols-[96px,1fr]"
-    : "group flex h-full flex-col rounded-[24px] border border-[#e8edfb] bg-white p-3 shadow-[0_14px_34px_rgba(90,108,179,0.12)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(90,108,179,0.18)]";
+    ? "group grid h-full gap-3 rounded-[22px] border border-white/80 bg-white/90 p-3 transition-all duration-200 hover:-translate-y-0.5 sm:grid-cols-[96px,1fr]"
+    : "group flex h-full flex-col rounded-[24px] border border-[#e8edfb] bg-white p-3 transition-all duration-200 hover:-translate-y-0.5";
   const imageWrapClass = compact
     ? "aspect-[6/5] overflow-hidden rounded-[16px] border border-[#edf1fc] bg-[#eef2ff] sm:h-full"
     : "aspect-[5/3] overflow-hidden rounded-[16px] border border-[#edf1fc] bg-[#eef2ff]";
@@ -3554,7 +3554,7 @@ Price: ${price}
   const renderSpecTable = (data, limit = 5) => {
     if (!data || (typeof data === "object" && Object.keys(data).length === 0))
       return (
-        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 py-6 text-center text-sm text-slate-500">
+        <div className="rounded-[20px] bg-slate-50/90 py-6 text-center text-sm text-slate-500">
           No data available
         </div>
       );
@@ -3573,11 +3573,11 @@ Price: ${price}
     return (
       <>
         {/* Mobile: Stacked Layout */}
-        <div className="sm:hidden space-y-2 px-1">
+        <div className="space-y-2 sm:hidden">
           {displayEntries.map(([key, value]) => (
             <div
               key={key}
-              className="rounded-md border border-slate-200 bg-white p-2.5"
+              className="rounded-2xl bg-slate-50/95 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]"
             >
               <div className="text-xs font-semibold uppercase tracking-wide text-slate-600 mb-0.5">
                 {toNormalCase(key)}
@@ -3590,9 +3590,9 @@ Price: ${price}
         </div>
 
         {/* Desktop: Table Layout */}
-        <div className="hidden sm:block overflow-hidden rounded-lg border border-slate-200 bg-white">
+        <div className="hidden overflow-hidden rounded-[22px] bg-slate-50/85 shadow-[inset_0_1px_0_rgba(255,255,255,0.82)] sm:block">
           <table className="w-full">
-            <thead className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+            <thead className="bg-white/80">
               <tr>
                 <th className="px-5 py-3 text-left text-sm font-semibold text-slate-700">
                   Spec
@@ -3607,7 +3607,7 @@ Price: ${price}
                 <tr
                   key={key}
                   className={`transition-colors hover:bg-blue-50 ${
-                    idx % 2 === 0 ? "bg-white" : "bg-slate-50"
+                    idx % 2 === 0 ? "bg-white/80" : "bg-slate-50/90"
                   }`}
                 >
                   <td className="px-5 py-4 text-sm font-medium text-slate-600 w-1/3">
@@ -3778,73 +3778,88 @@ Price: ${price}
           }
         };
         const sectionCardClass =
-          "rounded-lg border border-slate-200 bg-white p-5 sm:p-6";
+          "overflow-hidden rounded-[24px] bg-white/96 shadow-[0_18px_44px_rgba(15,23,42,0.06)]";
         const sectionDividerClass =
-          "mt-4 h-px w-full bg-gradient-to-r from-blue-600 via-sky-500 to-cyan-400";
+          "mt-4 h-px w-full bg-gradient-to-r from-blue-600 via-sky-500 to-cyan-400/60";
         const renderSectionCard = (sectionId, title, content) => (
           <section id={sectionId} className={sectionCardClass}>
-            <h4 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
-              {title}
-            </h4>
-            <div className={sectionDividerClass} />
-            <div className="mt-5">{content}</div>
+            <div className="px-4 pt-4 sm:px-6 sm:pt-6">
+              <h4 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
+                {title}
+              </h4>
+              <div className={sectionDividerClass} />
+            </div>
+            <div className="mt-5 pb-4 sm:px-6 sm:pb-6">{content}</div>
           </section>
         );
 
         return (
           <div
             id="spec-specifications"
-            className={`w-full max-w-3xl p-2 sm:p-0 ${combineResponsiveClasses(RESPONSIVE_SPACING.contentMarginY)}`}
+            className={`w-full max-w-4xl px-2 sm:px-0 ${combineResponsiveClasses(RESPONSIVE_SPACING.contentMarginY)}`}
           >
-            <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-              <div className="min-w-0">
-                <h3 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-[2rem]">
-                  {metaName}
-                  {currentVariantLabel ? ` (${currentVariantLabel})` : ""}
-                  <span className="ml-2 bg-gradient-to-r from-blue-600 via-sky-500 to-cyan-400 bg-clip-text text-transparent">
+            <div className="rounded-[28px] bg-gradient-to-br from-white via-[#f7faff] to-[#eef5ff] p-4 text-slate-900 shadow-[0_16px_40px_rgba(15,23,42,0.08)] sm:p-6 lg:p-7">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0 max-w-3xl">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-blue-600">
                     Full Specifications
+                  </p>
+                  <h3 className="mt-2 text-[1.45rem] font-semibold leading-tight tracking-tight text-slate-950 sm:text-[1.9rem]">
+                    {metaName}
+                  </h3>
+                  {currentVariantLabel ? (
+                    <div className="mt-3 inline-flex max-w-full items-center rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100">
+                      <span className="truncate">{currentVariantLabel}</span>
+                    </div>
+                  ) : null}
+                  <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-[15px]">
+                    All major hardware, display, camera, software, battery, and
+                    connectivity details in one clean view.
+                  </p>
+                </div>
+
+                <div className="flex w-full items-center justify-between rounded-2xl bg-slate-100 px-4 py-3 lg:w-[240px]">
+                  <span className="text-sm font-medium text-slate-700">
+                    Expanded View
                   </span>
-                </h3>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-slate-600">
-                  Expanded View
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setShowAllSpecs((prev) => !prev)}
-                  aria-pressed={showAllSpecs}
-                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
-                    showAllSpecs ? "bg-blue-600" : "bg-slate-300"
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform duration-200 ${
-                      showAllSpecs ? "translate-x-7" : "translate-x-1"
-                    }`}
-                  />
-                </button>
-              </div>
-            </div>
-
-            <div className="relative mt-5">
-              <div
-                className={`flex ${RESPONSIVE_SPACING.gapMedium} overflow-x-auto pb-1 no-scrollbar`}
-              >
-                {specJumpSections.map((section) => (
                   <button
-                    key={section.id}
                     type="button"
-                    onClick={() => scrollToSpecSection(section.id)}
-                    className="inline-flex flex-shrink-0 items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-all hover:border-blue-300 hover:text-blue-600"
+                    onClick={() => setShowAllSpecs((prev) => !prev)}
+                    aria-pressed={showAllSpecs}
+                    className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
+                      showAllSpecs ? "bg-blue-600" : "bg-slate-300"
+                    }`}
                   >
-                    {section.label}
+                    <span
+                      className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform duration-200 ${
+                        showAllSpecs
+                          ? "translate-x-7"
+                          : "translate-x-1"
+                      }`}
+                    />
                   </button>
-                ))}
+                </div>
+              </div>
+
+              <div className="mt-5 rounded-[22px] bg-[#eef4fb] p-2">
+                <div
+                  className={`flex ${RESPONSIVE_SPACING.gapMedium} overflow-x-auto pb-1 no-scrollbar`}
+                >
+                  {specJumpSections.map((section) => (
+                    <button
+                      key={section.id}
+                      type="button"
+                      onClick={() => scrollToSpecSection(section.id)}
+                      className="inline-flex flex-shrink-0 items-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition-all hover:bg-blue-50 hover:text-blue-700"
+                    >
+                      {section.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
-            <div className="mt-6 space-y-5">
+            <div className="mt-6 space-y-4 sm:space-y-5">
               {renderSectionCard(
                 "spec-general",
                 "General",
@@ -3948,13 +3963,12 @@ Price: ${price}
 
       case "camera":
         return (
-          <div className="bg-white rounded-lg p-4">
-            <div className="mb-4 flex items-center justify-between gap-2">
+          <div className="rounded-lg bg-white px-2 py-4 sm:p-4">
+            <div className="mb-4 flex items-center gap-2">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <FaCamera className="text-blue-500" />
                 Camera
               </h3>
-              <SpecScoreBadge score={getSectionScore("camera")} size={38} />
             </div>
             {renderCameraTable(mobileData.camera)}
           </div>
@@ -5342,25 +5356,14 @@ Price: ${price}
                     battery details that matter most.
                   </p>
                 </div>
-                <div className="rounded-2xl bg-white p-4 sm:p-5">
+                <div className="rounded-[28px] bg-white p-3 sm:p-5">
                   <div
-                    className={`grid grid-cols-1 items-stretch ${combineResponsiveClasses(RESPONSIVE_SPACING.specCardGap)} md:grid-cols-2`}
+                    className={`grid grid-cols-1 items-stretch gap-3 sm:gap-4 md:grid-cols-2`}
                   >
                     {detailInfoSections.map((section) => {
                       const iconMeta = highlightIconMap[section.key];
                       const Icon = iconMeta?.Icon;
-                      const cardTitle =
-                        section.key === "performance"
-                          ? "Processor"
-                          : section.key === "memory"
-                            ? "RAM/Storage"
-                            : section.key === "camera"
-                              ? "Rear Camera"
-                              : section.key === "design"
-                                ? "Design"
-                                : section.key === "os"
-                                  ? "OS"
-                                  : section.title;
+                      const cardTitle = section.title;
                       const leadPoint =
                         section.leadPoint || section.points?.[0] || null;
                       const bulletPoints = section.leadPoint
@@ -5370,37 +5373,37 @@ Price: ${price}
                       return (
                         <div
                           key={section.key}
-                          className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-4 transition-all duration-200 sm:p-5"
+                          className="flex h-full flex-col rounded-[22px] border border-[#d9e4f2] bg-white px-4 py-5 transition-all duration-200 sm:px-5 sm:py-6"
                         >
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2.5">
                             <div
-                              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-50`}
+                              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#dce6f3] bg-[#f8fbff]"
                             >
                               {Icon ? (
                                 <Icon
-                                  className={`text-[11px] ${iconMeta.color}`}
+                                  className={`text-sm ${iconMeta.color}`}
                                 />
                               ) : null}
                             </div>
                             <div className="min-w-0">
-                              <h4 className="text-sm font-medium leading-none text-slate-600">
+                              <h4 className="text-[15px] font-medium leading-none text-[#455a7c] sm:text-base">
                                 {cardTitle}
                               </h4>
                             </div>
                           </div>
                           {leadPoint ? (
-                            <div className="mt-3 text-[1.05rem] font-bold leading-snug text-slate-900 sm:text-[1.12rem]">
+                            <div className="mt-4 text-[1.15rem] font-semibold leading-snug tracking-tight text-[#1d2738] sm:text-[1.3rem]">
                               {formatSpecValue(leadPoint, section.title)}
                             </div>
                           ) : null}
                           {bulletPoints.length > 0 ? (
-                            <ul className="mt-3 space-y-1.5">
+                            <ul className="mt-4 space-y-2">
                               {bulletPoints.slice(0, 3).map((point, idx) => (
                                 <li
                                   key={idx}
-                                  className="flex items-start gap-2 text-[13px] leading-5 text-slate-600"
+                                  className="flex items-start gap-2.5 text-[14px] leading-6 text-[#6a7894]"
                                 >
-                                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-500" />
+                                  <span className="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full bg-[#7b8ca8]" />
                                   <span className="min-w-0">
                                     {formatSpecValue(point, section.title)}
                                   </span>
@@ -5453,7 +5456,7 @@ Price: ${price}
               />
             ) : null}
             <div className="space-y-4 sm:space-y-6">
-              <RecommendedSmartphones />
+              {/* <RecommendedSmartphones /> */}
             </div>
           </div>
         </div>
@@ -5462,7 +5465,7 @@ Price: ${price}
       {shouldShowLinkedNews ? (
         <div className="w-full">
           <div className="mx-auto max-w-7xl px-0 py-0 sm:px-6 sm:py-8 lg:px-8">
-            <section className="overflow-hidden rounded-[30px] border border-white/70 bg-gradient-to-br from-[#eef1ff] via-[#f4f7ff] to-[#eef5ff] p-4 shadow-[0_18px_44px_rgba(90,108,179,0.10)] sm:p-6 lg:p-8">
+            <section className="overflow-hidden rounded-[30px] border border-white/70 bg-gradient-to-br from-[#eef1ff] via-[#f4f7ff] to-[#eef5ff] p-4 sm:p-6 lg:p-8">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <h2 className="text-2xl font-bold tracking-tight text-[#082a72] sm:text-[2.1rem]">
@@ -5477,7 +5480,7 @@ Price: ${price}
                   </p>
                 </div>
                 {linkedNewsSecondaryStories.length > 0 ? (
-                  <div className="inline-flex items-center rounded-full border border-white/80 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[#6373a0] shadow-[0_10px_24px_rgba(90,108,179,0.08)]">
+                  <div className="inline-flex items-center rounded-full border border-white/80 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[#6373a0]">
                     {exactLinkedNewsStories.length} Linked Stories
                   </div>
                 ) : null}

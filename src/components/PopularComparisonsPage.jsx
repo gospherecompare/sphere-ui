@@ -14,7 +14,7 @@ import {
 } from "react-icons/fa";
 import useRevealAnimation from "../hooks/useRevealAnimation";
 import SEO from "./SEO";
-import RecommendedSmartphones from "./Home/RecommendedSmartphones";
+// import RecommendedSmartphones from "./Home/RecommendedSmartphones";
 import ProductDiscoverySections from "./ui/ProductDiscoverySections";
 import { normalizeScore100Value } from "../utils/groupScoreStats";
 import resolveSmartphoneBadgeScore from "../utils/smartphoneBadgeScore";
@@ -815,7 +815,7 @@ const PopularComparisonsPage = () => {
                 </button>
               </div>
             )}
-            {featuredDiscoveryProduct && <RecommendedSmartphones />}
+            {/* {featuredDiscoveryProduct && <RecommendedSmartphones />} */}
 
             {featuredDiscoveryProduct && (
               <section className="mt-8 sm:mt-10 overflow-hidden ">

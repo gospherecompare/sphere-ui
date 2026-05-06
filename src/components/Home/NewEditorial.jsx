@@ -244,7 +244,7 @@ const LeadStoryCard = ({ story }) => {
   return (
     <Link
       to={createNewsStoryPath(story.slug)}
-      className="group overflow-hidden rounded-[22px] bg-white lg:grid lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]"
+      className="group block overflow-hidden rounded-[22px] bg-white lg:grid lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]"
     >
       <StoryMedia
         story={story}
@@ -507,7 +507,7 @@ const NewEditorial = ({ stories = [], loading = false, error = "" }) => {
                 Hooks Newsroom
               </p>
               <h2 className="mt-3 text-[28px] font-black leading-[1.02] tracking-[-0.05em] text-[#121212] sm:text-[44px] lg:text-[50px]">
-                Technology News & Articles
+                Latest News & Articles
               </h2>
               <p className="mt-4 max-w-3xl text-[14px] leading-7 text-[#575757] sm:text-base">
                 Fresh gadget launches, mobile updates, reviews, buying guides,
@@ -542,7 +542,7 @@ const NewEditorial = ({ stories = [], loading = false, error = "" }) => {
                       Top Story
                     </p>
                     <h2 className="mt-2 text-[24px] font-black tracking-[-0.04em] text-[#141414]">
-                      Lead Coverage
+                      Featured Story
                     </h2>
                   </div>
                 </div>

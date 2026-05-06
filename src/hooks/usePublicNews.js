@@ -320,7 +320,7 @@ const splitParagraphs = (value) =>
   normalizeHtmlContent(value)
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(
-      /<\/(p|h[1-6]|li|blockquote|tr|table|div|section|article)>/gi,
+      /<\/(p|h[1-6]|li|blockquote|tr|table|div|section|article|figure|figcaption)>/gi,
       "$&\n\n",
     )
     .split(/\n\s*\n/)

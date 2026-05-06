@@ -3,7 +3,7 @@ import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDevice } from "../../hooks/useDevice";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
-import RecommendedSmartphones from "./RecommendedSmartphones";
+// import RecommendedSmartphones from "./RecommendedSmartphones";
 import { buildSmartphoneBrandPath } from "../../utils/smartphoneListingRoutes";
 import { FaArrowRight } from "react-icons/fa";
 import {
@@ -187,7 +187,7 @@ const PopularBrands = () => {
           </div>
         )}
 
-        <RecommendedSmartphones />
+        {/* <RecommendedSmartphones /> */}
       </div>
     </section>
   );

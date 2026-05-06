@@ -2268,7 +2268,7 @@ const Header = () => {
       {/* MOBILE HEADER (≤ 768px) */}
       <div
         ref={mobileHeaderRef}
-        className="md:hidden border-b border-slate-100 bg-gradient-to-b from-white to-blue-50/30 z-40"
+        className="z-40 border-b border-slate-100 bg-white md:hidden"
       >
         {/* Mobile Top Row: Menu | Logo | Actions */}
         <div className="flex items-center justify-between gap-3 px-4 py-3">
@@ -2867,7 +2867,7 @@ const Header = () => {
 
       <header
         ref={headerRef}
-        className="sticky top-0 left-0 right-0 z-40 bg-gradient-to-b from-white via-white to-blue-50/40"
+        className="sticky top-0 left-0 right-0 z-40 bg-white"
       >
         <MainHeader />
         <CategoryNavBar />
