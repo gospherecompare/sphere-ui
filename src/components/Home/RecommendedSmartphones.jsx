@@ -4,10 +4,12 @@ import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { createProductPath } from "../../utils/slugGenerator";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
-import { FaMobileAlt } from "react-icons/fa";
+import { FaArrowCircleRight, FaArrowRight, FaMobileAlt } from "react-icons/fa";
 import {
   HOME_SECTION_LEAD_LIGHT,
   HOME_SECTION_TITLE_LIGHT,
+  HOME_SECTION_TITLE_DARK,
+  HOME_SECTION_LEAD_DARK,
 } from "./homeSectionTypography";
 
 const RECENT_STORAGE_KEY = "hooks_recent_smartphones_v1";
@@ -662,44 +664,53 @@ const RecommendedSmartphones = ({
 
   return (
     <section
-      className={`relative mt-12 overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-b from-white via-sky-50/70 to-white transition-all duration-700 ${
+      className={`relative mt-12 overflow-hidden rounded-3xl bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 transition-all duration-700 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
+      <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
       <div className="relative mx-auto w-full px-4 py-10 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
         <div className="mx-auto max-w-7xl">
-          <div className="mx-auto mb-8 max-w-7xl text-center">
-            <h2 className={`${HOME_SECTION_TITLE_LIGHT} mb-4`}>
+          <div className="mx-auto mb-8 max-w-4xl text-center">
+            <h1
+              className={`mx-auto max-w-[10.5ch] text-[2.45rem] tracking-[-0.04em] sm:max-w-none sm:text-5xl lg:text-6xl text-slate-100`}
+            >
               <span className="block">Recommended</span>
-              <span className="bg-gradient-to-r from-blue-600 via-cyan-500 to-sky-600 bg-clip-text text-transparent animate-pulse">
+              <span className="bg-gradient-to-r from-blue-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent animate-pulse">
                 Smartphones
               </span>
-            </h2>
-            <p className={HOME_SECTION_LEAD_LIGHT}>
+            </h1>
+
+            <p className="mt-3 text-slate-400">
               Recommendations tailored to your recent browsing.
             </p>
           </div>
 
           {showEmpty ? (
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-6 py-8 text-center text-sm text-slate-600">
+            <div className="rounded-2xl border border-slate-700/30 bg-slate-800/30 px-6 py-8 text-center text-sm text-slate-400">
               Browse a smartphone to unlock recommendations.
             </div>
           ) : null}
 
-          <div className="no-scrollbar mt-8 grid grid-flow-col auto-cols-[88%] gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scroll-smooth sm:gap-4 sm:auto-cols-[calc(50%-0.5rem)] md:auto-cols-[calc(33.333%-0.67rem)] lg:auto-cols-[calc(25%-0.75rem)]">
+          <div className="no-scrollbar mt-8 grid grid-flow-col auto-cols-[88%] gap-4 overflow-x-auto pb-2 snap-x snap-mandatory sm:auto-cols-[calc(50%-0.5rem)] md:auto-cols-[calc(33.333%-0.67rem)] lg:auto-cols-[calc(25%-0.75rem)]">
             {loading
-              ? Array.from({ length: 6 }).map((_, i) => (
-                  <div key={`skeleton-${i}`} className="w-full animate-pulse">
-                    <div className="relative flex h-auto flex-row items-center gap-4 overflow-hidden rounded-3xl border border-slate-200 bg-white/80 p-4 sm:flex-col sm:items-stretch sm:p-6">
-                      <div className="h-24 w-24 shrink-0 rounded-2xl bg-slate-100 sm:h-40 sm:w-full"></div>
-                      <div className="flex-1 space-y-3">
-                        <div className="h-4 w-4/5 rounded bg-slate-200"></div>
-                        <div className="h-4 w-3/4 rounded bg-slate-200"></div>
-                        <div className="border-t border-slate-200 pt-3">
-                          <div className="h-3 w-24 rounded bg-slate-200"></div>
-                        </div>
-                      </div>
-                    </div>
+              ? Array.from({ length: 5 }).map((_, i) => (
+                  <div
+                    key={`skeleton-${i}`}
+                    className="flex w-full shrink-0 snap-start flex-col gap-3 rounded-3xl border border-white/12 bg-white/[0.08] p-4 text-slate-100 backdrop-blur-md transition-all duration-300 animate-pulse"
+                  >
+                    <span className="flex h-44 w-44 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-blue-950/20">
+                      <span className="h-12 w-12 rounded bg-white/10" />
+                    </span>
+
+                    <span className="min-w-0 flex-1 space-y-2">
+                      <span className="block h-2 w-16 rounded bg-white/15" />
+                      <span className="block h-3 w-4/5 rounded bg-white/15" />
+                    </span>
+
+                    <span className="mt-auto border-t border-white/12 pt-2">
+                      <span className="block h-2 w-20 rounded bg-white/10" />
+                    </span>
                   </div>
                 ))
               : displayItems.map((device, i) => (
@@ -707,44 +718,51 @@ const RecommendedSmartphones = ({
                     key={`${device.id || "noid"}-${i}`}
                     type="button"
                     onClick={() => handleDeviceClick(device)}
-                    className={`group relative flex w-full snap-start flex-row items-center gap-4 rounded-3xl border border-slate-200 bg-white/80 p-4 text-left text-slate-900 transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-200 sm:flex-col sm:items-stretch sm:p-6 ${
+                    className={`group flex w-full shrink-0 snap-start flex-col gap-3 rounded-3xl p-4 text-left text-slate-100 backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-white/20 ${
                       isLoaded
                         ? "opacity-100 translate-y-0"
                         : "opacity-0 translate-y-2"
                     }`}
                     style={{ transitionDelay: `${i * 60}ms` }}
                   >
-                    {/* Image Container */}
-                    <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 sm:h-40 sm:w-full">
+                    <div className="flex h-44 w-44 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-blue-950/20">
                       {device.image ? (
                         <img
                           src={device.image}
                           alt={device.name}
-                          className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-110 sm:p-4"
+                          className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-110"
                           loading="lazy"
                           onError={(e) => {
-                            e.target.style.display = "none";
+                            e.currentTarget.style.display = "none";
                           }}
                         />
                       ) : (
-                        <FaMobileAlt className="text-2xl text-slate-400 sm:text-3xl" />
+                        <FaMobileAlt className="text-4xl text-slate-500" />
                       )}
                     </div>
 
-                    {/* Content */}
-                    <div className="flex min-w-0 flex-1 flex-col justify-between self-stretch">
-                      <p className="line-clamp-2 text-sm font-bold leading-snug text-slate-900 sm:text-base">
-                        {device.name}
-                      </p>
+                    <div className="min-w-0 flex-1">
+                      {device.brand ? (
+                        <p className="truncate text-[10px] font-bold tracking-[0.24em] text-cyan-300">
+                          {device.brand}
+                        </p>
+                      ) : null}
 
-                      <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-200 pt-3">
-                        <span className="text-xs font-medium text-slate-600 sm:text-sm">
-                          View Details
-                        </span>
-                        <span className="text-slate-400 transition-transform duration-300 group-hover:translate-x-1">
-                          {"->"}
-                        </span>
+                      <h6 className="mt-1 line-clamp-2 text-sm font-bold leading-snug text-white transition-colors duration-200 group-hover:text-cyan-200">
+                        {device.name}
+                      </h6>
+                    </div>
+
+                    <div className="mt-auto flex items-center justify-between gap-2 border-t border-white/12 pt-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-xs font-bold text-white">
+                          View details
+                        </p>
                       </div>
+
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-950/25 text-slate-100 transition-all duration-300 group-hover:translate-x-1 group-hover:bg-white/15">
+                        <FaArrowRight className="h-3 w-3" />
+                      </span>
                     </div>
                   </button>
                 ))}

@@ -10,6 +10,8 @@ import {
 } from "../../utils/smartphonePopularFeatures";
 import { buildSmartphoneFeaturePath } from "../../utils/smartphoneListingRoutes";
 import {
+  HOME_SECTION_LEAD_DARK,
+  HOME_SECTION_TITLE_DARK,
   HOME_SECTION_LEAD_LIGHT,
   HOME_SECTION_TITLE_LIGHT,
 } from "./homeSectionTypography";
@@ -22,7 +24,7 @@ const FeatureCard = ({ feature, index, isActive, isLoaded, onClick }) => {
       type="button"
       onClick={onClick}
       aria-pressed={isActive}
-      className={`group relative h-auto min-h-[116px] w-[82vw] max-w-[18rem] shrink-0 snap-start overflow-hidden rounded-2xl border p-4 text-left shadow-sm transition-all duration-500 sm:w-[210px] lg:w-[225px] ${
+      className={`group relative h-auto min-h-[116px] w-[82vw] max-w-[18rem] shrink-0 snap-start overflow-hidden rounded-2xl border p-4 text-left  transition-all duration-500 sm:w-[210px] lg:w-[225px] ${
         isActive
           ? "border-blue-200 bg-blue-50 text-slate-900 -translate-y-1 shadow-md"
           : "border-slate-200 bg-white text-slate-700 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50"
@@ -197,15 +199,17 @@ const MobileFeaturesFinder = () => {
   };
 
   return (
-    <section className="relative overflow-hidden border-t border-slate-200 bg-gradient-to-b from-white via-sky-50/70 to-white text-slate-900">
+    <section className="relative overflow-hidden border-t border-slate-200 bg-white text-slate-900">
       <div className="relative mx-auto max-w-7xl px-4 pb-14 pt-12 sm:px-6 sm:pb-16 sm:pt-16 lg:px-8 lg:pb-20 lg:pt-20">
         <div className="mx-auto max-w-5xl text-center">
-          <h2 className={HOME_SECTION_TITLE_LIGHT}>
+          <h1
+            className={`${HOME_SECTION_TITLE_LIGHT} mx-auto max-w-[10.5ch] text-[2.45rem] tracking-[-0.04em] sm:max-w-none sm:text-5xl lg:text-6xl`}
+          >
             <span className="block">Find Phones by</span>
-            <span className="bg-gradient-to-r from-blue-600 via-cyan-500 to-sky-600 bg-clip-text text-transparent animate-pulse">
+            <span className="bg-gradient-to-r from-sky via-sky-500 to-sky-400 bg-clip-text text-transparent animate-pulse">
               Popular Features
             </span>
-          </h2>
+          </h1>
 
           <p className={HOME_SECTION_LEAD_LIGHT}>
             {popularFeatureOrderLoaded
@@ -225,7 +229,7 @@ const MobileFeaturesFinder = () => {
               key={feature.id}
               type="button"
               onClick={() => handleFeatureClick(feature.id)}
-              className="whitespace-nowrap rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-50 hover:text-slate-900"
+              className="whitespace-nowrap rounded-full  bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700  transition hover:border-slate-400 hover:bg-slate-50 hover:text-slate-900"
             >
               {feature.name}
             </button>
@@ -261,7 +265,7 @@ const MobileFeaturesFinder = () => {
           </div>
         </div>
 
-        <div className="mt-10 hidden flex-col items-center gap-5 rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50 to-cyan-50 px-5 py-5 text-slate-900 shadow-sm transition-all duration-300 hover:border-blue-200 sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="mt-10 hidden flex-col items-center gap-5 rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50 to-cyan-50 px-5 py-5 text-slate-900  transition-all duration-300 hover:border-blue-200 sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div className="text-center sm:text-left">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-700">
               Need a shortcut?

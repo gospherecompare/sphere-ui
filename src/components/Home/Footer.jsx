@@ -111,7 +111,7 @@ const FooterSectionCard = ({ section }) => {
 
 const Footer = () => {
   return (
-    <footer className="border-t border-sky-900/60 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 text-slate-300">
+    <footer className="border-t border-sky-900/60 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-300">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid gap-10 sm:grid-cols-2 xl:grid-cols-4">
           {footerSections.map((section) => (
