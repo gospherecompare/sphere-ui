@@ -145,7 +145,7 @@ const PopularBrands = () => {
 
   return (
     <section
-      className={`relative overflow-hidden border-t border-slate-200 bg-slate-50 transition-all duration-700 ${
+      className={`relative overflow-hidden border-t border-slate-200 bg-gradient-to-b from-sky-50 via-white to-slate-50 transition-all duration-700 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >

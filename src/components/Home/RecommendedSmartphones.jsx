@@ -662,7 +662,7 @@ const RecommendedSmartphones = ({
 
   return (
     <section
-      className={`relative mt-12 overflow-hidden rounded-3xl border border-slate-200 bg-white transition-all duration-700 ${
+      className={`relative mt-12 overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-b from-white via-sky-50/70 to-white transition-all duration-700 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
@@ -686,16 +686,18 @@ const RecommendedSmartphones = ({
             </div>
           ) : null}
 
-          <div className="no-scrollbar mt-8 grid grid-flow-col auto-cols-[11.5rem] gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scroll-smooth sm:gap-4 sm:auto-cols-[calc(50%-0.5rem)] md:auto-cols-[calc(33.333%-0.67rem)] lg:auto-cols-[calc(20%-0.8rem)]">
+          <div className="no-scrollbar mt-8 grid grid-flow-col auto-cols-[88%] gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scroll-smooth sm:gap-4 sm:auto-cols-[calc(50%-0.5rem)] md:auto-cols-[calc(33.333%-0.67rem)] lg:auto-cols-[calc(25%-0.75rem)]">
             {loading
               ? Array.from({ length: 6 }).map((_, i) => (
                   <div key={`skeleton-${i}`} className="w-full animate-pulse">
-                    <div className="relative flex h-auto flex-col gap-3 overflow-hidden rounded-3xl p-5 sm:p-6">
-                      <div className="h-36 w-full rounded-2xl bg-slate-100 sm:h-40"></div>
-                      <div className="h-4 w-4/5 rounded bg-slate-200"></div>
-                      <div className="h-4 w-3/4 rounded bg-slate-200"></div>
-                      <div className="border-t border-slate-200 pt-3">
-                        <div className="h-3 w-24 rounded bg-slate-200"></div>
+                    <div className="relative flex h-auto flex-row items-center gap-4 overflow-hidden rounded-3xl border border-slate-200 bg-white/80 p-4 sm:flex-col sm:items-stretch sm:p-6">
+                      <div className="h-24 w-24 shrink-0 rounded-2xl bg-slate-100 sm:h-40 sm:w-full"></div>
+                      <div className="flex-1 space-y-3">
+                        <div className="h-4 w-4/5 rounded bg-slate-200"></div>
+                        <div className="h-4 w-3/4 rounded bg-slate-200"></div>
+                        <div className="border-t border-slate-200 pt-3">
+                          <div className="h-3 w-24 rounded bg-slate-200"></div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -705,7 +707,7 @@ const RecommendedSmartphones = ({
                     key={`${device.id || "noid"}-${i}`}
                     type="button"
                     onClick={() => handleDeviceClick(device)}
-                    className={`group relative flex w-full snap-start flex-col gap-3 rounded-3xl p-5 text-left text-slate-900 transition-all duration-300 hover:-translate-y-0.5 sm:p-6 ${
+                    className={`group relative flex w-full snap-start flex-row items-center gap-4 rounded-3xl border border-slate-200 bg-white/80 p-4 text-left text-slate-900 transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-200 sm:flex-col sm:items-stretch sm:p-6 ${
                       isLoaded
                         ? "opacity-100 translate-y-0"
                         : "opacity-0 translate-y-2"
@@ -713,7 +715,7 @@ const RecommendedSmartphones = ({
                     style={{ transitionDelay: `${i * 60}ms` }}
                   >
                     {/* Image Container */}
-                    <div className="flex h-36 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 sm:h-40">
+                    <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 sm:h-40 sm:w-full">
                       {device.image ? (
                         <img
                           src={device.image}
@@ -730,20 +732,19 @@ const RecommendedSmartphones = ({
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1">
+                    <div className="flex min-w-0 flex-1 flex-col justify-between self-stretch">
                       <p className="line-clamp-2 text-sm font-bold leading-snug text-slate-900 sm:text-base">
                         {device.name}
                       </p>
-                    </div>
 
-                    {/* Divider & View Details */}
-                    <div className="flex items-center justify-between gap-2 border-t border-slate-200 pt-3">
-                      <span className="text-xs font-medium text-slate-600 sm:text-sm">
-                        View Details
-                      </span>
-                      <span className="text-slate-400 transition-transform duration-300 group-hover:translate-x-1">
-                        →
-                      </span>
+                      <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-200 pt-3">
+                        <span className="text-xs font-medium text-slate-600 sm:text-sm">
+                          View Details
+                        </span>
+                        <span className="text-slate-400 transition-transform duration-300 group-hover:translate-x-1">
+                          {"->"}
+                        </span>
+                      </div>
                     </div>
                   </button>
                 ))}

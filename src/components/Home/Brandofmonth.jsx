@@ -22,7 +22,7 @@ const FeatureCard = ({ feature, index, isActive, isLoaded, onClick }) => {
       type="button"
       onClick={onClick}
       aria-pressed={isActive}
-      className={`group relative h-[120px] w-[200px] shrink-0 snap-start overflow-hidden rounded-2xl border p-4 text-left shadow-sm transition-all duration-500 sm:w-[210px] lg:w-[225px] ${
+      className={`group relative h-auto min-h-[116px] w-[82vw] max-w-[18rem] shrink-0 snap-start overflow-hidden rounded-2xl border p-4 text-left shadow-sm transition-all duration-500 sm:w-[210px] lg:w-[225px] ${
         isActive
           ? "border-blue-200 bg-blue-50 text-slate-900 -translate-y-1 shadow-md"
           : "border-slate-200 bg-white text-slate-700 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50"
@@ -197,12 +197,12 @@ const MobileFeaturesFinder = () => {
   };
 
   return (
-    <section className="relative overflow-hidden border-t border-slate-200 bg-white text-slate-900">
+    <section className="relative overflow-hidden border-t border-slate-200 bg-gradient-to-b from-white via-sky-50/70 to-white text-slate-900">
       <div className="relative mx-auto max-w-7xl px-4 pb-14 pt-12 sm:px-6 sm:pb-16 sm:pt-16 lg:px-8 lg:pb-20 lg:pt-20">
         <div className="mx-auto max-w-5xl text-center">
           <h2 className={HOME_SECTION_TITLE_LIGHT}>
             <span className="block">Find Phones by</span>
-            <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-cyan-600 bg-clip-text text-transparent animate-pulse">
+            <span className="bg-gradient-to-r from-blue-600 via-cyan-500 to-sky-600 bg-clip-text text-transparent animate-pulse">
               Popular Features
             </span>
           </h2>
@@ -214,7 +214,7 @@ const MobileFeaturesFinder = () => {
           </p>
         </div>
 
-        <div className="mt-8 flex items-center justify-center gap-3 overflow-x-auto pb-1 text-slate-700 no-scrollbar">
+        <div className="mt-8 flex items-center justify-start gap-3 overflow-x-auto pb-1 text-slate-700 no-scrollbar sm:justify-center">
           <span className="inline-flex items-center gap-2 whitespace-nowrap text-sm font-semibold uppercase tracking-[0.22em] text-slate-700">
             <FaChartLine className="h-3.5 w-3.5 text-slate-500" />
             Trending
@@ -261,7 +261,7 @@ const MobileFeaturesFinder = () => {
           </div>
         </div>
 
-        <div className="mt-10 hidden flex-col items-center gap-5 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-5 text-slate-900 shadow-sm transition-all duration-300 hover:border-slate-300 sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="mt-10 hidden flex-col items-center gap-5 rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50 to-cyan-50 px-5 py-5 text-slate-900 shadow-sm transition-all duration-300 hover:border-blue-200 sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div className="text-center sm:text-left">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-700">
               Need a shortcut?
@@ -274,7 +274,7 @@ const MobileFeaturesFinder = () => {
           <button
             type="button"
             onClick={handleViewAll}
-            className="group mx-auto inline-flex w-fit rounded-full bg-gradient-to-r from-slate-700 to-slate-600 p-[1px] transition-all duration-500 hover:shadow-lg hover:from-slate-600 hover:to-slate-500 sm:mx-0"
+            className="group mx-auto inline-flex w-fit rounded-full bg-gradient-to-r from-blue-600 via-cyan-500 to-sky-600 p-[1px] transition-all duration-500 hover:shadow-lg hover:from-blue-500 hover:to-sky-500 sm:mx-0"
           >
             <span className="flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3 transition-all duration-300 group-hover:gap-3">
               <span className="font-semibold leading-none text-slate-700">

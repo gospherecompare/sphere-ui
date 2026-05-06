@@ -415,7 +415,7 @@ const BudgetCard = ({
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       aria-pressed={isActive}
-      className={`group relative w-full overflow-hidden bg-white rounded-lg transition-all duration-500 ${
+      className={`group relative w-full overflow-hidden rounded-2xl border border-red/50 bg-white/95 backdrop-blur-sm transition-all duration-500 ${
         isActive
           ? "transform -translate-y-1 shadow-[0_18px_36px_rgba(15,23,42,0.1)]"
           : "hover:bg-slate-50"
@@ -432,7 +432,7 @@ const BudgetCard = ({
         }`}
       />
 
-      <div className="relative z-10 flex items-center gap-3 px-2 py-3 sm:p-5">
+      <div className="relative z-10 flex items-center gap-3 px-3 py-3 sm:p-5">
         <span
           className={`flex h-10 w-10 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl ring-1 transition-all duration-300 ${
             isActive
@@ -469,7 +469,7 @@ const FeaturedFilterChip = ({ label, onClick }) => {
     <button
       type="button"
       onClick={onClick}
-      className="group relative shrink-0 snap-start whitespace-nowrap rounded-full border border-slate-700 bg-slate-900 px-5 py-2.5 text-xs font-semibold text-slate-100 transition-all duration-300 hover:border-slate-600 hover:bg-slate-800"
+      className="group relative shrink-0 snap-start whitespace-nowrap rounded-full border border-white/15 bg-white/10 px-5 py-2.5 text-xs font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:border-white/25 hover:bg-white/15"
     >
       {label}
     </button>
@@ -513,28 +513,28 @@ const FeaturedPhoneCard = ({ phone, index, isLoaded, onClick }) => {
       type="button"
       onClick={onClick}
       aria-label={`Open ${phone.name}`}
-      className={`group flex w-full shrink-0 snap-start flex-col gap-4 rounded-3xl p-5 text-left text-slate-100 transition-all duration-300 hover:-translate-y-0.5 sm:flex-row sm:items-center sm:gap-5 sm:p-6 ${
+      className={`group flex w-full shrink-0 snap-start flex-col gap-4 rounded-3xl p-5 text-left text-slate-100 backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-white/20 md:flex-row md:items-center md:gap-5 lg:flex-col lg:items-stretch sm:p-6 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
       style={{ transitionDelay: `${index * 60}ms` }}
     >
-      <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 sm:h-24 sm:w-24">
+      <div className="flex h-28 w-full shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-blue-950/20 md:h-24 md:w-24 lg:h-44 lg:w-full">
         {phone.image && !imageFailed ? (
           <img
             src={phone.image}
             alt={phone.name}
-            className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-110 sm:p-2"
+            className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-110 md:p-2 lg:p-4"
             loading="lazy"
             onError={() => setImageFailed(true)}
           />
         ) : (
-          <FaMobileAlt className="text-4xl text-slate-500 sm:text-2xl" />
+          <FaMobileAlt className="text-4xl text-slate-500 md:text-2xl lg:text-4xl" />
         )}
       </div>
 
       <div className="min-w-0 flex-1">
         {phone.brand ? (
-          <p className="truncate text-[11px] font-bold uppercase tracking-[0.28em] text-cyan-300">
+          <p className="truncate text-[11px] font-bold  tracking-[0.28em] text-cyan-300">
             {phone.brand}
           </p>
         ) : null}
@@ -542,23 +542,16 @@ const FeaturedPhoneCard = ({ phone, index, isLoaded, onClick }) => {
         <h6 className="mt-1 line-clamp-2 text-lg font-bold leading-snug text-white transition-colors duration-200 group-hover:text-cyan-200 sm:text-base">
           {phone.name}
         </h6>
-
-        <p className="mt-2 line-clamp-2 text-xs leading-snug text-slate-400 sm:text-xs">
-          {phone.note}
-        </p>
       </div>
 
-      <div className="flex w-full items-center justify-between gap-3 border-t border-slate-700 pt-3 sm:border-0 sm:border-l sm:border-l-slate-700 sm:pl-3 sm:pt-0">
+      <div className="flex w-full items-center justify-between gap-3 border-t border-white/12 pt-3 md:w-auto md:min-w-[8rem] md:border-l md:border-t-0 md:border-l-white/12 md:pl-3 md:pt-0 lg:w-full lg:min-w-0 lg:border-l-0 lg:border-t lg:pl-0 lg:pt-3">
         <div className="min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
-            {priceLabel ? "Price" : "Score"}
-          </p>
           <p className="mt-1 truncate text-base font-black text-white sm:text-sm">
-            {priceLabel || scoreLabel}
+            View details
           </p>
         </div>
 
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-800 text-slate-100 transition-all duration-300 group-hover:translate-x-1 group-hover:bg-slate-700 sm:h-9 sm:w-9">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-950/25 text-slate-100 transition-all duration-300 group-hover:translate-x-1 group-hover:bg-white/15 sm:h-9 sm:w-9">
           <FaArrowRight className="h-3.5 w-3.5" />
         </span>
       </div>
@@ -569,25 +562,25 @@ const FeaturedPhoneCard = ({ phone, index, isLoaded, onClick }) => {
 const FeaturedPhoneSkeleton = ({ index, isLoaded }) => {
   return (
     <div
-      className={`flex w-full shrink-0 snap-start flex-col gap-4 rounded-3xl p-5 text-slate-100 transition-all duration-300 sm:flex-row sm:items-center sm:gap-5 sm:p-6 ${
+      className={`flex w-full shrink-0 snap-start flex-col gap-4 rounded-3xl border border-white/12 bg-white/[0.08] p-5 text-slate-100 backdrop-blur-md transition-all duration-300 md:flex-row md:items-center md:gap-5 lg:flex-col lg:items-stretch sm:p-6 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       } animate-pulse`}
       style={{ transitionDelay: `${index * 60}ms` }}
     >
-      <span className="flex h-28 w-28 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-800 sm:h-24 sm:w-24">
-        <span className="h-12 w-12 rounded bg-slate-700 sm:h-10 sm:w-10" />
+      <span className="flex h-28 w-full flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-blue-950/20 md:h-24 md:w-24 lg:h-44 lg:w-full">
+        <span className="h-12 w-12 rounded bg-white/10 md:h-10 md:w-10 lg:h-12 lg:w-12" />
       </span>
 
       <span className="min-w-0 flex-1 space-y-3">
-        <span className="block h-2 w-16 rounded bg-slate-700" />
-        <span className="block h-3.5 w-4/5 rounded bg-slate-700" />
-        <span className="block h-2 w-full rounded bg-slate-800" />
-        <span className="block h-2 w-3/4 rounded bg-slate-800" />
-        <span className="mt-4 block h-px w-full bg-slate-800" />
-        <span className="block h-2.5 w-24 rounded bg-slate-700" />
+        <span className="block h-2 w-16 rounded bg-white/15" />
+        <span className="block h-3.5 w-4/5 rounded bg-white/15" />
+        <span className="block h-2 w-full rounded bg-white/10" />
+        <span className="block h-2 w-3/4 rounded bg-white/10" />
+        <span className="mt-4 block h-px w-full bg-white/10" />
+        <span className="block h-2.5 w-24 rounded bg-white/15" />
       </span>
 
-      <span className="h-10 w-10 rounded-full bg-slate-800 sm:h-9 sm:w-9" />
+      <span className="h-10 w-10 rounded-full bg-white/10 sm:h-9 sm:w-9" />
     </div>
   );
 };
@@ -746,22 +739,25 @@ const FeaturedProduct = () => {
 
   return (
     <section
-      className={`relative overflow-hidden border-t border-slate-800 bg-slate-950 transition-all duration-700 ${
+      className={`relative overflow-hidden border-t border-sky-900/60 bg-gradient-to-b from-[#030b19] via-[#0a2f6d] to-[#030b19] transition-all duration-700 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(191,219,254,0.18),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(103,232,249,0.14),_transparent_30%)]" />
       <div className="relative mx-auto max-w-7xl px-3 sm:px-4 pb-12 sm:pb-16 md:pb-20 lg:pb-24 pt-8 sm:pt-12 md:pt-16 lg:pt-24">
-        <div className="mx-auto max-w-5xl text-center">
-          <h2 className={HOME_SECTION_TITLE_DARK}>
-            <span className="block">Discover Featured Phones by</span>
-            <span className="bg-gradient-to-r from-cyan-200 via-white to-sky-100 bg-clip-text text-transparent animate-pulse">
-              Budget
+        <div className="mx-auto max-w-4xl text-center">
+          <h1
+            className={`${HOME_SECTION_TITLE_DARK} mx-auto max-w-[10.5ch] text-[2.45rem] tracking-[-0.04em] sm:max-w-none sm:text-5xl lg:text-6xl`}
+          >
+            <span className="block">Featured Phones</span>
+            <span className="bg-gradient-to-r from-white via-sky-100 to-cyan-200 bg-clip-text text-transparent animate-pulse">
+              By Budget
             </span>
-          </h2>
+          </h1>
 
           <p className={HOME_SECTION_LEAD_DARK}>
-            Use the budget lanes below to jump into curated phones, then tap the
-            trending feature filters to narrow things down even faster.
+            Curated phones across all price ranges, with trending features to
+            help you find exactly what you need.
           </p>
         </div>
 
@@ -771,7 +767,10 @@ const FeaturedProduct = () => {
           <div className="lg:hidden">
             <div className="flex gap-3 overflow-x-auto pb-4 no-scrollbar">
               {budgetRanges.map((item, index) => (
-                <div key={item.slug} className="flex-shrink-0 w-80">
+                <div
+                  key={item.slug}
+                  className="w-[84vw] max-w-[20rem] flex-shrink-0"
+                >
                   <BudgetCard
                     item={item}
                     index={index}
@@ -833,7 +832,7 @@ const FeaturedProduct = () => {
             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
           </div>
 
-          <div className="no-scrollbar mt-10 grid grid-flow-col auto-cols-[88%] gap-3 overflow-x-auto pb-2 snap-x snap-mandatory sm:grid-flow-row sm:auto-cols-auto sm:overflow-visible sm:pb-0 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+          <div className="no-scrollbar mt-10 grid grid-flow-col auto-cols-[88%] gap-4 overflow-x-auto pb-2 snap-x snap-mandatory sm:grid-flow-row sm:auto-cols-auto sm:overflow-visible sm:pb-0 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {loadingFeatured
               ? Array.from({ length: FEATURED_PHONES_LIMIT }).map(
                   (_, index) => (
@@ -856,7 +855,7 @@ const FeaturedProduct = () => {
           </div>
 
           {!loadingFeatured && displayPhones.length === 0 ? (
-            <div className="mt-6 rounded-2xl px-4 py-5 text-center text-sm text-slate-300">
+            <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-5 text-center text-sm text-slate-300 backdrop-blur-sm">
               {featuredError ||
                 "Live featured picks are unavailable right now."}
             </div>

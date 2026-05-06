@@ -166,17 +166,17 @@ const LatestSmartphoneCard = ({ device, index, isLoaded, onClick }) => {
       type="button"
       aria-label={`Open ${deviceName}`}
       onClick={onClick}
-      className={`group relative flex w-full snap-start flex-col gap-3 rounded-3xl p-5 text-left text-white transition-all duration-300 hover:-translate-y-0.5 sm:p-6 ${
+      className={`group relative flex w-full snap-start flex-row items-center gap-4 rounded-3xl  p-4 text-left text-white backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-white/20 sm:flex-col sm:items-stretch sm:p-6 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
       style={{ transitionDelay: `${index * 60}ms` }}
     >
-      <div className="flex h-40 items-center justify-center overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 sm:h-44">
+      <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-blue-950/20 sm:h-44 sm:w-full">
         {device.image ? (
           <img
             src={device.image}
             alt={deviceName}
-            className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-110 sm:p-4"
+            className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-110 sm:p-3"
             loading="lazy"
             onError={(e) => {
               e.currentTarget.style.display = "none";
@@ -187,19 +187,19 @@ const LatestSmartphoneCard = ({ device, index, isLoaded, onClick }) => {
         )}
       </div>
 
-      <div className="flex-1">
-        <p className="line-clamp-2 text-base font-bold leading-snug text-white sm:text-lg">
+      <div className="flex flex-col justify-between">
+        <p className="line-clamp-2 text-sm font-bold leading-snug text-white sm:text-base">
           {deviceName}
         </p>
-      </div>
 
-      <div className="flex items-center justify-between gap-2 border-t border-slate-700 pt-3">
-        <span className="text-xs font-medium text-slate-300 sm:text-sm">
-          View Details
-        </span>
-        <span className="transition-transform duration-300 group-hover:translate-x-1">
-          <FaArrowRight className="h-3.5 w-3.5 text-slate-300 sm:h-4 sm:w-4" />
-        </span>
+        <div className="mt-2 flex items-center justify-between gap-2 border-t border-white/12 pt-2 sm:mt-3 sm:pt-3">
+          <span className="text-xs font-medium text-slate-300">
+            View Details
+          </span>
+          <span className="transition-transform duration-300 group-hover:translate-x-1">
+            <FaArrowRight className="h-3 w-3 text-slate-300 sm:h-3.5 sm:w-3.5" />
+          </span>
+        </div>
       </div>
     </button>
   );
@@ -265,21 +265,25 @@ const LatestSmartphones = () => {
 
   return (
     <section
-      className={`relative overflow-hidden border-t border-slate-800 bg-slate-950 transition-all duration-700 ${
+      className={`relative overflow-hidden border-t border-sky-900/60 bg-gradient-to-b from-[#030b19] via-[#0a2f6d] to-[#030b19] transition-all duration-700 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(191,219,254,0.18),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(103,232,249,0.14),_transparent_30%)]" />
       <div className="relative mx-auto max-w-7xl px-4 pb-14 pt-10 sm:px-6 sm:pb-20 sm:pt-16 lg:px-8 lg:pb-24 lg:pt-24">
         {/* Header Section */}
-        <div className="mx-auto max-w-5xl text-center">
-          <h2 className={HOME_SECTION_TITLE_DARK}>
-            <span className="block">Latest</span>
-            <span className="bg-gradient-to-r from-cyan-200 via-white to-sky-100 bg-clip-text text-transparent animate-pulse">
+        <div className="mx-auto max-w-4xl text-center">
+          <h1
+            className={`${HOME_SECTION_TITLE_DARK} mx-auto max-w-[10.5ch] text-[2.45rem] tracking-[-0.04em] sm:max-w-none sm:text-5xl lg:text-6xl`}
+          >
+            <span className="block">Latest </span>
+            <span className="bg-gradient-to-r from-white via-sky-100 to-cyan-200 bg-clip-text text-transparent animate-pulse">
               Smartphones
             </span>
-          </h2>
+          </h1>
+
           <p className={HOME_SECTION_LEAD_DARK}>
-            Discover the newest released phones.
+            Discover the newest released phones. Stay updated with the latest
           </p>
         </div>
 
@@ -300,17 +304,19 @@ const LatestSmartphones = () => {
           </div>
         ) : null}
 
-        {/* Products Row - Horizontal scroll with compact cards */}
-        <div className="no-scrollbar mt-8 grid grid-flow-col auto-cols-[11.5rem] gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scroll-smooth sm:gap-4 sm:auto-cols-[calc(50%-0.5rem)] md:auto-cols-[calc(33.333%-0.67rem)] lg:auto-cols-[calc(20%-0.8rem)]">
+        {/* Products Row - Single row horizontal scroll */}
+        <div className="no-scrollbar mt-8 grid grid-flow-col auto-cols-[calc(100%-1rem)] gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scroll-smooth sm:auto-cols-[calc(50%-0.5rem)] md:auto-cols-[calc(33.333%-0.67rem)] lg:auto-cols-[calc(25%-0.75rem)] xl:auto-cols-[calc(20%-0.6rem)]">
           {loadingLatest
             ? Array.from({ length: 6 }).map((_, i) => (
                 <div key={`skeleton-${i}`} className="w-full animate-pulse">
-                  <div className="relative flex h-auto flex-col gap-3 overflow-hidden rounded-3xl p-5 sm:p-6">
-                    <div className="h-40 w-full rounded-2xl bg-slate-800 sm:h-44" />
-                    <div className="h-4 w-4/5 rounded bg-slate-800" />
-                    <div className="h-4 w-3/4 rounded bg-slate-800" />
-                    <div className="border-t border-slate-700 pt-3">
-                      <div className="h-3 w-24 rounded bg-slate-800" />
+                  <div className="relative flex h-auto flex-row items-center gap-4 overflow-hidden rounded-3xl border border-white/12 bg-white/[0.08] p-4 backdrop-blur-md sm:flex-col sm:items-stretch sm:p-6">
+                    <div className="h-24 w-24 shrink-0 rounded-2xl bg-blue-950/20 sm:h-44 sm:w-full" />
+                    <div className="flex-1 space-y-3">
+                      <div className="h-4 w-4/5 rounded bg-white/15" />
+                      <div className="h-4 w-3/4 rounded bg-white/10" />
+                      <div className="border-t border-white/10 pt-3">
+                        <div className="h-3 w-24 rounded bg-white/15" />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -331,7 +337,7 @@ const LatestSmartphones = () => {
           <div className="mt-10 flex justify-center">
             <Link
               to="/smartphones/latest"
-              className="group rounded-full border border-slate-700 bg-slate-900 px-6 py-3 font-semibold text-white transition-all duration-300 hover:border-slate-600 hover:bg-slate-800 hover:shadow-lg"
+              className="group rounded-full border border-white/15 bg-white/10 px-6 py-3 font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:border-white/25 hover:bg-white/15 hover:shadow-lg"
             >
               View all latest smartphones {"->"}
             </Link>

@@ -608,7 +608,7 @@ const BestPriceSection = () => {
 
   return (
     <section
-      className={`relative overflow-hidden border-t border-slate-200 bg-white transition-all duration-700 ${
+      className={`relative overflow-hidden border-t border-slate-200 bg-gradient-to-b from-white via-sky-50/60 to-white transition-all duration-700 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
@@ -622,7 +622,7 @@ const BestPriceSection = () => {
           </div>
           <h2 className={HOME_SECTION_TITLE_LIGHT}>
             <span className="block">Trending</span>
-            <span className="bg-gradient-to-r from-blue-600 via-slate-700 to-blue-600 bg-clip-text text-transparent animate-pulse">
+            <span className="bg-gradient-to-r from-blue-600 via-cyan-500 to-sky-600 bg-clip-text text-transparent animate-pulse">
               by Hooks
             </span>
           </h2>
@@ -701,17 +701,19 @@ const BestPriceSection = () => {
               Array.from({ length: 8 }).map((_, i) => (
                 <div
                   key={`skeleton-${i}`}
-                  className="w-[74vw] max-w-[17rem] shrink-0 animate-pulse sm:w-[18rem] lg:w-[19rem]"
+                  className="w-[86vw] max-w-[21rem] shrink-0 animate-pulse sm:w-[18rem] lg:w-[19rem]"
                 >
-                  <div className="relative overflow-hidden rounded-2xl p-3 sm:p-4">
-                    <div className="flex h-36 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 sm:h-40">
+                  <div className="relative flex overflow-hidden rounded-2xl border border-slate-200 bg-white/80 p-4 sm:block sm:p-4">
+                    <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 sm:h-40 sm:w-full">
                       <div className="h-24 w-20 rounded-xl bg-slate-200" />
                     </div>
-                    <div className="mt-4 h-4 w-4/5 rounded bg-slate-200" />
-                    <div className="mt-4 border-t border-slate-200 pt-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="h-4 w-24 rounded bg-slate-200" />
-                        <div className="h-4 w-4 rounded-full bg-slate-200" />
+                    <div className="flex-1 pl-4 sm:pl-0">
+                      <div className="mt-1 h-4 w-4/5 rounded bg-slate-200 sm:mt-4" />
+                      <div className="mt-4 border-t border-slate-200 pt-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="h-4 w-24 rounded bg-slate-200" />
+                          <div className="h-4 w-4 rounded-full bg-slate-200" />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -724,15 +726,15 @@ const BestPriceSection = () => {
                   type="button"
                   aria-label={`Open ${device.name}`}
                   onClick={() => handleDeviceClick(device)}
-                  className={`group relative flex h-full w-[74vw] max-w-[17rem] shrink-0 snap-start flex-col overflow-hidden rounded-2xl text-left transition-all duration-300 hover:-translate-y-0.5 sm:w-[18rem] lg:w-[19rem] ${
+                  className={`group relative flex h-full w-[86vw] max-w-[21rem] shrink-0 snap-start flex-row items-center overflow-hidden rounded-2xl border border-slate-200 bg-white/80 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-200 sm:w-[18rem] sm:flex-col sm:items-stretch lg:w-[19rem] ${
                     isLoaded
                       ? "opacity-100 translate-y-0"
                       : "opacity-0 translate-y-2"
                   }`}
                   style={{ transitionDelay: `${i * 60}ms` }}
                 >
-                  <div className="flex flex-1 flex-col p-4 sm:p-5">
-                    <div className="flex h-36 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50 sm:h-40">
+                  <div className="w-28 shrink-0 p-4 sm:w-full sm:p-5">
+                    <div className="flex h-24 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50 sm:h-40">
                       {device.image ? (
                         <img
                           src={device.image}
@@ -749,8 +751,8 @@ const BestPriceSection = () => {
                     </div>
                   </div>
 
-                  <div className="flex flex-1 flex-col p-4 sm:p-5">
-                    <h6 className="mt-2 line-clamp-2 text-base font-bold leading-snug text-slate-900 transition-colors duration-200 group-hover:text-slate-600 sm:text-lg">
+                  <div className="flex flex-1 flex-col self-stretch p-4 pl-0 sm:p-5">
+                    <h6 className="mt-1 line-clamp-2 text-base font-bold leading-snug text-slate-900 transition-colors duration-200 group-hover:text-slate-600 sm:mt-2 sm:text-lg">
                       {device.name}
                     </h6>
 

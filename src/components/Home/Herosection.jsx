@@ -467,30 +467,32 @@ const SearchDropdown = ({
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         onClick={onToggle}
-        className={`group flex min-h-[92px] w-full flex-col justify-center rounded-[22px] border border-slate-200 bg-white px-5 py-4 text-left transition-all duration-300 hover:border-sky-300 hover:shadow-[0_10px_30px_rgba(14,165,233,0.08)] sm:min-h-[96px] sm:px-6 ${buttonClassName}`}
+        className={`group flex min-h-[82px] w-full flex-col justify-center rounded-[20px] border border-slate-200 bg-white px-4 py-4 text-left transition-all duration-300 hover:border-sky-300 hover:shadow-[0_10px_30px_rgba(14,165,233,0.08)] sm:min-h-[96px] sm:rounded-[22px] sm:px-6 ${buttonClassName}`}
       >
-        <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 sm:text-[11px]">
+        <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-slate-500 sm:text-[11px]">
           {label}
         </span>
         <span className="mt-1.5 flex items-center justify-between gap-3 sm:mt-2 sm:gap-4">
           <span className="flex min-w-0 items-center gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sky-500 transition group-hover:text-sky-600 sm:h-10 sm:w-10">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-sky-500 transition group-hover:text-sky-600 sm:h-10 sm:w-10">
               <Icon className="h-4 w-4" />
             </span>
-            <span className="truncate text-sm font-semibold text-slate-900 sm:text-base">
+            <span className="truncate text-[15px] font-semibold leading-tight text-slate-900 sm:text-base">
               {value}
             </span>
           </span>
           <FaChevronDown
             className={`h-4 w-4 shrink-0 text-slate-400 transition ${
-              isOpen ? "rotate-180 text-slate-600" : "group-hover:text-slate-600"
+              isOpen
+                ? "rotate-180 text-slate-600"
+                : "group-hover:text-slate-600"
             }`}
           />
         </span>
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-full left-0 z-[80] mb-2 w-full overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-2xl lg:bottom-full lg:top-auto lg:mb-2 lg:mt-0">
+        <div className="absolute left-0 top-full z-[80] mt-2 w-full overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-2xl lg:bottom-full lg:top-auto lg:mb-2 lg:mt-0">
           <div className="p-2">
             {selectedOption && (
               <button
@@ -762,35 +764,43 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="relative overflow-visible border-t border-slate-800 bg-slate-950">
-      <div className="relative mx-auto max-w-7xl px-4 pb-12 pt-10 sm:px-6 sm:pb-20 sm:pt-16 lg:px-8 lg:pb-24 lg:pt-24">
-        <div className="mx-auto max-w-5xl text-center">
-          <h1 className={HOME_SECTION_TITLE_DARK}>
+    <section className="relative overflow-visible border-t border-sky-900/40 bg-gradient-to-b from-[#030b19] via-[#0a2f6d] to-[#030b19]">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(186,230,253,0.28),_transparent_30%),radial-gradient(circle_at_75%_18%,_rgba(56,189,248,0.22),_transparent_24%),radial-gradient(circle_at_bottom_right,_rgba(34,211,238,0.18),_transparent_28%)]" />
+      <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-sky-950/20 to-transparent" />
+      <div className="relative mx-auto max-w-7xl px-4 pb-12 pt-12 sm:px-6 sm:pb-20 sm:pt-16 lg:px-8 lg:pb-24 lg:pt-24">
+        <div className="mx-auto max-w-4xl text-center">
+          <h1
+            className={`${HOME_SECTION_TITLE_DARK} mx-auto max-w-[10.5ch] text-[2.45rem] tracking-[-0.04em] sm:max-w-none sm:text-5xl lg:text-6xl`}
+          >
             <span className="block">Find Your Perfect</span>
-            <span className="bg-gradient-to-r from-purple-500 via-purple-200 to-purple-500 bg-clip-text text-transparent animate-pulse">
+            <span className="bg-gradient-to-r from-white via-sky-100 to-cyan-200 bg-clip-text text-transparent animate-pulse">
               Device
             </span>
           </h1>
 
-          <p className={HOME_SECTION_LEAD_DARK}>
+          <p className={`${HOME_SECTION_LEAD_DARK} max-w-[22rem] sm:max-w-2xl`}>
             Smart comparisons, real-time prices, and expert insights to help you
             make the right choice - instantly.
           </p>
 
           <div
             ref={heroStatsRef}
-            className="mt-8 grid grid-cols-3 gap-2 sm:grid-cols-1 sm:gap-3 lg:flex lg:justify-center lg:gap-6"
+            className="mx-auto mt-8 grid max-w-lg grid-cols-1 gap-3 min-[480px]:grid-cols-2 sm:max-w-none sm:grid-cols-3 lg:gap-6"
           >
             {stats.map((stat, idx) => (
               <div
                 key={idx}
-                className="group flex items-center gap-2 rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-700 sm:gap-3 lg:rounded-2xl"
+                className={`group flex min-h-[92px] items-center gap-3 rounded-2xl border border-white/12 bg-white/10 px-4 py-3.5 text-left shadow-[0_18px_40px_rgba(8,47,73,0.2)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-white/20 min-[480px]:min-h-[84px] sm:min-h-[96px] sm:gap-3 sm:px-4 lg:rounded-2xl ${
+                  idx === stats.length - 1
+                    ? "min-[480px]:col-span-2 min-[480px]:mx-auto min-[480px]:w-full min-[480px]:max-w-[16rem] sm:col-span-1 sm:max-w-none"
+                    : ""
+                }`}
               >
-                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-cyan-200 transition-colors group-hover:text-cyan-100 sm:h-12 sm:w-12">
-                  <span className="text-base font-bold text-cyan-200">✓</span>
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white/10 text-cyan-100 transition-colors group-hover:bg-white/15 sm:h-12 sm:w-12">
+                  <FaStar className="h-4 w-4 text-cyan-100" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-base font-black leading-none tracking-tight text-white sm:text-2xl">
+                  <p className="text-lg font-black leading-none tracking-tight text-white sm:text-2xl">
                     <CountUpNumber
                       end={stat.value}
                       suffix={stat.suffix}
@@ -798,7 +808,7 @@ const HeroSection = () => {
                       play={heroStatsInView}
                     />
                   </p>
-                  <p className="text-[10px] leading-none text-white/70 sm:text-xs">
+                  <p className="mt-1 text-[11px] leading-[1.1] text-white/70 sm:text-xs">
                     {stat.label}
                   </p>
                 </div>
@@ -807,18 +817,21 @@ const HeroSection = () => {
           </div>
         </div>
 
-        <div ref={heroSearchRef} className="mx-auto mt-10 max-w-5xl sm:mt-14">
+        <div
+          ref={heroSearchRef}
+          className="mx-auto mt-10 max-w-xl sm:mt-14 sm:max-w-3xl lg:max-w-5xl"
+        >
           <form
             onSubmit={handleSearch}
-            className="overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-[0_30px_80px_rgba(15,23,42,0.18)] transition-all duration-300 hover:border-slate-300"
+            className="overflow-hidden rounded-[28px]   shadow-[0_30px_80px_rgba(15,23,42,0.18)] backdrop-blur-sm transition-all duration-300 hover:border-slate-300 sm:rounded-[30px]"
           >
-            <div className="border-b border-slate-200 px-6 py-4">
-              <p className="text-[1.05rem] font-semibold text-slate-900">
+            <div className="border-b border-slate-200 px-5 py-4 sm:px-6">
+              <p className="text-[1.05rem] font-semibold text-white">
                 Quick Search
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 p-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_220px]">
+            <div className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-2 sm:gap-4 sm:p-4 lg:grid-cols-4 lg:gap-4">
               <SearchDropdown
                 label="Device Type"
                 icon={selectedDevice.icon}
@@ -866,15 +879,15 @@ const HeroSection = () => {
                   )
                 }
                 onSelect={selectAndClose(setSelectedFeature)}
-                className="sm:col-span-2 lg:col-span-1"
+                className="col-span-2 sm:col-span-1"
                 buttonClassName="h-full"
               />
 
               <button
                 type="submit"
-                className="group relative flex w-full min-h-[92px] items-center justify-center gap-3 rounded-[22px] bg-gradient-to-br from-cyan-500 via-sky-500 to-blue-600 px-6 py-4 text-white shadow-[0_18px_45px_rgba(2,132,199,0.28)] transition-all duration-300 hover:from-cyan-400 hover:to-blue-500 active:scale-[0.99] sm:col-span-2 sm:min-h-[96px] lg:col-span-1"
+                className="group relative col-span-2 sm:col-span-1 flex w-full min-h-[82px] sm:min-h-[96px] items-center justify-center gap-3 rounded-[20px] sm:rounded-[22px] bg-gradient-to-br from-cyan-500 via-sky-500 to-blue-600 px-5 py-4 text-white shadow-[0_18px_45px_rgba(2,132,199,0.28)] transition-all duration-300 hover:from-cyan-400 hover:to-blue-500 active:scale-[0.99]"
               >
-                <span className="flex h-12 w-12 items-center justify-center rounded-full transition sm:h-14 sm:w-14">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full transition sm:h-14 sm:w-14">
                   <FaSearch className="h-4 w-4 sm:h-5 sm:w-5" />
                 </span>
                 <div className="text-left">
@@ -906,7 +919,7 @@ const HeroSection = () => {
                 onClick={() =>
                   navigate(`/smartphones?q=${encodeURIComponent(item)}`)
                 }
-                className="group relative rounded-full whitespace-nowrap border border-slate-700 bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-600 hover:bg-slate-800 hover:text-cyan-100 sm:px-5 sm:py-2.5 sm:text-sm"
+                className="group relative rounded-full whitespace-nowrap border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/15 hover:text-cyan-100 sm:px-5 sm:py-2.5 sm:text-sm"
               >
                 <span className="flex items-center gap-2">
                   {idx === 0 && <FaFire className="h-3 w-3 text-yellow-300" />}
@@ -934,7 +947,7 @@ const HeroSection = () => {
 
           <div className="mt-8">
             {featuredDevices.length > 0 ? (
-              <div className="no-scrollbar grid grid-flow-col auto-cols-[minmax(14.5rem,72vw)] gap-4 overflow-x-auto pb-2 snap-x snap-mandatory sm:grid-flow-row sm:auto-cols-auto sm:overflow-visible sm:pb-0 sm:grid-cols-2 lg:grid-cols-5">
+              <div className="no-scrollbar flex items-center gap-3 overflow-x-auto pb-2 sm:gap-4 md:gap-5">
                 {featuredDevices.map((phone) => (
                   <button
                     key={phone.id || phone.name}
@@ -945,48 +958,48 @@ const HeroSection = () => {
                           `/smartphones?q=${encodeURIComponent(phone.name)}`,
                       )
                     }
-                    className="group relative flex snap-start flex-col gap-3 rounded-3xl p-4 text-left text-white transition-all duration-300 hover:-translate-y-1 sm:p-5"
+                    className="group relative flex min-w-[160px] sm:min-w-[180px] md:min-w-[200px] flex-col gap-2.5 rounded-2xl sm:rounded-3xl  p-4 sm:p-5 text-left text-white backdrop-blur-lg transition-all duration-300 "
                   >
-                    <div className="flex h-50 w-full items-center justify-center overflow-hidden rounded-2xl border border-slate-700 bg-slate-800">
+                    <div className="flex h-32 w-full sm:h-40 lg:h-44 items-center justify-center overflow-hidden rounded-xl sm:rounded-2xl border border-sky-300/20 bg-blue-950/40">
                       {phone.image ? (
                         <img
                           src={phone.image}
                           alt={phone.name}
-                          className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-110 sm:p-4"
+                          className="h-full w-full object-contain p-2 sm:p-3 transition-transform duration-300 group-hover:scale-110"
                           loading="lazy"
                           onError={(e) => {
                             e.currentTarget.style.display = "none";
                           }}
                         />
                       ) : (
-                        <span className="text-lg font-bold tracking-wide text-slate-500">
+                        <span className="text-base sm:text-lg font-bold tracking-wide text-slate-500">
                           {phone.short}
                         </span>
                       )}
                     </div>
 
                     <div className="flex-1">
-                      <p className="text-sm font-bold leading-snug text-white sm:text-base">
+                      <p className="text-xs sm:text-sm font-bold leading-snug text-white">
                         {phone.name}
                       </p>
-                      <p className="mt-1 text-[11px] font-medium text-slate-400 sm:text-xs">
+                      <p className="mt-0.5 text-[10px] sm:text-xs font-medium text-sky-200/70">
                         {phone.brandName}
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between gap-2 border-t border-slate-700 pt-3">
-                      <span className="text-xs font-medium text-slate-300 sm:text-sm">
+                    <div className="flex items-center justify-between gap-2 border-t border-sky-300/20 pt-2.5 sm:pt-3">
+                      <span className="text-[10px] sm:text-xs font-semibold text-sky-200">
                         View Details
                       </span>
                       <span className="transition-transform duration-300 group-hover:translate-x-1">
-                        <FaArrowRight className="h-3 w-3 text-slate-300 sm:h-3.5 sm:w-3.5" />
+                        <FaArrowRight className="h-2.5 w-2.5 sm:h-3 sm:w-3.5 text-sky-200" />
                       </span>
                     </div>
                   </button>
                 ))}
               </div>
             ) : (
-              <div className="rounded-2xl p-6 text-center text-slate-300 transition-all duration-300">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-6 text-center text-slate-300 backdrop-blur-sm transition-all duration-300">
                 {featuredPhonesLoading
                   ? "Loading live devices..."
                   : "No live devices available right now."}
