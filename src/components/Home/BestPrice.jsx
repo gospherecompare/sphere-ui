@@ -608,24 +608,21 @@ const BestPriceSection = () => {
 
   return (
     <section
-      className={`relative overflow-hidden border-t border-slate-200 bg-gradient-to-b from-white via-sky-50/60 to-white transition-all duration-700 ${
+      className={`relative overflow-hidden border-t border-slate-200 bg-white to-white transition-all duration-700 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
       <div className="relative mx-auto max-w-7xl px-4 pb-16 pt-12 sm:px-6 sm:pb-20 sm:pt-16 lg:px-8 lg:pb-24 lg:pt-24">
         {/* Header Section */}
         <div className="mx-auto mb-12 max-w-5xl text-center">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-4 py-2">
-            <span className="text-xs font-semibold uppercase tracking-widest text-slate-600">
-              Premium Devices
+          <h1
+            className={`${HOME_SECTION_TITLE_LIGHT} mx-auto max-w-[10.5ch] text-[2.45rem] tracking-[-0.04em] sm:max-w-none sm:text-5xl lg:text-6xl`}
+          >
+            <span className="block">Trending </span>
+            <span className="bg-gradient-to-r from-white via-sky-100 to-cyan-200 bg-clip-text text-transparent animate-pulse">
+              Smartphones
             </span>
-          </div>
-          <h2 className={HOME_SECTION_TITLE_LIGHT}>
-            <span className="block">Trending</span>
-            <span className="bg-gradient-to-r from-blue-600 via-cyan-500 to-sky-600 bg-clip-text text-transparent animate-pulse">
-              by Hooks
-            </span>
-          </h2>
+          </h1>
           <p className={HOME_SECTION_LEAD_LIGHT}>
             Compare the highest-scoring devices across smartphones, laptops,
             TVs, and networking gear.
@@ -633,57 +630,6 @@ const BestPriceSection = () => {
         </div>
 
         {/* Category Tabs - Single Row */}
-        <div className="mx-auto mt-10 flex w-full max-w-full justify-start overflow-x-auto rounded-2xl border border-slate-200 bg-slate-100 p-2 no-scrollbar scroll-smooth sm:w-fit sm:p-3">
-          {categories.map((category, index) => {
-            const isActive = activeCategory === category.id;
-            const Icon = category.icon;
-
-            return (
-              <button
-                type="button"
-                key={category.id}
-                onClick={() => setActiveCategory(category.id)}
-                aria-pressed={isActive}
-                className={`group relative min-w-[100px] shrink-0 px-2 py-1.5 text-left text-[11px] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 focus-visible:ring-offset-2 focus-visible:ring-offset-white sm:min-w-[154px] sm:px-5 sm:py-3 sm:text-[0.95rem] lg:min-w-[174px] border rounded-2xl ${
-                  isActive
-                    ? "border-blue-200 bg-white text-slate-900 shadow-sm"
-                    : "border-transparent bg-transparent text-slate-700 hover:border-slate-200 hover:bg-white hover:text-slate-900"
-                } ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
-                style={{ transitionDelay: `${index * 55}ms` }}
-              >
-                <span className="flex items-center gap-2">
-                  <div
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ring-1 transition-all duration-300 sm:h-10 sm:w-10 ${
-                      isActive
-                        ? "bg-blue-100 text-blue-700 ring-blue-200"
-                        : "bg-white text-slate-600 ring-slate-200 group-hover:bg-blue-50 group-hover:text-blue-600"
-                    }`}
-                  >
-                    <Icon className="h-3.5 w-3.5 sm:h-5 sm:w-5" />
-                  </div>
-
-                  <span
-                    className={`block whitespace-nowrap text-[11px] font-semibold leading-tight transition-colors duration-300 sm:text-[0.95rem] ${
-                      isActive ? "text-blue-700" : "text-slate-700"
-                    }`}
-                  >
-                    {category.name}
-                  </span>
-                </span>
-
-                <div className="mt-3 h-0.5 overflow-hidden rounded-full bg-slate-200/80">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${
-                      isActive
-                        ? "w-full bg-gradient-to-r from-blue-500 to-blue-600"
-                        : "w-1/3 bg-slate-300 group-hover:w-1/2"
-                    }`}
-                  />
-                </div>
-              </button>
-            );
-          })}
-        </div>
 
         {/* Trending by Hooks - Single Row */}
         <div className="mt-10 flex items-center gap-4">
@@ -726,20 +672,20 @@ const BestPriceSection = () => {
                   type="button"
                   aria-label={`Open ${device.name}`}
                   onClick={() => handleDeviceClick(device)}
-                  className={`group relative flex h-full w-[86vw] max-w-[21rem] shrink-0 snap-start flex-row items-center overflow-hidden rounded-2xl border border-slate-200 bg-white/80 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-200 sm:w-[18rem] sm:flex-col sm:items-stretch lg:w-[19rem] ${
+                  className={`group relative flex min-w-[160px] sm:min-w-[180px] md:min-w-[200px] flex-col  rounded-2xl sm:rounded-3xl  text-left text-white backdrop-blur-lg transition-all duration-300 ${
                     isLoaded
                       ? "opacity-100 translate-y-0"
                       : "opacity-0 translate-y-2"
                   }`}
                   style={{ transitionDelay: `${i * 60}ms` }}
                 >
-                  <div className="w-28 shrink-0 p-4 sm:w-full sm:p-5">
-                    <div className="flex h-24 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50 sm:h-40">
+                  <div className="shrink-0 ">
+                    <div className="flex h-32 w-full sm:h-40 lg:h-44 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50 ">
                       {device.image ? (
                         <img
                           src={device.image}
                           alt={device.name}
-                          className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-110 sm:p-4"
+                          className="h-full w-full object-contain p-2 sm:p-3 transition-transform duration-300 group-hover:scale-110 "
                           loading="lazy"
                           onError={(e) => {
                             e.currentTarget.style.display = "none";
@@ -751,8 +697,8 @@ const BestPriceSection = () => {
                     </div>
                   </div>
 
-                  <div className="flex flex-1 flex-col self-stretch p-4 pl-0 sm:p-5">
-                    <h6 className="mt-1 line-clamp-2 text-base font-bold leading-snug text-slate-900 transition-colors duration-200 group-hover:text-slate-600 sm:mt-2 sm:text-lg">
+                  <div className="flex flex-1 flex-col self-stretch pl-0 sm:p-5">
+                    <h6 className="line-clamp-2 text-base font-bold leading-snug text-slate-900 transition-colors duration-200 group-hover:text-slate-600 ">
                       {device.name}
                     </h6>
 

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { FaArrowRight } from "react-icons/fa";
 import { HooksSignature } from "./NewsBrandBadge";
 import { NEWS_BRAND_STYLES } from "./newsBrandStyles";
+import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
 import {
   createNewsStoryPath,
   usePublicNewsFeed,
@@ -57,35 +58,6 @@ const LatestNewsArticlesSection = () => {
   return (
     <section className="border-t border-slate-200 bg-gradient-to-b from-sky-50 via-white to-cyan-50/40">
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl">
-            <div className="flex items-center gap-2">
-              <span className="inline-block h-1 w-8 rounded-full bg-blue-600"></span>
-              <p className={NEWS_BRAND_STYLES.eyebrow}>Latest stories</p>
-            </div>
-            <h2
-              className={`${HOME_SECTION_TITLE_LIGHT} mt-4 tracking-tight text-slate-950`}
-            >
-              <span className="block">Latest News &</span>
-              <span className="bg-gradient-to-r from-blue-600 via-cyan-500 to-sky-600 bg-clip-text text-transparent animate-pulse">
-                Articles
-              </span>
-            </h2>
-            <p className={HOME_SECTION_LEAD_LIGHT}>
-              Stay updated with the newest gadget launches, tech reviews,
-              industry news, and buying guides.
-            </p>
-          </div>
-
-          <Link
-            to="/news"
-            className="inline-flex items-center gap-2 whitespace-nowrap rounded-md border border-blue-500 bg-gradient-to-r from-blue-600 via-cyan-500 to-sky-600 px-5 py-3 text-sm font-semibold text-white transition-all duration-200 hover:shadow-[0_14px_30px_rgba(14,165,233,0.24)]"
-          >
-            Explore all news
-            <FaArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-
         {loading && !leadStory ? (
           <div className="mt-10 grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
             <div className="h-96 animate-pulse rounded-2xl border border-slate-200 bg-slate-100" />
@@ -117,72 +89,18 @@ const LatestNewsArticlesSection = () => {
             </p>
           </div>
         ) : null}
+        <LatestNewsRouteSection />
 
         {leadStory ? (
           <div className="mt-10 grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
             {/* Featured Article */}
-            <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-              <div className="grid gap-0 lg:grid-cols-2">
-                <div className="relative overflow-hidden bg-slate-100">
-                  <NewsStoryMedia story={leadStory} />
-                </div>
-
-                <div className="flex flex-col justify-between p-6 sm:p-7 lg:p-8">
-                  {/* Header */}
-                  <div>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-blue-700`}
-                      >
-                        <span className="h-1.5 w-1.5 rounded-full bg-blue-600"></span>
-                        {leadStory.label}
-                      </span>
-                      <span className="text-xs font-medium text-slate-500">
-                        {leadStory.publishedAt}
-                      </span>
-                    </div>
-
-                    <h3 className="mt-5 text-2xl font-black leading-tight tracking-tight text-slate-950 sm:text-3xl">
-                      {leadStory.title}
-                    </h3>
-                  </div>
-
-                  {/* Highlights */}
-                  {leadStory.highlights?.length > 0 && (
-                    <div className="my-6 flex flex-wrap gap-2 border-y border-slate-200 py-4">
-                      {leadStory.highlights.slice(0, 3).map((highlight) => (
-                        <span
-                          key={highlight}
-                          className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700"
-                        >
-                          <span className="h-1 w-1 rounded-full bg-slate-400"></span>
-                          {highlight}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Footer */}
-                  <div className="flex flex-col items-start justify-between gap-4 pt-4 sm:flex-row sm:items-center">
-                    <HooksSignature variant="light" className="shrink-0" />
-                    <Link
-                      to={createNewsStoryPath(leadStory.slug)}
-                      className="inline-flex items-center gap-2 font-semibold text-blue-600 transition-all duration-200 hover:text-blue-700 hover:gap-3"
-                    >
-                      Read Story
-                      <FaArrowRight className="h-3.5 w-3.5" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </article>
 
             {/* Side Articles */}
             <div className="flex flex-col gap-4">
               {listStories.map((story) => (
                 <article
                   key={story.slug}
-                  className="flex flex-col gap-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-4 sm:flex-row"
+                  className="flex flex-col gap-4 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm p-4 sm:flex-row"
                 >
                   <div className="h-44 w-full flex-shrink-0 overflow-hidden rounded-lg bg-slate-100 sm:h-24 sm:w-24">
                     <NewsStoryMedia story={story} />
@@ -191,7 +109,6 @@ const LatestNewsArticlesSection = () => {
                   <div className="flex min-w-0 flex-1 flex-col justify-between">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="inline-block h-0.5 w-4 rounded-full bg-blue-600"></span>
                         <span className="text-xs font-bold uppercase tracking-wider text-blue-700">
                           {story.label}
                         </span>
