@@ -942,37 +942,88 @@ const MobileDetailCard = () => {
 
   const getDeviceLaunchStatus = (device) => {
     if (!device) return null;
-    const override = normalizeLaunchStatus(
+    const explicitStatus = normalizeLaunchStatus(
       device.launch_status_override ||
         device.launchStatusOverride ||
         device.launch_status ||
         device.launchStatus,
     );
-    if (override) return override;
+    const saleStart = getSaleStartDateFromDevice(device);
+    const dateValue = normalizeDateLikeValue(
+      device.launch_date || device.launchDate,
+    );
+    const launchDate =
+      dateValue && !Number.isNaN(new Date(dateValue).getTime())
+        ? new Date(dateValue)
+        : null;
+
+    if (explicitStatus === "rumored" || explicitStatus === "announced") {
+      return explicitStatus;
+    }
+
+    if (explicitStatus === "released") {
+      return "released";
+    }
+
+    if (explicitStatus === "available") {
+      if (saleStart instanceof Date && !Number.isNaN(saleStart.getTime())) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (saleStart > today) return "upcoming";
+      }
+      return "available";
+    }
+
+    if (explicitStatus === "upcoming") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (saleStart instanceof Date && !Number.isNaN(saleStart.getTime())) {
+        return saleStart > today ? "upcoming" : "released";
+      }
+      if (launchDate instanceof Date && !Number.isNaN(launchDate.getTime())) {
+        return launchDate > today ? "upcoming" : "released";
+      }
+      return "released";
+    }
 
     const statusHint = normalizeLaunchStatus(
       device.status || device.availability || device.badge,
     );
-    if (statusHint) return statusHint;
+    if (statusHint) {
+      if (statusHint === "released") return "released";
+      if (statusHint === "available") {
+        if (saleStart instanceof Date && !Number.isNaN(saleStart.getTime())) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          if (saleStart > today) return "upcoming";
+        }
+        return "available";
+      }
+      if (statusHint === "upcoming") {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (saleStart instanceof Date && !Number.isNaN(saleStart.getTime())) {
+          return saleStart > today ? "upcoming" : "released";
+        }
+        if (launchDate instanceof Date && !Number.isNaN(launchDate.getTime())) {
+          return launchDate > today ? "upcoming" : "released";
+        }
+        return "released";
+      }
+      return statusHint;
+    }
 
-    const saleStart = getSaleStartDateFromDevice(device);
     if (saleStart instanceof Date && !Number.isNaN(saleStart.getTime())) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       return saleStart > today ? "upcoming" : "available";
     }
 
-    const dateValue = normalizeDateLikeValue(
-      device.launch_date || device.launchDate,
-    );
-    if (dateValue) {
-      const dt = new Date(dateValue);
-      if (!Number.isNaN(dt.getTime())) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (dt > today) return "upcoming";
+    if (launchDate instanceof Date && !Number.isNaN(launchDate.getTime())) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (launchDate > today) return "upcoming";
         return "released";
-      }
     }
 
     return "released";
@@ -1495,9 +1546,7 @@ const MobileDetailCard = () => {
     return getCompetitorLimitForStage(launchStatus);
   }, [launchStatus, serverPolicy]);
   const allowSpecScore =
-    typeof serverPolicy.allowSpecScore === "boolean"
-      ? serverPolicy.allowSpecScore
-      : isSpecScoreAllowed(launchStatus);
+    isSpecScoreAllowed(launchStatus) || serverPolicy.allowSpecScore === true;
   const SpecScoreBadge = allowSpecScore ? BaseSpecScoreBadge : HiddenScoreBadge;
   const headerSpecScoreValue = useMemo(() => {
     if (!allowSpecScore || !mobileData) return null;

@@ -525,7 +525,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
   const resolveLaunchStage = (device) => {
     if (!device) return null;
-    const override = normalizeLaunchStatus(
+    const explicitStatus = normalizeLaunchStatus(
       device.launchStatus ||
         device.launch_status ||
         device.launchStatusOverride ||
@@ -533,18 +533,48 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         device.launchStatusText ||
         device.launch_status_text,
     );
-    if (override) return override;
+    const saleStart = resolveSaleStartDate(device);
+    const launch = parseDateValue(device.launchDate || device.launch_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (explicitStatus === "rumored" || explicitStatus === "announced") {
+      return explicitStatus;
+    }
+
+    if (explicitStatus === "released") return "released";
+
+    if (explicitStatus === "available") {
+      if (saleStart) return saleStart > today ? "upcoming" : "available";
+      return "available";
+    }
+
+    if (explicitStatus === "upcoming") {
+      if (saleStart) return saleStart > today ? "upcoming" : "released";
+      if (launch) return launch > today ? "upcoming" : "released";
+      return "released";
+    }
 
     const statusHint = normalizeLaunchStatus(
       device.status || device.availability || device.badge,
     );
-    if (statusHint) return statusHint;
+    if (statusHint) {
+      if (statusHint === "released") return "released";
+      if (statusHint === "available") {
+        if (saleStart) return saleStart > today ? "upcoming" : "available";
+        return "available";
+      }
+      if (statusHint === "upcoming") {
+        if (saleStart) return saleStart > today ? "upcoming" : "released";
+        if (launch) return launch > today ? "upcoming" : "released";
+        return "released";
+      }
+      return statusHint;
+    }
 
-    const saleStart = resolveSaleStartDate(device);
-    if (saleStart) return saleStart > new Date() ? "upcoming" : "available";
+    if (saleStart) return saleStart > today ? "upcoming" : "available";
 
-    const launch = parseDateValue(device.launchDate || device.launch_date);
-    if (launch) return launch > new Date() ? "upcoming" : "released";
+    if (launch) return launch > today ? "upcoming" : "released";
 
     return "released";
   };
