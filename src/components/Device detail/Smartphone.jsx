@@ -70,6 +70,7 @@ import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
 
 const token = Cookies.get("arenak");
 const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
+const SMARTPHONE_SEO_SUFFIX_ALIAS = "-price-in-indi";
 const RECENT_STORAGE_KEY = "hooks_recent_smartphones_v1";
 const MAX_RECENT_ITEMS = 12;
 const SITE_ORIGIN = "https://tryhook.shop";
@@ -566,6 +567,11 @@ const MobileDetailCard = () => {
     if (slug.endsWith(SMARTPHONE_SEO_SUFFIX)) {
       return slug.slice(0, -SMARTPHONE_SEO_SUFFIX.length).replace(/-+$/g, "");
     }
+    if (slug.endsWith(SMARTPHONE_SEO_SUFFIX_ALIAS)) {
+      return slug
+        .slice(0, -SMARTPHONE_SEO_SUFFIX_ALIAS.length)
+        .replace(/-+$/g, "");
+    }
     return slug;
   }, []);
   const toSeoDetailSlug = useCallback(
@@ -599,10 +605,20 @@ const MobileDetailCard = () => {
     () => (routeSlug ? toSeoDetailSlug(routeSlug) : ""),
     [routeSlug, toSeoDetailSlug],
   );
+  const hasRecoverableSeoAlias = useMemo(
+    () =>
+      Boolean(
+        routeSlug &&
+          canonicalRouteSlug &&
+          normalizedRouteSlug.endsWith(SMARTPHONE_SEO_SUFFIX_ALIAS),
+      ),
+    [canonicalRouteSlug, normalizedRouteSlug, routeSlug],
+  );
   const shouldRenderAliasNotFound = Boolean(
     routeSlug &&
     canonicalRouteSlug &&
-    normalizedRouteSlug !== canonicalRouteSlug,
+    normalizedRouteSlug !== canonicalRouteSlug &&
+      !hasRecoverableSeoAlias,
   );
 
   // Convert slug to searchable model name
