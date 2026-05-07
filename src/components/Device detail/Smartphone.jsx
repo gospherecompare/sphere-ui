@@ -11,6 +11,7 @@ import ProductDiscoverySections from "../ui/ProductDiscoverySections";
 // import RecommendedSmartphones from "../Home/RecommendedSmartphones";
 import { useDevice } from "../../hooks/useDevice";
 import Cookies from "js-cookie";
+import latestNewsRouteSection from "../ui/LatestNewsRouteSection";
 
 import useTitle from "../../hooks/useTitle";
 import usePageEngagementTracker from "../../hooks/usePageEngagementTracker";
@@ -67,6 +68,7 @@ import {
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
 import { resolveSmartphoneBadgeScore } from "../../utils/smartphoneBadgeScore";
 import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
+import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
 
 const token = Cookies.get("arenak");
 const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
@@ -609,8 +611,8 @@ const MobileDetailCard = () => {
     () =>
       Boolean(
         routeSlug &&
-          canonicalRouteSlug &&
-          normalizedRouteSlug.endsWith(SMARTPHONE_SEO_SUFFIX_ALIAS),
+        canonicalRouteSlug &&
+        normalizedRouteSlug.endsWith(SMARTPHONE_SEO_SUFFIX_ALIAS),
       ),
     [canonicalRouteSlug, normalizedRouteSlug, routeSlug],
   );
@@ -618,7 +620,7 @@ const MobileDetailCard = () => {
     routeSlug &&
     canonicalRouteSlug &&
     normalizedRouteSlug !== canonicalRouteSlug &&
-      !hasRecoverableSeoAlias,
+    !hasRecoverableSeoAlias,
   );
 
   // Convert slug to searchable model name
@@ -1023,7 +1025,7 @@ const MobileDetailCard = () => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       if (launchDate > today) return "upcoming";
-        return "released";
+      return "released";
     }
 
     return "released";
@@ -3897,9 +3899,7 @@ Price: ${price}
                   >
                     <span
                       className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform duration-200 ${
-                        showAllSpecs
-                          ? "translate-x-7"
-                          : "translate-x-1"
+                        showAllSpecs ? "translate-x-7" : "translate-x-1"
                       }`}
                     />
                   </button>
@@ -5441,13 +5441,9 @@ Price: ${price}
                           className="flex h-full flex-col rounded-[22px] border border-[#d9e4f2] bg-white px-4 py-5 transition-all duration-200 sm:px-5 sm:py-6"
                         >
                           <div className="flex items-center gap-2.5">
-                            <div
-                              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#dce6f3] bg-[#f8fbff]"
-                            >
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#dce6f3] bg-[#f8fbff]">
                               {Icon ? (
-                                <Icon
-                                  className={`text-sm ${iconMeta.color}`}
-                                />
+                                <Icon className={`text-sm ${iconMeta.color}`} />
                               ) : null}
                             </div>
                             <div className="min-w-0">
@@ -5530,14 +5526,14 @@ Price: ${price}
       {shouldShowLinkedNews ? (
         <div className="w-full">
           <div className="mx-auto max-w-7xl px-0 py-0 sm:px-6 sm:py-8 lg:px-8">
-            <section className="overflow-hidden rounded-[30px] border border-white/70 bg-gradient-to-br from-[#eef1ff] via-[#f4f7ff] to-[#eef5ff] p-4 sm:p-6 lg:p-8">
+            <section className="overflow-hidden mx-auto w-full max-w-7xl  rounded-2xl border border-white shadow-[0_2px_4px_rgba(0,0,0,0.1)] p-4 sm:p-6 lg:p-8">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold tracking-tight text-[#082a72] sm:text-[2.1rem]">
-                    {linkedNewsHeading}{" "}
-                    <span className="bg-gradient-to-r from-[#4a66ff] via-[#8b63ff] to-[#ff7b39] bg-clip-text text-transparent">
-                      News
-                    </span>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.34em] text-purple-700 sm:text-[11px]">
+                    Related News
+                  </p>
+                  <h2 className="mt-1 text-base font-semibold tracking-tight text-slate-900 sm:mt-2 sm:text-lg md:text-xl">
+                    {linkedNewsHeading} <span className="">News</span>
                   </h2>
                   <p className="mt-2 max-w-2xl text-sm text-[#5f6d8f]">
                     This block appears only when the newsroom has a
@@ -5584,6 +5580,7 @@ Price: ${price}
           </div>
         </div>
       ) : null}
+      <LatestNewsRouteSection />
 
       {activeTab === "specifications" ? (
         <div className="w-full">

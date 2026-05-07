@@ -1,10 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  FaChevronLeft,
-  FaChevronRight,
-  FaMobileAlt,
-} from "react-icons/fa";
+import { FaChevronLeft, FaChevronRight, FaMobileAlt } from "react-icons/fa";
 import { generateSlug } from "../../utils/slugGenerator";
 
 const API_BASE = (
@@ -169,9 +165,7 @@ const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
         const json = await response.json();
         if (cancelled) return;
 
-        const rows = Array.isArray(json?.mostCompared)
-          ? json.mostCompared
-          : [];
+        const rows = Array.isArray(json?.mostCompared) ? json.mostCompared : [];
         const mapped = rows
           .filter(
             (row) =>
@@ -233,7 +227,7 @@ const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
 
   return (
     <section
-      className={`mx-auto w-full max-w-7xl overflow-hidden rounded-lg border border-blue-100 bg-transparent px-4 py-5 sm:px-5 sm:py-6 ${className}`}
+      className={`mx-auto w-full max-w-7xl overflow-hidden rounded-2xl bg-purple-100 border border-white shadow-[0_2px_4px_rgba(0,0,0,0.1)]  px-4 py-5 sm:px-5 sm:py-6 ${className}`}
     >
       <div className="mb-5 flex items-start justify-between gap-4 border-b border-blue-100 pb-4">
         <div className="min-w-0">
@@ -288,7 +282,7 @@ const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
               <Link
                 key={`${makeComparisonKey(item)}-${index}`}
                 to={buildComparePath(item)}
-                className="group w-[292px] shrink-0 rounded-lg border border-blue-100 bg-white p-3 text-slate-900 transition-colors duration-200 hover:border-blue-200 hover:bg-blue-50 sm:w-[315px]"
+                className="group w-[292px] shrink-0 rounded-lg  bg-white p-3 text-slate-900 transition-colors duration-200 hover:border-blue-200 hover:bg-blue-50 sm:w-[315px]"
               >
                 <div className="grid grid-cols-[minmax(0,1fr)_38px_minmax(0,1fr)] items-center gap-2">
                   <ComparisonPhoneVisual

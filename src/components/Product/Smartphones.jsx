@@ -28,6 +28,7 @@ import {
 import { useDevice } from "../../hooks/useDevice";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
+import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
 import {
   fetchSmartphones,
   fetchTrendingSmartphones,
@@ -41,7 +42,6 @@ import SEO from "../SEO";
 import ProductDiscoverySections from "../ui/ProductDiscoverySections";
 import PopularMobileComparisonsStrip from "../ui/PopularMobileComparisonsStrip";
 import MobilePhoneHighlights from "../ui/MobilePhoneHighlights";
-import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
 import { generateSlug } from "../../utils/slugGenerator";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
@@ -3942,7 +3942,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
               {/* Desktop Filter Sidebar */}
               {!shouldHideInteractiveFilters ? (
                 <div className="hidden lg:block lg:w-72 flex-shrink-0">
-                  <div className="sticky top-6 rounded-lg border border-slate-200 bg-transparent p-5 lg:p-6">
+                  <div className="sticky top-6 rounded-2xl border border-white shadow-[0_2px_4px_rgba(0,0,0,0.1)] p-5 lg:p-6">
                     {/* Filters Header */}
                     <div className="mb-6 flex items-center justify-between border-b border-slate-200 px-2 pb-4 sm:mb-8 sm:px-3 md:px-4">
                       <div>

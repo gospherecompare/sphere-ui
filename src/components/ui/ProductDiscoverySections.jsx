@@ -866,10 +866,12 @@ const ProductDiscoverySections = ({
   if (!loading && !hasContent && !error) return null;
 
   return (
-    <section className={`w-full overflow-hidden  ${className}`}>
+    <section
+      className={`w-full overflow-hidden  ${className} mx-auto w-full max-w-7xl  rounded-2xl border border-white shadow-[0_2px_4px_rgba(0,0,0,0.1)] `}
+    >
       <div className="mx-auto max-w-7xl ">
         {!isLatestPhonesLayout ? (
-          <div className="flex items-start justify-between gap-3 border-b border-slate-200/80 px-1 py-4 sm:px-5 sm:py-5">
+          <div className="flex items-start justify-between gap-3 border-b border-blue-200/60 px-1 py-4 sm:px-5 sm:py-5">
             <div className="flex items-start gap-3">
               <div className="min-w-0">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-blue-600">

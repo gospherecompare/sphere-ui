@@ -52,7 +52,7 @@ const LatestNewsRouteSection = ({
 
   return (
     <section
-      className={`mx-auto w-full max-w-7xl rounded-lg bg-purple-100 px-3 py-6 sm:px-5 sm:py-8 md:px-6 md:py-10 ${className}`}
+      className={`mx-auto w-full max-w-7xl rounded-2xl border border-white shadow-[0_2px_4px_rgba(0,0,0,0.1)] bg-purple-100 px-3 py-6 sm:px-5 sm:py-8 md:px-6 md:py-10 ${className}`}
     >
       <div className="mb-4 flex flex-col items-start justify-between gap-3 sm:mb-6 sm:flex-row sm:items-center sm:gap-4">
         <div className="min-w-0">
@@ -99,7 +99,7 @@ const LatestNewsRouteSection = ({
                 <NewsImage story={story} />
               </div>
 
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60 transition-opacity group-hover:opacity-70" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-200 transition-opacity group-hover:opacity-70" />
 
               <div className="absolute bottom-0 left-0 right-0 p-3 text-white sm:p-4">
                 <h3 className="line-clamp-2 text-xs font-semibold leading-4 sm:text-sm sm:leading-5">

@@ -21,7 +21,11 @@ const normalizeLaunchStatus = (value) => {
   if (!text) return "";
   if (/rumou?r/.test(text)) return "rumored";
   if (/announce/.test(text)) return "announced";
-  if (/(upcoming|coming soon|expected|launching soon|pre[-\s]?order|pre[-\s]?book)/i.test(text)) {
+  if (
+    /(upcoming|coming soon|expected|launching soon|pre[-\s]?order|pre[-\s]?book)/i.test(
+      text,
+    )
+  ) {
     return "upcoming";
   }
   if (/(available|released|launched|in stock|on sale|out now)/i.test(text)) {
@@ -212,7 +216,7 @@ const MobilePhoneHighlights = ({ devices = [], className = "" }) => {
 
   return (
     <section
-      className={`mx-auto w-full max-w-7xl rounded-lg border border-blue-100 bg-transparent px-4 py-5 sm:px-5 sm:py-6 ${className}`}
+      className={`mx-auto w-full max-w-7xl rounded-2xl border border-white shadow-[0_2px_4px_rgba(0,0,0,0.1)] bg-transparent px-4 py-5 sm:px-5 sm:py-6 ${className}`}
     >
       <div className="border-b border-blue-100 pb-4">
         <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-blue-600">
