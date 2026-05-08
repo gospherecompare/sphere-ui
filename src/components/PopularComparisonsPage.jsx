@@ -18,6 +18,7 @@ import SEO from "./SEO";
 import ProductDiscoverySections from "./ui/ProductDiscoverySections";
 import { normalizeScore100Value } from "../utils/groupScoreStats";
 import resolveSmartphoneBadgeScore from "../utils/smartphoneBadgeScore";
+import { buildCanonicalComparePath } from "../utils/compareRoutes";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -361,7 +362,13 @@ const PopularComparisonsPage = () => {
         "@type": "ListItem",
         position: index + 1,
         name: `${item.left_name} vs ${item.right_name}`,
-        url: `https://tryhook.shop/compare?devices=${item.left_id}:0,${item.right_id}:0`,
+        url: `https://tryhook.shop${buildCanonicalComparePath({
+          leftName: item.left_name,
+          rightName: item.right_name,
+          leftId: item.left_id,
+          rightId: item.right_id,
+          type: item.product_type,
+        })}`,
       })),
     },
   };
@@ -681,7 +688,13 @@ const PopularComparisonsPage = () => {
                 return (
                   <Link
                     key={`${item.left_id}-${item.right_id}-${index}`}
-                    to={`/compare?devices=${item.left_id}:0,${item.right_id}:0`}
+                    to={buildCanonicalComparePath({
+                      leftName: item.left_name,
+                      rightName: item.right_name,
+                      leftId: item.left_id,
+                      rightId: item.right_id,
+                      type: item.product_type,
+                    })}
                     className={`group transition-all duration-700 ${
                       isLoaded ? "opacity-100" : "opacity-0"
                     }`}

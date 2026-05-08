@@ -55,6 +55,7 @@ import {
   LAPTOP_FEATURE_CATALOG,
   matchesLaptopFeature,
 } from "../../utils/laptopPopularFeatures";
+import { buildCanonicalComparePathFromDevices } from "../../utils/compareRoutes";
 
 // Enhanced Image Carousel - Reusable from smartphone
 // Note: removed mock fallback — rely on `useDevice()` data from the store
@@ -1471,13 +1472,13 @@ const Laptops = () => {
     if (e) e.stopPropagation();
     if (compareItems.length === 0) return;
 
-    const queryParams = new URLSearchParams();
-    compareItems.forEach((device) => {
-      const idVal = device.productId ?? device.id ?? device.model;
-      queryParams.append("add", String(idVal));
+    const comparePath = buildCanonicalComparePathFromDevices({
+      devices: compareItems,
+      getName: (device) => device?.name || device?.model || "",
+      getId: (device) => device?.productId ?? device?.id ?? device?.model ?? null,
     });
 
-    navigate(`/compare?${queryParams.toString()}`, {
+    navigate(comparePath, {
       state: { initialProducts: compareItems },
     });
   };

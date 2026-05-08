@@ -32,6 +32,7 @@ import { laptopMeta } from "../../constants/meta";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
 import { createProductSchema } from "../../utils/schemaGenerators";
 import { Helmet } from "react-helmet-async";
+import { buildCanonicalComparePath } from "../../utils/compareRoutes";
 import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import usePageEngagementTracker from "../../hooks/usePageEngagementTracker";
@@ -788,9 +789,19 @@ const LaptopDetailCard = () => {
   const handlePopularCompare = (other) => {
     const otherId = other?.id ?? other?.product_id ?? other?.productId ?? null;
     if (!currentProductId || !otherId) return;
-    navigate(`/compare?devices=${currentProductId}:0,${otherId}:0`, {
-      state: { initialProduct: laptopData },
-    });
+    navigate(
+      buildCanonicalComparePath({
+        leftName:
+          laptopData?.name || laptopData?.product_name || laptopData?.model,
+        rightName: other?.name || other?.product_name || other?.model,
+        leftId: currentProductId,
+        rightId: otherId,
+        type: "laptop",
+      }),
+      {
+        state: { initialProduct: laptopData },
+      },
+    );
   };
 
   const allStorePrices =

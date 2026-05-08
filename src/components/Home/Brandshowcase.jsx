@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import React, { useEffect, useState } from "react";
 import { FaExchangeAlt, FaArrowRight, FaMobileAlt } from "react-icons/fa";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
+import { buildCanonicalComparePath } from "../../utils/compareRoutes";
 
 const PopularComparisons = ({
   data: initialData = [],
@@ -78,7 +79,13 @@ const PopularComparisons = ({
         {data.slice(0, 24).map((item, index) => (
           <Link
             key={`${item.left_id}-${item.right_id}-${index}`}
-            to={`/compare?devices=${item.left_id}:0,${item.right_id}:0`}
+            to={buildCanonicalComparePath({
+              leftName: item.left_name,
+              rightName: item.right_name,
+              leftId: item.left_id,
+              rightId: item.right_id,
+              type: "smartphone",
+            })}
             className={`group w-[320px] sm:w-[360px] md:w-[420px] shrink-0 transition-all duration-500 ${
               isLoaded ? "opacity-100 " : "opacity-0"
             }`}

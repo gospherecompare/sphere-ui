@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createProductPath } from "../../utils/slugGenerator";
+import { buildSmartphoneFilterPath } from "../../utils/smartphoneListingRoutes";
 import {
   FaBolt,
   FaChevronDown,
@@ -411,7 +412,7 @@ const buildHeroSearchUrl = ({ device, price, feature }) => {
 
   if (device.id === "smartphones") {
     const path = price?.smartphoneSlug
-      ? `/smartphones/filter/${price.smartphoneSlug}`
+      ? buildSmartphoneFilterPath(price.smartphoneSlug)
       : device.path;
 
     if (

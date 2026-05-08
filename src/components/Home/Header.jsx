@@ -50,6 +50,7 @@ import { createProductPath } from "../../utils/slugGenerator";
 import {
   buildSmartphoneBrandPath,
   buildSmartphoneFeaturePath,
+  buildSmartphoneFilterPath,
 } from "../../utils/smartphoneListingRoutes";
 
 // Icons - matching Vijay Sales style
@@ -1536,7 +1537,7 @@ const Header = () => {
                     ? "/smartphones/filter/trending"
                     : `/${category.id}?filter=trending`;
                 } else if (name.includes("compare")) {
-                  href = `/compare?type=${category.id}`;
+                  href = "/compare";
                 }
 
                 return (
@@ -2602,35 +2603,35 @@ const Header = () => {
     const priceItems = [
       {
         label: "Best Phones Under 10,000",
-        href: "/smartphones?priceMax=10000",
+        href: buildSmartphoneFilterPath("under-10000"),
       },
       {
         label: "Best Phones Under 15,000",
-        href: "/smartphones?priceMax=15000",
+        href: buildSmartphoneFilterPath("under-15000"),
       },
       {
         label: "Best Phones Under 20,000",
-        href: "/smartphones?priceMax=20000",
+        href: buildSmartphoneFilterPath("under-20000"),
       },
       {
         label: "Best Phones Under 25,000",
-        href: "/smartphones?priceMax=25000",
+        href: buildSmartphoneFilterPath("under-25000"),
       },
       {
         label: "Best Phones Under 30,000",
-        href: "/smartphones?priceMax=30000",
+        href: buildSmartphoneFilterPath("under-30000"),
       },
       {
         label: "Best Phones Under 40,000",
-        href: "/smartphones?priceMax=40000",
+        href: buildSmartphoneFilterPath("under-40000"),
       },
       {
         label: "Best Phones Under 50,000",
-        href: "/smartphones?priceMax=50000",
+        href: buildSmartphoneFilterPath("under-50000"),
       },
       {
         label: "Best Phones Under 60,000",
-        href: "/smartphones?priceMax=60000",
+        href: buildSmartphoneFilterPath("under-60000"),
       },
     ];
 

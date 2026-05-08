@@ -58,6 +58,7 @@ import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import SEO from "../SEO";
 import { smartphoneMeta } from "../../constants/meta";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
+import { buildCanonicalComparePath } from "../../utils/compareRoutes";
 import { createWebPageSchema } from "../../utils/schemaGenerators";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import useStoreLogos from "../../hooks/useStoreLogos";
@@ -583,6 +584,30 @@ const MobileDetailCard = () => {
     },
     [normalizeSeoSlug],
   );
+  const getPreferredDeviceRouteSeed = useCallback((device) => {
+    for (const value of [
+      device?.name,
+      device?.product_name,
+      device?.productName,
+      device?.basic_info?.product_name,
+      device?.model,
+      device?.model_number,
+      device?.basic_info?.model,
+      device?.basic_info?.model_number,
+      device?.brand,
+    ]) {
+      const slug = generateSlug(value || "");
+      if (slug) return slug;
+    }
+    return "";
+  }, []);
+  const getCanonicalSeoSlugForDevice = useCallback(
+    (device) => {
+      const seed = getPreferredDeviceRouteSeed(device);
+      return seed ? toSeoDetailSlug(seed) : "";
+    },
+    [getPreferredDeviceRouteSeed, toSeoDetailSlug],
+  );
   const query = new URLSearchParams(location.search);
   const model = query.get("model");
   const variantQuery = query.get("variantId") || query.get("variant_id");
@@ -706,13 +731,7 @@ const MobileDetailCard = () => {
     const mobileDataLocal = selectedDevice?.smartphones?.[0] || selectedDevice;
     if (!mobileDataLocal || !routeSlug) return;
 
-    const canonicalBaseSlug = generateSlug(
-      mobileDataLocal.name ||
-        mobileDataLocal.model ||
-        mobileDataLocal.brand ||
-        "",
-    );
-    const canonicalSeoSlug = toSeoDetailSlug(canonicalBaseSlug);
+    const canonicalSeoSlug = getCanonicalSeoSlugForDevice(mobileDataLocal);
     if (!canonicalSeoSlug) return;
 
     const desiredPath = `/smartphones/${canonicalSeoSlug}`;
@@ -743,9 +762,9 @@ const MobileDetailCard = () => {
       navigate(desiredUrl, { replace: true });
     }
   }, [
+    getCanonicalSeoSlugForDevice,
     selectedDevice,
     routeSlug,
-    toSeoDetailSlug,
     navigate,
     location.search,
     shouldRenderAliasNotFound,
@@ -1429,6 +1448,19 @@ const MobileDetailCard = () => {
         selectedResolvedForRoute || localResolved || selectedResolved,
       ),
     [localResolved, selectedResolved, selectedResolvedForRoute],
+  );
+  const resolvedCanonicalRouteSlug = useMemo(
+    () =>
+      getCanonicalSeoSlugForDevice(
+        mobileData || selectedResolvedForRoute || localResolved || selectedResolved,
+      ),
+    [
+      getCanonicalSeoSlugForDevice,
+      localResolved,
+      mobileData,
+      selectedResolved,
+      selectedResolvedForRoute,
+    ],
   );
   const carouselImages = Array.isArray(mobileData?.images)
     ? mobileData.images.filter(Boolean)
@@ -2118,9 +2150,19 @@ const MobileDetailCard = () => {
       const otherId =
         other?.id ?? other?.product_id ?? other?.productId ?? null;
       if (!currentProductId || !otherId) return;
-      navigate(`/compare?devices=${currentProductId}:0,${otherId}:0`, {
+      navigate(
+        buildCanonicalComparePath({
+          leftName:
+            mobileData?.name || mobileData?.product_name || mobileData?.model,
+          rightName: other?.name || other?.product_name || other?.model,
+          leftId: currentProductId,
+          rightId: otherId,
+          type: "smartphone",
+        }),
+        {
         state: { initialProduct: mobileData },
-      });
+        },
+      );
     },
     [navigate, currentProductId, mobileData, compareDisabled],
   );
@@ -2610,20 +2652,23 @@ Price: ${price}
       .replace(/^-+|-+$/g, "");
 
   const getCanonicalUrl = useMemo(() => {
-    if (canonicalRouteSlug) {
-      return `${SITE_ORIGIN}/smartphones/${canonicalRouteSlug}`;
+    const effectiveCanonicalSlug =
+      resolvedCanonicalRouteSlug || canonicalRouteSlug;
+    if (effectiveCanonicalSlug) {
+      return `${SITE_ORIGIN}/smartphones/${effectiveCanonicalSlug}`;
     }
     const path = location?.pathname || "/";
     const normalizedPath =
       path && path.length > 1 ? path.replace(/\/+$/g, "") : path;
     return `${SITE_ORIGIN}${normalizedPath || "/"}`;
-  }, [canonicalRouteSlug, location.pathname]);
+  }, [canonicalRouteSlug, location.pathname, resolvedCanonicalRouteSlug]);
   const normalizedPathname = useMemo(() => {
     const path = location?.pathname || "/";
     return path && path.length > 1 ? path.replace(/\/+$/g, "") : path || "/";
   }, [location.pathname]);
-  const canonicalPathname = canonicalRouteSlug
-    ? `/smartphones/${canonicalRouteSlug}`
+  const canonicalPathname =
+    resolvedCanonicalRouteSlug || canonicalRouteSlug
+      ? `/smartphones/${resolvedCanonicalRouteSlug || canonicalRouteSlug}`
     : normalizedPathname;
   const hasDuplicateQueryParams = [
     "id",

@@ -42,6 +42,7 @@ import {
   createItemListSchema,
 } from "../../utils/schemaGenerators";
 import { buildListSeoKeywords } from "../../utils/seoKeywordBuilder";
+import { buildCanonicalComparePathFromDevices } from "../../utils/compareRoutes";
 import useDevice from "../../hooks/useDevice";
 import Breadcrumbs from "../Breadcrumbs";
 
@@ -921,13 +922,13 @@ const Networking = () => {
     if (e) e.stopPropagation();
     if (compareItems.length === 0) return;
 
-    const queryParams = new URLSearchParams();
-    compareItems.forEach((device) => {
-      const idVal = device.productId ?? device.id ?? device.model;
-      queryParams.append("add", String(idVal));
+    const comparePath = buildCanonicalComparePathFromDevices({
+      devices: compareItems,
+      getName: (device) => device?.name || device?.model || "",
+      getId: (device) => device?.productId ?? device?.id ?? device?.model ?? null,
     });
 
-    navigate(`/compare?${queryParams.toString()}`, {
+    navigate(comparePath, {
       state: { initialProducts: compareItems },
     });
   };

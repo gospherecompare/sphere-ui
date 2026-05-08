@@ -15,6 +15,7 @@ import {
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { createProductPath } from "../../utils/slugGenerator";
+import { buildCanonicalComparePath } from "../../utils/compareRoutes";
 import { resolveSmartphoneBadgeScore } from "../../utils/smartphoneBadgeScore";
 
 const API_BASE = (
@@ -793,7 +794,15 @@ const CompetitorCards = ({
       return;
     }
     if (Number.isInteger(pid) && pid > 0) {
-      navigate(`/compare?devices=${pid}:0,${competitorId}:0`);
+      navigate(
+        buildCanonicalComparePath({
+          leftName: productName,
+          rightName: competitor?.name || competitor?.model,
+          leftId: pid,
+          rightId: competitorId,
+          type: entityType === "smartphones" ? "smartphone" : entityType,
+        }),
+      );
     }
   };
 

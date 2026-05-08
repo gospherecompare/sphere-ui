@@ -1,7 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { FaChevronLeft, FaChevronRight, FaMobileAlt } from "react-icons/fa";
-import { generateSlug } from "../../utils/slugGenerator";
+import {
+  buildCanonicalComparePath,
+  toCanonicalCompareSlug,
+} from "../../utils/compareRoutes";
 
 const API_BASE = (
   import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in"
@@ -23,9 +26,6 @@ const normalizeAssetUrl = (value) => {
 
 const isSmartphoneType = (value) =>
   /(smartphone|smart phone|mobile|phone)/i.test(normalizeText(value));
-
-const toCompareSlug = (value) =>
-  generateSlug(normalizeText(value)).replace(/-price-in-india$/i, "");
 
 const getDeviceProductId = (device) => {
   const raw =
@@ -50,31 +50,23 @@ const getDeviceImage = (device) =>
   );
 
 const buildComparePath = (item) => {
-  const leftId = Number(item.leftId);
-  const rightId = Number(item.rightId);
-  if (
-    Number.isFinite(leftId) &&
-    leftId > 0 &&
-    Number.isFinite(rightId) &&
-    rightId > 0
-  ) {
-    return `/compare?devices=${leftId}:0,${rightId}:0&type=smartphone`;
-  }
-
-  const leftSlug = toCompareSlug(item.leftName);
-  const rightSlug = toCompareSlug(item.rightName);
-  if (leftSlug && rightSlug && leftSlug !== rightSlug) {
-    return `/compare/${leftSlug}-vs-${rightSlug}`;
-  }
-
-  return "/compare";
+  return buildCanonicalComparePath({
+    leftName: item.leftName,
+    rightName: item.rightName,
+    leftId: item.leftId,
+    rightId: item.rightId,
+    type: "smartphone",
+  });
 };
 
 const makeComparisonKey = (item) => {
   const idPair =
     item.leftId && item.rightId
       ? [String(item.leftId), String(item.rightId)].sort()
-      : [toCompareSlug(item.leftName), toCompareSlug(item.rightName)].sort();
+      : [
+          toCanonicalCompareSlug(item.leftName),
+          toCanonicalCompareSlug(item.rightName),
+        ].sort();
   return idPair.join("|");
 };
 
@@ -86,7 +78,9 @@ const buildLocalComparisons = (devices = []) => {
     const name = getDeviceName(device);
     if (!name) continue;
     const productId = getDeviceProductId(device);
-    const key = productId ? `id:${productId}` : `name:${toCompareSlug(name)}`;
+    const key = productId
+      ? `id:${productId}`
+      : `name:${toCanonicalCompareSlug(name)}`;
     if (seen.has(key)) continue;
     seen.add(key);
     uniqueDevices.push({

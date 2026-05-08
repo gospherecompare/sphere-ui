@@ -6,6 +6,7 @@ import Cookies from "js-cookie";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
 import { createProductSchema } from "../../utils/schemaGenerators";
 import { Helmet } from "react-helmet-async";
+import { buildCanonicalComparePath } from "../../utils/compareRoutes";
 import usePageEngagementTracker from "../../hooks/usePageEngagementTracker";
 
 // Icons
@@ -1071,9 +1072,21 @@ const TVDetailCard = () => {
   const handlePopularCompare = (other) => {
     const otherId = other?.id ?? other?.product_id ?? other?.productId ?? null;
     if (!currentProductId || !otherId) return;
-    navigate(`/compare?devices=${currentProductId}:0,${otherId}:0`, {
-      state: { initialProduct: applianceData },
-    });
+    navigate(
+      buildCanonicalComparePath({
+        leftName:
+          applianceData?.name ||
+          applianceData?.product_name ||
+          applianceData?.model,
+        rightName: other?.name || other?.product_name || other?.model,
+        leftId: currentProductId,
+        rightId: otherId,
+        type: "tv",
+      }),
+      {
+        state: { initialProduct: applianceData },
+      },
+    );
   };
 
   const allStorePrices =

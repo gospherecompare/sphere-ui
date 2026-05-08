@@ -196,13 +196,42 @@ const toSmartphoneSeoSlug = (slug = "") => {
   return base ? `${base}${SMARTPHONE_SEO_SUFFIX}` : "";
 };
 
-const getSmartphoneRouteSlugs = (row = {}) => {
-  const slugs = new Set();
-  for (const value of [row?.name, row?.product_name, row?.model]) {
+const getSmartphoneCanonicalRouteSlug = (row = {}) => {
+  for (const value of [
+    row?.name,
+    row?.product_name,
+    row?.productName,
+    row?.basic_info?.product_name,
+    row?.model,
+    row?.model_number,
+    row?.basic_info?.model,
+    row?.basic_info?.model_number,
+  ]) {
     const slug = toSmartphoneSeoSlug(toSlug(value));
-    if (slug) slugs.add(slug);
+    if (slug) return slug;
   }
-  return [...slugs];
+  return "";
+};
+
+const getSmartphoneRouteSlugs = (row = {}) => {
+  const orderedSlugs = [];
+  const seen = new Set();
+  for (const value of [
+    row?.name,
+    row?.product_name,
+    row?.productName,
+    row?.basic_info?.product_name,
+    row?.model,
+    row?.model_number,
+    row?.basic_info?.model,
+    row?.basic_info?.model_number,
+  ]) {
+    const slug = toSmartphoneSeoSlug(toSlug(value));
+    if (!slug || seen.has(slug)) continue;
+    seen.add(slug);
+    orderedSlugs.push(slug);
+  }
+  return orderedSlugs;
 };
 
 const ensureSmartphoneSeoDetailPath = (path = "") => {
@@ -379,6 +408,15 @@ const routesFromSitemap = () => {
         }
       })
       .filter(Boolean)
+      .filter((routePath) => {
+        if (!routePath.startsWith("/smartphones/")) return true;
+        return (
+          routePath === "/smartphones/upcoming" ||
+          routePath.startsWith("/smartphones/filter/") ||
+          routePath.startsWith("/smartphones/brand/") ||
+          routePath.startsWith("/smartphones/feature/")
+        );
+      })
       .map((routePath) => toCanonicalPath(routePath));
 
     return parsed;
@@ -625,7 +663,10 @@ const fetchDetailRoutesFromApi = async () => {
       endpoint: `${API_BASE_URL}/smartphones`,
       preferredKeys: ["smartphones"],
       basePath: "/smartphones",
-      getDetailSlugs: (item) => getSmartphoneRouteSlugs(item),
+      getDetailSlugs: (item) => {
+        const slug = getSmartphoneCanonicalRouteSlug(item);
+        return slug ? [slug] : [];
+      },
       getName: (item) => item?.name || item?.model || item?.product_name,
       toDetailSlug: (slug) => toSmartphoneSeoSlug(slug),
     },

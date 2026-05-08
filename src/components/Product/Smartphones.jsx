@@ -62,6 +62,7 @@ import {
   normalizeSmartphoneListingSlug,
   stripSmartphoneSeoQueryParams,
 } from "../../utils/smartphoneListingRoutes";
+import { buildCanonicalComparePathFromDevices } from "../../utils/compareRoutes";
 import "../../styles/hideScrollbar.css";
 
 const ROUTE_FEED_CACHE_KEY = "hooks_smartphone_route_feed_v1";
@@ -2641,22 +2642,15 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     if (e) e.stopPropagation();
     if (compareItems.length === 0) return;
 
-    const queryParams = new URLSearchParams();
-    const deviceEntries = compareItems
-      .map((device) => {
-        const productId = getCompareProductId(device);
-        if (productId == null) return null;
-        const variantIndex = getCompareVariantIndex(device);
-        return `${productId}:${variantIndex}`;
-      })
-      .filter(Boolean);
+    const comparePath = buildCanonicalComparePathFromDevices({
+      devices: compareItems,
+      type: "smartphone",
+      getName: (device) => device?.name || device?.model || "",
+      getId: getCompareProductId,
+      getVariantIndex: getCompareVariantIndex,
+    });
 
-    if (deviceEntries.length === 0) return;
-
-    queryParams.set("devices", deviceEntries.join(","));
-    queryParams.set("type", "smartphone");
-
-    navigate(`/compare?${queryParams.toString()}`, {
+    navigate(comparePath, {
       state: { initialProducts: compareItems },
     });
   };

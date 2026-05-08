@@ -62,6 +62,7 @@ import {
   matchesTvFeature,
   TV_FEATURE_CATALOG,
 } from "../../utils/tvPopularFeatures";
+import { buildCanonicalComparePathFromDevices } from "../../utils/compareRoutes";
 
 const SITE_ORIGIN = "https://tryhook.shop";
 
@@ -2477,13 +2478,13 @@ const TVs = () => {
     if (e) e.stopPropagation();
     if (compareItems.length === 0) return;
 
-    const queryParams = new URLSearchParams();
-    compareItems.forEach((device) => {
-      const idVal = device.productId ?? device.id ?? device.model;
-      queryParams.append("add", String(idVal));
+    const comparePath = buildCanonicalComparePathFromDevices({
+      devices: compareItems,
+      getName: (device) => device?.name || device?.model || "",
+      getId: (device) => device?.productId ?? device?.id ?? device?.model ?? null,
     });
 
-    navigate(`/compare?${queryParams.toString()}`, {
+    navigate(comparePath, {
       state: { initialProducts: compareItems },
     });
   };

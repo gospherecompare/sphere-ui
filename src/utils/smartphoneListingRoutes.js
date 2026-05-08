@@ -167,6 +167,14 @@ export const buildSmartphoneBrandPath = (brand = "", query = null) =>
 export const buildSmartphoneFeaturePath = (feature = "", query = null) =>
   buildSmartphoneListingPath({ feature, query });
 
+export const buildSmartphoneFilterPath = (filter = "", query = null) => {
+  const filterSlug = normalizeSmartphoneListingSlug(filter);
+  const path = filterSlug
+    ? `${SMARTPHONE_LISTING_BASE_PATH}/filter/${filterSlug}`
+    : SMARTPHONE_LISTING_BASE_PATH;
+  return `${path}${toQueryString(query)}`;
+};
+
 export const stripSmartphoneSeoQueryParams = (search = "") => {
   const params = new URLSearchParams(search || "");
   params.delete("brand");
