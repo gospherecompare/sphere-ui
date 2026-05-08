@@ -19,6 +19,10 @@ import ProductDiscoverySections from "./ui/ProductDiscoverySections";
 import { normalizeScore100Value } from "../utils/groupScoreStats";
 import resolveSmartphoneBadgeScore from "../utils/smartphoneBadgeScore";
 import { buildCanonicalComparePath } from "../utils/compareRoutes";
+import {
+  getPreloadedApiMap,
+  readPreloadedApiResponse,
+} from "../utils/preloadedApi";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -90,6 +94,77 @@ const FILTER_CHIPS = [
   },
 ];
 
+const MOST_COMPARED_ENDPOINT =
+  "https://api.apisphere.in/api/public/trending/most-compared";
+const SMARTPHONES_ENDPOINT = "https://api.apisphere.in/api/smartphones";
+const PRODUCT_ENDPOINT_BASE = "https://api.apisphere.in/api/public/product";
+
+const mapMostComparedRows = (json) =>
+  (json?.mostCompared || []).map((r) => ({
+    left_id: r.product_id,
+    left_name: r.product_name,
+    left_image: r.product_image || null,
+    left_type: r.product_type || "unknown",
+    right_id: r.compared_product_id,
+    right_name: r.compared_product_name,
+    right_image: r.compared_product_image || null,
+    right_type: r.compared_product_type || "unknown",
+    compare_count: Number(r.compare_count) || 0,
+  }));
+
+const mapSmartphonesById = (json) => {
+  const rows = Array.isArray(json)
+    ? json
+    : Array.isArray(json?.smartphones)
+      ? json.smartphones
+      : Array.isArray(json?.data)
+        ? json.data
+        : Array.isArray(json?.rows)
+          ? json.rows
+          : [];
+
+  const next = {};
+  for (const row of rows) {
+    const id = row?.id ?? row?.product_id ?? row?.productId ?? null;
+    if (id == null) continue;
+    next[String(id)] = row;
+  }
+  return next;
+};
+
+const mapPreloadedProductsById = () => {
+  const byUrl = getPreloadedApiMap();
+  if (!byUrl) return {};
+
+  const next = {};
+
+  Object.entries(byUrl).forEach(([rawUrl, value]) => {
+    try {
+      const parsed = new URL(rawUrl, window.location.origin);
+      if (parsed.origin !== "https://api.apisphere.in") return;
+      if (parsed.search) return;
+
+      const segments = parsed.pathname.split("/").filter(Boolean);
+      if (
+        segments.length !== 4 ||
+        segments[0] !== "api" ||
+        segments[1] !== "public" ||
+        segments[2] !== "product"
+      ) {
+        return;
+      }
+
+      const productId = String(segments[3] || "").trim();
+      if (!productId) return;
+      next[productId] = value;
+    } catch {
+      // Ignore malformed payload keys.
+    }
+  });
+
+  return next;
+};
+
 // Spec Score Badge Component
 const CircularScoreBadge = ({ score, size = 38 }) => {
   const normalized = normalizeScore100Value(score);
@@ -115,41 +190,40 @@ const CircularScoreBadge = ({ score, size = 38 }) => {
 };
 
 const PopularComparisonsPage = () => {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState(() =>
+    mapMostComparedRows(readPreloadedApiResponse(MOST_COMPARED_ENDPOINT) || {}),
+  );
+  const [loading, setLoading] = useState(
+    () => !readPreloadedApiResponse(MOST_COMPARED_ENDPOINT),
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [deviceTypeFilter, setDeviceTypeFilter] = useState("all");
   const [sortBy, setSortBy] = useState("trending");
-  const [productById, setProductById] = useState({});
-  const [smartphoneById, setSmartphoneById] = useState({});
+  const [productById, setProductById] = useState(() => mapPreloadedProductsById());
+  const [smartphoneById, setSmartphoneById] = useState(() =>
+    mapSmartphonesById(readPreloadedApiResponse(SMARTPHONES_ENDPOINT) || {}),
+  );
   const isLoaded = useRevealAnimation();
 
   // Fetch comparisons data
   useEffect(() => {
+    const preloadedPayload = readPreloadedApiResponse(MOST_COMPARED_ENDPOINT);
+    if (preloadedPayload) {
+      setData(mapMostComparedRows(preloadedPayload));
+      setLoading(false);
+      return undefined;
+    }
+
     let cancelled = false;
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch(
-          "https://api.apisphere.in/api/public/trending/most-compared",
-        );
+        const res = await fetch(MOST_COMPARED_ENDPOINT);
         if (!res.ok) return;
         const json = await res.json();
         if (cancelled) return;
-
-        const mapped = (json.mostCompared || []).map((r) => ({
-          left_id: r.product_id,
-          left_name: r.product_name,
-          left_image: r.product_image || null,
-          left_type: r.product_type || "unknown",
-          right_id: r.compared_product_id,
-          right_name: r.compared_product_name,
-          right_image: r.compared_product_image || null,
-          right_type: r.compared_product_type || "unknown",
-          compare_count: Number(r.compare_count) || 0,
-        }));
-        setData(mapped);
+        setData(mapMostComparedRows(json));
         setLoading(false);
       } catch {
         setLoading(false);
@@ -161,34 +235,23 @@ const PopularComparisonsPage = () => {
   }, []);
 
   useEffect(() => {
+    const preloadedPayload = readPreloadedApiResponse(SMARTPHONES_ENDPOINT);
+    if (preloadedPayload) {
+      setSmartphoneById(mapSmartphonesById(preloadedPayload));
+      return undefined;
+    }
+
     let cancelled = false;
 
     const loadSmartphones = async () => {
       try {
-        const res = await fetch("https://api.apisphere.in/api/smartphones", {
+        const res = await fetch(SMARTPHONES_ENDPOINT, {
           cache: "no-store",
         });
         if (!res.ok) return;
         const json = await res.json();
         if (cancelled) return;
-
-        const rows = Array.isArray(json)
-          ? json
-          : Array.isArray(json.smartphones)
-            ? json.smartphones
-            : Array.isArray(json.data)
-              ? json.data
-              : Array.isArray(json.rows)
-                ? json.rows
-                : [];
-
-        const next = {};
-        for (const row of rows) {
-          const id = row?.id ?? row?.product_id ?? row?.productId ?? null;
-          if (id == null) continue;
-          next[String(id)] = row;
-        }
-        setSmartphoneById(next);
+        setSmartphoneById(mapSmartphonesById(json));
       } catch {
         if (!cancelled) setSmartphoneById({});
       }
@@ -315,9 +378,7 @@ const PopularComparisonsPage = () => {
         missingProductIds.map(async (id) => {
           try {
             const res = await fetch(
-              `https://api.apisphere.in/api/public/product/${encodeURIComponent(
-                id,
-              )}`,
+              `${PRODUCT_ENDPOINT_BASE}/${encodeURIComponent(id)}`,
               { cache: "no-store" },
             );
             if (!res.ok) return [id, null];

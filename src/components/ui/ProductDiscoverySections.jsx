@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 // Icons removed - removed from headings
 import { createProductPath } from "../../utils/slugGenerator";
+import { readPreloadedApiResponse } from "../../utils/preloadedApi";
 import {
   buildSmartphoneBrandPath,
   buildSmartphoneListingPath,
@@ -144,6 +145,15 @@ const normalizeDiscoveryPath = (rawPath, entityType = "smartphones") => {
       ? normalizeSmartphoneDetailPath(fallbackPath)
       : fallbackPath;
   }
+};
+
+const buildDiscoveryEndpoint = (productId, entityType) => {
+  const pid = Number(productId);
+  if (!Number.isInteger(pid) || pid <= 0) return "";
+  const queryEntity = encodeURIComponent(normalizeEntityType(entityType));
+  return `${API_BASE}/api/public/product/${encodeURIComponent(
+    pid,
+  )}/discovery?entity_type=${queryEntity}`;
 };
 
 const fixCurrencyText = (value = "") => {
@@ -593,14 +603,22 @@ const ProductDiscoverySections = ({
   layout = "full",
   className = "",
 }) => {
-  const [loading, setLoading] = useState(false);
+  const discoveryEndpoint = useMemo(
+    () => buildDiscoveryEndpoint(productId, entityType),
+    [entityType, productId],
+  );
+  const [payload, setPayload] = useState(() =>
+    discoveryEndpoint ? readPreloadedApiResponse(discoveryEndpoint) : null,
+  );
+  const [loading, setLoading] = useState(() =>
+    Boolean(discoveryEndpoint) && !readPreloadedApiResponse(discoveryEndpoint),
+  );
   const [error, setError] = useState("");
-  const [payload, setPayload] = useState(null);
 
   useEffect(() => {
-    const pid = Number(productId);
-    if (!Number.isInteger(pid) || pid <= 0) {
+    if (!discoveryEndpoint) {
       setPayload(null);
+      setLoading(false);
       return;
     }
 
@@ -611,6 +629,14 @@ const ProductDiscoverySections = ({
       return;
     }
 
+    const preloadedPayload = readPreloadedApiResponse(discoveryEndpoint);
+    if (preloadedPayload) {
+      setLoading(false);
+      setError("");
+      setPayload(preloadedPayload);
+      return;
+    }
+
     let cancelled = false;
     const controller = new AbortController();
 
@@ -618,13 +644,9 @@ const ProductDiscoverySections = ({
       setLoading(true);
       setError("");
       try {
-        const queryEntity = encodeURIComponent(normalizeEntityType(entityType));
-        const response = await fetch(
-          `${API_BASE}/api/public/product/${encodeURIComponent(
-            pid,
-          )}/discovery?entity_type=${queryEntity}`,
-          { signal: controller.signal },
-        );
+        const response = await fetch(discoveryEndpoint, {
+          signal: controller.signal,
+        });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         if (!cancelled) setPayload(data);
@@ -644,7 +666,7 @@ const ProductDiscoverySections = ({
       cancelled = true;
       controller.abort();
     };
-  }, [productId, entityType]);
+  }, [discoveryEndpoint, entityType]);
 
   const entityConfig = useMemo(() => getEntityConfig(entityType), [entityType]);
   const isLatestPhonesLayout =

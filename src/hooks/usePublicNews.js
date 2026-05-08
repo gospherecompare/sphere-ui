@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { readPreloadedApiResponse } from "../utils/preloadedApi";
 
 const API_BASE = (() => {
   const configuredBase = String(import.meta.env.VITE_API_BASE_URL || "").trim();
@@ -584,6 +585,24 @@ const fetchJson = async (url, { signal } = {}) => {
   return data;
 };
 
+const buildNewsFeedEndpoint = ({ limit = 12, category = "", productId = null } = {}) => {
+  const params = new URLSearchParams();
+  params.set("limit", String(limit));
+  if (safeText(category)) params.set("category", safeText(category));
+  if (productId != null && productId !== "") {
+    params.set("productId", String(productId));
+  }
+  return `${API_BASE}/api/public/blogs?${params.toString()}`;
+};
+
+const buildNewsStoryEndpoint = (slug = "") =>
+  `${API_BASE}/api/public/blogs/${encodeURIComponent(safeText(slug))}`;
+
+const normalizeStoriesFromPayload = (payload) =>
+  Array.isArray(payload?.blogs)
+    ? payload.blogs.map(normalizeBlogStory).filter(Boolean)
+    : [];
+
 export const createNewsStoryPath = (slug = "") =>
   `/news/${encodeURIComponent(safeText(slug))}`;
 
@@ -609,13 +628,29 @@ export const usePublicNewsFeed = ({
   productId = null,
   enabled = true,
 } = {}) => {
-  const [stories, setStories] = useState([]);
-  const [loading, setLoading] = useState(Boolean(enabled));
+  const endpoint = useMemo(
+    () => buildNewsFeedEndpoint({ limit, category, productId }),
+    [category, limit, productId],
+  );
+  const preloadedStories = useMemo(
+    () => normalizeStoriesFromPayload(readPreloadedApiResponse(endpoint)),
+    [endpoint],
+  );
+  const [stories, setStories] = useState(() => preloadedStories);
+  const [loading, setLoading] = useState(Boolean(enabled && !preloadedStories.length));
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (!enabled) {
       setStories([]);
+      setLoading(false);
+      setError("");
+      return undefined;
+    }
+
+    const preloadedPayload = readPreloadedApiResponse(endpoint);
+    if (preloadedPayload) {
+      setStories(normalizeStoriesFromPayload(preloadedPayload));
       setLoading(false);
       setError("");
       return undefined;
@@ -629,25 +664,10 @@ export const usePublicNewsFeed = ({
       setError("");
 
       try {
-        const params = new URLSearchParams();
-        params.set("limit", String(limit));
-        if (safeText(category)) params.set("category", safeText(category));
-        if (productId != null && productId !== "") {
-          params.set("productId", String(productId));
-        }
-
-        const data = await fetchJson(
-          `${API_BASE}/api/public/blogs?${params.toString()}`,
-          {
-            signal: controller.signal,
-          },
-        );
+        const data = await fetchJson(endpoint, { signal: controller.signal });
 
         if (!active) return;
-        const nextStories = Array.isArray(data?.blogs)
-          ? data.blogs.map(normalizeBlogStory).filter(Boolean)
-          : [];
-        setStories(nextStories);
+        setStories(normalizeStoriesFromPayload(data));
       } catch (err) {
         if (!active || err?.name === "AbortError") return;
         setStories([]);
@@ -663,14 +683,22 @@ export const usePublicNewsFeed = ({
       active = false;
       controller.abort();
     };
-  }, [category, enabled, limit, productId]);
+  }, [enabled, endpoint]);
 
   return { stories, loading, error };
 };
 
 export const usePublicNewsStory = (slug = "") => {
-  const [story, setStory] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const storyEndpoint = useMemo(
+    () => buildNewsStoryEndpoint(slug),
+    [slug],
+  );
+  const preloadedStory = useMemo(() => {
+    const payload = readPreloadedApiResponse(storyEndpoint);
+    return payload?.blog ? normalizeBlogStory(payload.blog) : null;
+  }, [storyEndpoint]);
+  const [story, setStory] = useState(() => preloadedStory);
+  const [loading, setLoading] = useState(() => !preloadedStory);
   const [error, setError] = useState("");
   const [notFound, setNotFound] = useState(false);
 
@@ -684,6 +712,15 @@ export const usePublicNewsStory = (slug = "") => {
       return undefined;
     }
 
+    const preloadedPayload = readPreloadedApiResponse(storyEndpoint);
+    if (preloadedPayload?.blog) {
+      setStory(normalizeBlogStory(preloadedPayload.blog));
+      setLoading(false);
+      setError("");
+      setNotFound(false);
+      return undefined;
+    }
+
     const controller = new AbortController();
     let active = true;
 
@@ -693,10 +730,7 @@ export const usePublicNewsStory = (slug = "") => {
       setNotFound(false);
 
       try {
-        const data = await fetchJson(
-          `${API_BASE}/api/public/blogs/${encodeURIComponent(normalizedSlug)}`,
-          { signal: controller.signal },
-        );
+        const data = await fetchJson(storyEndpoint, { signal: controller.signal });
 
         if (!active) return;
         setStory(normalizeBlogStory(data?.blog));
@@ -721,7 +755,7 @@ export const usePublicNewsStory = (slug = "") => {
       active = false;
       controller.abort();
     };
-  }, [slug]);
+  }, [slug, storyEndpoint]);
 
   return { story, loading, error, notFound };
 };

@@ -16,6 +16,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { createProductPath } from "../../utils/slugGenerator";
 import { buildCanonicalComparePath } from "../../utils/compareRoutes";
+import { readPreloadedApiResponse } from "../../utils/preloadedApi";
 import { resolveSmartphoneBadgeScore } from "../../utils/smartphoneBadgeScore";
 
 const API_BASE = (
@@ -38,6 +39,15 @@ const normalizeList = (value) =>
     : [];
 
 const normalizeText = (value) => String(value || "").trim();
+
+const buildCompetitorsEndpoint = (productId, entityType) => {
+  const pid = Number(productId);
+  if (!Number.isInteger(pid) || pid <= 0) return "";
+  const queryEntity = encodeURIComponent(String(entityType || "smartphones"));
+  return `${API_BASE}/api/public/product/${encodeURIComponent(
+    pid,
+  )}/competitors?entity_type=${queryEntity}`;
+};
 
 const toFiniteNumber = (value) => {
   const n = Number(value);
@@ -569,9 +579,18 @@ const CompetitorCards = ({
   compareDisabled = false,
 }) => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const competitorsEndpoint = useMemo(
+    () => buildCompetitorsEndpoint(productId, entityType),
+    [entityType, productId],
+  );
+  const [payload, setPayload] = useState(() =>
+    competitorsEndpoint ? readPreloadedApiResponse(competitorsEndpoint) : null,
+  );
+  const [loading, setLoading] = useState(() =>
+    Boolean(competitorsEndpoint) &&
+    !readPreloadedApiResponse(competitorsEndpoint),
+  );
   const [error, setError] = useState("");
-  const [payload, setPayload] = useState(null);
   const [expandAll, setExpandAll] = useState(false);
   const [collapsedMap, setCollapsedMap] = useState({});
   const railRef = useRef(null);
@@ -581,9 +600,17 @@ const CompetitorCards = ({
   });
 
   useEffect(() => {
-    const pid = Number(productId);
-    if (!Number.isInteger(pid) || pid <= 0) {
+    if (!competitorsEndpoint) {
       setPayload(null);
+      setLoading(false);
+      return;
+    }
+
+    const preloadedPayload = readPreloadedApiResponse(competitorsEndpoint);
+    if (preloadedPayload) {
+      setPayload(preloadedPayload);
+      setLoading(false);
+      setError("");
       return;
     }
 
@@ -592,14 +619,7 @@ const CompetitorCards = ({
       setLoading(true);
       setError("");
       try {
-        const queryEntity = encodeURIComponent(
-          String(entityType || "smartphones"),
-        );
-        const response = await fetch(
-          `${API_BASE}/api/public/product/${encodeURIComponent(
-            pid,
-          )}/competitors?entity_type=${queryEntity}`,
-        );
+        const response = await fetch(competitorsEndpoint);
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }
@@ -623,7 +643,7 @@ const CompetitorCards = ({
     return () => {
       cancelled = true;
     };
-  }, [productId, entityType]);
+  }, [competitorsEndpoint]);
 
   const competitors = useMemo(() => {
     const raw = Array.isArray(payload?.competitors) ? payload.competitors : [];

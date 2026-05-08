@@ -217,12 +217,6 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://tryhook.shop/news/oppo-f33-pro-5g-launched-india-price-specs</loc>
-    <lastmod>2026-05-08</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://tryhook.shop/news/realme-16-5g-price-specs-features-india</loc>
     <lastmod>2026-05-08</lastmod>
     <changefreq>daily</changefreq>
@@ -242,12 +236,6 @@
   </url>
   <url>
     <loc>https://tryhook.shop/news/redmi-a7-pro-5g-launch-date-sale-date-india-specs</loc>
-    <lastmod>2026-05-08</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://tryhook.shop/news/vivo-t5-pro-5g-announced-india-launch-april-15-9020mah-snapdragon-7s-gen4</loc>
     <lastmod>2026-05-08</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
@@ -290,6 +278,12 @@
   </url>
   <url>
     <loc>https://tryhook.shop/news/youtube-remove-shorts-feature</loc>
+    <lastmod>2026-05-08</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://tryhook.shop/popular-comparisons</loc>
     <lastmod>2026-05-08</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>

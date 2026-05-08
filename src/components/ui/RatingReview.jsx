@@ -8,6 +8,30 @@ import {
   FaUser,
 } from "react-icons/fa";
 import Cookies from "js-cookie";
+import { readPreloadedApiResponse } from "../../utils/preloadedApi";
+
+const buildRatingsEndpoint = (productId) =>
+  productId
+    ? `https://api.apisphere.in/api/public/products/${encodeURIComponent(
+        productId,
+      )}/ratings`
+    : null;
+
+const createEmptyRatingsState = () => ({
+  averageRating: 0,
+  totalRatings: 0,
+  ratingDistribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+});
+
+const normalizeRatingsPayload = (data) => ({
+  reviews: Array.isArray(data?.reviews) ? data.reviews : [],
+  ratingsData: {
+    averageRating: parseFloat(data?.averageRating) || 0,
+    totalRatings: parseInt(data?.totalRatings) || 0,
+    ratingDistribution:
+      data?.ratingDistribution || createEmptyRatingsState().ratingDistribution,
+  },
+});
 
 const RatingReview = ({
   productId,
@@ -19,11 +43,9 @@ const RatingReview = ({
   const [reviews, setReviews] = useState([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [editingReviewId, setEditingReviewId] = useState(null);
-  const [ratingsData, setRatingsData] = useState({
-    averageRating: 0,
-    totalRatings: 0,
-    ratingDistribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
-  });
+  const [ratingsData, setRatingsData] = useState(() =>
+    createEmptyRatingsState(),
+  );
 
   const [newReview, setNewReview] = useState({
     overall_rating: 0,
@@ -31,7 +53,10 @@ const RatingReview = ({
   });
 
   const [submitLoading, setSubmitLoading] = useState(false);
-  const [fetchLoading, setFetchLoading] = useState(true);
+  const ratingsEndpoint = buildRatingsEndpoint(productId);
+  const [fetchLoading, setFetchLoading] = useState(
+    () => (productId ? !readPreloadedApiResponse(ratingsEndpoint) : false),
+  );
 
   const token = Cookies.get("arenak");
 
@@ -45,45 +70,25 @@ const RatingReview = ({
         return;
       }
 
-      const response = await fetch(
-        `https://api.apisphere.in/api/public/products/${prodId}/ratings`,
-        {
-          headers: {
-            Authorization: token ? `Bearer ${token}` : "",
-          },
+      const response = await fetch(buildRatingsEndpoint(prodId), {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : "",
         },
-      );
+      });
 
       if (response.ok) {
         const data = await response.json();
-        setReviews(Array.isArray(data.reviews) ? data.reviews : []);
-        setRatingsData({
-          averageRating: parseFloat(data.averageRating) || 0,
-          totalRatings: parseInt(data.totalRatings) || 0,
-          ratingDistribution: data.ratingDistribution || {
-            5: 0,
-            4: 0,
-            3: 0,
-            2: 0,
-            1: 0,
-          },
-        });
+        const normalized = normalizeRatingsPayload(data);
+        setReviews(normalized.reviews);
+        setRatingsData(normalized.ratingsData);
       } else {
         setReviews([]);
-        setRatingsData({
-          averageRating: 0,
-          totalRatings: 0,
-          ratingDistribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
-        });
+        setRatingsData(createEmptyRatingsState());
       }
     } catch (error) {
       console.error("Error fetching reviews:", error);
       setReviews([]);
-      setRatingsData({
-        averageRating: 0,
-        totalRatings: 0,
-        ratingDistribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
-      });
+      setRatingsData(createEmptyRatingsState());
     } finally {
       setFetchLoading(false);
     }
@@ -91,11 +96,19 @@ const RatingReview = ({
 
   useEffect(() => {
     if (productId) {
+      const preloadedPayload = readPreloadedApiResponse(ratingsEndpoint);
+      if (preloadedPayload) {
+        const normalized = normalizeRatingsPayload(preloadedPayload);
+        setReviews(normalized.reviews);
+        setRatingsData(normalized.ratingsData);
+        setFetchLoading(false);
+        return;
+      }
       fetchReviews();
     } else {
       setFetchLoading(false);
     }
-  }, [productId, token]);
+  }, [productId, ratingsEndpoint, token]);
 
   // Submit or update review
   const handleSubmitReview = async () => {

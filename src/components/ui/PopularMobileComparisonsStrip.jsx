@@ -5,6 +5,7 @@ import {
   buildCanonicalComparePath,
   toCanonicalCompareSlug,
 } from "../../utils/compareRoutes";
+import { readPreloadedApiResponse } from "../../utils/preloadedApi";
 
 const API_BASE = (
   import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in"
@@ -68,6 +69,29 @@ const makeComparisonKey = (item) => {
           toCanonicalCompareSlug(item.rightName),
         ].sort();
   return idPair.join("|");
+};
+
+const MOST_COMPARED_ENDPOINT = `${API_BASE}/api/public/trending/most-compared`;
+
+const mapRemoteComparisonsPayload = (json) => {
+  const rows = Array.isArray(json?.mostCompared) ? json.mostCompared : [];
+  return rows
+    .filter(
+      (row) =>
+        isSmartphoneType(row?.product_type) &&
+        isSmartphoneType(row?.compared_product_type),
+    )
+    .map((row) => ({
+      leftId: row.product_id,
+      leftName: normalizeText(row.product_name),
+      leftImage: normalizeAssetUrl(row.product_image),
+      rightId: row.compared_product_id,
+      rightName: normalizeText(row.compared_product_name),
+      rightImage: normalizeAssetUrl(row.compared_product_image),
+      compareCount: Number(row.compare_count) || 0,
+      source: "remote",
+    }))
+    .filter((item) => item.leftName && item.rightName);
 };
 
 const buildLocalComparisons = (devices = []) => {
@@ -142,43 +166,28 @@ const ComparisonPhoneVisual = ({ src = "", label = "" }) => {
 
 const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
   const scrollerRef = useRef(null);
-  const [remoteComparisons, setRemoteComparisons] = useState([]);
+  const [remoteComparisons, setRemoteComparisons] = useState(() =>
+    mapRemoteComparisonsPayload(readPreloadedApiResponse(MOST_COMPARED_ENDPOINT)),
+  );
 
   useEffect(() => {
+    const preloadedPayload = readPreloadedApiResponse(MOST_COMPARED_ENDPOINT);
+    if (preloadedPayload) {
+      setRemoteComparisons(mapRemoteComparisonsPayload(preloadedPayload));
+      return undefined;
+    }
+
     let cancelled = false;
     const controller =
       typeof AbortController !== "undefined" ? new AbortController() : null;
 
     const loadComparisons = async () => {
       try {
-        const response = await fetch(
-          `${API_BASE}/api/public/trending/most-compared`,
-          controller ? { signal: controller.signal } : undefined,
-        );
+        const response = await fetch(MOST_COMPARED_ENDPOINT, controller ? { signal: controller.signal } : undefined);
         if (!response.ok) return;
         const json = await response.json();
         if (cancelled) return;
-
-        const rows = Array.isArray(json?.mostCompared) ? json.mostCompared : [];
-        const mapped = rows
-          .filter(
-            (row) =>
-              isSmartphoneType(row?.product_type) &&
-              isSmartphoneType(row?.compared_product_type),
-          )
-          .map((row) => ({
-            leftId: row.product_id,
-            leftName: normalizeText(row.product_name),
-            leftImage: normalizeAssetUrl(row.product_image),
-            rightId: row.compared_product_id,
-            rightName: normalizeText(row.compared_product_name),
-            rightImage: normalizeAssetUrl(row.compared_product_image),
-            compareCount: Number(row.compare_count) || 0,
-            source: "remote",
-          }))
-          .filter((item) => item.leftName && item.rightName);
-
-        setRemoteComparisons(mapped);
+        setRemoteComparisons(mapRemoteComparisonsPayload(json));
       } catch (err) {
         if (err?.name !== "AbortError" && !cancelled) {
           setRemoteComparisons([]);

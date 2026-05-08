@@ -3,37 +3,51 @@ import React, { useEffect, useState } from "react";
 import { FaExchangeAlt, FaArrowRight, FaMobileAlt } from "react-icons/fa";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
 import { buildCanonicalComparePath } from "../../utils/compareRoutes";
+import { readPreloadedApiResponse } from "../../utils/preloadedApi";
+
+const MOST_COMPARED_ENDPOINT =
+  "https://api.apisphere.in/api/public/trending/most-compared";
+
+const mapMostComparedRows = (json) =>
+  (json?.mostCompared || []).map((r) => ({
+    left_id: r.product_id,
+    left_name: r.product_name,
+    left_image: r.product_image || null,
+    right_id: r.compared_product_id,
+    right_name: r.compared_product_name,
+    right_image: r.compared_product_image || null,
+    compare_count: Number(r.compare_count) || 0,
+  }));
 
 const PopularComparisons = ({
   data: initialData = [],
   variant = "default",
   className = "",
 }) => {
-  const [data, setData] = useState(initialData || []);
+  const [data, setData] = useState(
+    () =>
+      initialData?.length
+        ? initialData
+        : mapMostComparedRows(readPreloadedApiResponse(MOST_COMPARED_ENDPOINT) || {}),
+  );
   const isFlat = variant === "flat";
   const isLoaded = useRevealAnimation();
 
   useEffect(() => {
+    const preloadedPayload = readPreloadedApiResponse(MOST_COMPARED_ENDPOINT);
+    if (preloadedPayload) {
+      setData(mapMostComparedRows(preloadedPayload));
+      return undefined;
+    }
+
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(
-          "https://api.apisphere.in/api/public/trending/most-compared",
-        );
+        const res = await fetch(MOST_COMPARED_ENDPOINT);
         if (!res.ok) return;
         const json = await res.json();
         if (cancelled) return;
-
-        const mapped = (json.mostCompared || []).map((r) => ({
-          left_id: r.product_id,
-          left_name: r.product_name,
-          left_image: r.product_image || null,
-          right_id: r.compared_product_id,
-          right_name: r.compared_product_name,
-          right_image: r.compared_product_image || null,
-          compare_count: Number(r.compare_count) || 0,
-        }));
-        setData(mapped);
+        setData(mapMostComparedRows(json));
       } catch (err) {
         // ignore
       }

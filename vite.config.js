@@ -38,6 +38,7 @@ const ENABLE_PUPPETEER_PRERENDER =
     .toLowerCase() === "true";
 const MAX_DETAIL_ROUTES_PER_CATEGORY = 1000;
 const MAX_COMPARE_ROUTES = 300;
+const POPULAR_COMPARISON_PRELOAD_ROWS = 12;
 const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
 const SMARTPHONE_LIST_SLUGS = new Set(["upcoming"]);
 const SMARTPHONE_FILTER_SEO = {
@@ -58,6 +59,8 @@ const SMARTPHONE_FILTER_ROUTE_PATHS = new Set(
 );
 const PRELOAD_CANONICAL_PATHS = new Set([
   "/",
+  "/news",
+  "/popular-comparisons",
   "/smartphones",
   "/smartphones/upcoming",
   ...SMARTPHONE_FILTER_ROUTE_PATHS,
@@ -77,8 +80,19 @@ const PRELOAD_API_ENDPOINTS = [
   `${API_BASE_URL}/tvs`,
   `${API_BASE_URL}/brand`,
   `${API_BASE_URL}/category`,
+  `${API_BASE_URL}/public/trending/smartphones`,
+  `${API_BASE_URL}/public/new/smartphones`,
+  `${API_BASE_URL}/public/trending/networking`,
+  `${API_BASE_URL}/public/new/networking`,
+  `${API_BASE_URL}/public/trending/laptops`,
+  `${API_BASE_URL}/public/new/laptops`,
+  `${API_BASE_URL}/public/trending/tvs`,
+  `${API_BASE_URL}/public/new/tvs`,
   // Home route payloads
   `${API_BASE_URL}/public/search-popularity?productType=smartphone&limit=5`,
+  `${API_BASE_URL}/public/blogs?limit=4`,
+  `${API_BASE_URL}/public/blogs?limit=18`,
+  `${API_BASE_URL}/public/blogs?limit=24`,
   `${API_BASE_URL}/public/trending/smartphones?limit=15`,
   `${API_BASE_URL}/public/trending/smartphones?limit=25`,
   `${API_BASE_URL}/public/trending/smartphones?limit=120`,
@@ -141,6 +155,7 @@ const STATIC_PRERENDER_ROUTES = [
   "/tvs",
   "/networking",
   "/compare",
+  "/popular-comparisons",
   "/trending/smartphones",
   "/trending/laptops",
   "/trending/tvs",
@@ -524,6 +539,16 @@ const fetchApiBody = async (endpoint) => {
   }
 };
 
+const doesApiEndpointExist = async (endpoint) => {
+  if (typeof fetch !== "function") return false;
+  try {
+    const response = await fetch(endpoint);
+    return response.ok;
+  } catch {
+    return false;
+  }
+};
+
 const shouldStripPreloadKey = (key = "") =>
   PRELOAD_STRIP_KEY_PATTERNS.some((pattern) => pattern.test(String(key)));
 
@@ -557,6 +582,30 @@ const fetchPreloadedApiPayload = async () => {
     if (body != null) byUrl[endpoint] = sanitizePreloadValue(body);
   }
   if (Object.keys(byUrl).length === 0) return null;
+  return {
+    version: 1,
+    generatedAt: new Date().toISOString(),
+    apiOrigin: API_ORIGIN,
+    byUrl,
+  };
+};
+
+const fetchPayloadForEndpoints = async (endpoints = []) => {
+  const uniqueEndpoints = [...new Set(endpoints.filter(Boolean))];
+  if (!uniqueEndpoints.length) return null;
+
+  const byUrl = {};
+  await Promise.all(
+    uniqueEndpoints.map(async (endpoint) => {
+      const body = await fetchApiBody(endpoint);
+      if (body != null) {
+        byUrl[endpoint] = sanitizePreloadValue(body);
+      }
+    }),
+  );
+
+  if (!Object.keys(byUrl).length) return null;
+
   return {
     version: 1,
     generatedAt: new Date().toISOString(),
@@ -603,6 +652,71 @@ const buildDetailWidgetContextMap = (preloadedApiPayload) => {
   return map;
 };
 
+const getSingleSegmentRouteTail = (canonicalPath = "", basePath = "") => {
+  if (!canonicalPath.startsWith(`${basePath}/`)) return "";
+  const tail = canonicalPath.slice(basePath.length + 1);
+  if (!tail || tail.includes("/")) return "";
+  return tail;
+};
+
+const getFirstMostComparedSmartphoneId = (preloadedApiPayload) => {
+  const rows = getPreloadedRows(
+    preloadedApiPayload,
+    `${API_BASE_URL}/public/trending/most-compared`,
+    ["mostCompared"],
+  );
+
+  for (const row of rows) {
+    const leftType = String(row?.product_type || "")
+      .trim()
+      .toLowerCase();
+    const rightType = String(row?.compared_product_type || "")
+      .trim()
+      .toLowerCase();
+    const leftId = resolveProductId(row);
+    const rightId = toPositiveInteger(
+      row?.compared_product_id ?? row?.right_product_id,
+    );
+
+    if (leftId && leftType.includes("smartphone")) return leftId;
+    if (rightId && rightType.includes("smartphone")) return rightId;
+  }
+
+  return null;
+};
+
+const getPopularComparisonsPreloadProductIds = (preloadedApiPayload) => {
+  const rows = getPreloadedRows(
+    preloadedApiPayload,
+    `${API_BASE_URL}/public/trending/most-compared`,
+    ["mostCompared"],
+  );
+  const ids = new Set();
+
+  rows.slice(0, POPULAR_COMPARISON_PRELOAD_ROWS).forEach((row) => {
+    const leftType = String(row?.product_type || "")
+      .trim()
+      .toLowerCase();
+    const rightType = String(row?.compared_product_type || "")
+      .trim()
+      .toLowerCase();
+    const leftId = resolveProductId(row);
+    const rightId = toPositiveInteger(
+      row?.compared_product_id ?? row?.right_product_id,
+    );
+
+    if (leftId && !leftType.includes("smartphone")) {
+      ids.add(leftId);
+    }
+
+    if (rightId && !rightType.includes("smartphone")) {
+      ids.add(rightId);
+    }
+  });
+
+  return Array.from(ids);
+};
+
 const mergePreloadedPayloads = (...payloads) => {
   const validPayloads = payloads.filter(
     (payload) =>
@@ -625,36 +739,97 @@ const mergePreloadedPayloads = (...payloads) => {
 const fetchRouteSpecificPreloadedPayload = async (
   routePath,
   detailWidgetContextMap,
+  sharedPreloadedApiPayload,
 ) => {
   const canonicalPath = toCanonicalPath(normalizePath(routePath || "/"));
-  const context = detailWidgetContextMap.get(canonicalPath);
-  if (!context || context.entityType !== "smartphones") return null;
+  const smartphoneContext = detailWidgetContextMap.get(canonicalPath);
+  if (smartphoneContext?.entityType === "smartphones") {
+    const encodedId = encodeURIComponent(smartphoneContext.productId);
+    const encodedEntityType = encodeURIComponent(smartphoneContext.entityType);
+    return fetchPayloadForEndpoints([
+      `${API_BASE_URL}/smartphones`,
+      `${API_BASE_URL}/public/product/${encodedId}`,
+      `${API_BASE_URL}/public/product/${encodedId}/discovery?entity_type=${encodedEntityType}`,
+      `${API_BASE_URL}/public/product/${encodedId}/competitors?entity_type=${encodedEntityType}`,
+      `${API_BASE_URL}/public/blogs?limit=3&productId=${encodedId}`,
+    ]);
+  }
 
-  const encodedId = encodeURIComponent(context.productId);
-  const encodedEntityType = encodeURIComponent(context.entityType);
-  const endpoints = [
-    `${API_BASE_URL}/public/product/${encodedId}/discovery?entity_type=${encodedEntityType}`,
-    `${API_BASE_URL}/public/product/${encodedId}/competitors?entity_type=${encodedEntityType}`,
-  ];
+  if (getSingleSegmentRouteTail(canonicalPath, "/laptops")) {
+    return fetchPayloadForEndpoints([`${API_BASE_URL}/laptops`]);
+  }
 
-  const byUrl = {};
-  await Promise.all(
-    endpoints.map(async (endpoint) => {
-      const body = await fetchApiBody(endpoint);
-      if (body != null) {
-        byUrl[endpoint] = sanitizePreloadValue(body);
-      }
-    }),
-  );
+  if (getSingleSegmentRouteTail(canonicalPath, "/tvs")) {
+    return fetchPayloadForEndpoints([`${API_BASE_URL}/tvs`]);
+  }
 
-  if (!Object.keys(byUrl).length) return null;
+  const networkingSlug = getSingleSegmentRouteTail(canonicalPath, "/networking");
+  if (networkingSlug) {
+    const endpoints = [`${API_BASE_URL}/networking`];
+    const networkingRows = getPreloadedRows(
+      sharedPreloadedApiPayload,
+      `${API_BASE_URL}/networking`,
+      ["networking"],
+    );
+    const matchedRow = networkingRows.find((row) => {
+      const label =
+        row?.product_name ||
+        row?.name ||
+        row?.model_number ||
+        row?.model ||
+        row?.basic_info?.product_name ||
+        row?.basic_info?.title ||
+        row?.basic_info?.model_number ||
+        row?.basic_info?.model ||
+        "";
+      return toSlug(label) === networkingSlug;
+    });
+    const productId = resolveProductId(matchedRow);
 
-  return {
-    version: 1,
-    generatedAt: new Date().toISOString(),
-    apiOrigin: API_ORIGIN,
-    byUrl,
-  };
+    if (productId) {
+      endpoints.push(
+        `${API_BASE_URL}/public/products/${encodeURIComponent(
+          productId,
+        )}/ratings`,
+      );
+    }
+
+    return fetchPayloadForEndpoints(endpoints);
+  }
+
+  const newsSlug = getSingleSegmentRouteTail(canonicalPath, "/news");
+  if (newsSlug) {
+    return fetchPayloadForEndpoints([
+      `${API_BASE_URL}/public/blogs/${encodeURIComponent(newsSlug)}`,
+      `${API_BASE_URL}/public/blogs?limit=18`,
+    ]);
+  }
+
+  if (canonicalPath === "/popular-comparisons") {
+    const endpoints = [];
+    const smartphoneId = getFirstMostComparedSmartphoneId(
+      sharedPreloadedApiPayload,
+    );
+    if (smartphoneId) {
+      endpoints.push(
+        `${API_BASE_URL}/public/product/${encodeURIComponent(
+          smartphoneId,
+        )}/discovery?entity_type=smartphones`,
+      );
+    }
+
+    getPopularComparisonsPreloadProductIds(sharedPreloadedApiPayload).forEach(
+      (productId) => {
+        endpoints.push(
+          `${API_BASE_URL}/public/product/${encodeURIComponent(productId)}`,
+        );
+      },
+    );
+
+    return fetchPayloadForEndpoints(endpoints);
+  }
+
+  return null;
 };
 
 const fetchDetailRoutesFromApi = async () => {
@@ -778,19 +953,25 @@ const fetchNewsRoutesFromApi = async () => {
   const rows = await fetchApiRows(`${API_BASE_URL}/public/blogs?limit=1000`, [
     "blogs",
   ]);
-  const routes = [];
   const seen = new Set();
+  const routes = await Promise.all(
+    rows.map(async (row) => {
+      const slug = String(row?.slug || "").trim().replace(/^\/+|\/+$/g, "");
+      if (!slug) return null;
+      const routePath = `/news/${slug}`;
+      if (seen.has(routePath)) return null;
 
-  for (const row of rows) {
-    const slug = String(row?.slug || "").trim().replace(/^\/+|\/+$/g, "");
-    if (!slug) continue;
-    const routePath = `/news/${slug}`;
-    if (seen.has(routePath)) continue;
-    seen.add(routePath);
-    routes.push(routePath);
-  }
+      const hasDetailEndpoint = await doesApiEndpointExist(
+        `${API_BASE_URL}/public/blogs/${encodeURIComponent(slug)}`,
+      );
+      if (!hasDetailEndpoint) return null;
 
-  return routes;
+      seen.add(routePath);
+      return routePath;
+    }),
+  );
+
+  return routes.filter(Boolean);
 };
 
 const fetchSmartphoneListingRoutesFromApi = async () => {
@@ -823,13 +1004,30 @@ const fetchSmartphoneListingRoutesFromApi = async () => {
   return routes;
 };
 
+const filterValidPrerenderRoutes = async (routes = []) => {
+  const uniqueRoutes = [...new Set(routes.map((route) => normalizePath(route)))];
+  const filteredRoutes = await Promise.all(
+    uniqueRoutes.map(async (routePath) => {
+      const newsSlug = getSingleSegmentRouteTail(routePath, "/news");
+      if (!newsSlug) return routePath;
+
+      const hasDetailEndpoint = await doesApiEndpointExist(
+        `${API_BASE_URL}/public/blogs/${encodeURIComponent(newsSlug)}`,
+      );
+      return hasDetailEndpoint ? routePath : null;
+    }),
+  );
+
+  return filteredRoutes.filter(Boolean);
+};
+
 const getPrerenderRoutes = async () => {
   const sitemapRoutes = routesFromSitemap();
   const detailRoutes = await fetchDetailRoutesFromApi();
   const compareRoutes = await fetchCompareRoutesFromApi();
   const newsRoutes = await fetchNewsRoutesFromApi();
   const smartphoneListingRoutes = await fetchSmartphoneListingRoutesFromApi();
-  return [
+  return filterValidPrerenderRoutes([
     ...new Set([
       "/",
       ...STATIC_PRERENDER_ROUTES,
@@ -839,7 +1037,7 @@ const getPrerenderRoutes = async () => {
       ...newsRoutes,
       ...smartphoneListingRoutes,
     ]),
-  ];
+  ]);
 };
 
 const NOINDEX_SITEMAP_PATHS = new Set([
@@ -1613,6 +1811,7 @@ export default defineConfig(async () => {
     const routeSpecificPayload = await fetchRouteSpecificPreloadedPayload(
       canonicalPath,
       detailWidgetContextMap,
+      sharedPreloadedApiPayload,
     );
     const mergedPayload = mergePreloadedPayloads(
       sharedPayload,
