@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { createProductPath } from "../../utils/slugGenerator";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
-import { FaMobileAlt, FaArrowRight } from "react-icons/fa";
+import { FaArrowRight } from "react-icons/fa";
 import {
   HOME_SECTION_LEAD_DARK,
   HOME_SECTION_TITLE_DARK,
@@ -158,48 +158,72 @@ const getRowImage = (row) => {
   return "";
 };
 
+const getRowBrand = (row) =>
+  firstText(
+    row?.brand_name,
+    row?.brand,
+    row?.manufacturer,
+    row?.basic_info?.brand,
+    row?.basic_info?.brand_name,
+    row?.specifications?.brand,
+  );
+
+const getShortLabel = (name, brand) => {
+  const source = firstText(brand, name) || "Phone";
+  return source
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || "")
+    .join("");
+};
+
 const LatestSmartphoneCard = ({ device, index, isLoaded, onClick }) => {
   const deviceName = device?.name || "Latest smartphone";
+  const [imageFailed, setImageFailed] = useState(false);
 
   return (
     <button
       type="button"
       aria-label={`Open ${deviceName}`}
       onClick={onClick}
-      className={`group relative flex w-full snap-start flex-row items-center gap-4 rounded-3xl  p-4 text-left text-white backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-white/20 sm:flex-col sm:items-stretch sm:p-6 ${
+      className={`group relative flex min-w-[160px] sm:min-w-[180px] md:min-w-[200px] shrink-0 flex-col gap-2.5 rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-left text-white backdrop-blur-lg transition-all duration-300 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
       style={{ transitionDelay: `${index * 60}ms` }}
     >
-      <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-blue-950/20 sm:h-44 sm:w-full">
-        {device.image ? (
+      <div className="flex h-32 w-full sm:h-40 lg:h-44 items-center justify-center overflow-hidden rounded-xl sm:rounded-2xl border border-sky-300/20 bg-blue-950/40">
+        {device.image && !imageFailed ? (
           <img
             src={device.image}
             alt={deviceName}
-            className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-110 sm:p-3"
+            className="h-full w-full object-contain p-2 sm:p-3 transition-transform duration-300 group-hover:scale-110"
             loading="lazy"
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-            }}
+            onError={() => setImageFailed(true)}
           />
         ) : (
-          <FaMobileAlt className="text-3xl text-slate-500 sm:text-4xl" />
+          <span className="text-base sm:text-lg font-bold tracking-wide text-slate-500">
+            {device.short || "LT"}
+          </span>
         )}
       </div>
 
-      <div className="flex flex-col justify-between">
-        <p className="line-clamp-2 text-sm font-bold leading-snug text-white sm:text-base">
+      <div className="flex-1">
+        <p className="line-clamp-2 text-xs sm:text-sm font-bold leading-snug text-white">
           {deviceName}
         </p>
+        <p className="mt-0.5 text-[10px] sm:text-xs font-medium text-sky-200/70">
+          {device.brand || "Smartphone"}
+        </p>
+      </div>
 
-        <div className="mt-2 flex items-center justify-between gap-2 border-t border-white/12 pt-2 sm:mt-3 sm:pt-3">
-          <span className="text-xs font-medium text-slate-300">
-            View Details
-          </span>
-          <span className="transition-transform duration-300 group-hover:translate-x-1">
-            <FaArrowRight className="h-3 w-3 text-slate-300 sm:h-3.5 sm:w-3.5" />
-          </span>
-        </div>
+      <div className="flex items-center justify-between gap-2 border-t border-sky-300/20 pt-2.5 sm:pt-3">
+        <span className="text-[10px] sm:text-xs font-semibold text-sky-200">
+          View Details
+        </span>
+        <span className="transition-transform duration-300 group-hover:translate-x-1">
+          <FaArrowRight className="h-2.5 w-2.5 sm:h-3 sm:w-3.5 text-sky-200" />
+        </span>
       </div>
     </button>
   );
@@ -235,7 +259,9 @@ const LatestSmartphones = () => {
             row.basic_info?.id ??
             null,
           name: getRowName(row),
+          brand: getRowBrand(row),
           image: getRowImage(row),
+          short: getShortLabel(getRowName(row), getRowBrand(row)),
           _rowIndex: index,
         }));
 
@@ -269,31 +295,30 @@ const LatestSmartphones = () => {
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(191,219,254,0.18),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(103,232,249,0.14),_transparent_30%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(186,230,253,0.28),_transparent_30%),radial-gradient(circle_at_75%_18%,_rgba(56,189,248,0.22),_transparent_24%),radial-gradient(circle_at_bottom_right,_rgba(34,211,238,0.18),_transparent_28%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(186,230,253,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(186,230,253,0.07)_1px,transparent_1px)] [background-size:34px_34px] [mask-image:radial-gradient(circle_at_center,white,transparent_88%)]" />
+      <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-sky-950/20 to-transparent" />
       <div className="relative mx-auto max-w-7xl px-4 pb-14 pt-10 sm:px-6 sm:pb-20 sm:pt-16 lg:px-8 lg:pb-24 lg:pt-24">
         {/* Header Section */}
-        <div className="mx-auto max-w-4xl text-center">
-          <h1
-            className={`${HOME_SECTION_TITLE_DARK} mx-auto max-w-[10.5ch] text-[2.45rem] tracking-[-0.04em] sm:max-w-none sm:text-5xl lg:text-6xl`}
-          >
-            <span className="block">Latest </span>
-            <span className="bg-gradient-to-r from-white via-sky-100 to-cyan-200 bg-clip-text text-transparent animate-pulse">
-              Smartphones
-            </span>
+        <div className="mx-auto max-w-5xl text-center">
+          <h1 className="text-[20px] font-bold uppercase tracking-[0.32em] text-sky-400 sm:text-xs">
+            Latest Smartphones
           </h1>
 
           <p className={HOME_SECTION_LEAD_DARK}>
-            Discover the newest released phones. Stay updated with the latest
+            Discover the latest smartphones that have just hit the market.
+            Explore their features, specifications, and prices to find the
+            perfect device for you.
           </p>
         </div>
 
         {/* Section Divider */}
         <div className="mt-14 flex items-center gap-4">
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/35 to-transparent" />
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-yellow-200/50 to-transparent" />
           <span className="whitespace-nowrap text-xs font-bold uppercase tracking-[0.3em] text-white/80">
             Featured Latest
           </span>
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/35 to-transparent" />
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-yellow-200/50 to-transparent" />
         </div>
 
         {loadingLatest ? null : currentDevices.length === 0 ? (
@@ -305,19 +330,30 @@ const LatestSmartphones = () => {
         ) : null}
 
         {/* Products Row - Single row horizontal scroll */}
-        <div className="no-scrollbar mt-8 grid grid-flow-col auto-cols-[calc(100%-1rem)] gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scroll-smooth sm:auto-cols-[calc(50%-0.5rem)] md:auto-cols-[calc(33.333%-0.67rem)] lg:auto-cols-[calc(25%-0.75rem)] xl:auto-cols-[calc(20%-0.6rem)]">
+        <div className="no-scrollbar mt-8 flex items-center gap-3 overflow-x-auto pb-2 sm:gap-4 md:gap-5">
           {loadingLatest
             ? Array.from({ length: 6 }).map((_, i) => (
-                <div key={`skeleton-${i}`} className="w-full animate-pulse">
-                  <div className="relative flex h-auto flex-row items-center gap-4 overflow-hidden rounded-3xl border border-white/12 bg-white/[0.08] p-4 backdrop-blur-md sm:flex-col sm:items-stretch sm:p-6">
-                    <div className="h-24 w-24 shrink-0 rounded-2xl bg-blue-950/20 sm:h-44 sm:w-full" />
-                    <div className="flex-1 space-y-3">
-                      <div className="h-4 w-4/5 rounded bg-white/15" />
-                      <div className="h-4 w-3/4 rounded bg-white/10" />
-                      <div className="border-t border-white/10 pt-3">
-                        <div className="h-3 w-24 rounded bg-white/15" />
-                      </div>
-                    </div>
+                <div
+                  key={`skeleton-${i}`}
+                  className={`flex min-w-[160px] sm:min-w-[180px] md:min-w-[200px] shrink-0 flex-col gap-2.5 rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-slate-100 backdrop-blur-lg transition-all duration-300 ${
+                    isLoaded
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 translate-y-2"
+                  } animate-pulse`}
+                  style={{ transitionDelay: `${i * 60}ms` }}
+                >
+                  <div className="flex h-32 w-full items-center justify-center overflow-hidden rounded-xl sm:rounded-2xl border border-sky-300/20 bg-blue-950/40 sm:h-40 lg:h-44">
+                    <div className="h-12 w-12 rounded bg-white/10" />
+                  </div>
+
+                  <div className="flex-1">
+                    <div className="h-3 w-4/5 rounded bg-white/15" />
+                    <div className="mt-2 h-2 w-16 rounded bg-white/10" />
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 border-t border-sky-300/20 pt-2.5 sm:pt-3">
+                    <div className="h-2.5 w-20 rounded bg-white/15" />
+                    <div className="h-3 w-3 rounded-full bg-white/15 sm:h-3.5 sm:w-3.5" />
                   </div>
                 </div>
               ))
@@ -333,16 +369,6 @@ const LatestSmartphones = () => {
         </div>
 
         {/* View All Link */}
-        {!loadingLatest && currentDevices.length > 0 && (
-          <div className="mt-10 flex justify-center">
-            <Link
-              to="/smartphones/latest"
-              className="group rounded-full border border-white/15 bg-white/10 px-6 py-3 font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:border-white/25 hover:bg-white/15 hover:shadow-lg"
-            >
-              View all latest smartphones {"->"}
-            </Link>
-          </div>
-        )}
       </div>
     </section>
   );

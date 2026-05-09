@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { FaArrowRight } from "react-icons/fa";
-import { HooksSignature } from "./NewsBrandBadge";
 import { NEWS_BRAND_STYLES } from "./newsBrandStyles";
 import {
   createNewsStoryPath,
@@ -126,12 +125,11 @@ const LatestNewsArticlesSection = () => {
   };
 
   return (
-    <section className="border-t border-slate-200 bg-white">
+    <section className="border-t border-slate-200 ">
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
         <div className="flex flex-col gap-5 sm:gap-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
-              <HooksSignature variant="light" />
               <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.32em] text-sky-700">
                 Latest News
               </p>
@@ -197,7 +195,7 @@ const LatestNewsArticlesSection = () => {
                   <Link
                     key={story.slug}
                     to={createNewsStoryPath(story.slug)}
-                    className="group w-[84vw] max-w-[21rem] shrink-0 snap-center rounded-2xl border border-white/80 bg-white p-3 shadow-[0_22px_50px_rgba(15,23,42,0.08)]"
+                    className="group w-[84vw] max-w-[21rem] shrink-0 snap-center rounded-2xl  bg-white p-3 shadow-[0_22px_50px_rgba(15,23,42,0.08)]"
                   >
                     <div className="relative overflow-hidden rounded-2xl">
                       <NewsStoryMedia
@@ -319,7 +317,9 @@ const LatestNewsArticlesSection = () => {
                               {story.label || "Newsroom"}
                             </span>
                             <span className="h-1 w-1 rounded-full bg-slate-300" />
-                            <span className="truncate">{story.publishedAt}</span>
+                            <span className="truncate">
+                              {story.publishedAt}
+                            </span>
                           </div>
 
                           <h4 className="mt-3 line-clamp-2 text-lg font-black leading-tight tracking-tight text-slate-900 transition-colors duration-200 group-hover:text-sky-800">

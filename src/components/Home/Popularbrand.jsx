@@ -6,61 +6,123 @@ import useRevealAnimation from "../../hooks/useRevealAnimation";
 // import RecommendedSmartphones from "./RecommendedSmartphones";
 import { buildSmartphoneBrandPath } from "../../utils/smartphoneListingRoutes";
 import { FaArrowRight } from "react-icons/fa";
-import {
-  HOME_SECTION_LEAD_LIGHT,
-  HOME_SECTION_TITLE_LIGHT,
-} from "./homeSectionTypography";
+import { HOME_SECTION_LEAD_LIGHT } from "./homeSectionTypography";
 
 const BRAND_PLACEHOLDER_LOGO =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Crect width='80' height='80' rx='12' fill='%23f3f4f6'/%3E%3Ctext x='40' y='46' font-family='Arial' font-size='10' text-anchor='middle' fill='%239ca3af'%3ELogo%3C/text%3E%3C/svg%3E";
 
+const getBrandMetaLabel = (brand) => {
+  const category = String(
+    brand?.category ||
+      brand?.originalBrand?.category ||
+      brand?.originalBrand?.product_type ||
+      "",
+  ).toLowerCase();
+
+  if (category.includes("smart") || category.includes("mobile")) {
+    return "Smartphones";
+  }
+  if (category.includes("lap") || category.includes("computer")) {
+    return "Laptops";
+  }
+  if (
+    category.includes("appliance") ||
+    category.includes("television") ||
+    category.includes("tv")
+  ) {
+    return "TVs";
+  }
+  if (
+    category.includes("network") ||
+    category.includes("router") ||
+    category.includes("wifi")
+  ) {
+    return "Networking";
+  }
+
+  return "Browse brand";
+};
+
+const getBrandShortLabel = (name) =>
+  String(name || "Brand")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || "")
+    .join("");
+
 const BrandCard = ({ brand, index, isActive, isLoaded, onClick }) => {
+  const [imageFailed, setImageFailed] = useState(false);
+  const metaLabel = getBrandMetaLabel(brand);
+
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`group relative flex h-16 w-[84vw] max-w-[240px] shrink-0 snap-start items-center gap-3 rounded-2xl border bg-white px-4 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 sm:w-[255px] lg:w-[270px] ${
-        isActive
-          ? "border-blue-200 bg-blue-50 shadow-md"
-          : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
-      } ${isLoaded ? "opacity-100" : "opacity-0 translate-y-2"}`}
-      style={{ transitionDelay: `${index * 45}ms` }}
+      className={`group relative flex min-w-[160px] sm:min-w-[180px] md:min-w-[200px] shrink-0 flex-col gap-2.5 rounded-2xl  bg-transparent sm:rounded-3xl p-4 sm:p-5 text-left shadow-[0_18px_45px_-30px_rgba(15,23,42,0.1)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_55px_-34px_rgba(15,23,42,0.18)] ${
+        isActive ? "border-sky-200" : " hover:border-slate-300"
+      } ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
+      style={{ transitionDelay: `${index * 60}ms` }}
     >
       <div
-        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-colors duration-300 ${
-          isActive
-            ? "border-blue-200 bg-white"
-            : "border-slate-200 bg-slate-50"
+        className={`flex h-32 w-full sm:h-40 lg:h-44 items-center justify-center overflow-hidden rounded-xl sm:rounded-2xl border transition-colors duration-300 ${
+          isActive ? "border-sky-200 bg-white" : "border-slate-200 bg-slate-50"
         }`}
       >
-        <img
-          src={brand.logo || BRAND_PLACEHOLDER_LOGO}
-          alt={brand.name || "brand"}
-          loading="lazy"
-          decoding="async"
-          className="h-7 w-7 object-contain"
-          onError={(e) => {
-            e.currentTarget.onerror = null;
-            e.currentTarget.src = BRAND_PLACEHOLDER_LOGO;
-          }}
-        />
+        {brand.logo && !imageFailed ? (
+          <img
+            src={brand.logo}
+            alt={brand.name || "brand"}
+            loading="lazy"
+            decoding="async"
+            className="h-16 w-16 object-contain p-1 transition-transform duration-300 group-hover:scale-110 sm:h-20 sm:w-20"
+            onError={() => {
+              setImageFailed(true);
+            }}
+          />
+        ) : (
+          <span className="text-base sm:text-lg font-bold tracking-wide text-slate-400">
+            {getBrandShortLabel(brand.name)}
+          </span>
+        )}
       </div>
 
-      <div className="min-w-0 flex flex-1 items-center justify-between gap-3">
-        <span
-          className={`block truncate text-sm font-semibold leading-none sm:text-base transition-colors duration-300 ${
-            isActive ? "text-slate-900" : "text-slate-700"
+      <div className="flex-1 min-w-0">
+        <p
+          className={`truncate text-xs sm:text-sm font-bold leading-snug transition-colors duration-300 ${
+            isActive ? "text-slate-900" : "text-slate-800"
           }`}
         >
           {brand.name}
+        </p>
+        <p
+          className={`mt-0.5 text-[10px] sm:text-xs font-medium transition-colors duration-300 ${
+            isActive ? "text-slate-600" : "text-slate-500"
+          }`}
+        >
+          {metaLabel}
+        </p>
+      </div>
+
+      <div
+        className={`flex items-center justify-between gap-2 border-t pt-2.5 sm:pt-3 ${
+          isActive ? "border-sky-200" : "border-slate-200"
+        }`}
+      >
+        <span
+          className={`text-[10px] sm:text-xs font-semibold transition-colors duration-300 ${
+            isActive ? "text-slate-700" : "text-slate-600"
+          }`}
+        >
+          Explore Brand
         </span>
         <span
-          className={`text-sm transition-transform duration-300 group-hover:translate-x-0.5 ${
-            isActive ? "text-slate-600" : "text-slate-400"
+          className={`transition-transform duration-300 group-hover:translate-x-1 ${
+            isActive ? "text-slate-600" : "text-slate-500"
           }`}
           aria-hidden="true"
         >
-          <FaArrowRight className="h-3 w-3" />
+          <FaArrowRight className="h-2.5 w-2.5 sm:h-3 sm:w-3.5" />
         </span>
       </div>
     </button>
@@ -145,30 +207,36 @@ const PopularBrands = () => {
 
   return (
     <section
-      className={`relative overflow-hidden border-t border-slate-200 bg-gradient-to-b from-sky-50 via-white to-slate-50 transition-all duration-700 ${
+      className={`relative overflow-hidden border-t border-slate-200 bg-transparent transition-all duration-700 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.08)_1px,transparent_1px)] [background-size:34px_34px] [mask-image:radial-gradient(circle_at_center,white,transparent_88%)]" />
       <div className="relative px-4 pt-10 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-5xl text-center">
-          <h2 className={HOME_SECTION_TITLE_LIGHT}>
-            <span className="block">Explore by</span>
-            <span className="bg-gradient-to-r from-cyan-600 via-blue-600 to-sky-600 bg-clip-text text-transparent animate-pulse">
-              Popular Brands
-            </span>
-          </h2>
+          <h1 className="text-[11px] font-bold uppercase tracking-[0.32em] text-purple-600 sm:text-xs">
+            Popular Brands
+          </h1>
 
-          <p className={HOME_SECTION_LEAD_LIGHT}>
-            Browse trusted brands across smartphones, laptops, TVs, and other
-            devices.
+          <p className={`${HOME_SECTION_LEAD_LIGHT} mt-4`}>
+            Jump into top brands across smartphones, laptops, TVs, and home tech
+            with a cleaner card-first browse.
           </p>
         </div>
+      </div>
+
+      <div className="mt-10 flex items-center gap-4">
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-purple-300 to-transparent" />
+        <span className="whitespace-nowrap text-xs font-bold uppercase tracking-[0.3em] text-slate-500">
+          Browse by Brand
+        </span>
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-purple-300 to-transparent" />
       </div>
 
       <div className="relative mx-auto max-w-7xl px-4 pb-12 pt-8 sm:px-6 sm:pb-16 lg:px-8 lg:pb-20">
         {uniqueBrands.length > 0 && (
           <div className="mx-auto mt-8 max-w-6xl">
-            <div className="no-scrollbar flex w-full flex-nowrap gap-3 overflow-x-auto pb-5 pt-0 snap-x snap-mandatory sm:gap-4">
+            <div className="no-scrollbar flex w-full items-center gap-3 overflow-x-auto pb-2 pt-0 sm:gap-4 md:gap-5">
               {uniqueBrands.map((brand, index) => {
                 const isActive = activeBrand === brand.id;
 

@@ -419,6 +419,105 @@ const getRowBadge = (row) =>
     row?.manual_badge,
   ) || "Best Deal";
 
+const getShortLabel = (name, brand) => {
+  const source = firstText(brand, name) || "Device";
+  return source
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || "")
+    .join("");
+};
+
+const getDeviceMetaLabel = (device) => {
+  const parts = [];
+  if (device?.brand) parts.push(device.brand);
+  if (device?.price && device.price !== "N/A") parts.push(device.price);
+  if (parts.length) return parts.join(" · ");
+  return device?.badge || "Trending pick";
+};
+
+const BestPriceCard = ({
+  device,
+  index,
+  isLoaded,
+  onClick,
+  FallbackCardIcon,
+}) => {
+  const [imageFailed, setImageFailed] = useState(false);
+
+  return (
+    <button
+      type="button"
+      aria-label={`Open ${device.name}`}
+      onClick={onClick}
+      className={`group relative flex min-w-[160px] sm:min-w-[180px] md:min-w-[200px] shrink-0 flex-col gap-2.5 rounded-2xl sm:rounded-3xl  bg-transparent p-4 sm:p-5 text-left text-slate-900  backdrop-blur-lg transition-all duration-300 hover:-translate-y-0.5  ${
+        isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+      }`}
+      style={{ transitionDelay: `${index * 60}ms` }}
+    >
+      <div className="flex h-32 w-full sm:h-40 lg:h-44 items-center justify-center overflow-hidden rounded-xl sm:rounded-2xl border border-slate-200 bg-slate-50">
+        {device.image && !imageFailed ? (
+          <img
+            src={device.image}
+            alt={device.name}
+            className="h-full w-full object-contain p-2 sm:p-3 transition-transform duration-300 group-hover:scale-110"
+            loading="lazy"
+            onError={() => setImageFailed(true)}
+          />
+        ) : device.short ? (
+          <span className="text-base sm:text-lg font-bold tracking-wide text-slate-400">
+            {device.short}
+          </span>
+        ) : (
+          <FallbackCardIcon className="text-4xl text-slate-400" />
+        )}
+      </div>
+
+      <div className="flex-1">
+        <p className="line-clamp-2 text-xs sm:text-sm font-bold leading-snug text-slate-900">
+          {device.name}
+        </p>
+        <p className="mt-0.5 text-[10px] sm:text-xs font-medium text-slate-500">
+          {getDeviceMetaLabel(device)}
+        </p>
+      </div>
+
+      <div className="flex items-center justify-between gap-2 border-t border-slate-200 pt-2.5 sm:pt-3">
+        <span className="text-[10px] sm:text-xs font-semibold text-slate-700">
+          View Details
+        </span>
+        <span className="transition-transform duration-300 group-hover:translate-x-1">
+          <FaArrowRight className="h-2.5 w-2.5 sm:h-3 sm:w-3.5 text-slate-500" />
+        </span>
+      </div>
+    </button>
+  );
+};
+
+const BestPriceSkeleton = ({ index, isLoaded }) => (
+  <div
+    className={`flex min-w-[160px] sm:min-w-[180px] md:min-w-[200px] shrink-0 flex-col gap-2.5 rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-slate-900  backdrop-blur-lg transition-all duration-300 ${
+      isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+    } animate-pulse`}
+    style={{ transitionDelay: `${index * 60}ms` }}
+  >
+    <div className="flex h-32 w-full items-center justify-center overflow-hidden rounded-xl sm:rounded-2xl border border-slate-200 bg-slate-50 sm:h-40 lg:h-44">
+      <div className="h-12 w-12 rounded bg-slate-200" />
+    </div>
+
+    <div className="flex-1">
+      <div className="h-3 w-4/5 rounded bg-slate-200" />
+      <div className="mt-2 h-2 w-24 rounded bg-slate-100" />
+    </div>
+
+    <div className="flex items-center justify-between gap-2 border-t border-slate-200 pt-2.5 sm:pt-3">
+      <div className="h-2.5 w-20 rounded bg-slate-200" />
+      <div className="h-3 w-3 rounded-full bg-slate-200 sm:h-3.5 sm:w-3.5" />
+    </div>
+  </div>
+);
+
 const BestPriceSection = () => {
   const [activeCategory, setActiveCategory] = useState("smartphone");
   const [currentDevices, setCurrentDevices] = useState([]);
@@ -474,6 +573,10 @@ const BestPriceSection = () => {
             row.basic_info?.id ??
             null;
           const variantId = row.variant_id ?? row.variantId ?? null;
+          const formattedPriceStr =
+            basePrice !== null && basePrice !== undefined && basePrice !== ""
+              ? `Rs. ${Number(basePrice).toLocaleString("en-IN")}`
+              : "N/A";
 
           return {
             id: productId,
@@ -482,11 +585,12 @@ const BestPriceSection = () => {
             brand: getRowBrand(row),
             badge: getRowBadge(row),
             base_price: basePrice !== null ? String(basePrice) : null,
-            price: priceStr,
+            price: formattedPriceStr,
             ram: normalizeMemoryValue(specs.ram),
             storage: normalizeMemoryValue(specs.storage),
             image: getRowImage(row),
             score: getRowDisplayScore(row),
+            short: getShortLabel(getRowName(row), getRowBrand(row)),
             _rowIndex: index,
             _priceNumber: basePrice,
           };
@@ -561,6 +665,7 @@ const BestPriceSection = () => {
               storage: combinedStorage,
               image: item.image,
               score: Number.isFinite(item._score) ? item._score : null,
+              short: item.short,
             };
           })
           .slice(0, 15);
@@ -608,20 +713,18 @@ const BestPriceSection = () => {
 
   return (
     <section
-      className={`relative overflow-hidden border-t border-slate-200 bg-white to-white transition-all duration-700 ${
+      className={`relative overflow-hidden border-t border-slate-200  transition-all duration-700 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.08)_1px,transparent_1px)] [background-size:34px_34px] [mask-image:radial-gradient(circle_at_center,white,transparent_88%)]" />
       <div className="relative mx-auto max-w-7xl px-4 pb-16 pt-12 sm:px-6 sm:pb-20 sm:pt-16 lg:px-8 lg:pb-24 lg:pt-24">
         {/* Header Section */}
         <div className="mx-auto mb-12 max-w-5xl text-center">
           <h1
-            className={`${HOME_SECTION_TITLE_LIGHT} mx-auto max-w-[10.5ch] text-[2.45rem] tracking-[-0.04em] sm:max-w-none sm:text-5xl lg:text-6xl`}
+            className={` text-[11px] font-bold uppercase tracking-[0.32em] text-purple-600 sm:text-xs`}
           >
-            <span className="block">Trending </span>
-            <span className="bg-gradient-to-r from-white via-sky-100 to-cyan-200 bg-clip-text text-transparent animate-pulse">
-              Smartphones
-            </span>
+            Trending Smartphones
           </h1>
           <p className={HOME_SECTION_LEAD_LIGHT}>
             Compare the highest-scoring devices across smartphones, laptops,
@@ -633,7 +736,7 @@ const BestPriceSection = () => {
 
         {/* Trending by Hooks - Single Row */}
         <div className="mt-10 flex items-center gap-4">
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-purple-300 to-transparent" />
           <span className="whitespace-nowrap text-xs font-bold uppercase tracking-[0.3em] text-slate-500">
             Trending
           </span>
@@ -641,77 +744,24 @@ const BestPriceSection = () => {
         </div>
 
         {/* Products Row - Horizontal scroll with fixed-size cards */}
-        <div className="no-scrollbar mt-10 flex snap-x snap-mandatory overflow-x-auto gap-2 scroll-smooth pb-4 sm:gap-4 lg:gap-5">
+        <div className="no-scrollbar mt-10 flex items-center gap-3 overflow-x-auto pb-2 sm:gap-4 md:gap-5">
           {loadingTrending
-            ? // Skeleton Loaders
-              Array.from({ length: 8 }).map((_, i) => (
-                <div
+            ? Array.from({ length: 8 }).map((_, i) => (
+                <BestPriceSkeleton
                   key={`skeleton-${i}`}
-                  className="w-[86vw] max-w-[21rem] shrink-0 animate-pulse sm:w-[18rem] lg:w-[19rem]"
-                >
-                  <div className="relative flex overflow-hidden rounded-2xl border border-slate-200 bg-white/80 p-4 sm:block sm:p-4">
-                    <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 sm:h-40 sm:w-full">
-                      <div className="h-24 w-20 rounded-xl bg-slate-200" />
-                    </div>
-                    <div className="flex-1 pl-4 sm:pl-0">
-                      <div className="mt-1 h-4 w-4/5 rounded bg-slate-200 sm:mt-4" />
-                      <div className="mt-4 border-t border-slate-200 pt-3">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="h-4 w-24 rounded bg-slate-200" />
-                          <div className="h-4 w-4 rounded-full bg-slate-200" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                  index={i}
+                  isLoaded={isLoaded}
+                />
               ))
-            : // Actual Products
-              currentDevices.map((device, i) => (
-                <button
+            : currentDevices.map((device, i) => (
+                <BestPriceCard
                   key={`${device.id || "noid"}-${i}`}
-                  type="button"
-                  aria-label={`Open ${device.name}`}
+                  device={device}
+                  index={i}
+                  isLoaded={isLoaded}
                   onClick={() => handleDeviceClick(device)}
-                  className={`group relative flex min-w-[160px] sm:min-w-[180px] md:min-w-[200px] flex-col  rounded-2xl sm:rounded-3xl  text-left text-white backdrop-blur-lg transition-all duration-300 ${
-                    isLoaded
-                      ? "opacity-100 translate-y-0"
-                      : "opacity-0 translate-y-2"
-                  }`}
-                  style={{ transitionDelay: `${i * 60}ms` }}
-                >
-                  <div className="shrink-0 ">
-                    <div className="flex h-32 w-full sm:h-40 lg:h-44 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50 ">
-                      {device.image ? (
-                        <img
-                          src={device.image}
-                          alt={device.name}
-                          className="h-full w-full object-contain p-2 sm:p-3 transition-transform duration-300 group-hover:scale-110 "
-                          loading="lazy"
-                          onError={(e) => {
-                            e.currentTarget.style.display = "none";
-                          }}
-                        />
-                      ) : (
-                        <FallbackCardIcon className="text-4xl text-slate-400" />
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-1 flex-col self-stretch pl-0 sm:p-5">
-                    <h6 className="line-clamp-2 text-base font-bold leading-snug text-slate-900 transition-colors duration-200 group-hover:text-slate-600 ">
-                      {device.name}
-                    </h6>
-
-                    <div className="mt-4 border-t border-slate-200 pt-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-sm font-semibold text-slate-700 transition-colors duration-200 group-hover:text-slate-900">
-                          View Details
-                        </span>
-                        <FaArrowRight className="shrink-0 text-sm text-slate-400 transition-transform duration-300 group-hover:translate-x-1 group-hover:text-slate-700" />
-                      </div>
-                    </div>
-                  </div>
-                </button>
+                  FallbackCardIcon={FallbackCardIcon}
+                />
               ))}
         </div>
       </div>

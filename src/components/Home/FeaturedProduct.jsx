@@ -499,60 +499,49 @@ const SpecScoreBadge = ({ score }) => {
 
 const FeaturedPhoneCard = ({ phone, index, isLoaded, onClick }) => {
   const [imageFailed, setImageFailed] = useState(false);
-  const priceLabel =
-    phone.price !== null && phone.price !== undefined
-      ? formatCurrency(phone.price)
-      : "";
-  const scoreLabel =
-    phone.score !== null && phone.score !== undefined
-      ? `Spec score ${Number(phone.score).toFixed(1)}`
-      : "Live pick";
+  const brandLabel = phone.brandName || phone.brand || "Smartphone";
 
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={`Open ${phone.name}`}
-      className={`group flex w-full shrink-0 snap-start flex-col gap-4 rounded-3xl p-5 text-left text-slate-100 backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-white/20 md:flex-row md:items-center md:gap-5 lg:flex-col lg:items-stretch sm:p-6 ${
+      className={`group relative flex min-w-[160px] sm:min-w-[180px] md:min-w-[200px] shrink-0 flex-col gap-2.5 rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-left text-white backdrop-blur-lg transition-all duration-300 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
       style={{ transitionDelay: `${index * 60}ms` }}
     >
-      <div className="flex h-28 w-full shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-blue-950/20 md:h-24 md:w-24 lg:h-44 lg:w-full">
+      <div className="flex h-32 w-full sm:h-40 lg:h-44 items-center justify-center overflow-hidden rounded-xl sm:rounded-2xl border border-sky-300/20 bg-blue-950/40">
         {phone.image && !imageFailed ? (
           <img
             src={phone.image}
             alt={phone.name}
-            className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-110 md:p-2 lg:p-4"
+            className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-110 sm:p-3"
             loading="lazy"
             onError={() => setImageFailed(true)}
           />
         ) : (
-          <FaMobileAlt className="text-4xl text-slate-500 md:text-2xl lg:text-4xl" />
+          <span className="text-base sm:text-lg font-bold tracking-wide text-slate-500">
+            {phone.short}
+          </span>
         )}
       </div>
 
-      <div className="min-w-0 flex-1">
-        {phone.brand ? (
-          <p className="truncate text-[11px] font-bold  tracking-[0.28em] text-cyan-300">
-            {phone.brand}
-          </p>
-        ) : null}
-
-        <h6 className="mt-1 line-clamp-2 text-lg font-bold leading-snug text-white transition-colors duration-200 group-hover:text-cyan-200 sm:text-base">
+      <div className="flex-1">
+        <p className="text-xs sm:text-sm font-bold leading-snug text-white">
           {phone.name}
-        </h6>
+        </p>
+        <p className="mt-0.5 text-[10px] sm:text-xs font-medium text-sky-200/70">
+          {brandLabel}
+        </p>
       </div>
 
-      <div className="flex w-full items-center justify-between gap-3 border-t border-white/12 pt-3 md:w-auto md:min-w-[8rem] md:border-l md:border-t-0 md:border-l-white/12 md:pl-3 md:pt-0 lg:w-full lg:min-w-0 lg:border-l-0 lg:border-t lg:pl-0 lg:pt-3">
-        <div className="min-w-0">
-          <p className="mt-1 truncate text-base font-black text-white sm:text-sm">
-            View details
-          </p>
-        </div>
-
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-950/25 text-slate-100 transition-all duration-300 group-hover:translate-x-1 group-hover:bg-white/15 sm:h-9 sm:w-9">
-          <FaArrowRight className="h-3.5 w-3.5" />
+      <div className="flex items-center justify-between gap-2 border-t border-sky-300/20 pt-2.5 sm:pt-3">
+        <span className="text-[10px] sm:text-xs font-semibold text-sky-200">
+          View Details
+        </span>
+        <span className="transition-transform duration-300 group-hover:translate-x-1">
+          <FaArrowRight className="h-2.5 w-2.5 sm:h-3 sm:w-3.5 text-sky-200" />
         </span>
       </div>
     </button>
@@ -562,25 +551,24 @@ const FeaturedPhoneCard = ({ phone, index, isLoaded, onClick }) => {
 const FeaturedPhoneSkeleton = ({ index, isLoaded }) => {
   return (
     <div
-      className={`flex w-full shrink-0 snap-start flex-col gap-4 rounded-3xl border border-white/12 bg-white/[0.08] p-5 text-slate-100 backdrop-blur-md transition-all duration-300 md:flex-row md:items-center md:gap-5 lg:flex-col lg:items-stretch sm:p-6 ${
+      className={`flex min-w-[160px] sm:min-w-[180px] md:min-w-[200px] shrink-0 snap-start flex-col gap-2.5 rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-slate-100 backdrop-blur-lg transition-all duration-300 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       } animate-pulse`}
       style={{ transitionDelay: `${index * 60}ms` }}
     >
-      <span className="flex h-28 w-full flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-blue-950/20 md:h-24 md:w-24 lg:h-44 lg:w-full">
-        <span className="h-12 w-12 rounded bg-white/10 md:h-10 md:w-10 lg:h-12 lg:w-12" />
+      <span className="flex h-32 w-full items-center justify-center overflow-hidden rounded-xl border border-sky-300/20 bg-blue-950/40 sm:h-40 lg:h-44 sm:rounded-2xl">
+        <span className="h-12 w-12 rounded bg-white/10" />
       </span>
 
-      <span className="min-w-0 flex-1 space-y-3">
-        <span className="block h-2 w-16 rounded bg-white/15" />
-        <span className="block h-3.5 w-4/5 rounded bg-white/15" />
-        <span className="block h-2 w-full rounded bg-white/10" />
-        <span className="block h-2 w-3/4 rounded bg-white/10" />
-        <span className="mt-4 block h-px w-full bg-white/10" />
-        <span className="block h-2.5 w-24 rounded bg-white/15" />
+      <span className="flex-1">
+        <span className="block h-3 w-4/5 rounded bg-white/15" />
+        <span className="mt-2 block h-2 w-16 rounded bg-white/10" />
       </span>
 
-      <span className="h-10 w-10 rounded-full bg-white/10 sm:h-9 sm:w-9" />
+      <span className="flex items-center justify-between gap-2 border-t border-sky-300/20 pt-2.5 sm:pt-3">
+        <span className="block h-2.5 w-20 rounded bg-white/15" />
+        <span className="block h-3 w-3 rounded-full bg-white/15 sm:h-3.5 sm:w-3.5" />
+      </span>
     </div>
   );
 };
@@ -743,16 +731,13 @@ const FeaturedProduct = () => {
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(191,219,254,0.18),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(103,232,249,0.14),_transparent_30%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(186,230,253,0.28),_transparent_30%),radial-gradient(circle_at_75%_18%,_rgba(56,189,248,0.22),_transparent_24%),radial-gradient(circle_at_bottom_right,_rgba(34,211,238,0.18),_transparent_28%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(186,230,253,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(186,230,253,0.07)_1px,transparent_1px)] [background-size:34px_34px] [mask-image:radial-gradient(circle_at_center,white,transparent_88%)]" />
+      <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-sky-950/20 to-transparent" />
       <div className="relative mx-auto max-w-7xl px-3 sm:px-4 pb-12 sm:pb-16 md:pb-20 lg:pb-24 pt-8 sm:pt-12 md:pt-16 lg:pt-24">
         <div className="mx-auto max-w-4xl text-center">
-          <h1
-            className={`${HOME_SECTION_TITLE_DARK} mx-auto max-w-[10.5ch] text-[2.45rem] tracking-[-0.04em] sm:max-w-none sm:text-5xl lg:text-6xl`}
-          >
-            <span className="block">Featured Phones</span>
-            <span className="bg-gradient-to-r from-white via-sky-100 to-cyan-200 bg-clip-text text-transparent animate-pulse">
-              By Budget
-            </span>
+          <h1 className="text-[11px] font-bold uppercase tracking-[0.32em] text-sky-600 sm:text-xs">
+            Featured Phones By Budget
           </h1>
 
           <p className={HOME_SECTION_LEAD_DARK}>
@@ -821,18 +806,18 @@ const FeaturedProduct = () => {
 
         <div className="mt-10 sm:mt-16">
           <div className="flex items-center gap-2 sm:gap-4">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-yellow-200/50 to-transparent" />
             <span className="inline-flex items-center gap-2 whitespace-nowrap text-xs font-bold uppercase tracking-[0.2em] text-white/90 sm:text-sm sm:tracking-[0.3em]">
-              <FaFire className="h-3.5 w-3.5 text-cyan-300" />
               Featured Picks on Hooks
             </span>
-            <span className="hidden rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-200 sm:inline-flex">
-              Live feed
-            </span>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-yellow-200/50 to-transparent" />
           </div>
 
-          <div className="no-scrollbar mt-10 grid grid-flow-col auto-cols-[88%] gap-4 overflow-x-auto pb-2 snap-x snap-mandatory sm:grid-flow-row sm:auto-cols-auto sm:overflow-visible sm:pb-0 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <p className="mt-4 text-center text-[11px] font-medium text-white/60 sm:text-xs">
+            Live standout devices picked from recent trend activity.
+          </p>
+
+          <div className="no-scrollbar mt-8 flex items-center gap-3 overflow-x-auto pb-2 sm:gap-4 md:gap-5">
             {loadingFeatured
               ? Array.from({ length: FEATURED_PHONES_LIMIT }).map(
                   (_, index) => (

@@ -767,16 +767,12 @@ const HeroSection = () => {
   return (
     <section className="relative overflow-visible border-t border-sky-900/40 bg-gradient-to-b from-[#030b19] via-[#0a2f6d] to-[#030b19]">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(186,230,253,0.28),_transparent_30%),radial-gradient(circle_at_75%_18%,_rgba(56,189,248,0.22),_transparent_24%),radial-gradient(circle_at_bottom_right,_rgba(34,211,238,0.18),_transparent_28%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(186,230,253,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(186,230,253,0.07)_1px,transparent_1px)] [background-size:34px_34px] [mask-image:radial-gradient(circle_at_center,white,transparent_88%)]" />
       <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-sky-950/20 to-transparent" />
       <div className="relative mx-auto max-w-7xl px-4 pb-12 pt-12 sm:px-6 sm:pb-20 sm:pt-16 lg:px-8 lg:pb-24 lg:pt-24">
         <div className="mx-auto max-w-4xl text-center">
-          <h1
-            className={`${HOME_SECTION_TITLE_DARK} mx-auto max-w-[10.5ch] text-[2.45rem] tracking-[-0.04em] sm:max-w-none sm:text-5xl lg:text-6xl`}
-          >
-            <span className="block">Find Your Perfect</span>
-            <span className="bg-gradient-to-r from-white via-sky-100 to-cyan-200 bg-clip-text text-transparent animate-pulse">
-              Device
-            </span>
+          <h1 className="text-[11px] font-bold uppercase tracking-[0.32em] text-sky-600 sm:text-xs">
+            Find Your Perfect Device
           </h1>
 
           <p className={`${HOME_SECTION_LEAD_DARK} max-w-[22rem] sm:max-w-2xl`}>
@@ -904,12 +900,11 @@ const HeroSection = () => {
 
         <div className="mt-10 sm:mt-12">
           <div className="flex items-center gap-3 sm:gap-4">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-yellow-200/50 to-transparent" />
             <span className="inline-flex items-center gap-2 whitespace-nowrap text-xs font-bold uppercase tracking-[0.3em] text-white/80">
-              <FaFire className="h-3.5 w-3.5 text-yellow-300" />
               Trending Searches
             </span>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-yellow-200/50 to-transparent" />
           </div>
 
           <div className="mt-5 flex items-center justify-start gap-2 overflow-x-auto pb-2 no-scrollbar sm:mt-6 sm:justify-center sm:gap-3">

@@ -4,13 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { createProductPath } from "../../utils/slugGenerator";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
-import { FaArrowCircleRight, FaArrowRight, FaMobileAlt } from "react-icons/fa";
-import {
-  HOME_SECTION_LEAD_LIGHT,
-  HOME_SECTION_TITLE_LIGHT,
-  HOME_SECTION_TITLE_DARK,
-  HOME_SECTION_LEAD_DARK,
-} from "./homeSectionTypography";
+import { FaArrowRight, FaMobileAlt } from "react-icons/fa";
+import { HOME_SECTION_LEAD_DARK } from "./homeSectionTypography";
 
 const RECENT_STORAGE_KEY = "hooks_recent_smartphones_v1";
 const FALLBACK_CACHE_KEY = "hooks_reco_fallback_cache_v1";
@@ -130,6 +125,95 @@ const TrendSpecScoreBadge = ({ score }) => {
     </div>
   );
 };
+
+const getRecommendationShortLabel = (device) => {
+  const source = firstText(device?.brand, device?.name) || "Phone";
+  return source
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || "")
+    .join("");
+};
+
+const RecommendationRailCard = ({
+  device,
+  index,
+  isLoaded,
+  onClick,
+  metaLabel,
+  shortLabel,
+}) => {
+  const [imageFailed, setImageFailed] = useState(false);
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`group relative flex min-w-[160px] sm:min-w-[180px] md:min-w-[200px] shrink-0 flex-col gap-2.5 rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-left text-slate-100 backdrop-blur-lg transition-all duration-300 hover:-translate-y-0.5 ${
+        isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+      }`}
+      style={{ transitionDelay: `${index * 60}ms` }}
+    >
+      <div className="flex h-32 w-full sm:h-40 lg:h-44 items-center justify-center overflow-hidden rounded-xl sm:rounded-2xl border border-sky-300/20 bg-blue-950/40">
+        {device.image && !imageFailed ? (
+          <img
+            src={device.image}
+            alt={device.name}
+            className="h-full w-full object-contain p-2 sm:p-3 transition-transform duration-300 group-hover:scale-110"
+            loading="lazy"
+            onError={() => setImageFailed(true)}
+          />
+        ) : (
+          <span className="text-base sm:text-lg font-bold tracking-wide text-slate-500">
+            {shortLabel}
+          </span>
+        )}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <p className="line-clamp-2 text-xs sm:text-sm font-bold leading-snug text-white">
+          {device.name}
+        </p>
+        <p className="mt-0.5 truncate text-[10px] sm:text-xs font-medium text-sky-200/70">
+          {metaLabel}
+        </p>
+      </div>
+
+      <div className="flex items-center justify-between gap-2 border-t border-sky-300/20 pt-2.5 sm:pt-3">
+        <span className="text-[10px] sm:text-xs font-semibold text-sky-200">
+          View Details
+        </span>
+        <span className="transition-transform duration-300 group-hover:translate-x-1">
+          <FaArrowRight className="h-2.5 w-2.5 sm:h-3 sm:w-3.5 text-sky-200" />
+        </span>
+      </div>
+    </button>
+  );
+};
+
+const RecommendationRailSkeleton = ({ index, isLoaded }) => (
+  <div
+    className={`flex min-w-[160px] sm:min-w-[180px] md:min-w-[200px] shrink-0 flex-col gap-2.5 rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-slate-100 backdrop-blur-lg transition-all duration-300 animate-pulse ${
+      isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+    }`}
+    style={{ transitionDelay: `${index * 60}ms` }}
+  >
+    <div className="flex h-32 w-full items-center justify-center overflow-hidden rounded-xl sm:rounded-2xl border border-sky-300/20 bg-blue-950/40 sm:h-40 lg:h-44">
+      <div className="h-12 w-12 rounded bg-white/10" />
+    </div>
+
+    <div className="min-w-0 flex-1">
+      <div className="h-3 w-4/5 rounded bg-white/15" />
+      <div className="mt-2 h-2 w-24 rounded bg-white/10" />
+    </div>
+
+    <div className="flex items-center justify-between gap-2 border-t border-sky-300/20 pt-2.5 sm:pt-3">
+      <div className="h-2.5 w-20 rounded bg-white/15" />
+      <div className="h-3 w-3 rounded-full bg-white/15 sm:h-3.5 sm:w-3.5" />
+    </div>
+  </div>
+);
 
 const mulberry32 = (seed) => () => {
   let t = (seed += 0x6d2b79f5);
@@ -664,25 +748,25 @@ const RecommendedSmartphones = ({
 
   return (
     <section
-      className={`relative mt-12 overflow-hidden rounded-3xl bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 transition-all duration-700 ${
+      className={`relative mt-12 overflow-hidden  border-t border-sky-900/60 bg-gradient-to-b from-[#030b19] via-[#0a2f6d] to-[#030b19] transition-all duration-700 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
-      <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(186,230,253,0.28),_transparent_30%),radial-gradient(circle_at_75%_18%,_rgba(56,189,248,0.22),_transparent_24%),radial-gradient(circle_at_bottom_right,_rgba(34,211,238,0.18),_transparent_28%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(186,230,253,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(186,230,253,0.07)_1px,transparent_1px)] [background-size:34px_34px] [mask-image:radial-gradient(circle_at_center,white,transparent_88%)]" />
+      <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-sky-950/20 to-transparent" />
       <div className="relative mx-auto w-full px-4 py-10 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
         <div className="mx-auto max-w-7xl">
           <div className="mx-auto mb-8 max-w-4xl text-center">
-            <h1
-              className={`mx-auto max-w-[10.5ch] text-[2.45rem] tracking-[-0.04em] sm:max-w-none sm:text-5xl lg:text-6xl text-slate-100`}
-            >
-              <span className="block">Recommended</span>
-              <span className="bg-gradient-to-r from-blue-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent animate-pulse">
-                Smartphones
-              </span>
+            <h1 className="text-[11px] font-bold uppercase tracking-[0.32em] text-sky-600 sm:text-xs">
+              Recommended Smartphones
             </h1>
 
-            <p className="mt-3 text-slate-400">
-              Recommendations tailored to your recent browsing.
+            <p
+              className={`${HOME_SECTION_LEAD_DARK} max-w-[22rem] sm:max-w-2xl`}
+            >
+              Recommendations based on your browsing history and current trends
+              in the smartphone world.
             </p>
           </div>
 
@@ -692,79 +776,32 @@ const RecommendedSmartphones = ({
             </div>
           ) : null}
 
-          <div className="no-scrollbar mt-8 grid grid-flow-col auto-cols-[88%] gap-4 overflow-x-auto pb-2 snap-x snap-mandatory sm:auto-cols-[calc(50%-0.5rem)] md:auto-cols-[calc(33.333%-0.67rem)] lg:auto-cols-[calc(25%-0.75rem)]">
+          <div className="no-scrollbar mt-8 flex items-center gap-3 overflow-x-auto pb-2 sm:gap-4 md:gap-5">
             {loading
               ? Array.from({ length: 5 }).map((_, i) => (
-                  <div
+                  <RecommendationRailSkeleton
                     key={`skeleton-${i}`}
-                    className="flex w-full shrink-0 snap-start flex-col gap-3 rounded-3xl border border-white/12 bg-white/[0.08] p-4 text-slate-100 backdrop-blur-md transition-all duration-300 animate-pulse"
-                  >
-                    <span className="flex h-44 w-44 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-blue-950/20">
-                      <span className="h-12 w-12 rounded bg-white/10" />
-                    </span>
-
-                    <span className="min-w-0 flex-1 space-y-2">
-                      <span className="block h-2 w-16 rounded bg-white/15" />
-                      <span className="block h-3 w-4/5 rounded bg-white/15" />
-                    </span>
-
-                    <span className="mt-auto border-t border-white/12 pt-2">
-                      <span className="block h-2 w-20 rounded bg-white/10" />
-                    </span>
-                  </div>
+                    index={i}
+                    isLoaded={isLoaded}
+                  />
                 ))
               : displayItems.map((device, i) => (
-                  <button
+                  <RecommendationRailCard
                     key={`${device.id || "noid"}-${i}`}
-                    type="button"
+                    device={device}
+                    index={i}
+                    isLoaded={isLoaded}
                     onClick={() => handleDeviceClick(device)}
-                    className={`group flex w-full shrink-0 snap-start flex-col gap-3 rounded-3xl p-4 text-left text-slate-100 backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-white/20 ${
-                      isLoaded
-                        ? "opacity-100 translate-y-0"
-                        : "opacity-0 translate-y-2"
-                    }`}
-                    style={{ transitionDelay: `${i * 60}ms` }}
-                  >
-                    <div className="flex h-44 w-44 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-blue-950/20">
-                      {device.image ? (
-                        <img
-                          src={device.image}
-                          alt={device.name}
-                          className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-110"
-                          loading="lazy"
-                          onError={(e) => {
-                            e.currentTarget.style.display = "none";
-                          }}
-                        />
-                      ) : (
-                        <FaMobileAlt className="text-4xl text-slate-500" />
-                      )}
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      {device.brand ? (
-                        <p className="truncate text-[10px] font-bold tracking-[0.24em] text-cyan-300">
-                          {device.brand}
-                        </p>
-                      ) : null}
-
-                      <h6 className="mt-1 line-clamp-2 text-sm font-bold leading-snug text-white transition-colors duration-200 group-hover:text-cyan-200">
-                        {device.name}
-                      </h6>
-                    </div>
-
-                    <div className="mt-auto flex items-center justify-between gap-2 border-t border-white/12 pt-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-xs font-bold text-white">
-                          View details
-                        </p>
-                      </div>
-
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-950/25 text-slate-100 transition-all duration-300 group-hover:translate-x-1 group-hover:bg-white/15">
-                        <FaArrowRight className="h-3 w-3" />
-                      </span>
-                    </div>
-                  </button>
+                    metaLabel={[
+                      device.brand,
+                      formatPriceLabel(device.price) !== "Price not available"
+                        ? formatPriceLabel(device.price)
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ") || "Recommended pick"}
+                    shortLabel={getRecommendationShortLabel(device)}
+                  />
                 ))}
           </div>
         </div>
