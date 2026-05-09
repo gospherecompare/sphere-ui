@@ -46,6 +46,7 @@ const parseStoryDate = (story) => {
 
 const stripMarkup = (value) =>
   String(value || "")
+    .replace(/(\*\*|__)([\s\S]*?)\1/g, " $2 ")
     .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -88,6 +89,24 @@ const decodeHtmlEntities = (value) => {
   return text;
 };
 
+const applyInlineBoldMarkers = (value) =>
+  String(value || "")
+    .split(/(<[^>]+>)/g)
+    .map((segment) => {
+      if (!segment || segment.startsWith("<")) return segment;
+
+      return segment
+        .replace(/\*\*([\s\S]*?)\*\*/g, (full, inner) => {
+          const text = String(inner || "").trim();
+          return text ? `<strong>${text}</strong>` : full;
+        })
+        .replace(/__([\s\S]*?)__/g, (full, inner) => {
+          const text = String(inner || "").trim();
+          return text ? `<strong>${text}</strong>` : full;
+        });
+    })
+    .join("");
+
 const hasStructuredArticleMarkup = (value) =>
   /<\s*(?:p|h[1-6]|ul|ol|table|blockquote|figure|figcaption|img)\b/i.test(
     decodeHtmlEntities(value),
@@ -112,7 +131,7 @@ const sanitizeArticleHtml = (value) => {
     .replace(/href\s*=\s*(['"])\s*javascript:[^'"]*\1/gi, 'href="#"')
     .replace(/src\s*=\s*(['"])\s*javascript:[^'"]*\1/gi, "");
 
-  return normalized
+  return applyInlineBoldMarkers(normalized)
     .replace(
       /<(?!\/?(?:p|br|strong|em|b|i|u|a|ul|ol|li|h2|h3|h4|h5|h6|blockquote|table|thead|tbody|tr|th|td|figure|figcaption|img)\b)[^>]+>/gi,
       "",
@@ -141,20 +160,39 @@ const formatRelativeTime = (story) => {
   return DATE_FORMATTER.format(date);
 };
 
-const formatPublishedLabel = (story) =>
-  `Published ${formatRelativeTime(story)}`;
-
 const formatAbsoluteDate = (story) => {
   const date = parseStoryDate(story);
   if (!date) return story?.publishedAt || "Recent update";
   return DATE_FORMATTER.format(date);
 };
 
-const getInitials = (name = "") => {
-  const parts = String(name).trim().split(/\s+/).filter(Boolean);
-  if (!parts.length) return "HK";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+const formatHeaderDateTime = (story) => {
+  const date = parseStoryDate(story);
+  if (!date) return `${formatAbsoluteDate(story)} IST`;
+
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Kolkata",
+  }).formatToParts(date);
+
+  const lookup = Object.fromEntries(
+    parts
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value]),
+  );
+
+  const day = lookup.day || "";
+  const month = lookup.month || "";
+  const year = lookup.year || "";
+  const hour = lookup.hour || "";
+  const minute = lookup.minute || "";
+
+  return `${day} ${month} ${year} ${hour}:${minute} IST`.trim();
 };
 
 const formatImageCredit = (story) => {
@@ -173,6 +211,87 @@ const formatImageCredit = (story) => {
   return raw;
 };
 
+const getStoryHeaderMeta = (story) => {
+  const productType = String(story?.productType || "")
+    .trim()
+    .toLowerCase();
+  const category = String(story?.category || "")
+    .trim()
+    .toLowerCase();
+
+  if (productType === "smartphone" || category === "mobiles") {
+    return {
+      parent: {
+        label: "Mobiles",
+        to: "/smartphones",
+        url: "https://tryhook.shop/smartphones",
+      },
+      section: {
+        label: "Mobiles News",
+        to: "/news",
+        url: "https://tryhook.shop/news",
+      },
+    };
+  }
+
+  if (productType === "laptop") {
+    return {
+      parent: {
+        label: "Laptops",
+        to: "/laptops",
+        url: "https://tryhook.shop/laptops",
+      },
+      section: {
+        label: "Laptop News",
+        to: "/news",
+        url: "https://tryhook.shop/news",
+      },
+    };
+  }
+
+  if (productType === "tv") {
+    return {
+      parent: { label: "TVs", to: "/tvs", url: "https://tryhook.shop/tvs" },
+      section: {
+        label: "TV News",
+        to: "/news",
+        url: "https://tryhook.shop/news",
+      },
+    };
+  }
+
+  if (productType === "networking") {
+    return {
+      parent: {
+        label: "Networking",
+        to: "/networking",
+        url: "https://tryhook.shop/networking",
+      },
+      section: {
+        label: "Networking News",
+        to: "/news",
+        url: "https://tryhook.shop/news",
+      },
+    };
+  }
+
+  return {
+    parent: null,
+    section: { label: "News", to: "/news", url: "https://tryhook.shop/news" },
+  };
+};
+
+const buildStoryBreadcrumbs = (story, canonicalUrl) => {
+  const headerMeta = getStoryHeaderMeta(story);
+  const items = [{ label: "Home", to: "/", url: "https://tryhook.shop/" }];
+
+  if (headerMeta.parent) items.push(headerMeta.parent);
+  if (headerMeta.section) items.push(headerMeta.section);
+  if (story?.title) items.push({ label: story.title, url: canonicalUrl });
+
+  return items;
+};
+
 const createSafeShareFileName = (value = "story") => {
   const normalized = String(value)
     .trim()
@@ -182,6 +301,164 @@ const createSafeShareFileName = (value = "story") => {
 
   return normalized || "story";
 };
+
+const HEADLINE_WORD_TARGET = 8;
+const HEADLINE_MIN_LAST_LINE_WORDS = 3;
+const HEADLINE_END_AVOID = new Set([
+  "a",
+  "an",
+  "and",
+  "at",
+  "by",
+  "for",
+  "from",
+  "in",
+  "of",
+  "on",
+  "or",
+  "the",
+  "to",
+  "with",
+]);
+
+const normalizeHeadlineWord = (value) =>
+  String(value || "")
+    .replace(/^[^a-z0-9]+|[^a-z0-9]+$/gi, "")
+    .toLowerCase();
+
+const shouldKeepHeadlineWordsTogether = (word, nextWord) => {
+  if (!word || !nextWord) return false;
+
+  const current = String(word || "").replace(/[^\w%+.-]+$/g, "");
+  const next = String(nextWord || "").replace(/^[^\w%+.-]+/g, "");
+
+  return /\d/.test(current) && /^[a-z]/i.test(next);
+};
+
+const splitHeadlineLines = (value) => {
+  const words = String(value || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (words.length <= HEADLINE_WORD_TARGET + HEADLINE_MIN_LAST_LINE_WORDS) {
+    return [words.join(" ")];
+  }
+
+  const lines = [];
+  let remaining = [...words];
+
+  while (remaining.length > HEADLINE_WORD_TARGET + HEADLINE_MIN_LAST_LINE_WORDS) {
+    let count = HEADLINE_WORD_TARGET;
+    const currentWord = normalizeHeadlineWord(remaining[count - 1]);
+
+    if (HEADLINE_END_AVOID.has(currentWord) && count > 6) {
+      count -= 1;
+    }
+
+    if (
+      shouldKeepHeadlineWordsTogether(remaining[count - 1], remaining[count]) &&
+      remaining.length - (count + 1) >= HEADLINE_MIN_LAST_LINE_WORDS
+    ) {
+      count += 1;
+    }
+
+    lines.push(remaining.slice(0, count).join(" "));
+    remaining = remaining.slice(count);
+  }
+
+  if (remaining.length) {
+    lines.push(remaining.join(" "));
+  }
+
+  return lines.filter(Boolean);
+};
+
+const createAnchorId = (value, fallback = "section") => {
+  const normalized = stripMarkup(value)
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return normalized || fallback;
+};
+
+const extractArticleHeadings = (html) => {
+  const headings = [];
+  const seen = new Map();
+
+  String(html || "").replace(
+    /<h([2-4])\b[^>]*>([\s\S]*?)<\/h\1>/gi,
+    (full, level, inner) => {
+      const text = stripMarkup(inner);
+      if (!text) return full;
+
+      const baseId = createAnchorId(text, `section-${headings.length + 1}`);
+      const count = seen.get(baseId) || 0;
+      const id = count ? `${baseId}-${count + 1}` : baseId;
+
+      seen.set(baseId, count + 1);
+      headings.push({ id, text, level: Number(level) });
+      return full;
+    },
+  );
+
+  return headings;
+};
+
+const injectHeadingIds = (html, headings = []) => {
+  let headingIndex = 0;
+
+  return String(html || "").replace(
+    /<h([2-4])\b([^>]*)>/gi,
+    (full, level, attrs = "") => {
+      const heading = headings[headingIndex];
+      headingIndex += 1;
+
+      if (!heading || /\sid\s*=/.test(attrs)) return full;
+      return `<h${level}${attrs} id="${heading.id}">`;
+    },
+  );
+};
+
+const splitStructuredArticleHtml = (html, paragraphCount = 2) => {
+  if (!html) return { leadHtml: "", restHtml: "" };
+
+  const matcher = /<\/p>/gi;
+  let count = 0;
+  let match = matcher.exec(html);
+
+  while (match) {
+    count += 1;
+    if (count === paragraphCount) {
+      const splitIndex = match.index + match[0].length;
+      return {
+        leadHtml: html.slice(0, splitIndex),
+        restHtml: html.slice(splitIndex),
+      };
+    }
+    match = matcher.exec(html);
+  }
+
+  return { leadHtml: html, restHtml: "" };
+};
+
+const getInitials = (value = "Hooks") =>
+  String(value || "Hooks")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("") || "H";
+
+const ARTICLE_PROSE_CLASS =
+  'pt-6 text-[16px] leading-8 text-[#32363d] sm:text-[18px] sm:leading-9 [&_p]:mb-6 [&_p:last-child]:mb-0 [&_p]:text-[16px] [&_p]:leading-8 [&_p:first-of-type]:text-[18px] [&_p:first-of-type]:leading-8 [&_p:first-of-type]:text-[#1f2937] sm:[&_p]:text-[18px] sm:[&_p]:leading-9 sm:[&_p:first-of-type]:text-[20px] sm:[&_p:first-of-type]:leading-9 [&_h2]:scroll-mt-28 [&_h2]:mt-10 [&_h2]:text-[24px] [&_h2]:font-black [&_h2]:leading-[1.16] [&_h2]:text-[#1f2937] sm:[&_h2]:text-[30px] [&_h3]:scroll-mt-28 [&_h3]:mt-8 [&_h3]:text-[20px] [&_h3]:font-bold [&_h3]:leading-[1.24] [&_h3]:text-[#1f2937] sm:[&_h3]:text-[24px] [&_h4]:mt-7 [&_h4]:text-[18px] [&_h4]:font-bold [&_h4]:text-[#1f2937] [&_ul]:my-6 [&_ul]:list-disc [&_ul]:space-y-3 [&_ul]:pl-5 [&_ol]:my-6 [&_ol]:list-decimal [&_ol]:space-y-3 [&_ol]:pl-5 [&_li]:pl-1 [&_blockquote]:my-8 [&_blockquote]:border-l-4 [&_blockquote]:border-[#2563eb] [&_blockquote]:bg-[#eff6ff] [&_blockquote]:px-5 [&_blockquote]:py-4 [&_blockquote]:text-[#30343a] [&_a]:font-medium [&_a]:text-[#2563eb] [&_a]:underline [&_a]:decoration-[#c4b5fd] [&_a]:underline-offset-4 [&_strong]:font-semibold [&_strong]:text-[#171717] [&_figure]:my-7 [&_figure]:overflow-hidden [&_figure]:border [&_figure]:border-[#e5e7eb] [&_figure]:bg-[#fafafa] [&_figure_figcaption]:border-t [&_figure_figcaption]:border-[#e5e7eb] [&_figure_figcaption]:px-4 [&_figure_figcaption]:py-3 [&_figure_figcaption]:text-[11px] [&_figure_figcaption]:font-semibold [&_figure_figcaption]:uppercase [&_figure_figcaption]:tracking-[0.12em] [&_figure_figcaption]:text-[#6b7280] [&_figure_img]:w-full [&_img]:my-7 [&_img]:w-full [&_div.article-table-wrap]:my-7 [&_div.article-table-wrap]:overflow-x-auto [&_div.article-table-wrap]:border [&_div.article-table-wrap]:border-[#e5e7eb] [&_table]:min-w-[560px] [&_table]:w-full [&_table]:border-collapse [&_table]:text-left [&_table]:text-[14px] sm:[&_table]:text-[15px] [&_thead]:bg-[#f6f7fb] [&_th]:border-b [&_th]:border-[#dde3eb] [&_th]:px-4 [&_th]:py-3 [&_th]:font-semibold [&_th]:text-[#202938] [&_td]:border-b [&_td]:border-[#ebedf0] [&_td]:px-4 [&_td]:py-3 [&_td]:align-top [&_td]:text-[#424955] [&_tbody_tr:last-child_td]:border-b-0';
+
+const ARTICLE_PROSE_CONTINUATION_CLASS = ARTICLE_PROSE_CLASS.replace(
+  /^pt-6\s*/,
+  "",
+);
 
 const useStoryImageState = (story) => {
   const [imageError, setImageError] = useState(false);
@@ -194,7 +471,7 @@ const useStoryImageState = (story) => {
 };
 
 const StoryImageFallback = ({ story }) => (
-  <div className="flex h-full w-full items-end bg-gradient-to-br from-[#0f172a] via-[#1e3a8a] to-[#2563eb] p-5 text-white">
+  <div className="flex h-full w-full items-end bg-gradient-to-br from-[#0f172a] via-[#2563eb] to-[#7c3aed] p-5 text-white">
     <div className="max-w-[13rem]">
       <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/70">
         {getStoryCategory(story)}
@@ -305,7 +582,11 @@ const HeroShareButtons = ({ title, description, image, url }) => {
 
     await copyLink();
     if (typeof window !== "undefined") {
-      window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
+      window.open(
+        "https://www.instagram.com/",
+        "_blank",
+        "noopener,noreferrer",
+      );
     }
   };
 
@@ -313,33 +594,34 @@ const HeroShareButtons = ({ title, description, image, url }) => {
     {
       name: "Facebook",
       icon: FaFacebookF,
-      mobileHidden: true,
+      className: "text-[#4f46e5]",
       url: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedQuote}`,
+    },
+    {
+      name: "X",
+      icon: FaXTwitter,
+      className: "text-[#475569]",
+      url: `https://x.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
     },
     {
       name: "WhatsApp",
       icon: FaWhatsapp,
+      className: "text-[#7c3aed]",
       url: `https://wa.me/?text=${encodedText}%0A%0A${encodedUrl}`,
     },
     {
       name: "Instagram",
       icon: FaInstagram,
-      mobileHidden: true,
+      className: "text-[#6d28d9]",
       onClick: shareOnInstagram,
-    },
-    {
-      name: "X",
-      icon: FaXTwitter,
-      mobileHidden: true,
-      url: `https://x.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
     },
   ];
 
   return (
-    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+    <div className="flex flex-wrap items-center gap-2">
       {items.map((item) => {
         const Icon = item.icon;
-        const visibilityClass = item.mobileHidden ? "hidden sm:inline-flex" : "inline-flex";
+        const buttonClass = `inline-flex h-10 w-10 items-center justify-center rounded-[4px] bg-transparent transition-opacity hover:opacity-75 ${item.className}`;
 
         if (item.onClick) {
           return (
@@ -348,9 +630,9 @@ const HeroShareButtons = ({ title, description, image, url }) => {
               type="button"
               onClick={item.onClick}
               aria-label={`Share on ${item.name}`}
-              className={`${visibilityClass} h-9 w-9 items-center justify-center rounded-full border border-[#dbe6f3] bg-white text-[#1d4ed8] transition-colors hover:bg-[#f3f7ff] sm:h-10 sm:w-10`}
+              className={buttonClass}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="h-3.5 w-3.5" />
             </button>
           );
         }
@@ -362,9 +644,9 @@ const HeroShareButtons = ({ title, description, image, url }) => {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`Share on ${item.name}`}
-            className={`${visibilityClass} h-9 w-9 items-center justify-center rounded-full border border-[#dbe6f3] bg-white text-[#1d4ed8] transition-colors hover:bg-[#f3f7ff] sm:h-10 sm:w-10`}
+            className={buttonClass}
           >
-            <Icon className="h-4 w-4" />
+            <Icon className="h-3.5 w-3.5" />
           </a>
         );
       })}
@@ -373,14 +655,12 @@ const HeroShareButtons = ({ title, description, image, url }) => {
         type="button"
         onClick={copyLink}
         aria-label="Copy link"
-        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#dbe6f3] bg-white text-[#1d4ed8] transition-colors hover:bg-[#f3f7ff] sm:h-10 sm:w-10"
+        className="inline-flex h-10 w-10 items-center justify-center rounded-[4px] bg-transparent text-[#475569] transition-opacity hover:opacity-75"
       >
-        <FaLink className="h-4 w-4" />
+        <FaLink className="h-3.5 w-3.5" />
       </button>
 
-      {copied ? (
-        <span className="text-xs font-semibold text-[#5f6d7f]">Link copied</span>
-      ) : null}
+      {copied ? <span className="text-xs text-[#6b7280]">Link copied</span> : null}
     </div>
   );
 };
@@ -391,18 +671,18 @@ const SectionTitle = ({
   subtitle = "",
   hideSubtitleOnMobile = false,
 }) => (
-  <div className="border-b border-[#e6ebf2] pb-4">
+  <div className="border-b border-[#e5e7eb] pb-3 sm:pb-4">
     {eyebrow ? (
-      <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#1d4ed8]">
+      <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#7c3aed]">
         {eyebrow}
       </p>
     ) : null}
-    <h2 className="mt-2 text-[22px] font-black tracking-[-0.04em] text-[#151515] sm:text-[24px]">
+    <h2 className="mt-2 text-[24px] font-black tracking-[-0.035em] text-[#222222] sm:text-[30px]">
       {title}
     </h2>
     {subtitle ? (
       <p
-        className={`mt-3 max-w-3xl text-sm leading-7 text-[#5f6c7d] sm:text-base ${hideSubtitleOnMobile ? "hidden sm:block" : ""}`}
+        className={`mt-3 max-w-3xl text-sm leading-7 text-[#5f6670] sm:text-[15px] ${hideSubtitleOnMobile ? "hidden sm:block" : ""}`}
       >
         {subtitle}
       </p>
@@ -413,18 +693,18 @@ const SectionTitle = ({
 const TrendingStoryCard = ({ story }) => (
   <Link
     to={createNewsStoryPath(story.slug)}
-    className="group flex gap-3 py-3 first:pt-0 last:pb-0 sm:py-4"
+    className="group grid grid-cols-[92px_minmax(0,1fr)] items-start gap-3 py-4 first:pt-0 last:pb-0"
   >
-    <StoryImage story={story} className="h-[76px] w-[76px] shrink-0 rounded-lg" />
+    <StoryImage
+      story={story}
+      className="aspect-[4/3] w-full border border-[#e5e7eb]"
+    />
 
     <div className="min-w-0 flex-1">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1d4ed8]">
-        {getStoryCategory(story)}
-      </p>
-      <h3 className="mt-2 line-clamp-2 text-[15px] font-semibold leading-6 text-[#171717] transition-colors group-hover:text-[#1d4ed8]">
+      <h3 className="line-clamp-4 text-[14px] font-semibold leading-5 text-[#2a2a2a] transition-colors group-hover:text-[#2563eb]">
         {story.title}
       </h3>
-      <p className="mt-2 hidden text-[11px] uppercase tracking-[0.18em] text-[#7d8898] sm:block">
+      <p className="mt-2 text-[11px] text-[#7c828d]">
         {formatAbsoluteDate(story)}
       </p>
     </div>
@@ -434,36 +714,34 @@ const TrendingStoryCard = ({ story }) => (
 const SidebarStoryCard = ({ story }) => (
   <Link
     to={createNewsStoryPath(story.slug)}
-    className="group grid grid-cols-[70px_minmax(0,1fr)] items-start gap-3 border-b border-[#dde6f0] py-4 first:pt-0 last:border-b-0 last:pb-0"
+    className="group grid grid-cols-[92px_minmax(0,1fr)] items-start gap-3 border-b border-[#eceff3] pb-4 last:border-b-0 last:pb-0"
   >
-    <StoryImage story={story} className="aspect-[4/3] w-full rounded-lg" />
+    <StoryImage
+      story={story}
+      className="aspect-[4/3] w-full border border-[#e5e7eb]"
+    />
 
     <div className="min-w-0">
-      <div className="flex flex-wrap items-center gap-2 text-[10px] font-medium uppercase tracking-[0.18em] text-[#7d8898] sm:text-[11px]">
-        <span className="text-[#1d4ed8]">{getStoryCategory(story)}</span>
-        <span className="h-1 w-1 rounded-full bg-[#c6d1df]" />
-        <span className="whitespace-nowrap">{formatAbsoluteDate(story)}</span>
+      <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7c3aed]">
+        {getStoryCategory(story)}
       </div>
-      <h3 className="mt-2 text-[14px] font-semibold leading-[1.3] text-[#171717] transition-colors group-hover:text-[#1d4ed8]">
+      <h3 className="mt-2 text-[14px] font-semibold leading-[1.35] text-[#2a2a2a] transition-colors group-hover:text-[#2563eb]">
         {story.title}
       </h3>
+      <p className="mt-2 text-[11px] text-[#7c828d]">{formatAbsoluteDate(story)}</p>
     </div>
   </Link>
 );
 
 const RelatedStoryRow = ({ story, index }) => (
-  <li className="grid grid-cols-[2.25rem_minmax(0,1fr)] gap-3 border-b border-[#e6ebf2] py-5 first:pt-0 last:border-b-0 last:pb-0 sm:grid-cols-[2.75rem_minmax(0,1fr)]">
-    <span className="text-[21px] font-black leading-none tracking-[-0.04em] text-[#1d4ed8] tabular-nums sm:text-[24px]">
+  <li className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-3 border-b border-[#e6ebf2] py-5 first:pt-0 last:border-b-0 last:pb-0 sm:grid-cols-[3rem_minmax(0,1fr)] sm:gap-4">
+    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#ede9fe] text-[16px] font-black leading-none tracking-[-0.04em] text-[#7c3aed] tabular-nums sm:h-11 sm:w-11 sm:text-[17px]">
       {String(index + 1).padStart(2, "0")}
     </span>
 
-    <Link
-      to={createNewsStoryPath(story.slug)}
-      className="group block"
-    >
+    <Link to={createNewsStoryPath(story.slug)} className="group block">
       <h3
-        className="text-[15px] font-semibold leading-[1.34] text-[#171717] transition-colors group-hover:text-[#1d4ed8] sm:text-[18px]"
-        style={{ textWrap: "balance" }}
+        className="text-[15px] font-semibold leading-[1.45] text-[#18212f] transition-colors group-hover:text-[#2563eb] sm:text-[18px]"
       >
         {story.title}
       </h3>
@@ -477,24 +755,23 @@ const RelatedStoryRow = ({ story, index }) => (
 const RecommendedStoryRow = ({ story }) => (
   <Link
     to={createNewsStoryPath(story.slug)}
-    className="group grid gap-4 border-b border-[#e6ebf2] py-5 first:pt-0 last:border-b-0 last:pb-0 sm:grid-cols-[7rem_minmax(0,1fr)] sm:items-center"
+    className="group grid gap-4 border-b border-[#e8ebef] py-5 first:pt-0 last:border-b-0 last:pb-0 sm:grid-cols-[7rem_minmax(0,1fr)] sm:items-center"
   >
     <StoryImage
       story={story}
-      className="aspect-[4/3] w-full rounded-lg sm:h-[7rem] sm:w-[7rem]"
+      className="aspect-[4/3] w-full border border-[#e5e7eb] sm:h-[7rem] sm:w-[7rem]"
     />
 
     <div className="min-w-0">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1d4ed8]">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7c3aed]">
         {getStoryCategory(story)}
       </p>
       <h3
-        className="mt-2 text-[16px] font-semibold leading-[1.32] text-[#171717] transition-colors group-hover:text-[#1d4ed8] sm:text-[20px]"
-        style={{ textWrap: "balance" }}
+        className="mt-2 text-[16px] font-semibold leading-[1.4] text-[#262626] transition-colors group-hover:text-[#2563eb] sm:text-[20px]"
       >
         {story.title}
       </h3>
-      <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-[#7d8898] sm:text-[12px]">
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-[#7d8898] sm:text-[12px]">
         <span className="font-medium normal-case tracking-normal text-[#4d5968]">
           {story.author || "Hooks newsroom"}
         </span>
@@ -506,64 +783,185 @@ const RecommendedStoryRow = ({ story }) => (
 );
 
 const TopicChip = ({ label }) => (
-  <span className="inline-flex rounded-full border border-[#dbe5f4] bg-[#f3f7ff] px-2.5 py-1.5 text-[11px] font-medium text-[#344256] sm:px-3 sm:py-2 sm:text-[13px]">
+  <span className="inline-flex rounded-full border border-[#e5e7eb] bg-[#fafafa] px-2.5 py-1.5 text-[11px] font-medium text-[#474f5b] sm:px-3 sm:py-2 sm:text-[12px]">
     {label}
   </span>
 );
 
-const LinkListPanel = ({ title, subtitle, items }) => (
-  <section className="rounded-lg bg-white p-5">
-    <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#1d4ed8]">
-      Buying Guides
-    </p>
-    <h2 className="mt-3 text-[20px] font-black tracking-[-0.04em] text-[#171717] sm:text-[21px]">
-      {title}
-    </h2>
-    {subtitle ? (
-      <p className="mt-3 text-sm leading-7 text-[#5f6c7d]">{subtitle}</p>
-    ) : null}
+const RailPanel = ({ title, items = [], linkable = false }) => {
+  if (!items.length) return null;
 
-    <div className="mt-5 divide-y divide-[#e6ebf2]">
-      {items.map((item) => (
-        <Link
-          key={item}
-          to="/smartphones"
-          className="flex items-center justify-between gap-3 py-3 text-[15px] font-medium text-[#173570] transition-colors hover:text-[#1d4ed8]"
-        >
-          <span>{item}</span>
-          <FaArrowRight className="h-3 w-3 shrink-0 text-[#7d8898]" />
-        </Link>
-      ))}
+  return (
+    <section className="border-t-2 border-[#d8dbe1] pt-3">
+      <h2 className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[#5f6670]">
+        {title}
+      </h2>
+
+      <div className="mt-3 border-y border-[#e5e7eb]">
+        {items.map((item, index) => {
+          const label = typeof item === "string" ? item : item?.text || "";
+          const href =
+            linkable && typeof item === "object" && item?.id
+              ? `#${item.id}`
+              : "";
+
+          if (!label) return null;
+
+          const classes = `flex items-start gap-3 py-3 text-[14px] leading-6 text-[#343a40] ${
+            index !== items.length - 1 ? "border-b border-[#eceff3]" : ""
+          }`;
+
+          const marker = href ? (
+            <span className="pt-[2px] text-[15px] text-[#9aa0a6]">&rsaquo;</span>
+          ) : (
+            <span className="mt-[9px] h-[5px] w-[5px] rounded-full bg-[#7c3aed]" />
+          );
+
+          if (!href) {
+            return (
+              <div key={`${title}-${label}-${index}`} className={classes}>
+                {marker}
+                <span className="min-w-0 flex-1">{label}</span>
+              </div>
+            );
+          }
+
+          return (
+            <a
+              key={`${title}-${label}-${index}`}
+              href={href}
+              className={`${classes} transition-colors hover:text-[#2563eb]`}
+            >
+              {marker}
+              <span className="min-w-0 flex-1">{label}</span>
+            </a>
+          );
+        })}
+      </div>
+    </section>
+  );
+};
+
+const SidebarSection = ({ title, children }) => (
+  <section className="border border-[#e5e7eb] bg-white">
+    <div className="bg-gradient-to-r from-[#2563eb] to-[#7c3aed] px-4 py-2 text-[12px] font-bold uppercase tracking-[0.12em] text-white">
+      {title}
+    </div>
+    <div className="p-4">{children}</div>
+  </section>
+);
+
+const InlineStoryLinksPanel = ({ stories = [] }) => {
+  if (!stories.length) return null;
+
+  return (
+    <section className="my-8 border border-[#d8dbe1] bg-[#fafafa]">
+      <div className="flex items-center gap-3 border-b border-[#e5e7eb] px-4 py-3">
+        <span className="inline-flex h-7 w-7 items-center justify-center bg-[#ede9fe] text-[#7c3aed]">
+          <FaArrowRight className="h-3 w-3" />
+        </span>
+        <p className="text-[15px] font-semibold text-[#262626]">Also See</p>
+      </div>
+
+      <div className="divide-y divide-[#eceff3]">
+        {stories.slice(0, 3).map((story) => (
+          <Link
+            key={story.slug}
+            to={createNewsStoryPath(story.slug)}
+            className="flex items-start gap-3 px-4 py-3 text-[15px] leading-6 text-[#2563eb] transition-colors hover:text-[#7c3aed]"
+          >
+            <span className="mt-[10px] h-[5px] w-[5px] rounded-full bg-[#7c3aed]" />
+            <span className="min-w-0 flex-1">{story.title}</span>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+};
+
+const RelatedStoryTile = ({ story }) => (
+  <Link
+    to={createNewsStoryPath(story.slug)}
+    className="group overflow-hidden border border-[#e5e7eb] bg-white"
+  >
+    <StoryImage story={story} className="aspect-[4/3] w-full" />
+
+    <div className="bg-gradient-to-r from-[#1e293b] to-[#312e81] px-3 py-3">
+      <h3 className="line-clamp-3 text-[15px] font-semibold leading-5 text-white transition-colors group-hover:text-[#ddd6fe]">
+        {story.title}
+      </h3>
+      <p className="mt-2 text-[11px] text-white/70">{formatAbsoluteDate(story)}</p>
+    </div>
+  </Link>
+);
+
+const AuthorNoteCard = ({ author, role, categoryLabel }) => (
+  <section className="border border-[#e5e7eb] bg-[#f6f6f6] p-4 sm:p-5">
+    <div className="flex items-start gap-4">
+      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#d9dde3] text-sm font-black uppercase text-[#2b3440]">
+        {getInitials(author)}
+      </div>
+
+      <div className="min-w-0">
+        <h3 className="text-[24px] font-black tracking-[-0.03em] text-[#2b2b2b]">
+          {author}
+        </h3>
+        <p className="mt-1 text-[13px] text-[#707784]">
+          {role || `${categoryLabel} desk`}
+        </p>
+        <p className="mt-3 text-[14px] leading-7 text-[#5f6670]">
+          Hooks newsroom coverage focused on the details readers usually want
+          first: what is launching, what changes, and why the update matters.
+        </p>
+      </div>
     </div>
   </section>
 );
 
+const LinkListPanel = ({ title, subtitle, items }) => (
+  <SidebarSection title={title}>
+    {subtitle ? (
+      <p className="pb-3 text-[13px] leading-6 text-[#5f6670]">{subtitle}</p>
+    ) : null}
+
+    <div className="divide-y divide-[#eceff3]">
+      {items.map((item) => (
+        <Link
+          key={item}
+          to="/smartphones"
+          className="flex items-center justify-between gap-3 py-3 text-[14px] font-medium text-[#29303a] transition-colors hover:text-[#2563eb]"
+        >
+          <span>{item}</span>
+          <FaArrowRight className="h-3 w-3 shrink-0 text-[#9aa0a6]" />
+        </Link>
+      ))}
+    </div>
+  </SidebarSection>
+);
+
 const LoadingState = () => (
-  <main className="min-h-screen bg-[#f6f8fc] text-slate-900">
-    <section className="border-b border-[#e6ebf2] bg-[linear-gradient(180deg,#ffffff_0%,#f5f8fc_100%)]">
-      <div className="mx-auto max-w-[1280px] px-4 pb-10 pt-6 sm:px-6 sm:pb-12 sm:pt-8 lg:px-8">
+  <main className="min-h-screen bg-[#f5f7fb] text-slate-900">
+    <section className="border-b border-[#e6ebf2] bg-white">
+      <div className="mx-auto max-w-[1200px] px-4 pb-10 pt-6 sm:px-6 sm:pb-12 sm:pt-8 lg:px-8">
         <div className="h-4 w-36 animate-pulse rounded-full bg-slate-200" />
         <div className="mt-5 h-16 max-w-5xl animate-pulse rounded-[22px] bg-slate-200" />
         <div className="mt-4 h-6 max-w-4xl animate-pulse rounded-full bg-slate-100" />
         <div className="mt-6 h-12 w-full max-w-3xl animate-pulse rounded-[18px] bg-slate-100" />
-        <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
-          <div className="h-[360px] animate-pulse rounded-[22px] bg-slate-200" />
-          <div className="h-[360px] animate-pulse rounded-lg bg-[#eef3fa]" />
-        </div>
+        <div className="mt-8 h-[320px] animate-pulse rounded-[28px] border border-slate-200 bg-slate-200 sm:h-[420px]" />
       </div>
     </section>
 
-    <section className="bg-white">
+    <section className="bg-[#f5f7fb]">
       <div className="mx-auto max-w-[1280px] px-4 py-10 sm:px-6 lg:px-8 lg:py-12">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-6">
-            <div className="h-8 w-48 animate-pulse rounded-full bg-slate-200" />
-            <div className="h-64 animate-pulse rounded-lg bg-slate-100" />
-            <div className="h-64 animate-pulse rounded-lg bg-slate-100" />
+            <div className="h-[420px] animate-pulse rounded-[28px] border border-slate-200 bg-white" />
+            <div className="h-[280px] animate-pulse rounded-[28px] border border-slate-200 bg-white" />
+            <div className="h-[320px] animate-pulse rounded-[28px] border border-slate-200 bg-white" />
           </div>
           <div className="space-y-5">
-            <div className="h-72 animate-pulse rounded-lg bg-[#eef3fa]" />
-            <div className="h-72 animate-pulse rounded-lg bg-slate-100" />
+            <div className="h-[420px] animate-pulse rounded-[24px] border border-slate-200 bg-white" />
+            <div className="h-[280px] animate-pulse rounded-[24px] border border-slate-200 bg-white" />
           </div>
         </div>
       </div>
@@ -660,26 +1058,50 @@ const NewsStoryArticlePage = () => {
 
   const storyAuthor =
     String(story?.author || "Hooks newsroom").trim() || "Hooks newsroom";
-
-  const storyHighlights = useMemo(() => {
-    const highlights = Array.isArray(story?.highlights)
-      ? story.highlights.map(stripMarkup).filter(Boolean)
-      : [];
-
-    if (highlights.length) return highlights.slice(0, 4);
-
-    return articleParagraphs.map((paragraph) => clipText(paragraph, 16)).slice(0, 4);
-  }, [articleParagraphs, story?.highlights]);
-
-  const storySpecs = useMemo(
-    () =>
-      (Array.isArray(story?.deviceSpecs) ? story.deviceSpecs : [])
-        .filter(
-          (item) => stripMarkup(item?.label) && stripMarkup(item?.value),
-        )
-        .slice(0, 4),
-    [story?.deviceSpecs],
+  const headlineLines = useMemo(
+    () => splitHeadlineLines(story?.title),
+    [story?.title],
   );
+  const articleHeadings = useMemo(
+    () => extractArticleHeadings(articleHtml),
+    [articleHtml],
+  );
+  const articleHtmlWithAnchors = useMemo(
+    () => injectHeadingIds(articleHtml, articleHeadings),
+    [articleHtml, articleHeadings],
+  );
+  const { leadHtml: structuredLeadHtml, restHtml: structuredRestHtml } =
+    useMemo(
+      () => splitStructuredArticleHtml(articleHtmlWithAnchors, 2),
+      [articleHtmlWithAnchors],
+    );
+  const introParagraphs = articleParagraphs.slice(0, 2);
+  const remainingParagraphs = articleParagraphs.slice(2);
+
+  const editorialHighlights = useMemo(() => {
+    const candidates = [
+      ...(Array.isArray(story?.takeaways) ? story.takeaways : []),
+      ...(Array.isArray(story?.highlights) ? story.highlights : []),
+      articleDescription,
+    ]
+      .map((value) => stripMarkup(value))
+      .filter(Boolean);
+
+    const seen = new Set();
+    return candidates
+      .filter((value) => {
+        const key = normalizeTagKey(value);
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 3);
+  }, [articleDescription, story?.highlights, story?.takeaways]);
+
+  const jumpRailItems = useMemo(() => {
+    if (articleHeadings.length) return articleHeadings.slice(0, 5);
+    return editorialHighlights.map((text) => ({ text }));
+  }, [articleHeadings, editorialHighlights]);
 
   const trendingStories = useMemo(() => {
     const pool = feedStoriesOrdered.filter((item) => item.slug !== story?.slug);
@@ -705,9 +1127,7 @@ const NewsStoryArticlePage = () => {
     const relatedSet = new Set(relatedStories.map((item) => item.slug));
 
     return feedStoriesOrdered
-      .filter(
-        (item) => item.slug !== story?.slug && !relatedSet.has(item.slug),
-      )
+      .filter((item) => item.slug !== story?.slug && !relatedSet.has(item.slug))
       .slice(0, 4);
   }, [feedStoriesOrdered, relatedStories, story?.slug]);
 
@@ -719,14 +1139,42 @@ const NewsStoryArticlePage = () => {
       .filter((item) => !excluded.has(item.slug))
       .slice(0, 3);
   }, [feedStoriesOrdered, story?.slug, trendingStories]);
+  const inlineStories = useMemo(
+    () =>
+      (recommendedStories.length ? recommendedStories : relatedStories).slice(0, 3),
+    [recommendedStories, relatedStories],
+  );
+  const articleKeywords = useMemo(() => {
+    const candidates = [
+      story?.productName,
+      story?.brandName,
+      story?.label,
+      ...storyTags,
+    ]
+      .map((value) => stripMarkup(value))
+      .filter(Boolean);
+
+    const seen = new Set();
+    return candidates
+      .filter((value) => {
+        const key = normalizeTagKey(value);
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 6);
+  }, [story?.brandName, story?.label, story?.productName, storyTags]);
+
+  const storyBreadcrumbs = useMemo(
+    () => buildStoryBreadcrumbs(story, canonicalUrl),
+    [story, canonicalUrl],
+  );
 
   const schema = story
     ? [
-        createBreadcrumbSchema([
-          { label: "Home", url: "https://tryhook.shop/" },
-          { label: "News", url: "https://tryhook.shop/news" },
-          { label: story.title, url: canonicalUrl },
-        ]),
+        createBreadcrumbSchema(
+          storyBreadcrumbs.map(({ label, url }) => ({ label, url })),
+        ),
         createNewsArticleSchema({
           headline: story.title,
           description: articleDescription,
@@ -758,65 +1206,68 @@ const NewsStoryArticlePage = () => {
       />
       <NewsPushOptInCard />
 
-      <main className="min-h-screen bg-[#f6f8fc] text-[#111111]">
-        <section className="border-b border-[#e6ebf2] bg-[linear-gradient(180deg,#ffffff_0%,#f5f8fc_100%)]">
-          <div className="mx-auto max-w-[1280px] px-4 pb-8 pt-4 sm:px-6 sm:pb-12 sm:pt-8 lg:px-8">
-            <div className="hidden flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8a8a8a] sm:flex">
-              <Link to="/" className="transition-colors hover:text-[#1d4ed8]">
-                Home
-              </Link>
-              <span>/</span>
-              <Link
-                to="/news"
-                className="transition-colors hover:text-[#1d4ed8]"
-              >
-                News
-              </Link>
-              <span>/</span>
-              <span className="text-[#1a1a1a]">{getStoryCategory(story)}</span>
+      <main className="min-h-screen bg-white text-[#111111]">
+        <section className="border-b border-[#e5e7eb] bg-white">
+          <div className="mx-auto max-w-[1280px] px-4 pb-8 pt-4 sm:px-6 sm:pb-10 sm:pt-5 lg:px-8">
+            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12px] leading-5 text-[#7b8796]">
+              {storyBreadcrumbs.map((item, index) => {
+                const isLast = index === storyBreadcrumbs.length - 1;
+
+                return (
+                  <React.Fragment key={`${item.label}-${index}`}>
+                    {item.to && !isLast ? (
+                      <Link
+                        to={item.to}
+                        className="transition-colors hover:text-[#1d4ed8]"
+                      >
+                        {item.label}
+                      </Link>
+                    ) : (
+                      <span
+                        className={
+                          isLast
+                            ? "font-medium text-[#334155]"
+                            : "text-[#7b8796]"
+                        }
+                      >
+                        {item.label}
+                      </span>
+                    )}
+                    {!isLast ? (
+                      <span className="text-[#b6c2cf]">&gt;</span>
+                    ) : null}
+                  </React.Fragment>
+                );
+              })}
             </div>
 
-            <div className="mt-2 max-w-5xl sm:mt-5">
-              <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-[#1d4ed8]">
-                {getStoryCategory(story)}
-              </p>
-              <h1
-                className="mt-3 text-[27px] font-black leading-[1.04] tracking-[-0.05em] text-[#121212] sm:text-[44px] lg:text-[52px]"
-                style={{ textWrap: "balance" }}
-              >
-                {story.title}
+            <div className="mt-4 max-w-[1120px]">
+              <h1 className="text-[22px] font-black leading-[1.1] tracking-[-0.035em] text-[#20242b] sm:text-[28px] lg:text-[32px] xl:text-[36px]">
+                {headlineLines.map((line, index) => (
+                  <span key={`${story.slug}-headline-${index + 1}`} className="block">
+                    {line}
+                  </span>
+                ))}
               </h1>
-              <p className="mt-4 max-w-4xl text-[14px] leading-7 text-[#576273] sm:text-base sm:leading-8">
+              <p className="mt-3 max-w-[72ch] text-[15px] leading-7 text-[#5f6670] sm:text-[17px]">
                 {articleDescription}
               </p>
             </div>
 
-            <div className="mt-6 flex flex-col gap-4 border-t border-[#e6ebf2] pt-5 xl:flex-row xl:items-end xl:justify-between">
-              <div className="flex flex-col gap-4">
-                <div className="flex flex-wrap items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#e8f0ff] text-sm font-black uppercase tracking-wide text-[#1d4ed8]">
-                    {getInitials(storyAuthor)}
-                  </div>
-                  <div>
-                    <p className="text-[13px] text-[#667689] sm:text-sm">
-                      Written by{" "}
-                      <span className="font-semibold text-[#151515]">
-                        {storyAuthor}
-                      </span>
-                    </p>
-                    <p className="mt-1 hidden text-sm text-[#7d8898] sm:block">
-                      {formatPublishedLabel(story)}
-                    </p>
-                  </div>
-                </div>
-
-                {storyTags.length ? (
-                  <div className="hidden flex-wrap gap-2 sm:flex">
-                    {storyTags.map((tag) => (
-                      <TopicChip key={tag} label={tag} />
-                    ))}
-                  </div>
+            <div className="mt-5 flex flex-col gap-4 border-b border-[#eceff3] pb-5 sm:flex-row sm:items-end sm:justify-between">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-[#667689] sm:text-[13.5px]">
+                <span>Written by</span>
+                <span className="font-semibold text-[#2563eb]">{storyAuthor}</span>
+                {story?.authorRole ? (
+                  <>
+                    <span className="hidden text-[#cbd5e1] sm:inline">|</span>
+                    <span>{story.authorRole}</span>
+                  </>
                 ) : null}
+                <span className="hidden text-[#cbd5e1] sm:inline">|</span>
+                <span className="text-[#7d8898]">
+                  Updated {formatHeaderDateTime(story)}
+                </span>
               </div>
 
               <HeroShareButtons
@@ -826,154 +1277,147 @@ const NewsStoryArticlePage = () => {
                 url={canonicalUrl}
               />
             </div>
-
-            <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px] xl:items-start">
-              <div>
-                <StoryImage
-                  story={story}
-                  eager
-                  className="aspect-[16/10] w-full rounded-[22px]"
-                />
-                <div className="mt-3 hidden flex-wrap items-center justify-between gap-3 text-[10px] font-medium uppercase tracking-[0.16em] text-[#7d8898] sm:flex sm:text-[11px] sm:tracking-[0.18em]">
-                  <span>Image credit: {formatImageCredit(story)}</span>
-                  <span>{formatAbsoluteDate(story)}</span>
-                </div>
-              </div>
-
-              <aside className="hidden rounded-lg bg-[#f8fbff] p-5 md:block">
-                <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#1d4ed8]">
-                  Story Snapshot
-                </p>
-                <h2 className="mt-3 text-[20px] font-black tracking-[-0.04em] text-[#171717]">
-                  Key details
-                </h2>
-
-                <ol className="mt-5 space-y-4">
-                  {storyHighlights.map((item, index) => (
-                    <li
-                      key={`${story.slug}-highlight-${index + 1}`}
-                      className="grid grid-cols-[1.75rem_minmax(0,1fr)] gap-3"
-                    >
-                      <span className="text-[18px] font-black leading-none tracking-[-0.04em] text-[#1d4ed8]">
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                      <p className="text-[14px] leading-7 text-[#4f5c6d]">
-                        {item}
-                      </p>
-                    </li>
-                  ))}
-                </ol>
-              </aside>
-            </div>
           </div>
         </section>
 
         <section className="bg-white">
-          <div className="mx-auto max-w-[1280px] px-4 py-10 sm:px-6 lg:px-8 lg:py-12">
-            <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-10">
-              <article className="min-w-0 lg:max-w-[780px]">
-                <section className="border-y border-[#e8edf5] py-5">
-                  <div className="flex flex-wrap items-center gap-2.5">
-                    <span className="inline-flex items-center rounded-full bg-[#eaf1ff] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[#1d4ed8]">
+          <div className="mx-auto max-w-[1280px] px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+            <div className="grid gap-8 xl:grid-cols-[160px_minmax(0,1fr)_300px] xl:items-start xl:gap-10">
+              <aside className="hidden xl:block">
+                <div className="sticky top-6 space-y-8">
+                  <RailPanel title="Highlights" items={editorialHighlights} />
+                  <RailPanel
+                    title="Jump To"
+                    items={jumpRailItems}
+                    linkable={articleHeadings.length > 0}
+                  />
+                </div>
+              </aside>
+
+              <div className="min-w-0">
+                <div className="border-b border-[#eceff3] pb-6">
+                  <StoryImage
+                    story={story}
+                    eager
+                    className="aspect-[4/3] w-full border border-[#e5e7eb] sm:aspect-[16/9]"
+                  />
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-[10px] font-medium uppercase tracking-[0.14em] text-[#7d8898]">
+                    <span>Image credit: {formatImageCredit(story)}</span>
+                    <span>{formatAbsoluteDate(story)}</span>
+                  </div>
+                </div>
+
+                <div className="mt-6 grid gap-5 xl:hidden">
+                  <RailPanel title="Highlights" items={editorialHighlights} />
+                  <RailPanel
+                    title="Jump To"
+                    items={jumpRailItems}
+                    linkable={articleHeadings.length > 0}
+                  />
+                </div>
+
+                <article className="mt-8">
+                  <div className="flex flex-wrap items-center gap-2.5 border-b border-[#eceff3] pb-5 text-[11px] uppercase tracking-[0.14em]">
+                    <span className="inline-flex items-center bg-[#f5f3ff] px-3 py-1 font-bold text-[#7c3aed]">
                       {getStoryCategory(story)}
                     </span>
-                    <span className="inline-flex items-center rounded-full border border-[#dfe7f2] px-3 py-1 text-[12px] font-medium text-[#526173]">
+                    <span className="inline-flex items-center border border-[#e5e7eb] px-3 py-1 font-medium text-[#5f6670]">
                       {story.readTime}
                     </span>
-                    <span className="inline-flex items-center rounded-full border border-[#dfe7f2] px-3 py-1 text-[12px] font-medium text-[#526173]">
+                    <span className="inline-flex items-center border border-[#e5e7eb] px-3 py-1 font-medium text-[#5f6670]">
                       {formatAbsoluteDate(story)}
                     </span>
                   </div>
 
-                  {storySpecs.length ? (
-                    <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                      {storySpecs.map((item) => (
+                  {hasStructuredArticle && articleHtmlWithAnchors ? (
+                    <>
+                      {structuredLeadHtml ? (
                         <div
-                          key={`${item.label}-${item.value}`}
-                          className="border-l-2 border-[#dbe7ff] pl-3"
-                        >
-                          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6f86a6]">
-                            {item.label}
+                          className={ARTICLE_PROSE_CLASS}
+                          dangerouslySetInnerHTML={{ __html: structuredLeadHtml }}
+                        />
+                      ) : null}
+
+                      <InlineStoryLinksPanel stories={inlineStories} />
+
+                      {structuredRestHtml ? (
+                        <div
+                          className={ARTICLE_PROSE_CONTINUATION_CLASS}
+                          dangerouslySetInnerHTML={{ __html: structuredRestHtml }}
+                        />
+                      ) : null}
+                    </>
+                  ) : (
+                    <>
+                      <div className="space-y-6 pt-6 text-[16px] leading-8 text-[#32363d] sm:space-y-7 sm:text-[18px] sm:leading-9">
+                        {introParagraphs.map((paragraph, index) => (
+                          <p
+                            key={`${story.slug}-intro-${index + 1}`}
+                            className={
+                              index === 0
+                                ? "text-[18px] leading-8 text-[#1f2937] sm:text-[20px] sm:leading-9"
+                                : "text-[16px] leading-8 sm:text-[18px] sm:leading-9"
+                            }
+                          >
+                            {paragraph}
                           </p>
-                          <p className="mt-1 text-[14px] leading-6 text-[#273445]">
-                            {item.value}
-                          </p>
+                        ))}
+                      </div>
+
+                      <InlineStoryLinksPanel stories={inlineStories} />
+
+                      {remainingParagraphs.length ? (
+                        <div className="space-y-6 text-[16px] leading-8 text-[#32363d] sm:space-y-7 sm:text-[18px] sm:leading-9">
+                          {remainingParagraphs.map((paragraph, index) => (
+                            <p key={`${story.slug}-rest-${index + 1}`}>
+                              {paragraph}
+                            </p>
+                          ))}
                         </div>
+                      ) : null}
+                    </>
+                  )}
+
+                  {articleKeywords.length ? (
+                    <div className="mt-10 border-t border-[#eceff3] pt-5 text-[13px] leading-6 text-[#6b7280]">
+                      <span className="font-semibold text-[#202226]">
+                        Further reading:
+                      </span>{" "}
+                      {articleKeywords.join(", ")}
+                    </div>
+                  ) : null}
+
+                  {storyTags.length ? (
+                    <div className="mt-5 flex flex-wrap gap-2">
+                      {storyTags.map((tag) => (
+                        <TopicChip key={tag} label={tag} />
                       ))}
                     </div>
                   ) : null}
-                </section>
 
-                {hasStructuredArticle && articleHtml ? (
-                  <div
-                    className="pt-4 text-[16px] leading-8 text-[#4d5868] sm:text-[18px] sm:leading-9 [&_p]:mb-6 [&_p:last-child]:mb-0 [&_p]:text-[16px] [&_p]:leading-8 sm:[&_p]:text-[18px] sm:[&_p]:leading-9 [&_h2]:scroll-mt-28 [&_h2]:mt-12 [&_h2]:border-t [&_h2]:border-[#e8edf5] [&_h2]:pt-8 [&_h2]:text-[26px] [&_h2]:font-black [&_h2]:leading-[1.12] [&_h2]:tracking-[-0.04em] [&_h2]:text-[#101828] [&_h2:first-child]:mt-0 [&_h2:first-child]:border-t-0 [&_h2:first-child]:pt-0 sm:[&_h2]:text-[31px] [&_h3]:scroll-mt-28 [&_h3]:mt-9 [&_h3]:text-[21px] [&_h3]:font-black [&_h3]:leading-[1.2] [&_h3]:tracking-[-0.03em] [&_h3]:text-[#17202c] [&_h3:first-child]:mt-0 sm:[&_h3]:text-[24px] [&_h4]:mt-8 [&_h4]:text-[18px] [&_h4]:font-bold [&_h4]:text-[#151515] [&_h4:first-child]:mt-0 sm:[&_h4]:text-[20px] [&_ul]:my-6 [&_ul]:list-disc [&_ul]:space-y-3 [&_ul]:pl-5 [&_ol]:my-6 [&_ol]:list-decimal [&_ol]:space-y-3 [&_ol]:pl-5 [&_li]:pl-1 [&_blockquote]:my-8 [&_blockquote]:rounded-r-[6px] [&_blockquote]:border-l-4 [&_blockquote]:border-[#1d4ed8] [&_blockquote]:bg-[#f7faff] [&_blockquote]:px-5 [&_blockquote]:py-4 [&_blockquote]:text-[#334155] [&_a]:font-semibold [&_a]:text-[#1d4ed8] [&_a]:underline [&_a]:decoration-[#bfdbfe] [&_a]:underline-offset-4 [&_strong]:font-semibold [&_strong]:text-[#171717] [&_figure]:my-8 [&_figure]:overflow-hidden [&_figure]:rounded-[20px] [&_figure]:border [&_figure]:border-[#e2e8f0] [&_figure]:bg-[#f8fbff] [&_figure_figcaption]:border-t [&_figure_figcaption]:border-[#e2e8f0] [&_figure_figcaption]:px-4 [&_figure_figcaption]:py-3 [&_figure_figcaption]:text-[11px] [&_figure_figcaption]:font-semibold [&_figure_figcaption]:uppercase [&_figure_figcaption]:tracking-[0.18em] [&_figure_figcaption]:text-[#74839a] [&_figure_img]:w-full [&_figure_img]:bg-[#eef4fb] [&_figure_img]:object-cover [&_img]:my-7 [&_img]:w-full [&_img]:rounded-[20px] [&_div.article-table-wrap]:my-7 [&_div.article-table-wrap]:overflow-x-auto [&_div.article-table-wrap]:rounded-[10px] [&_div.article-table-wrap]:border [&_div.article-table-wrap]:border-[#e2e8f0] [&_table]:min-w-[560px] [&_table]:w-full [&_table]:border-collapse [&_table]:text-left [&_table]:text-[14px] sm:[&_table]:text-[15px] [&_thead]:bg-[#f3f7ff] [&_th]:border-b [&_th]:border-[#dbe6f3] [&_th]:px-4 [&_th]:py-3 [&_th]:font-semibold [&_th]:text-[#173570] [&_td]:border-b [&_td]:border-[#e6ebf2] [&_td]:px-4 [&_td]:py-3 [&_td]:align-top [&_td]:text-[#4d5868] [&_tbody_tr:last-child_td]:border-b-0 [&_tbody_tr:nth-child(even)]:bg-[#fbfdff]"
-                    dangerouslySetInnerHTML={{ __html: articleHtml }}
-                  />
-                ) : (
-                  <div className="space-y-6 pt-4 text-[16px] leading-8 text-[#4d5868] sm:space-y-7 sm:text-[18px] sm:leading-9">
-                    {articleParagraphs.map((paragraph, index) => (
-                      <p
-                        key={`${story.slug}-paragraph-${index + 1}`}
-                        className="text-[16px] leading-8 sm:text-[18px] sm:leading-9"
-                      >
-                        {paragraph}
-                      </p>
-                    ))}
+                  <div className="mt-8">
+                    <AuthorNoteCard
+                      author={storyAuthor}
+                      role={story?.authorRole}
+                      categoryLabel={getStoryCategory(story)}
+                    />
                   </div>
-                )}
-
-                <div className="mt-10 hidden border-t border-[#e6ebf2] pt-6 md:block">
-                  <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#1d4ed8]">
-                        Byline
-                      </p>
-                      <p className="mt-2 text-[15px] font-semibold text-[#171717]">
-                        {storyAuthor}
-                      </p>
-                      {story?.authorRole && story.authorRole !== storyAuthor ? (
-                        <p className="mt-1 text-sm text-[#6b7787]">
-                          {story.authorRole}
-                        </p>
-                      ) : null}
-                    </div>
-
-                    {storyTags.length ? (
-                      <div className="sm:max-w-[60%]">
-                        <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#1d4ed8]">
-                          Topics
-                        </p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {storyTags.map((tag) => (
-                            <TopicChip key={`story-tag-${tag}`} label={tag} />
-                          ))}
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
+                </article>
 
                 {relatedStories.length ? (
-                  <section className="mt-14">
-                    <SectionTitle
-                      eyebrow="Related"
-                      title="Related Articles"
-                    />
+                  <section className="mt-12">
+                    <SectionTitle eyebrow="Related" title="Related Stories" />
 
-                    <ol className="mt-6">
-                      {relatedStories.map((item, index) => (
-                        <RelatedStoryRow
-                          key={item.slug}
-                          story={item}
-                          index={index}
-                        />
+                    <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                      {relatedStories.map((item) => (
+                        <RelatedStoryTile key={item.slug} story={item} />
                       ))}
-                    </ol>
+                    </div>
                   </section>
                 ) : null}
 
                 {recommendedStories.length ? (
-                  <section className="mt-14 hidden md:block">
+                  <section className="mt-12">
                     <SectionTitle
                       eyebrow="Recommended"
                       title="More From The Newsroom"
@@ -986,48 +1430,37 @@ const NewsStoryArticlePage = () => {
                     </div>
                   </section>
                 ) : null}
-              </article>
+              </div>
 
-              <aside className="space-y-6 lg:sticky lg:top-6 lg:self-start">
-                <section className="rounded-lg bg-[#f8fbff] p-4 sm:p-5">
-                  <div className="flex items-center gap-2 text-[#1d4ed8]">
-                    <FaFire className="h-4 w-4" />
-                    <p className="text-[11px] font-bold uppercase tracking-[0.24em]">
-                      Trending
-                    </p>
+              <aside className="space-y-6 xl:sticky xl:top-6 xl:self-start">
+                <SidebarSection title="Trending News">
+                  <div className="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#7c3aed]">
+                    <FaFire className="h-3.5 w-3.5" />
+                    Live from the newsroom
                   </div>
 
-                  <h2 className="mt-3 text-[20px] font-black tracking-[-0.04em] text-[#171717] sm:text-[21px]">
-                    Trending News
-                  </h2>
-
-                  <div className="mt-5 divide-y divide-[#dbe5f1]">
+                  <div className="divide-y divide-[#eceff3]">
                     {trendingStories.map((item) => (
                       <TrendingStoryCard key={item.slug} story={item} />
                     ))}
                   </div>
+                </SidebarSection>
 
-                  {moreStories.length ? (
-                    <div className="mt-6 hidden border-t border-[#d9e4f1] pt-6 md:block">
-                      <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#1d4ed8]">
-                        More Stories
-                      </p>
-                      <div className="mt-4">
-                        {moreStories.map((item) => (
-                          <SidebarStoryCard key={item.slug} story={item} />
-                        ))}
-                      </div>
+                {moreStories.length ? (
+                  <SidebarSection title="Latest Reads">
+                    <div className="space-y-4">
+                      {moreStories.map((item) => (
+                        <SidebarStoryCard key={item.slug} story={item} />
+                      ))}
                     </div>
-                  ) : null}
-                </section>
+                  </SidebarSection>
+                ) : null}
 
-                <div className="hidden lg:block">
-                  <LinkListPanel
-                    title="Popular Mobile List"
-                    subtitle="High-intent buying links readers often explore after launch and specs coverage."
-                    items={POPULAR_MOBILE_LIST}
-                  />
-                </div>
+                <LinkListPanel
+                  title="Popular Mobile List"
+                  subtitle="High-intent buying links readers often explore after launch and specs coverage."
+                  items={POPULAR_MOBILE_LIST}
+                />
               </aside>
             </div>
           </div>

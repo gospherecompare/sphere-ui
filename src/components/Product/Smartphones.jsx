@@ -3794,7 +3794,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
             <div className="relative mx-auto max-w-7xl">
               <div className={heroContentWidthClass}>
                 <h1
-                  className={`${heroTitleWidthClass} text-3xl font-bold tracking-tight text-[#14255e] sm:text-4xl lg:text-15xl`}
+                  className={`${heroTitleWidthClass} text-[11px] font-bold uppercase tracking-[0.32em] text-purple-600 sm:text-xs`}
                 >
                   {heroTitleText}
                 </h1>

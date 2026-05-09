@@ -62,6 +62,24 @@ const decodeHtmlEntities = (value) => {
 const normalizeHtmlContent = (value) =>
   decodeHtmlEntities(String(value || "").replace(/\r\n?/g, "\n")).trim();
 
+const applyInlineBoldMarkers = (value) =>
+  String(value || "")
+    .split(/(<[^>]+>)/g)
+    .map((segment) => {
+      if (!segment || segment.startsWith("<")) return segment;
+
+      return segment
+        .replace(/\*\*([\s\S]*?)\*\*/g, (full, inner) => {
+          const text = String(inner || "").trim();
+          return text ? `<strong>${text}</strong>` : full;
+        })
+        .replace(/__([\s\S]*?)__/g, (full, inner) => {
+          const text = String(inner || "").trim();
+          return text ? `<strong>${text}</strong>` : full;
+        });
+    })
+    .join("");
+
 const parseBlogTags = (value) => {
   if (Array.isArray(value)) {
     return Array.from(
@@ -125,6 +143,7 @@ const DEFAULT_THEME = FALLBACK_THEME_BY_CATEGORY.news;
 
 const stripMarkup = (value) =>
   safeText(value)
+    .replace(/(\*\*|__)([\s\S]*?)\1/g, " $2 ")
     .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -153,19 +172,26 @@ const renderTokenizedContent = (
 };
 
 const resolveBlogContentHtml = (blog, tokenSnapshot = {}) => {
-  const rendered = normalizeHtmlContent(blog?.content_rendered);
+  const rendered = applyInlineBoldMarkers(
+    normalizeHtmlContent(blog?.content_rendered),
+  );
   if (rendered) return rendered;
 
   const template = normalizeHtmlContent(blog?.content_template);
   if (!template) return "";
 
-  return normalizeHtmlContent(
-    renderTokenizedContent(template, tokenSnapshot, { preserveUnknown: true }),
+  return applyInlineBoldMarkers(
+    normalizeHtmlContent(
+      renderTokenizedContent(template, tokenSnapshot, {
+        preserveUnknown: true,
+      }),
+    ),
   );
 };
 
 const cleanPublicStoryText = (value) =>
   String(value || "")
+    .replace(/(\*\*|__)([\s\S]*?)\1/g, "$2")
     .replace(/\{\{\s*[^}]+\s*\}\}/g, "")
     .replace(/\bis powered by\s+and\s+/gi, " ")
     .replace(/\bcomes with\s+and\s+/gi, " ")

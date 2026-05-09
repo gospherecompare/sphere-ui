@@ -1469,12 +1469,7 @@ const TrendingProductsHub = () => {
           <section className="relative left-1/2 isolate w-screen -translate-x-1/2 overflow-hidden px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
             <div className="relative mx-auto max-w-7xl">
               <div className={heroDescriptionWidthClass}>
-                <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.32em] text-blue-600">
-                  <HeroIcon className="h-3.5 w-3.5" />
-                  {config.badge}
-                </span>
-
-                <h1 className="mt-4 max-w-3xl text-3xl font-bold tracking-tight text-[#14255e] sm:text-4xl lg:text-5xl">
+                <h1 className="max-w-3xl text-[11px] font-bold uppercase tracking-[0.32em] text-purple-600 sm:text-xs">
                   {heroTitleText}
                 </h1>
 
@@ -1501,8 +1496,7 @@ const TrendingProductsHub = () => {
           <div className="overflow-hidden pt-0 pb-2 sm:pb-3">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <FaFilter className="text-blue-600" />
-                <h3 className="text-sm font-semibold text-slate-900 sm:text-base">
+                <h3 className="text-lg font-semibold text-sky-600 sm:text-base">
                   Popular Features
                 </h3>
               </div>
@@ -1544,67 +1538,6 @@ const TrendingProductsHub = () => {
         </div>
 
         <div className="mb-3 overflow-hidden">
-          <div className="hidden items-center justify-between gap-4 lg:flex">
-            <div className="relative flex-1 min-w-0 max-w-4xl">
-              <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                <FaSearch className="text-blue-500" />
-              </div>
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={config.searchPlaceholder}
-                className="w-full rounded-md border border-slate-200 bg-white pl-12 pr-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 transition-all duration-200 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-400 sm:text-base"
-              />
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <FaFilter className="text-slate-500" />
-                <span className="text-sm text-slate-600">Sort by:</span>
-              </div>
-              <div className="relative min-w-[220px]">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full cursor-pointer appearance-none rounded-md border border-slate-200 bg-white px-4 py-2.5 pr-10 text-slate-700 transition-all duration-200 hover:border-blue-300 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                >
-                  <option value="featured" className="bg-white">
-                    Featured Devices
-                  </option>
-                  <option value="price-low" className="bg-white">
-                    Price: Low to High
-                  </option>
-                  <option value="price-high" className="bg-white">
-                    Price: High to Low
-                  </option>
-                  <option value="newest" className="bg-white">
-                    Newest First
-                  </option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
-                  <svg
-                    className="fill-current h-4 w-4"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                  </svg>
-                </div>
-              </div>
-
-              {activeFilterCount > 0 && (
-                <button
-                  onClick={clearAllFilters}
-                  className="flex items-center gap-2 rounded-[18px] px-4 py-2.5 text-sm font-medium text-blue-600 transition-all duration-200 hover:bg-blue-50 hover:text-blue-700"
-                >
-                  <FaTimes />
-                  Clear
-                </button>
-              )}
-            </div>
-          </div>
-
           <div className="space-y-3 sm:space-y-4 lg:hidden">
             <div className="relative group">
               <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-500 group-focus-within:text-blue-600 transition-colors duration-200" />
@@ -1719,7 +1652,7 @@ const TrendingProductsHub = () => {
 
           <div className="mt-4 flex flex-col gap-4 lg:flex-row md:gap-6">
             <div className="hidden lg:block lg:w-72 flex-shrink-0">
-              <div className="sticky top-6 rounded-lg border border-slate-200 bg-transparent p-5 lg:p-6">
+              <div className="sticky top-6 rounded-2xl border border-white bg-transparent p-5 lg:p-6">
                 <div className="mb-6 flex items-center justify-between border-b border-slate-200 px-2 pb-4 sm:mb-8 sm:px-3 md:px-4">
                   <div>
                     <h3 className="flex items-center gap-2 text-xl font-bold text-slate-900">
@@ -2069,287 +2002,362 @@ const TrendingProductsHub = () => {
                 <>
                   <div className="grid grid-cols-1 gap-4 sm:gap-5 md:gap-6 auto-rows-max">
                     {paginatedVisible.map((p) => {
-                    const dedupedStoreMap = new Map();
-                    arr(p.stores).forEach((s) => {
-                      const storeName =
-                        text(
-                          s?.store || s?.store_name || s?.storeName || s?.name,
-                        ) || "Online Store";
-                      const key = storeName.toLowerCase();
-                      const candidate = {
-                        store: storeName,
-                        store_name: text(
-                          s?.store_name || s?.store || s?.storeName || s?.name,
-                        ),
-                        storeName: text(
-                          s?.storeName || s?.store || s?.store_name || s?.name,
-                        ),
-                        price: num(s?.price),
-                        url: text(s?.url),
-                        storeObj: s?.storeObj || null,
-                        logo: text(s?.logo),
-                        saleStartDate: text(
-                          s?.saleStartDate ||
-                            s?.sale_start_date ||
-                            s?.sale_date,
-                        ),
-                        isPrebooking:
-                          s?.isPrebooking === true || s?.is_prebooking === true,
-                        isLive: s?.isLive === true || s?.is_live === true,
-                        availabilityStatus: text(
-                          s?.availabilityStatus || s?.availability_status,
-                        ),
-                        ctaLabel: text(s?.ctaLabel || s?.cta_label),
-                      };
-                      const existing = dedupedStoreMap.get(key);
-                      if (!existing) {
-                        dedupedStoreMap.set(key, candidate);
-                        return;
-                      }
-                      const currentPrice = num(existing.price);
-                      const nextPrice = num(candidate.price);
-                      if (
-                        nextPrice != null &&
-                        (currentPrice == null || nextPrice < currentPrice)
-                      ) {
-                        dedupedStoreMap.set(key, { ...existing, ...candidate });
-                        return;
-                      }
-                      if (!existing.url && candidate.url)
-                        existing.url = candidate.url;
-                      if (!existing.logo && candidate.logo)
-                        existing.logo = candidate.logo;
-                      if (!existing.saleStartDate && candidate.saleStartDate) {
-                        existing.saleStartDate = candidate.saleStartDate;
-                      }
-                      if (!existing.ctaLabel && candidate.ctaLabel) {
-                        existing.ctaLabel = candidate.ctaLabel;
-                      }
-                    });
-                    const availableStores = Array.from(
-                      dedupedStoreMap.values(),
-                    ).sort(
-                      (a, b) =>
-                        (num(a.price) ?? Number.MAX_SAFE_INTEGER) -
-                        (num(b.price) ?? Number.MAX_SAFE_INTEGER),
-                    );
-                    const availabilityState =
-                      activeCategory === "smartphones"
-                        ? getAvailabilityRows(
-                            availableStores,
-                            p.brand,
-                            p.brand_logo || p.brandLogo || null,
-                            p.brand_website || p.brandWebsite || null,
-                            p.release || null,
-                          )
-                        : {
-                            mode: "live",
-                            stores: availableStores,
-                            hiddenCount: 0,
-                          };
-                    const renderedStores = availabilityState.stores || [];
-                    const resolvedPriceText =
-                      activeCategory === "smartphones" &&
-                      renderedStores[0]?.price != null
-                        ? formatStorePriceDisplay(renderedStores[0].price)
-                        : p.priceText;
-                    const releasedOn = dateLabel(p.release);
-                    const cardBadgeLabel = "Trending";
-                    const visibleStoreRows = renderedStores.slice(0, 2);
-                    const renderStoreRow = (
-                      store,
-                      storeIdx,
-                      mobile = false,
-                    ) => {
-                      const storeObj =
-                        store.storeObj ||
-                        (getStore
-                          ? getStore(
-                              store.store ||
-                                store.store_name ||
-                                store.storeName ||
-                                "",
+                      const dedupedStoreMap = new Map();
+                      arr(p.stores).forEach((s) => {
+                        const storeName =
+                          text(
+                            s?.store ||
+                              s?.store_name ||
+                              s?.storeName ||
+                              s?.name,
+                          ) || "Online Store";
+                        const key = storeName.toLowerCase();
+                        const candidate = {
+                          store: storeName,
+                          store_name: text(
+                            s?.store_name ||
+                              s?.store ||
+                              s?.storeName ||
+                              s?.name,
+                          ),
+                          storeName: text(
+                            s?.storeName ||
+                              s?.store ||
+                              s?.store_name ||
+                              s?.name,
+                          ),
+                          price: num(s?.price),
+                          url: text(s?.url),
+                          storeObj: s?.storeObj || null,
+                          logo: text(s?.logo),
+                          saleStartDate: text(
+                            s?.saleStartDate ||
+                              s?.sale_start_date ||
+                              s?.sale_date,
+                          ),
+                          isPrebooking:
+                            s?.isPrebooking === true ||
+                            s?.is_prebooking === true,
+                          isLive: s?.isLive === true || s?.is_live === true,
+                          availabilityStatus: text(
+                            s?.availabilityStatus || s?.availability_status,
+                          ),
+                          ctaLabel: text(s?.ctaLabel || s?.cta_label),
+                        };
+                        const existing = dedupedStoreMap.get(key);
+                        if (!existing) {
+                          dedupedStoreMap.set(key, candidate);
+                          return;
+                        }
+                        const currentPrice = num(existing.price);
+                        const nextPrice = num(candidate.price);
+                        if (
+                          nextPrice != null &&
+                          (currentPrice == null || nextPrice < currentPrice)
+                        ) {
+                          dedupedStoreMap.set(key, {
+                            ...existing,
+                            ...candidate,
+                          });
+                          return;
+                        }
+                        if (!existing.url && candidate.url)
+                          existing.url = candidate.url;
+                        if (!existing.logo && candidate.logo)
+                          existing.logo = candidate.logo;
+                        if (
+                          !existing.saleStartDate &&
+                          candidate.saleStartDate
+                        ) {
+                          existing.saleStartDate = candidate.saleStartDate;
+                        }
+                        if (!existing.ctaLabel && candidate.ctaLabel) {
+                          existing.ctaLabel = candidate.ctaLabel;
+                        }
+                      });
+                      const availableStores = Array.from(
+                        dedupedStoreMap.values(),
+                      ).sort(
+                        (a, b) =>
+                          (num(a.price) ?? Number.MAX_SAFE_INTEGER) -
+                          (num(b.price) ?? Number.MAX_SAFE_INTEGER),
+                      );
+                      const availabilityState =
+                        activeCategory === "smartphones"
+                          ? getAvailabilityRows(
+                              availableStores,
+                              p.brand,
+                              p.brand_logo || p.brandLogo || null,
+                              p.brand_website || p.brandWebsite || null,
+                              p.release || null,
                             )
-                          : null);
-                      const storeNameCandidate =
-                        store.display_store_name ||
-                        store.store ||
-                        store.store_name ||
-                        store.storeName ||
-                        storeObj?.name ||
-                        "Online Store";
-                      const ctaText = store.ctaLabel || "Buy Now";
-                      const isPreorderCta =
-                        store.isPrebooking === true ||
-                        /^(pre(book|order)|coming\s*soon)$/i.test(
-                          String(ctaText).trim(),
+                          : {
+                              mode: "live",
+                              stores: availableStores,
+                              hiddenCount: 0,
+                            };
+                      const renderedStores = availabilityState.stores || [];
+                      const resolvedPriceText =
+                        activeCategory === "smartphones" &&
+                        renderedStores[0]?.price != null
+                          ? formatStorePriceDisplay(renderedStores[0].price)
+                          : p.priceText;
+                      const releasedOn = dateLabel(p.release);
+                      const cardBadgeLabel = "Trending";
+                      const visibleStoreRows = renderedStores.slice(0, 2);
+                      const renderStoreRow = (
+                        store,
+                        storeIdx,
+                        mobile = false,
+                      ) => {
+                        const storeObj =
+                          store.storeObj ||
+                          (getStore
+                            ? getStore(
+                                store.store ||
+                                  store.store_name ||
+                                  store.storeName ||
+                                  "",
+                              )
+                            : null);
+                        const storeNameCandidate =
+                          store.display_store_name ||
+                          store.store ||
+                          store.store_name ||
+                          store.storeName ||
+                          storeObj?.name ||
+                          "Online Store";
+                        const ctaText = store.ctaLabel || "Buy Now";
+                        const isPreorderCta =
+                          store.isPrebooking === true ||
+                          /^(pre(book|order)|coming\s*soon)$/i.test(
+                            String(ctaText).trim(),
+                          );
+                        const logoSrc = normalizeAssetUrl(
+                          store.logo ||
+                            (store.isPrebooking
+                              ? p.brand_logo || p.brandLogo || null
+                              : getStoreLogo
+                                ? getStoreLogo(storeNameCandidate)
+                                : getLogo(storeNameCandidate)),
                         );
-                      const logoSrc = normalizeAssetUrl(
-                        store.logo ||
-                          (store.isPrebooking
-                            ? p.brand_logo || p.brandLogo || null
-                            : getStoreLogo
-                              ? getStoreLogo(storeNameCandidate)
-                              : getLogo(storeNameCandidate)),
-                      );
-                      return (
-                        <div
-                          key={`${p.key}-store-${storeIdx}${mobile ? "-mobile" : ""}`}
-                          className={`flex items-center justify-between gap-3 ${
-                            mobile
-                              ? "rounded-xl border border-slate-100 bg-white px-3 py-2.5"
-                              : "rounded-lg border border-slate-100 px-2.5 py-2.5 sm:px-3 sm:py-3"
-                          }`}
-                        >
-                          <div className="flex min-w-0 items-center gap-3">
-                            {logoSrc ? (
-                              <div
-                                className={
-                                  mobile
-                                    ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white"
-                                    : "flex h-8 w-8 shrink-0 items-center justify-center"
-                                }
-                              >
-                                <img
-                                  src={logoSrc}
-                                  alt={storeObj?.name || storeNameCandidate}
-                                  className="h-full w-full object-contain"
-                                  loading="lazy"
-                                />
-                              </div>
-                            ) : (
-                              <div
-                                className={
-                                  mobile
-                                    ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f7fbff] ring-1 ring-[#dbe7f7]"
-                                    : "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f7fbff] ring-1 ring-[#dbe7f7]"
-                                }
-                              >
-                                <FaStore className="text-slate-400 text-xs" />
-                              </div>
-                            )}
-                            <span className="truncate text-sm font-medium text-slate-800">
-                              {storeNameCandidate}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className="whitespace-nowrap text-sm font-semibold text-emerald-600">
-                              {formatStorePriceDisplay(store.price)}
-                            </span>
-                            {store.url ? (
-                              <a
-                                href={store.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className={`inline-flex items-center gap-1 whitespace-nowrap text-sm font-semibold transition-colors ${
-                                  isPreorderCta
-                                    ? "text-blue-600 hover:text-blue-700"
-                                    : "text-violet-600 hover:text-violet-700"
-                                }`}
-                              >
-                                {ctaText || "Buy Now"}
-                                <FaExternalLinkAlt className="text-xs" />
-                              </a>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 whitespace-nowrap text-sm font-semibold text-slate-400">
-                                {ctaText || "Unavailable"}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    };
-
-                    return (
-                      <article
-                        key={p.key}
-                        onClick={() => openDetail(p)}
-                        className="group relative h-full overflow-hidden  border border-slate-200 bg-white cursor-pointer transition-all duration-300"
-                      >
-                        <div className="p-5 sm:p-6 transition-all duration-300">
-                          <div className="hidden flex-col gap-4 lg:flex lg:flex-row lg:items-start lg:justify-between">
-                            <div className="min-w-0 flex-1">
-                              <h3 className="max-w-3xl text-[1.45rem] font-semibold tracking-tight text-[#14255e] sm:text-[1.8rem]">
-                                {p.name}
-                              </h3>
-                            </div>
-
-                            <div className="flex flex-wrap items-center gap-3 lg:justify-end">
-                              <div className="text-xl font-semibold tracking-tight text-[#14255e] sm:text-2xl">
-                                {resolvedPriceText}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="mt-4 hidden flex-col gap-3 lg:flex lg:flex-row lg:items-center lg:justify-between">
-                            <div className="flex flex-wrap items-center gap-4">
-                              {p.specScore != null ? (
-                                <SpecScoreBadge score={p.specScore} />
-                              ) : null}
-                            </div>
-
-                            {releasedOn ? (
-                              <div className="flex items-center gap-1.5 text-sm text-slate-700 sm:justify-end">
-                                <FaCalendarAlt className="text-slate-400" />
-                                <span>
-                                  Launched:{" "}
-                                  <span className="font-semibold text-slate-900">
-                                    {releasedOn}
-                                  </span>
-                                </span>
-                              </div>
-                            ) : null}
-                          </div>
-
-                          <div className="mt-5 grid grid-cols-[128px_minmax(0,1fr)] gap-3 sm:grid-cols-[120px_minmax(0,1fr)] lg:grid-cols-[180px_minmax(0,1fr)] sm:gap-4 lg:gap-5">
-                            <div className="relative flex items-start justify-start sm:justify-center">
-                              {cardBadgeLabel ? (
-                                <span className="absolute left-0 top-0 z-10 inline-flex items-center rounded-full bg-amber-600 px-3 py-1 text-xs font-semibold text-white shadow-sm">
-                                  {cardBadgeLabel}
-                                </span>
-                              ) : null}
-                              <div className="flex w-full justify-start sm:justify-center">
-                                <ImageCarousel
-                                  images={
-                                    arr(p.images).length
-                                      ? p.images
-                                      : p.image
-                                        ? [p.image]
-                                        : []
+                        return (
+                          <div
+                            key={`${p.key}-store-${storeIdx}${mobile ? "-mobile" : ""}`}
+                            className={`flex items-center justify-between gap-3 ${
+                              mobile
+                                ? "rounded-xl border border-slate-100 bg-white px-3 py-2.5"
+                                : "rounded-lg border border-slate-100 px-2.5 py-2.5 sm:px-3 sm:py-3"
+                            }`}
+                          >
+                            <div className="flex min-w-0 items-center gap-3">
+                              {logoSrc ? (
+                                <div
+                                  className={
+                                    mobile
+                                      ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white"
+                                      : "flex h-8 w-8 shrink-0 items-center justify-center"
                                   }
-                                  fallbackIcon={HeroIcon}
-                                />
-                              </div>
+                                >
+                                  <img
+                                    src={logoSrc}
+                                    alt={storeObj?.name || storeNameCandidate}
+                                    className="h-full w-full object-contain"
+                                    loading="lazy"
+                                  />
+                                </div>
+                              ) : (
+                                <div
+                                  className={
+                                    mobile
+                                      ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f7fbff] ring-1 ring-[#dbe7f7]"
+                                      : "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f7fbff] ring-1 ring-[#dbe7f7]"
+                                  }
+                                >
+                                  <FaStore className="text-slate-400 text-xs" />
+                                </div>
+                              )}
+                              <span className="truncate text-sm font-medium text-slate-800">
+                                {storeNameCandidate}
+                              </span>
                             </div>
+                            <div className="flex items-center gap-3">
+                              <span className="whitespace-nowrap text-sm font-semibold text-emerald-600">
+                                {formatStorePriceDisplay(store.price)}
+                              </span>
+                              {store.url ? (
+                                <a
+                                  href={store.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className={`inline-flex items-center gap-1 whitespace-nowrap text-sm font-semibold transition-colors ${
+                                    isPreorderCta
+                                      ? "text-blue-600 hover:text-blue-700"
+                                      : "text-violet-600 hover:text-violet-700"
+                                  }`}
+                                >
+                                  {ctaText || "Buy Now"}
+                                  <FaExternalLinkAlt className="text-xs" />
+                                </a>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 whitespace-nowrap text-sm font-semibold text-slate-400">
+                                  {ctaText || "Unavailable"}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      };
 
-                            <div className="space-y-3 pt-1">
-                              <div className="space-y-1 lg:hidden">
-                                {p.brand ? (
-                                  <p className="text-sm font-semibold text-blue-600">
-                                    {p.brand}
-                                  </p>
-                                ) : null}
-                                <h3 className="max-w-3xl text-[1.05rem] font-semibold tracking-tight text-[#14255e] sm:text-[1.2rem]">
+                      return (
+                        <article
+                          key={p.key}
+                          onClick={() => openDetail(p)}
+                          className="group relative h-full overflow-hidden  border border-slate-200 bg-white cursor-pointer transition-all duration-300"
+                        >
+                          <div className="p-5 sm:p-6 transition-all duration-300">
+                            <div className="hidden flex-col gap-4 lg:flex lg:flex-row lg:items-start lg:justify-between">
+                              <div className="min-w-0 flex-1">
+                                <h3 className="max-w-3xl text-[1.45rem] font-semibold tracking-tight text-[#14255e] sm:text-[1.8rem]">
                                   {p.name}
                                 </h3>
+                              </div>
 
+                              <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+                                <div className="text-xl font-semibold tracking-tight text-[#14255e] sm:text-2xl">
+                                  {resolvedPriceText}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="mt-4 hidden flex-col gap-3 lg:flex lg:flex-row lg:items-center lg:justify-between">
+                              <div className="flex flex-wrap items-center gap-4">
                                 {p.specScore != null ? (
                                   <SpecScoreBadge score={p.specScore} />
                                 ) : null}
                               </div>
 
-                              <div className="hidden lg:block text-[13px] leading-6 text-slate-700 sm:text-sm sm:leading-7 sm:text-base">
-                                {p.specLine}
+                              {releasedOn ? (
+                                <div className="flex items-center gap-1.5 text-sm text-slate-700 sm:justify-end">
+                                  <FaCalendarAlt className="text-slate-400" />
+                                  <span>
+                                    Launched:{" "}
+                                    <span className="font-semibold text-slate-900">
+                                      {releasedOn}
+                                    </span>
+                                  </span>
+                                </div>
+                              ) : null}
+                            </div>
+
+                            <div className="mt-5 grid grid-cols-[128px_minmax(0,1fr)] gap-3 sm:grid-cols-[120px_minmax(0,1fr)] lg:grid-cols-[180px_minmax(0,1fr)] sm:gap-4 lg:gap-5">
+                              <div className="relative flex items-start justify-start sm:justify-center">
+                                {cardBadgeLabel ? (
+                                  <span className="absolute left-0 top-0 z-10 inline-flex items-center rounded-full bg-amber-600 px-3 py-1 text-xs font-semibold text-white shadow-sm">
+                                    {cardBadgeLabel}
+                                  </span>
+                                ) : null}
+                                <div className="flex w-full justify-start sm:justify-center">
+                                  <ImageCarousel
+                                    images={
+                                      arr(p.images).length
+                                        ? p.images
+                                        : p.image
+                                          ? [p.image]
+                                          : []
+                                    }
+                                    fallbackIcon={HeroIcon}
+                                  />
+                                </div>
                               </div>
 
-                              <div className="lg:hidden text-lg font-semibold tracking-tight text-[#14255e] sm:text-xl">
-                                {resolvedPriceText}
+                              <div className="space-y-3 pt-1">
+                                <div className="space-y-1 lg:hidden">
+                                  {p.brand ? (
+                                    <p className="text-sm font-semibold text-blue-600">
+                                      {p.brand}
+                                    </p>
+                                  ) : null}
+                                  <h3 className="max-w-3xl text-[1.05rem] font-semibold tracking-tight text-[#14255e] sm:text-[1.2rem]">
+                                    {p.name}
+                                  </h3>
+
+                                  {p.specScore != null ? (
+                                    <SpecScoreBadge score={p.specScore} />
+                                  ) : null}
+                                </div>
+
+                                <div className="hidden lg:block text-[13px] leading-6 text-slate-700 sm:text-sm sm:leading-7 sm:text-base">
+                                  {p.specLine}
+                                </div>
+
+                                <div className="lg:hidden text-lg font-semibold tracking-tight text-[#14255e] sm:text-xl">
+                                  {resolvedPriceText}
+                                </div>
+
+                                {visibleStoreRows.length > 0 ? (
+                                  <div
+                                    className="hidden rounded-[24px] border border-blue-100 bg-[#f8fbff] p-2.5 sm:p-4 lg:block"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
+                                      <FaStore className="text-emerald-500" />
+                                      Check Price On
+                                    </div>
+                                    <div className="space-y-2">
+                                      {visibleStoreRows.map((store, storeIdx) =>
+                                        renderStoreRow(store, storeIdx, false),
+                                      )}
+                                      {availabilityState.hiddenCount > 0 ? (
+                                        <div className="text-center text-xs text-slate-500">
+                                          +{availabilityState.hiddenCount} more
+                                          stores
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                ) : null}
+                              </div>
+                            </div>
+
+                            <div className="mt-4 flex items-center justify-between gap-3">
+                              <label
+                                className="flex cursor-pointer items-center gap-2 text-slate-700"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <input
+                                  type="checkbox"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white transition-all duration-200 checked:border-emerald-600 checked:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-1"
+                                  aria-label="Select for compare"
+                                />
+                                <span className="text-sm font-semibold">
+                                  Add to Compare
+                                </span>
+                              </label>
+
+                              {releasedOn ? (
+                                <div className="flex items-center gap-1.5 text-sm text-slate-700 lg:hidden">
+                                  <FaCalendarAlt className="text-slate-400" />
+                                  <span>
+                                    Launched:{" "}
+                                    <span className="font-semibold text-slate-900">
+                                      {releasedOn}
+                                    </span>
+                                  </span>
+                                </div>
+                              ) : null}
+                            </div>
+
+                            <div className="mt-4 space-y-3 lg:hidden">
+                              <div className="text-[13px] leading-6 text-slate-700 sm:text-sm sm:leading-7 sm:text-base">
+                                {p.specLine}
                               </div>
 
                               {visibleStoreRows.length > 0 ? (
                                 <div
-                                  className="hidden rounded-[24px] border border-blue-100 bg-[#f8fbff] p-2.5 sm:p-4 lg:block"
+                                  className="rounded-[20px] border border-blue-100 bg-[#f8fbff] p-3 sm:p-4"
                                   onClick={(e) => e.stopPropagation()}
                                 >
                                   <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
@@ -2358,7 +2366,7 @@ const TrendingProductsHub = () => {
                                   </div>
                                   <div className="space-y-2">
                                     {visibleStoreRows.map((store, storeIdx) =>
-                                      renderStoreRow(store, storeIdx, false),
+                                      renderStoreRow(store, storeIdx, true),
                                     )}
                                     {availabilityState.hiddenCount > 0 ? (
                                       <div className="text-center text-xs text-slate-500">
@@ -2371,67 +2379,8 @@ const TrendingProductsHub = () => {
                               ) : null}
                             </div>
                           </div>
-
-                          <div className="mt-4 flex items-center justify-between gap-3">
-                            <label
-                              className="flex cursor-pointer items-center gap-2 text-slate-700"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <input
-                                type="checkbox"
-                                onClick={(e) => e.stopPropagation()}
-                                className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white transition-all duration-200 checked:border-emerald-600 checked:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-1"
-                                aria-label="Select for compare"
-                              />
-                              <span className="text-sm font-semibold">
-                                Add to Compare
-                              </span>
-                            </label>
-
-                            {releasedOn ? (
-                              <div className="flex items-center gap-1.5 text-sm text-slate-700 lg:hidden">
-                                <FaCalendarAlt className="text-slate-400" />
-                                <span>
-                                  Launched:{" "}
-                                  <span className="font-semibold text-slate-900">
-                                    {releasedOn}
-                                  </span>
-                                </span>
-                              </div>
-                            ) : null}
-                          </div>
-
-                          <div className="mt-4 space-y-3 lg:hidden">
-                            <div className="text-[13px] leading-6 text-slate-700 sm:text-sm sm:leading-7 sm:text-base">
-                              {p.specLine}
-                            </div>
-
-                            {visibleStoreRows.length > 0 ? (
-                              <div
-                                className="rounded-[20px] border border-blue-100 bg-[#f8fbff] p-3 sm:p-4"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
-                                  <FaStore className="text-emerald-500" />
-                                  Check Price On
-                                </div>
-                                <div className="space-y-2">
-                                  {visibleStoreRows.map((store, storeIdx) =>
-                                    renderStoreRow(store, storeIdx, true),
-                                  )}
-                                  {availabilityState.hiddenCount > 0 ? (
-                                    <div className="text-center text-xs text-slate-500">
-                                      +{availabilityState.hiddenCount} more
-                                      stores
-                                    </div>
-                                  ) : null}
-                                </div>
-                              </div>
-                            ) : null}
-                          </div>
-                        </div>
-                      </article>
-                    );
+                        </article>
+                      );
                     })}
                   </div>
 

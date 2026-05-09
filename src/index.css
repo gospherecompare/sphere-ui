@@ -86,32 +86,6 @@ small {
    HEADINGS
 ========================= */
 
-h2 {
-  font-size: 20px;
-}
-h3 {
-  font-size: 18px;
-}
-h4 {
-  font-size: 16px;
-}
-h5 {
-  font-size: 15px;
-}
-h6 {
-  font-size: 14px;
-}
-
-/* =========================
-   DESKTOP-ONLY UTILITY
-========================= */
-@media (min-width: 1024px) {
-  .text-13px {
-    font-size: 13px;
-    line-height: 1.4;
-  }
-}
-
 /* =========================
    ANIMATIONS
 ========================= */
@@ -150,15 +124,6 @@ h6 {
 /* =========================
    UI ENHANCEMENTS
 ========================= */
-.category-button {
-  font-family: var(--font-sans);
-  font-weight: 500;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.advanced-mega-menu {
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-}
 
 /* =========================
    HEADER ANIMATIONS
