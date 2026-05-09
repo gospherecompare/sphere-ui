@@ -2,9 +2,10 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   FaArrowRight,
+  FaChevronLeft,
+  FaChevronRight,
   FaFacebookF,
   FaFire,
-  FaInstagram,
   FaLink,
   FaWhatsapp,
 } from "react-icons/fa";
@@ -37,6 +38,10 @@ const POPULAR_MOBILE_LIST = [
   "6000mAh Battery Mobile Phones",
   "Fast Charging Mobile Phones",
 ];
+
+const MOBILE_RELATED_STORIES_PER_PAGE = 2;
+const DESKTOP_RELATED_STORIES_PER_PAGE = 4;
+const RELATED_STORIES_MOBILE_QUERY = "(max-width: 639px)";
 
 const parseStoryDate = (story) => {
   const raw = story?.publishedIso || story?.updatedIso || story?.publishedAt;
@@ -374,6 +379,19 @@ const splitHeadlineLines = (value) => {
   return lines.filter(Boolean);
 };
 
+const HeadlineText = ({ lines = [], title = "", slug = "" }) => (
+  <>
+    <span className="sm:hidden">{title}</span>
+    <span className="hidden sm:block">
+      {lines.map((line, index) => (
+        <span key={`${slug}-headline-${index + 1}`} className="block">
+          {line}
+        </span>
+      ))}
+    </span>
+  </>
+);
+
 const createAnchorId = (value, fallback = "section") => {
   const normalized = stripMarkup(value)
     .toLowerCase()
@@ -453,7 +471,7 @@ const getInitials = (value = "Hooks") =>
     .join("") || "H";
 
 const ARTICLE_PROSE_CLASS =
-  'pt-6 text-[16px] leading-8 text-[#32363d] sm:text-[18px] sm:leading-9 [&_p]:mb-6 [&_p:last-child]:mb-0 [&_p]:text-[16px] [&_p]:leading-8 [&_p:first-of-type]:text-[18px] [&_p:first-of-type]:leading-8 [&_p:first-of-type]:text-[#1f2937] sm:[&_p]:text-[18px] sm:[&_p]:leading-9 sm:[&_p:first-of-type]:text-[20px] sm:[&_p:first-of-type]:leading-9 [&_h2]:scroll-mt-28 [&_h2]:mt-10 [&_h2]:text-[24px] [&_h2]:font-black [&_h2]:leading-[1.16] [&_h2]:text-[#1f2937] sm:[&_h2]:text-[30px] [&_h3]:scroll-mt-28 [&_h3]:mt-8 [&_h3]:text-[20px] [&_h3]:font-bold [&_h3]:leading-[1.24] [&_h3]:text-[#1f2937] sm:[&_h3]:text-[24px] [&_h4]:mt-7 [&_h4]:text-[18px] [&_h4]:font-bold [&_h4]:text-[#1f2937] [&_ul]:my-6 [&_ul]:list-disc [&_ul]:space-y-3 [&_ul]:pl-5 [&_ol]:my-6 [&_ol]:list-decimal [&_ol]:space-y-3 [&_ol]:pl-5 [&_li]:pl-1 [&_blockquote]:my-8 [&_blockquote]:border-l-4 [&_blockquote]:border-[#2563eb] [&_blockquote]:bg-[#eff6ff] [&_blockquote]:px-5 [&_blockquote]:py-4 [&_blockquote]:text-[#30343a] [&_a]:font-medium [&_a]:text-[#2563eb] [&_a]:underline [&_a]:decoration-[#c4b5fd] [&_a]:underline-offset-4 [&_strong]:font-semibold [&_strong]:text-[#171717] [&_figure]:my-7 [&_figure]:overflow-hidden [&_figure]:border [&_figure]:border-[#e5e7eb] [&_figure]:bg-[#fafafa] [&_figure_figcaption]:border-t [&_figure_figcaption]:border-[#e5e7eb] [&_figure_figcaption]:px-4 [&_figure_figcaption]:py-3 [&_figure_figcaption]:text-[11px] [&_figure_figcaption]:font-semibold [&_figure_figcaption]:uppercase [&_figure_figcaption]:tracking-[0.12em] [&_figure_figcaption]:text-[#6b7280] [&_figure_img]:w-full [&_img]:my-7 [&_img]:w-full [&_div.article-table-wrap]:my-7 [&_div.article-table-wrap]:overflow-x-auto [&_div.article-table-wrap]:border [&_div.article-table-wrap]:border-[#e5e7eb] [&_table]:min-w-[560px] [&_table]:w-full [&_table]:border-collapse [&_table]:text-left [&_table]:text-[14px] sm:[&_table]:text-[15px] [&_thead]:bg-[#f6f7fb] [&_th]:border-b [&_th]:border-[#dde3eb] [&_th]:px-4 [&_th]:py-3 [&_th]:font-semibold [&_th]:text-[#202938] [&_td]:border-b [&_td]:border-[#ebedf0] [&_td]:px-4 [&_td]:py-3 [&_td]:align-top [&_td]:text-[#424955] [&_tbody_tr:last-child_td]:border-b-0';
+  'pt-5 text-[15px] leading-7 text-[#32363d] sm:pt-6 sm:text-[18px] sm:leading-9 [&_p]:mb-5 sm:[&_p]:mb-6 [&_p:last-child]:mb-0 [&_p]:text-[15px] [&_p]:leading-7 [&_p:first-of-type]:text-[16px] [&_p:first-of-type]:leading-8 [&_p:first-of-type]:text-[#1f2937] sm:[&_p]:text-[18px] sm:[&_p]:leading-9 sm:[&_p:first-of-type]:text-[20px] sm:[&_p:first-of-type]:leading-9 [&_h2]:scroll-mt-28 [&_h2]:mt-9 [&_h2]:text-[22px] [&_h2]:font-black [&_h2]:leading-[1.16] [&_h2]:text-[#1f2937] sm:[&_h2]:mt-10 sm:[&_h2]:text-[30px] [&_h3]:scroll-mt-28 [&_h3]:mt-7 [&_h3]:text-[19px] [&_h3]:font-bold [&_h3]:leading-[1.24] [&_h3]:text-[#1f2937] sm:[&_h3]:mt-8 sm:[&_h3]:text-[24px] [&_h4]:mt-7 [&_h4]:text-[17px] [&_h4]:font-bold [&_h4]:text-[#1f2937] sm:[&_h4]:text-[18px] [&_ul]:my-5 [&_ul]:list-disc [&_ul]:space-y-2.5 [&_ul]:pl-5 sm:[&_ul]:my-6 sm:[&_ul]:space-y-3 [&_ol]:my-5 [&_ol]:list-decimal [&_ol]:space-y-2.5 [&_ol]:pl-5 sm:[&_ol]:my-6 sm:[&_ol]:space-y-3 [&_li]:pl-1 [&_blockquote]:my-7 [&_blockquote]:border-l-4 [&_blockquote]:border-[#2563eb] [&_blockquote]:bg-[#eff6ff] [&_blockquote]:px-4 [&_blockquote]:py-4 [&_blockquote]:text-[#30343a] sm:[&_blockquote]:my-8 sm:[&_blockquote]:px-5 [&_a]:font-medium [&_a]:text-[#2563eb] [&_a]:underline [&_a]:decoration-[#c4b5fd] [&_a]:underline-offset-4 [&_strong]:font-semibold [&_strong]:text-[#171717] [&_figure]:my-6 [&_figure]:overflow-hidden [&_figure]:border [&_figure]:border-[#e5e7eb] [&_figure]:bg-[#fafafa] sm:[&_figure]:my-7 [&_figure_figcaption]:border-t [&_figure_figcaption]:border-[#e5e7eb] [&_figure_figcaption]:px-4 [&_figure_figcaption]:py-3 [&_figure_figcaption]:text-[11px] [&_figure_figcaption]:font-semibold [&_figure_figcaption]:uppercase [&_figure_figcaption]:tracking-[0.12em] [&_figure_figcaption]:text-[#6b7280] [&_figure_img]:w-full [&_img]:my-6 [&_img]:w-full sm:[&_img]:my-7 [&_div.article-table-wrap]:my-6 [&_div.article-table-wrap]:overflow-x-auto [&_div.article-table-wrap]:border [&_div.article-table-wrap]:border-[#e5e7eb] sm:[&_div.article-table-wrap]:my-7 [&_table]:min-w-[560px] [&_table]:w-full [&_table]:border-collapse [&_table]:text-left [&_table]:text-[14px] sm:[&_table]:text-[15px] [&_thead]:bg-[#f6f7fb] [&_th]:border-b [&_th]:border-[#dde3eb] [&_th]:px-4 [&_th]:py-3 [&_th]:font-semibold [&_th]:text-[#202938] [&_td]:border-b [&_td]:border-[#ebedf0] [&_td]:px-4 [&_td]:py-3 [&_td]:align-top [&_td]:text-[#424955] [&_tbody_tr:last-child_td]:border-b-0';
 
 const ARTICLE_PROSE_CONTINUATION_CLASS = ARTICLE_PROSE_CLASS.replace(
   /^pt-6\s*/,
@@ -503,6 +521,44 @@ const StoryImage = ({ story, className = "", eager = false }) => {
     </div>
   );
 };
+
+const InstagramBrandIcon = ({ className = "" }) => (
+  <svg
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+    focusable="false"
+    className={className}
+  >
+    <defs>
+      <linearGradient id="instagram-share-gradient" x1="3" y1="21" x2="21" y2="3">
+        <stop offset="0" stopColor="#feda75" />
+        <stop offset="0.28" stopColor="#fa7e1e" />
+        <stop offset="0.5" stopColor="#d62976" />
+        <stop offset="0.74" stopColor="#962fbf" />
+        <stop offset="1" stopColor="#4f5bd5" />
+      </linearGradient>
+    </defs>
+    <rect
+      x="3.25"
+      y="3.25"
+      width="17.5"
+      height="17.5"
+      rx="5.2"
+      fill="none"
+      stroke="url(#instagram-share-gradient)"
+      strokeWidth="2"
+    />
+    <circle
+      cx="12"
+      cy="12"
+      r="4.1"
+      fill="none"
+      stroke="url(#instagram-share-gradient)"
+      strokeWidth="2"
+    />
+    <circle cx="17.1" cy="6.9" r="1.25" fill="url(#instagram-share-gradient)" />
+  </svg>
+);
 
 const HeroShareButtons = ({ title, description, image, url }) => {
   const [copied, setCopied] = useState(false);
@@ -606,13 +662,13 @@ const HeroShareButtons = ({ title, description, image, url }) => {
     {
       name: "WhatsApp",
       icon: FaWhatsapp,
-      className: "text-[#7c3aed]",
+      className: "text-[#25d366]",
       url: `https://wa.me/?text=${encodedText}%0A%0A${encodedUrl}`,
     },
     {
       name: "Instagram",
-      icon: FaInstagram,
-      className: "text-[#6d28d9]",
+      icon: InstagramBrandIcon,
+      className: "text-[#d62976]",
       onClick: shareOnInstagram,
     },
   ];
@@ -621,7 +677,7 @@ const HeroShareButtons = ({ title, description, image, url }) => {
     <div className="flex flex-wrap items-center gap-2">
       {items.map((item) => {
         const Icon = item.icon;
-        const buttonClass = `inline-flex h-10 w-10 items-center justify-center rounded-[4px] bg-transparent transition-opacity hover:opacity-75 ${item.className}`;
+        const buttonClass = `inline-flex h-9 w-9 items-center justify-center rounded-[4px] bg-transparent transition-opacity hover:opacity-75 sm:h-10 sm:w-10 ${item.className}`;
 
         if (item.onClick) {
           return (
@@ -655,7 +711,7 @@ const HeroShareButtons = ({ title, description, image, url }) => {
         type="button"
         onClick={copyLink}
         aria-label="Copy link"
-        className="inline-flex h-10 w-10 items-center justify-center rounded-[4px] bg-transparent text-[#475569] transition-opacity hover:opacity-75"
+        className="inline-flex h-9 w-9 items-center justify-center rounded-[4px] bg-transparent text-[#475569] transition-opacity hover:opacity-75 sm:h-10 sm:w-10"
       >
         <FaLink className="h-3.5 w-3.5" />
       </button>
@@ -677,7 +733,7 @@ const SectionTitle = ({
         {eyebrow}
       </p>
     ) : null}
-    <h2 className="mt-2 text-[24px] font-black tracking-[-0.035em] text-[#222222] sm:text-[30px]">
+    <h2 className="mt-2 text-[22px] font-black tracking-[-0.02em] text-[#222222] sm:text-[30px]">
       {title}
     </h2>
     {subtitle ? (
@@ -693,7 +749,7 @@ const SectionTitle = ({
 const TrendingStoryCard = ({ story }) => (
   <Link
     to={createNewsStoryPath(story.slug)}
-    className="group grid grid-cols-[92px_minmax(0,1fr)] items-start gap-3 py-4 first:pt-0 last:pb-0"
+    className="group grid grid-cols-[78px_minmax(0,1fr)] items-start gap-3 py-4 first:pt-0 last:pb-0 sm:grid-cols-[92px_minmax(0,1fr)]"
   >
     <StoryImage
       story={story}
@@ -714,7 +770,7 @@ const TrendingStoryCard = ({ story }) => (
 const SidebarStoryCard = ({ story }) => (
   <Link
     to={createNewsStoryPath(story.slug)}
-    className="group grid grid-cols-[92px_minmax(0,1fr)] items-start gap-3 border-b border-[#eceff3] pb-4 last:border-b-0 last:pb-0"
+    className="group grid grid-cols-[78px_minmax(0,1fr)] items-start gap-3 border-b border-[#eceff3] pb-4 last:border-b-0 last:pb-0 sm:grid-cols-[92px_minmax(0,1fr)]"
   >
     <StoryImage
       story={story}
@@ -755,37 +811,31 @@ const RelatedStoryRow = ({ story, index }) => (
 const RecommendedStoryRow = ({ story }) => (
   <Link
     to={createNewsStoryPath(story.slug)}
-    className="group grid gap-4 border-b border-[#e8ebef] py-5 first:pt-0 last:border-b-0 last:pb-0 sm:grid-cols-[7rem_minmax(0,1fr)] sm:items-center"
+    className="group min-w-[72%] overflow-hidden border border-[#e8ebef] bg-white sm:grid sm:min-w-0 sm:grid-cols-[7rem_minmax(0,1fr)] sm:items-center sm:gap-4 sm:border-x-0 sm:border-t-0 sm:py-5 sm:first:pt-0 sm:last:border-b-0 sm:last:pb-0"
   >
     <StoryImage
       story={story}
-      className="aspect-[4/3] w-full border border-[#e5e7eb] sm:h-[7rem] sm:w-[7rem]"
+      className="aspect-[4/3] w-full border-b border-[#e5e7eb] sm:h-[7rem] sm:w-[7rem] sm:border"
     />
 
-    <div className="min-w-0">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7c3aed]">
+    <div className="min-w-0 p-3 sm:p-0">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7c3aed] sm:text-[11px] sm:tracking-[0.18em]">
         {getStoryCategory(story)}
       </p>
       <h3
-        className="mt-2 text-[16px] font-semibold leading-[1.4] text-[#262626] transition-colors group-hover:text-[#2563eb] sm:text-[20px]"
+        className="mt-2 line-clamp-3 text-[14px] font-semibold leading-[1.4] text-[#262626] transition-colors group-hover:text-[#2563eb] sm:text-[20px]"
       >
         {story.title}
       </h3>
       <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-[#7d8898] sm:text-[12px]">
-        <span className="font-medium normal-case tracking-normal text-[#4d5968]">
+        <span className="hidden font-medium normal-case tracking-normal text-[#4d5968] sm:inline">
           {story.author || "Hooks newsroom"}
         </span>
-        <span className="h-1 w-1 rounded-full bg-[#c6d1df]" />
+        <span className="hidden h-1 w-1 rounded-full bg-[#c6d1df] sm:inline-flex" />
         <span>{formatAbsoluteDate(story)}</span>
       </div>
     </div>
   </Link>
-);
-
-const TopicChip = ({ label }) => (
-  <span className="inline-flex rounded-full border border-[#e5e7eb] bg-[#fafafa] px-2.5 py-1.5 text-[11px] font-medium text-[#474f5b] sm:px-3 sm:py-2 sm:text-[12px]">
-    {label}
-  </span>
 );
 
 const RailPanel = ({ title, items = [], linkable = false }) => {
@@ -807,7 +857,7 @@ const RailPanel = ({ title, items = [], linkable = false }) => {
 
           if (!label) return null;
 
-          const classes = `flex items-start gap-3 py-3 text-[14px] leading-6 text-[#343a40] ${
+          const classes = `flex items-start gap-3 py-3 text-[13px] leading-6 text-[#343a40] sm:text-[14px] ${
             index !== items.length - 1 ? "border-b border-[#eceff3]" : ""
           }`;
 
@@ -842,12 +892,22 @@ const RailPanel = ({ title, items = [], linkable = false }) => {
   );
 };
 
-const SidebarSection = ({ title, children }) => (
-  <section className="border border-[#e5e7eb] bg-white">
-    <div className="bg-gradient-to-r from-[#2563eb] to-[#7c3aed] px-4 py-2 text-[12px] font-bold uppercase tracking-[0.12em] text-white">
+const SidebarSection = ({ title, children, mobileSoft = false }) => (
+  <section
+    className={`bg-white ${
+      mobileSoft ? "border-t border-[#e5e7eb] pt-5 sm:border sm:pt-0" : "border border-[#e5e7eb]"
+    }`}
+  >
+    <div
+      className={`px-4 py-2 text-[12px] font-bold uppercase tracking-[0.12em] text-white ${
+        mobileSoft
+          ? "bg-none px-0 pb-3 pt-0 text-[#18212f] sm:bg-gradient-to-r sm:from-[#2563eb] sm:to-[#7c3aed] sm:px-4 sm:py-2 sm:text-white"
+          : "bg-gradient-to-r from-[#2563eb] to-[#7c3aed]"
+      }`}
+    >
       {title}
     </div>
-    <div className="p-4">{children}</div>
+    <div className={`${mobileSoft ? "p-0 sm:p-4" : "p-3 sm:p-4"}`}>{children}</div>
   </section>
 );
 
@@ -855,7 +915,7 @@ const InlineStoryLinksPanel = ({ stories = [] }) => {
   if (!stories.length) return null;
 
   return (
-    <section className="my-8 border border-[#d8dbe1] bg-[#fafafa]">
+    <section className="my-7 border border-[#d8dbe1] bg-[#fafafa] sm:my-8">
       <div className="flex items-center gap-3 border-b border-[#e5e7eb] px-4 py-3">
         <span className="inline-flex h-7 w-7 items-center justify-center bg-[#ede9fe] text-[#7c3aed]">
           <FaArrowRight className="h-3 w-3" />
@@ -868,7 +928,7 @@ const InlineStoryLinksPanel = ({ stories = [] }) => {
           <Link
             key={story.slug}
             to={createNewsStoryPath(story.slug)}
-            className="flex items-start gap-3 px-4 py-3 text-[15px] leading-6 text-[#2563eb] transition-colors hover:text-[#7c3aed]"
+            className="flex items-start gap-3 px-4 py-3 text-[14px] leading-6 text-[#2563eb] transition-colors hover:text-[#7c3aed] sm:text-[15px]"
           >
             <span className="mt-[10px] h-[5px] w-[5px] rounded-full bg-[#7c3aed]" />
             <span className="min-w-0 flex-1">{story.title}</span>
@@ -893,29 +953,6 @@ const RelatedStoryTile = ({ story }) => (
       <p className="mt-2 text-[11px] text-white/70">{formatAbsoluteDate(story)}</p>
     </div>
   </Link>
-);
-
-const AuthorNoteCard = ({ author, role, categoryLabel }) => (
-  <section className="border border-[#e5e7eb] bg-[#f6f6f6] p-4 sm:p-5">
-    <div className="flex items-start gap-4">
-      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#d9dde3] text-sm font-black uppercase text-[#2b3440]">
-        {getInitials(author)}
-      </div>
-
-      <div className="min-w-0">
-        <h3 className="text-[24px] font-black tracking-[-0.03em] text-[#2b2b2b]">
-          {author}
-        </h3>
-        <p className="mt-1 text-[13px] text-[#707784]">
-          {role || `${categoryLabel} desk`}
-        </p>
-        <p className="mt-3 text-[14px] leading-7 text-[#5f6670]">
-          Hooks newsroom coverage focused on the details readers usually want
-          first: what is launching, what changes, and why the update matters.
-        </p>
-      </div>
-    </div>
-  </section>
 );
 
 const LinkListPanel = ({ title, subtitle, items }) => (
@@ -998,6 +1035,11 @@ const NewsStoryArticlePage = () => {
   const { slug = "" } = useParams();
   const { story, loading, error, notFound } = usePublicNewsStory(slug);
   const { stories: feedStories = [] } = usePublicNewsFeed({ limit: 18 });
+  const [relatedPage, setRelatedPage] = useState(0);
+  const [isRelatedMobileLayout, setIsRelatedMobileLayout] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia(RELATED_STORIES_MOBILE_QUERY).matches;
+  });
 
   const canonicalUrl = `https://tryhook.shop${createNewsStoryPath(slug)}`;
 
@@ -1119,9 +1161,28 @@ const NewsStoryArticlePage = () => {
   }, [feedStoriesOrdered, story?.slug]);
 
   const relatedStories = useMemo(
-    () => buildRelatedNewsStories(feedStoriesOrdered, story, 4),
+    () => buildRelatedNewsStories(feedStoriesOrdered, story, 12),
     [feedStoriesOrdered, story],
   );
+
+  useEffect(() => {
+    setRelatedPage(0);
+  }, [story?.slug]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const mediaQuery = window.matchMedia(RELATED_STORIES_MOBILE_QUERY);
+    const syncRelatedLayout = () =>
+      setIsRelatedMobileLayout(mediaQuery.matches);
+
+    syncRelatedLayout();
+    mediaQuery.addEventListener("change", syncRelatedLayout);
+
+    return () => {
+      mediaQuery.removeEventListener("change", syncRelatedLayout);
+    };
+  }, []);
 
   const recommendedStories = useMemo(() => {
     const relatedSet = new Set(relatedStories.map((item) => item.slug));
@@ -1143,6 +1204,22 @@ const NewsStoryArticlePage = () => {
     () =>
       (recommendedStories.length ? recommendedStories : relatedStories).slice(0, 3),
     [recommendedStories, relatedStories],
+  );
+  const relatedStoriesPerPage = isRelatedMobileLayout
+    ? MOBILE_RELATED_STORIES_PER_PAGE
+    : DESKTOP_RELATED_STORIES_PER_PAGE;
+  const relatedPageCount = Math.max(
+    1,
+    Math.ceil(relatedStories.length / relatedStoriesPerPage),
+  );
+  const currentRelatedPage = Math.min(relatedPage, relatedPageCount - 1);
+  const paginatedRelatedStories = useMemo(
+    () =>
+      relatedStories.slice(
+        currentRelatedPage * relatedStoriesPerPage,
+        currentRelatedPage * relatedStoriesPerPage + relatedStoriesPerPage,
+      ),
+    [currentRelatedPage, relatedStories, relatedStoriesPerPage],
   );
   const articleKeywords = useMemo(() => {
     const candidates = [
@@ -1208,8 +1285,8 @@ const NewsStoryArticlePage = () => {
 
       <main className="min-h-screen bg-white text-[#111111]">
         <section className="border-b border-[#e5e7eb] bg-white">
-          <div className="mx-auto max-w-[1280px] px-4 pb-8 pt-4 sm:px-6 sm:pb-10 sm:pt-5 lg:px-8">
-            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12px] leading-5 text-[#7b8796]">
+          <div className="mx-auto max-w-[1280px] px-4 pb-6 pt-4 sm:px-6 sm:pb-10 sm:pt-5 lg:px-8">
+            <div className="line-clamp-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] leading-5 text-[#7b8796] sm:text-[12px]">
               {storyBreadcrumbs.map((item, index) => {
                 const isLast = index === storyBreadcrumbs.length - 1;
 
@@ -1241,21 +1318,17 @@ const NewsStoryArticlePage = () => {
               })}
             </div>
 
-            <div className="mt-4 max-w-[1120px]">
-              <h1 className="text-[22px] font-black leading-[1.1] tracking-[-0.035em] text-[#20242b] sm:text-[28px] lg:text-[32px] xl:text-[36px]">
-                {headlineLines.map((line, index) => (
-                  <span key={`${story.slug}-headline-${index + 1}`} className="block">
-                    {line}
-                  </span>
-                ))}
+            <div className="mt-3 max-w-[1120px] sm:mt-4">
+              <h1 className="text-[21px] font-black leading-[1.16] tracking-[-0.02em] text-[#20242b] sm:text-[28px] sm:leading-[1.1] lg:text-[32px] xl:text-[36px]">
+                <HeadlineText lines={headlineLines} title={story.title} slug={story.slug} />
               </h1>
-              <p className="mt-3 max-w-[72ch] text-[15px] leading-7 text-[#5f6670] sm:text-[17px]">
+              <p className="mt-3 max-w-[72ch] text-[14px] leading-6 text-[#5f6670] sm:text-[17px] sm:leading-7">
                 {articleDescription}
               </p>
             </div>
 
-            <div className="mt-5 flex flex-col gap-4 border-b border-[#eceff3] pb-5 sm:flex-row sm:items-end sm:justify-between">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-[#667689] sm:text-[13.5px]">
+            <div className="mt-5 flex flex-col gap-3 pb-4 sm:flex-row sm:items-end sm:justify-between sm:gap-4 sm:border-b sm:border-[#eceff3] sm:pb-5">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] leading-5 text-[#667689] sm:text-[13.5px]">
                 <span>Written by</span>
                 <span className="font-semibold text-[#2563eb]">{storyAuthor}</span>
                 {story?.authorRole ? (
@@ -1281,8 +1354,8 @@ const NewsStoryArticlePage = () => {
         </section>
 
         <section className="bg-white">
-          <div className="mx-auto max-w-[1280px] px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-            <div className="grid gap-8 xl:grid-cols-[160px_minmax(0,1fr)_300px] xl:items-start xl:gap-10">
+          <div className="mx-auto max-w-[1280px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+            <div className="grid gap-6 sm:gap-8 xl:grid-cols-[160px_minmax(0,1fr)_300px] xl:items-start xl:gap-10">
               <aside className="hidden xl:block">
                 <div className="sticky top-6 space-y-8">
                   <RailPanel title="Highlights" items={editorialHighlights} />
@@ -1295,19 +1368,19 @@ const NewsStoryArticlePage = () => {
               </aside>
 
               <div className="min-w-0">
-                <div className="border-b border-[#eceff3] pb-6">
+                <div className="border-b border-[#eceff3]">
                   <StoryImage
                     story={story}
                     eager
                     className="aspect-[4/3] w-full border border-[#e5e7eb] sm:aspect-[16/9]"
                   />
-                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-[10px] font-medium uppercase tracking-[0.14em] text-[#7d8898]">
+                  <div className="mt-3 flex flex-col gap-1.5 text-[10px] font-medium uppercase tracking-[0.12em] text-[#7d8898] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:tracking-[0.14em]">
                     <span>Image credit: {formatImageCredit(story)}</span>
                     <span>{formatAbsoluteDate(story)}</span>
                   </div>
                 </div>
 
-                <div className="mt-6 grid gap-5 xl:hidden">
+                <div className="mt-5 hidden gap-5 sm:mt-6 sm:grid xl:hidden">
                   <RailPanel title="Highlights" items={editorialHighlights} />
                   <RailPanel
                     title="Jump To"
@@ -1316,15 +1389,12 @@ const NewsStoryArticlePage = () => {
                   />
                 </div>
 
-                <article className="mt-8">
-                  <div className="flex flex-wrap items-center gap-2.5 border-b border-[#eceff3] pb-5 text-[11px] uppercase tracking-[0.14em]">
-                    <span className="inline-flex items-center bg-[#f5f3ff] px-3 py-1 font-bold text-[#7c3aed]">
-                      {getStoryCategory(story)}
-                    </span>
-                    <span className="inline-flex items-center border border-[#e5e7eb] px-3 py-1 font-medium text-[#5f6670]">
+                <article className="mt-7 sm:mt-8">
+                  <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.12em] sm:gap-2.5 sm:text-[11px] sm:tracking-[0.14em]">
+                    <span className="inline-flex items-center font-medium text-[#5f6670]">
                       {story.readTime}
                     </span>
-                    <span className="inline-flex items-center border border-[#e5e7eb] px-3 py-1 font-medium text-[#5f6670]">
+                    <span className="inline-flex items-center font-medium text-[#5f6670]">
                       {formatAbsoluteDate(story)}
                     </span>
                   </div>
@@ -1349,14 +1419,14 @@ const NewsStoryArticlePage = () => {
                     </>
                   ) : (
                     <>
-                      <div className="space-y-6 pt-6 text-[16px] leading-8 text-[#32363d] sm:space-y-7 sm:text-[18px] sm:leading-9">
+                      <div className="space-y-5 pt-5 text-[15px] leading-7 text-[#32363d] sm:space-y-7 sm:pt-6 sm:text-[18px] sm:leading-9">
                         {introParagraphs.map((paragraph, index) => (
                           <p
                             key={`${story.slug}-intro-${index + 1}`}
                             className={
                               index === 0
-                                ? "text-[18px] leading-8 text-[#1f2937] sm:text-[20px] sm:leading-9"
-                                : "text-[16px] leading-8 sm:text-[18px] sm:leading-9"
+                                ? "text-[16px] leading-8 text-[#1f2937] sm:text-[20px] sm:leading-9"
+                                : "text-[15px] leading-7 sm:text-[18px] sm:leading-9"
                             }
                           >
                             {paragraph}
@@ -1367,7 +1437,7 @@ const NewsStoryArticlePage = () => {
                       <InlineStoryLinksPanel stories={inlineStories} />
 
                       {remainingParagraphs.length ? (
-                        <div className="space-y-6 text-[16px] leading-8 text-[#32363d] sm:space-y-7 sm:text-[18px] sm:leading-9">
+                        <div className="space-y-5 text-[15px] leading-7 text-[#32363d] sm:space-y-7 sm:text-[18px] sm:leading-9">
                           {remainingParagraphs.map((paragraph, index) => (
                             <p key={`${story.slug}-rest-${index + 1}`}>
                               {paragraph}
@@ -1379,7 +1449,7 @@ const NewsStoryArticlePage = () => {
                   )}
 
                   {articleKeywords.length ? (
-                    <div className="mt-10 border-t border-[#eceff3] pt-5 text-[13px] leading-6 text-[#6b7280]">
+                    <div className="mt-8 border-t border-[#eceff3] pt-5 text-[13px] leading-6 text-[#6b7280] sm:mt-10">
                       <span className="font-semibold text-[#202226]">
                         Further reading:
                       </span>{" "}
@@ -1387,43 +1457,80 @@ const NewsStoryArticlePage = () => {
                     </div>
                   ) : null}
 
-                  {storyTags.length ? (
-                    <div className="mt-5 flex flex-wrap gap-2">
-                      {storyTags.map((tag) => (
-                        <TopicChip key={tag} label={tag} />
-                      ))}
-                    </div>
-                  ) : null}
-
-                  <div className="mt-8">
-                    <AuthorNoteCard
-                      author={storyAuthor}
-                      role={story?.authorRole}
-                      categoryLabel={getStoryCategory(story)}
-                    />
-                  </div>
                 </article>
 
                 {relatedStories.length ? (
-                  <section className="mt-12">
+                  <section className="mt-10 sm:mt-12">
                     <SectionTitle eyebrow="Related" title="Related Stories" />
 
-                    <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                      {relatedStories.map((item) => (
+                    <div className="mt-5 grid grid-cols-2 gap-3 sm:mt-6 sm:grid-cols-4 sm:gap-4">
+                      {paginatedRelatedStories.map((item) => (
                         <RelatedStoryTile key={item.slug} story={item} />
                       ))}
                     </div>
+
+                    {relatedPageCount > 1 ? (
+                      <div className="mt-5 flex justify-center border-t border-[#eceff3] pt-4">
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setRelatedPage((page) => Math.max(0, page - 1))
+                            }
+                            disabled={currentRelatedPage === 0}
+                            aria-label="Show previous related stories"
+                            className="inline-flex h-8 w-8 items-center justify-center bg-transparent text-[#334155] transition-opacity hover:opacity-70 disabled:cursor-not-allowed disabled:opacity-30"
+                          >
+                            <FaChevronLeft className="h-3.5 w-3.5" />
+                          </button>
+
+                          <div className="flex items-center gap-2">
+                          {Array.from({ length: relatedPageCount }).map((_, index) => {
+                            const isActive = index === currentRelatedPage;
+                            return (
+                              <button
+                                key={`related-page-${index + 1}`}
+                                type="button"
+                                onClick={() => setRelatedPage(index)}
+                                aria-label={`Show related stories page ${index + 1}`}
+                                aria-current={isActive ? "page" : undefined}
+                                className={`h-2 rounded-full transition-all ${
+                                  isActive
+                                    ? "w-10 bg-[#334155]"
+                                    : "w-2.5 bg-[#cbd5e1] hover:bg-[#94a3b8]"
+                                }`}
+                              />
+                            );
+                          })}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setRelatedPage((page) =>
+                                Math.min(relatedPageCount - 1, page + 1),
+                              )
+                            }
+                            disabled={currentRelatedPage >= relatedPageCount - 1}
+                            aria-label="Show next related stories"
+                            className="inline-flex h-8 w-8 items-center justify-center bg-transparent text-[#334155] transition-opacity hover:opacity-70 disabled:cursor-not-allowed disabled:opacity-30"
+                          >
+                            <FaChevronRight className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
                   </section>
                 ) : null}
 
                 {recommendedStories.length ? (
-                  <section className="mt-12">
+                  <section className="mt-10 sm:mt-12">
                     <SectionTitle
                       eyebrow="Recommended"
                       title="More From The Newsroom"
                     />
 
-                    <div className="mt-6">
+                    <div className="-mx-4 mt-5 flex gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:mt-6 sm:block sm:overflow-visible sm:px-0 sm:pb-0">
                       {recommendedStories.map((item) => (
                         <RecommendedStoryRow key={item.slug} story={item} />
                       ))}
@@ -1433,7 +1540,7 @@ const NewsStoryArticlePage = () => {
               </div>
 
               <aside className="space-y-6 xl:sticky xl:top-6 xl:self-start">
-                <SidebarSection title="Trending News">
+                <SidebarSection title="Trending News" mobileSoft>
                   <div className="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#7c3aed]">
                     <FaFire className="h-3.5 w-3.5" />
                     Live from the newsroom
