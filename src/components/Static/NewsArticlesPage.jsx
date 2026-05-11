@@ -32,6 +32,11 @@ const parseStoryTime = (story) => {
 
 const formatStoryDate = (story) => story?.publishedAt || "Latest";
 
+const formatStoryLabel = (story) => {
+  const label = story?.label || "News";
+  return label === "Launch Tracker" ? "Launch Coverage" : label;
+};
+
 const readStoryText = (story) =>
   `${story?.title || ""} ${story?.summary || ""} ${story?.category || ""} ${
     story?.label || ""
@@ -168,7 +173,7 @@ const StoryMeta = ({ story, light = false }) => (
       light ? "text-white/72" : "text-[#7d8898]"
     }`}
   >
-    <span>{story?.label || "News"}</span>
+    <span>{formatStoryLabel(story)}</span>
     <span className={light ? "text-white/35" : "text-[#c7d0dd]"}>|</span>
     <span>{formatStoryDate(story)}</span>
   </div>
@@ -206,8 +211,10 @@ const NewsGridCard = ({ story, compact = false, rowCard = false }) => (
   <Link
     to={createNewsStoryPath(story.slug)}
     className={`group block overflow-hidden bg-white transition-all hover:border-[#bfdbfe] ${
-      rowCard
-        ? "min-w-[84%] snap-start border border-[#dde7f3] sm:min-w-0"
+      rowCard && compact
+        ? "min-w-[76%] snap-start border border-white/15 bg-[#1f2631] sm:min-w-0 sm:border-[#e5e7eb] sm:bg-white"
+        : rowCard
+          ? "min-w-[84%] snap-start border border-[#dde7f3] sm:min-w-0"
         : "border border-[#e5e7eb]"
     }`}
   >
@@ -221,12 +228,14 @@ const NewsGridCard = ({ story, compact = false, rowCard = false }) => (
             : "aspect-[4/3] w-full"
       }
     />
-    <div className={rowCard ? "p-4 sm:p-4" : "p-3 sm:p-4"}>
+    <div className={rowCard ? "p-3 sm:p-4" : "p-3 sm:p-4"}>
       <StoryMeta story={story} />
       <h3
         className={`mt-2 font-semibold leading-[1.35] text-[#20242b] transition-colors group-hover:text-[#2563eb] ${
           compact
-            ? "line-clamp-2 text-[14px]"
+            ? rowCard
+              ? "line-clamp-3 text-[14px] text-white sm:line-clamp-2 sm:text-[#20242b]"
+              : "line-clamp-2 text-[14px]"
             : rowCard
               ? "line-clamp-2 text-[16px]"
               : "line-clamp-3 text-[16px]"
@@ -243,6 +252,27 @@ const NewsGridCard = ({ story, compact = false, rowCard = false }) => (
   </Link>
 );
 
+const RecentStoryCard = ({ story }) => (
+  <Link
+    to={createNewsStoryPath(story.slug)}
+    className="group grid grid-cols-[92px_minmax(0,1fr)] gap-3 border-b border-[#e5e7eb] bg-white py-3 first:pt-0 last:border-b-0 last:pb-0 sm:block sm:overflow-hidden sm:border sm:bg-white sm:py-0 sm:transition-colors sm:hover:border-[#bfdbfe]"
+  >
+    <StoryImage
+      story={story}
+      className="aspect-square w-full sm:aspect-[4/3]"
+    />
+    <div className="min-w-0 sm:p-4">
+      <StoryMeta story={story} />
+      <h3 className="mt-1 line-clamp-3 text-[14px] font-semibold leading-5 text-[#20242b] transition-colors group-hover:text-[#2563eb] sm:mt-2 sm:text-[16px] sm:leading-[1.35]">
+        {story.title}
+      </h3>
+      <p className="mt-2 hidden text-[13px] leading-6 text-[#667689] sm:line-clamp-2">
+        {story.summary}
+      </p>
+    </div>
+  </Link>
+);
+
 const SpotlightList = ({ stories = [] }) => (
   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
     {stories.map((story) => (
@@ -254,7 +284,7 @@ const SpotlightList = ({ stories = [] }) => (
         <StoryImage story={story} className="aspect-square w-full" />
         <div className="min-w-0 self-center">
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#7c3aed]">
-            {story.label || "News"}
+            {formatStoryLabel(story)}
           </p>
           <h3 className="mt-1 line-clamp-3 text-[14px] font-semibold leading-5 text-[#20242b] group-hover:text-[#2563eb]">
             {story.title}
@@ -316,11 +346,17 @@ const StorySection = ({
   stories = [],
   dark = false,
   singleRow = false,
+  hideOnMobile = false,
+  compactMobile = false,
 }) => {
   if (!stories.length) return null;
 
   return (
-    <section className={dark ? "bg-[#2b3038] p-4 sm:p-5" : ""}>
+    <section
+      className={`${hideOnMobile ? "hidden sm:block" : ""} ${
+        dark ? "bg-[#2b3038] p-3 sm:p-5" : ""
+      }`}
+    >
       <SectionHeader
         title={title}
         eyebrow={eyebrow}
@@ -331,23 +367,31 @@ const StorySection = ({
         <div
           className={
             singleRow
-              ? "-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3"
-              : "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+              ? "-mx-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3"
+              : compactMobile
+                ? "grid grid-cols-1 gap-0 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3"
+                : "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
           }
         >
           {stories.map((story) => (
-            <NewsGridCard
-              key={story.slug}
-              story={story}
-              compact={dark}
-              rowCard={singleRow}
-            />
+            compactMobile ? (
+              <RecentStoryCard key={story.slug} story={story} />
+            ) : (
+              <NewsGridCard
+                key={story.slug}
+                story={story}
+                compact={dark}
+                rowCard={singleRow}
+              />
+            )
           ))}
         </div>
         {singleRow ? (
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute bottom-4 right-0 top-0 w-10 bg-gradient-to-l from-[#f7f8fb] to-transparent sm:hidden"
+            className={`pointer-events-none absolute bottom-4 right-0 top-0 w-10 bg-gradient-to-l ${
+              dark ? "from-[#2b3038]" : "from-[#f7f8fb]"
+            } to-transparent sm:hidden`}
           />
         ) : null}
       </div>
@@ -529,16 +573,19 @@ const NewsArticlesPage = () => {
                 />
 
                 <StorySection
-                  title="Launch Tracker"
+                  title="Latest Launches"
                   eyebrow="Prices & Availability"
                   stories={display.launches}
                   dark
+                  singleRow
+                  hideOnMobile
                 />
 
                 <StorySection
                   title="Recent Updates"
                   eyebrow="Latest"
                   stories={display.latest}
+                  compactMobile
                 />
               </div>
 
