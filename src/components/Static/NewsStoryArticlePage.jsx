@@ -697,7 +697,7 @@ const HeroShareButtons = ({ title, description, image, url }) => {
     <div className="flex flex-wrap items-center gap-2">
       {items.map((item) => {
         const Icon = item.icon;
-        const buttonClass = `inline-flex h-9 w-9 items-center justify-center rounded-[4px] bg-transparent transition-opacity hover:opacity-75 sm:h-10 sm:w-10 ${item.className}`;
+        const buttonClass = `inline-flex h-8 w-8 items-center justify-center rounded-[4px] bg-transparent transition-opacity hover:opacity-75 sm:h-10 sm:w-10 ${item.className}`;
 
         if (item.onClick) {
           return (
@@ -731,7 +731,7 @@ const HeroShareButtons = ({ title, description, image, url }) => {
         type="button"
         onClick={copyLink}
         aria-label="Copy link"
-        className="inline-flex h-9 w-9 items-center justify-center rounded-[4px] bg-transparent text-[#475569] transition-opacity hover:opacity-75 sm:h-10 sm:w-10"
+        className="inline-flex h-8 w-8 items-center justify-center rounded-[4px] bg-transparent text-[#475569] transition-opacity hover:opacity-75 sm:h-10 sm:w-10"
       >
         <FaLink className="h-3.5 w-3.5" />
       </button>
@@ -833,7 +833,7 @@ const RelatedStoryRow = ({ story, index }) => (
 const RecommendedStoryRow = ({ story }) => (
   <Link
     to={createNewsStoryPath(story.slug)}
-    className="group min-w-[72%] overflow-hidden border border-[#e8ebef] bg-white sm:grid sm:min-w-0 sm:grid-cols-[7rem_minmax(0,1fr)] sm:items-center sm:gap-4 sm:border-x-0 sm:border-t-0 sm:py-5 sm:first:pt-0 sm:last:border-b-0 sm:last:pb-0"
+    className="group min-w-[82%] overflow-hidden border border-[#e8ebef] bg-white sm:grid sm:min-w-0 sm:grid-cols-[7rem_minmax(0,1fr)] sm:items-center sm:gap-4 sm:border-x-0 sm:border-t-0 sm:py-5 sm:first:pt-0 sm:last:border-b-0 sm:last:pb-0"
   >
     <StoryImage
       story={story}
@@ -1315,8 +1315,8 @@ const NewsStoryArticlePage = () => {
       <NewsPushOptInCard />
 
       <main className="min-h-screen bg-white text-[#111111]">
-        <section className="border-b border-[#e5e7eb] bg-white">
-          <div className="mx-auto max-w-[1280px] px-4 pt-4 sm:px-6 sm:pb-10 sm:pt-5 lg:px-8">
+        <section className="bg-white">
+          <div className="mx-auto max-w-[1280px] px-4 pb-3 pt-3 sm:px-6 sm:pb-5 sm:pt-5 lg:px-8">
             <div className="line-clamp-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] leading-5 text-[#7b8796] sm:text-[12px]">
               {storyBreadcrumbs.map((item, index) => {
                 const isLast = index === storyBreadcrumbs.length - 1;
@@ -1355,20 +1355,20 @@ const NewsStoryArticlePage = () => {
               })}
             </div>
 
-            <div className="mt-3 max-w-[1120px] sm:mt-4">
-              <h1 className="text-[21px] font-black leading-[1.16] tracking-[-0.02em] text-[#20242b] sm:text-[28px] sm:leading-[1.1] lg:text-[32px] xl:text-[36px]">
+            <div className="mt-2 max-w-[1120px] sm:mt-4">
+              <h1 className="text-[19px] font-black leading-[1.18] tracking-[-0.02em] text-[#20242b] sm:text-[25px] sm:leading-[1.14] lg:text-[28px] xl:text-[30px]">
                 <HeadlineText
                   lines={headlineLines}
                   title={story.title}
                   slug={story.slug}
                 />
               </h1>
-              <p className="mt-3 max-w-[72ch] text-[14px] leading-6 text-[#5f6670] sm:text-[17px] sm:leading-7">
+              <p className="mt-2 max-w-[72ch] text-[13.5px] leading-6 text-[#5f6670] sm:mt-3 sm:text-[17px] sm:leading-7">
                 {articleDescription}
               </p>
             </div>
 
-            <div className="mt-5 flex flex-col gap-3 pb-4 sm:flex-row sm:items-end sm:justify-between sm:gap-4 sm:border-b sm:border-[#eceff3] sm:pb-5">
+            <div className="mt-4 flex flex-col gap-2 sm:mt-5 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] leading-5 text-[#667689] sm:text-[13.5px]">
                 <span>Written by</span>
                 <span className="font-semibold text-[#2563eb]">
@@ -1397,8 +1397,8 @@ const NewsStoryArticlePage = () => {
         </section>
 
         <section className="bg-white">
-          <div className="mx-auto max-w-[1280px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
-            <div className="grid gap-6 sm:gap-8 xl:grid-cols-[160px_minmax(0,1fr)_300px] xl:items-start xl:gap-10">
+          <div className="mx-auto max-w-[1280px] px-4 py-4 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+            <div className="grid gap-5 sm:gap-8 xl:grid-cols-[160px_minmax(0,1fr)_300px] xl:items-start xl:gap-10">
               <aside className="hidden xl:block">
                 <div className="sticky top-6 space-y-8">
                   <RailPanel title="Highlights" items={editorialHighlights} />
@@ -1415,7 +1415,7 @@ const NewsStoryArticlePage = () => {
                   <StoryImage
                     story={story}
                     eager
-                    className="aspect-[4/3] w-full border border-[#e5e7eb] sm:aspect-[16/9]"
+                    className="aspect-[16/10] w-full border border-[#e5e7eb] sm:aspect-[16/9]"
                   />
                   <div className="mt-3 flex flex-col gap-1.5 text-[10px] font-medium uppercase tracking-[0.12em] text-[#7d8898] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:tracking-[0.14em]">
                     <span>Image credit: {formatImageCredit(story)}</span>
@@ -1432,7 +1432,7 @@ const NewsStoryArticlePage = () => {
                   />
                 </div>
 
-                <article className="mt-7 sm:mt-8">
+                <article className="mt-5 sm:mt-8">
                   <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.12em] sm:gap-2.5 sm:text-[11px] sm:tracking-[0.14em]">
                     <span className="inline-flex items-center font-medium text-[#5f6670]">
                       {story.readTime}
@@ -1496,7 +1496,7 @@ const NewsStoryArticlePage = () => {
                   )}
 
                   {articleKeywords.length ? (
-                    <div className="mt-8 border-t border-[#eceff3] pt-5 text-[13px] leading-6 text-[#6b7280] sm:mt-10">
+                    <div className="mt-7 border-t border-[#eceff3] pt-4 text-[13px] leading-6 text-[#6b7280] sm:mt-10 sm:pt-5">
                       <span className="font-semibold text-[#202226]">
                         Further reading:
                       </span>{" "}
@@ -1506,17 +1506,17 @@ const NewsStoryArticlePage = () => {
                 </article>
 
                 {relatedStories.length ? (
-                  <section className="mt-10 sm:mt-12">
+                  <section className="mt-8 sm:mt-12">
                     <SectionTitle eyebrow="Related" title="Related Stories" />
 
-                    <div className="mt-5 grid grid-cols-2 gap-3 sm:mt-6 sm:grid-cols-4 sm:gap-4">
+                    <div className="mt-4 grid grid-cols-2 gap-3 sm:mt-6 sm:grid-cols-4 sm:gap-4">
                       {paginatedRelatedStories.map((item) => (
                         <RelatedStoryTile key={item.slug} story={item} />
                       ))}
                     </div>
 
                     {relatedPageCount > 1 ? (
-                      <div className="mt-5 flex justify-center border-t border-[#eceff3] pt-4">
+                      <div className="mt-4 flex justify-center border-t border-[#eceff3] pt-4 sm:mt-5">
                         <div className="flex items-center gap-3">
                           <button
                             type="button"
@@ -1574,13 +1574,13 @@ const NewsStoryArticlePage = () => {
                 ) : null}
 
                 {recommendedStories.length ? (
-                  <section className="mt-10 sm:mt-12">
+                  <section className="mt-8 sm:mt-12">
                     <SectionTitle
                       eyebrow="Recommended"
                       title="More From The Newsroom"
                     />
 
-                    <div className="-mx-4 mt-5 flex gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:mt-6 sm:block sm:overflow-visible sm:px-0 sm:pb-0">
+                    <div className="-mx-4 mt-4 flex gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:mt-6 sm:block sm:overflow-visible sm:px-0 sm:pb-0">
                       {recommendedStories.map((item) => (
                         <RecommendedStoryRow key={item.slug} story={item} />
                       ))}
@@ -1589,7 +1589,7 @@ const NewsStoryArticlePage = () => {
                 ) : null}
               </div>
 
-              <aside className="space-y-6 xl:sticky xl:top-6 xl:self-start">
+              <aside className="space-y-5 xl:sticky xl:top-6 xl:self-start">
                 <SidebarSection title="Trending News" mobileSoft>
                   <div className="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#7c3aed]">
                     <FaFire className="h-3.5 w-3.5" />
