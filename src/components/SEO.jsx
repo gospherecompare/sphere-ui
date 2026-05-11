@@ -2,6 +2,7 @@ import React from "react";
 import { Helmet } from "react-helmet-async";
 import { useLocation } from "react-router-dom";
 import { normalizeSeoTitle } from "../utils/seoTitle";
+import { toCanonicalPageUrl } from "../utils/publicUrl";
 
 const SITE_ORIGIN = "https://tryhook.shop";
 
@@ -33,15 +34,15 @@ const toAbsoluteUrl = (value, fallbackPath = "/") => {
  * Falls back to window.location.href if available
  */
 const getCanonicalUrl = (customUrl, pathname) => {
-  if (customUrl) return toAbsoluteUrl(customUrl);
+  if (customUrl) return toCanonicalPageUrl(customUrl);
 
   if (typeof window !== "undefined") {
     const origin = window.location?.origin || SITE_ORIGIN;
     const path = pathname || window.location?.pathname || "/";
-    return `${origin}${path.startsWith("/") ? path : `/${path}`}`;
+    return toCanonicalPageUrl(path, origin);
   }
 
-  return `${SITE_ORIGIN}${pathname || "/"}`;
+  return toCanonicalPageUrl(pathname || "/", SITE_ORIGIN);
 };
 
 const inferImageType = (url) => {

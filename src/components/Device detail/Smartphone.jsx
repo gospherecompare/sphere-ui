@@ -69,6 +69,7 @@ import {
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
 import { resolveSmartphoneBadgeScore } from "../../utils/smartphoneBadgeScore";
 import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
+import { toCanonicalPageUrl } from "../../utils/publicUrl";
 import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
 
 const token = Cookies.get("arenak");
@@ -912,8 +913,103 @@ const MobileDetailCard = () => {
     return 10;
   };
 
-  const isSpecScoreAllowed = (stage) =>
-    stage === "released" || stage === "available";
+  const parseMarketPriceValue = (value) => {
+    if (value == null || value === "") return null;
+    const normalized = Number(String(value).replace(/[^0-9.]/g, ""));
+    return Number.isFinite(normalized) && normalized > 0 ? normalized : null;
+  };
+
+  const hasStoreMarketSignal = (store) => {
+    if (!store || typeof store !== "object") return false;
+    return Boolean(
+      parseMarketPriceValue(
+        store.price ??
+          store.current_price ??
+          store.sale_price ??
+          store.offer_price ??
+          store.mrp,
+      ) ||
+        store.url ||
+        store.store ||
+        store.store_name ||
+        store.storeName ||
+        store.display_store_name ||
+        store.sale_start_date ||
+        store.saleStartDate ||
+        store.sale_date ||
+        store.saleDate ||
+        store.available_from ||
+        store.availableFrom,
+    );
+  };
+
+  const hasSpecScoreMarketSignal = (device) => {
+    if (!device || typeof device !== "object") return false;
+
+    if (getSaleStartDateFromDevice(device)) return true;
+
+    if (
+      parseMarketPriceValue(
+        device.price ??
+          device.current_price ??
+          device.launch_price ??
+          device.starting_price ??
+          device.price_in_india ??
+          device.expected_price,
+      )
+    ) {
+      return true;
+    }
+
+    const stores = Array.isArray(device.storePrices)
+      ? device.storePrices
+      : Array.isArray(device.store_prices)
+        ? device.store_prices
+        : [];
+    if (stores.some(hasStoreMarketSignal)) return true;
+
+    const variants = Array.isArray(device.variants)
+      ? device.variants
+      : Array.isArray(device.variants_json)
+        ? device.variants_json
+        : [];
+    return variants.some((variant) => {
+      if (!variant || typeof variant !== "object") return false;
+      if (
+        normalizeDateLikeValue(
+          variant.saleStartDate ??
+            variant.sale_start_date ??
+            variant.saleDate ??
+            variant.sale_date,
+        )
+      ) {
+        return true;
+      }
+      if (
+        parseMarketPriceValue(
+          variant.price ??
+            variant.current_price ??
+            variant.launch_price ??
+            variant.starting_price ??
+            variant.expected_price,
+        )
+      ) {
+        return true;
+      }
+      const variantStores = Array.isArray(variant.storePrices)
+        ? variant.storePrices
+        : Array.isArray(variant.store_prices)
+          ? variant.store_prices
+          : [];
+      return variantStores.some(hasStoreMarketSignal);
+    });
+  };
+
+  const isSpecScoreAllowed = (stage, device = null) =>
+    stage === "released" ||
+    stage === "available" ||
+    ((stage === "upcoming" || stage === "announced") &&
+      hasSpecScoreMarketSignal(device));
 
   const getSaleStartDateFromDevice = (device) => {
     if (!device) return null;
@@ -1412,7 +1508,7 @@ const MobileDetailCard = () => {
       deviceFieldProfiles,
     );
     out.field_profile = profileResult;
-    const canShowSpecScore = isSpecScoreAllowed(getDeviceLaunchStatus(out));
+    const canShowSpecScore = isSpecScoreAllowed(getDeviceLaunchStatus(out), out);
     if (!canShowSpecScore) {
       out.spec_score = null;
       out.specScore = null;
@@ -1580,7 +1676,8 @@ const MobileDetailCard = () => {
     return getCompetitorLimitForStage(launchStatus);
   }, [launchStatus, serverPolicy]);
   const allowSpecScore =
-    isSpecScoreAllowed(launchStatus) || serverPolicy.allowSpecScore === true;
+    isSpecScoreAllowed(launchStatus, mobileData) ||
+    serverPolicy.allowSpecScore === true;
   const SpecScoreBadge = allowSpecScore ? BaseSpecScoreBadge : HiddenScoreBadge;
   const headerSpecScoreValue = useMemo(() => {
     if (!allowSpecScore || !mobileData) return null;
@@ -2655,12 +2752,13 @@ Price: ${price}
     const effectiveCanonicalSlug =
       resolvedCanonicalRouteSlug || canonicalRouteSlug;
     if (effectiveCanonicalSlug) {
-      return `${SITE_ORIGIN}/smartphones/${effectiveCanonicalSlug}`;
+      return toCanonicalPageUrl(
+        `/smartphones/${effectiveCanonicalSlug}`,
+        SITE_ORIGIN,
+      );
     }
     const path = location?.pathname || "/";
-    const normalizedPath =
-      path && path.length > 1 ? path.replace(/\/+$/g, "") : path;
-    return `${SITE_ORIGIN}${normalizedPath || "/"}`;
+    return toCanonicalPageUrl(path || "/", SITE_ORIGIN);
   }, [canonicalRouteSlug, location.pathname, resolvedCanonicalRouteSlug]);
   const normalizedPathname = useMemo(() => {
     const path = location?.pathname || "/";

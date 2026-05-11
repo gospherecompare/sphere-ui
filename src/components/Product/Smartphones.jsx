@@ -432,8 +432,99 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     return 4;
   };
 
-  const isSpecScoreAllowed = (stage) =>
-    stage === "released" || stage === "available";
+  const parseMarketPriceValue = (value) => {
+    if (value == null || value === "") return null;
+    const normalized = Number(String(value).replace(/[^0-9.]/g, ""));
+    return Number.isFinite(normalized) && normalized > 0 ? normalized : null;
+  };
+
+  const hasStoreMarketSignal = (store) => {
+    if (!store || typeof store !== "object") return false;
+    return Boolean(
+      parseMarketPriceValue(
+        store.price ??
+          store.current_price ??
+          store.sale_price ??
+          store.offer_price ??
+          store.mrp,
+      ) ||
+        store.url ||
+        store.store ||
+        store.store_name ||
+        store.storeName ||
+        store.display_store_name ||
+        store.sale_start_date ||
+        store.saleStartDate ||
+        store.sale_date ||
+        store.saleDate ||
+        store.available_from ||
+        store.availableFrom,
+    );
+  };
+
+  const hasSpecScoreMarketSignal = (device) => {
+    if (!device || typeof device !== "object") return false;
+
+    if (resolveSaleStartDate(device)) return true;
+
+    if (
+      parseMarketPriceValue(
+        device.price ??
+          device.current_price ??
+          device.launch_price ??
+          device.starting_price ??
+          device.price_in_india ??
+          device.expected_price,
+      )
+    ) {
+      return true;
+    }
+
+    const stores = Array.isArray(device.storePrices)
+      ? device.storePrices
+      : Array.isArray(device.store_prices)
+        ? device.store_prices
+        : [];
+    if (stores.some(hasStoreMarketSignal)) return true;
+
+    const variants = Array.isArray(device.variants) ? device.variants : [];
+    return variants.some((variant) => {
+      if (!variant || typeof variant !== "object") return false;
+      if (
+        parseDateValue(
+          variant.saleStartDate ??
+            variant.sale_start_date ??
+            variant.saleDate ??
+            variant.sale_date,
+        )
+      ) {
+        return true;
+      }
+      if (
+        parseMarketPriceValue(
+          variant.price ??
+            variant.current_price ??
+            variant.launch_price ??
+            variant.starting_price ??
+            variant.expected_price,
+        )
+      ) {
+        return true;
+      }
+      const variantStores = Array.isArray(variant.storePrices)
+        ? variant.storePrices
+        : Array.isArray(variant.store_prices)
+          ? variant.store_prices
+          : [];
+      return variantStores.some(hasStoreMarketSignal);
+    });
+  };
+
+  const isSpecScoreAllowed = (stage, device = null) =>
+    stage === "released" ||
+    stage === "available" ||
+    ((stage === "upcoming" || stage === "announced") &&
+      hasSpecScoreMarketSignal(device));
 
   const toNumberOrNull = (value) => {
     const num = Number(value);
@@ -448,7 +539,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       typeof allowCompareRaw === "boolean"
         ? allowCompareRaw
         : stage !== "rumored";
-    const allowSpecScore = isSpecScoreAllowed(stage);
+    const allowSpecScore = isSpecScoreAllowed(stage, device);
     const compareLimitRaw = toNumberOrNull(
       device?.compareLimit ?? device?.compare_limit,
     );
@@ -1622,7 +1713,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       field_profile: profileResult,
     };
     baseDevice.launchStatus = resolveLaunchStage(baseDevice);
-    if (!isSpecScoreAllowed(baseDevice.launchStatus)) {
+    if (!isSpecScoreAllowed(baseDevice.launchStatus, baseDevice)) {
       baseDevice.allowSpecScore = false;
       baseDevice.spec_score = null;
       baseDevice.overall_score = null;

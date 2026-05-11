@@ -38,6 +38,7 @@ import {
 import useStoreLogos from "../../hooks/useStoreLogos";
 import Spinner from "../ui/Spinner";
 import useTitle from "../../hooks/useTitle";
+import { toCanonicalPageUrl } from "../../utils/publicUrl";
 import useDevice from "../../hooks/useDevice";
 // BannerSlot disabled until completed.
 import { generateSlug } from "../../utils/slugGenerator";
@@ -1590,9 +1591,10 @@ const Laptops = () => {
     return toAbsoluteUrl(raw);
   }, [sortedVariants, siteOrigin]);
 
-  const listSchemaUrl = `${SITE_ORIGIN}${
-    location?.pathname ? location.pathname : "/laptops"
-  }`;
+  const listSchemaUrl = toCanonicalPageUrl(
+    location?.pathname ? location.pathname : "/laptops",
+    SITE_ORIGIN,
+  );
 
   const listSchemaItems = useMemo(() => {
     const items = sortedVariants.slice(0, 20).map((device) => {
@@ -1608,7 +1610,7 @@ const Laptops = () => {
         : device?.image;
       return {
         name,
-        url: `${SITE_ORIGIN}/laptops/${slug}`,
+        url: toCanonicalPageUrl(`/laptops/${slug}`, SITE_ORIGIN),
         image: imageRaw ? toAbsoluteUrl(imageRaw) : undefined,
       };
     });

@@ -2,6 +2,7 @@
 import { Helmet } from "react-helmet-async";
 import useTitle from "../../hooks/useTitle";
 import { createWebPageSchema } from "../../utils/schemaGenerators";
+import { toCanonicalPageUrl } from "../../utils/publicUrl";
 
 const CAREERS_API_BASE = (
   import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in"
@@ -980,7 +981,7 @@ const SectionCard = ({ title, children, optional = false }) => (
 const Careers = () => {
   useTitle({ page: "Careers" });
 
-  const canonical = "https://tryhook.shop/careers";
+  const canonical = toCanonicalPageUrl("/careers");
   const careersSchemaJson = JSON.stringify(
     createWebPageSchema({
       name: "Careers at Hooks",

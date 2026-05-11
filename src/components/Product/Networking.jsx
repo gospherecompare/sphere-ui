@@ -37,6 +37,7 @@ import useStoreLogos from "../../hooks/useStoreLogos";
 import Spinner from "../ui/Spinner";
 import useTitle from "../../hooks/useTitle";
 import { generateSlug } from "../../utils/slugGenerator";
+import { toCanonicalPageUrl } from "../../utils/publicUrl";
 import {
   createCollectionSchema,
   createItemListSchema,
@@ -987,9 +988,10 @@ const Networking = () => {
     return toAbsoluteUrl(raw);
   }, [sortedVariants, siteOrigin]);
 
-  const listSchemaUrl = `${SITE_ORIGIN}${
-    location?.pathname ? location.pathname : "/networking"
-  }`;
+  const listSchemaUrl = toCanonicalPageUrl(
+    location?.pathname ? location.pathname : "/networking",
+    SITE_ORIGIN,
+  );
 
   const listSchemaItems = useMemo(() => {
     const items = sortedVariants.slice(0, 20).map((device) => {
@@ -1005,7 +1007,7 @@ const Networking = () => {
         : device?.image;
       return {
         name,
-        url: `${SITE_ORIGIN}/networking/${slug}`,
+        url: toCanonicalPageUrl(`/networking/${slug}`, SITE_ORIGIN),
         image: imageRaw ? toAbsoluteUrl(imageRaw) : undefined,
       };
     });

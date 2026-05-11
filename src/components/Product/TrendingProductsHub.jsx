@@ -27,6 +27,7 @@ import {
 } from "../../utils/schemaGenerators";
 import { buildListSeoKeywords } from "../../utils/seoKeywordBuilder";
 import { normalizeSeoTitle } from "../../utils/seoTitle";
+import { toCanonicalPageUrl } from "../../utils/publicUrl";
 import {
   computePopularSmartphoneFeatures,
   SMARTPHONE_FEATURE_CATALOG,
@@ -1396,7 +1397,7 @@ const TrendingProductsHub = () => {
     });
   }, [config.metaKeywords, activeCategory, visible, products]);
   const canonicalPath = `/trending/${activeCategory}`;
-  const canonicalUrl = `${SITE_ORIGIN}${canonicalPath}`;
+  const canonicalUrl = toCanonicalPageUrl(canonicalPath, SITE_ORIGIN);
   const ogImage = first(
     arr(visible).find((p) => text(p?.image))?.image,
     arr(products).find((p) => text(p?.image))?.image,
@@ -1424,7 +1425,7 @@ const TrendingProductsHub = () => {
           : `${p?.detailPath || "/smartphones"}/${slug}`;
       return {
         name,
-        url: `${SITE_ORIGIN}${detailPath}`,
+        url: toCanonicalPageUrl(detailPath, SITE_ORIGIN),
         image: p?.image || undefined,
       };
     });

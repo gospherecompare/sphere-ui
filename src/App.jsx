@@ -50,6 +50,7 @@ import {
   buildSmartphoneBrandPath,
   buildSmartphoneListingPath,
 } from "./utils/smartphoneListingRoutes";
+import { toCanonicalPageUrl } from "./utils/publicUrl";
 
 const SITE_ORIGIN = "https://tryhook.shop";
 const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/hook-logo.svg`;
@@ -434,7 +435,7 @@ const RouteSeoFallback = () => {
 
   // Initialize all hooks before any conditional returns
   const seo = resolveSeoMeta(pathname);
-  const canonicalUrl = `${SITE_ORIGIN}${seo.canonicalPath}`;
+  const canonicalUrl = toCanonicalPageUrl(seo.canonicalPath, SITE_ORIGIN);
   const normalizedTitle = normalizeSeoTitle(seo.title);
   const schemaJson = React.useMemo(() => {
     if (seo.canonicalPath === "/") {

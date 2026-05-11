@@ -66,6 +66,7 @@ import Spinner from "../ui/Spinner";
 import { networkingMeta } from "../../constants/meta";
 import RatingReview from "../ui/RatingReview";
 import useStoreLogos from "../../hooks/useStoreLogos";
+import { toCanonicalPageUrl } from "../../utils/publicUrl";
 
 const SITE_ORIGIN = "https://tryhook.shop";
 
@@ -746,7 +747,7 @@ const NetworkingDetailCard = () => {
 
   const getCanonicalUrl = useMemo(() => {
     const path = location?.pathname || "/";
-    return `${SITE_ORIGIN}${path}`;
+    return toCanonicalPageUrl(path, SITE_ORIGIN);
   }, [location.pathname]);
 
   const handleShare = async () => {

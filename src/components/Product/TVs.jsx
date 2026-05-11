@@ -38,6 +38,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import useStoreLogos from "../../hooks/useStoreLogos";
 import Spinner from "../ui/Spinner";
 import useTitle from "../../hooks/useTitle";
+import { toCanonicalPageUrl } from "../../utils/publicUrl";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import { useSearchParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
@@ -2610,9 +2611,10 @@ const TVs = () => {
     return toAbsoluteUrl(raw);
   }, [sortedVariants, siteOrigin]);
 
-  const listSchemaUrl = `${SITE_ORIGIN}${
-    location?.pathname ? location.pathname : "/tvs"
-  }`;
+  const listSchemaUrl = toCanonicalPageUrl(
+    location?.pathname ? location.pathname : "/tvs",
+    SITE_ORIGIN,
+  );
 
   const listSchemaItems = useMemo(() => {
     const items = sortedVariants.slice(0, 20).map((device) => {
@@ -2633,7 +2635,7 @@ const TVs = () => {
         : device?.image;
       return {
         name,
-        url: `${SITE_ORIGIN}/tvs/${slug || "detail"}`,
+        url: toCanonicalPageUrl(`/tvs/${slug || "detail"}`, SITE_ORIGIN),
         image: imageRaw ? toAbsoluteUrl(imageRaw) : undefined,
       };
     });

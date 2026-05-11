@@ -2,13 +2,12 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import useTitle from "../../hooks/useTitle";
-
-const SITE_ORIGIN = "https://tryhook.shop";
+import { toCanonicalPageUrl } from "../../utils/publicUrl";
 
 const NotFound = () => {
   const location = useLocation();
   const path = location?.pathname || "/";
-  const canonicalUrl = `${SITE_ORIGIN}${path.startsWith("/") ? path : `/${path}`}`;
+  const canonicalUrl = toCanonicalPageUrl(path || "/");
 
   useTitle({ page: "Page Not Found" });
 

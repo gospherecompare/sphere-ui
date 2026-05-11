@@ -34,6 +34,7 @@ import { createProductSchema } from "../../utils/schemaGenerators";
 import { Helmet } from "react-helmet-async";
 import { buildCanonicalComparePath } from "../../utils/compareRoutes";
 import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
+import { toCanonicalPageUrl } from "../../utils/publicUrl";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import usePageEngagementTracker from "../../hooks/usePageEngagementTracker";
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
@@ -1105,7 +1106,7 @@ const LaptopDetailCard = () => {
 
   const getCanonicalUrl = useMemo(() => {
     const path = location?.pathname || "/";
-    return `${SITE_ORIGIN}${path}`;
+    return toCanonicalPageUrl(path, SITE_ORIGIN);
   }, [location.pathname]);
 
   const getShareUrl = () => {

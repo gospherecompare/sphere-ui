@@ -22,6 +22,7 @@ import {
   getSmartphoneFeatureRouteMeta,
   toReadableListingLabel,
 } from "./src/utils/smartphoneListingRoutes.js";
+import { toCanonicalPageUrl } from "./src/utils/publicUrl.js";
 
 const require = createRequire(import.meta.url);
 const vitePrerender = require("vite-plugin-prerender");
@@ -127,27 +128,7 @@ const BUDGET_PHONE_KEYWORDS =
 const DEFAULT_SEO_KEYWORDS = `hook, best gadget comparison site, mobile price comparison india, moblie price comparison india, compare laptops smartphones tvs, compare smartphone tv laptops, compare specs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch phones, trending phone in india, most popular mobiles, top selling gadgets india, 5g phones in india, ai phones in india, ${BUDGET_PHONE_KEYWORDS}, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, gaming laptops india, student laptops india, laptop comparison india, vacuum cooler laptop and phone, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000, smart tv comparison india`;
 const STATIC_PRERENDER_ROUTES = [
   "/",
-  "/career",
   "/news",
-  "/trending",
-  "/laptop",
-  "/mobiles",
-  "/appliances",
-  "/products",
-  "/products/laptop",
-  "/products/mobiles",
-  "/products/smartphones",
-  "/products/laptops",
-  "/products/tvs",
-  "/products/appliances",
-  "/products/networking",
-  "/devices",
-  "/devices/laptop",
-  "/devices/smartphones",
-  "/devices/laptops",
-  "/devices/tvs",
-  "/devices/appliances",
-  "/devices/networking",
   "/smartphones",
   "/smartphones/upcoming",
   ...SMARTPHONE_FILTER_ROUTE_PATHS,
@@ -1072,8 +1053,7 @@ const buildSitemapXml = (routes = []) => {
 
   const urls = canonicalRoutes
     .map((routePath) => {
-      const loc =
-        routePath === "/" ? SITE_ORIGIN : `${SITE_ORIGIN}${routePath}`;
+      const loc = toCanonicalPageUrl(routePath, SITE_ORIGIN);
       const isDetailPage =
         routePath.startsWith("/smartphones/") ||
         routePath.startsWith("/laptops/") ||
@@ -1405,7 +1385,7 @@ const resolveSeo = (routePath) => {
 const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
   const seo = resolveSeo(routePath);
   const canonicalPath = seo.canonicalPath;
-  const canonicalUrl = `${SITE_ORIGIN}${canonicalPath}`;
+  const canonicalUrl = toCanonicalPageUrl(canonicalPath, SITE_ORIGIN);
 
   if (canonicalPath === "/") return [];
 
@@ -1688,7 +1668,7 @@ const injectStructuredData = (html, routePath, preloadedApiPayload) => {
 
 const applySeoToHtml = (html, routePath) => {
   const seo = resolveSeo(routePath);
-  const canonicalUrl = `${SITE_ORIGIN}${seo.canonicalPath}`;
+  const canonicalUrl = toCanonicalPageUrl(seo.canonicalPath, SITE_ORIGIN);
   const normalizedRoute = normalizePath(routePath || "/");
   const isAliasRoute = normalizedRoute !== seo.canonicalPath;
   let next = html;

@@ -59,6 +59,7 @@ import ProductDiscoverySections from "../ui/ProductDiscoverySections";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
 import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
+import { toCanonicalPageUrl } from "../../utils/publicUrl";
 
 // Ratings UI removed: review submission and inline rating input deleted
 
@@ -1453,7 +1454,7 @@ const TVDetailCard = () => {
 
   const getCanonicalUrl = useMemo(() => {
     const path = location?.pathname || "/";
-    return `${SITE_ORIGIN}${path}`;
+    return toCanonicalPageUrl(path, SITE_ORIGIN);
   }, [location.pathname]);
 
   const getShareUrl = () => {

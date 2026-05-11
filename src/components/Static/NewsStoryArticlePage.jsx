@@ -1315,8 +1315,8 @@ const NewsStoryArticlePage = () => {
       <NewsPushOptInCard />
 
       <main className="min-h-screen bg-white text-[#111111]">
-        <section className="bg-white">
-          <div className="mx-auto max-w-[1280px] px-4 pb-3 pt-3 sm:px-6 sm:pb-5 sm:pt-5 lg:px-8">
+        <section className="bg-[#f7f8fb]">
+          <div className="mx-auto max-w-[1280px] px-4 py-4 sm:px-6 lg:px-8">
             <div className="line-clamp-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] leading-5 text-[#7b8796] sm:text-[12px]">
               {storyBreadcrumbs.map((item, index) => {
                 const isLast = index === storyBreadcrumbs.length - 1;
@@ -1335,7 +1335,7 @@ const NewsStoryArticlePage = () => {
                         title={isLast ? item.label : undefined}
                         className={
                           isLast
-                            ? "font-medium text-[#334155]"
+                            ? "font-semibold text-[#1f2937]"
                             : "text-[#7b8796]"
                         }
                       >
@@ -1354,7 +1354,11 @@ const NewsStoryArticlePage = () => {
                 );
               })}
             </div>
+          </div>
+        </section>
 
+        <section className="bg-white">
+          <div className="mx-auto max-w-[1280px] px-4 pb-3 pt-3 sm:px-6 sm:pb-5 sm:pt-5 lg:px-8">
             <div className="mt-2 max-w-[1120px] sm:mt-4">
               <h1 className="text-[19px] font-black leading-[1.18] tracking-[-0.02em] text-[#20242b] sm:text-[25px] sm:leading-[1.14] lg:text-[28px] xl:text-[30px]">
                 <HeadlineText

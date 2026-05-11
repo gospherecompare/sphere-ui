@@ -35,6 +35,7 @@ import { Helmet } from "react-helmet-async";
 import { createWebApplicationSchema } from "../utils/schemaGenerators";
 import { buildListSeoKeywords } from "../utils/seoKeywordBuilder";
 import { normalizeSeoTitle } from "../utils/seoTitle";
+import { toCanonicalPageUrl } from "../utils/publicUrl";
 
 const Search = FaSearch;
 const X = FaTimes;
@@ -646,7 +647,7 @@ const MobileCompare = () => {
   ]);
 
   const canonicalCompareUrl = useMemo(
-    () => `${SITE_ORIGIN}${canonicalComparePath}`,
+    () => toCanonicalPageUrl(canonicalComparePath, SITE_ORIGIN),
     [canonicalComparePath],
   );
 

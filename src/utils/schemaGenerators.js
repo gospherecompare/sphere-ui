@@ -2,6 +2,7 @@
  * Schema.org generators for SEO
  * Creates structured data objects for different content types
  */
+import { toCanonicalPageUrl } from "./publicUrl";
 
 const SITE_ORIGIN = "https://tryhook.shop";
 
@@ -20,6 +21,9 @@ const toAbsoluteUrl = (value, fallbackPath = "/") => {
 
   return `${SITE_ORIGIN}/${raw}`;
 };
+
+const toAbsolutePageUrl = (value, fallbackPath = "/") =>
+  toCanonicalPageUrl(value || fallbackPath, SITE_ORIGIN);
 
 const normalizeImageObject = (
   entry,
@@ -101,7 +105,7 @@ export const createProductSchema = ({
     "@type": "Product",
     name: name || "",
     description: description || "",
-    url: url || SITE_ORIGIN,
+    url: toAbsolutePageUrl(url || "/"),
   };
 
   if (image) {
@@ -129,7 +133,7 @@ export const createProductSchema = ({
       price: normalizedPrice,
       priceCurrency: priceCurrency,
       availability: `https://schema.org/${availability}`,
-      url: url || SITE_ORIGIN,
+      url: toAbsolutePageUrl(url || "/"),
     };
   }
 
@@ -183,7 +187,7 @@ export const createItemListSchema = ({
     "@context": "https://schema.org",
     "@type": "ItemList",
     name: name || "Products",
-    url: url || SITE_ORIGIN,
+    url: toAbsolutePageUrl(url || "/"),
   };
 
   if (description) {
@@ -196,7 +200,7 @@ export const createItemListSchema = ({
         "@type": "ListItem",
         position: index + 1,
         name: item.name || "",
-        url: item.url ? toAbsoluteUrl(item.url) : "",
+        url: item.url ? toAbsolutePageUrl(item.url) : "",
       };
       if (item.image) entry.image = toAbsoluteUrl(item.image);
       return entry;
@@ -217,7 +221,7 @@ export const createBreadcrumbSchema = (breadcrumbs = []) => {
       "@type": "ListItem",
       position: index + 1,
       name: item.label || "",
-      item: item.url ? toAbsoluteUrl(item.url) : SITE_ORIGIN,
+      item: item.url ? toAbsolutePageUrl(item.url) : toAbsolutePageUrl("/"),
     })),
   };
 };
@@ -236,7 +240,7 @@ export const createCollectionSchema = ({
     "@type": "CollectionPage",
     name: name || "",
     description: description || "",
-    url: url || SITE_ORIGIN,
+    url: toAbsolutePageUrl(url || "/"),
     image: image || `${SITE_ORIGIN}/hook-logo.svg`,
   };
 };
@@ -264,7 +268,7 @@ export const createNewsArticleSchema = ({
     "@type": "NewsArticle",
     headline: headline || "",
     description: description || "",
-    url: url || SITE_ORIGIN,
+    url: toAbsolutePageUrl(url || "/"),
     datePublished: datePublished || undefined,
     dateModified: dateModified || datePublished || undefined,
     author: {
@@ -279,7 +283,7 @@ export const createNewsArticleSchema = ({
         url: `${SITE_ORIGIN}/hook-logo.svg`,
       },
     },
-    mainEntityOfPage: url || SITE_ORIGIN,
+    mainEntityOfPage: toAbsolutePageUrl(url || "/"),
   };
 
   if (image) {
@@ -317,7 +321,7 @@ export const createOrganizationSchema = () => {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: "Hooks",
-    url: SITE_ORIGIN,
+    url: toAbsolutePageUrl("/"),
     logo: `${SITE_ORIGIN}/hook-logo.svg`,
     description:
       "Compare smartphones, laptops, TVs, and gadgets with specs, prices, and reviews",
@@ -342,7 +346,7 @@ export const createWebsiteSchema = () => {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: "Hooks",
-    url: SITE_ORIGIN,
+    url: toAbsolutePageUrl("/"),
     description: "Smart device comparison platform",
     potentialAction: {
       "@type": "SearchAction",
@@ -371,7 +375,7 @@ export const createWebApplicationSchema = ({
     description:
       description ||
       "Compare smartphones, laptops, TVs, and networking devices side-by-side",
-    url: url || `${SITE_ORIGIN}/compare`,
+    url: toAbsolutePageUrl(url || "/compare"),
     applicationCategory: applicationCategory,
     operatingSystem: "Any",
     browserRequirements: "Requires JavaScript",
@@ -394,7 +398,7 @@ export const createContactPageSchema = ({
     "@type": "ContactPage",
     name: name || "Contact Us",
     description: description || "Get in touch with Hooks support team",
-    url: url || `${SITE_ORIGIN}/contact`,
+    url: toAbsolutePageUrl(url || "/contact"),
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "Customer Support",
@@ -429,11 +433,11 @@ export const createAboutPageSchema = ({
     description:
       description ||
       "Learn about Hooks - a device comparison and research platform",
-    url: url || `${SITE_ORIGIN}/about`,
+    url: toAbsolutePageUrl(url || "/about"),
     about: {
       "@type": "Organization",
       name: organizationName,
-      url: SITE_ORIGIN,
+      url: toAbsolutePageUrl("/"),
       logo: `${SITE_ORIGIN}/hook-logo.svg`,
       description:
         "Compare smartphones, laptops, TVs, and gadgets with specs, prices, and trend insights",
@@ -455,7 +459,7 @@ export const createWebPageSchema = ({
     "@type": pageType || "WebPage",
     name: name || "Page",
     description: description || "",
-    url: url || SITE_ORIGIN,
+    url: toAbsolutePageUrl(url || "/"),
   };
 };
 
