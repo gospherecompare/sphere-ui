@@ -1545,6 +1545,11 @@ const MobileDetailCard = () => {
       ),
     [localResolved, selectedResolved, selectedResolvedForRoute],
   );
+  const scoreSourceData = selectedResolvedForRoute
+    ? normalizeSmartphone(selectedResolvedForRoute)
+    : !routeSlug
+      ? mobileData
+      : null;
   const resolvedCanonicalRouteSlug = useMemo(
     () =>
       getCanonicalSeoSlugForDevice(
@@ -1680,10 +1685,10 @@ const MobileDetailCard = () => {
     serverPolicy.allowSpecScore === true;
   const SpecScoreBadge = allowSpecScore ? BaseSpecScoreBadge : HiddenScoreBadge;
   const headerSpecScoreValue = useMemo(() => {
-    if (!allowSpecScore || !mobileData) return null;
-    const rawValue = Number(resolveSmartphoneBadgeScore(mobileData));
+    if (!allowSpecScore || !scoreSourceData) return null;
+    const rawValue = Number(resolveSmartphoneBadgeScore(scoreSourceData));
     return Number.isFinite(rawValue) ? Math.round(rawValue) : null;
-  }, [allowSpecScore, mobileData]);
+  }, [allowSpecScore, scoreSourceData]);
   const headerSpecScoreBlock =
     headerSpecScoreValue != null ? (
       <div className="flex items-end gap-1 leading-none">
@@ -1912,20 +1917,20 @@ const MobileDetailCard = () => {
     [pickScore100],
   );
   const scoreSummary = useMemo(() => {
-    if (!mobileData || !allowSpecScore) {
+    if (!scoreSourceData || !allowSpecScore) {
       return {
         overall: null,
         overallDisplay: null,
         sections: [],
       };
     }
-    return buildScoreSummary(mobileData, {
+    return buildScoreSummary(scoreSourceData, {
       allowProfileSectionFallback: true,
       allowProfileOverallFallback: false,
       allowSectionAverageFallback: true,
       allowFallbackPersistedScores: true,
     });
-  }, [mobileData, buildScoreSummary, allowSpecScore]);
+  }, [scoreSourceData, buildScoreSummary, allowSpecScore]);
   const getSectionScore = useCallback(
     (key) => {
       if (!key || key === "overall") return scoreSummary.overall;
@@ -1938,16 +1943,16 @@ const MobileDetailCard = () => {
   );
   const getSectionScoreDisplay = useCallback(
     (key) => {
-      if (!allowSpecScore) return null;
+      if (!allowSpecScore || !scoreSourceData) return null;
       if (!key || key === "overall") {
-        return resolveSmartphoneBadgeScore(mobileData);
+        return resolveSmartphoneBadgeScore(scoreSourceData);
       }
       const matched = scoreSummary.sections.find(
         (section) => section.key === key,
       );
       return matched?.score ?? scoreSummary.overall;
     },
-    [allowSpecScore, mobileData, scoreSummary],
+    [allowSpecScore, scoreSourceData, scoreSummary],
   );
 
   const smartphoneTabTitle = mobileData?.name
@@ -4418,7 +4423,7 @@ Price: ${price}
   const ogImageAlt =
     [metaBrand, metaName].filter(Boolean).join(" ").trim() || metaTitle;
   const pageSchema = useMemo(() => {
-    const name = metaName || metaTitleBase || metaTitle || "";
+    const name = metaTitle || metaName || metaTitleBase || "";
     if (!name) return null;
     return createWebPageSchema({
       name,

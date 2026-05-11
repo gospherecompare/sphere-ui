@@ -10,7 +10,7 @@ import {
 } from "react-icons/fa";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
 import { createProductPath } from "../../utils/slugGenerator";
-import { buildSmartphoneFeaturePath } from "../../utils/smartphoneListingRoutes";
+import { buildPublicSmartphoneFeaturePath as buildSmartphoneFeaturePath } from "../../utils/smartphoneListingRoutes";
 import {
   HOME_SECTION_LEAD_DARK,
   HOME_SECTION_TITLE_DARK,

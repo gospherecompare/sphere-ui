@@ -1,3 +1,5 @@
+import { toCanonicalPagePath } from "./publicUrl";
+
 // src/utils/slugGenerator.js
 
 /**
@@ -34,12 +36,14 @@ export const createProductPath = (category, productName) => {
     normalizedCategory === "mobile";
   const baseCategory = normalizedCategory || "smartphones";
   const slug = generateSlug(productName);
-  if (!slug) return `/${baseCategory}`;
+  if (!slug) return toCanonicalPagePath(`/${baseCategory}`);
   if (isSmartphoneCategory) {
     const baseSlug = slug.replace(new RegExp(`${SMARTPHONE_SEO_SUFFIX}$`, "i"), "");
-    return `/smartphones/${baseSlug}${SMARTPHONE_SEO_SUFFIX}`;
+    return toCanonicalPagePath(
+      `/smartphones/${baseSlug}${SMARTPHONE_SEO_SUFFIX}`,
+    );
   }
-  return `/${baseCategory}/${slug}`;
+  return toCanonicalPagePath(`/${baseCategory}/${slug}`);
 };
 
 /**

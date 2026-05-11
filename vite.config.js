@@ -1393,7 +1393,7 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
   if (smartphoneDetailName) {
     return [
       createWebPageSchema({
-        name: smartphoneDetailName,
+        name: seo.title,
         description: seo.description,
         url: canonicalUrl,
       }),
@@ -1403,6 +1403,11 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
   const laptopDetailName = extractDetailSlugName(canonicalPath, "/laptops/");
   if (laptopDetailName) {
     return [
+      createWebPageSchema({
+        name: seo.title,
+        description: seo.description,
+        url: canonicalUrl,
+      }),
       createProductSchema({
         name: laptopDetailName,
         description: seo.description,
@@ -1414,6 +1419,11 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
   const tvDetailName = extractDetailSlugName(canonicalPath, "/tvs/");
   if (tvDetailName) {
     return [
+      createWebPageSchema({
+        name: seo.title,
+        description: seo.description,
+        url: canonicalUrl,
+      }),
       createProductSchema({
         name: tvDetailName,
         description: seo.description,
@@ -1428,6 +1438,11 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
   );
   if (networkingDetailName) {
     return [
+      createWebPageSchema({
+        name: seo.title,
+        description: seo.description,
+        url: canonicalUrl,
+      }),
       createProductSchema({
         name: networkingDetailName,
         description: seo.description,
@@ -1450,7 +1465,7 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
   if (canonicalPath.startsWith("/about")) {
     return [
       createAboutPageSchema({
-        name: "About Hooks",
+        name: seo.title,
         description: seo.description,
         url: canonicalUrl,
       }),
@@ -1460,7 +1475,7 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
   if (canonicalPath.startsWith("/contact")) {
     return [
       createContactPageSchema({
-        name: "Contact Hooks",
+        name: seo.title,
         description: seo.description,
         url: canonicalUrl,
         contactEmail: "gospherecompare@gmail.com",

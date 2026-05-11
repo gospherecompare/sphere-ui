@@ -1,3 +1,5 @@
+import { toCanonicalPagePath } from "./publicUrl";
+
 const SMARTPHONE_LISTING_BASE_PATH = "/smartphones";
 
 export const SMARTPHONE_FEATURE_ROUTE_META = {
@@ -174,6 +176,28 @@ export const buildSmartphoneFilterPath = (filter = "", query = null) => {
     : SMARTPHONE_LISTING_BASE_PATH;
   return `${path}${toQueryString(query)}`;
 };
+
+export const buildPublicSmartphoneListingPath = ({
+  brand = "",
+  feature = "",
+  query = null,
+} = {}) =>
+  toCanonicalPagePath(
+    buildSmartphoneListingPath({
+      brand,
+      feature,
+      query,
+    }),
+  );
+
+export const buildPublicSmartphoneBrandPath = (brand = "", query = null) =>
+  buildPublicSmartphoneListingPath({ brand, query });
+
+export const buildPublicSmartphoneFeaturePath = (feature = "", query = null) =>
+  buildPublicSmartphoneListingPath({ feature, query });
+
+export const buildPublicSmartphoneFilterPath = (filter = "", query = null) =>
+  toCanonicalPagePath(buildSmartphoneFilterPath(filter, query));
 
 export const stripSmartphoneSeoQueryParams = (search = "") => {
   const params = new URLSearchParams(search || "");

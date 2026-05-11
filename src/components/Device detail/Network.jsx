@@ -4,7 +4,10 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import useDevice from "../../hooks/useDevice";
 import Cookies from "js-cookie";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
-import { createProductSchema } from "../../utils/schemaGenerators";
+import {
+  createProductSchema,
+  createWebPageSchema,
+} from "../../utils/schemaGenerators";
 import { Helmet } from "react-helmet-async";
 import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
 import usePageEngagementTracker from "../../hooks/usePageEngagementTracker";
@@ -1428,16 +1431,23 @@ const NetworkingDetailCard = () => {
   };
   const ogImage = toAbsoluteUrl(metaImage);
   const productSchemaJson = (() => {
-    const name = deviceData?.name || deviceData?.model || metaTitle || "";
-    if (!name) return null;
-    const schema = createProductSchema({
-      name,
-      description: metaDescription,
-      image: ogImage || undefined,
-      url: canonicalUrl,
-      brand: deviceData?.brand || deviceData?.brand_name || undefined,
-    });
-    return JSON.stringify(schema);
+    const productName = deviceData?.name || deviceData?.model || metaTitle || "";
+    if (!productName) return null;
+    const schemas = [
+      createWebPageSchema({
+        name: metaTitle || productName,
+        description: metaDescription,
+        url: canonicalUrl,
+      }),
+      createProductSchema({
+        name: productName,
+        description: metaDescription,
+        image: ogImage || undefined,
+        url: canonicalUrl,
+        brand: deviceData?.brand || deviceData?.brand_name || undefined,
+      }),
+    ];
+    return JSON.stringify(schemas);
   })();
 
   return (

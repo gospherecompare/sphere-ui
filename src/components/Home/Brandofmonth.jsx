@@ -8,7 +8,7 @@ import {
   computePopularSmartphoneFeatures,
   SMARTPHONE_FEATURE_CATALOG,
 } from "../../utils/smartphonePopularFeatures";
-import { buildSmartphoneFeaturePath } from "../../utils/smartphoneListingRoutes";
+import { buildPublicSmartphoneFeaturePath as buildSmartphoneFeaturePath } from "../../utils/smartphoneListingRoutes";
 import {
   HOME_SECTION_LEAD_DARK,
   HOME_SECTION_TITLE_DARK,

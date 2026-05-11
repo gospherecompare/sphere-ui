@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { readPreloadedApiResponse } from "../utils/preloadedApi";
+import { toCanonicalPagePath } from "../utils/publicUrl";
 
 const API_BASE = (() => {
   const configuredBase = String(import.meta.env.VITE_API_BASE_URL || "").trim();
@@ -630,7 +631,7 @@ const normalizeStoriesFromPayload = (payload) =>
     : [];
 
 export const createNewsStoryPath = (slug = "") =>
-  `/news/${encodeURIComponent(safeText(slug))}`;
+  toCanonicalPagePath(`/news/${encodeURIComponent(safeText(slug))}`);
 
 export const buildRelatedNewsStories = (stories = [], currentStory = null, limit = 3) => {
   const currentSlug = safeText(currentStory?.slug);

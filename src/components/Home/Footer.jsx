@@ -13,6 +13,7 @@ import {
   FaInfoCircle,
 } from "react-icons/fa";
 import { Link } from "react-router-dom";
+import { toCanonicalPagePath } from "../../utils/publicUrl";
 
 const footerSections = [
   {
@@ -97,7 +98,7 @@ const FooterSectionCard = ({ section }) => {
             className={link.hideOnMobile ? "hidden sm:list-item" : ""}
           >
             <Link
-              to={link.href}
+              to={toCanonicalPagePath(link.href)}
               className="group inline-flex items-center gap-2 text-sm text-sky-100/75 transition-colors duration-200 hover:text-white"
             >
               <span>{link.label}</span>

@@ -47,10 +47,10 @@ import {
 } from "./utils/schemaGenerators";
 import { normalizeSeoTitle } from "./utils/seoTitle";
 import {
-  buildSmartphoneBrandPath,
-  buildSmartphoneListingPath,
+  buildPublicSmartphoneBrandPath as buildSmartphoneBrandPath,
+  buildPublicSmartphoneListingPath as buildSmartphoneListingPath,
 } from "./utils/smartphoneListingRoutes";
-import { toCanonicalPageUrl } from "./utils/publicUrl";
+import { toCanonicalPagePath, toCanonicalPageUrl } from "./utils/publicUrl";
 
 const SITE_ORIGIN = "https://tryhook.shop";
 const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/hook-logo.svg`;
@@ -563,7 +563,12 @@ function App() {
       params.set("brand", brandName);
     }
     const query = params.toString();
-    return <Navigate to={`${targetPath}${query ? `?${query}` : ""}`} replace />;
+    return (
+      <Navigate
+        to={toCanonicalPagePath(`${targetPath}${query ? `?${query}` : ""}`)}
+        replace
+      />
+    );
   };
 
   const SmartphoneListingOrderRedirect = () => {
@@ -585,14 +590,24 @@ function App() {
   const AppliancesDetailRedirect = () => {
     const { slug } = useParams();
     const location = useLocation();
-    return <Navigate to={`/tvs/${slug}${location.search || ""}`} replace />;
+    return (
+      <Navigate
+        to={toCanonicalPagePath(`/tvs/${slug}${location.search || ""}`)}
+        replace
+      />
+    );
   };
 
   const ProductDetailRedirect = ({ toBasePath }) => {
     const { slug } = useParams();
     const location = useLocation();
     return (
-      <Navigate to={`${toBasePath}/${slug}${location.search || ""}`} replace />
+      <Navigate
+        to={toCanonicalPagePath(
+          `${toBasePath}/${slug}${location.search || ""}`,
+        )}
+        replace
+      />
     );
   };
 

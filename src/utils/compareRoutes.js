@@ -1,4 +1,5 @@
 import { generateSlug } from "./slugGenerator";
+import { toCanonicalPagePath } from "./publicUrl";
 
 const normalizeCompareName = (value = "") =>
   generateSlug(String(value || "").trim()).replace(/-price-in-india$/i, "");
@@ -34,7 +35,7 @@ export const buildCanonicalComparePath = ({
   const rightSlug = normalizeCompareName(rightName);
 
   if (leftSlug && rightSlug && leftSlug !== rightSlug) {
-    return `/compare/${leftSlug}-vs-${rightSlug}`;
+    return toCanonicalPagePath(`/compare/${leftSlug}-vs-${rightSlug}`);
   }
 
   const normalizedLeftId = Number(leftId);
@@ -48,10 +49,10 @@ export const buildCanonicalComparePath = ({
     const params = new URLSearchParams();
     params.set("devices", `${normalizedLeftId}:0,${normalizedRightId}:0`);
     if (type) params.set("type", String(type));
-    return `/compare?${params.toString()}`;
+    return toCanonicalPagePath(`/compare?${params.toString()}`);
   }
 
-  return "/compare";
+  return toCanonicalPagePath("/compare");
 };
 
 export const toCanonicalCompareSlug = normalizeCompareName;
@@ -114,5 +115,5 @@ export const buildCanonicalComparePathFromDevices = ({
     normalizedDevices.length === 2 && !basePath.startsWith("/compare?")
       ? basePath
       : "/compare";
-  return `${canonicalBasePath}?${params.toString()}`;
+  return toCanonicalPagePath(`${canonicalBasePath}?${params.toString()}`);
 };

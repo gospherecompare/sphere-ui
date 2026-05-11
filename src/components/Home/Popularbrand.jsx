@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useDevice } from "../../hooks/useDevice";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
 // import RecommendedSmartphones from "./RecommendedSmartphones";
-import { buildSmartphoneBrandPath } from "../../utils/smartphoneListingRoutes";
+import { buildPublicSmartphoneBrandPath as buildSmartphoneBrandPath } from "../../utils/smartphoneListingRoutes";
 import { FaArrowRight } from "react-icons/fa";
 import { HOME_SECTION_LEAD_LIGHT } from "./homeSectionTypography";
 

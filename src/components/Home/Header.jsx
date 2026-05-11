@@ -48,10 +48,11 @@ import Cookies from "js-cookie";
 import { useDevice } from "../../hooks/useDevice";
 import { createProductPath } from "../../utils/slugGenerator";
 import {
-  buildSmartphoneBrandPath,
-  buildSmartphoneFeaturePath,
-  buildSmartphoneFilterPath,
+  buildPublicSmartphoneBrandPath as buildSmartphoneBrandPath,
+  buildPublicSmartphoneFeaturePath as buildSmartphoneFeaturePath,
+  buildPublicSmartphoneFilterPath as buildSmartphoneFilterPath,
 } from "../../utils/smartphoneListingRoutes";
+import { toCanonicalPagePath } from "../../utils/publicUrl";
 
 // Icons - matching Vijay Sales style
 import {
@@ -144,7 +145,11 @@ const Header = () => {
   const [mobileHeaderHeight, setMobileHeaderHeight] = useState(112);
   const navigate = useNavigate();
   const location = useLocation();
-  const currentPath = String(location.pathname || "").toLowerCase();
+  const currentPath = (() => {
+    const path = String(location.pathname || "").toLowerCase();
+    if (!path || path === "/") return "/";
+    return path.replace(/\/+$/g, "");
+  })();
   const megaMenuRef = useRef(null);
   const authDropdownRef = useRef(null);
   const searchRef = useRef(null);
@@ -1383,9 +1388,9 @@ const Header = () => {
 
   // Top navigation links
   const exploreDropdownLinks = [
-    { name: "Smartphones", link: "/smartphones" },
-    { name: "Laptops", link: "/laptops" },
-    { name: "TVs", link: "/tvs" },
+    { name: "Smartphones", link: toCanonicalPagePath("/smartphones") },
+    { name: "Laptops", link: toCanonicalPagePath("/laptops") },
+    { name: "TVs", link: toCanonicalPagePath("/tvs") },
   ];
   const isCompareRoute = currentPath.startsWith("/compare");
   const browseNavLabel = isCompareRoute ? "Home" : "Explore";
@@ -1398,16 +1403,27 @@ const Header = () => {
       caret: !isCompareRoute,
       dropdownItems: isCompareRoute ? undefined : exploreDropdownLinks,
     },
-    { name: "Compare", link: "/compare" },
-    { name: "Upcoming Mobiles", link: "/smartphones/upcoming" },
-    { name: "Latest Mobiles", link: "/smartphones/filter/new" },
-    { name: "Trending Mobiles", link: "/trending/smartphones" },
-    { name: "News & Articles", link: "/news" },
+    { name: "Compare", link: toCanonicalPagePath("/compare") },
+    {
+      name: "Upcoming Mobiles",
+      link: toCanonicalPagePath("/smartphones/upcoming"),
+    },
+    {
+      name: "Latest Mobiles",
+      link: toCanonicalPagePath("/smartphones/filter/new"),
+    },
+    {
+      name: "Trending Mobiles",
+      link: toCanonicalPagePath("/trending/smartphones"),
+    },
+    { name: "News & Articles", link: toCanonicalPagePath("/news") },
     { name: "Phone Finder", link: "/" },
   ];
 
   const isActiveNavLink = (href) => {
-    const target = String(href || "").toLowerCase();
+    const target = String(href || "")
+      .toLowerCase()
+      .replace(/\/+$/g, "") || "/";
     if (!target) return false;
     if (target === "/") return currentPath === "/";
     if (target === "/compare")
@@ -1426,7 +1442,12 @@ const Header = () => {
   };
 
   const utilityItems = [
-    { name: "Wishlist", icon: <FaHeart />, count: 1, link: "/wishlist" },
+    {
+      name: "Wishlist",
+      icon: <FaHeart />,
+      count: 1,
+      link: toCanonicalPagePath("/wishlist"),
+    },
   ];
 
   // Handle search
@@ -1527,17 +1548,17 @@ const Header = () => {
                 const categoryId = String(category.id || "").toLowerCase();
                 const isSmartphonesCategory =
                   categoryId === "smartphones" || categoryId === "mobiles";
-                let href = `/${category.id}`;
+                let href = toCanonicalPagePath(`/${category.id}`);
                 if (name.includes("new")) {
                   href = isSmartphonesCategory
-                    ? "/smartphones/filter/new"
-                    : `/${category.id}?filter=new`;
+                    ? toCanonicalPagePath("/smartphones/filter/new")
+                    : toCanonicalPagePath(`/${category.id}?filter=new`);
                 } else if (name.includes("trending")) {
                   href = isSmartphonesCategory
-                    ? "/smartphones/filter/trending"
-                    : `/${category.id}?filter=trending`;
+                    ? toCanonicalPagePath("/trending/smartphones")
+                    : toCanonicalPagePath(`/${category.id}?filter=trending`);
                 } else if (name.includes("compare")) {
-                  href = "/compare";
+                  href = toCanonicalPagePath("/compare");
                 }
 
                 return (
@@ -2725,15 +2746,20 @@ const Header = () => {
         id: "compare",
         title: "Compare Mobiles",
         kind: "link",
-        href: "/compare",
+        href: toCanonicalPagePath("/compare"),
       },
       { id: "finder", title: "Phone Finder", kind: "link", href: "/" },
-      { id: "news", title: "News & Articles", kind: "link", href: "/news" },
+      {
+        id: "news",
+        title: "News & Articles",
+        kind: "link",
+        href: toCanonicalPagePath("/news"),
+      },
       {
         id: "trending",
         title: "Trending Mobiles",
         kind: "link",
-        href: "/trending/smartphones",
+        href: toCanonicalPagePath("/trending/smartphones"),
       },
       ...(isLoggedIn
         ? [

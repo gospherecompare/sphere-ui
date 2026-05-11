@@ -4,8 +4,8 @@ import { Link } from "react-router-dom";
 import { createProductPath } from "../../utils/slugGenerator";
 import { readPreloadedApiResponse } from "../../utils/preloadedApi";
 import {
-  buildSmartphoneBrandPath,
-  buildSmartphoneListingPath,
+  buildPublicSmartphoneBrandPath as buildSmartphoneBrandPath,
+  buildPublicSmartphoneListingPath as buildSmartphoneListingPath,
 } from "../../utils/smartphoneListingRoutes";
 
 const API_BASE = (

@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { FaClock, FaUser, FaArrowRight } from "react-icons/fa";
+import { createNewsStoryPath } from "../../hooks/usePublicNews";
 
 const NewsArticleCard = ({
   article,
@@ -18,11 +19,12 @@ const NewsArticleCard = ({
     label = "News",
     slug = "",
   } = article;
+  const storyPath = createNewsStoryPath(slug);
 
   if (featured) {
     return (
       <Link
-        to={`/news/${slug}`}
+        to={storyPath}
         className={`group relative isolate block overflow-hidden rounded-[12px] border border-slate-200 bg-slate-900 text-white transition-all hover:border-slate-400 hover:shadow-lg ${className}`}
       >
         {image && (
@@ -75,7 +77,7 @@ const NewsArticleCard = ({
   // Regular card
   return (
     <Link
-      to={`/news/${slug}`}
+      to={storyPath}
       className={`group flex h-full flex-col overflow-hidden rounded-lg border border-slate-200 bg-yellow-100 transition-all hover:border-slate-300 hover:shadow-md ${className}`}
     >
       {/* Image Section */}

@@ -57,12 +57,13 @@ import {
   SMARTPHONE_FEATURE_CATALOG,
 } from "../../utils/smartphonePopularFeatures";
 import {
-  buildSmartphoneListingPath,
+  buildPublicSmartphoneListingPath as buildSmartphoneListingPath,
   getSmartphoneFeatureRouteMeta,
   normalizeSmartphoneListingSlug,
   stripSmartphoneSeoQueryParams,
 } from "../../utils/smartphoneListingRoutes";
 import { buildCanonicalComparePathFromDevices } from "../../utils/compareRoutes";
+import { toCanonicalPagePath } from "../../utils/publicUrl";
 import "../../styles/hideScrollbar.css";
 
 const ROUTE_FEED_CACHE_KEY = "hooks_smartphone_route_feed_v1";
@@ -355,11 +356,11 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
   // Normalize legacy query-based brand/feature routes into the canonical path shape.
   useEffect(() => {
+    const hasLegacySeoQueryRoute =
+      !normalizedFilterSlug &&
+      (Boolean(legacyBrandParam) || Boolean(legacyFeatureParam));
     const hasSeoListingRoute =
-      Boolean(routeBrandSlug) ||
-      Boolean(routeFeatureSlug) ||
-      Boolean(legacyBrandParam) ||
-      Boolean(legacyFeatureParam);
+      Boolean(routeBrandSlug) || Boolean(routeFeatureSlug) || hasLegacySeoQueryRoute;
 
     if (!hasSeoListingRoute) return;
 
@@ -380,6 +381,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     navigate,
     normalizedBrandSlug,
     normalizedFeature,
+    normalizedFilterSlug,
     routeBrandSlug,
     routeFeatureSlug,
     legacyBrandParam,
@@ -2194,6 +2196,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   } = deviceContext || {};
   const { search } = location;
   const pathname = String(location?.pathname || "").toLowerCase();
+  const hasSearchParams = Boolean(
+    String(search || "").replace(/^\?+/, "").trim(),
+  );
   const isSingleSmartphonePath = pathname === "/smartphone";
   const isNewFilterPath = listFilter === "new";
   const currentYear = new Date().getFullYear();
@@ -3811,17 +3816,26 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       }
     : null;
   const normalizedSeoTitle = normalizeSeoTitle(seoTitle);
+  const listRobots = hasSearchParams
+    ? "noindex, follow, max-image-preview:large"
+    : "index, follow, max-image-preview:large";
 
   const listSchemaUrl = useMemo(() => {
-    const basePath =
-      normalizedBrandSlug || normalizedFeature
+    const basePath = hasSearchParams
+      ? toCanonicalPagePath(location?.pathname || "/smartphones")
+      : normalizedBrandSlug || normalizedFeature
         ? buildSmartphoneListingPath({
             brand: normalizedBrandSlug,
             feature: normalizedFeature,
           })
-        : location?.pathname || "/smartphones";
+        : toCanonicalPagePath(location?.pathname || "/smartphones");
     return `${SITE_ORIGIN}${basePath}`;
-  }, [location?.pathname, normalizedBrandSlug, normalizedFeature]);
+  }, [
+    hasSearchParams,
+    location?.pathname,
+    normalizedBrandSlug,
+    normalizedFeature,
+  ]);
 
   const listSchemaItems = useMemo(() => {
     const items = visibleVariants.map((device) => {
@@ -3836,7 +3850,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       const image = normalizeAssetUrl(imageRaw) || undefined;
       return {
         name,
-        url: `${SITE_ORIGIN}/smartphones/${slug}-price-in-india`,
+        url: `${SITE_ORIGIN}${toCanonicalPagePath(
+          `/smartphones/${slug}-price-in-india`,
+        )}`,
         image,
       };
     });
@@ -3875,7 +3891,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         keywords={seoKeywords}
         image={listOgImageMeta}
         url={listSchemaUrl}
-        robots="index, follow, max-image-preview:large"
+        robots={listRobots}
         schema={listSchema}
       />
       {/* Main Content */}

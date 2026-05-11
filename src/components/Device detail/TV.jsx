@@ -4,7 +4,10 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import useDevice from "../../hooks/useDevice";
 import Cookies from "js-cookie";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
-import { createProductSchema } from "../../utils/schemaGenerators";
+import {
+  createProductSchema,
+  createWebPageSchema,
+} from "../../utils/schemaGenerators";
 import { Helmet } from "react-helmet-async";
 import { buildCanonicalComparePath } from "../../utils/compareRoutes";
 import usePageEngagementTracker from "../../hooks/usePageEngagementTracker";
@@ -2628,16 +2631,23 @@ const TVDetailCard = () => {
   };
   const ogImage = toAbsoluteUrl(metaImage);
   const productSchemaJson = (() => {
-    const name = metaNameWithBrand || metaName || metaTitle || "";
-    if (!name) return null;
-    const schema = createProductSchema({
-      name,
-      description: metaDescription,
-      image: ogImage || undefined,
-      url: canonicalUrl,
-      brand: metaBrand || undefined,
-    });
-    return JSON.stringify(schema);
+    const productName = metaNameWithBrand || metaName || metaTitle || "";
+    if (!productName) return null;
+    const schemas = [
+      createWebPageSchema({
+        name: metaTitleWithMonthYear || metaTitle || productName,
+        description: metaDescription,
+        url: canonicalUrl,
+      }),
+      createProductSchema({
+        name: productName,
+        description: metaDescription,
+        image: ogImage || undefined,
+        url: canonicalUrl,
+        brand: metaBrand || undefined,
+      }),
+    ];
+    return JSON.stringify(schemas);
   })();
 
   const primarySpecs =

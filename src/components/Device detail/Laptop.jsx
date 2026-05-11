@@ -30,7 +30,10 @@ import Cookies from "js-cookie";
 import Spinner from "../ui/Spinner";
 import { laptopMeta } from "../../constants/meta";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
-import { createProductSchema } from "../../utils/schemaGenerators";
+import {
+  createProductSchema,
+  createWebPageSchema,
+} from "../../utils/schemaGenerators";
 import { Helmet } from "react-helmet-async";
 import { buildCanonicalComparePath } from "../../utils/compareRoutes";
 import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
@@ -1911,16 +1914,23 @@ const LaptopDetailCard = () => {
   };
   const ogImage = toAbsoluteUrl(metaImage);
   const productSchemaJson = (() => {
-    const name = metaNameWithBrand || metaBaseName || metaTitle || "";
-    if (!name) return null;
-    const schema = createProductSchema({
-      name,
-      description: metaDescription,
-      image: ogImage || undefined,
-      url: canonicalUrl,
-      brand: metaBrand || undefined,
-    });
-    return JSON.stringify(schema);
+    const productName = metaNameWithBrand || metaBaseName || metaTitle || "";
+    if (!productName) return null;
+    const schemas = [
+      createWebPageSchema({
+        name: metaTitleWithMonthYear || metaTitle || productName,
+        description: metaDescription,
+        url: canonicalUrl,
+      }),
+      createProductSchema({
+        name: productName,
+        description: metaDescription,
+        image: ogImage || undefined,
+        url: canonicalUrl,
+        brand: metaBrand || undefined,
+      }),
+    ];
+    return JSON.stringify(schemas);
   })();
   const showHiddenLaptopSections =
     typeof window !== "undefined" && window.innerWidth < 0;
