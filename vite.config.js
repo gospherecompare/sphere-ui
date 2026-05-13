@@ -126,6 +126,7 @@ const CURRENT_YEAR = new Date().getFullYear();
 const BUDGET_PHONE_KEYWORDS =
   "budget phones under 10000, budget phones under 15000, budget phones under 20000, budget phones under 30000, budget phones under 50000";
 const DEFAULT_SEO_KEYWORDS = `hook, best gadget comparison site, mobile price comparison india, moblie price comparison india, compare laptops smartphones tvs, compare smartphone tv laptops, compare specs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch phones, trending phone in india, most popular mobiles, top selling gadgets india, 5g phones in india, ai phones in india, ${BUDGET_PHONE_KEYWORDS}, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, gaming laptops india, student laptops india, laptop comparison india, vacuum cooler laptop and phone, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000, smart tv comparison india`;
+let publishedCompareRouteMeta = new Map();
 const STATIC_PRERENDER_ROUTES = [
   "/",
   "/news",
@@ -277,13 +278,30 @@ const extractDetailSlugName = (path, prefix, normalizeTail) => {
   return toReadableTitleFromSlug(normalizedTail);
 };
 
-const extractComparePairNames = (path) => {
-  const match = String(path || "").match(/^\/compare\/([^/]+)-vs-([^/]+)$/i);
-  if (!match) return null;
-  const left = toReadableTitleFromSlug(match[1]);
-  const right = toReadableTitleFromSlug(match[2]);
-  if (!left || !right) return null;
-  return { left, right };
+const extractCompareRouteNames = (path) => {
+  const legacyMatch = String(path || "").match(/^\/compare\/([^/]+)-vs-([^/]+)$/i);
+  if (legacyMatch) {
+    return [toReadableTitleFromSlug(legacyMatch[1]), toReadableTitleFromSlug(legacyMatch[2])].filter(
+      Boolean,
+    );
+  }
+
+  const modernMatch = String(path || "").match(/^\/compare\/([^/]+?)-comparison$/i);
+  if (!modernMatch) return [];
+
+  return String(modernMatch[1] || "")
+    .split("-and-")
+    .map((part) => toReadableTitleFromSlug(part))
+    .filter(Boolean);
+};
+
+const joinCompareNamesWithoutCommas = (names = []) => {
+  const clean = (Array.isArray(names) ? names : [])
+    .map((name) => String(name || "").trim())
+    .filter(Boolean);
+  if (!clean.length) return "";
+  if (clean.length === 1) return clean[0];
+  return clean.join(" and ");
 };
 
 const toSlug = (value = "") =>
@@ -297,6 +315,19 @@ const toSlug = (value = "") =>
 
 const toCanonicalPath = (rawPath) => {
   const pathName = normalizePath(rawPath);
+  const legacyCompareNames = extractCompareRouteNames(pathName);
+  if (
+    /^\/compare\/[^/]+-vs-[^/]+$/i.test(pathName) &&
+    legacyCompareNames.length >= 2
+  ) {
+    const compareParts = legacyCompareNames
+      .map((name) => toSlug(name))
+      .filter(Boolean)
+      .slice(0, 3);
+    if (compareParts.length >= 2) {
+      return `/compare/${compareParts.join("-and-")}-comparison`;
+    }
+  }
   if (pathName === "/smartphones/upcoming") return "/smartphones/upcoming";
   if (pathName.startsWith("/smartphones/filter/upcoming"))
     return "/smartphones/upcoming";
@@ -723,6 +754,13 @@ const fetchRouteSpecificPreloadedPayload = async (
   sharedPreloadedApiPayload,
 ) => {
   const canonicalPath = toCanonicalPath(normalizePath(routePath || "/"));
+  const compareSlug = getSingleSegmentRouteTail(canonicalPath, "/compare");
+  if (compareSlug) {
+    return fetchPayloadForEndpoints([
+      `${API_BASE_URL}/public/compare-pages/resolve?slug=${encodeURIComponent(compareSlug)}`,
+    ]);
+  }
+
   const smartphoneContext = detailWidgetContextMap.get(canonicalPath);
   if (smartphoneContext?.entityType === "smartphones") {
     const encodedId = encodeURIComponent(smartphoneContext.productId);
@@ -904,27 +942,26 @@ const fetchDetailRoutesFromApi = async () => {
 };
 
 const fetchCompareRoutesFromApi = async () => {
-  const rows = await fetchApiRows(
-    `${API_BASE_URL}/public/trending/most-compared`,
-    ["mostCompared"],
-  );
+  publishedCompareRouteMeta = new Map();
+  const body = await fetchApiBody(`${API_BASE_URL}/public/compare-pages/routes`);
+  const rows = Array.isArray(body?.routes) ? body.routes : [];
   const routes = [];
 
   for (const row of rows) {
     if (routes.length >= MAX_COMPARE_ROUTES) break;
-    const leftType = String(row?.product_type || "")
-      .trim()
-      .toLowerCase();
-    const rightType = String(row?.compared_product_type || "")
-      .trim()
-      .toLowerCase();
-    if (leftType && rightType && leftType !== rightType) continue;
-    const leftSlug = toSlug(row?.product_name || row?.left_product_name || "");
-    const rightSlug = toSlug(
-      row?.compared_product_name || row?.right_product_name || "",
+    const routePath = normalizePath(
+      row?.route_path || (row?.slug ? `/compare/${row.slug}` : ""),
     );
-    if (!leftSlug || !rightSlug || leftSlug === rightSlug) continue;
-    routes.push(`/compare/${leftSlug}-vs-${rightSlug}`);
+    if (!routePath || routePath === "/compare" || !routePath.startsWith("/compare/")) {
+      continue;
+    }
+
+    publishedCompareRouteMeta.set(routePath, {
+      title: String(row?.title || "").trim(),
+      description: String(row?.meta_description || "").trim(),
+      updatedAt: row?.updated_at || null,
+    });
+    routes.push(routePath);
   }
 
   return [...new Set(routes)];
@@ -986,9 +1023,17 @@ const fetchSmartphoneListingRoutesFromApi = async () => {
 };
 
 const filterValidPrerenderRoutes = async (routes = []) => {
-  const uniqueRoutes = [...new Set(routes.map((route) => normalizePath(route)))];
+  const uniqueRoutes = [
+    ...new Set(
+      routes.map((route) => toCanonicalPath(normalizePath(route))).filter(Boolean),
+    ),
+  ];
   const filteredRoutes = await Promise.all(
     uniqueRoutes.map(async (routePath) => {
+      if (routePath.startsWith("/compare/")) {
+        return publishedCompareRouteMeta.has(routePath) ? routePath : null;
+      }
+
       const newsSlug = getSingleSegmentRouteTail(routePath, "/news");
       if (!newsSlug) return routePath;
 
@@ -1152,7 +1197,9 @@ const resolveSeo = (routePath) => {
   })();
   const laptopDetailName = extractDetailSlugName(canonicalPath, "/laptops/");
   const tvDetailName = extractDetailSlugName(canonicalPath, "/tvs/");
-  const comparePair = extractComparePairNames(canonicalPath);
+  const compareNames = extractCompareRouteNames(canonicalPath);
+  const compareJoinedNames = joinCompareNamesWithoutCommas(compareNames);
+  const publishedCompareSeo = publishedCompareRouteMeta.get(canonicalPath) || null;
   const smartphoneFilterSlug = (() => {
     const match = canonicalPath.match(/^\/smartphones\/filter\/([^/]+)$/i);
     if (!match) return "";
@@ -1293,14 +1340,18 @@ const resolveSeo = (routePath) => {
     },
     {
       test: (p) => p.startsWith("/compare"),
-      title: comparePair
-        ? `${comparePair.left} vs ${comparePair.right}: Specs, Price & Feature Comparison | Hooks`
-        : "Device Comparison - Side by Side Specs & Prices | Hooks",
-      description: comparePair
-        ? `Compare ${comparePair.left} and ${comparePair.right} side by side with full specifications, pricing, and feature differences on Hook.`
-        : "Compare devices side by side with full specs, pricing, and feature differences to make faster buying decisions.",
-      keywords: comparePair
-        ? `${comparePair.left.toLowerCase()} vs ${comparePair.right.toLowerCase()}, ${comparePair.left.toLowerCase()} comparison, ${comparePair.right.toLowerCase()} comparison, compare devices india, side by side comparison`
+      title:
+        publishedCompareSeo?.title ||
+        (compareJoinedNames
+          ? `Compare ${compareJoinedNames} Price Specifications and Features in India`
+          : "Device Comparison Price Specifications and Features in India"),
+      description:
+        publishedCompareSeo?.description ||
+        (compareJoinedNames
+          ? `Compare ${compareJoinedNames} with latest price specifications camera battery performance and features in India.`
+          : "Compare devices side by side with latest price specifications camera battery performance and features in India."),
+      keywords: compareNames.length >= 2
+        ? `${compareNames.map((name) => name.toLowerCase()).join(", ")}, compare ${compareNames.map((name) => name.toLowerCase()).join(" and ")}, compare devices india, smartphone comparison india`
         : "device comparison, compare smartphones laptops tvs, compare smartphone tv laptops, compare spec online, compare prices india, side by side comparison, best gadget comparison site",
     },
     {

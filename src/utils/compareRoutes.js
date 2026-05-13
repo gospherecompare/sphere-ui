@@ -14,52 +14,27 @@ const normalizeCompareVariantIndex = (value = 0) => {
   return Number.isInteger(numeric) && numeric >= 0 ? numeric : 0;
 };
 
-const stringifyCompareEntries = (entries = []) =>
-  entries
-    .map((entry) => {
-      const id = normalizeCompareIdentifier(entry?.id);
-      if (!id) return "";
-      return `${id}:${normalizeCompareVariantIndex(entry?.variantIndex)}`;
-    })
-    .filter(Boolean)
-    .join(",");
+const buildSlugPathFromNames = (names = []) => {
+  const parts = (Array.isArray(names) ? names : [])
+    .map((name) => normalizeCompareName(name))
+    .filter(Boolean);
+
+  if (parts.length < 2 || parts.length > 3) return "";
+  return toCanonicalPagePath(`/compare/${parts.join("-and-")}-comparison`);
+};
 
 export const buildCanonicalComparePath = ({
   leftName = "",
   rightName = "",
-  leftId = null,
-  rightId = null,
-  type = "",
 } = {}) => {
-  const leftSlug = normalizeCompareName(leftName);
-  const rightSlug = normalizeCompareName(rightName);
-
-  if (leftSlug && rightSlug && leftSlug !== rightSlug) {
-    return toCanonicalPagePath(`/compare/${leftSlug}-vs-${rightSlug}`);
-  }
-
-  const normalizedLeftId = Number(leftId);
-  const normalizedRightId = Number(rightId);
-  if (
-    Number.isFinite(normalizedLeftId) &&
-    normalizedLeftId > 0 &&
-    Number.isFinite(normalizedRightId) &&
-    normalizedRightId > 0
-  ) {
-    const params = new URLSearchParams();
-    params.set("devices", `${normalizedLeftId}:0,${normalizedRightId}:0`);
-    if (type) params.set("type", String(type));
-    return toCanonicalPagePath(`/compare?${params.toString()}`);
-  }
-
-  return toCanonicalPagePath("/compare");
+  const path = buildSlugPathFromNames([leftName, rightName]);
+  return path || toCanonicalPagePath("/compare");
 };
 
 export const toCanonicalCompareSlug = normalizeCompareName;
 
 export const buildCanonicalComparePathFromDevices = ({
   devices = [],
-  type = "",
   getName = (device) =>
     device?.name ||
     device?.model ||
@@ -83,37 +58,19 @@ export const buildCanonicalComparePathFromDevices = ({
     .map((device) => ({
       id: normalizeCompareIdentifier(getId(device)),
       variantIndex: normalizeCompareVariantIndex(getVariantIndex(device)),
+      name: getName(device),
     }))
     .filter((entry) => entry.id);
 
-  const basePath =
-    normalizedDevices.length === 2
-      ? buildCanonicalComparePath({
-          leftName: getName(normalizedDevices[0]),
-          rightName: getName(normalizedDevices[1]),
-          leftId: entries[0]?.id || null,
-          rightId: entries[1]?.id || null,
-          type,
-        })
-      : "/compare";
-
   const canUseSlugOnly =
-    normalizedDevices.length === 2 &&
-    !basePath.startsWith("/compare?") &&
-    entries.length === 2 &&
+    entries.length >= 2 &&
+    entries.length <= 3 &&
     entries.every((entry) => entry.variantIndex === 0);
 
-  if (canUseSlugOnly) return basePath;
+  if (canUseSlugOnly) {
+    const slugPath = buildSlugPathFromNames(entries.map((entry) => entry.name));
+    if (slugPath) return slugPath;
+  }
 
-  const devicesParam = stringifyCompareEntries(entries);
-  if (!devicesParam) return basePath || "/compare";
-
-  const params = new URLSearchParams();
-  params.set("devices", devicesParam);
-  if (type) params.set("type", String(type));
-  const canonicalBasePath =
-    normalizedDevices.length === 2 && !basePath.startsWith("/compare?")
-      ? basePath
-      : "/compare";
-  return toCanonicalPagePath(`${canonicalBasePath}?${params.toString()}`);
+  return toCanonicalPagePath("/compare");
 };
