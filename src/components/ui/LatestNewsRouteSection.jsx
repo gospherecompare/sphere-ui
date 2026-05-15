@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { FaArrowRight } from "react-icons/fa";
 import {
@@ -47,6 +47,56 @@ const LatestNewsRouteSection = ({
 }) => {
   const { stories, loading, error } = usePublicNewsFeed({ limit });
   const visibleStories = stories.slice(0, limit);
+  const mobileCarouselRef = useRef(null);
+  const [activeMobileIndex, setActiveMobileIndex] = useState(0);
+
+  useEffect(() => {
+    setActiveMobileIndex(0);
+    const container = mobileCarouselRef.current;
+    if (container) {
+      container.scrollTo({ left: 0, behavior: "auto" });
+    }
+  }, [visibleStories.length]);
+
+  const syncActiveMobileIndex = () => {
+    const container = mobileCarouselRef.current;
+    if (!container) return;
+
+    const cards = Array.from(container.children);
+    if (!cards.length) return;
+
+    const viewportCenter = container.scrollLeft + container.clientWidth / 2;
+    let nextIndex = 0;
+    let smallestDistance = Number.POSITIVE_INFINITY;
+
+    cards.forEach((card, index) => {
+      const cardCenter = card.offsetLeft + card.clientWidth / 2;
+      const distance = Math.abs(cardCenter - viewportCenter);
+      if (distance < smallestDistance) {
+        smallestDistance = distance;
+        nextIndex = index;
+      }
+    });
+
+    setActiveMobileIndex(nextIndex);
+  };
+
+  const scrollToMobileStory = (index) => {
+    const container = mobileCarouselRef.current;
+    const target = container?.children?.[index];
+    if (!container || !target) return;
+
+    const nextLeft = Math.max(
+      target.offsetLeft - (container.clientWidth - target.clientWidth) / 2,
+      0,
+    );
+
+    container.scrollTo({
+      left: nextLeft,
+      behavior: "smooth",
+    });
+    setActiveMobileIndex(index);
+  };
 
   if (!loading && (!visibleStories.length || error)) return null;
 
@@ -77,47 +127,117 @@ const LatestNewsRouteSection = ({
       </div>
 
       {loading && !visibleStories.length ? (
-        <div className="grid gap-3 grid-cols-1 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {[1, 2, 3, 4].map((item) => (
-            <div
-              key={item}
-              className="h-48 animate-pulse rounded-lg bg-white sm:h-56 md:h-64 lg:h-72"
-            />
-          ))}
-        </div>
+        <>
+          <div className="sm:hidden">
+            <div className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-2 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {[1, 2, 3, 4].map((item) => (
+                <div
+                  key={item}
+                  className="aspect-square w-[76vw] max-w-[18rem] shrink-0 snap-center animate-pulse rounded-lg bg-white"
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="hidden grid-cols-2 gap-4 sm:grid lg:grid-cols-3 xl:grid-cols-4">
+            {[1, 2, 3, 4].map((item) => (
+              <div
+                key={item}
+                className="h-56 animate-pulse rounded-lg bg-white md:h-64 lg:h-72"
+              />
+            ))}
+          </div>
+        </>
       ) : null}
 
       {visibleStories.length ? (
-        <div className="grid gap-3 grid-cols-1 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {visibleStories.map((story) => (
-            <Link
-              key={story.slug}
-              to={createNewsStoryPath(story.slug)}
-              className="group relative h-48 overflow-hidden rounded-lg bg-white transition-all duration-200 hover:shadow-lg sm:h-56 md:h-64 lg:h-72 sm:rounded-xl"
+        <>
+          <div className="sm:hidden">
+            <div
+              ref={mobileCarouselRef}
+              onScroll={syncActiveMobileIndex}
+              className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-2 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
-              <div className="absolute inset-0">
-                <NewsImage story={story} />
+              {visibleStories.map((story) => (
+                <Link
+                  key={story.slug}
+                  to={createNewsStoryPath(story.slug)}
+                  className="group relative aspect-square w-[76vw] max-w-[18rem] shrink-0 snap-center overflow-hidden rounded-lg bg-white transition-all duration-200 hover:shadow-lg"
+                >
+                  <div className="absolute inset-0">
+                    <NewsImage story={story} />
+                  </div>
+
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-200 transition-opacity group-hover:opacity-70" />
+
+                  <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
+                    <h3 className="line-clamp-2 text-xs font-semibold leading-4">
+                      {story.title}
+                    </h3>
+
+                    <div className="mt-2 flex items-center justify-between text-[10px]">
+                      <span className="truncate pr-2 font-medium">
+                        {story.author || "By Hooks"}
+                      </span>
+                      <span className="whitespace-nowrap opacity-90">
+                        {story.publishedAt}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {visibleStories.length > 1 ? (
+              <div className="mt-4 flex justify-center gap-2">
+                {visibleStories.map((story, index) => (
+                  <button
+                    key={`${story.slug}-dot`}
+                    type="button"
+                    aria-label={`Go to story ${index + 1}`}
+                    onClick={() => scrollToMobileStory(index)}
+                    className={`h-2 rounded-full transition-all duration-200 ${
+                      activeMobileIndex === index
+                        ? "w-6 bg-purple-700"
+                        : "w-2 bg-purple-300 hover:bg-purple-400"
+                    }`}
+                  />
+                ))}
               </div>
+            ) : null}
+          </div>
 
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-200 transition-opacity group-hover:opacity-70" />
-
-              <div className="absolute bottom-0 left-0 right-0 p-3 text-white sm:p-4">
-                <h3 className="line-clamp-2 text-xs font-semibold leading-4 sm:text-sm sm:leading-5">
-                  {story.title}
-                </h3>
-
-                <div className="mt-2 flex items-center justify-between text-[10px] sm:mt-3 sm:text-[12px]">
-                  <span className="truncate font-medium pr-2">
-                    {story.author || "By Hooks"}
-                  </span>
-                  <span className="whitespace-nowrap opacity-90">
-                    {story.publishedAt}
-                  </span>
+          <div className="hidden grid-cols-2 gap-4 sm:grid lg:grid-cols-3 xl:grid-cols-4">
+            {visibleStories.map((story) => (
+              <Link
+                key={story.slug}
+                to={createNewsStoryPath(story.slug)}
+                className="group relative h-56 overflow-hidden rounded-lg bg-white transition-all duration-200 hover:shadow-lg md:h-64 lg:h-72 sm:rounded-xl"
+              >
+                <div className="absolute inset-0">
+                  <NewsImage story={story} />
                 </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-200 transition-opacity group-hover:opacity-70" />
+
+                <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+                  <h3 className="line-clamp-2 text-sm font-semibold leading-5">
+                    {story.title}
+                  </h3>
+
+                  <div className="mt-3 flex items-center justify-between text-[12px]">
+                    <span className="truncate pr-2 font-medium">
+                      {story.author || "By Hooks"}
+                    </span>
+                    <span className="whitespace-nowrap opacity-90">
+                      {story.publishedAt}
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </>
       ) : null}
     </section>
   );

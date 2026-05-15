@@ -3585,12 +3585,6 @@ Price: ${price}
       return values.join(", ");
     };
 
-    const formatCameraScore = (value) => {
-      const normalized = normalizeScore100(value);
-      if (normalized == null) return "";
-      return Number(normalized).toFixed(1);
-    };
-
     const mainCameraSource = pickFirstContent(
       camera.rear_camera?.main_camera,
       camera.rear_camera?.main,
@@ -3621,18 +3615,10 @@ Price: ${price}
       camera.rear_camera?.ai_features,
       camera.front_camera?.ai_features,
     );
-    const scoreValue = pickFirstContent(
-      camera.score,
-      camera.camera_score,
-      camera.cameraScore,
-      camera.spec_score,
-    );
-
     const mainCameraItems = buildMainCameraItems(mainCameraSource);
     const frontCameraItems = buildFrontCameraItems(frontCameraSource);
     const videoRecordingItems = buildVideoItems(videoRecordingSource);
     const photographySummary = buildFeatureSummary(photographySource);
-    const cameraScore = formatCameraScore(scoreValue);
 
     const groups = [];
     if (mainCameraItems.length) {
@@ -3670,14 +3656,6 @@ Price: ${price}
         value: photographySummary,
       });
     }
-    if (cameraScore) {
-      groups.push({
-        key: "score",
-        title: "Score",
-        layout: "score",
-        value: cameraScore,
-      });
-    }
 
     if (!groups.length) {
       return (
@@ -3708,13 +3686,13 @@ Price: ${price}
             return (
               <div
                 key={`${row.label}-${idx}`}
-                className="grid gap-2 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] sm:gap-6"
+                className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-start gap-x-4 gap-y-1 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] sm:gap-6"
               >
-                <div className="text-sm font-medium text-slate-600">
+                <div className="text-[13px] font-medium leading-5 text-[#45608f] sm:text-sm sm:text-slate-600">
                   {row.label}
                 </div>
                 <div
-                  className={`text-sm font-semibold leading-6 text-slate-900 break-words sm:text-left ${valueClassName}`}
+                  className={`break-words text-[15px] font-semibold leading-6 text-[#0d347f] sm:text-left sm:text-sm sm:text-slate-900 ${valueClassName}`}
                 >
                   {row.value}
                 </div>
@@ -3732,16 +3710,6 @@ Price: ${price}
         });
       }
 
-      if (group.layout === "score") {
-        return renderRowTable(
-          [{ key: group.key, label: "Score", value: group.value }],
-          {
-            valueClassName:
-              "text-2xl font-semibold tracking-tight text-blue-600",
-          },
-        );
-      }
-
       return renderRowTable(group.items);
     };
 
@@ -3751,11 +3719,13 @@ Price: ${price}
           <section
             key={group.key}
             className={
-              idx !== groups.length - 1 ? "border-b border-slate-100 pb-5" : ""
+              idx !== groups.length - 1
+                ? "border-b border-[#d9e6ff] pb-5"
+                : ""
             }
           >
             <div className="flex items-center justify-between gap-4">
-              <h5 className="text-sm font-semibold text-slate-900 sm:text-base">
+              <h5 className="text-sm font-semibold text-[#133b88] sm:text-base">
                 {group.title}
               </h5>
             </div>
@@ -3769,7 +3739,7 @@ Price: ${price}
   const renderSpecTable = (data, limit = 5) => {
     if (!data || (typeof data === "object" && Object.keys(data).length === 0))
       return (
-        <div className="rounded-[20px] bg-slate-50/90 py-6 text-center text-sm text-slate-500">
+        <div className="rounded-2xl border border-[#d9e6ff] bg-white py-6 text-center text-sm text-[#5f7094]">
           No data available
         </div>
       );
@@ -3788,16 +3758,16 @@ Price: ${price}
     return (
       <>
         {/* Mobile: Stacked Layout */}
-        <div className="space-y-2 sm:hidden">
+        <div className="space-y-3 sm:hidden">
           {displayEntries.map(([key, value]) => (
             <div
               key={key}
-              className="rounded-2xl bg-slate-50/95 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]"
+              className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-start gap-x-4 gap-y-1 py-1"
             >
-              <div className="text-xs font-semibold uppercase tracking-wide text-slate-600 mb-0.5">
+              <div className="text-[13px] font-medium leading-5 text-[#45608f]">
                 {toNormalCase(key)}
               </div>
-              <div className="text-sm font-semibold text-slate-900 break-words">
+              <div className="break-words text-[15px] font-semibold leading-6 text-[#0d347f]">
                 {formatSpecValue(value, key)}
               </div>
             </div>
@@ -3805,36 +3775,20 @@ Price: ${price}
         </div>
 
         {/* Desktop: Table Layout */}
-        <div className="hidden overflow-hidden rounded-[22px] bg-slate-50/85 shadow-[inset_0_1px_0_rgba(255,255,255,0.82)] sm:block">
-          <table className="w-full">
-            <thead className="bg-white/80">
-              <tr>
-                <th className="px-5 py-3 text-left text-sm font-semibold text-slate-700">
-                  Spec
-                </th>
-                <th className="px-5 py-3 text-left text-sm font-semibold text-slate-700">
-                  Details
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {displayEntries.map(([key, value], idx) => (
-                <tr
-                  key={key}
-                  className={`transition-colors hover:bg-blue-50 ${
-                    idx % 2 === 0 ? "bg-white/80" : "bg-slate-50/90"
-                  }`}
-                >
-                  <td className="px-5 py-4 text-sm font-medium text-slate-600 w-1/3">
-                    {toNormalCase(key)}
-                  </td>
-                  <td className="px-5 py-4 text-sm font-semibold text-slate-900 break-words w-2/3">
-                    {formatSpecValue(value, key)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="hidden space-y-4 sm:block">
+          {displayEntries.map(([key, value]) => (
+            <div
+              key={key}
+              className="grid gap-2 py-1 sm:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] sm:gap-6"
+            >
+              <div className="text-sm font-medium text-[#58709d]">
+                {toNormalCase(key)}
+              </div>
+              <div className="break-words text-sm font-semibold text-[#123986]">
+                {formatSpecValue(value, key)}
+              </div>
+            </div>
+          ))}
         </div>
       </>
     );
@@ -3993,18 +3947,33 @@ Price: ${price}
           }
         };
         const sectionCardClass =
-          "overflow-hidden rounded-[24px] bg-white/96 shadow-[0_18px_44px_rgba(15,23,42,0.06)]";
+          "overflow-hidden rounded-2xl border border-[#dde1ff] bg-gradient-to-br from-[#edf4ff] via-[#fbfcff] to-[#f3efff] shadow-[0_18px_44px_rgba(99,102,241,0.10)]";
         const sectionDividerClass =
-          "mt-4 h-px w-full bg-gradient-to-r from-blue-600 via-sky-500 to-cyan-400/60";
+          "mt-4 h-px w-full bg-gradient-to-r from-[#6fa8ff] via-[#8e87ff] to-[#d2b6ff]";
+        const fullSpecHighlightFormatter = new Intl.ListFormat("en", {
+          style: "long",
+          type: "conjunction",
+        });
+        const fullSpecHighlights = [
+          headerProcessor,
+          headerDisplay ? `${headerDisplay} display` : null,
+          currentMainCameraMp ? `${currentMainCameraMp} MP camera` : null,
+          batteryForShare ? `${batteryForShare} battery` : null,
+        ]
+          .filter(Boolean)
+          .slice(0, 4);
+        const fullSpecIntroText = fullSpecHighlights.length
+          ? `${metaName || mobileData?.name || "This phone"} specifications cover ${fullSpecHighlightFormatter.format(fullSpecHighlights)}.`
+          : "Browse the full hardware, software, battery, and connectivity details below.";
         const renderSectionCard = (sectionId, title, content) => (
           <section id={sectionId} className={sectionCardClass}>
             <div className="px-4 pt-4 sm:px-6 sm:pt-6">
-              <h4 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
+              <h4 className="text-xl font-semibold tracking-tight text-[#123986] sm:text-2xl">
                 {title}
               </h4>
               <div className={sectionDividerClass} />
             </div>
-            <div className="mt-5 pb-4 sm:px-6 sm:pb-6">{content}</div>
+            <div className="mt-5 px-4 pb-4 sm:px-6 sm:pb-6">{content}</div>
           </section>
         );
 
@@ -4013,66 +3982,16 @@ Price: ${price}
             id="spec-specifications"
             className={`w-full max-w-4xl px-2 sm:px-0 ${combineResponsiveClasses(RESPONSIVE_SPACING.contentMarginY)}`}
           >
-            <div className="rounded-[28px] bg-gradient-to-br from-white via-[#f7faff] to-[#eef5ff] p-4 text-slate-900 shadow-[0_16px_40px_rgba(15,23,42,0.08)] sm:p-6 lg:p-7">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div className="min-w-0 max-w-3xl">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-blue-600">
-                    Full Specifications
-                  </p>
-                  <h3 className="mt-2 text-[1.45rem] font-semibold leading-tight tracking-tight text-slate-950 sm:text-[1.9rem]">
-                    {metaName}
-                  </h3>
-                  {currentVariantLabel ? (
-                    <div className="mt-3 inline-flex max-w-full items-center rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100">
-                      <span className="truncate">{currentVariantLabel}</span>
-                    </div>
-                  ) : null}
-                  <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-[15px]">
-                    All major hardware, display, camera, software, battery, and
-                    connectivity details in one clean view.
-                  </p>
-                </div>
-
-                <div className="flex w-full items-center justify-between rounded-2xl bg-slate-100 px-4 py-3 lg:w-[240px]">
-                  <span className="text-sm font-medium text-slate-700">
-                    Expanded View
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowAllSpecs((prev) => !prev)}
-                    aria-pressed={showAllSpecs}
-                    className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
-                      showAllSpecs ? "bg-blue-600" : "bg-slate-300"
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform duration-200 ${
-                        showAllSpecs ? "translate-x-7" : "translate-x-1"
-                      }`}
-                    />
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-5 rounded-[22px] bg-[#eef4fb] p-2">
-                <div
-                  className={`flex ${RESPONSIVE_SPACING.gapMedium} overflow-x-auto pb-1 no-scrollbar`}
-                >
-                  {specJumpSections.map((section) => (
-                    <button
-                      key={section.id}
-                      type="button"
-                      onClick={() => scrollToSpecSection(section.id)}
-                      className="inline-flex flex-shrink-0 items-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition-all hover:bg-blue-50 hover:text-blue-700"
-                    >
-                      {section.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            <div className="hidden text-slate-900 sm:block">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-blue-600">
+                Full Specifications
+              </p>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-[#556b95]">
+                {fullSpecIntroText}
+              </p>
             </div>
 
-            <div className="mt-6 space-y-4 sm:space-y-5">
+            <div className="space-y-4 sm:mt-6 sm:space-y-5">
               {renderSectionCard(
                 "spec-general",
                 "General",
@@ -4828,6 +4747,79 @@ Price: ${price}
 
   const compareTarget = popularComparisonTargets[0] || null;
   const detailInfoSections = infoKeySections.filter(Boolean);
+  const detailInfoSectionByKey = detailInfoSections.reduce((acc, section) => {
+    acc[section.key] = section;
+    return acc;
+  }, {});
+  const shouldUseTallMobileCameraCard = Boolean(
+    detailInfoSectionByKey.camera &&
+      detailInfoSectionByKey.display &&
+      detailInfoSectionByKey.memory,
+  );
+
+  const detailInfoCardToneMap = {
+    performance: "from-[#eef4ff] via-[#ffffff] to-[#f5f0ff]",
+    memory: "from-[#f2f6ff] via-[#ffffff] to-[#f3efff]",
+    display: "from-[#edf5ff] via-[#ffffff] to-[#f0f4ff]",
+    camera: "from-[#eef3ff] via-[#ffffff] to-[#f6f0ff]",
+    "camera-front": "from-[#f1f6ff] via-[#ffffff] to-[#f3f0ff]",
+    battery: "from-[#edf4ff] via-[#ffffff] to-[#f0f2ff]",
+    design: "from-[#eef2ff] via-[#ffffff] to-[#f5efff]",
+    os: "from-[#f1f5ff] via-[#ffffff] to-[#f3f0ff]",
+  };
+
+  const renderDetailInfoCard = (section, layoutClass = "") => {
+    if (!section) return null;
+
+    const iconMeta = highlightIconMap[section.key];
+    const Icon = iconMeta?.Icon;
+    const cardTitle = section.title;
+    const leadPoint = section.leadPoint || section.points?.[0] || null;
+    const bulletPoints = section.leadPoint
+      ? section.points
+      : section.points?.slice(1) || [];
+    const toneClass =
+      detailInfoCardToneMap[section.key] ||
+      "from-[#eef4ff] via-[#ffffff] to-[#f4efff]";
+
+    return (
+      <div
+        key={section.key}
+        className={`flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-[#d9e4f2] bg-gradient-to-br ${toneClass} px-3.5 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all duration-200 sm:px-4 md:px-5 md:py-5 ${layoutClass}`}
+      >
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[#dce6f3] bg-[#f8fbff] md:h-8 md:w-8">
+            {Icon ? <Icon className={`text-[11px] ${iconMeta.color}`} /> : null}
+          </div>
+          <div className="min-w-0">
+            <h4 className="text-[13px] font-medium leading-tight text-[#455a7c] md:text-[14px]">
+              {cardTitle}
+            </h4>
+          </div>
+        </div>
+        {leadPoint ? (
+          <div className="mt-3 min-w-0 break-words text-[0.98rem] font-semibold leading-[1.45] tracking-tight text-[#082c78] min-[420px]:text-[1rem] md:mt-4 md:text-[1.18rem] lg:text-[1.24rem]">
+            {formatSpecValue(leadPoint, section.title)}
+          </div>
+        ) : null}
+        {bulletPoints.length > 0 ? (
+          <ul className="mt-3 space-y-1.5 md:mt-4 md:space-y-2">
+            {bulletPoints.slice(0, 4).map((point, idx) => (
+              <li
+                key={idx}
+                className="flex min-w-0 items-start gap-2 text-[13px] leading-5 text-[#5f6f8f] md:gap-2.5 md:text-[14px] md:leading-6"
+              >
+                <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-[#7b8ca8] md:mt-[9px]" />
+                <span className="min-w-0 break-words">
+                  {formatSpecValue(point, section.title)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+    );
+  };
 
   if (shouldRenderAliasNotFound) {
     return <NotFound />;
@@ -5569,67 +5561,102 @@ Price: ${price}
                     battery details that matter most.
                   </p>
                 </div>
-                <div className="rounded-[28px] bg-white p-3 sm:p-5">
-                  <div
-                    className={`grid grid-cols-1 items-stretch gap-3 sm:gap-4 md:grid-cols-2`}
-                  >
-                    {detailInfoSections.map((section) => {
-                      const iconMeta = highlightIconMap[section.key];
-                      const Icon = iconMeta?.Icon;
-                      const cardTitle = section.title;
-                      const leadPoint =
-                        section.leadPoint || section.points?.[0] || null;
-                      const bulletPoints = section.leadPoint
-                        ? section.points
-                        : section.points?.slice(1) || [];
+                <div className="rounded-2xl border border-[#dce4f3] bg-gradient-to-br from-[#eef3ff] via-[#f7f8ff] to-[#f2eeff] p-3 sm:p-4 md:p-5">
+                  <div className="grid grid-cols-1 items-stretch gap-3 min-[420px]:grid-cols-2 md:hidden">
+                    {[
+                      {
+                        key: "battery",
+                        className: "",
+                      },
+                      {
+                        key: "performance",
+                        className: "",
+                      },
+                      {
+                        key: "camera",
+                        className: shouldUseTallMobileCameraCard
+                          ? "min-[420px]:row-span-2"
+                          : "",
+                      },
+                      {
+                        key: "display",
+                        className: "",
+                      },
+                      {
+                        key: "memory",
+                        className: "",
+                      },
+                      {
+                        key: "camera-front",
+                        className: "",
+                      },
+                      {
+                        key: "design",
+                        className: "",
+                      },
+                      {
+                        key: "os",
+                        className: "min-[420px]:col-span-2",
+                      },
+                    ]
+                      .filter((item) => detailInfoSectionByKey[item.key])
+                      .map((item) =>
+                        renderDetailInfoCard(
+                          detailInfoSectionByKey[item.key],
+                          item.className,
+                        ),
+                      )}
+                  </div>
 
-                      return (
-                        <div
-                          key={section.key}
-                          className="flex h-full flex-col rounded-[22px] border border-[#d9e4f2] bg-white px-4 py-5 transition-all duration-200 sm:px-5 sm:py-6"
-                        >
-                          <div className="flex items-center gap-2.5">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#dce6f3] bg-[#f8fbff]">
-                              {Icon ? (
-                                <Icon className={`text-sm ${iconMeta.color}`} />
-                              ) : null}
-                            </div>
-                            <div className="min-w-0">
-                              <h4 className="text-[15px] font-medium leading-none text-[#455a7c] sm:text-base">
-                                {cardTitle}
-                              </h4>
-                            </div>
-                          </div>
-                          {leadPoint ? (
-                            <div className="mt-4 text-[1.15rem] font-semibold leading-snug tracking-tight text-[#1d2738] sm:text-[1.3rem]">
-                              {formatSpecValue(leadPoint, section.title)}
-                            </div>
-                          ) : null}
-                          {bulletPoints.length > 0 ? (
-                            <ul className="mt-4 space-y-2">
-                              {bulletPoints.slice(0, 3).map((point, idx) => (
-                                <li
-                                  key={idx}
-                                  className="flex items-start gap-2.5 text-[14px] leading-6 text-[#6a7894]"
-                                >
-                                  <span className="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full bg-[#7b8ca8]" />
-                                  <span className="min-w-0">
-                                    {formatSpecValue(point, section.title)}
-                                  </span>
-                                </li>
-                              ))}
-                            </ul>
-                          ) : null}
-                        </div>
-                      );
-                    })}
+                  <div className="hidden md:grid md:grid-cols-12 md:items-stretch md:gap-4 lg:gap-5">
+                    {[
+                      {
+                        key: "performance",
+                        className: "md:col-span-6",
+                      },
+                      {
+                        key: "display",
+                        className: "md:col-span-6",
+                      },
+                      {
+                        key: "battery",
+                        className: "md:col-span-4",
+                      },
+                      {
+                        key: "camera",
+                        className: "md:col-span-8",
+                      },
+                      {
+                        key: "memory",
+                        className: "md:col-span-6",
+                      },
+                      {
+                        key: "camera-front",
+                        className: "md:col-span-6",
+                      },
+                      {
+                        key: "design",
+                        className: "md:col-span-6",
+                      },
+                      {
+                        key: "os",
+                        className: "md:col-span-6",
+                      },
+                    ]
+                      .filter((item) => detailInfoSectionByKey[item.key])
+                      .map((item) =>
+                        renderDetailInfoCard(
+                          detailInfoSectionByKey[item.key],
+                          item.className,
+                        ),
+                      )}
                   </div>
                 </div>
                 <div className="flex justify-center pt-1 sm:justify-end">
                   <button
                     type="button"
                     onClick={() => handleTabClick("specifications")}
-                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 transition-all duration-200 "
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-blue-700 bg-blue-700 px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-blue-800 sm:w-auto sm:px-4 sm:py-2"
                   >
                     See full specifications
                     <FaChevronRight className="text-xs" />
