@@ -354,13 +354,18 @@ const toCompareSlug = (value = "") =>
 const resolveLowestPriceForSeo = (device) => {
   if (!device || typeof device !== "object") return null;
   const direct = Number(
-    device.price ?? device.base_price ?? device.basePrice ?? device.numericPrice,
+    device.price ??
+      device.base_price ??
+      device.basePrice ??
+      device.numericPrice,
   );
   const directPrice = Number.isFinite(direct) && direct > 0 ? direct : null;
 
   const variants = Array.isArray(device.variants) ? device.variants : [];
   const variantPrice = variants.reduce((lowest, variant) => {
-    const base = Number(variant?.base_price ?? variant?.price ?? variant?.basePrice);
+    const base = Number(
+      variant?.base_price ?? variant?.price ?? variant?.basePrice,
+    );
     const basePrice = Number.isFinite(base) && base > 0 ? base : null;
     const stores = Array.isArray(variant?.store_prices)
       ? variant.store_prices
@@ -386,7 +391,8 @@ const resolveLowestPriceForSeo = (device) => {
     return Math.min(lowest, candidate);
   }, null);
 
-  if (directPrice != null && variantPrice != null) return Math.min(directPrice, variantPrice);
+  if (directPrice != null && variantPrice != null)
+    return Math.min(directPrice, variantPrice);
   return variantPrice != null ? variantPrice : directPrice;
 };
 
@@ -396,7 +402,8 @@ const resolveSmartphoneSegmentLabel = (devices = []) => {
     .filter((value) => Number.isFinite(value) && value > 0);
   if (prices.length === 0) return "";
 
-  const averagePrice = prices.reduce((sum, value) => sum + value, 0) / prices.length;
+  const averagePrice =
+    prices.reduce((sum, value) => sum + value, 0) / prices.length;
   if (averagePrice <= 10000) return "Entry";
   if (averagePrice <= 20000) return "Budget";
   if (averagePrice <= 30000) return "Lower Mid Range";
@@ -425,7 +432,8 @@ const buildCompareTitleText = ({
   if (overridden) return overridden;
 
   const joined = joinCompareNamesWithoutCommas(names);
-  if (!joined) return "Device Comparison Price Specifications and Features in India";
+  if (!joined)
+    return "Device Comparison Price Specifications and Features in India";
 
   const segment = String(segmentLabel || "").trim();
   if (segment) {
@@ -584,7 +592,7 @@ const MobileCompare = () => {
   const [publishedCompareLoading, setPublishedCompareLoading] = useState(() =>
     Boolean(
       publishedCompareEndpoint &&
-        !readPreloadedApiResponse(publishedCompareEndpoint),
+      !readPreloadedApiResponse(publishedCompareEndpoint),
     ),
   );
   const isSeoCompareRoute = Boolean(normalizedCompareSlug);
@@ -635,8 +643,12 @@ const MobileCompare = () => {
     if (resolvedProductId == null) return null;
 
     const resolvedType =
-      deviceObj.productType || deviceObj.deviceType || deviceObj.product_type || null;
-    const resolvedName = deviceObj.name || deviceObj.model || deviceObj.title || null;
+      deviceObj.productType ||
+      deviceObj.deviceType ||
+      deviceObj.product_type ||
+      null;
+    const resolvedName =
+      deviceObj.name || deviceObj.model || deviceObj.title || null;
 
     return {
       ...deviceObj,
@@ -704,7 +716,11 @@ const MobileCompare = () => {
       );
     }
 
-    if (!normalizedCompareSlug || !Array.isArray(availableDevices) || availableDevices.length === 0) {
+    if (
+      !normalizedCompareSlug ||
+      !Array.isArray(availableDevices) ||
+      availableDevices.length === 0
+    ) {
       return [];
     }
 
@@ -754,7 +770,8 @@ const MobileCompare = () => {
     if (
       !expectedType ||
       normalizedMatches.some(
-        (device) => String(getResolvedProductType(device) || "").trim() !== expectedType,
+        (device) =>
+          String(getResolvedProductType(device) || "").trim() !== expectedType,
       )
     ) {
       return [];
@@ -811,12 +828,17 @@ const MobileCompare = () => {
   }, [activeCompareEntries]);
 
   const canonicalCompareSlugPath = useMemo(() => {
-    if (publishedComparePage?.route_path) return publishedComparePage.route_path;
+    if (publishedComparePage?.route_path)
+      return publishedComparePage.route_path;
     const slugPath = buildCanonicalComparePathFromDevices({
       devices: activeDevices,
       getName: (device) => device?.name || device?.model || "",
       getId: (device) =>
-        device?.productId ?? device?.product_id ?? device?.id ?? device?.baseId ?? null,
+        device?.productId ??
+        device?.product_id ??
+        device?.id ??
+        device?.baseId ??
+        null,
       getVariantIndex: (device) =>
         variantSelection[device?.id] ?? device?.selectedVariantIndex ?? 0,
     });
@@ -828,7 +850,10 @@ const MobileCompare = () => {
     if (!isLegacyCompareSlug || routeDeviceEntries.length < 2) return "";
 
     const names = routeDeviceEntries
-      .map((entry) => productLookupById.get(String(entry.baseId || "").trim())?.name)
+      .map(
+        (entry) =>
+          productLookupById.get(String(entry.baseId || "").trim())?.name,
+      )
       .filter(Boolean)
       .slice(0, 3);
 
@@ -846,12 +871,21 @@ const MobileCompare = () => {
       getVariantIndex: () => 0,
     });
 
-    if (!nextPath || nextPath === "/compare" || nextPath === location.pathname) {
+    if (
+      !nextPath ||
+      nextPath === "/compare" ||
+      nextPath === location.pathname
+    ) {
       return "";
     }
 
     return nextPath;
-  }, [location.pathname, normalizedCompareSlug, productLookupById, routeDeviceEntries]);
+  }, [
+    location.pathname,
+    normalizedCompareSlug,
+    productLookupById,
+    routeDeviceEntries,
+  ]);
 
   useEffect(() => {
     if (!legacyCompareRedirectPath) return;
@@ -859,7 +893,8 @@ const MobileCompare = () => {
   }, [legacyCompareRedirectPath, navigate]);
 
   const canonicalComparePath = useMemo(() => {
-    if (publishedComparePage?.route_path) return publishedComparePage.route_path;
+    if (publishedComparePage?.route_path)
+      return publishedComparePage.route_path;
     const isLegacyCompareSlug = /-vs-/i.test(normalizedCompareSlug);
     if (
       !isLegacyCompareSlug &&
@@ -3125,26 +3160,28 @@ const MobileCompare = () => {
           activeDevices.length > 0 ? activeDevices : [],
         )
       : "");
-  const metaTitle = seoSelectedNames.length > 0
-    ? buildCompareTitleText({
-        names: seoSelectedNames.slice(0, maxDevices),
-        segmentLabel: seoSegmentLabel,
-        publishedTitle: publishedComparePage?.title || "",
-      })
-    : canonicalCompareEntries.length > 0
-      ? "Compare Selected Devices Price Specifications and Features in India"
-      : "Device Comparison Price Specifications and Features in India";
+  const metaTitle =
+    seoSelectedNames.length > 0
+      ? buildCompareTitleText({
+          names: seoSelectedNames.slice(0, maxDevices),
+          segmentLabel: seoSegmentLabel,
+          publishedTitle: publishedComparePage?.title || "",
+        })
+      : canonicalCompareEntries.length > 0
+        ? "Compare Selected Devices Price Specifications and Features in India"
+        : "Device Comparison Price Specifications and Features in India";
   const normalizedMetaTitle = normalizeSeoTitle(metaTitle);
 
-  const metaDescription = seoSelectedNames.length > 0
-    ? buildCompareDescriptionText({
-        names: seoSelectedNames.slice(0, maxDevices),
-        segmentLabel: seoSegmentLabel,
-        publishedDescription: publishedComparePage?.meta_description || "",
-      })
-    : canonicalCompareEntries.length > 0
-      ? "Compare selected devices with latest price specifications camera battery performance and features in India."
-      : "Compare smartphones laptops and more with latest price specifications camera battery performance and features in India.";
+  const metaDescription =
+    seoSelectedNames.length > 0
+      ? buildCompareDescriptionText({
+          names: seoSelectedNames.slice(0, maxDevices),
+          segmentLabel: seoSegmentLabel,
+          publishedDescription: publishedComparePage?.meta_description || "",
+        })
+      : canonicalCompareEntries.length > 0
+        ? "Compare selected devices with latest price specifications camera battery performance and features in India."
+        : "Compare smartphones laptops and more with latest price specifications camera battery performance and features in India.";
   const metaKeywords = useMemo(
     () =>
       buildListSeoKeywords({
@@ -3286,7 +3323,9 @@ const MobileCompare = () => {
               </div>
               <div>
                 <h1 className="text-lg font-bold text-gray-900">
-                  {seoSelectedNames.length > 0 ? comparisonNames : "Compare Devices"}
+                  {seoSelectedNames.length > 0
+                    ? comparisonNames
+                    : "Compare Devices"}
                 </h1>
                 <p className="text-xs text-gray-500">
                   {publishedComparePage?.segment_label
@@ -3439,6 +3478,44 @@ const MobileCompare = () => {
                   selectedVariant || variants[safeVariantIndex] || null,
                 );
                 const signalLabel = getCardSignalLabel(device);
+                // Helper to resolve the best price for a device/variant
+                const getCardPrice = (device, selectedVariant) => {
+                  // Try variant price first
+                  const variantPrice =
+                    selectedVariant?.base_price ??
+                    selectedVariant?.price ??
+                    selectedVariant?.basePrice ??
+                    null;
+                  if (variantPrice && Number(variantPrice) > 0)
+                    return Number(variantPrice);
+
+                  // Fallback to device price
+                  const devicePrice =
+                    device.price ??
+                    device.base_price ??
+                    device.basePrice ??
+                    device.numericPrice ??
+                    null;
+                  if (devicePrice && Number(devicePrice) > 0)
+                    return Number(devicePrice);
+
+                  // Fallback to variant store prices if available
+                  if (
+                    selectedVariant?.store_prices &&
+                    Array.isArray(selectedVariant.store_prices)
+                  ) {
+                    const storePrice = selectedVariant.store_prices
+                      .map((s) => Number(s.price))
+                      .filter((p) => p > 0)
+                      .sort((a, b) => a - b)[0];
+                    if (storePrice) return storePrice;
+                  }
+
+                  return null;
+                };
+
+                const price = getCardPrice(device, selectedVariant);
+
                 return (
                   <div
                     key={device.id}
@@ -3492,19 +3569,11 @@ const MobileCompare = () => {
                         ) : null}
                         <p
                           className={`mt-1 text-[15px] font-semibold tracking-tight ${
-                            selectedVariant?.base_price || device.price
-                              ? "text-green-600"
-                              : "text-slate-400"
+                            price ? "text-green-600" : "text-slate-400"
                           }`}
-                          title={
-                            selectedVariant?.base_price || device.price
-                              ? "Price"
-                              : "Price not available"
-                          }
+                          title={price ? "Price" : "Price not available"}
                         >
-                          {selectedVariant
-                            ? formatPrice(selectedVariant.base_price)
-                            : formatPrice(device.price || 0)}
+                          {price ? formatPrice(price) : "N/A"}
                         </p>
                       </div>
 
