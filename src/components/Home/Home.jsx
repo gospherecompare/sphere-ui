@@ -5,7 +5,6 @@ import LatestSmartphones from "./UpcomingSmartphones";
 import FeaturedProduct from "./FeaturedProduct";
 import HeroSection from "./Herosection";
 import PopularBrands from "./Popularbrand";
-import Brandofmonth from "./Brandofmonth";
 import RecommendedSmartphones from "./RecommendedSmartphones";
 import LatestNewsArticlesSection from "./LatestNewsArticlesSection";
 // BannerSlot disabled until completed.
@@ -15,7 +14,6 @@ const Home = () => {
   return (
     <div className="">
       <HeroSection />
-      <Brandofmonth />
       <FeaturedProduct />
       <PopularBrands />
       <LatestSmartphones />

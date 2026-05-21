@@ -292,6 +292,33 @@ const normalizeStorePriceRow = (
     `Store ${fallbackIndex + 1}`;
   const rawUrl = store?.url || store?.url_link || store?.link || "";
   const price = store?.price ?? store?.base_price ?? store?.basePrice ?? null;
+  const saleStartRaw =
+    store?.sale_start_date ||
+    store?.saleStartDate ||
+    store?.sale_date ||
+    store?.saleDate ||
+    store?.available_from ||
+    store?.availableFrom ||
+    null;
+  const saleStartDate = saleStartRaw ? new Date(saleStartRaw) : null;
+  const hasFutureSaleDate =
+    saleStartDate instanceof Date &&
+    !Number.isNaN(saleStartDate.getTime()) &&
+    saleStartDate > new Date();
+  const availabilityText = String(
+    store?.availability_status ||
+      store?.availabilityStatus ||
+      store?.cta_label ||
+      store?.ctaLabel ||
+      "",
+  )
+    .trim()
+    .toLowerCase();
+  const isPrebooking =
+    store?.is_prebooking === true ||
+    store?.isPrebooking === true ||
+    /pre(book|order)|coming\s*soon|not[\s_-]*started/.test(availabilityText) ||
+    hasFutureSaleDate;
 
   return {
     ...store,
@@ -309,17 +336,12 @@ const normalizeStorePriceRow = (
     cta_label:
       store?.cta_label ||
       store?.ctaLabel ||
-      (rawUrl ? "Buy Now" : "Unavailable"),
+      (isPrebooking ? "Coming Soon" : rawUrl ? "Buy Now" : "Unavailable"),
     availability_status:
       store?.availability_status || store?.availabilityStatus || null,
-    sale_start_date:
-      store?.sale_start_date ||
-      store?.saleStartDate ||
-      store?.sale_date ||
-      null,
+    sale_start_date: saleStartRaw,
     sale_date: store?.sale_date || store?.saleDate || null,
-    is_prebooking:
-      store?.is_prebooking === true || store?.isPrebooking === true,
+    is_prebooking: isPrebooking,
     logo: store?.logo || store?.store_logo || store?.storeLogo || "",
   };
 };
@@ -943,6 +965,75 @@ const MobileDetailCard = () => {
     );
   };
 
+  const getDeviceStoreRows = (device) => {
+    const rows = [];
+
+    if (Array.isArray(device?.storePrices)) rows.push(...device.storePrices);
+    else if (Array.isArray(device?.store_prices))
+      rows.push(...device.store_prices);
+
+    const variants = Array.isArray(device?.variants)
+      ? device.variants
+      : Array.isArray(device?.variants_json)
+        ? device.variants_json
+        : [];
+
+    variants.forEach((variant) => {
+      if (Array.isArray(variant?.storePrices)) rows.push(...variant.storePrices);
+      else if (Array.isArray(variant?.store_prices))
+        rows.push(...variant.store_prices);
+    });
+
+    return rows.filter(Boolean);
+  };
+
+  const hasLiveStoreSignal = (store) => {
+    if (!store || typeof store !== "object") return false;
+    if (store?.is_prebooking === true || store?.isPrebooking === true)
+      return false;
+
+    const availabilityText = String(
+      store?.availability_status ??
+        store?.availabilityStatus ??
+        store?.sale_status ??
+        store?.saleStatus ??
+        store?.cta_label ??
+        store?.ctaLabel ??
+        "",
+    )
+      .trim()
+      .toLowerCase();
+
+    if (/pre(book|order)|coming\s*soon|not[\s_-]*started/.test(availabilityText))
+      return false;
+
+    const saleStart = store?.sale_start_date ??
+      store?.saleStartDate ??
+      store?.sale_date ??
+      store?.saleDate ??
+      store?.available_from ??
+      store?.availableFrom ??
+      null;
+    const parsedSaleStart = saleStart ? new Date(saleStart) : null;
+    if (
+      parsedSaleStart instanceof Date &&
+      !Number.isNaN(parsedSaleStart.getTime()) &&
+      parsedSaleStart > new Date()
+    ) {
+      return false;
+    }
+
+    return Boolean(
+      parseMarketPriceValue(
+        store.price ??
+          store.current_price ??
+          store.sale_price ??
+          store.offer_price ??
+          store.mrp,
+      ) || String(store.url || store.link || "").trim(),
+    );
+  };
+
   const hasSpecScoreMarketSignal = (device) => {
     if (!device || typeof device !== "object") return false;
 
@@ -1007,7 +1098,6 @@ const MobileDetailCard = () => {
 
   const isSpecScoreAllowed = (stage, device = null) =>
     stage === "released" ||
-    stage === "available" ||
     ((stage === "upcoming" || stage === "announced") &&
       hasSpecScoreMarketSignal(device));
 
@@ -1073,33 +1163,48 @@ const MobileDetailCard = () => {
       dateValue && !Number.isNaN(new Date(dateValue).getTime())
         ? new Date(dateValue)
         : null;
+    const preorderSignal =
+      Boolean(device.official_preorder_url || device.officialPreorderUrl) ||
+      getDeviceStoreRows(device).some(
+        (store) =>
+          store?.is_prebooking === true ||
+          store?.isPrebooking === true ||
+          /pre(book|order)|coming\s*soon|not[\s_-]*started/i.test(
+            String(
+              store?.availability_status ??
+                store?.availabilityStatus ??
+                store?.sale_status ??
+                store?.saleStatus ??
+                store?.cta_label ??
+                store?.ctaLabel ??
+                "",
+            ),
+          ),
+      );
 
     if (explicitStatus === "rumored" || explicitStatus === "announced") {
       return explicitStatus;
     }
 
-    if (explicitStatus === "released") {
-      return "released";
-    }
-
-    if (explicitStatus === "available") {
-      if (saleStart instanceof Date && !Number.isNaN(saleStart.getTime())) {
+    if (explicitStatus === "released" || explicitStatus === "available") {
+      if (launchDate instanceof Date && !Number.isNaN(launchDate.getTime())) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        if (saleStart > today) return "upcoming";
+        if (launchDate > today) return "upcoming";
       }
-      return "available";
+      return "released";
     }
 
     if (explicitStatus === "upcoming") {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      if (saleStart instanceof Date && !Number.isNaN(saleStart.getTime())) {
-        return saleStart > today ? "upcoming" : "released";
-      }
       if (launchDate instanceof Date && !Number.isNaN(launchDate.getTime())) {
         return launchDate > today ? "upcoming" : "released";
       }
+      if (saleStart instanceof Date && !Number.isNaN(saleStart.getTime())) {
+        return saleStart > today ? "upcoming" : "released";
+      }
+      if (preorderSignal) return "upcoming";
       return "released";
     }
 
@@ -1109,31 +1214,26 @@ const MobileDetailCard = () => {
     if (statusHint) {
       if (statusHint === "released") return "released";
       if (statusHint === "available") {
-        if (saleStart instanceof Date && !Number.isNaN(saleStart.getTime())) {
+        if (launchDate instanceof Date && !Number.isNaN(launchDate.getTime())) {
           const today = new Date();
           today.setHours(0, 0, 0, 0);
-          if (saleStart > today) return "upcoming";
+          if (launchDate > today) return "upcoming";
         }
-        return "available";
+        return "released";
       }
       if (statusHint === "upcoming") {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        if (saleStart instanceof Date && !Number.isNaN(saleStart.getTime())) {
-          return saleStart > today ? "upcoming" : "released";
-        }
         if (launchDate instanceof Date && !Number.isNaN(launchDate.getTime())) {
           return launchDate > today ? "upcoming" : "released";
         }
+        if (saleStart instanceof Date && !Number.isNaN(saleStart.getTime())) {
+          return saleStart > today ? "upcoming" : "released";
+        }
+        if (preorderSignal) return "upcoming";
         return "released";
       }
       return statusHint;
-    }
-
-    if (saleStart instanceof Date && !Number.isNaN(saleStart.getTime())) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      return saleStart > today ? "upcoming" : "available";
     }
 
     if (launchDate instanceof Date && !Number.isNaN(launchDate.getTime())) {
@@ -1143,7 +1243,103 @@ const MobileDetailCard = () => {
       return "released";
     }
 
+    if (saleStart instanceof Date && !Number.isNaN(saleStart.getTime())) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return saleStart > today ? "upcoming" : "released";
+    }
+
+    if (preorderSignal) return "upcoming";
+
     return "released";
+  };
+
+  const getDeviceSaleStatus = (device) => {
+    if (!device) return "sale_tbd";
+
+    const saleStart = getSaleStartDateFromDevice(device);
+    const storeRows = getDeviceStoreRows(device);
+    const explicitStatus = normalizeLaunchStatus(
+      device.launch_status_override ||
+        device.launchStatusOverride ||
+        device.launch_status ||
+        device.launchStatus ||
+        device.status ||
+        "",
+    );
+    const preorderSignal =
+      Boolean(device.official_preorder_url || device.officialPreorderUrl) ||
+      storeRows.some(
+        (store) =>
+          store?.is_prebooking === true || store?.isPrebooking === true,
+      );
+    const liveStores = storeRows.some(hasLiveStoreSignal);
+    const hasStoreSignals = storeRows.some(hasStoreMarketSignal);
+    const launchStage = getDeviceLaunchStatus(device);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (saleStart instanceof Date && !Number.isNaN(saleStart.getTime())) {
+      if (saleStart > today) {
+        return preorderSignal ? "preorder" : "sale_scheduled";
+      }
+      return liveStores ? "on_sale" : "sale_started";
+    }
+
+    if (explicitStatus === "available") return "on_sale";
+    if (preorderSignal) return "preorder";
+    if (liveStores) return "on_sale";
+    if (launchStage === "released" && hasStoreSignals) return "store_pending";
+    return "sale_tbd";
+  };
+
+  const getDeviceStoreStatus = (device) => {
+    if (!device) return "none";
+    const storeRows = getDeviceStoreRows(device);
+    if (storeRows.some(hasLiveStoreSignal)) return "live";
+    const saleStart = getSaleStartDateFromDevice(device);
+    if (
+      saleStart instanceof Date &&
+      !Number.isNaN(saleStart.getTime()) &&
+      saleStart > new Date()
+    ) {
+      return "prebooking";
+    }
+    if (
+      Boolean(device.official_preorder_url || device.officialPreorderUrl) ||
+      storeRows.some(
+        (store) =>
+          store?.is_prebooking === true || store?.isPrebooking === true,
+      )
+    ) {
+      return "prebooking";
+    }
+    if (storeRows.some(hasStoreMarketSignal)) return "listed";
+    return "none";
+  };
+
+  const formatLaunchStageLabel = (value) => {
+    if (!value) return null;
+    if (value === "rumored") return "Rumored";
+    if (value === "announced") return "Announced";
+    if (value === "upcoming") return "Upcoming";
+    return "Released";
+  };
+
+  const formatSaleStageLabel = (value) => {
+    if (value === "preorder") return "Pre-order";
+    if (value === "sale_scheduled") return "Sale Scheduled";
+    if (value === "on_sale") return "On Sale";
+    if (value === "sale_started") return "Sale Started";
+    if (value === "store_pending") return "Store Links Pending";
+    return "Sale Date TBA";
+  };
+
+  const formatStoreStageLabel = (value) => {
+    if (value === "live") return "Live Stores";
+    if (value === "prebooking") return "Pre-booking Stores";
+    if (value === "listed") return "Store Listing Pending";
+    return "No Store Listing";
   };
 
   const getBatteryCapacityRaw = (deviceData) => {
@@ -1635,13 +1831,7 @@ const MobileDetailCard = () => {
     };
   }, [mobileData]);
   const launchStatusLabel = useMemo(() => {
-    if (!launchStatus) return null;
-    if (launchStatus === "rumored") return "RUMORED";
-    if (launchStatus === "announced") return "ANNOUNCED";
-    if (launchStatus === "upcoming") return "UPCOMING";
-    if (launchStatus === "available") return "AVAILABLE";
-    if (launchStatus === "released") return "RELEASED";
-    return String(launchStatus).toUpperCase();
+    return formatLaunchStageLabel(launchStatus);
   }, [launchStatus]);
   const launchStatusBadgeClass = useMemo(() => {
     if (launchStatus === "rumored") {
@@ -1661,6 +1851,40 @@ const MobileDetailCard = () => {
     }
     return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
   }, [launchStatus]);
+  const saleStatus = useMemo(() => getDeviceSaleStatus(mobileData), [mobileData]);
+  const saleStatusLabel = useMemo(
+    () => formatSaleStageLabel(saleStatus),
+    [saleStatus],
+  );
+  const saleStatusBadgeClass = useMemo(() => {
+    if (saleStatus === "on_sale") {
+      return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200";
+    }
+    if (saleStatus === "preorder") {
+      return "bg-sky-50 text-sky-700 ring-1 ring-sky-200";
+    }
+    if (saleStatus === "sale_scheduled") {
+      return "bg-amber-50 text-amber-700 ring-1 ring-amber-200";
+    }
+    return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
+  }, [saleStatus]);
+  const storeStatus = useMemo(
+    () => getDeviceStoreStatus(mobileData),
+    [mobileData],
+  );
+  const storeStatusLabel = useMemo(
+    () => formatStoreStageLabel(storeStatus),
+    [storeStatus],
+  );
+  const storeStatusBadgeClass = useMemo(() => {
+    if (storeStatus === "live") {
+      return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200";
+    }
+    if (storeStatus === "prebooking") {
+      return "bg-sky-50 text-sky-700 ring-1 ring-sky-200";
+    }
+    return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
+  }, [storeStatus]);
   const launchDateRaw =
     mobileData?.launch_date ?? mobileData?.launchDate ?? null;
   const launchDateParsed = launchDateRaw ? new Date(launchDateRaw) : null;
@@ -4979,13 +5203,25 @@ Price: ${price}
                       {currentVariantLabel}
                     </span>
                   ) : null}
-                  {launchStatus &&
-                  launchStatus !== "released" &&
-                  launchStatus !== "upcoming" ? (
+                  {launchStatusLabel ? (
                     <span
-                      className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold leading-none ${launchStatusBadgeClass}`}
+                      className={`inline-flex shrink-0 items-center rounded-full px-3 py-1 text-[11px] font-semibold leading-none ${launchStatusBadgeClass}`}
                     >
-                      {launchStatusLabel}
+                      Market: {launchStatusLabel}
+                    </span>
+                  ) : null}
+                  {saleStatusLabel ? (
+                    <span
+                      className={`inline-flex shrink-0 items-center rounded-full px-3 py-1 text-[11px] font-semibold leading-none ${saleStatusBadgeClass}`}
+                    >
+                      Sale: {saleStatusLabel}
+                    </span>
+                  ) : null}
+                  {storeStatusLabel ? (
+                    <span
+                      className={`inline-flex shrink-0 items-center rounded-full px-3 py-1 text-[11px] font-semibold leading-none ${storeStatusBadgeClass}`}
+                    >
+                      Stores: {storeStatusLabel}
                     </span>
                   ) : null}
                   {mobileData?.isAiPhone ? (
@@ -5476,13 +5712,25 @@ Price: ${price}
                     {currentVariantLabel ? (
                       <span>{currentVariantLabel}</span>
                     ) : null}
-                    {launchStatus &&
-                    launchStatus !== "released" &&
-                    launchStatus !== "upcoming" ? (
+                    {launchStatusLabel ? (
                       <span
-                        className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold leading-none ${launchStatusBadgeClass}`}
+                        className={`inline-flex shrink-0 items-center rounded-full px-3 py-1 text-[11px] font-semibold leading-none ${launchStatusBadgeClass}`}
                       >
-                        {launchStatusLabel}
+                        Market: {launchStatusLabel}
+                      </span>
+                    ) : null}
+                    {saleStatusLabel ? (
+                      <span
+                        className={`inline-flex shrink-0 items-center rounded-full px-3 py-1 text-[11px] font-semibold leading-none ${saleStatusBadgeClass}`}
+                      >
+                        Sale: {saleStatusLabel}
+                      </span>
+                    ) : null}
+                    {storeStatusLabel ? (
+                      <span
+                        className={`inline-flex shrink-0 items-center rounded-full px-3 py-1 text-[11px] font-semibold leading-none ${storeStatusBadgeClass}`}
+                      >
+                        Stores: {storeStatusLabel}
                       </span>
                     ) : null}
                     {mobileData?.isAiPhone ? (

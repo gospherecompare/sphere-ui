@@ -464,6 +464,45 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     );
   };
 
+  const getDeviceStoreRows = (device) => {
+    const rows = [];
+
+    if (Array.isArray(device?.storePrices)) rows.push(...device.storePrices);
+    else if (Array.isArray(device?.store_prices))
+      rows.push(...device.store_prices);
+
+    const variants = Array.isArray(device?.variants) ? device.variants : [];
+    variants.forEach((variant) => {
+      if (Array.isArray(variant?.storePrices)) rows.push(...variant.storePrices);
+      else if (Array.isArray(variant?.store_prices))
+        rows.push(...variant.store_prices);
+    });
+
+    return rows.filter(Boolean);
+  };
+
+  const hasLiveStoreSignal = (store) => {
+    if (!store || typeof store !== "object") return false;
+    if (isPrebookingStore(store)) return false;
+
+    return Boolean(
+      parseMarketPriceValue(
+        store.price ??
+          store.current_price ??
+          store.sale_price ??
+          store.offer_price ??
+          store.mrp,
+      ) ||
+        String(
+          store.url ||
+            store.link ||
+            store.affiliate_link ||
+            store.affiliateUrl ||
+            "",
+        ).trim(),
+    );
+  };
+
   const hasSpecScoreMarketSignal = (device) => {
     if (!device || typeof device !== "object") return false;
 
@@ -524,7 +563,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
   const isSpecScoreAllowed = (stage, device = null) =>
     stage === "released" ||
-    stage === "available" ||
     ((stage === "upcoming" || stage === "announced") &&
       hasSpecScoreMarketSignal(device));
 
@@ -631,21 +669,23 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     const launch = parseDateValue(device.launchDate || device.launch_date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const preorderSignal =
+      Boolean(device.official_preorder_url || device.officialPreorderUrl) ||
+      getDeviceStoreRows(device).some(isPrebookingStore);
 
     if (explicitStatus === "rumored" || explicitStatus === "announced") {
       return explicitStatus;
     }
 
-    if (explicitStatus === "released") return "released";
-
-    if (explicitStatus === "available") {
-      if (saleStart) return saleStart > today ? "upcoming" : "available";
-      return "available";
+    if (explicitStatus === "released" || explicitStatus === "available") {
+      if (launch && launch > today) return "upcoming";
+      return "released";
     }
 
     if (explicitStatus === "upcoming") {
-      if (saleStart) return saleStart > today ? "upcoming" : "released";
       if (launch) return launch > today ? "upcoming" : "released";
+      if (saleStart) return saleStart > today ? "upcoming" : "released";
+      if (preorderSignal) return "upcoming";
       return "released";
     }
 
@@ -655,22 +695,99 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     if (statusHint) {
       if (statusHint === "released") return "released";
       if (statusHint === "available") {
-        if (saleStart) return saleStart > today ? "upcoming" : "available";
-        return "available";
+        if (launch && launch > today) return "upcoming";
+        return "released";
       }
       if (statusHint === "upcoming") {
-        if (saleStart) return saleStart > today ? "upcoming" : "released";
         if (launch) return launch > today ? "upcoming" : "released";
+        if (saleStart) return saleStart > today ? "upcoming" : "released";
+        if (preorderSignal) return "upcoming";
         return "released";
       }
       return statusHint;
     }
 
-    if (saleStart) return saleStart > today ? "upcoming" : "available";
-
     if (launch) return launch > today ? "upcoming" : "released";
 
+    if (saleStart) return saleStart > today ? "upcoming" : "released";
+
+    if (preorderSignal) return "upcoming";
+
     return "released";
+  };
+
+  const resolveSaleStage = (device) => {
+    if (!device) return "sale_tbd";
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const saleStart = resolveSaleStartDate(device);
+    const storeRows = getDeviceStoreRows(device);
+    const explicitStatus = normalizeLaunchStatus(
+      device.launchStatusOverride ||
+        device.launch_status_override ||
+        device.launchStatus ||
+        device.launch_status ||
+        device.status ||
+        "",
+    );
+    const preorderSignal =
+      Boolean(device.official_preorder_url || device.officialPreorderUrl) ||
+      storeRows.some(isPrebookingStore);
+    const liveStores = storeRows.some(hasLiveStoreSignal);
+    const hasStoreSignals = storeRows.some(hasStoreMarketSignal);
+    const launchStage = resolveLaunchStage(device);
+
+    if (saleStart) {
+      if (saleStart > today) {
+        return preorderSignal ? "preorder" : "sale_scheduled";
+      }
+      return liveStores ? "on_sale" : "sale_started";
+    }
+
+    if (explicitStatus === "available") return "on_sale";
+    if (preorderSignal) return "preorder";
+    if (liveStores) return "on_sale";
+    if (launchStage === "released" && hasStoreSignals) return "store_pending";
+    return "sale_tbd";
+  };
+
+  const resolveStoreStage = (device) => {
+    if (!device) return "none";
+    const storeRows = getDeviceStoreRows(device);
+    if (storeRows.some(hasLiveStoreSignal)) return "live";
+    if (
+      Boolean(device.official_preorder_url || device.officialPreorderUrl) ||
+      storeRows.some(isPrebookingStore)
+    ) {
+      return "prebooking";
+    }
+    if (storeRows.some(hasStoreMarketSignal)) return "listed";
+    return "none";
+  };
+
+  const formatLaunchStageLabel = (value) => {
+    if (value === "rumored") return "Rumored";
+    if (value === "announced") return "Announced";
+    if (value === "upcoming") return "Upcoming";
+    return "Released";
+  };
+
+  const formatSaleStageLabel = (value) => {
+    if (value === "preorder") return "Pre-order";
+    if (value === "sale_scheduled") return "Sale Scheduled";
+    if (value === "on_sale") return "On Sale";
+    if (value === "sale_started") return "Sale Started";
+    if (value === "store_pending") return "Store Links Pending";
+    return "Sale Date TBA";
+  };
+
+  const formatStoreStageLabel = (value) => {
+    if (value === "live") return "Live Stores";
+    if (value === "prebooking") return "Pre-booking Stores";
+    if (value === "listed") return "Store Listing Pending";
+    return "No Store Listing";
   };
 
   const getCompareLimitForDevices = (devices = []) =>
@@ -1704,8 +1821,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       sensors: apiDevice.sensors ?? apiDevice.sensor ?? null,
       display: apiDevice.display ?? null,
       category: apiDevice.category ?? apiDevice.product_type ?? null,
-      launchDate: pick(
-        toString(apiDevice.launch_date),
+      launchDate: pick(toString(apiDevice.launch_date), ""),
+      createdAt: pick(
         toString(apiDevice.created_at),
         toString(apiDevice.createdAt),
         "",
@@ -1715,6 +1832,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       field_profile: profileResult,
     };
     baseDevice.launchStatus = resolveLaunchStage(baseDevice);
+    baseDevice.saleStatus = resolveSaleStage(baseDevice);
+    baseDevice.storeStatus = resolveStoreStage(baseDevice);
     if (!isSpecScoreAllowed(baseDevice.launchStatus, baseDevice)) {
       baseDevice.allowSpecScore = false;
       baseDevice.spec_score = null;
@@ -2845,6 +2964,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
           ...noDate.map((item) => item.device),
         ];
       }
+
+      baseCards = baseCards.filter((device) => !isUpcomingDevice(device));
     }
 
     return baseCards.filter((device) => {
@@ -4439,21 +4560,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                     const scoreValue = Number.isFinite(scoreValueRaw)
                       ? Math.round(scoreValueRaw)
                       : null;
-                    const marketStatusLabel =
-                      devicePolicy.stage === "upcoming"
-                        ? "Coming Soon"
-                        : devicePolicy.stage === "announced"
-                          ? "Announced"
-                          : devicePolicy.stage === "rumored"
-                            ? "Rumored"
-                            : "In Stock";
-                    const marketStatusClass =
-                      devicePolicy.stage === "upcoming" ||
-                      devicePolicy.stage === "announced"
-                        ? "text-amber-600"
-                        : devicePolicy.stage === "rumored"
-                          ? "text-slate-500"
-                          : "text-emerald-600";
                     const isAiDevice = Boolean(
                       device.specs?.isAiPhone || getAiFeatureCount(device) > 0,
                     );
@@ -4576,6 +4682,61 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                       const raw = String(price).trim();
                       return raw.startsWith("₹") ? raw : `₹ ${raw}`;
                     };
+                    const launchStageLabel = formatLaunchStageLabel(
+                      device.launchStatus || devicePolicy.stage,
+                    );
+                    const saleStageLabel = formatSaleStageLabel(
+                      device.saleStatus || resolveSaleStage(device),
+                    );
+                    const storeStageLabel =
+                      availabilityState.mode === "live"
+                        ? "Live Stores"
+                        : availabilityState.mode === "prebooking"
+                          ? "Pre-booking Stores"
+                          : formatStoreStageLabel(
+                              device.storeStatus || resolveStoreStage(device),
+                            );
+                    const launchStageClass =
+                      devicePolicy.stage === "released"
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        : devicePolicy.stage === "announced"
+                          ? "border-blue-200 bg-blue-50 text-blue-700"
+                          : devicePolicy.stage === "rumored"
+                            ? "border-slate-200 bg-slate-50 text-slate-700"
+                            : "border-amber-200 bg-amber-50 text-amber-700";
+                    const saleStageClass =
+                      device.saleStatus === "on_sale"
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        : device.saleStatus === "preorder"
+                          ? "border-sky-200 bg-sky-50 text-sky-700"
+                          : device.saleStatus === "sale_scheduled"
+                            ? "border-amber-200 bg-amber-50 text-amber-700"
+                            : "border-slate-200 bg-slate-50 text-slate-700";
+                    const storeStageClass =
+                      availabilityState.mode === "live"
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        : availabilityState.mode === "prebooking"
+                          ? "border-sky-200 bg-sky-50 text-sky-700"
+                          : "border-slate-200 bg-slate-50 text-slate-700";
+                    const lifecyclePills = (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span
+                          className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold ${launchStageClass}`}
+                        >
+                          Market: {launchStageLabel}
+                        </span>
+                        <span
+                          className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold ${saleStageClass}`}
+                        >
+                          Sale: {saleStageLabel}
+                        </span>
+                        <span
+                          className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold ${storeStageClass}`}
+                        >
+                          Stores: {storeStageLabel}
+                        </span>
+                      </div>
+                    );
 
                     return (
                       <div
@@ -4641,6 +4802,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                             ) : null}
                           </div>
 
+                          <div className="mt-3 hidden lg:block">{lifecyclePills}</div>
+
                           <div className="mt-5 grid grid-cols-[128px_minmax(0,1fr)] gap-3 sm:grid-cols-[120px_minmax(0,1fr)] lg:grid-cols-[180px_minmax(0,1fr)] sm:gap-4 lg:gap-5">
                             {" "}
                             <div className="relative flex items-start justify-start sm:justify-center">
@@ -4682,6 +4845,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                                     </div>
                                   </div>
                                 ) : null}
+                                <div className="pt-2">{lifecyclePills}</div>
                               </div>
 
                               <div className="hidden lg:block text-[13px] leading-6 text-slate-700 sm:text-sm sm:leading-7 sm:text-base">

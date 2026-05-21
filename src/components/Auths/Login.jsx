@@ -424,22 +424,6 @@ const Login = ({
             )}
           </button>
         </form>
-
-        <div className="mt-6 border-t border-slate-200 pt-6">
-          <p className="text-center text-sm text-slate-600">
-            Don't have an account?{" "}
-            <button
-              type="button"
-              onClick={() => {
-                if (typeof onSwitchToSignup === "function") onSwitchToSignup();
-                else navigate("/signup");
-              }}
-              className="font-semibold text-blue-700 hover:text-blue-900"
-            >
-              Sign up now
-            </button>
-          </p>
-        </div>
       </div>
     </div>
   );
