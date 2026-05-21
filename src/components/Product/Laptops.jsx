@@ -57,6 +57,7 @@ import {
   matchesLaptopFeature,
 } from "../../utils/laptopPopularFeatures";
 import { buildCanonicalComparePathFromDevices } from "../../utils/compareRoutes";
+import { isPublishedProduct } from "../../utils/publishedProducts";
 
 // Enhanced Image Carousel - Reusable from smartphone
 // Note: removed mock fallback — rely on `useDevice()` data from the store
@@ -1138,6 +1139,7 @@ const Laptops = () => {
   const filteredVariants = variantCards.filter((device) => {
     // Search filter
     if (searchQuery) {
+      if (!isPublishedProduct(device)) return false;
       const query = searchQuery.toLowerCase();
       const matchesSearch =
         device.name.toLowerCase().includes(query) ||

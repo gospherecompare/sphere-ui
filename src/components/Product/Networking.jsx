@@ -44,6 +44,7 @@ import {
 } from "../../utils/schemaGenerators";
 import { buildListSeoKeywords } from "../../utils/seoKeywordBuilder";
 import { buildCanonicalComparePathFromDevices } from "../../utils/compareRoutes";
+import { isPublishedProduct } from "../../utils/publishedProducts";
 import useDevice from "../../hooks/useDevice";
 import Breadcrumbs from "../Breadcrumbs";
 
@@ -687,6 +688,7 @@ const Networking = () => {
   const filteredVariants = variantCards.filter((device) => {
     // Search filter
     if (searchQuery) {
+      if (!isPublishedProduct(device)) return false;
       const query = searchQuery.toLowerCase();
       const matchesSearch =
         device.name.toLowerCase().includes(query) ||

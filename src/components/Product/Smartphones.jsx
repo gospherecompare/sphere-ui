@@ -64,6 +64,7 @@ import {
 } from "../../utils/smartphoneListingRoutes";
 import { buildCanonicalComparePathFromDevices } from "../../utils/compareRoutes";
 import { toCanonicalPagePath } from "../../utils/publicUrl";
+import { isPublishedProduct } from "../../utils/publishedProducts";
 import "../../styles/hideScrollbar.css";
 
 const ROUTE_FEED_CACHE_KEY = "hooks_smartphone_route_feed_v1";
@@ -2971,6 +2972,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     return baseCards.filter((device) => {
       // Search filter
       if (searchQuery) {
+        if (!isPublishedProduct(device)) return false;
         const query = searchQuery.toLowerCase();
         const matchesSearch =
           device.name.toLowerCase().includes(query) ||

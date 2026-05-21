@@ -64,6 +64,7 @@ import {
   TV_FEATURE_CATALOG,
 } from "../../utils/tvPopularFeatures";
 import { buildCanonicalComparePathFromDevices } from "../../utils/compareRoutes";
+import { isPublishedProduct } from "../../utils/publishedProducts";
 
 const SITE_ORIGIN = "https://tryhook.shop";
 
@@ -2135,6 +2136,7 @@ const TVs = () => {
   const filteredVariants = resolvedVariantCards.filter((device) => {
     // Search filter
     if (searchQuery) {
+      if (!isPublishedProduct(device)) return false;
       const query = searchQuery.toLowerCase();
       const matchesSearch =
         device.name.toLowerCase().includes(query) ||

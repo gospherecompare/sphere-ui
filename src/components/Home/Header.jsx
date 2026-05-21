@@ -53,6 +53,7 @@ import {
   buildPublicSmartphoneFilterPath as buildSmartphoneFilterPath,
 } from "../../utils/smartphoneListingRoutes";
 import { toCanonicalPagePath } from "../../utils/publicUrl";
+import { isPublishedProduct } from "../../utils/publishedProducts";
 
 // Icons - matching Vijay Sales style
 import {
@@ -381,6 +382,35 @@ const Header = () => {
 
   const buildKeywordSearchPath = (query, ptype) =>
     buildCatalogPath(ptype, { q: query });
+
+  const resolveProductSuggestionPath = (item) => {
+    const directPath = readFirstText(
+      item?.route_path,
+      item?.routePath,
+      item?.canonical_path,
+      item?.canonicalPath,
+      item?.path,
+      item?.href,
+    );
+
+    if (directPath && directPath.startsWith("/")) {
+      return toCanonicalPagePath(directPath);
+    }
+
+    const category = mapProductTypeToRoute(
+      item?.product_type || item?.productType,
+    );
+    const productKey = readFirstText(
+      item?.name,
+      item?.product_name,
+      item?.productName,
+      item?.model,
+      item?.model_number,
+      item?.modelNumber,
+    );
+
+    return createProductPath(category, productKey);
+  };
 
   const formatINR = (value) => {
     const n = Number(value);
@@ -861,9 +891,15 @@ const Header = () => {
 
   const localSearchSuggestions = React.useMemo(() => {
     const mapped = [
-      ...smartphones.map((item) => toSearchSuggestion(item, "smartphone")),
-      ...laptops.map((item) => toSearchSuggestion(item, "laptop")),
-      ...tvs.map((item) => toSearchSuggestion(item, "tv")),
+      ...smartphones
+        .filter((item) => isPublishedProduct(item))
+        .map((item) => toSearchSuggestion(item, "smartphone")),
+      ...laptops
+        .filter((item) => isPublishedProduct(item))
+        .map((item) => toSearchSuggestion(item, "laptop")),
+      ...tvs
+        .filter((item) => isPublishedProduct(item))
+        .map((item) => toSearchSuggestion(item, "tv")),
     ].filter(Boolean);
 
     const deduped = [];
@@ -1059,9 +1095,11 @@ const Header = () => {
         });
         if (!r.ok) throw new Error(`Search failed: ${r.status}`);
         const json = await r.json();
-        const apiResults = (json.results || []).map((it) => ({
-          ...it,
-        }));
+        const apiResults = (json.results || [])
+          .filter((item) => isPublishedProduct(item))
+          .map((it) => ({
+            ...it,
+          }));
 
         const localMatches = localSearchSuggestions
           .filter((item) => item.searchable_text.includes(qLower))
@@ -1075,7 +1113,9 @@ const Header = () => {
 
         const merged = stripSuggestionInternals(
           sortSuggestionsByRelevance(
-            mergeSuggestions(apiResults, localMatches),
+            mergeSuggestions(apiResults, localMatches).filter((item) =>
+              isPublishedProduct(item),
+            ),
             qLower,
           ).slice(0, SEARCH_SUGGESTION_LIMIT),
         );
@@ -1138,16 +1178,7 @@ const Header = () => {
 
     // Navigate FIRST before closing anything
     if (item.type === "product") {
-      // Prefer navigating using the product `model` (or name fallback)
-      const category = mapProductTypeToRoute(item.product_type);
-      const productKey = item.model || item.name || "";
-      const path = createProductPath(category, productKey);
-      console.log("Product suggestion clicked:", {
-        item,
-        product_type: item.product_type,
-        category,
-        path,
-      });
+      const path = resolveProductSuggestionPath(item);
       // Navigate directly to the canonical detail path so crawlers do not
       // discover duplicate query-string variants for the same product.
       trackSearchInterest({
