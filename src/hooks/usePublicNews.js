@@ -490,6 +490,55 @@ const buildDeviceSpecs = (snapshot) => {
   return specs.slice(0, 4);
 };
 
+const normalizeLinkedProductEntries = (blog) => {
+  const products = Array.isArray(blog?.products) ? blog.products : [];
+  const productIds = Array.isArray(blog?.product_ids) ? blog.product_ids : [];
+  const byId = new Map();
+
+  products.forEach((product) => {
+    const productId = Number(
+      product?.product_id ?? product?.productId ?? product?.id,
+    );
+    if (!Number.isInteger(productId) || productId <= 0) return;
+
+    byId.set(productId, {
+      productId,
+      productType: safeText(product?.product_type || product?.productType).toLowerCase(),
+      name: safeText(product?.name || product?.product_name || product?.productName),
+      brandName: safeText(product?.brand_name || product?.brandName),
+    });
+  });
+
+  const orderedIds = Array.from(
+    new Set(
+      productIds
+        .map((value) => Number(value))
+        .filter((value) => Number.isInteger(value) && value > 0),
+    ),
+  );
+  const orderedProducts = orderedIds
+    .map((productId) => byId.get(productId) || { productId })
+    .filter(Boolean);
+
+  if (orderedProducts.length > 0) {
+    return orderedProducts;
+  }
+
+  const fallbackId = Number(blog?.product_id);
+  if (!Number.isInteger(fallbackId) || fallbackId <= 0) {
+    return [];
+  }
+
+  return [
+    {
+      productId: fallbackId,
+      productType: safeText(blog?.product_type).toLowerCase(),
+      name: safeText(blog?.product_name),
+      brandName: safeText(blog?.brand_name),
+    },
+  ];
+};
+
 const normalizeBlogStory = (blog) => {
   if (!blog || typeof blog !== "object") return null;
 
@@ -497,13 +546,21 @@ const normalizeBlogStory = (blog) => {
   const title = safeText(blog.title);
   if (!slug || !title) return null;
 
-  const rawProductId = Number(blog.product_id);
-  const linkedProductId =
-    Number.isInteger(rawProductId) && rawProductId > 0 ? rawProductId : null;
+  const linkedProducts = normalizeLinkedProductEntries(blog);
+  const primaryLinkedProduct = linkedProducts[0] || null;
+  const linkedProductIds = linkedProducts
+    .map((product) => Number(product?.productId))
+    .filter((productId) => Number.isInteger(productId) && productId > 0);
+  const linkedProductNames = linkedProducts
+    .map((product) => safeText(product?.name))
+    .filter(Boolean);
+  const linkedProductTypes = linkedProducts
+    .map((product) => safeText(product?.productType).toLowerCase())
+    .filter(Boolean);
+  const linkedProductId = primaryLinkedProduct?.productId || null;
   const category = normalizeCategory(blog.category);
   const tokenSnapshot = toPlainObject(blog.token_snapshot);
   const articleHtml = resolveBlogContentHtml(blog, tokenSnapshot);
-  const renderedContent = cleanPublicStoryText(articleHtml);
   const body = splitParagraphs(articleHtml).filter(Boolean);
   const summarySource =
     safeText(blog.excerpt) ||
@@ -546,7 +603,12 @@ const normalizeBlogStory = (blog) => {
   return {
     id: Number(blog.id) || slug,
     productId: linkedProductId,
-    productLinked: Boolean(linkedProductId),
+    productIds: linkedProductIds,
+    productTypes: linkedProductTypes,
+    linkedProducts,
+    linkedProductNames,
+    linkedProductCount: linkedProductIds.length,
+    productLinked: linkedProductIds.length > 0,
     slug,
     category,
     label: CATEGORY_LABELS[category] || CATEGORY_LABELS.news,
@@ -574,9 +636,9 @@ const normalizeBlogStory = (blog) => {
     featured: Boolean(blog.featured),
     trending: Boolean(blog.trending),
     pinned: Boolean(blog.pinned),
-    productName: safeText(blog.product_name),
-    productType: safeText(blog.product_type).toLowerCase(),
-    brandName: safeText(blog.brand_name),
+    productName: safeText(primaryLinkedProduct?.name || blog.product_name),
+    productType: safeText(primaryLinkedProduct?.productType || blog.product_type).toLowerCase(),
+    brandName: safeText(primaryLinkedProduct?.brandName || blog.brand_name),
     brandLogo: normalizeBrandLogoUrl(blog.brand_logo),
     tokenSnapshot,
     deviceSpecs: buildDeviceSpecs(tokenSnapshot),

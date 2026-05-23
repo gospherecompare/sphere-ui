@@ -487,6 +487,11 @@ const LinkedNewsStoryCard = ({ story, compact = false }) => {
 
   const storyPath = createNewsStoryPath(story.slug);
   const authorLabel = story?.author || "Hooks newsroom";
+  const linkedProductNames = Array.isArray(story?.linkedProductNames)
+    ? story.linkedProductNames.filter(Boolean)
+    : [];
+  const linkedProductsLabel =
+    linkedProductNames.length > 1 ? linkedProductNames.join(", ") : "";
   const dateLabel = formatLinkedNewsDate(
     story?.publishedIso || story?.updatedIso || story?.publishedAt,
   );
@@ -544,6 +549,16 @@ const LinkedNewsStoryCard = ({ story, compact = false }) => {
         >
           {story.title}
         </h3>
+
+        {linkedProductsLabel ? (
+          <p
+            className={`mt-2 line-clamp-2 text-[12px] font-medium text-[#5f6d8f] ${
+              compact ? "" : "max-w-[28rem]"
+            }`}
+          >
+            Linked products: {linkedProductsLabel}
+          </p>
+        ) : null}
 
         <div
           className={`flex items-center justify-between gap-3 text-[13px] ${
@@ -2309,16 +2324,14 @@ const MobileDetailCard = () => {
     }
 
     return linkedNewsStories.filter((story) => {
-      const storyProductId = Number(story?.productId);
-      const storyProductType = String(story?.productType || "")
-        .trim()
-        .toLowerCase();
+      const storyProductIds = Array.isArray(story?.productIds)
+        ? story.productIds
+            .map((value) => Number(value))
+            .filter((value) => Number.isInteger(value) && value > 0)
+        : [];
 
       return (
-        Number.isInteger(storyProductId) &&
-        storyProductId === resolvedProductId &&
-        Boolean(story?.productLinked) &&
-        (!storyProductType || storyProductType === "smartphone")
+        storyProductIds.includes(resolvedProductId) && Boolean(story?.productLinked)
       );
     });
   }, [currentProductId, linkedNewsStories]);
@@ -5960,7 +5973,8 @@ Price: ${price}
                   </h2>
                   <p className="mt-2 max-w-2xl text-sm text-[#5f6d8f]">
                     This block appears only when the newsroom has a
-                    product-linked story saved for this exact smartphone.
+                    product-linked story saved for this smartphone, including
+                    multi-product stories linked to more than one device.
                   </p>
                 </div>
                 {linkedNewsSecondaryStories.length > 0 ? (

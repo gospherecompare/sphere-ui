@@ -2,30 +2,39 @@
 import React, { useState, useMemo, useEffect } from "react";
 import {
   FaBatteryFull,
+  FaBluetoothB,
   FaBolt,
+  FaCalendarAlt,
   FaCamera,
   FaChartBar,
   FaChevronLeft,
   FaChevronRight,
+  FaCube,
   FaDesktop,
   FaExclamationCircle,
   FaFilter,
   FaHeadphones,
+  FaHdd,
   FaInfoCircle,
   FaMagic,
+  FaMemory,
   FaMicrochip,
   FaMobileAlt,
   FaPage4,
   FaPlus,
   FaRobot,
+  FaRulerCombined,
   FaSearch,
   FaShareAlt,
   FaSignal,
+  FaShieldAlt,
   FaStar,
+  FaSun,
   FaTachometerAlt,
   FaTimes,
   FaTrash,
   FaWifi,
+  FaWeightHanging,
 } from "react-icons/fa";
 import "../styles/hideScrollbar.css";
 import useDevice from "../hooks/useDevice";
@@ -60,6 +69,18 @@ const Filter = FaFilter;
 const Share2 = FaShareAlt;
 const AlertCircle = FaExclamationCircle;
 const Info = FaInfoCircle;
+const Calendar = FaCalendarAlt;
+const Cube = FaCube;
+const Ruler = FaRulerCombined;
+const Weight = FaWeightHanging;
+const Shield = FaShieldAlt;
+const Memory = FaMemory;
+const Storage = FaHdd;
+const Sun = FaSun;
+const Bluetooth = FaBluetoothB;
+const Gauge = FaTachometerAlt;
+const Signal = FaSignal;
+const Bot = FaRobot;
 
 const SECTIONS = [
   {
@@ -75,16 +96,16 @@ const SECTIONS = [
     color: "sky",
   },
   {
-    id: "camera",
-    label: "Camera",
-    icon: Camera,
-    color: "blue",
-  },
-  {
     id: "performance",
     label: "Performance",
     icon: Cpu,
     color: "emerald",
+  },
+  {
+    id: "camera",
+    label: "Camera",
+    icon: Camera,
+    color: "blue",
   },
   {
     id: "battery",
@@ -94,8 +115,8 @@ const SECTIONS = [
   },
   {
     id: "network",
-    label: "Network",
-    icon: Wifi,
+    label: "Connectivity",
+    icon: Signal,
     color: "cyan",
   },
   {
@@ -105,12 +126,141 @@ const SECTIONS = [
     color: "teal",
   },
   {
+    id: "build_design",
+    label: "Build & Design",
+    icon: Cube,
+    color: "slate",
+  },
+  {
     id: "features",
     label: "Features",
-    icon: Zap,
+    icon: Bot,
     color: "orange",
   },
 ];
+
+const SECTION_ICON_BY_ID = Object.freeze(
+  Object.fromEntries(SECTIONS.map((section) => [section.id, section.icon])),
+);
+
+const SECTION_SPEC_ORDER = Object.freeze({
+  overview: [
+    "launchdate",
+    "releasedate",
+    "body",
+    "dimensions",
+    "weight",
+    "iprating",
+  ],
+  display: [
+    "displaytype",
+    "screensize",
+    "displaysize",
+    "resolution",
+    "refreshrate",
+    "peakbrightness",
+    "brightness",
+    "protection",
+  ],
+  performance: [
+    "chipset",
+    "processor",
+    "cpu",
+    "gpu",
+    "ram",
+    "memory",
+    "storage",
+    "storageoptions",
+    "os",
+    "operatingsystem",
+  ],
+  camera: [
+    "maincamera",
+    "rearcamera",
+    "ultrawide",
+    "ultrawidecamera",
+    "telephoto",
+    "periscope",
+    "frontcamera",
+    "videorecording",
+  ],
+  battery: [
+    "batterycapacity",
+    "capacity",
+    "wiredcharging",
+    "charging",
+    "wirelesscharging",
+    "reversewirelesscharging",
+  ],
+  network: ["5g", "wifi", "bluetooth", "nfc", "usb", "sim"],
+  audio: ["speakers", "audiojack", "microphone", "dolbyatmos"],
+  build_design: [
+    "protection",
+    "durability",
+    "waterdustresistance",
+    "designfeatures",
+    "materials",
+  ],
+  features: ["aifeatures", "sensors", "specialfeatures", "features"],
+});
+
+const SECTION_COLOR_CLASSES = Object.freeze({
+  overview: "text-blue-600",
+  display: "text-sky-600",
+  camera: "text-blue-500",
+  performance: "text-emerald-500",
+  battery: "text-amber-500",
+  network: "text-cyan-500",
+  audio: "text-teal-500",
+  build_design: "text-slate-500",
+  features: "text-orange-500",
+});
+
+const SPEC_ROW_ICONS = Object.freeze({
+  launch_date: Calendar,
+  release_date: Calendar,
+  body: Cube,
+  dimensions: Ruler,
+  weight: Weight,
+  ip_rating: Shield,
+  display_type: Monitor,
+  resolution: Monitor,
+  refresh_rate: Gauge,
+  peak_brightness: Sun,
+  brightness: Sun,
+  protection: Shield,
+  processor: Cpu,
+  chipset: Cpu,
+  ram: Memory,
+  memory: Memory,
+  storage: Storage,
+  storage_options: Storage,
+  os: Bot,
+  operating_system: Bot,
+  battery_capacity: Battery,
+  capacity: Battery,
+  wired_charging: Zap,
+  charging: Zap,
+  wireless_charging: Zap,
+  main_camera: Camera,
+  rear_camera: Camera,
+  ultra_wide: Camera,
+  ultra_wide_camera: Camera,
+  telephoto: Camera,
+  periscope: Camera,
+  front_camera: Camera,
+  video_recording: Camera,
+  "5g": Signal,
+  wifi: Wifi,
+  wi_fi: Wifi,
+  bluetooth: Bluetooth,
+  nfc: Signal,
+  durability: Shield,
+  water_dust_resistance: Shield,
+  design_features: Cube,
+  ai_features: Bot,
+  sensors: Smartphone,
+});
 
 const COMPARE_CARD_THEMES = [
   {
@@ -553,11 +703,85 @@ const QUICK_FILTER_CHIPS = [
   { id: "wifi", label: "Wi-Fi", icon: FaWifi },
 ];
 
+const EMPTY_COMPARE_INSIGHTS = Object.freeze({
+  scoreVersion: "",
+  productType: "",
+  overallWinner: null,
+  categoryWinners: {},
+  warnings: [],
+});
+
+const CATEGORY_WINNER_LABELS = Object.freeze({
+  performance: "Performance Lead",
+  display: "Display Lead",
+  camera: "Camera Lead",
+  battery: "Battery Lead",
+  priceValue: "Value Highlight",
+  memory: "Memory Lead",
+  portability: "Portability Lead",
+  connectivity: "Connectivity Lead",
+  smart: "Smart TV Lead",
+  audio: "Audio Lead",
+  gaming: "Gaming Lead",
+  coverage: "Coverage Lead",
+  ports: "Ports Lead",
+  features: "Feature Lead",
+  security: "Security Lead",
+});
+
+const formatNaturalList = (items) => {
+  const values = Array.from(
+    new Set(
+      (items || [])
+        .map((item) => String(item || "").trim())
+        .filter(Boolean),
+    ),
+  );
+  if (values.length === 0) return "";
+  if (values.length === 1) return values[0];
+  if (values.length === 2) return `${values[0]} and ${values[1]}`;
+  return `${values.slice(0, -1).join(", ")}, and ${values[values.length - 1]}`;
+};
+
+const normalizeCategorySummaryLabel = (label, key) => {
+  const base = String(label || key || "")
+    .replace(/\s+(Lead|Highlight)$/i, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!base) return "";
+  return `${base.charAt(0).toLowerCase()}${base.slice(1)}`;
+};
+
+const lowerFirst = (value) => {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  return `${text.charAt(0).toLowerCase()}${text.slice(1)}`;
+};
+
+const formatSpecScoreLabel = (score) => {
+  if (score == null || !Number.isFinite(score)) return null;
+  return `${score.toFixed(1)}%`;
+};
+
 const MobileCompare = () => {
   const [selectedDevices, setSelectedDevices] = useState([]);
   const [comparedDevices, setComparedDevices] = useState([]);
   const [variantSelection, setVariantSelection] = useState({});
   const [rankingByDeviceId, setRankingByDeviceId] = useState({});
+  const [compareInsights, setCompareInsights] = useState(
+    EMPTY_COMPARE_INSIGHTS,
+  );
+  const [compareInsightsLoading, setCompareInsightsLoading] = useState(false);
+  const [expandedSections, setExpandedSections] = useState(() =>
+    Object.fromEntries(
+      SECTIONS.map((section, index) => [section.id, index === 0]),
+    ),
+  );
+  const [activeCompareSection, setActiveCompareSection] = useState(
+    SECTIONS[0]?.id || "overview",
+  );
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isComparing, setIsComparing] = useState(false);
@@ -609,6 +833,30 @@ const MobileCompare = () => {
     : selectedDevices.length;
   const visibleRemainingSlots = Math.max(0, maxDevices - activeDevices.length);
 
+  const getDeviceRankingKeys = (device) =>
+    [
+      device?.id,
+      device?.productId,
+      device?.product_id,
+      getResolvedProductId(device),
+    ]
+      .filter((entry) => entry != null)
+      .map((entry) => String(entry));
+
+  const getServerScoreEntry = (device) => {
+    const keys = getDeviceRankingKeys(device);
+    for (const key of keys) {
+      const entry = rankingByDeviceId?.[key];
+      if (entry) return entry;
+    }
+    return null;
+  };
+
+  const overallWinnerId =
+    compareInsights?.overallWinner?.product_id != null
+      ? String(compareInsights.overallWinner.product_id)
+      : "";
+
   useEffect(() => {
     if (selectedDevices.length > maxDevices) {
       setSelectedDevices((prev) => prev.slice(0, maxDevices));
@@ -631,6 +879,89 @@ const MobileCompare = () => {
     });
     return lookup;
   }, [availableDevices]);
+
+  const categoryWinnerEntries = useMemo(
+    () =>
+      Object.entries(compareInsights?.categoryWinners || {})
+        .map(([key, winner]) => ({
+          key,
+          summaryLabel: normalizeCategorySummaryLabel(
+            CATEGORY_WINNER_LABELS[key] ||
+              String(key || "")
+                .replace(/([A-Z])/g, " $1")
+                .replace(/[_-]+/g, " ")
+                .replace(/\s+/g, " ")
+                .trim()
+                .replace(/^./, (ch) => ch.toUpperCase()),
+            key,
+          ),
+          winner,
+        }))
+        .filter(({ winner }) => winner?.product_id != null),
+    [compareInsights?.categoryWinners],
+  );
+
+  const comparisonRecommendationText = useMemo(() => {
+    const recommendationName =
+      compareInsights?.overallWinner?.product_name || "";
+    if (!recommendationName) return "";
+
+    const rawReason = String(
+      compareInsights?.overallWinner?.reason || "",
+    ).trim();
+    const reasonCore = rawReason.replace(/[.!?]+$/, "");
+    const intro = `For this comparison, ${recommendationName} looks like the most well-rounded choice overall.`;
+    const reasonSentence = reasonCore
+      ? `Its advantage here comes from ${lowerFirst(reasonCore)}.`
+      : "";
+
+    const overallWinnerKey = String(
+      compareInsights?.overallWinner?.product_id ?? overallWinnerId ?? "",
+    );
+    const categoryGroups = categoryWinnerEntries.reduce((acc, entry) => {
+      const productKey = String(
+        entry?.winner?.product_id ?? entry?.winner?.product_name ?? "",
+      ).trim();
+      if (!productKey || !entry?.summaryLabel) return acc;
+
+      if (!acc[productKey]) {
+        acc[productKey] = {
+          productName: entry?.winner?.product_name || "This device",
+          categories: [],
+        };
+      }
+
+      acc[productKey].categories.push(entry.summaryLabel);
+      return acc;
+    }, {});
+
+    const overallLeadCategories =
+      (overallWinnerKey && categoryGroups[overallWinnerKey]?.categories) || [];
+    const overallLeadSentence = overallLeadCategories.length
+      ? `Its strongest areas in this lineup are ${formatNaturalList(
+          overallLeadCategories,
+        )}.`
+      : "";
+
+    const supportingLeaderSentences = Object.entries(categoryGroups)
+      .filter(([productKey]) => productKey !== overallWinnerKey)
+      .map(([, entry]) => {
+        const categories = formatNaturalList(entry.categories);
+        if (!categories || !entry?.productName) return "";
+        return `${entry.productName} is the stronger alternative if your focus is ${categories}.`;
+      })
+      .filter(Boolean);
+
+    return [
+      intro,
+      reasonSentence,
+      overallLeadSentence,
+      ...supportingLeaderSentences,
+      "This summary updates automatically whenever you change devices or variants.",
+    ]
+      .filter(Boolean)
+      .join(" ");
+  }, [compareInsights?.overallWinner, categoryWinnerEntries, overallWinnerId]);
 
   const toCompareSelectedEntry = (base, variantIndex = 0) => {
     if (!base) return null;
@@ -1515,6 +1846,72 @@ const MobileCompare = () => {
       .join(" ");
   };
 
+  const normalizeSpecOrderKey = (value) =>
+    String(value || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "");
+
+  const getOrderedSpecIndex = (sectionId, specKey) => {
+    const order = SECTION_SPEC_ORDER[sectionId] || [];
+    return order.indexOf(normalizeSpecOrderKey(specKey));
+  };
+
+  const getSpecRowIcon = (sectionId, specKey) => {
+    const mappedIcon = SPEC_ROW_ICONS[specKey];
+    if (mappedIcon) return mappedIcon;
+    return SECTION_ICON_BY_ID[sectionId] || Info;
+  };
+
+  const pickFirstRenderable = (...values) => {
+    for (const value of values) {
+      if (hasRenderableValue(value)) return value;
+    }
+    return null;
+  };
+
+  const buildBodySpecValue = (buildSpecs = {}, physicalSpecs = {}) => {
+    const direct = pickFirstRenderable(
+      buildSpecs?.body,
+      physicalSpecs?.body,
+      buildSpecs?.materials,
+      buildSpecs?.material,
+    );
+    if (direct) return direct;
+
+    const parts = [
+      buildSpecs?.front_material || buildSpecs?.front,
+      buildSpecs?.frame_material || buildSpecs?.frame,
+      buildSpecs?.back_material || buildSpecs?.back,
+    ]
+      .map((part) => String(part || "").trim())
+      .filter(Boolean);
+
+    return parts.length ? parts.join(", ") : null;
+  };
+
+  const buildDimensionsSpecValue = (buildSpecs = {}, physicalSpecs = {}) => {
+    const direct = pickFirstRenderable(
+      physicalSpecs?.dimensions,
+      buildSpecs?.dimensions,
+    );
+    if (direct) return direct;
+
+    const values = [
+      pickFirstRenderable(physicalSpecs?.height, buildSpecs?.height),
+      pickFirstRenderable(physicalSpecs?.width, buildSpecs?.width),
+      pickFirstRenderable(
+        physicalSpecs?.thickness,
+        buildSpecs?.thickness,
+        physicalSpecs?.depth,
+        buildSpecs?.depth,
+      ),
+    ]
+      .map((part) => String(part || "").trim())
+      .filter(Boolean);
+
+    return values.length >= 2 ? values.join(" x ") : null;
+  };
+
   const formatSpecValue = (value, key, depth = 0) => {
     if (value == null || value === "") return "N/A";
     if (Array.isArray(value)) {
@@ -2032,7 +2429,7 @@ const MobileCompare = () => {
 
   const cleanSpecs = (specs) => {
     if (!specs || typeof specs !== "object") return {};
-    const blocked = new Set(["sphere_rating", "ai_features"]);
+    const blocked = new Set(["sphere_rating"]);
     return Object.fromEntries(
       Object.entries(specs).filter(
         ([k, v]) =>
@@ -2207,31 +2604,36 @@ const MobileCompare = () => {
       device?.multimedia,
       device?.multimedia_json,
     );
-    const featureSpecs = {
-      ai_features: collectAiFeatures(device),
-      design_features:
-        device?.build_design?.design_features ||
-        device?.buildDesign?.design_features ||
-        [],
-      durability:
-        device?.build_design?.durability ||
-        device?.build_design?.military_grade_certification ||
-        device?.buildDesign?.durability ||
-        null,
-      water_dust_resistance:
-        device?.build_design?.water_dust_resistance ||
-        device?.buildDesign?.water_dust_resistance ||
-        null,
+    const buildSpecs = mergeSpecObjects(
+      device?.build_design,
+      device?.buildDesign,
+    );
+    const physicalSpecs = mergeSpecObjects(
+      device?.physical,
+      device?.physical_json,
+    );
+    const buildDesignSpecs = {
       protection:
         device?.display?.cover_glass ||
-        device?.build_design?.front_protection ||
-        device?.build_design?.protection_glass ||
+        buildSpecs?.front_protection ||
+        buildSpecs?.protection_glass ||
         null,
+      durability:
+        buildSpecs?.durability ||
+        buildSpecs?.military_grade_certification ||
+        null,
+      water_dust_resistance:
+        buildSpecs?.water_dust_resistance ||
+        buildSpecs?.ip_rating ||
+        null,
+      design_features: buildSpecs?.design_features || [],
+    };
+    const featureSpecs = {
+      ai_features: collectAiFeatures(device),
       sensors: device?.sensors || null,
     };
 
     if (section === "overview") {
-      const selectedVariant = getSelectedVariant(device);
       const launchDateRaw = device?.launch_date ?? device?.launchDate ?? null;
       const launchDateText =
         launchDateRaw && typeof launchDateRaw !== "object"
@@ -2243,25 +2645,22 @@ const MobileCompare = () => {
             })()
           : "N/A";
       return {
-        rating: device.rating,
-        price: formatPrice(
-          selectedVariant?.base_price ||
-            selectedVariant?.basePrice ||
-            selectedVariant?.price ||
-            device.price ||
-            0,
-        ),
-        variant: `${selectedVariant?.ram || "N/A"} / ${
-          selectedVariant?.storage || "N/A"
-        }`,
-        os:
-          performanceSpecs?.operating_system ||
-          performanceSpecs?.os ||
-          device.os ||
-          "N/A",
-        processor:
-          performanceSpecs?.processor || performanceSpecs?.chipset || "N/A",
         launch_date: launchDateText,
+        body: buildBodySpecValue(buildSpecs, physicalSpecs) || "N/A",
+        dimensions: buildDimensionsSpecValue(buildSpecs, physicalSpecs) || "N/A",
+        weight:
+          pickFirstRenderable(
+            physicalSpecs?.weight,
+            buildSpecs?.weight,
+            physicalSpecs?.weight_gms,
+            buildSpecs?.weight_gms,
+          ) || "N/A",
+        ip_rating:
+          pickFirstRenderable(
+            buildSpecs?.ip_rating,
+            buildSpecs?.water_dust_resistance,
+            buildSpecs?.durability,
+          ) || "N/A",
       };
     }
 
@@ -2271,6 +2670,7 @@ const MobileCompare = () => {
     if (section === "battery") return cleanSpecs(batterySpecs);
     if (section === "network") return cleanSpecs(networkSpecs);
     if (section === "audio") return cleanSpecs(audioSpecs);
+    if (section === "build_design") return cleanSpecs(buildDesignSpecs);
     if (section === "features") return cleanSpecs(featureSpecs);
 
     return cleanSpecs(device[section] || {});
@@ -2288,6 +2688,8 @@ const MobileCompare = () => {
   useEffect(() => {
     if (!isComparing || comparedDevices.length < MIN_DEVICES) {
       setRankingByDeviceId({});
+      setCompareInsights(EMPTY_COMPARE_INSIGHTS);
+      setCompareInsightsLoading(false);
       return;
     }
 
@@ -2323,10 +2725,15 @@ const MobileCompare = () => {
 
     if (payloadDevices.length < MIN_DEVICES) {
       setRankingByDeviceId({});
+      setCompareInsights(EMPTY_COMPARE_INSIGHTS);
+      setCompareInsightsLoading(false);
       return;
     }
 
     const controller = new AbortController();
+    setRankingByDeviceId({});
+    setCompareInsights(EMPTY_COMPARE_INSIGHTS);
+    setCompareInsightsLoading(true);
 
     (async () => {
       try {
@@ -2352,16 +2759,47 @@ const MobileCompare = () => {
           const productId = String(row?.product_id ?? "");
           const overallScore = Number(row?.overall_score);
           if (!productId || !Number.isFinite(overallScore)) return;
-          nextScores[productId] = { totalScore: overallScore };
+          nextScores[productId] = {
+            totalScore: overallScore,
+            rank: Number(row?.rank ?? 0) || null,
+            confidence: Number(row?.confidence ?? 0) || null,
+            price:
+              row?.price == null || Number.isNaN(Number(row.price))
+                ? null
+                : Number(row.price),
+            reasons: Array.isArray(row?.reasons) ? row.reasons : [],
+            breakdown:
+              row?.breakdown && typeof row.breakdown === "object"
+                ? row.breakdown
+                : {},
+            details:
+              row?.details && typeof row.details === "object" ? row.details : {},
+          };
         });
 
         if (!controller.signal.aborted) {
           setRankingByDeviceId(nextScores);
+          setCompareInsights({
+            scoreVersion: String(data?.score_version || "").trim(),
+            productType: String(data?.product_type || "").trim(),
+            overallWinner:
+              data?.overall_winner && typeof data.overall_winner === "object"
+                ? data.overall_winner
+                : null,
+            categoryWinners:
+              data?.category_winners && typeof data.category_winners === "object"
+                ? data.category_winners
+                : {},
+            warnings: Array.isArray(data?.warnings) ? data.warnings : [],
+          });
+          setCompareInsightsLoading(false);
         }
       } catch (error) {
         if (controller.signal.aborted) return;
         console.error("Failed to fetch compare scores:", error);
         setRankingByDeviceId({});
+        setCompareInsights(EMPTY_COMPARE_INSIGHTS);
+        setCompareInsightsLoading(false);
       }
     })();
 
@@ -2476,15 +2914,6 @@ const MobileCompare = () => {
     const devicesForSpecs = isComparing ? comparedDevices : selectedDevices;
     if (devicesForSpecs.length === 0) return out;
 
-    const overviewOrder = [
-      "rating",
-      "price",
-      "variant",
-      "processor",
-      "os",
-      "launch_date",
-    ];
-
     for (const section of SECTIONS) {
       const specKeys = new Set();
       devicesForSpecs.forEach((device) => {
@@ -2495,13 +2924,11 @@ const MobileCompare = () => {
       });
 
       const sortedKeys = Array.from(specKeys).sort((a, b) => {
-        if (section.id === "overview") {
-          const aIndex = overviewOrder.indexOf(a);
-          const bIndex = overviewOrder.indexOf(b);
-          if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
-          if (aIndex !== -1) return -1;
-          if (bIndex !== -1) return 1;
-        }
+        const aIndex = getOrderedSpecIndex(section.id, a);
+        const bIndex = getOrderedSpecIndex(section.id, b);
+        if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+        if (aIndex !== -1) return -1;
+        if (bIndex !== -1) return 1;
         return toNormalCase(a).localeCompare(toNormalCase(b));
       });
 
@@ -2510,6 +2937,63 @@ const MobileCompare = () => {
 
     return out;
   }, [selectedDevices, comparedDevices, isComparing, variantSelection]);
+
+  const visibleCompareSections = useMemo(
+    () =>
+      SECTIONS.filter((section) => (sectionSpecKeys[section.id] || []).length > 0),
+    [sectionSpecKeys],
+  );
+
+  useEffect(() => {
+    setExpandedSections((prev) => {
+      const next = {};
+      let hasExpanded = false;
+
+      visibleCompareSections.forEach((section, index) => {
+        const isExpanded = prev[section.id] ?? index === 0;
+        next[section.id] = Boolean(isExpanded);
+        if (next[section.id]) hasExpanded = true;
+      });
+
+      if (!hasExpanded && visibleCompareSections[0]) {
+        next[visibleCompareSections[0].id] = true;
+      }
+
+      return next;
+    });
+
+    if (
+      visibleCompareSections.length > 0 &&
+      !visibleCompareSections.some(
+        (section) => section.id === activeCompareSection,
+      )
+    ) {
+      setActiveCompareSection(visibleCompareSections[0].id);
+    }
+  }, [activeCompareSection, visibleCompareSections]);
+
+  const toggleCompareSection = (sectionId) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [sectionId]: !prev[sectionId],
+    }));
+    setActiveCompareSection(sectionId);
+  };
+
+  const focusCompareSection = (sectionId) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [sectionId]: true,
+    }));
+    setActiveCompareSection(sectionId);
+
+    requestAnimationFrame(() => {
+      document.getElementById(`spec-${sectionId}`)?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  };
 
   // Open details modal
   const openDetailsModal = (device, section = "specifications") => {
@@ -2548,6 +3032,50 @@ const MobileCompare = () => {
         : "";
 
     return `${main || `Variant ${index + 1}`}${priceText}`;
+  };
+
+  const formatVariantCompactLabel = (variant, index) => {
+    if (!variant || typeof variant !== "object") return `Variant ${index + 1}`;
+    const ram = String(variant.ram || variant.variantRam || "").trim();
+    const storage = String(
+      variant.storage || variant.variantStorage || "",
+    ).trim();
+    const main = [ram, storage].filter(Boolean).join(" + ");
+    return main || `Variant ${index + 1}`;
+  };
+
+  const getCardPrice = (device, selectedVariant) => {
+    const variantPrice =
+      selectedVariant?.base_price ??
+      selectedVariant?.price ??
+      selectedVariant?.basePrice ??
+      null;
+    if (variantPrice && Number(variantPrice) > 0) {
+      return Number(variantPrice);
+    }
+
+    const devicePrice =
+      device?.price ??
+      device?.base_price ??
+      device?.basePrice ??
+      device?.numericPrice ??
+      null;
+    if (devicePrice && Number(devicePrice) > 0) {
+      return Number(devicePrice);
+    }
+
+    if (
+      selectedVariant?.store_prices &&
+      Array.isArray(selectedVariant.store_prices)
+    ) {
+      const storePrice = selectedVariant.store_prices
+        .map((store) => Number(store.price))
+        .filter((value) => value > 0)
+        .sort((left, right) => left - right)[0];
+      if (storePrice) return storePrice;
+    }
+
+    return null;
   };
 
   // Add device (base device + variantIndex)
@@ -2882,29 +3410,27 @@ const MobileCompare = () => {
       persistedOverallScoreDisplay,
       derivedOverall,
     );
-    if (scoreFromDevice != null) return Number(scoreFromDevice.toFixed(1));
+    if (!isComparing && scoreFromDevice != null) {
+      return Number(scoreFromDevice.toFixed(1));
+    }
 
-    const rankingKeys = [
-      device?.id,
-      device?.productId,
-      device?.product_id,
-      getResolvedProductId(device),
-    ]
-      .filter((entry) => entry != null)
-      .map((entry) => String(entry));
+    const rankingKeys = getDeviceRankingKeys(device);
+
+    if (isComparing) {
+      for (const key of rankingKeys) {
+        const parsed = pickScore100(rankingByDeviceId?.[key]?.totalScore);
+        if (parsed != null) return parsed;
+      }
+    }
 
     for (const key of rankingKeys) {
       const parsed = pickScore100(rankingByDeviceId?.[key]?.totalScore);
       if (parsed != null) return parsed;
     }
 
-    return null;
+    return scoreFromDevice != null ? Number(scoreFromDevice.toFixed(1)) : null;
   };
 
-  const formatSpecScoreLabel = (score) => {
-    if (score == null || !Number.isFinite(score)) return null;
-    return `${score.toFixed(1)}%`;
-  };
   const getCardSummary = (device, variant) => {
     const performance = mergeSpecObjects(
       device?.performance,
@@ -3031,8 +3557,18 @@ const MobileCompare = () => {
     const overviewDesc = activeDevices
       .map((d) => {
         try {
-          const specs = getDeviceSpecs(d, "overview");
-          return `${d.name} ${specs.processor || ""} ${specs.price || ""}`.trim();
+          const specs = getDeviceSpecs(d, "performance");
+          const selectedVariant = getSelectedVariant(d);
+          const priceLabel = formatPrice(
+            selectedVariant?.base_price ||
+              selectedVariant?.basePrice ||
+              selectedVariant?.price ||
+              d?.price ||
+              0,
+          );
+          return `${d.name} ${specs.processor || specs.chipset || ""} ${
+            priceLabel !== "N/A" ? priceLabel : ""
+          }`.trim();
         } catch {
           return d.name;
         }
@@ -3313,59 +3849,44 @@ const MobileCompare = () => {
           <script type="application/ld+json">{compareSchemaJson}</script>
         )}
       </Helmet>
-      {/* Floating Header */}
-      <div className="sticky top-0 z-40 w-full px-3 pt-3 sm:px-6 sm:pt-5 lg:px-8">
-        <div className="mx-auto max-w-7xl  px-4 py-3  sm:px-5 sm:py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className=" rounded-md bg-blue-600 p-2">
-                <BarChart3 className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-gray-900">
-                  {seoSelectedNames.length > 0
-                    ? comparisonNames
-                    : "Compare Devices"}
-                </h1>
-                <p className="text-xs text-gray-500">
-                  {publishedComparePage?.segment_label
-                    ? `${publishedComparePage.segment_label} smartphone comparison`
-                    : `${activeDevices.length} device${activeDevices.length !== 1 ? "s" : ""} selected`}
-                </p>
-                {sharedDescription ? (
-                  <p className="text-xs text-gray-500 mt-1">
-                    {sharedDescription}
-                  </p>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {(activeDevices.length > 0 || selectedDevices.length > 0) && (
-                <>
-                  {activeDevices.length > 0 ? (
-                    <button
-                      onClick={shareComparison}
-                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                      title="Share comparison"
-                    >
-                      <Share2 className="h-5 w-5 text-gray-600" />
-                    </button>
-                  ) : null}
-                  <button
-                    onClick={clearAll}
-                    className="px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
-                  >
-                    Clear
-                  </button>
-                </>
-              )}
-            </div>
+      {/* Page Header */}
+      <div className="w-full px-4 pt-6 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-[1600px] flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight text-[#0F172A] sm:text-4xl">
+              Compare
+            </h1>
+            <p className="mt-2 text-sm font-medium text-slate-500">
+              {activeDevices.length} product
+              {activeDevices.length !== 1 ? "s" : ""}
+            </p>
           </div>
+
+          {(activeDevices.length > 0 || selectedDevices.length > 0) && (
+            <div className="flex items-center gap-3 self-start">
+              {activeDevices.length > 0 ? (
+                <button
+                  onClick={shareComparison}
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                  title="Share comparison"
+                >
+                  <Share2 className="h-4 w-4" />
+                  <span>Share</span>
+                </button>
+              ) : null}
+              <button
+                onClick={clearAll}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Clear all</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-3 pb-8 pt-2 sm:px-6 sm:py-6 lg:px-8">
+      <div className="mx-auto max-w-[1600px] px-4 pb-10 pt-4 sm:px-6 sm:pt-6 lg:px-8">
         {/* Hero Section */}
         {usedSlots === 0 && (
           <div className="mb-6 px-4 py-4 text-center sm:px-6">
@@ -3408,7 +3929,185 @@ const MobileCompare = () => {
           </div>
         )}
         {/* Selected Devices Section */}
-        <div className="mb-8 border border-slate-200 bg-white p-4 sm:p-5 lg:p-6">
+        {isComparing ? (
+          <div className="mb-8 overflow-hidden rounded-[28px] border border-slate-200 bg-white">
+            <div className="xl:grid xl:grid-cols-[220px_minmax(0,1fr)]">
+              <aside className="flex flex-col justify-between gap-6 border-b border-slate-200 bg-slate-50/70 p-5 xl:border-b-0 xl:border-r xl:p-6">
+                <div>
+                  <h2 className="text-xl font-semibold tracking-tight text-[#0F172A]">
+                    Add or remove products
+                  </h2>
+                  <p className="mt-3 text-sm leading-6 text-slate-500">
+                    You can compare up to {maxDevices} devices at a time.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
+                    <h3 className="text-sm font-semibold text-slate-900">
+                      Select Variant
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-500">
+                      Choose the variant for each device to compare.
+                    </p>
+                  </div>
+
+                  {visibleRemainingSlots > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowSearch(true)}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-100"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add product
+                    </button>
+                  ) : null}
+                </div>
+              </aside>
+
+              <div className="overflow-x-auto">
+                <div
+                  className="grid min-h-full divide-y divide-slate-200 md:divide-x md:divide-y-0"
+                  style={{
+                    gridTemplateColumns: `repeat(${Math.max(
+                      activeDevices.length,
+                      1,
+                    )}, minmax(260px, 1fr))`,
+                    minWidth: `${Math.max(activeDevices.length, 1) * 260}px`,
+                  }}
+                >
+                  {activeDevices.map((device) => {
+                    const selectedVariant = getSelectedVariant(device);
+                    const variants = Array.isArray(device.variants)
+                      ? device.variants
+                      : [];
+                    const rawVariantIndex =
+                      variantSelection[device.id] ??
+                      device.selectedVariantIndex ??
+                      0;
+                    const safeVariantIndex =
+                      variants.length > 0 && variants[rawVariantIndex]
+                        ? rawVariantIndex
+                        : 0;
+                    const summaryText = getCardSummary(
+                      device,
+                      selectedVariant || variants[safeVariantIndex] || null,
+                    );
+                    const serverScoreEntry = getServerScoreEntry(device);
+                    const isOverallWinner =
+                      overallWinnerId &&
+                      getDeviceRankingKeys(device).includes(overallWinnerId);
+                    const price = getCardPrice(device, selectedVariant);
+
+                    return (
+                      <div
+                        key={device.id}
+                        className="relative flex h-full flex-col justify-between px-5 py-6 sm:px-6"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => removeComparedDevice(device.id)}
+                          className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                          aria-label="Remove device"
+                          title="Remove device"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+
+                        <div>
+                          <div className="flex justify-center">
+                            <div className="flex h-36 w-full max-w-[150px] items-center justify-center overflow-hidden">
+                              <img
+                                src={getPrimaryImage(device) || null}
+                                alt={device.name}
+                                className="h-full w-auto object-contain"
+                                onError={(event) => {
+                                  event.target.src = `/api/placeholder/320/240?text=${encodeURIComponent(
+                                    (device.brand || "D").slice(0, 1),
+                                  )}`;
+                                }}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="mt-5 text-center">
+                            <p className="text-sm font-medium text-slate-500">
+                              {device.brand || "Brand"}
+                            </p>
+                            <h3 className="mt-1 text-[1.9rem] font-semibold leading-tight tracking-tight text-[#0F172A]">
+                              {device.name ||
+                                device.model ||
+                                device.title ||
+                                "Device"}
+                            </h3>
+                            <p className="mx-auto mt-3 max-w-[240px] text-sm leading-7 text-slate-500">
+                              {summaryText}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mt-6">
+                          {variants.length > 0 ? (
+                            <label className="block">
+                              <select
+                                value={safeVariantIndex}
+                                onChange={(event) =>
+                                  updateDeviceVariant(
+                                    device.id,
+                                    Number(event.target.value),
+                                  )
+                                }
+                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                              >
+                                {variants.map((variant, index) => (
+                                  <option
+                                    key={`${device.id}-compare-variant-${index}`}
+                                    value={index}
+                                  >
+                                    {formatVariantCompactLabel(variant, index)}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          ) : (
+                            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                              Variant information not available
+                            </div>
+                          )}
+
+                          <p className="mt-6 text-center text-[2rem] font-semibold tracking-tight text-[#0F172A]">
+                            {price ? formatPrice(price) : "N/A"}
+                          </p>
+
+                          {serverScoreEntry?.totalScore != null ? (
+                            <p className="mt-3 text-center text-sm leading-7 text-slate-500">
+                              Live compare score{" "}
+                              <span className="font-medium text-slate-700">
+                                {formatSpecScoreLabel(serverScoreEntry.totalScore)}
+                              </span>
+                              {serverScoreEntry?.rank || isOverallWinner ? (
+                                <>
+                                  , currently ranked{" "}
+                                  <span className="font-semibold text-blue-600">
+                                    #{serverScoreEntry?.rank || 1}
+                                  </span>{" "}
+                                  overall.
+                                </>
+                              ) : (
+                                "."
+                              )}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="mb-8 border border-slate-200 bg-white p-4 sm:p-5 lg:p-6">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
               <h2 className="text-2xl font-semibold leading-none tracking-tight text-[#14255e] sm:text-3xl">
@@ -3478,42 +4177,11 @@ const MobileCompare = () => {
                   selectedVariant || variants[safeVariantIndex] || null,
                 );
                 const signalLabel = getCardSignalLabel(device);
-                // Helper to resolve the best price for a device/variant
-                const getCardPrice = (device, selectedVariant) => {
-                  // Try variant price first
-                  const variantPrice =
-                    selectedVariant?.base_price ??
-                    selectedVariant?.price ??
-                    selectedVariant?.basePrice ??
-                    null;
-                  if (variantPrice && Number(variantPrice) > 0)
-                    return Number(variantPrice);
-
-                  // Fallback to device price
-                  const devicePrice =
-                    device.price ??
-                    device.base_price ??
-                    device.basePrice ??
-                    device.numericPrice ??
-                    null;
-                  if (devicePrice && Number(devicePrice) > 0)
-                    return Number(devicePrice);
-
-                  // Fallback to variant store prices if available
-                  if (
-                    selectedVariant?.store_prices &&
-                    Array.isArray(selectedVariant.store_prices)
-                  ) {
-                    const storePrice = selectedVariant.store_prices
-                      .map((s) => Number(s.price))
-                      .filter((p) => p > 0)
-                      .sort((a, b) => a - b)[0];
-                    if (storePrice) return storePrice;
-                  }
-
-                  return null;
-                };
-
+                const serverScoreEntry = getServerScoreEntry(device);
+                const isOverallWinner =
+                  isComparing &&
+                  overallWinnerId &&
+                  getDeviceRankingKeys(device).includes(overallWinnerId);
                 const price = getCardPrice(device, selectedVariant);
 
                 return (
@@ -3567,14 +4235,55 @@ const MobileCompare = () => {
                             {signalLabel}
                           </p>
                         ) : null}
+                        {variants.length > 0 ? (
+                          <label className="mt-3 block">
+                            <select
+                              value={safeVariantIndex}
+                              onChange={(event) =>
+                                updateDeviceVariant(
+                                  device.id,
+                                  Number(event.target.value),
+                                )
+                              }
+                              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-medium text-slate-700 outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                            >
+                              {variants.map((variant, variantIndex) => (
+                                <option
+                                  key={`${device.id}-variant-${variantIndex}`}
+                                  value={variantIndex}
+                                >
+                                  {formatVariantCompactLabel(
+                                    variant,
+                                    variantIndex,
+                                  )}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        ) : null}
                         <p
-                          className={`mt-1 text-[15px] font-semibold tracking-tight ${
+                          className={`mt-3 text-[15px] font-semibold tracking-tight ${
                             price ? "text-green-600" : "text-slate-400"
                           }`}
                           title={price ? "Price" : "Price not available"}
                         >
                           {price ? formatPrice(price) : "N/A"}
                         </p>
+                        {isComparing && serverScoreEntry?.totalScore != null ? (
+                          <p className="mt-1 text-[11px] leading-5 text-slate-600">
+                            {isOverallWinner
+                              ? `Live server compare score ${formatSpecScoreLabel(
+                                  serverScoreEntry.totalScore,
+                                )}. This device currently ranks highest overall in this set.`
+                              : `Live server compare score ${formatSpecScoreLabel(
+                                  serverScoreEntry.totalScore,
+                                )}${
+                                  serverScoreEntry?.rank
+                                    ? `, currently ranked #${serverScoreEntry.rank}.`
+                                    : "."
+                                }`}
+                          </p>
+                        ) : null}
                       </div>
 
                       {/* Variant Selector / Info */}
@@ -3617,7 +4326,8 @@ const MobileCompare = () => {
               </button>
             </div>
           )}
-        </div>
+          </div>
+        )}
         {/* Search Modal */}
         {showSearch && (
           <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-4 pt-16 backdrop-blur-sm sm:p-6">
@@ -3859,269 +4569,221 @@ const MobileCompare = () => {
             id="comparison-section"
             className="space-y-6 animate-in fade-in duration-500"
           >
-            {/* Detailed Comparison Header (smartphone-style: no tabs) */}
-            <div className="  border border-slate-200 bg-white">
-              <div className="px-4 py-4 sm:px-5">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
-                      <BarChart3 className="h-5 w-5 text-blue-600" />
-                      Detailed Comparison
-                    </h2>
-                    <p className="mt-1 text-sm text-slate-600">
-                      Compare section-wise specifications across the selected
-                      devices.
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {visibleRemainingSlots > 0 ? (
+            {compareInsightsLoading ? (
+              <div className="border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-800">
+                Refreshing the live comparison recommendation from the server...
+              </div>
+            ) : null}
+
+            {Array.isArray(compareInsights?.warnings) &&
+            compareInsights.warnings.length > 0 ? (
+              <div className="border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                {compareInsights.warnings[0]}
+              </div>
+            ) : null}
+
+            <div className="grid gap-4 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-start">
+              <aside className="hidden xl:block">
+                <div className="sticky top-6 rounded-[28px] border border-slate-200 bg-white p-3">
+                  <nav className="space-y-1.5">
+                    {visibleCompareSections.map((section) => {
+                      const Icon = section.icon;
+                      const active = activeCompareSection === section.id;
+                      return (
+                        <button
+                          key={`compare-nav-${section.id}`}
+                          type="button"
+                          onClick={() => focusCompareSection(section.id)}
+                          className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium transition-colors ${
+                            active
+                              ? "bg-blue-50 text-blue-700"
+                              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                          }`}
+                        >
+                          <Icon
+                            className={`h-4 w-4 ${
+                              active ? "text-blue-600" : "text-slate-400"
+                            }`}
+                          />
+                          <span>{section.label}</span>
+                        </button>
+                      );
+                    })}
+                  </nav>
+                </div>
+              </aside>
+
+              <div className="space-y-4">
+                {visibleCompareSections.map((section) => {
+                  const specKeys = sectionSpecKeys[section.id] || [];
+                  if (specKeys.length === 0) return null;
+
+                  const Icon = section.icon;
+                  const isExpanded = expandedSections[section.id] ?? false;
+
+                  return (
+                    <section
+                      key={`section-${section.id}`}
+                      id={`spec-${section.id}`}
+                      className="overflow-hidden rounded-[28px] border border-slate-200 bg-white"
+                    >
                       <button
                         type="button"
-                        onClick={() => setShowSearch(true)}
-                        className="inline-flex items-center gap-2   border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:bg-blue-50"
+                        onClick={() => toggleCompareSection(section.id)}
+                        className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left sm:px-6"
                       >
-                        <FaPlus className="h-3.5 w-3.5" />
-                        Add Device
+                        <div className="flex items-center gap-3">
+                          <Icon
+                            className={`h-4 w-4 ${
+                              SECTION_COLOR_CLASSES[section.id] || "text-blue-600"
+                            }`}
+                          />
+                          <h3 className="text-lg font-semibold tracking-tight text-[#0F172A]">
+                            {section.label}
+                          </h3>
+                        </div>
+                        <ChevronRight
+                          className={`h-4 w-4 text-slate-400 transition-transform ${
+                            isExpanded ? "rotate-90" : "rotate-0"
+                          }`}
+                        />
                       </button>
-                    ) : null}
-                    <div className="  border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700">
-                      {comparedDevices.length} devices
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            {/* Section Details (tables like Smartphone detail UI) */}
-            <div className="space-y-6">
-              {SECTIONS.map((section) => {
-                const specKeys = sectionSpecKeys[section.id] || [];
-                if (specKeys.length === 0) return null;
-
-                const Icon = section.icon;
-                const iconColorClass =
-                  {
-                    overview: "text-blue-600",
-                    display: "text-sky-600",
-                    camera: "text-blue-500",
-                    performance: "text-emerald-500",
-                    battery: "text-amber-500",
-                    network: "text-cyan-500",
-                    audio: "text-teal-500",
-                    features: "text-orange-500",
-                  }[section.id] || "text-blue-600";
-
-                return (
-                  <div key={`section-${section.id}`} className="bg-white">
-                    <div
-                      id={`spec-${section.id}`}
-                      className="px-1 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
-                    >
-                      <h4 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-700 sm:text-sm">
-                        <Icon className={iconColorClass} />
-                        {section.label}
-                      </h4>
-
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-slate-200">
-                          <thead className="bg-slate-50/80">
-                            <tr>
-                              <th className="w-1/3 px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 align-top">
-                                Specification
-                              </th>
-                              {comparedDevices.map((device) => {
-                                const selectedVariant =
-                                  getSelectedVariant(device);
-                                const name =
-                                  device.name ||
-                                  device.model ||
-                                  device.title ||
-                                  "Device";
-
-                                return (
-                                  <th
-                                    key={`${section.id}-head-${device.id}`}
-                                    className="px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 align-top"
-                                  >
-                                    <div className="min-w-[180px] relative pr-6">
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          removeComparedDevice(device.id)
-                                        }
-                                        className="absolute top-0 right-0   p-1 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                                        title="Remove device from comparison"
-                                        aria-label="Remove device from comparison"
-                                      >
-                                        <Trash2 className="h-3.5 w-3.5" />
-                                      </button>
-                                      {device.brand ? (
-                                        <div className="truncate text-[11px] font-semibold normal-case tracking-normal text-blue-600">
-                                          {device.brand}
-                                        </div>
-                                      ) : null}
-                                      <div className="truncate text-[13px] font-semibold normal-case text-slate-900">
-                                        {name}
-                                      </div>
-
-                                      {selectedVariant ? (
-                                        <div className="truncate text-[11px] font-medium normal-case text-slate-500">
-                                          {selectedVariant.ram || "N/A"} /{" "}
-                                          {selectedVariant.storage || "N/A"}
-                                        </div>
-                                      ) : null}
-                                    </div>
+                      {isExpanded ? (
+                        <div className="border-t border-slate-200">
+                          <div className="overflow-x-auto">
+                            <table className="min-w-full border-collapse">
+                              <thead>
+                                <tr className="bg-slate-50/70">
+                                  <th className="min-w-[180px] border-b border-r border-slate-200 px-4 py-4 text-left align-top text-base font-semibold text-[#0F172A] sm:px-5">
+                                    {section.label}
                                   </th>
-                                );
-                              })}
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100 bg-white">
-                            {specKeys.map((specKey, idx) => {
-                              const isOverview = section.id === "overview";
-                              const isRating =
-                                isOverview && specKey === "rating";
-                              const isPrice = isOverview && specKey === "price";
-                              const isVariant =
-                                isOverview && specKey === "variant";
-                              const specHint = getSpecHint(section.id, specKey);
-
-                              return (
-                                <tr
-                                  key={`${section.id}-${specKey}`}
-                                  className={
-                                    idx % 2 === 0
-                                      ? "bg-white hover:bg-blue-50/30"
-                                      : "bg-slate-50/50 hover:bg-blue-50/40"
-                                  }
-                                >
-                                  <td className="w-1/3 px-6 py-3 text-sm font-semibold text-slate-700 align-top">
-                                    <div className="inline-flex items-center gap-1.5">
-                                      <span>{toNormalCase(specKey)}</span>
-                                      {specHint ? (
-                                        <span
-                                          className="inline-flex cursor-help text-slate-400 hover:text-blue-500"
-                                          title={specHint}
-                                        >
-                                          <Info className="h-3.5 w-3.5" />
-                                        </span>
-                                      ) : null}
-                                    </div>
-                                  </td>
                                   {comparedDevices.map((device) => {
-                                    const specs = getDeviceSpecs(
-                                      device,
-                                      section.id,
-                                    );
-                                    const value = specs[specKey];
-                                    const isEmpty =
-                                      value === undefined ||
-                                      value === null ||
-                                      value === "" ||
-                                      value === "N/A";
-                                    const renderedValue = isEmpty
-                                      ? null
-                                      : section.id === "camera"
-                                        ? renderCameraComparisonValue(
-                                            value,
-                                            specKey,
-                                          )
-                                        : renderStructuredSpecValue(
-                                            value,
-                                            specKey,
-                                          );
-                                    const shouldRenderNaIcon =
-                                      isEmpty || renderedValue === "N/A";
+                                    const selectedVariant =
+                                      getSelectedVariant(device);
+                                    const name =
+                                      device.name ||
+                                      device.model ||
+                                      device.title ||
+                                      "Device";
 
                                     return (
-                                      <td
-                                        key={`${section.id}-${device.id}-${specKey}`}
-                                        className="min-w-[180px] px-6 py-3 text-sm text-slate-800 align-top"
+                                      <th
+                                        key={`${section.id}-head-${device.id}`}
+                                        className="min-w-[220px] border-b border-slate-200 px-5 py-4 text-left align-top"
                                       >
-                                        {isRating && !isEmpty ? (
-                                          <div className="flex items-center gap-2">
-                                            <div className="flex gap-0.5">
-                                              {[...Array(5)].map((_, i) => (
-                                                <Star
-                                                  key={i}
-                                                  className={`h-3.5 w-3.5 ${
-                                                    i <
-                                                    Math.floor(
-                                                      Number(value) || 0,
-                                                    )
-                                                      ? "text-yellow-400 fill-yellow-400"
-                                                      : "text-gray-200"
-                                                  }`}
-                                                />
-                                              ))}
-                                            </div>
-                                            <span className="text-sm font-semibold text-slate-900">
-                                              {value}
-                                            </span>
+                                        <div className="text-base font-semibold tracking-tight text-[#0F172A]">
+                                          {name}
+                                        </div>
+                                        {selectedVariant ? (
+                                          <div className="mt-1 text-sm font-medium text-slate-500">
+                                            {formatVariantCompactLabel(
+                                              selectedVariant,
+                                              0,
+                                            )}
                                           </div>
-                                        ) : (
-                                          <div
-                                            className={`${
-                                              shouldRenderNaIcon
-                                                ? "text-blue-500"
-                                                : isPrice
-                                                  ? "font-semibold text-emerald-600"
-                                                  : isVariant
-                                                    ? "font-semibold text-blue-700"
-                                                    : "text-slate-800"
-                                            }`}
-                                          >
-                                            {shouldRenderNaIcon ? (
-                                              <span
-                                                title="Not available"
-                                                className="inline-flex h-6 w-6 items-center justify-center   bg-blue-50 text-blue-500 ring-1 ring-blue-200"
-                                              >
-                                                <FaTimes
-                                                  className="h-3 w-3"
-                                                  aria-hidden="true"
-                                                />
-                                                <span className="sr-only">
-                                                  Not available
+                                        ) : null}
+                                      </th>
+                                    );
+                                  })}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {specKeys.map((specKey, index) => {
+                                  const specHint = getSpecHint(
+                                    section.id,
+                                    specKey,
+                                  );
+                                  const RowIcon = getSpecRowIcon(
+                                    section.id,
+                                    specKey,
+                                  );
+
+                                  return (
+                                    <tr
+                                      key={`${section.id}-${specKey}`}
+                                      className={
+                                        index % 2 === 0
+                                          ? "bg-white"
+                                          : "bg-slate-50/40"
+                                      }
+                                    >
+                                      <td className="border-r border-t border-slate-200 px-4 py-4 align-top text-sm font-semibold text-slate-700 sm:px-5">
+                                        <div className="flex items-start gap-3">
+                                          <RowIcon className="mt-0.5 h-4 w-4 flex-shrink-0 text-slate-400" />
+                                          <div className="min-w-0">
+                                            <div className="inline-flex items-center gap-1.5">
+                                              <span>{toNormalCase(specKey)}</span>
+                                              {specHint ? (
+                                                <span
+                                                  className="inline-flex cursor-help text-slate-400 hover:text-blue-500"
+                                                  title={specHint}
+                                                >
+                                                  <Info className="h-3.5 w-3.5" />
                                                 </span>
+                                              ) : null}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </td>
+                                      {comparedDevices.map((device) => {
+                                        const specs = getDeviceSpecs(
+                                          device,
+                                          section.id,
+                                        );
+                                        const value = specs[specKey];
+                                        const isEmpty =
+                                          value === undefined ||
+                                          value === null ||
+                                          value === "" ||
+                                          value === "N/A";
+                                        const renderedValue = isEmpty
+                                          ? null
+                                          : section.id === "camera"
+                                            ? renderCameraComparisonValue(
+                                                value,
+                                                specKey,
+                                              )
+                                            : renderStructuredSpecValue(
+                                                value,
+                                                specKey,
+                                              );
+                                        const missingValue =
+                                          isEmpty || renderedValue === "N/A";
+
+                                        return (
+                                          <td
+                                            key={`${section.id}-${device.id}-${specKey}`}
+                                            className="border-t border-slate-200 px-5 py-4 align-top text-sm leading-7 text-slate-700"
+                                          >
+                                            {missingValue ? (
+                                              <span className="text-slate-400">
+                                                Not available
                                               </span>
                                             ) : (
                                               renderedValue
                                             )}
-                                          </div>
-                                        )}
-                                      </td>
-                                    );
-                                  })}
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                                          </td>
+                                        );
+                                      })}
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      ) : null}
+                    </section>
+                  );
+                })}
+              </div>
             </div>
-            {/* Action Buttons */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <button
-                onClick={shareComparison}
-                className="flex items-center justify-center gap-2 rounded-2xl  border border-slate-200 bg-white p-3 transition-colors hover:border-blue-200 hover:bg-blue-50"
-              >
-                <Share2 className="h-4 w-4 text-slate-700" />
-                <span className="text-sm font-medium text-slate-700">
-                  Share Comparison
-                </span>
-              </button>
-              <button
-                onClick={() => navigate("/smartphones")}
-                className="flex items-center justify-center gap-2 rounded-2xl  border border-blue-600 bg-blue-600 p-3 text-white transition-colors hover:bg-blue-700"
-              >
-                <Plus className="h-4 w-4" />
-                <span className="text-sm font-medium">Browse More</span>
-              </button>
-            </div>
+            {compareInsights?.overallWinner && comparisonRecommendationText ? (
+              <p className="mx-auto max-w-5xl text-center text-base leading-8 text-slate-700 sm:text-lg">
+                {comparisonRecommendationText}
+              </p>
+            ) : null}
           </div>
         )}
         {/* Empty State */}
