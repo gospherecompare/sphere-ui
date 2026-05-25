@@ -113,12 +113,16 @@ const BrandIdentity = ({ variant = "desktop" }) => {
       ? "text-[18px] sm:text-[20px]"
       : "text-[18px]";
   const wrapperClass = isDesktop ? "gap-3" : "gap-2.5";
-  const brandTone = "text-[#345ce3] font-semibold";
+  const brandTone =
+    "bg-gradient-to-r from-[#2563eb] via-[#4f46e5] to-[#9333ea] bg-clip-text text-transparent";
+  const brandShadow = isDesktop
+    ? "drop-shadow-[0_10px_22px_rgba(99,102,241,0.18)]"
+    : "drop-shadow-[0_8px_16px_rgba(99,102,241,0.14)]";
 
   return (
     <span className={`flex items-center min-w-0 ${wrapperClass} group`}>
       <span
-        className={`luckiest-guy-regular ${brandClass} ${brandTone} leading-[1.02] pt-1 transition-all`}
+        className={`luckiest-guy-regular ${brandClass} ${brandTone} ${brandShadow} font-semibold leading-[1.02] pt-1 transition-all`}
       >
         Hooks
       </span>
@@ -141,6 +145,7 @@ const Header = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [mobileHeaderHeight, setMobileHeaderHeight] = useState(112);
@@ -1450,6 +1455,28 @@ const Header = () => {
     { name: "News & Articles", link: toCanonicalPagePath("/news") },
     { name: "Phone Finder", link: "/" },
   ];
+  const categoryShortcutLinks = [
+    {
+      name: "Smartphones",
+      link: toCanonicalPagePath("/smartphones"),
+      icon: FaMobileAlt,
+    },
+    {
+      name: "Laptops",
+      link: toCanonicalPagePath("/laptops"),
+      icon: FaLaptop,
+    },
+    {
+      name: "TVs",
+      link: toCanonicalPagePath("/tvs"),
+      icon: FaTv,
+    },
+    {
+      name: "Networking",
+      link: toCanonicalPagePath("/networking"),
+      icon: FaPlug,
+    },
+  ];
 
   const isActiveNavLink = (href) => {
     const target = String(href || "")
@@ -1480,6 +1507,7 @@ const Header = () => {
       link: toCanonicalPagePath("/wishlist"),
     },
   ];
+  const wishlistLink = utilityItems[0]?.link || toCanonicalPagePath("/wishlist");
 
   // Handle search
   const handleSearch = (e) => {
@@ -1494,6 +1522,14 @@ const Header = () => {
       setSearchQuery("");
     }
   };
+
+  const openSearchOverlay = () => {
+    setShowSearchSuggestions(false);
+    setSelectedSuggestionIndex(-1);
+    setIsSearchOpen(true);
+  };
+  const isSearchActionCompact =
+    isSearchFocused || Boolean(String(searchQuery || "").trim());
 
   // Handle auth
   const handleLogin = () => {
@@ -1829,10 +1865,10 @@ const Header = () => {
         className={`animate-pulse ${
           isMobileVariant
             ? "group rounded-2xl border border-blue-100/70 bg-white/80 px-4 py-4 shadow-sm"
-            : "w-full flex items-center gap-3 border-b border-blue-100/70 px-4 sm:px-5 py-4 last:border-b-0"
+            : "w-full flex items-center gap-3 border-b border-blue-100/70 px-4 py-4 last:border-b-0"
         }`}
       >
-        <div className="h-12 w-12 shrink-0 rounded-2xl bg-gradient-to-br from-blue-100 via-indigo-100 to-cyan-100 ring-1 ring-blue-100" />
+        <div className="h-12 w-12 shrink-0 rounded-md bg-gradient-to-br from-blue-100 via-indigo-100 to-cyan-100 ring-1 ring-blue-100" />
         <div className="min-w-0 flex-1 space-y-2">
           <div className="h-4 w-3/5 rounded-full bg-slate-200/90" />
           <div className="h-3 w-4/5 rounded-full bg-slate-100" />
@@ -1856,7 +1892,7 @@ const Header = () => {
     <div className="border-b border-blue-100/70 bg-gradient-to-r from-blue-50 via-white to-cyan-50 px-4 py-3 sm:px-5">
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#345ce3] via-blue-500 to-cyan-400 text-white shadow-[0_12px_24px_rgba(52,92,227,0.24)]">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-[#345ce3] via-blue-500 to-cyan-400 text-white shadow-[0_12px_24px_rgba(52,92,227,0.24)]">
             <FaSearch className="h-4 w-4" />
           </div>
           <div className="min-w-0">
@@ -1889,7 +1925,7 @@ const Header = () => {
         variant === "mobile" ? "px-6 py-10" : "px-4 py-8"
       }`}
     >
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 via-white to-cyan-50 text-[#345ce3] ring-1 ring-blue-100">
+      <div className="flex h-14 w-14 items-center justify-center rounded-md bg-gradient-to-br from-blue-50 via-white to-cyan-50 text-[#345ce3] ring-1 ring-blue-100">
         <FaSearch className="h-5 w-5" />
       </div>
       <p className="mt-4 text-sm font-semibold text-slate-900">
@@ -1954,7 +1990,7 @@ const Header = () => {
             ? "border-blue-200 bg-blue-50/90 shadow-[0_16px_36px_rgba(59,130,246,0.14)]"
             : "border-blue-100 bg-white/95 hover:border-blue-200 hover:shadow-[0_16px_36px_rgba(59,130,246,0.12)] active:bg-blue-50"
         }`
-      : `group relative flex w-full items-center gap-3 px-4 sm:px-5 py-3.5 text-left transition-all duration-200 border-b border-blue-100/70 last:border-b-0 ${
+      : `group relative flex w-full items-center gap-3 px-4 py-3.5 text-left transition-all duration-200 border-b border-blue-100/70 last:border-b-0 ${
           selected
             ? "bg-blue-50/90"
             : "bg-white/90 hover:bg-blue-50/60 active:bg-blue-100/70"
@@ -2342,11 +2378,7 @@ const Header = () => {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => {
-                setShowSearchSuggestions(false);
-                setSelectedSuggestionIndex(-1);
-                setIsSearchOpen(true);
-              }}
+              onClick={openSearchOverlay}
               className="inline-flex h-10 w-10 items-center justify-center   text-slate-600 transition-all hover:bg-slate-100/60 hover:text-slate-900 hover:border-slate-300"
               aria-label="Open search"
             >
@@ -2356,186 +2388,212 @@ const Header = () => {
         </div>
       </div>
 
-      {/* DESKTOP HEADER (> 768px) - Clean Minimal Design like Beebom */}
-      <div className="hidden md:block bg-gradient-to-br from-white via-white to-blue-50/30 sticky top-0 z-40">
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3 lg:py-4">
-          {/* Header Row: Logo | Search | Login */}
-          <div className="flex items-center justify-between gap-3 sm:gap-4 lg:gap-6">
-            {/* Logo */}
-            <Link to="/" className="flex-shrink-0">
+      {/* DESKTOP HEADER (> 768px) */}
+      <div
+        className={`hidden md:block border-b border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,248,255,0.95))] backdrop-blur-xl ${
+          isScrolled
+            ? "shadow-[0_18px_60px_rgba(15,23,42,0.12)]"
+            : "shadow-[0_8px_30px_rgba(15,23,42,0.05)]"
+        }`}
+      >
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-4 lg:py-5">
+          <div className="flex items-center gap-4 lg:gap-6">
+            <Link to="/" className="flex shrink-0 flex-col">
               <BrandIdentity variant="desktop" />
+              <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-500">
+                Gadget Intelligence
+              </span>
             </Link>
 
-            {/* Search Bar - Responsive */}
-            <div
+            <form
               ref={searchRef}
-              className="flex-1 min-w-0 max-w-sm sm:max-w-md lg:max-w-lg xl:max-w-2xl relative"
+              onSubmit={handleSearch}
+              className="relative min-w-0 flex-1"
             >
-              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#345ce3] sm:w-4 sm:h-4" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder="Search for products, brands and more..."
-                value={searchQuery}
-                onChange={(e) => handleSearchInputChange(e.target.value)}
-                onKeyDown={(e) => {
-                  handleSearchKeyDown(e);
-                  if (
-                    e.key === "Enter" &&
-                    searchQuery.trim() &&
-                    selectedSuggestionIndex < 0
-                  ) {
-                    navigate(buildKeywordSearchPath(searchQuery));
-                    setSearchQuery("");
-                    setShowSearchSuggestions(false);
-                  }
-                }}
-                className="w-full rounded-lg border border-blue-100/70 bg-gradient-to-r from-blue-50/60 via-white to-cyan-50/40 py-2 pl-9 pr-3 text-sm placeholder-slate-400  transition-all focus:outline-none focus:border-blue-200 focus:ring-2 focus:ring-blue-500/15 sm:py-2.5 sm:text-base"
-              />
-
-              {/* Desktop Suggestions Dropdown */}
-              {showSearchSuggestions && searchQuery.trim() && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-100/80 rounded-xl shadow-[0_10px_40px_rgba(15,23,42,0.12)] z-50 max-h-96 overflow-y-auto backdrop-blur-sm">
-                  {isSearching ? (
-                    <div className="p-3 space-y-2">
-                      {[...Array(3)].map((_, i) => (
-                        <SkeletonSuggestion key={`skel-${i}`} />
-                      ))}
-                    </div>
-                  ) : searchSuggestions.length === 0 ? (
-                    <div className="w-full text-center py-8 px-4">
-                      <p className="text-sm font-medium text-gray-900">
-                        No products found
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Try different keywords
-                      </p>
-                    </div>
-                  ) : (
-                    searchSuggestions
-                      .slice(0, SEARCH_SUGGESTION_LIMIT)
-                      .map((sugg, index) => (
-                        <button
-                          key={index}
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            handleSuggestionClick(sugg);
-                          }}
-                          onMouseEnter={() => setSelectedSuggestionIndex(index)}
-                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50/60 text-left text-sm sm:text-base border-b border-slate-100/50 last:border-b-0 transition-all"
-                        >
-                          {sugg.image_url && (
-                            <img
-                              src={sugg.image_url}
-                              alt={sugg.name}
-                              className="w-8 h-8 sm:w-10 sm:h-10 object-contain flex-shrink-0"
-                            />
-                          )}
-                          <span className="font-medium text-gray-900 truncate">
-                            {sugg.name}
-                          </span>
-                        </button>
-                      ))
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Account Menu */}
-            <div className="relative flex-shrink-0">
-              <button
-                type="button"
-                onClick={() => setShowAuthDropdown((prev) => !prev)}
-                className="auth-button inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-gradient-to-br from-white to-slate-50/60 px-4 py-2 text-sm font-semibold text-slate-700 transition-all duration-200 hover:border-blue-200 hover:bg-slate-50 hover:text-slate-900 shadow-[0_1px_3px_rgba(15,23,42,0.08)]"
-                aria-haspopup="menu"
-                aria-expanded={showAuthDropdown}
-              >
-                <FaUser className="h-4 w-4 text-slate-500" />
-                <span>Account</span>
-                <FaChevronDown
-                  className={`h-3 w-3 text-slate-400 transition-transform duration-200 ${
-                    showAuthDropdown ? "rotate-180" : ""
+              <div className="group/search relative rounded-[24px] border border-[#dbe4ff] bg-white/90 shadow-[0_18px_45px_rgba(53,87,211,0.10)] ring-1 ring-white/80">
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Search devices, brands, specs, or comparisons..."
+                  value={searchQuery}
+                  onChange={(e) => handleSearchInputChange(e.target.value)}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => setIsSearchFocused(false)}
+                  onKeyDown={handleSearchKeyDown}
+                  className={`w-full rounded-[24px] bg-transparent py-3.5 pl-5 text-[15px] font-medium text-slate-800 placeholder:text-slate-400 transition-[padding] duration-300 ease-out focus:outline-none ${
+                    isSearchActionCompact ? "pr-16" : "pr-28"
                   }`}
                 />
-              </button>
+                <button
+                  type="submit"
+                  className={`absolute right-2 top-1/2 inline-flex h-10 -translate-y-1/2 items-center justify-center overflow-hidden rounded-[18px] bg-gradient-to-r from-[#3158e0] via-[#4f46e5] to-[#7c3aed] py-2 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(79,70,229,0.28)] transition-all duration-300 ease-out hover:scale-[1.01] ${
+                    isSearchActionCompact
+                      ? "w-10 gap-0 px-0"
+                      : "w-[104px] gap-2 px-4"
+                  }`}
+                >
+                  <FaSearch className="h-3.5 w-3.5 shrink-0" />
+                  <span
+                    className={`whitespace-nowrap transition-all duration-200 ease-out ${
+                      isSearchActionCompact
+                        ? "max-w-0 opacity-0"
+                        : "max-w-[48px] opacity-100"
+                    }`}
+                  >
+                    Search
+                  </span>
+                </button>
+              </div>
 
-              {showAuthDropdown ? <AuthDropdown /> : null}
+              {showSearchSuggestions && searchQuery.trim() && (
+                <div className="absolute left-0 right-0 top-full z-50 mt-3 overflow-hidden rounded-md border border-[#dfe7ff] bg-gradient-to-br from-white via-white to-blue-50/60 shadow-[0_28px_72px_rgba(15,23,42,0.16)] backdrop-blur-xl">
+                  <SuggestionPanelHeader
+                    query={searchQuery}
+                    count={searchSuggestions.length}
+                    isSearching={isSearching}
+                  />
+
+                  <div className="max-h-[26rem] overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    {!searchSuggestions || searchSuggestions.length === 0 ? (
+                      searchQuery.trim() ? (
+                        <>
+                          {isSearching &&
+                            [...Array(3)].map((_, i) => (
+                              <SkeletonSuggestion key={`skel-${i}`} />
+                            ))}
+                          {!isSearching && (
+                            <SuggestionEmptyState
+                              query={searchQuery}
+                              variant="desktop"
+                            />
+                          )}
+                        </>
+                      ) : null
+                    ) : (
+                      searchSuggestions
+                        .slice(0, SEARCH_SUGGESTION_LIMIT)
+                        .map((sugg, index) => (
+                          <SuggestionRow
+                            key={`${sugg.id || sugg.name || index}-desktop-header`}
+                            suggestion={sugg}
+                            query={searchQuery}
+                            selected={selectedSuggestionIndex === index}
+                            variant="desktop"
+                            onActivate={handleSuggestionClick}
+                            onMouseEnter={() =>
+                              setSelectedSuggestionIndex(index)
+                            }
+                          />
+                        ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </form>
+
+            <div className="flex shrink-0 items-center justify-end gap-3">
+              <Link
+                to={toCanonicalPagePath("/compare")}
+                className={`inline-flex items-center gap-2 rounded-[18px] px-4 py-2.5 text-sm font-semibold transition-all duration-200 ${
+                  isActiveNavLink("/compare")
+                    ? "bg-gradient-to-r from-[#3158e0] via-[#4f46e5] to-[#7c3aed] text-white shadow-[0_14px_26px_rgba(79,70,229,0.24)]"
+                    : "border border-[#dce4f8] bg-white text-slate-700 hover:border-[#c6d5ff] hover:text-[#3557d3]"
+                }`}
+              >
+                <FaStream className="h-3.5 w-3.5" />
+                <span>Compare</span>
+              </Link>
+
+              <Link
+                to={wishlistLink}
+                className={`inline-flex items-center gap-2 rounded-[18px] border px-4 py-2.5 text-sm font-semibold transition-all duration-200 ${
+                  isActiveNavLink(wishlistLink)
+                    ? "border-pink-200 bg-pink-50 text-pink-700"
+                    : "border-[#dce4f8] bg-white text-slate-700 hover:border-pink-200 hover:text-pink-700"
+                }`}
+              >
+                <FaHeart className="h-3.5 w-3.5" />
+                <span className="hidden lg:inline">Wishlist</span>
+              </Link>
+
+              <div className="relative flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setShowAuthDropdown((prev) => !prev)}
+                  className="auth-button inline-flex items-center gap-3 rounded-[20px] border border-[#dce4f8] bg-white px-3 py-2.5 text-left shadow-[0_8px_22px_rgba(15,23,42,0.06)] transition-all duration-200 hover:border-[#c8d7ff] hover:shadow-[0_12px_28px_rgba(53,87,211,0.10)]"
+                  aria-haspopup="menu"
+                  aria-expanded={showAuthDropdown}
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#3158e0] via-[#4f46e5] to-[#7c3aed] text-white shadow-[0_10px_20px_rgba(79,70,229,0.24)]">
+                    <FaUser className="h-4 w-4" />
+                  </span>
+                  <span className="hidden xl:flex min-w-0 flex-col">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                      {isLoggedIn ? "Welcome back" : "Account"}
+                    </span>
+                    <span className="mt-0.5 max-w-[8rem] truncate text-sm font-semibold text-slate-800">
+                      {isLoggedIn
+                        ? String(userName || "User").split(" ")[0]
+                        : "Login / Sign Up"}
+                    </span>
+                  </span>
+                  <FaChevronDown
+                    className={`h-3 w-3 text-slate-400 transition-transform duration-200 ${
+                      showAuthDropdown ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {showAuthDropdown ? <AuthDropdown /> : null}
+              </div>
             </div>
           </div>
         </div>
-        {/* Navigation Links */}
-        <div className="w-full bg-gradient-to-r from-white via-blue-50/20 to-white border-b border-slate-100">
-          <div className="mx-auto max-w-7xl px-6">
-            <div className="flex items-center gap-2 py-1 overflow-visible">
-              {directLinks.map((link) =>
-                link.dropdownItems &&
-                !(
-                  currentPath.startsWith("/compare") && link.name === "Explore"
-                ) ? (
-                  <div
-                    key={`${link.link}-${link.name}`}
-                    className="relative group"
-                  >
-                    <button
-                      type="button"
-                      className={`inline-flex cursor-default items-center gap-1 whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition ${
-                        currentPath.startsWith("/compare") ||
-                        currentPath.startsWith("/smartphones") ||
-                        currentPath.startsWith("/trending")
-                          ? "text-gray-700 hover:text-blue-600"
-                          : "text-gray-700 hover:text-blue-600"
+
+        <div className="border-t border-slate-100/80 bg-white/78">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex min-w-0 items-center gap-2 overflow-x-auto pr-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                {categoryShortcutLinks.map((link) => {
+                  const Icon = link.icon;
+                  const active = isActiveNavLink(link.link);
+
+                  return (
+                    <Link
+                      key={link.link}
+                      to={link.link}
+                      className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-all duration-200 ${
+                        active
+                          ? "border-blue-200 bg-blue-50 text-[#3557d3]"
+                          : "border-slate-200 bg-white/90 text-slate-600 hover:border-blue-200 hover:text-[#3557d3]"
+                      }`}
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                      <span>{link.name}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+
+              <div className="hidden xl:flex shrink-0 items-center gap-1">
+                {directLinks
+                  .filter(
+                    (link) => link.name !== browseNavLabel && link.name !== "Compare",
+                  )
+                  .map((link) => (
+                    <Link
+                      key={`${link.link}-${link.name}`}
+                      to={link.link}
+                      className={`inline-flex items-center gap-1 rounded-full px-3 py-2 text-sm font-medium transition ${
+                        isActiveNavLink(link.link)
+                          ? "bg-blue-50 text-[#3557d3]"
+                          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                       }`}
                     >
                       {link.name}
-                      {link.caret && <FaChevronDown className="h-3 w-3" />}
-                    </button>
-
-                    <div className="absolute left-0 top-full z-50 mt-1 hidden min-w-56  border border-blue-100 bg-white p-2 group-hover:block group-focus-within:block">
-                      <div className="px-3 py-2">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-500">
-                          Browse categories
-                        </p>
-                      </div>
-                      <div className="space-y-1">
-                        {link.dropdownItems.map((item) => (
-                          <Link
-                            key={item.link}
-                            to={item.link}
-                            className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
-                          >
-                            <span>{item.name}</span>
-                            <FaChevronRight className="h-3 w-3 text-gray-400" />
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <Link
-                    key={`${link.link}-${link.name}`}
-                    to={
-                      currentPath.startsWith("/compare") &&
-                      link.name === "Explore"
-                        ? "/"
-                        : link.link
-                    }
-                    className={`inline-flex items-center gap-1 whitespace-nowrap px-3 py-2 text-sm font-medium transition ${
-                      isActiveNavLink(link.link)
-                        ? "text-blue-700"
-                        : "text-gray-700 hover:text-blue-600"
-                    }`}
-                  >
-                    {link.name}
-                    {link.caret &&
-                    !(
-                      currentPath.startsWith("/compare") &&
-                      link.name === "Explore"
-                    ) ? (
-                      <FaChevronDown className="h-3 w-3" />
-                    ) : null}
-                  </Link>
-                ),
-              )}
+                    </Link>
+                  ))}
+              </div>
             </div>
           </div>
         </div>

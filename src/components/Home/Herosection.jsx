@@ -1,106 +1,137 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { createProductPath } from "../../utils/slugGenerator";
-import { buildPublicSmartphoneFilterPath as buildSmartphoneFilterPath } from "../../utils/smartphoneListingRoutes";
 import {
-  FaBolt,
-  FaChevronDown,
-  FaFire,
-  FaLaptop,
-  FaMobile,
-  FaRupeeSign,
-  FaSearch,
-  FaStar,
-  FaTv,
-  FaWifi,
   FaArrowRight,
+  FaBolt,
+  FaChartLine,
+  FaExchangeAlt,
+  FaLaptop,
+  FaMobileAlt,
+  FaNetworkWired,
+  FaRegLightbulb,
+  FaSearch,
+  FaSignal,
+  FaTv,
 } from "react-icons/fa";
-import {
-  HOME_SECTION_LEAD_DARK,
-  HOME_SECTION_TITLE_DARK,
-} from "./homeSectionTypography";
+import useDevice from "../../hooks/useDevice";
+import { createProductPath } from "../../utils/slugGenerator";
+import "../../styles/hideScrollbar.css";
 
-const DEVICE_TYPE_OPTIONS = [
-  { id: "smartphones", label: "Mobile", path: "/smartphones", icon: FaMobile },
-  { id: "laptops", label: "Laptop", path: "/laptops", icon: FaLaptop },
-  { id: "tvs", label: "TV", path: "/tvs", icon: FaTv },
-  { id: "networking", label: "Networking", path: "/networking", icon: FaWifi },
+const API_BASE = (
+  import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in/api"
+).replace(/\/$/, "");
+
+const CATEGORY_META = [
+  {
+    id: "smartphones",
+    label: "Smartphones",
+    path: "/smartphones",
+    productPathType: "smartphones",
+    icon: FaMobileAlt,
+  },
+  {
+    id: "laptops",
+    label: "Laptops",
+    path: "/laptops",
+    productPathType: "laptops",
+    icon: FaLaptop,
+  },
+  {
+    id: "tvs",
+    label: "TVs",
+    path: "/tvs",
+    productPathType: "tvs",
+    icon: FaTv,
+  },
+  {
+    id: "networking",
+    label: "Networking",
+    path: "/networking",
+    productPathType: "networking",
+    icon: FaNetworkWired,
+  },
 ];
 
-const PRICE_RANGE_OPTIONS = [
-  {
-    id: "under-10000",
-    label: "\u20B910,000",
-    optionLabel: "\u20B910,000",
-    description: "Entry budget",
-    min: 0,
-    max: 10000,
-    smartphoneSlug: "under-10000",
-  },
-  {
-    id: "under-15000",
-    label: "\u20B915,000",
-    optionLabel: "Under \u20B915,000",
-    description: "Budget sweet spot",
-    min: 0,
-    max: 15000,
-    smartphoneSlug: "under-15000",
-  },
-  {
-    id: "under-20000",
-    label: "\u20B920,000",
-    optionLabel: "Under \u20B920,000",
-    description: "Best value picks",
-    min: 0,
-    max: 20000,
-    smartphoneSlug: "under-20000",
-  },
-  {
-    id: "under-25000",
-    label: "\u20B925,000",
-    optionLabel: "Under \u20B925,000",
-    description: "Balanced mid-range",
-    min: 0,
-    max: 25000,
-    smartphoneSlug: "under-25000",
-  },
-  {
-    id: "under-30000",
-    label: "\u20B930,000",
-    optionLabel: "Under \u20B930,000",
-    description: "Upper mid-range",
-    min: 0,
-    max: 30000,
-    smartphoneSlug: "under-30000",
-  },
-  {
-    id: "under-40000",
-    label: "\u20B940,000",
-    optionLabel: "Under \u20B940,000",
-    description: "Premium value",
-    min: 0,
-    max: 40000,
-    smartphoneSlug: "under-40000",
-  },
-  {
-    id: "under-50000",
-    label: "\u20B950,000",
-    optionLabel: "Under \u20B950,000",
-    description: "Flagship killers",
-    min: 0,
-    max: 50000,
-    smartphoneSlug: "under-50000",
-  },
-  {
-    id: "above-50000",
-    label: "\u20B950,000+",
-    optionLabel: "Above \u20B950,000",
-    description: "Premium flagships",
-    min: 50000,
-    max: 9999999,
-    smartphoneSlug: "above-50000",
-  },
-];
+const HERO_POPULAR_CARD_LIMIT = 5;
+
+const firstText = (...values) => {
+  for (const value of values) {
+    if (value == null) continue;
+    if (Array.isArray(value)) {
+      const nested = firstText(...value);
+      if (nested) return nested;
+      continue;
+    }
+    const text = String(value).trim();
+    if (text && text !== "[object Object]") return text;
+  }
+  return "";
+};
+
+const parseJsonArray = (value) => {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  if (typeof value !== "string") return [];
+  const trimmed = value.trim();
+  if (!trimmed.startsWith("[") && !trimmed.startsWith("{")) return [];
+  try {
+    const parsed = JSON.parse(trimmed);
+    return Array.isArray(parsed) ? parsed : [parsed];
+  } catch {
+    return [];
+  }
+};
+
+const parsePriceNumber = (value) => {
+  if (value == null || value === "") return null;
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  const numeric = Number(String(value).replace(/[^0-9.]/g, ""));
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+};
+
+const formatCount = (value) => {
+  const safeValue = Number(value) || 0;
+  try {
+    return new Intl.NumberFormat("en-IN", {
+      notation: safeValue >= 1000 ? "compact" : "standard",
+      maximumFractionDigits: 1,
+    }).format(safeValue);
+  } catch {
+    return String(safeValue);
+  }
+};
+
+const formatPrice = (value) => {
+  const price = parsePriceNumber(value);
+  if (!price) return "";
+  try {
+    return `Rs. ${new Intl.NumberFormat("en-IN", {
+      maximumFractionDigits: 0,
+    }).format(price)}`;
+  } catch {
+    return `Rs. ${Math.round(price)}`;
+  }
+};
+
+const resolveCategoryFromType = (value = "") => {
+  const text = String(value || "").toLowerCase();
+  if (text.includes("laptop") || text.includes("notebook")) return "laptops";
+  if (
+    text.includes("tv") ||
+    text.includes("television") ||
+    text.includes("appliance")
+  ) {
+    return "tvs";
+  }
+  if (
+    text.includes("network") ||
+    text.includes("router") ||
+    text.includes("wifi")
+  ) {
+    return "networking";
+  }
+  return "smartphones";
+};
 
 const normalizeSmartphoneDetailPath = (rawPath = "", fallbackName = "") => {
   const pathValue = String(rawPath || "").trim();
@@ -115,7 +146,7 @@ const normalizeSmartphoneDetailPath = (rawPath = "", fallbackName = "") => {
         }
       }
     } catch {
-      // Ignore malformed path values and fall back to the product name.
+      // Fall back to the product name if an API path is malformed.
     }
   }
 
@@ -124,529 +155,261 @@ const normalizeSmartphoneDetailPath = (rawPath = "", fallbackName = "") => {
     : "/smartphones";
 };
 
-const FEATURE_OPTIONS_BY_DEVICE = {
-  smartphones: [
-    {
-      id: "overall",
-      label: "Overall",
-      optionLabel: "Overall",
-      description: "All matching results",
-      icon: FaBolt,
-      searchMode: null,
-    },
-    {
-      id: "5g",
-      label: "5G",
-      optionLabel: "5G",
-      description: "5G phones",
-      icon: FaBolt,
-      searchMode: "feature",
-    },
-    {
-      id: "amoled",
-      label: "AMOLED",
-      optionLabel: "AMOLED",
-      description: "Vivid displays",
-      icon: FaBolt,
-      searchMode: "feature",
-    },
-    {
-      id: "high-refresh-rate",
-      label: "120Hz+",
-      optionLabel: "120Hz+",
-      description: "Smooth display",
-      icon: FaBolt,
-      searchMode: "feature",
-    },
-    {
-      id: "long-battery",
-      label: "Long Battery",
-      optionLabel: "Long Battery",
-      description: "6000mAh+",
-      icon: FaBolt,
-      searchMode: "feature",
-    },
-    {
-      id: "fast-charging",
-      label: "Fast Charge",
-      optionLabel: "Fast Charge",
-      description: "65W+ charging",
-      icon: FaBolt,
-      searchMode: "feature",
-    },
-    {
-      id: "gaming",
-      label: "Gaming",
-      optionLabel: "Gaming",
-      description: "Performance phones",
-      icon: FaBolt,
-      searchMode: "feature",
-    },
-  ],
-  laptops: [
-    {
-      id: "overall",
-      label: "Overall",
-      optionLabel: "Overall",
-      description: "All matching results",
-      icon: FaBolt,
-      searchMode: null,
-    },
-    {
-      id: "gaming",
-      label: "Gaming",
-      optionLabel: "Gaming",
-      description: "RTX/GTX graphics",
-      icon: FaLaptop,
-      searchMode: "feature",
-    },
-    {
-      id: "high-ram",
-      label: "16GB+ RAM",
-      optionLabel: "16GB+ RAM",
-      description: "Better multitasking",
-      icon: FaLaptop,
-      searchMode: "feature",
-    },
-    {
-      id: "high-storage",
-      label: "512GB+ SSD",
-      optionLabel: "512GB+ SSD",
-      description: "Fast storage",
-      icon: FaLaptop,
-      searchMode: "feature",
-    },
-    {
-      id: "lightweight",
-      label: "Lightweight",
-      optionLabel: "Lightweight",
-      description: "Portable design",
-      icon: FaLaptop,
-      searchMode: "feature",
-    },
-    {
-      id: "oled-display",
-      label: "OLED Display",
-      optionLabel: "OLED Display",
-      description: "Vibrant panels",
-      icon: FaLaptop,
-      searchMode: "feature",
-    },
-  ],
-  tvs: [
-    {
-      id: "overall",
-      label: "Overall",
-      optionLabel: "Overall",
-      description: "All matching results",
-      icon: FaBolt,
-      searchMode: null,
-    },
-    {
-      id: "smart-tv",
-      label: "Smart TV",
-      optionLabel: "Smart TV",
-      description: "Built-in smart platform",
-      icon: FaTv,
-      searchMode: "feature",
-    },
-    {
-      id: "ultra-hd-4k",
-      label: "4K Ultra HD",
-      optionLabel: "4K Ultra HD",
-      description: "Sharper picture quality",
-      icon: FaTv,
-      searchMode: "feature",
-    },
-    {
-      id: "high-refresh-rate",
-      label: "120Hz+",
-      optionLabel: "120Hz+",
-      description: "Smooth motion",
-      icon: FaTv,
-      searchMode: "feature",
-    },
-    {
-      id: "oled-qled",
-      label: "OLED/QLED",
-      optionLabel: "OLED/QLED",
-      description: "Premium panel tech",
-      icon: FaTv,
-      searchMode: "feature",
-    },
-    {
-      id: "gaming",
-      label: "Gaming",
-      optionLabel: "Gaming",
-      description: "VRR / ALLM / 120Hz",
-      icon: FaTv,
-      searchMode: "feature",
-    },
-  ],
-  networking: [
-    {
-      id: "overall",
-      label: "Overall",
-      optionLabel: "Overall",
-      description: "All matching results",
-      icon: FaBolt,
-      searchMode: null,
-    },
-    {
-      id: "wifi-7",
-      label: "Wi-Fi 7",
-      optionLabel: "Wi-Fi 7",
-      description: "Latest wireless standard",
-      icon: FaWifi,
-      searchMode: "query",
-      query: "Wi-Fi 7",
-    },
-    {
-      id: "mesh",
-      label: "Mesh",
-      optionLabel: "Mesh",
-      description: "Whole-home coverage",
-      icon: FaWifi,
-      searchMode: "query",
-      query: "mesh",
-    },
-    {
-      id: "dual-band",
-      label: "Dual Band",
-      optionLabel: "Dual Band",
-      description: "2.4GHz + 5GHz performance",
-      icon: FaWifi,
-      searchMode: "query",
-      query: "dual band",
-    },
-    {
-      id: "gigabit",
-      label: "Gigabit",
-      optionLabel: "Gigabit",
-      description: "Fast wired networking",
-      icon: FaWifi,
-      searchMode: "query",
-      query: "gigabit",
-    },
-    {
-      id: "wpa3",
-      label: "WPA3",
-      optionLabel: "WPA3",
-      description: "Modern security",
-      icon: FaWifi,
-      searchMode: "query",
-      query: "wpa3",
-    },
-  ],
+const getImages = (item) => [
+  firstText(
+    item?.image,
+    item?.image_url,
+    item?.imageUrl,
+    item?.product_image,
+    item?.productImage,
+    item?.thumbnail,
+  ),
+  firstText(parseJsonArray(item?.images)?.[0]),
+  firstText(parseJsonArray(item?.images_json)?.[0]),
+  firstText(item?.metadata?.images?.[0]),
+].filter(Boolean);
+
+const getVariants = (item) => {
+  if (Array.isArray(item?.variants)) return item.variants;
+  if (Array.isArray(item?.variants_json)) return item.variants_json;
+  return parseJsonArray(item?.variants_json || item?.variants);
 };
 
-const HERO_TRENDING_CHIP_LIMIT = 6;
-const HERO_POPULAR_CARD_LIMIT = 5;
+const getLowestPrice = (item) => {
+  const prices = [
+    parsePriceNumber(item?.price),
+    parsePriceNumber(item?.base_price),
+    parsePriceNumber(item?.basePrice),
+    parsePriceNumber(item?.starting_price),
+    parsePriceNumber(item?.min_price),
+    parsePriceNumber(item?.minPrice),
+  ].filter(Boolean);
 
-const stats = [
-  { value: 50000, label: "Active Users", suffix: "+", compact: true },
-  { value: 1000, label: "Device Models", suffix: "+", compact: false },
-  { value: 500, label: "Comparisons Monthly", suffix: "+", compact: false },
-];
+  getVariants(item).forEach((variant) => {
+    prices.push(
+      ...[
+        parsePriceNumber(variant?.price),
+        parsePriceNumber(variant?.base_price),
+        parsePriceNumber(variant?.basePrice),
+      ].filter(Boolean),
+    );
 
-const formatHeroCount = (value, compact = false) => {
-  const safeValue = Number.isFinite(value) ? value : 0;
-  try {
-    return new Intl.NumberFormat("en-US", {
-      maximumFractionDigits: 0,
-      notation: compact ? "compact" : "standard",
-    }).format(safeValue);
-  } catch {
-    return String(Math.round(safeValue));
-  }
+    const stores = Array.isArray(variant?.store_prices)
+      ? variant.store_prices
+      : Array.isArray(variant?.storePrices)
+        ? variant.storePrices
+        : [];
+    stores.forEach((store) => {
+      const storePrice = parsePriceNumber(store?.price);
+      if (storePrice) prices.push(storePrice);
+    });
+  });
+
+  const storePrices = Array.isArray(item?.store_prices)
+    ? item.store_prices
+    : Array.isArray(item?.storePrices)
+      ? item.storePrices
+      : [];
+  storePrices.forEach((store) => {
+    const storePrice = parsePriceNumber(store?.price);
+    if (storePrice) prices.push(storePrice);
+  });
+
+  return prices.length ? Math.min(...prices) : null;
 };
 
-const CountUpNumber = ({
-  end,
-  suffix = "",
-  compact = false,
-  play = false,
-  duration = 1500,
-}) => {
-  const [current, setCurrent] = useState(play ? end : 0);
-
-  useEffect(() => {
-    if (!play) {
-      setCurrent(0);
-      return undefined;
-    }
-
-    let frameId = 0;
-    let startTime = 0;
-
-    const animate = (timestamp) => {
-      if (!startTime) startTime = timestamp;
-      const progress = Math.min((timestamp - startTime) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setCurrent(Math.round(end * eased));
-
-      if (progress < 1) {
-        frameId = window.requestAnimationFrame(animate);
-      }
-    };
-
-    frameId = window.requestAnimationFrame(animate);
-
-    return () => {
-      if (frameId) window.cancelAnimationFrame(frameId);
-    };
-  }, [duration, end, play]);
-
-  return (
-    <span className="inline-flex min-w-[6ch] tabular-nums">
-      {formatHeroCount(current, compact)}
-      {suffix}
-    </span>
+const getPrimarySpec = (item) =>
+  firstText(
+    item?.chipset,
+    item?.processor,
+    item?.performance?.chipset,
+    item?.performance?.processor,
+    item?.display?.screen_size,
+    item?.display?.display_size,
+    item?.screen_size,
+    item?.network?.wifi,
+    item?.connectivity?.wifi,
   );
+
+const normalizeCard = (item, fallbackCategory = "smartphones", source = "") => {
+  const name = firstText(
+    item?.name,
+    item?.product_name,
+    item?.productName,
+    item?.model,
+    item?.title,
+  );
+  if (!name) return null;
+
+  const categoryId =
+    fallbackCategory ||
+    resolveCategoryFromType(
+      firstText(item?.product_type, item?.productType, item?.deviceType),
+    );
+  const category =
+    CATEGORY_META.find((entry) => entry.id === categoryId) || CATEGORY_META[0];
+  const price = getLowestPrice(item);
+  const image = getImages(item)[0] || "";
+  const brand = firstText(item?.brand, item?.brand_name, item?.brandName);
+  const signal = Number(
+    item?.trend_score ??
+      item?.trending_score ??
+      item?.search_popularity_score ??
+      item?.search_count_30d ??
+      0,
+  );
+
+  return {
+    id: firstText(item?.product_id, item?.productId, item?.id, name),
+    name,
+    brand,
+    categoryId: category.id,
+    categoryLabel: category.label,
+    image,
+    price,
+    priceLabel: formatPrice(price),
+    spec: getPrimarySpec(item),
+    source,
+    signal: Number.isFinite(signal) ? signal : 0,
+    path: createProductPath(category.productPathType, name),
+  };
 };
 
-const buildHeroSearchUrl = ({ device, price, feature }) => {
-  if (!device) return "/smartphones";
+const normalizePopularDevice = (device, index) => {
+  const name = firstText(
+    device?.name,
+    device?.product_name,
+    device?.productName,
+    device?.model,
+  );
+  if (!name) return null;
 
-  const params = new URLSearchParams();
+  const searchCount = Number(
+    device?.search_count_30d ??
+      device?.searchCount30d ??
+      device?.search_count ??
+      0,
+  );
+  const score = Number(
+    device?.search_popularity_score ??
+      device?.popularity_score ??
+      device?.score ??
+      0,
+  );
 
-  if (device.id === "smartphones") {
-    const path = price?.smartphoneSlug
-      ? buildSmartphoneFilterPath(price.smartphoneSlug)
-      : device.path;
-
-    if (
-      feature?.id &&
-      feature.id !== "overall" &&
-      feature.searchMode === "feature"
-    ) {
-      params.set("feature", feature.id);
-    }
-
-    return `${path}${params.toString() ? `?${params.toString()}` : ""}`;
-  }
-
-  if (price) {
-    params.set("priceMin", String(price.min));
-    params.set("priceMax", String(price.max));
-  }
-
-  if (feature?.id && feature.id !== "overall") {
-    if (feature.searchMode === "feature") {
-      params.set("feature", feature.id);
-    } else if (feature.searchMode === "query") {
-      params.set("q", feature.query || feature.label);
-    }
-  }
-
-  return `${device.path}${params.toString() ? `?${params.toString()}` : ""}`;
+  return {
+    id: firstText(device?.product_id, device?.productId, device?.id, name),
+    name,
+    brand: firstText(device?.brand_name, device?.brandName, device?.brand),
+    categoryId: "smartphones",
+    categoryLabel: "Smartphones",
+    image: firstText(
+      device?.image_url,
+      device?.imageUrl,
+      device?.image,
+      device?.thumbnail,
+    ),
+    price: null,
+    priceLabel: "",
+    spec: searchCount ? `${formatCount(searchCount)} searches in 30 days` : "",
+    source: "popular",
+    signal: Number.isFinite(score) ? score : 0,
+    path: normalizeSmartphoneDetailPath(
+      firstText(device?.detail_path, device?.detailPath),
+      name,
+    ),
+    rank: Number(device?.hero_rank ?? device?.rank ?? index + 1),
+    searchCount: Number.isFinite(searchCount) ? searchCount : 0,
+  };
 };
 
-const SearchDropdown = ({
-  label,
-  icon: Icon,
-  value,
-  selectedId,
-  options,
-  isOpen,
-  onToggle,
-  onSelect,
-  className = "",
-  buttonClassName = "",
-}) => {
-  const selectedOption =
-    options.find((option) => option.id === selectedId) || options[0];
-  const suggestionOptions = options.filter(
-    (option) => option.id !== selectedId,
-  );
-  const SelectedIcon = selectedOption.icon || Icon || FaBolt;
-
-  return (
-    <div className={`relative ${isOpen ? "z-[70]" : "z-10"} ${className}`}>
-      <button
-        type="button"
-        aria-haspopup="listbox"
-        aria-expanded={isOpen}
-        onClick={onToggle}
-        className={`group flex min-h-[82px] w-full flex-col justify-center rounded-[20px] border border-slate-200 bg-white px-4 py-4 text-left transition-all duration-300 hover:border-sky-300 hover:shadow-[0_10px_30px_rgba(14,165,233,0.08)] sm:min-h-[96px] sm:rounded-[22px] sm:px-6 ${buttonClassName}`}
-      >
-        <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-slate-500 sm:text-[11px]">
-          {label}
-        </span>
-        <span className="mt-1.5 flex items-center justify-between gap-3 sm:mt-2 sm:gap-4">
-          <span className="flex min-w-0 items-center gap-3">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-sky-500 transition group-hover:text-sky-600 sm:h-10 sm:w-10">
-              <Icon className="h-4 w-4" />
-            </span>
-            <span className="truncate text-[15px] font-semibold leading-tight text-slate-900 sm:text-base">
-              {value}
-            </span>
-          </span>
-          <FaChevronDown
-            className={`h-4 w-4 shrink-0 text-slate-400 transition ${
-              isOpen
-                ? "rotate-180 text-slate-600"
-                : "group-hover:text-slate-600"
-            }`}
-          />
-        </span>
-      </button>
-
-      {isOpen && (
-        <div className="absolute left-0 top-full z-[80] mt-2 w-full overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-2xl lg:bottom-full lg:top-auto lg:mb-2 lg:mt-0">
-          <div className="p-2">
-            {selectedOption && (
-              <button
-                type="button"
-                onClick={() => onSelect(selectedOption.id)}
-                className="flex w-full flex-col items-start gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 text-left text-slate-900 transition hover:border-sky-300 hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between sm:px-4"
-              >
-                <span className="flex min-w-0 flex-1 items-center gap-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sky-500 sm:h-10 sm:w-10">
-                    <SelectedIcon className="h-4 w-4" />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-sm font-semibold leading-tight text-slate-900">
-                      {selectedOption.optionLabel || selectedOption.label}
-                    </span>
-                    {selectedOption.description && (
-                      <span className="mt-0.5 block text-[11px] text-slate-500 sm:text-xs">
-                        {selectedOption.description}
-                      </span>
-                    )}
-                  </span>
-                </span>
-                <span className="self-start px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-sky-600 sm:ml-3 sm:self-auto sm:px-3 sm:text-[10px]">
-                  Selected
-                </span>
-              </button>
-            )}
-
-            <div className="max-h-56 space-y-1 overflow-y-auto pr-1 sm:max-h-64">
-              {suggestionOptions.map((option) => {
-                const OptionIcon = option.icon || Icon || FaBolt;
-
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    onClick={() => onSelect(option.id)}
-                    className="flex w-full items-center gap-3 rounded-lg border border-transparent bg-white px-3 py-2.5 text-left text-slate-900 transition hover:border-slate-200 hover:bg-slate-50 hover:text-sky-600 sm:px-4 sm:py-3"
-                  >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sky-500 transition sm:h-10 sm:w-10">
-                      <OptionIcon className="h-4 w-4" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-semibold leading-tight">
-                        {option.optionLabel || option.label}
-                      </span>
-                      {option.description && (
-                        <span className="mt-0.5 block text-[11px] text-slate-500 sm:text-xs">
-                          {option.description}
-                        </span>
-                      )}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+const dedupeCards = (cards) => {
+  const seen = new Set();
+  const output = [];
+  for (const card of cards) {
+    if (!card?.name) continue;
+    const key = `${card.categoryId}:${card.name}`.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    output.push(card);
+  }
+  return output;
 };
 
 const HeroSection = () => {
   const navigate = useNavigate();
-  const heroSearchRef = useRef(null);
-  const heroStatsRef = useRef(null);
-  const [selectedDeviceType, setSelectedDeviceType] = useState("smartphones");
-  const [selectedPriceRange, setSelectedPriceRange] = useState("under-10000");
-  const [selectedFeature, setSelectedFeature] = useState("overall");
-  const [activeDropdown, setActiveDropdown] = useState(null);
-  const [heroStatsInView, setHeroStatsInView] = useState(false);
+  const {
+    smartphone,
+    smartphoneAll,
+    laptops,
+    homeAppliances,
+    networking,
+    brands,
+  } = useDevice();
+  const [activeCategory, setActiveCategory] = useState("smartphones");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [liveTrending, setLiveTrending] = useState([]);
   const [featuredPhones, setFeaturedPhones] = useState([]);
   const [featuredPhonesLoading, setFeaturedPhonesLoading] = useState(false);
-  const trendingSearches = useMemo(() => {
-    const names = featuredPhones
-      .map((device) => device?.name || "")
-      .filter(Boolean);
-    return Array.from(new Set(names)).slice(0, HERO_TRENDING_CHIP_LIMIT);
-  }, [featuredPhones]);
-  const featuredDevices = useMemo(
-    () => featuredPhones.slice(0, HERO_POPULAR_CARD_LIMIT),
-    [featuredPhones],
-  );
 
-  const selectedDevice =
-    DEVICE_TYPE_OPTIONS.find((option) => option.id === selectedDeviceType) ||
-    DEVICE_TYPE_OPTIONS[0];
-  const selectedPrice =
-    PRICE_RANGE_OPTIONS.find((option) => option.id === selectedPriceRange) ||
-    PRICE_RANGE_OPTIONS[0];
-  const currentFeatureOptions =
-    FEATURE_OPTIONS_BY_DEVICE[selectedDevice.id] ||
-    FEATURE_OPTIONS_BY_DEVICE.smartphones;
-  const selectedFeatureOption =
-    currentFeatureOptions.find((option) => option.id === selectedFeature) ||
-    currentFeatureOptions[0];
+  const categoryRows = useMemo(() => {
+    const phones = Array.isArray(smartphoneAll) && smartphoneAll.length
+      ? smartphoneAll
+      : Array.isArray(smartphone)
+        ? smartphone
+        : [];
+
+    const sourceMap = {
+      smartphones: phones,
+      laptops: Array.isArray(laptops) ? laptops : [],
+      tvs: Array.isArray(homeAppliances) ? homeAppliances : [],
+      networking: Array.isArray(networking) ? networking : [],
+    };
+
+    return CATEGORY_META.map((category) => ({
+      ...category,
+      items: sourceMap[category.id] || [],
+      count: (sourceMap[category.id] || []).length,
+    }));
+  }, [homeAppliances, laptops, networking, smartphone, smartphoneAll]);
 
   useEffect(() => {
-    if (!heroSearchRef.current) return undefined;
+    const firstAvailable = categoryRows.find((category) => category.count > 0);
+    const current = categoryRows.find((category) => category.id === activeCategory);
+    if (firstAvailable && (!current || current.count === 0)) {
+      setActiveCategory(firstAvailable.id);
+    }
+  }, [activeCategory, categoryRows]);
 
-    const handlePointerDown = (event) => {
-      if (!heroSearchRef.current?.contains(event.target)) {
-        setActiveDropdown(null);
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+
+    const loadTrending = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/public/trending/all`, {
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const payload = await response.json();
+        const rows = Array.isArray(payload?.trending)
+          ? payload.trending
+          : Array.isArray(payload?.results)
+            ? payload.results
+            : Array.isArray(payload?.data)
+              ? payload.data
+              : [];
+        if (!cancelled) setLiveTrending(rows);
+      } catch (error) {
+        if (!cancelled && error?.name !== "AbortError") setLiveTrending([]);
       }
     };
 
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
-        setActiveDropdown(null);
-      }
-    };
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
+    loadTrending();
 
     return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (
-      !currentFeatureOptions.some((option) => option.id === selectedFeature)
-    ) {
-      setSelectedFeature("overall");
-    }
-  }, [currentFeatureOptions, selectedFeature]);
-
-  useEffect(() => {
-    const node = heroStatsRef.current;
-    if (!node) return undefined;
-
-    if (typeof IntersectionObserver === "undefined") {
-      setHeroStatsInView(true);
-      return undefined;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setHeroStatsInView(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.35 },
-    );
-
-    observer.observe(node);
-
-    return () => {
-      observer.disconnect();
+      cancelled = true;
+      controller.abort();
     };
   }, []);
 
@@ -657,44 +420,27 @@ const HeroSection = () => {
     const loadPopularDevices = async () => {
       setFeaturedPhonesLoading(true);
       try {
-        const url =
-          "https://api.apisphere.in/api/public/search-popularity?productType=smartphone&limit=5";
-        const response = await fetch(url, {
-          signal: controller.signal,
-        });
+        const response = await fetch(
+          `${API_BASE}/public/search-popularity?productType=smartphone&limit=${HERO_POPULAR_CARD_LIMIT}`,
+          { signal: controller.signal },
+        );
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
         const json = await response.json();
-        const devices = Array.isArray(json?.devices) ? json.devices : [];
+        const devices = Array.isArray(json?.devices)
+          ? json.devices
+          : Array.isArray(json?.data)
+            ? json.data
+            : [];
 
         if (!mounted) return;
 
-        const mappedDevices = devices.length
-          ? devices.map((device, index) => ({
-              id: device?.product_id ?? device?.id ?? `device-${index + 1}`,
-              name: device?.name || `Device ${index + 1}`,
-              short:
-                device?.brand_name ||
-                String(device?.name || "")
-                  .split(" ")
-                  .slice(0, 2)
-                  .map((part) => part.slice(0, 1).toUpperCase())
-                  .join("") ||
-                `D${index + 1}`,
-              image: device?.image_url || "",
-              badge: device?.badge || "Popular",
-              detailPath: normalizeSmartphoneDetailPath(
-                device?.detail_path,
-                device?.name,
-              ),
-              brandName: device?.brand_name || "Smartphone",
-              searchCount: device?.search_count_30d || 0,
-              score: device?.search_popularity_score || 0,
-              rank: device?.hero_rank || index + 1,
-            }))
-          : [];
-
-        setFeaturedPhones(mappedDevices.slice(0, 5));
+        setFeaturedPhones(
+          devices
+            .map((device, index) => normalizePopularDevice(device, index))
+            .filter(Boolean)
+            .slice(0, HERO_POPULAR_CARD_LIMIT),
+        );
       } catch (error) {
         if (error?.name !== "AbortError") {
           setFeaturedPhones([]);
@@ -712,345 +458,532 @@ const HeroSection = () => {
     };
   }, []);
 
-  const handleSearch = (event) => {
+  const allStoreCards = useMemo(
+    () =>
+      dedupeCards(
+        categoryRows.flatMap((category) =>
+          category.items
+            .map((item) => normalizeCard(item, category.id, "catalog"))
+            .filter(Boolean),
+        ),
+      ),
+    [categoryRows],
+  );
+
+  const liveCards = useMemo(
+    () =>
+      dedupeCards(
+        liveTrending
+          .map((item) =>
+            normalizeCard(
+              item,
+              resolveCategoryFromType(
+                firstText(item?.product_type, item?.productType, item?.deviceType),
+              ),
+              "live",
+            ),
+          )
+          .filter(Boolean),
+      ),
+    [liveTrending],
+  );
+
+  const discoveryCards = useMemo(
+    () =>
+      dedupeCards([...liveCards, ...allStoreCards]).sort(
+        (left, right) => right.signal - left.signal,
+      ),
+    [allStoreCards, liveCards],
+  );
+
+  const activeCategoryMeta =
+    categoryRows.find((category) => category.id === activeCategory) ||
+    categoryRows[0] ||
+    CATEGORY_META[0];
+  const featuredDevices = useMemo(
+    () => featuredPhones.slice(0, HERO_POPULAR_CARD_LIMIT),
+    [featuredPhones],
+  );
+  const featuredDevice = featuredDevices[0] || null;
+  const featuredRail = featuredDevices.slice(1);
+  const searchPool = useMemo(
+    () => dedupeCards([...featuredDevices, ...discoveryCards]),
+    [discoveryCards, featuredDevices],
+  );
+  const visibleStats = [
+    {
+      label: "Indexed devices",
+      value: allStoreCards.length,
+      icon: FaSignal,
+    },
+    {
+      label: `${activeCategoryMeta.label} available`,
+      value: activeCategoryMeta.count,
+      icon: activeCategoryMeta.icon,
+    },
+    {
+      label: "Active brands",
+      value: Array.isArray(brands) ? brands.length : 0,
+      icon: FaRegLightbulb,
+    },
+    {
+      label: "Live signals",
+      value: liveCards.length,
+      icon: FaChartLine,
+    },
+  ];
+
+  const dynamicChips = useMemo(() => {
+    const brandChips = (Array.isArray(brands) ? brands : [])
+      .map((brand) => firstText(brand?.name, brand))
+      .filter(Boolean);
+    const productChips = searchPool.map((card) => card.name).filter(Boolean);
+    return Array.from(new Set([...productChips, ...brandChips])).slice(0, 9);
+  }, [brands, searchPool]);
+
+  const searchSuggestions = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return [];
+    return searchPool
+      .filter((card) =>
+        [card.name, card.brand, card.categoryLabel, card.spec]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase()
+          .includes(query),
+      )
+      .slice(0, 5);
+  }, [searchPool, searchQuery]);
+
+  const submitSearch = (event) => {
     event?.preventDefault?.();
-    trackSearchInterest({
-      query: selectedDevice.id,
-      device_type: selectedDevice.id,
-      source: "hero",
-    });
-    navigate(
-      buildHeroSearchUrl({
-        device: selectedDevice,
-        price: selectedPrice,
-        feature: selectedFeatureOption,
-      }),
-    );
+    const query = searchQuery.trim();
+    const target = query
+      ? `${activeCategoryMeta.path}?q=${encodeURIComponent(query)}`
+      : activeCategoryMeta.path;
+    navigate(target);
   };
 
-  const selectAndClose = (setter) => (nextValue) => {
-    setter(nextValue);
-    setActiveDropdown(null);
-  };
-
-  const trackSearchInterest = (payload) => {
-    try {
-      const body = JSON.stringify({
-        ...payload,
-        event_id:
-          payload?.event_id ||
-          (typeof crypto !== "undefined" && crypto.randomUUID
-            ? crypto.randomUUID()
-            : undefined),
-      });
-
-      if (typeof navigator !== "undefined" && navigator.sendBeacon) {
-        const blob = new Blob([body], { type: "application/json" });
-        navigator.sendBeacon(
-          "https://api.apisphere.in/api/public/search-interest",
-          blob,
-        );
-        return;
-      }
-
-      fetch("https://api.apisphere.in/api/public/search-interest", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body,
-        keepalive: true,
-      }).catch(() => {});
-    } catch {
-      // analytics should not block navigation
-    }
+  const openCard = (card) => {
+    if (!card) return;
+    navigate(card.path);
   };
 
   return (
-    <section className="relative overflow-visible bg-[linear-gradient(180deg,#020617_0%,#050816_38%,#0B1120_100%)] text-white">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_22%,rgba(124,58,237,0.16),transparent_22%),radial-gradient(circle_at_82%_24%,rgba(37,99,235,0.16),transparent_24%),radial-gradient(circle_at_90%_82%,rgba(124,58,237,0.18),transparent_18%)]" />
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.06)_1px,transparent_1px)] [background-size:24px_24px] opacity-35 [mask-image:radial-gradient(circle_at_center,white,transparent_88%)]" />
-      <div className="absolute inset-y-0 left-[26%] hidden w-[380px] bg-[radial-gradient(circle,rgba(124,58,237,0.12)_1px,transparent_1px)] [background-size:10px_10px] opacity-50 [mask-image:radial-gradient(circle_at_center,white,transparent_76%)] lg:block" />
-      <div className="absolute inset-y-0 right-[-4%] hidden w-[360px] bg-[radial-gradient(circle,rgba(37,99,235,0.2)_1px,transparent_1px)] [background-size:10px_10px] opacity-55 [mask-image:radial-gradient(circle_at_center,white,transparent_78%)] lg:block" />
-      <div className="pointer-events-none absolute inset-x-0 top-[34%] hidden lg:block">
-        <svg
-          viewBox="0 0 1440 260"
-          className="h-[260px] w-full opacity-95"
+    <section className="relative overflow-hidden bg-[#02030B] text-white">
+      <div className="absolute inset-0 bg-[linear-gradient(135deg,#020617_0%,#090B2E_24%,#24105E_50%,#073C8C_76%,#050712_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(14,165,233,0.34),transparent_32%),radial-gradient(circle_at_82%_18%,rgba(168,85,247,0.42),transparent_34%),radial-gradient(circle_at_54%_82%,rgba(59,130,246,0.28),transparent_40%)]" />
+      <div className="absolute left-[-58%] top-[7%] h-28 w-[34rem] -rotate-12 rounded-[999px] bg-gradient-to-r from-cyan-400/18 via-blue-500/24 to-fuchsia-500/22 blur-2xl sm:left-[-18%] sm:h-32 sm:w-[58rem]" />
+      <div className="absolute right-[-72%] top-[38%] h-32 w-[34rem] rotate-12 rounded-[999px] bg-gradient-to-r from-purple-600/24 via-blue-500/22 to-sky-400/16 blur-2xl sm:right-[-22%] sm:top-[34%] sm:h-40 sm:w-[54rem]" />
+      <div className="absolute bottom-[-16%] left-[-36%] h-56 w-[36rem] rounded-[999px] bg-gradient-to-r from-blue-600/18 via-violet-600/24 to-fuchsia-500/18 blur-3xl sm:bottom-[-20%] sm:left-[12%] sm:h-72 sm:w-[68rem]" />
+      <svg
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-45 mix-blend-screen sm:opacity-90"
+        viewBox="0 0 1440 760"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+      >
+        <defs>
+          <linearGradient id="heroCircuit" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#22D3EE" stopOpacity="0.18" />
+            <stop offset="42%" stopColor="#3B82F6" stopOpacity="0.72" />
+            <stop offset="100%" stopColor="#D946EF" stopOpacity="0.34" />
+          </linearGradient>
+          <linearGradient id="heroPulse" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#38BDF8" stopOpacity="0" />
+            <stop offset="50%" stopColor="#C084FC" stopOpacity="0.92" />
+            <stop offset="100%" stopColor="#38BDF8" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M-40 160H196C242 160 250 226 304 226H512C577 226 586 112 660 112H862C936 112 956 218 1034 218H1480"
+          stroke="url(#heroCircuit)"
+          strokeWidth="2"
           fill="none"
-          aria-hidden="true"
-        >
-          <defs>
-            <linearGradient id="hooksHeroWave" x1="0" y1="0" x2="1440" y2="0">
-              <stop offset="0%" stopColor="rgba(124,58,237,0)" />
-              <stop offset="34%" stopColor="#7C3AED" />
-              <stop offset="68%" stopColor="#2563EB" />
-              <stop offset="100%" stopColor="rgba(37,99,235,0)" />
-            </linearGradient>
-            <filter
-              id="hooksHeroGlow"
-              x="-20%"
-              y="-80%"
-              width="140%"
-              height="260%"
+        />
+        <path
+          d="M-70 520H226C280 520 304 444 360 444H566C646 444 652 584 732 584H918C998 584 1000 480 1080 480H1490"
+          stroke="url(#heroPulse)"
+          strokeWidth="2"
+          fill="none"
+        />
+        <path
+          d="M214 160V86H418M862 112V52H1084M566 444V374H748M1034 218V302H1202"
+          stroke="rgba(191,219,254,0.28)"
+          strokeWidth="1.5"
+          fill="none"
+        />
+        <rect
+          x="104"
+          y="92"
+          width="110"
+          height="188"
+          rx="22"
+          stroke="rgba(191,219,254,0.3)"
+          strokeWidth="2"
+          fill="rgba(37,99,235,0.08)"
+        />
+        <rect
+          x="1124"
+          y="114"
+          width="188"
+          height="116"
+          rx="18"
+          stroke="rgba(216,180,254,0.32)"
+          strokeWidth="2"
+          fill="rgba(168,85,247,0.08)"
+        />
+        <rect
+          x="1030"
+          y="520"
+          width="142"
+          height="88"
+          rx="16"
+          stroke="rgba(125,211,252,0.3)"
+          strokeWidth="2"
+          fill="rgba(14,165,233,0.07)"
+        />
+        <path
+          d="M1082 608H1120M1120 608L1132 636H1070L1082 608Z"
+          stroke="rgba(125,211,252,0.26)"
+          strokeWidth="2"
+          fill="none"
+        />
+        <path
+          d="M128 138H190M128 168H178M128 198H184M1156 154H1276M1156 184H1238M1060 554H1140M1060 580H1116"
+          stroke="rgba(255,255,255,0.2)"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        {[
+          [196, 160],
+          [304, 226],
+          [660, 112],
+          [862, 112],
+          [1034, 218],
+          [360, 444],
+          [732, 584],
+          [1080, 480],
+        ].map(([cx, cy]) => (
+          <circle
+            key={`${cx}-${cy}`}
+            cx={cx}
+            cy={cy}
+            r="5"
+            fill="#BAE6FD"
+            opacity="0.54"
+          />
+        ))}
+      </svg>
+      <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#02030B] to-transparent sm:h-28" />
+
+      <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-8 sm:px-6 sm:pb-20 sm:pt-16 lg:px-8 lg:pb-24 lg:pt-20">
+        <div className="grid items-center gap-8 sm:gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]">
+          <div className="min-w-0">
+            <p className="inline-flex max-w-full items-center gap-2 rounded-md border border-cyan-200/20 bg-blue-500/12 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.06em] text-blue-100 shadow-[0_0_32px_rgba(14,165,233,0.16)] backdrop-blur sm:text-[11px]">
+              <FaBolt className="h-3 w-3 text-sky-300" />
+              Live Gadget Intelligence
+            </p>
+
+            <h1 className="mt-5 max-w-3xl text-[2.45rem] font-black leading-[0.98] text-white sm:mt-6 sm:text-5xl sm:leading-[1.02] lg:text-6xl">
+              Find the gadget
+              <span className="block bg-gradient-to-r from-sky-200 via-white to-fuchsia-200 bg-clip-text text-transparent">
+                worth buying next.
+              </span>
+            </h1>
+
+            <p className="mt-4 max-w-2xl text-sm leading-6 text-blue-100/78 sm:mt-5 sm:text-lg sm:leading-7">
+              Search once and see what is worth shortlisting, from specs and
+              variants to prices, launches, and real buyer interest.
+            </p>
+
+            <form
+              onSubmit={submitSearch}
+              className="mt-6 w-full max-w-2xl overflow-hidden rounded-lg border border-cyan-200/18 bg-[#070B24]/76 p-2 shadow-[0_30px_100px_rgba(37,99,235,0.22)] backdrop-blur-xl sm:mt-8 sm:shadow-[0_30px_100px_rgba(37,99,235,0.28)]"
             >
-              <feGaussianBlur stdDeviation="7" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-          <path
-            d="M-40 178C108 217 194 224 308 188C431 150 503 67 652 90C794 113 868 226 1010 214C1145 203 1250 120 1480 146"
-            stroke="url(#hooksHeroWave)"
-            strokeWidth="3"
-            strokeLinecap="round"
-            filter="url(#hooksHeroGlow)"
-          />
-          <path
-            d="M18 194C154 217 249 208 348 163C454 114 546 85 663 111C783 137 855 224 983 215C1112 206 1238 123 1454 137"
-            stroke="rgba(124,58,237,0.46)"
-            strokeWidth="1.5"
-            strokeDasharray="2 10"
-            strokeLinecap="round"
-          />
-        </svg>
-      </div>
-      <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#0B1120] to-transparent" />
-      <div className="relative mx-auto max-w-7xl px-4 pb-12 pt-12 sm:px-6 sm:pb-20 sm:pt-16 lg:px-8 lg:pb-24 lg:pt-24">
-        <div className="mx-auto max-w-4xl text-center">
-          <h1 className="text-[11px] font-bold uppercase tracking-[0.32em] text-sky-600 sm:text-xs">
-            Find Your Perfect Device
-          </h1>
-
-          <p className={`${HOME_SECTION_LEAD_DARK} max-w-[22rem] sm:max-w-2xl`}>
-            Smart comparisons, real-time prices, and expert insights to help you
-            make the right choice - instantly.
-          </p>
-
-          <div
-            ref={heroStatsRef}
-            className="mx-auto mt-8 grid max-w-lg grid-cols-1 gap-3 min-[480px]:grid-cols-2 sm:max-w-none sm:grid-cols-3 lg:gap-6"
-          >
-            {stats.map((stat, idx) => (
-              <div
-                key={idx}
-                className={`group flex min-h-[92px] items-center gap-3 rounded-2xl border border-white/12 bg-white/10 px-4 py-3.5 text-left shadow-[0_18px_40px_rgba(8,47,73,0.2)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-white/20 min-[480px]:min-h-[84px] sm:min-h-[96px] sm:gap-3 sm:px-4 lg:rounded-2xl ${
-                  idx === stats.length - 1
-                    ? "min-[480px]:col-span-2 min-[480px]:mx-auto min-[480px]:w-full min-[480px]:max-w-[16rem] sm:col-span-1 sm:max-w-none"
-                    : ""
-                }`}
-              >
-                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white/10 text-cyan-100 transition-colors group-hover:bg-white/15 sm:h-12 sm:w-12">
-                  <FaStar className="h-4 w-4 text-cyan-100" />
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <div className="relative min-w-0 flex-1">
+                  <FaSearch className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-100/55" />
+                  <input
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder={`Search ${activeCategoryMeta.label.toLowerCase()}...`}
+                    className="h-12 w-full rounded-md border border-blue-200/12 bg-[#071024]/92 py-3 pl-11 pr-4 text-sm font-medium text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-400/24 sm:h-[52px]"
+                  />
                 </div>
-                <div className="min-w-0">
-                  <p className="text-lg font-black leading-none tracking-tight text-white sm:text-2xl">
-                    <CountUpNumber
-                      end={stat.value}
-                      suffix={stat.suffix}
-                      compact={stat.compact}
-                      play={heroStatsInView}
-                    />
-                  </p>
-                  <p className="mt-1 text-[11px] leading-[1.1] text-white/70 sm:text-xs">
-                    {stat.label}
-                  </p>
-                </div>
+                <button
+                  type="submit"
+                  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-md bg-gradient-to-r from-sky-400 via-blue-500 to-fuchsia-500 px-5 text-sm font-bold text-white shadow-[0_16px_36px_rgba(59,130,246,0.34)] transition hover:brightness-110 sm:h-[52px] sm:w-auto"
+                >
+                  Discover
+                  <FaArrowRight className="h-3.5 w-3.5" />
+                </button>
               </div>
-            ))}
-          </div>
-        </div>
 
-        <div
-          ref={heroSearchRef}
-          className="mx-auto mt-10 max-w-xl sm:mt-14 sm:max-w-3xl lg:max-w-5xl"
-        >
-          <form
-            onSubmit={handleSearch}
-            className="overflow-hidden rounded-[28px]   shadow-[0_30px_80px_rgba(15,23,42,0.18)] backdrop-blur-sm transition-all duration-300 hover:border-slate-300 sm:rounded-[30px]"
-          >
-            <div className="border-b border-slate-200 px-5 py-4 sm:px-6">
-              <p className="text-[1.05rem] font-semibold text-white">
-                Quick Search
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-2 sm:gap-4 sm:p-4 lg:grid-cols-4 lg:gap-4">
-              <SearchDropdown
-                label="Device Type"
-                icon={selectedDevice.icon}
-                value={selectedDevice.label}
-                selectedId={selectedDevice.id}
-                options={DEVICE_TYPE_OPTIONS}
-                isOpen={activeDropdown === "device"}
-                onToggle={() =>
-                  setActiveDropdown((current) =>
-                    current === "device" ? null : "device",
-                  )
-                }
-                onSelect={selectAndClose(setSelectedDeviceType)}
-                className=""
-                buttonClassName="h-full"
-              />
-
-              <SearchDropdown
-                label="Price Range"
-                icon={FaRupeeSign}
-                value={selectedPrice.label}
-                selectedId={selectedPrice.id}
-                options={PRICE_RANGE_OPTIONS}
-                isOpen={activeDropdown === "price"}
-                onToggle={() =>
-                  setActiveDropdown((current) =>
-                    current === "price" ? null : "price",
-                  )
-                }
-                onSelect={selectAndClose(setSelectedPriceRange)}
-                className=""
-                buttonClassName="h-full"
-              />
-
-              <SearchDropdown
-                label="Features"
-                icon={selectedFeatureOption.icon || FaBolt}
-                value={selectedFeatureOption.label}
-                selectedId={selectedFeatureOption.id}
-                options={currentFeatureOptions}
-                isOpen={activeDropdown === "feature"}
-                onToggle={() =>
-                  setActiveDropdown((current) =>
-                    current === "feature" ? null : "feature",
-                  )
-                }
-                onSelect={selectAndClose(setSelectedFeature)}
-                className="col-span-2 sm:col-span-1"
-                buttonClassName="h-full"
-              />
-
-              <button
-                type="submit"
-                className="group relative col-span-2 sm:col-span-1 flex w-full min-h-[82px] sm:min-h-[96px] items-center justify-center gap-3 rounded-[20px] sm:rounded-[22px] bg-gradient-to-br from-cyan-500 via-sky-500 to-blue-600 px-5 py-4 text-white shadow-[0_18px_45px_rgba(2,132,199,0.28)] transition-all duration-300 hover:from-cyan-400 hover:to-blue-500 active:scale-[0.99]"
-              >
-                <span className="flex h-10 w-10 items-center justify-center rounded-full transition sm:h-14 sm:w-14">
-                  <FaSearch className="h-4 w-4 sm:h-5 sm:w-5" />
-                </span>
-                <div className="text-left">
-                  <p className="text-xs font-bold sm:text-sm">Explore Now</p>
-                  <p className="text-[11px] text-white/70 sm:text-xs">
-                    Find your match
-                  </p>
-                </div>
-              </button>
-            </div>
-          </form>
-        </div>
-
-        <div className="mt-10 sm:mt-12">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-yellow-200/50 to-transparent" />
-            <span className="inline-flex items-center gap-2 whitespace-nowrap text-xs font-bold uppercase tracking-[0.3em] text-white/80">
-              Trending Searches
-            </span>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-yellow-200/50 to-transparent" />
-          </div>
-
-          <div className="mt-5 flex items-center justify-start gap-2 overflow-x-auto pb-2 no-scrollbar sm:mt-6 sm:justify-center sm:gap-3">
-            {trendingSearches.map((item, idx) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() =>
-                  navigate(`/smartphones?q=${encodeURIComponent(item)}`)
-                }
-                className="group relative rounded-full whitespace-nowrap border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/15 hover:text-cyan-100 sm:px-5 sm:py-2.5 sm:text-sm"
-              >
-                <span className="flex items-center gap-2">
-                  {idx === 0 && <FaFire className="h-3 w-3 text-yellow-300" />}
-                  {item}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-12 sm:mt-16">
-          <div className="space-y-1 text-center sm:space-y-2">
-            <p className="text-[10px] font-bold uppercase tracking-[0.26em] text-white/70 sm:text-xs sm:tracking-[0.3em]">
-              Popular Choices
-            </p>
-            <h2 className="text-xl font-bold text-white sm:text-2xl">
-              Most Searched Devices
-            </h2>
-            <p className="text-[11px] font-medium text-white/65">
-              {featuredPhonesLoading
-                ? "Updating the ranking from recent search activity..."
-                : "Live ranking from recent search activity."}
-            </p>
-          </div>
-
-          <div className="mt-8">
-            {featuredDevices.length > 0 ? (
-              <div className="no-scrollbar flex items-center gap-3 overflow-x-auto pb-2 sm:gap-4 md:gap-5">
-                {featuredDevices.map((phone) => (
-                  <button
-                    key={phone.id || phone.name}
-                    type="button"
-                    onClick={() =>
-                      navigate(
-                        phone.detailPath ||
-                          `/smartphones?q=${encodeURIComponent(phone.name)}`,
-                      )
-                    }
-                    className="group relative flex min-w-[160px] sm:min-w-[180px] md:min-w-[200px] flex-col gap-2.5 rounded-2xl sm:rounded-3xl  p-4 sm:p-5 text-left text-white backdrop-blur-lg transition-all duration-300 "
-                  >
-                    <div className="flex h-32 w-full sm:h-40 lg:h-44 items-center justify-center overflow-hidden rounded-xl sm:rounded-2xl border border-sky-300/20 bg-blue-950/40">
-                      {phone.image ? (
-                        <img
-                          src={phone.image}
-                          alt={phone.name}
-                          className="h-full w-full object-contain p-2 sm:p-3 transition-transform duration-300 group-hover:scale-110"
-                          loading="lazy"
-                          onError={(e) => {
-                            e.currentTarget.style.display = "none";
-                          }}
-                        />
-                      ) : (
-                        <span className="text-base sm:text-lg font-bold tracking-wide text-slate-500">
-                          {phone.short}
+              {searchSuggestions.length > 0 ? (
+                <div className="mt-2 overflow-hidden rounded-md border border-cyan-200/14 bg-[#070C1B]/95 shadow-[0_18px_50px_rgba(14,165,233,0.16)]">
+                  {searchSuggestions.map((card) => (
+                    <button
+                      key={`${card.categoryId}-${card.name}`}
+                      type="button"
+                      onClick={() => openCard(card)}
+                      className="flex w-full items-center gap-3 border-b border-white/8 px-3 py-3 text-left transition last:border-b-0 hover:bg-white/8"
+                    >
+                      <ProductThumb card={card} className="h-10 w-10" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold text-white">
+                          {card.name}
                         </span>
-                      )}
-                    </div>
-
-                    <div className="flex-1">
-                      <p className="text-xs sm:text-sm font-bold leading-snug text-white">
-                        {phone.name}
-                      </p>
-                      <p className="mt-0.5 text-[10px] sm:text-xs font-medium text-sky-200/70">
-                        {phone.brandName}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-2 border-t border-sky-300/20 pt-2.5 sm:pt-3">
-                      <span className="text-[10px] sm:text-xs font-semibold text-sky-200">
-                        View Details
+                        <span className="block truncate text-xs text-blue-100/60">
+                          {[card.brand, card.categoryLabel, card.priceLabel]
+                            .filter(Boolean)
+                            .join(" / ")}
+                        </span>
                       </span>
-                      <span className="transition-transform duration-300 group-hover:translate-x-1">
-                        <FaArrowRight className="h-2.5 w-2.5 sm:h-3 sm:w-3.5 text-sky-200" />
-                      </span>
-                    </div>
+                      <FaArrowRight className="h-3 w-3 text-blue-100/50" />
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </form>
+
+            <div className="no-scrollbar mt-5 flex w-full flex-nowrap gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
+              {categoryRows.map((category) => {
+                const Icon = category.icon;
+                const isActive = category.id === activeCategory;
+                return (
+                  <button
+                    key={category.id}
+                    type="button"
+                    onClick={() => setActiveCategory(category.id)}
+                    className={`inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-2 text-sm font-semibold transition ${
+                      isActive
+                        ? "border-fuchsia-300/55 bg-gradient-to-r from-blue-500/24 to-fuchsia-500/20 text-white shadow-[0_12px_34px_rgba(168,85,247,0.18)]"
+                        : "border-white/10 bg-[#0B1230]/58 text-blue-100/76 hover:border-cyan-200/24 hover:bg-blue-500/12"
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {category.label}
+                    <span className="text-xs text-blue-100/55">
+                      {formatCount(category.count)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
+              <button
+                type="button"
+                onClick={() => navigate("/compare")}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-cyan-200/20 bg-blue-500/14 px-3 py-3 text-center text-xs font-bold text-white transition hover:border-sky-300/50 hover:bg-blue-400/18 sm:px-4 sm:text-sm"
+              >
+                <FaExchangeAlt className="h-3.5 w-3.5 text-sky-300" />
+                Start comparison
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate("/trending/smartphones")}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-fuchsia-200/20 bg-purple-500/14 px-3 py-3 text-center text-xs font-bold text-white transition hover:border-purple-300/50 hover:bg-purple-400/18 sm:px-4 sm:text-sm"
+              >
+                <FaChartLine className="h-3.5 w-3.5 text-purple-200" />
+                View trends
+              </button>
+            </div>
+
+            {dynamicChips.length > 0 ? (
+              <div className="no-scrollbar mt-5 flex w-full gap-2 overflow-x-auto pb-1 sm:mt-6">
+                {dynamicChips.map((chip) => (
+                  <button
+                    key={chip}
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery(chip);
+                      navigate(
+                        `${activeCategoryMeta.path}?q=${encodeURIComponent(chip)}`,
+                      );
+                    }}
+                    className="shrink-0 rounded-md border border-white/10 bg-[#0B1230]/58 px-3 py-2 text-xs font-semibold text-blue-100/80 transition hover:border-sky-300/40 hover:bg-blue-500/14 hover:text-white"
+                  >
+                    {chip}
                   </button>
                 ))}
               </div>
-            ) : (
-              <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-6 text-center text-slate-300 backdrop-blur-sm transition-all duration-300">
-                {featuredPhonesLoading
-                  ? "Loading live devices..."
-                  : "No live devices available right now."}
-              </div>
-            )}
+            ) : null}
           </div>
+
+          <div className="relative min-w-0">
+            <div className="absolute -inset-3 rounded-lg bg-[conic-gradient(from_150deg_at_50%_50%,rgba(34,211,238,0.34),rgba(37,99,235,0.28),rgba(168,85,247,0.34),rgba(217,70,239,0.28),rgba(34,211,238,0.34))] opacity-70 blur-3xl sm:-inset-4 sm:opacity-80" />
+            <div className="relative overflow-hidden rounded-lg border border-white/14 bg-[#050817]/88 p-3 shadow-[0_26px_90px_rgba(30,64,175,0.28)] backdrop-blur-xl sm:p-4 sm:shadow-[0_34px_130px_rgba(30,64,175,0.34)]">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_16%,rgba(14,165,233,0.24),transparent_28%),radial-gradient(circle_at_92%_12%,rgba(217,70,239,0.28),transparent_30%),linear-gradient(150deg,rgba(37,99,235,0.18),rgba(88,28,135,0.22)_68%,rgba(4,10,30,0))]" />
+              <div className="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/70 to-transparent" />
+
+              <div className="relative flex items-start justify-between gap-3">
+                <div>
+                  <span className="inline-flex rounded-md border border-cyan-200/18 bg-cyan-300/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-100">
+                    Popular Choices
+                  </span>
+                  <h2 className="mt-3 max-w-[14rem] text-xl font-black leading-[1.05] text-white sm:text-2xl">
+                    Most Searched
+                    <span className="block bg-gradient-to-r from-cyan-200 to-fuchsia-200 bg-clip-text text-transparent">
+                      Devices
+                    </span>
+                  </h2>
+                  <p className="mt-2 text-xs font-medium text-blue-100/62">
+                    {featuredPhonesLoading
+                      ? "Updating the ranking..."
+                      : "Live demand signals from recent searches."}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate("/smartphones")}
+                  className="inline-flex shrink-0 items-center gap-2 rounded-md border border-fuchsia-200/22 bg-white/[0.06] px-2.5 py-2 text-xs font-bold text-fuchsia-50/86 transition hover:border-cyan-200/38 hover:bg-cyan-300/12 hover:text-white sm:px-3"
+                >
+                  Browse
+                  <FaArrowRight className="h-3 w-3" />
+                </button>
+              </div>
+
+              {featuredDevice ? (
+                <button
+                  type="button"
+                  onClick={() => openCard(featuredDevice)}
+                  className="group relative mt-4 w-full overflow-hidden rounded-lg border border-cyan-200/18 bg-[linear-gradient(135deg,rgba(8,47,73,0.78),rgba(30,64,175,0.42)_45%,rgba(88,28,135,0.72))] p-3 text-left transition hover:border-fuchsia-200/42 hover:shadow-[0_22px_70px_rgba(14,165,233,0.18)] sm:mt-5 sm:p-3.5"
+                >
+                  <span className="pointer-events-none absolute -right-4 -top-3 text-[86px] font-black leading-none text-white/[0.045] sm:-right-5 sm:-top-4 sm:text-[108px]">
+                    01
+                  </span>
+                  <span className="relative grid grid-cols-[96px_minmax(0,1fr)] items-center gap-3 min-[420px]:grid-cols-[112px_minmax(0,1fr)] min-[480px]:grid-cols-[124px_minmax(0,1fr)] sm:gap-4">
+                    <span className="relative">
+                      <span className="absolute -inset-2 rounded-lg bg-gradient-to-br from-cyan-400/22 to-fuchsia-400/18 blur-xl" />
+                      <ProductThumb
+                        card={featuredDevice}
+                        className="relative h-24 w-full rounded-md border-cyan-200/18 bg-[#071333]/88 shadow-[inset_0_0_34px_rgba(14,165,233,0.12)] min-[480px]:h-[124px]"
+                        imageClassName="p-2 transition duration-300 group-hover:scale-105 sm:p-2.5"
+                      />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="inline-flex rounded-md bg-gradient-to-r from-cyan-300 to-fuchsia-300 px-2.5 py-1 text-[9px] font-black uppercase text-[#071024] sm:px-3 sm:text-[10px]">
+                        #{featuredDevice.rank || 1} most searched
+                      </span>
+                      <span className="mt-2 block text-lg font-black leading-tight text-white sm:mt-3 sm:text-2xl">
+                        {featuredDevice.name}
+                      </span>
+                      <span className="mt-1 block line-clamp-2 text-xs leading-5 text-cyan-100/70 sm:mt-1.5 sm:text-sm">
+                        {[featuredDevice.brand, featuredDevice.spec]
+                          .filter(Boolean)
+                          .join(" / ")}
+                      </span>
+                      <span className="mt-3 inline-flex items-center gap-2 rounded-md bg-white/[0.09] px-3 py-2 text-xs font-bold text-white ring-1 ring-white/10 transition group-hover:bg-white/[0.14] sm:mt-4 sm:px-3.5">
+                        View details
+                        <FaArrowRight className="h-3 w-3" />
+                      </span>
+                    </span>
+                  </span>
+                </button>
+              ) : (
+                <div className="relative mt-5 rounded-lg border border-white/10 bg-white/[0.06] p-6 text-sm text-blue-100/70">
+                  {featuredPhonesLoading
+                    ? "Loading most searched devices..."
+                    : "No search popularity data is available right now."}
+                </div>
+              )}
+
+              {featuredRail.length > 0 ? (
+                <div className="relative mt-3 space-y-2.5">
+                  {featuredRail.map((card, index) => {
+                    const rowColor =
+                      index % 2 === 0
+                        ? "from-sky-400/14 via-blue-500/10 to-fuchsia-400/12"
+                        : "from-fuchsia-400/13 via-violet-500/11 to-cyan-400/10";
+
+                    return (
+                      <button
+                        key={`${card.categoryId}-${card.name}-rail`}
+                        type="button"
+                        onClick={() => openCard(card)}
+                        className={`group flex w-full items-center gap-2.5 rounded-lg border border-white/10 bg-gradient-to-r ${rowColor} p-2 text-left transition hover:border-cyan-200/34 hover:brightness-110 sm:gap-3 sm:p-2.5`}
+                      >
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[#071333]/72 text-xs font-black text-cyan-50 ring-1 ring-white/10 sm:h-10 sm:w-10">
+                          {String(index + 2).padStart(2, "0")}
+                        </span>
+                        <ProductThumb
+                          card={card}
+                          className="h-12 w-12 rounded-md border-cyan-200/12 bg-[#071333]/84 sm:h-14 sm:w-14"
+                          imageClassName="p-1.5 transition duration-300 group-hover:scale-105"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[13px] font-black text-white sm:text-sm">
+                            {card.name}
+                          </span>
+                          <span className="mt-0.5 block truncate text-[11px] text-cyan-100/58 sm:text-xs">
+                            {[card.brand, card.spec].filter(Boolean).join(" / ")}
+                          </span>
+                        </span>
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/[0.06] text-fuchsia-100/50 transition group-hover:bg-cyan-300/14 group-hover:text-cyan-100 sm:h-8 sm:w-8">
+                          <FaArrowRight className="h-3 w-3 transition group-hover:translate-x-0.5" />
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-10 hidden gap-3 lg:grid lg:grid-cols-4">
+          {visibleStats.map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <div
+                key={stat.label}
+                className="rounded-md border border-cyan-200/14 bg-gradient-to-br from-blue-500/12 via-violet-500/10 to-fuchsia-500/10 px-4 py-4 shadow-[0_18px_50px_rgba(2,6,23,0.18)] backdrop-blur"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs font-bold uppercase text-blue-100/58">
+                    {stat.label}
+                  </span>
+                  <Icon className="h-4 w-4 text-sky-300" />
+                </div>
+                <p className="mt-3 text-3xl font-black text-white">
+                  {formatCount(stat.value)}
+                </p>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>
+  );
+};
+
+const ProductThumb = ({ card, className = "", imageClassName = "p-2.5" }) => {
+  const [imageFailed, setImageFailed] = useState(false);
+  const initials = firstText(card?.brand, card?.name)
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0))
+    .join("");
+
+  return (
+    <span
+      className={`flex shrink-0 items-center justify-center overflow-hidden rounded-md border border-white/10 bg-[#071024] ${className}`}
+    >
+      {card?.image && !imageFailed ? (
+        <img
+          src={card.image}
+          alt={card.name}
+          className={`h-full w-full object-contain ${imageClassName}`}
+          loading="lazy"
+          onError={() => setImageFailed(true)}
+        />
+      ) : (
+        <span className="px-3 text-center text-sm font-black uppercase text-blue-100/55">
+          {initials || "HD"}
+        </span>
+      )}
+    </span>
   );
 };
 
