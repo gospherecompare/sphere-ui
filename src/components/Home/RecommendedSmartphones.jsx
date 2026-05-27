@@ -5,7 +5,6 @@ import { useSelector } from "react-redux";
 import { createProductPath } from "../../utils/slugGenerator";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
 import { FaArrowRight, FaMobileAlt } from "react-icons/fa";
-import { HOME_SECTION_LEAD_DARK } from "./homeSectionTypography";
 
 const RECENT_STORAGE_KEY = "hooks_recent_smartphones_v1";
 const FALLBACK_CACHE_KEY = "hooks_reco_fallback_cache_v1";
@@ -115,12 +114,12 @@ const getRowDisplayScore = (row) => {
 
 const TrendSpecScoreBadge = ({ score }) => {
   const value = Number.isFinite(Number(score)) ? Number(score) : null;
-  const label = value != null ? `${value.toFixed(1)}%` : "--";
+  const label = value != null ? `${value.toFixed(1)}%` : "Live";
   return (
-    <div className="inline-flex flex-col items-center justify-center rounded-md border border-blue-200 bg-blue-50/95 px-1.5 py-1 leading-none">
-      <span className="text-[10px] font-bold text-blue-700">{label}</span>
-      <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide text-blue-600">
-        Spec
+    <div className="inline-flex flex-col items-center justify-center rounded-md border border-cyan-200/20 bg-cyan-300/10 px-2 py-1 leading-none shadow-[0_10px_28px_rgba(8,145,178,0.16)] backdrop-blur">
+      <span className="text-[10px] font-black text-cyan-100">{label}</span>
+      <span className="mt-0.5 text-[8px] font-bold uppercase tracking-wide text-cyan-200/70">
+        Match
       </span>
     </div>
   );
@@ -142,50 +141,67 @@ const RecommendationRailCard = ({
   isLoaded,
   onClick,
   metaLabel,
+  priceLabel,
   shortLabel,
 }) => {
   const [imageFailed, setImageFailed] = useState(false);
+  const brandLabel = device.brand || metaLabel || "Smartphone pick";
+  const visiblePrice = priceLabel || "View details";
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`group relative flex min-w-[160px] sm:min-w-[180px] md:min-w-[200px] shrink-0 flex-col gap-2.5 rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-left text-slate-100 backdrop-blur-lg transition-all duration-300 hover:-translate-y-0.5 ${
+      className={`group relative flex min-w-[15.5rem] shrink-0 snap-start flex-col overflow-hidden rounded-lg border border-cyan-200/14 bg-white/[0.055] p-3 text-left text-white shadow-[0_24px_70px_rgba(2,6,23,0.22)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-cyan-200/28 hover:bg-white/[0.075] sm:min-w-[16.75rem] sm:p-3.5 lg:min-w-[18rem] ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
       style={{ transitionDelay: `${index * 60}ms` }}
     >
-      <div className="flex h-32 w-full sm:h-40 lg:h-44 items-center justify-center overflow-hidden rounded-xl sm:rounded-2xl border border-sky-300/20 bg-blue-950/40">
+      <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_22%_12%,rgba(56,189,248,0.16),transparent_32%),radial-gradient(circle_at_86%_28%,rgba(168,85,247,0.18),transparent_36%)] opacity-90" />
+      <span className="pointer-events-none absolute -right-6 top-12 text-8xl font-black leading-none text-white/[0.035] transition-transform duration-300 group-hover:scale-110">
+        {String(index + 1).padStart(2, "0")}
+      </span>
+
+      <div className="relative z-10 flex items-center justify-between gap-3">
+        <span className="rounded-md border border-white/10 bg-white/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-cyan-100">
+          For you {String(index + 1).padStart(2, "0")}
+        </span>
+        <TrendSpecScoreBadge score={device.score} />
+      </div>
+
+      <div className="relative z-10 mt-4 flex h-32 w-full items-center justify-center overflow-visible sm:h-36 lg:h-40">
+        <span className="absolute bottom-3 h-12 w-28 rounded-full bg-cyan-200/10 blur-2xl" />
+        <span className="absolute h-24 w-24 rounded-full bg-gradient-to-br from-cyan-300/12 via-blue-500/10 to-fuchsia-400/12 blur-xl" />
         {device.image && !imageFailed ? (
           <img
             src={device.image}
             alt={device.name}
-            className="h-full w-full object-contain p-2 sm:p-3 transition-transform duration-300 group-hover:scale-110"
+            className="relative z-10 h-full w-full object-contain p-1 drop-shadow-[0_24px_34px_rgba(2,6,23,0.4)] transition-transform duration-300 group-hover:scale-110"
             loading="lazy"
             onError={() => setImageFailed(true)}
           />
         ) : (
-          <span className="text-base sm:text-lg font-bold tracking-wide text-slate-500">
+          <span className="relative z-10 text-lg font-black tracking-wide text-cyan-100/75">
             {shortLabel}
           </span>
         )}
       </div>
 
-      <div className="min-w-0 flex-1">
-        <p className="line-clamp-2 text-xs sm:text-sm font-bold leading-snug text-white">
+      <div className="relative z-10 mt-3 min-w-0 flex-1">
+        <p className="line-clamp-2 text-base font-black leading-snug text-white">
           {device.name}
         </p>
-        <p className="mt-0.5 truncate text-[10px] sm:text-xs font-medium text-sky-200/70">
-          {metaLabel}
+        <p className="mt-1 truncate text-xs font-bold text-cyan-100/65">
+          {brandLabel}
         </p>
       </div>
 
-      <div className="flex items-center justify-between gap-2 border-t border-sky-300/20 pt-2.5 sm:pt-3">
-        <span className="text-[10px] sm:text-xs font-semibold text-sky-200">
-          View Details
+      <div className="relative z-10 mt-4 flex items-center justify-between gap-3 border-t border-cyan-100/10 pt-3">
+        <span className="text-sm font-black text-white">
+          {visiblePrice}
         </span>
-        <span className="transition-transform duration-300 group-hover:translate-x-1">
-          <FaArrowRight className="h-2.5 w-2.5 sm:h-3 sm:w-3.5 text-sky-200" />
+        <span className="grid h-8 w-8 place-items-center rounded-md bg-gradient-to-br from-cyan-400/80 to-fuchsia-500/80 text-white transition-transform duration-300 group-hover:translate-x-1">
+          <FaArrowRight className="h-3 w-3" />
         </span>
       </div>
     </button>
@@ -194,23 +210,28 @@ const RecommendationRailCard = ({
 
 const RecommendationRailSkeleton = ({ index, isLoaded }) => (
   <div
-    className={`flex min-w-[160px] sm:min-w-[180px] md:min-w-[200px] shrink-0 flex-col gap-2.5 rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-slate-100 backdrop-blur-lg transition-all duration-300 animate-pulse ${
+    className={`relative flex min-w-[15.5rem] shrink-0 flex-col overflow-hidden rounded-lg border border-cyan-200/12 bg-white/[0.055] p-3 backdrop-blur-xl transition-all duration-300 animate-pulse sm:min-w-[16.75rem] sm:p-3.5 lg:min-w-[18rem] ${
       isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
     }`}
     style={{ transitionDelay: `${index * 60}ms` }}
   >
-    <div className="flex h-32 w-full items-center justify-center overflow-hidden rounded-xl sm:rounded-2xl border border-sky-300/20 bg-blue-950/40 sm:h-40 lg:h-44">
-      <div className="h-12 w-12 rounded bg-white/10" />
+    <div className="flex items-center justify-between gap-3">
+      <div className="h-7 w-24 rounded-md bg-white/10" />
+      <div className="h-8 w-12 rounded-md bg-white/10" />
     </div>
 
-    <div className="min-w-0 flex-1">
-      <div className="h-3 w-4/5 rounded bg-white/15" />
-      <div className="mt-2 h-2 w-24 rounded bg-white/10" />
+    <div className="mt-4 flex h-32 w-full items-center justify-center sm:h-36 lg:h-40">
+      <div className="h-24 w-20 rounded-md bg-white/10" />
     </div>
 
-    <div className="flex items-center justify-between gap-2 border-t border-sky-300/20 pt-2.5 sm:pt-3">
-      <div className="h-2.5 w-20 rounded bg-white/15" />
-      <div className="h-3 w-3 rounded-full bg-white/15 sm:h-3.5 sm:w-3.5" />
+    <div className="mt-3 min-w-0 flex-1">
+      <div className="h-4 w-4/5 rounded bg-white/12" />
+      <div className="mt-2 h-3 w-24 rounded bg-white/10" />
+    </div>
+
+    <div className="mt-4 flex items-center justify-between gap-3 border-t border-cyan-100/10 pt-3">
+      <div className="h-4 w-20 rounded bg-white/12" />
+      <div className="h-8 w-8 rounded-md bg-white/10" />
     </div>
   </div>
 );
@@ -748,35 +769,131 @@ const RecommendedSmartphones = ({
 
   return (
     <section
-      className={`relative mt-12 overflow-hidden  border-t border-sky-900/60 bg-gradient-to-b from-[#030b19] via-[#0a2f6d] to-[#030b19] transition-all duration-700 ${
+      className={`relative overflow-hidden bg-[#050712] transition-all duration-700 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(186,230,253,0.28),_transparent_30%),radial-gradient(circle_at_75%_18%,_rgba(56,189,248,0.22),_transparent_24%),radial-gradient(circle_at_bottom_right,_rgba(34,211,238,0.18),_transparent_28%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(186,230,253,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(186,230,253,0.07)_1px,transparent_1px)] [background-size:34px_34px] [mask-image:radial-gradient(circle_at_center,white,transparent_88%)]" />
-      <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-sky-950/20 to-transparent" />
-      <div className="relative mx-auto w-full px-4 py-10 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,#073C8C_0%,#24105E_34%,#0B1547_62%,#073C8C_100%)]" />
+      <div className="pointer-events-none absolute inset-0 hidden bg-[radial-gradient(circle_at_14%_18%,rgba(34,211,238,0.25),transparent_30%),radial-gradient(circle_at_84%_16%,rgba(217,70,239,0.22),transparent_32%),radial-gradient(circle_at_46%_95%,rgba(59,130,246,0.2),transparent_42%)] sm:block" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_8%,rgba(34,211,238,0.2),transparent_40%),radial-gradient(circle_at_92%_22%,rgba(217,70,239,0.18),transparent_42%),radial-gradient(circle_at_38%_82%,rgba(59,130,246,0.16),transparent_45%)] sm:hidden" />
+      <svg
+        className="pointer-events-none absolute inset-0 hidden h-full w-full opacity-70 sm:block"
+        viewBox="0 0 1440 620"
+        preserveAspectRatio="xMidYMid slice"
+        aria-hidden="true"
+      >
+        <path
+          d="M-40 310H210c96 0 102-132 192-132h260c100 0 98 164 208 164h620"
+          fill="none"
+          stroke="rgba(125,211,252,0.18)"
+          strokeWidth="3"
+        />
+        <path
+          d="M910 120h214c84 0 86 98 166 98h190"
+          fill="none"
+          stroke="rgba(216,180,254,0.16)"
+          strokeWidth="3"
+        />
+        <rect
+          x="1040"
+          y="250"
+          width="210"
+          height="118"
+          rx="28"
+          fill="none"
+          stroke="rgba(125,211,252,0.13)"
+          strokeWidth="3"
+        />
+      </svg>
+      <svg
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-65 sm:hidden"
+        viewBox="0 0 390 780"
+        preserveAspectRatio="xMidYMid slice"
+        aria-hidden="true"
+      >
+        <path
+          d="M-34 124H112c60 0 58 82 116 82h196"
+          fill="none"
+          stroke="rgba(125,211,252,0.18)"
+          strokeWidth="2"
+        />
+        <path
+          d="M52 342h108c45 0 44 68 90 68h176"
+          fill="none"
+          stroke="rgba(216,180,254,0.15)"
+          strokeWidth="2"
+        />
+        <path
+          d="M-20 600h120c52 0 52-76 104-76h214"
+          fill="none"
+          stroke="rgba(56,189,248,0.12)"
+          strokeWidth="2"
+        />
+        <rect
+          x="282"
+          y="252"
+          width="78"
+          height="116"
+          rx="20"
+          fill="none"
+          stroke="rgba(125,211,252,0.13)"
+          strokeWidth="2"
+        />
+        <rect
+          x="22"
+          y="488"
+          width="94"
+          height="146"
+          rx="22"
+          fill="none"
+          stroke="rgba(216,180,254,0.12)"
+          strokeWidth="2"
+        />
+        <circle cx="112" cy="124" r="4" fill="rgba(103,232,249,0.55)" />
+        <circle cx="250" cy="410" r="4" fill="rgba(216,180,254,0.5)" />
+      </svg>
+      <div className="pointer-events-none absolute left-[-7rem] top-12 hidden h-80 w-80 rounded-full border border-cyan-300/12 sm:block" />
+      <div className="pointer-events-none absolute right-[-8rem] bottom-8 hidden h-80 w-80 rounded-full border border-fuchsia-300/14 sm:block" />
+      <div className="pointer-events-none absolute inset-x-0 top-1/2 hidden h-px bg-gradient-to-r from-transparent via-cyan-300/18 to-transparent sm:block" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-[#050712]/32 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[#050712]/32 to-transparent" />
+      <div className="relative mx-auto w-full px-4 py-9 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
         <div className="mx-auto max-w-7xl">
-          <div className="mx-auto mb-8 max-w-4xl text-center">
-            <h1 className="text-[11px] font-bold uppercase tracking-[0.32em] text-sky-600 sm:text-xs">
-              Recommended Smartphones
-            </h1>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="max-w-2xl">
+              <span className="inline-flex rounded-md border border-cyan-200/20 bg-cyan-300/10 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.24em] text-cyan-100">
+                Smart picks
+              </span>
+              <h2 className="mt-4 text-3xl font-black leading-[1.03] tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl">
+                Recommended Smartphones
+              </h2>
+              <p className="mt-4 max-w-xl text-sm font-semibold leading-6 text-cyan-50/72 sm:text-base">
+                Picks shaped by your recent browsing and live smartphone demand
+                signals.
+              </p>
+            </div>
 
-            <p
-              className={`${HOME_SECTION_LEAD_DARK} max-w-[22rem] sm:max-w-2xl`}
-            >
-              Recommendations based on your browsing history and current trends
-              in the smartphone world.
+            <p className="hidden max-w-xs rounded-lg border border-white/10 bg-white/[0.055] p-4 text-xs font-bold leading-5 text-cyan-50/70 backdrop-blur-xl sm:block">
+              The rail adapts as people compare, shortlist, and search across
+              Hooks.
             </p>
           </div>
 
           {showEmpty ? (
-            <div className="rounded-2xl border border-slate-700/30 bg-slate-800/30 px-6 py-8 text-center text-sm text-slate-400">
+            <div className="mt-8 rounded-lg border border-cyan-200/14 bg-white/[0.055] px-6 py-8 text-center text-sm font-semibold text-cyan-50/70 backdrop-blur-xl">
               Browse a smartphone to unlock recommendations.
             </div>
           ) : null}
 
-          <div className="no-scrollbar mt-8 flex items-center gap-3 overflow-x-auto pb-2 sm:gap-4 md:gap-5">
+          <div className="mt-7 flex items-center gap-3 sm:mt-8 sm:gap-4">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-cyan-300/35 to-transparent" />
+            <span className="whitespace-nowrap rounded-md border border-white/10 bg-white/[0.06] px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-100/70 sm:tracking-[0.28em]">
+              Personalized picks
+            </span>
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-fuchsia-300/30 to-transparent" />
+          </div>
+
+          <div className="no-scrollbar mt-5 flex snap-x snap-mandatory items-stretch gap-3 overflow-x-auto pb-2 pr-8 sm:mt-6 sm:gap-4 sm:pr-12 md:gap-5">
             {loading
               ? Array.from({ length: 5 }).map((_, i) => (
                   <RecommendationRailSkeleton
@@ -792,14 +909,12 @@ const RecommendedSmartphones = ({
                     index={i}
                     isLoaded={isLoaded}
                     onClick={() => handleDeviceClick(device)}
-                    metaLabel={[
-                      device.brand,
+                    metaLabel={device.brand || "Recommended pick"}
+                    priceLabel={
                       formatPriceLabel(device.price) !== "Price not available"
                         ? formatPriceLabel(device.price)
-                        : null,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ") || "Recommended pick"}
+                        : "View details"
+                    }
                     shortLabel={getRecommendationShortLabel(device)}
                   />
                 ))}

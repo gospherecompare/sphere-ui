@@ -6,10 +6,6 @@ import {
   createNewsStoryPath,
   usePublicNewsFeed,
 } from "../../hooks/usePublicNews";
-import {
-  HOME_SECTION_LEAD_LIGHT,
-  HOME_SECTION_TITLE_LIGHT,
-} from "./homeSectionTypography";
 import "../../styles/hideScrollbar.css";
 
 const NewsStoryMedia = ({
@@ -125,19 +121,140 @@ const LatestNewsArticlesSection = () => {
   };
 
   return (
-    <section className="border-t border-slate-200 ">
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+    <section className="relative overflow-hidden bg-[#050712] text-white">
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,#073C8C_0%,#24105E_34%,#0B1547_62%,#073C8C_100%)]" />
+      <div className="pointer-events-none absolute inset-0 hidden bg-[radial-gradient(circle_at_15%_14%,rgba(34,211,238,0.22),transparent_30%),radial-gradient(circle_at_84%_18%,rgba(217,70,239,0.2),transparent_34%),radial-gradient(circle_at_50%_94%,rgba(59,130,246,0.18),transparent_42%)] sm:block" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_8%,rgba(34,211,238,0.18),transparent_42%),radial-gradient(circle_at_92%_22%,rgba(217,70,239,0.16),transparent_42%),radial-gradient(circle_at_38%_86%,rgba(59,130,246,0.15),transparent_48%)] sm:hidden" />
+
+      <svg
+        className="pointer-events-none absolute inset-0 hidden h-full w-full opacity-70 mix-blend-screen sm:block"
+        viewBox="0 0 1440 760"
+        preserveAspectRatio="xMidYMid slice"
+        aria-hidden="true"
+      >
+        <defs>
+          <linearGradient id="newsHomeTrace" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#22D3EE" stopOpacity="0" />
+            <stop offset="45%" stopColor="#60A5FA" stopOpacity="0.56" />
+            <stop offset="100%" stopColor="#D946EF" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="newsHomeFrame" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#67E8F9" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="#C084FC" stopOpacity="0.18" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M-80 170H202C286 170 292 272 378 272H626C724 272 732 140 830 140H1052C1148 140 1160 258 1254 258H1520"
+          stroke="url(#newsHomeTrace)"
+          strokeWidth="2"
+          fill="none"
+        />
+        <path
+          d="M-80 610H210C290 610 306 520 388 520H646C742 520 750 632 844 632H1072C1170 632 1186 508 1282 508H1520"
+          stroke="url(#newsHomeTrace)"
+          strokeWidth="2"
+          fill="none"
+        />
+        <rect
+          x="82"
+          y="334"
+          width="184"
+          height="114"
+          rx="22"
+          fill="rgba(14,165,233,0.04)"
+          stroke="url(#newsHomeFrame)"
+          strokeWidth="2"
+        />
+        <rect
+          x="1150"
+          y="284"
+          width="190"
+          height="118"
+          rx="22"
+          fill="rgba(168,85,247,0.05)"
+          stroke="url(#newsHomeFrame)"
+          strokeWidth="2"
+        />
+        <circle cx="378" cy="272" r="5" fill="rgba(186,230,253,0.42)" />
+        <circle cx="844" cy="632" r="5" fill="rgba(216,180,254,0.38)" />
+      </svg>
+
+      <svg
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-40 mix-blend-screen sm:hidden"
+        viewBox="0 0 390 820"
+        preserveAspectRatio="xMidYMid slice"
+        aria-hidden="true"
+      >
+        <defs>
+          <linearGradient id="newsHomeMobileTrace" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#22D3EE" stopOpacity="0" />
+            <stop offset="48%" stopColor="#60A5FA" stopOpacity="0.46" />
+            <stop offset="100%" stopColor="#D946EF" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient
+            id="newsHomeMobileFrame"
+            x1="0"
+            y1="0"
+            x2="1"
+            y2="1"
+          >
+            <stop offset="0%" stopColor="#67E8F9" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="#C084FC" stopOpacity="0.15" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M-34 88H78C116 88 122 146 164 146H258C302 146 306 92 426 92"
+          stroke="url(#newsHomeMobileTrace)"
+          strokeWidth="1.6"
+          fill="none"
+        />
+        <path
+          d="M-36 570H86C128 570 140 504 184 504H260C304 504 314 612 426 612"
+          stroke="url(#newsHomeMobileTrace)"
+          strokeWidth="1.6"
+          fill="none"
+        />
+        <rect
+          x="-18"
+          y="302"
+          width="84"
+          height="114"
+          rx="18"
+          fill="rgba(14,165,233,0.04)"
+          stroke="url(#newsHomeMobileFrame)"
+          strokeWidth="1.5"
+        />
+        <rect
+          x="302"
+          y="420"
+          width="86"
+          height="116"
+          rx="20"
+          fill="rgba(168,85,247,0.05)"
+          stroke="url(#newsHomeMobileFrame)"
+          strokeWidth="1.5"
+        />
+        <circle cx="78" cy="88" r="3.5" fill="rgba(186,230,253,0.38)" />
+        <circle cx="184" cy="504" r="3.5" fill="rgba(216,180,254,0.34)" />
+      </svg>
+
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-[#050712]/30 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[#050712]/40 to-transparent" />
+
+      <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
         <div className="flex flex-col gap-5 sm:gap-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
-              <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.32em] text-sky-700">
+              <p className="inline-flex rounded-md border border-cyan-200/20 bg-cyan-300/10 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.24em] text-cyan-100">
                 Latest News
               </p>
-              <h2 className={HOME_SECTION_TITLE_LIGHT}>
-                News cards that stay sharp, swipe cleanly, and feel made for
-                mobile.
+              <h2 className="mt-5 max-w-4xl text-[2.45rem] font-black leading-[0.98] tracking-[-0.05em] text-white sm:text-5xl sm:leading-[1.02] lg:text-6xl">
+                News cards that stay sharp,
+                <span className="block bg-gradient-to-r from-sky-200 via-white to-fuchsia-200 bg-clip-text text-transparent">
+                  swipe cleanly, and feel made for mobile.
+                </span>
               </h2>
-              <p className={HOME_SECTION_LEAD_LIGHT}>
+              <p className="mt-5 max-w-2xl text-sm font-semibold leading-6 text-cyan-50/72 sm:text-base sm:leading-7">
                 Fresh launches, quick context, and product updates from the
                 Hooks newsroom with a cleaner image-first layout.
               </p>
@@ -145,7 +262,7 @@ const LatestNewsArticlesSection = () => {
 
             <Link
               to="/news"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-900 shadow-[0_12px_30px_rgba(15,23,42,0.06)] transition-all duration-200 hover:border-slate-300 hover:shadow-[0_16px_36px_rgba(15,23,42,0.1)] sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-cyan-200/18 bg-cyan-300/10 px-5 py-3 text-sm font-bold text-cyan-50/90 shadow-[0_16px_42px_rgba(14,165,233,0.12)] backdrop-blur-xl transition-all duration-200 hover:border-fuchsia-200/30 hover:bg-fuchsia-400/12 hover:text-white sm:w-auto"
             >
               View all stories
               <FaArrowRight className="h-3.5 w-3.5" />

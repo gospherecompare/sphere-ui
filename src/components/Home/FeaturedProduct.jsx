@@ -426,8 +426,8 @@ const BudgetCard = ({
       aria-pressed={isActive}
       className={`group relative w-full overflow-hidden rounded-md border text-left backdrop-blur-xl transition-all duration-500 ${
         isActive
-          ? "border-cyan-200/45 bg-gradient-to-r from-sky-500/20 via-blue-500/16 to-fuchsia-500/18 shadow-[0_18px_46px_rgba(14,165,233,0.18)]"
-          : "border-white/10 bg-[#071126]/58 hover:border-cyan-200/28 hover:bg-[#0D1A3A]/68"
+          ? "border-cyan-200/45 bg-white/[0.085] shadow-[0_18px_46px_rgba(14,165,233,0.18)]"
+          : "border-white/10 bg-white/[0.045] hover:border-cyan-200/28 hover:bg-white/[0.075]"
       } ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
       style={{ transitionDelay: `${index * 45}ms` }}
     >
@@ -447,7 +447,7 @@ const BudgetCard = ({
           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md ring-1 transition-all duration-300 sm:h-11 sm:w-11 ${
             isActive
               ? `bg-gradient-to-br ${item.accent} text-white ring-white/20 shadow-lg shadow-cyan-500/20`
-              : "bg-[#0E1830] text-cyan-100/62 ring-white/10 group-hover:bg-[#152442] group-hover:text-white"
+              : "bg-white/[0.065] text-cyan-100/62 ring-white/10 group-hover:bg-white/[0.1] group-hover:text-white"
           }`}
         >
           <FaRupeeSign className="h-4 w-4" />
@@ -486,8 +486,8 @@ const BudgetMobileTile = ({ item, index, isActive, isLoaded, onClick }) => {
       aria-pressed={isActive}
       className={`group relative min-w-0 overflow-hidden rounded-md border text-left transition-all duration-500 ${
         isActive
-          ? "border-cyan-200/45 bg-gradient-to-br from-sky-500/22 via-blue-500/16 to-fuchsia-500/18 shadow-[0_14px_34px_rgba(14,165,233,0.16)]"
-          : "border-white/10 bg-[#071126]/62 hover:border-cyan-200/26 hover:bg-[#0D1A3A]/72"
+          ? "border-cyan-200/45 bg-white/[0.085] shadow-[0_14px_34px_rgba(14,165,233,0.16)]"
+          : "border-white/10 bg-white/[0.045] hover:border-cyan-200/26 hover:bg-white/[0.075]"
       } ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
       style={{ transitionDelay: `${index * 35}ms` }}
     >
@@ -501,7 +501,7 @@ const BudgetMobileTile = ({ item, index, isActive, isLoaded, onClick }) => {
           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ring-1 ${
             isActive
               ? `bg-gradient-to-br ${item.accent} text-white ring-white/20`
-              : "bg-[#0E1830] text-cyan-100/64 ring-white/10"
+              : "bg-white/[0.065] text-cyan-100/64 ring-white/10"
           }`}
         >
           <FaRupeeSign className="h-3.5 w-3.5" />
@@ -529,7 +529,7 @@ const FeaturedFilterChip = ({ label, onClick }) => {
     <button
       type="button"
       onClick={onClick}
-      className="group relative shrink-0 snap-start overflow-hidden whitespace-nowrap rounded-full border border-cyan-200/16 bg-[#071126]/72 px-4 py-2.5 text-[11px] font-bold text-cyan-50/86 backdrop-blur-xl transition-all duration-300 hover:border-fuchsia-200/30 hover:text-white sm:px-5 sm:text-xs"
+      className="group relative shrink-0 snap-start overflow-hidden whitespace-nowrap rounded-md border border-cyan-200/16 bg-white/[0.055] px-4 py-2.5 text-[11px] font-bold text-cyan-50/86 backdrop-blur-xl transition-all duration-300 hover:border-fuchsia-200/30 hover:bg-white/[0.08] hover:text-white sm:px-5 sm:text-xs"
     >
       <span className="absolute inset-0 bg-gradient-to-r from-cyan-400/0 via-blue-500/10 to-fuchsia-500/0 opacity-0 transition group-hover:opacity-100" />
       <span className="relative">{label}</span>
@@ -568,19 +568,20 @@ const FeaturedPhoneCard = ({ phone, index, isLoaded, onClick }) => {
       type="button"
       onClick={onClick}
       aria-label={`Open ${phone.name}`}
-      className={`group relative flex min-w-0 items-center gap-2.5 overflow-hidden rounded-md border border-cyan-200/16 bg-[#071126]/62 p-2.5 text-left text-white shadow-[0_18px_60px_rgba(2,6,23,0.16)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-cyan-200/34 hover:bg-[#0D1A3A]/72 hover:shadow-[0_24px_80px_rgba(14,165,233,0.16)] sm:gap-3 sm:p-3 ${
+      className={`group relative flex min-w-[19rem] shrink-0 snap-start items-center gap-2.5 overflow-hidden rounded-md border border-cyan-200/16 bg-white/[0.055] p-2.5 text-left text-white shadow-[0_18px_60px_rgba(2,6,23,0.14)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-cyan-200/34 hover:bg-white/[0.08] hover:shadow-[0_24px_80px_rgba(14,165,233,0.16)] sm:min-w-[21rem] sm:gap-3 sm:p-3 lg:min-w-0 lg:shrink ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
       style={{ transitionDelay: `${index * 60}ms` }}
     >
       <div className="pointer-events-none absolute right-[-20%] top-[-40%] h-28 w-28 rounded-full bg-fuchsia-300/18 blur-3xl transition group-hover:bg-cyan-300/22" />
-      <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md border border-cyan-200/18 bg-[#061225]/68 sm:h-28 sm:w-28">
-        <span className="absolute inset-x-4 bottom-3 h-7 rounded-full bg-cyan-200/18 blur-xl" />
+      <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-visible rounded-md border border-transparent bg-transparent sm:h-28 sm:w-28">
+        <span className="absolute bottom-2 h-9 w-16 rounded-full bg-cyan-200/14 blur-xl" />
+        <span className="absolute h-16 w-16 rounded-full bg-gradient-to-br from-cyan-300/12 to-fuchsia-400/12 blur-xl sm:h-20 sm:w-20" />
         {phone.image && !imageFailed ? (
           <img
             src={phone.image}
             alt={phone.name}
-            className="relative h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-110"
+            className="relative h-full w-full object-contain p-1 drop-shadow-[0_18px_26px_rgba(2,6,23,0.38)] transition-transform duration-300 group-hover:scale-110"
             loading="lazy"
             onError={() => setImageFailed(true)}
           />
@@ -623,12 +624,12 @@ const FeaturedPhoneCard = ({ phone, index, isLoaded, onClick }) => {
 const FeaturedPhoneSkeleton = ({ index, isLoaded }) => {
   return (
     <div
-      className={`flex min-w-0 items-center gap-2.5 rounded-md border border-cyan-200/16 bg-[#071126]/62 p-2.5 text-slate-100 backdrop-blur-lg transition-all duration-300 sm:gap-3 sm:p-3 ${
+      className={`flex min-w-[19rem] shrink-0 snap-start items-center gap-2.5 rounded-md border border-cyan-200/16 bg-white/[0.055] p-2.5 text-slate-100 backdrop-blur-lg transition-all duration-300 sm:min-w-[21rem] sm:gap-3 sm:p-3 lg:min-w-0 lg:shrink ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       } animate-pulse`}
       style={{ transitionDelay: `${index * 60}ms` }}
     >
-      <span className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md border border-cyan-200/18 bg-[#061225]/68 sm:h-28 sm:w-28">
+      <span className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md border border-white/10 bg-white/[0.045] sm:h-28 sm:w-28">
         <span className="h-10 w-10 rounded bg-white/10" />
       </span>
 
@@ -796,19 +797,19 @@ const FeaturedProduct = () => {
 
   return (
     <section
-      className={`relative overflow-hidden bg-[#02030B] text-white transition-all duration-700 ${
+      className={`relative overflow-hidden bg-[#050712] text-white transition-all duration-700 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
-      <div className="absolute inset-0 bg-[linear-gradient(135deg,#020617_0%,#090B2E_24%,#24105E_50%,#073C8C_76%,#050712_100%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(14,165,233,0.3),transparent_32%),radial-gradient(circle_at_82%_18%,rgba(168,85,247,0.36),transparent_34%),radial-gradient(circle_at_54%_82%,rgba(59,130,246,0.24),transparent_40%)]" />
-      <div className="absolute left-[-58%] top-[7%] h-28 w-[34rem] -rotate-12 rounded-[999px] bg-gradient-to-r from-cyan-400/14 via-blue-500/20 to-fuchsia-500/18 blur-2xl sm:left-[-18%] sm:h-32 sm:w-[58rem]" />
-      <div className="absolute right-[-72%] top-[38%] h-32 w-[34rem] rotate-12 rounded-[999px] bg-gradient-to-r from-purple-600/20 via-blue-500/18 to-sky-400/14 blur-2xl sm:right-[-22%] sm:top-[34%] sm:h-40 sm:w-[54rem]" />
-      <div className="absolute bottom-[-16%] left-[-36%] h-56 w-[36rem] rounded-[999px] bg-gradient-to-r from-blue-600/14 via-violet-600/18 to-fuchsia-500/14 blur-3xl sm:bottom-[-20%] sm:left-[12%] sm:h-72 sm:w-[68rem]" />
+      <div className="absolute inset-0 bg-[linear-gradient(135deg,#073C8C_0%,#24105E_34%,#0B1547_62%,#073C8C_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_14%,rgba(34,211,238,0.28),transparent_31%),radial-gradient(circle_at_82%_16%,rgba(217,70,239,0.28),transparent_34%),radial-gradient(circle_at_52%_86%,rgba(59,130,246,0.22),transparent_42%)]" />
+      <div className="absolute left-[-28%] top-[4%] h-24 w-[22rem] -rotate-12 rounded-[999px] bg-gradient-to-r from-cyan-400/14 via-blue-500/20 to-fuchsia-500/18 blur-2xl sm:left-[-18%] sm:top-[7%] sm:h-32 sm:w-[58rem]" />
+      <div className="absolute right-[-42%] top-[30%] h-28 w-[24rem] rotate-12 rounded-[999px] bg-gradient-to-r from-purple-600/20 via-blue-500/18 to-sky-400/14 blur-2xl sm:right-[-22%] sm:top-[34%] sm:h-40 sm:w-[54rem]" />
+      <div className="absolute bottom-[-10%] left-[-28%] h-44 w-[28rem] rounded-[999px] bg-gradient-to-r from-blue-600/14 via-violet-600/18 to-fuchsia-500/14 blur-3xl sm:bottom-[-20%] sm:left-[12%] sm:h-72 sm:w-[68rem]" />
       <svg
-        className="pointer-events-none absolute inset-0 h-full w-full opacity-45 mix-blend-screen sm:opacity-80"
+        className="pointer-events-none absolute inset-0 hidden h-full w-full mix-blend-screen sm:block sm:opacity-65 lg:opacity-80"
         viewBox="0 0 1440 900"
-        preserveAspectRatio="none"
+        preserveAspectRatio="xMidYMid slice"
         aria-hidden="true"
       >
         <defs>
@@ -861,11 +862,83 @@ const FeaturedProduct = () => {
           strokeLinecap="round"
         />
       </svg>
-      <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#02030B] to-transparent sm:h-32" />
-      <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-10 sm:px-6 sm:pb-20 sm:pt-16 lg:px-8 lg:pb-24 lg:pt-20">
+      <svg
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-34 mix-blend-screen sm:hidden"
+        viewBox="0 0 390 1180"
+        preserveAspectRatio="xMidYMid slice"
+        aria-hidden="true"
+      >
+        <defs>
+          <linearGradient id="featuredMobileTrace" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#22D3EE" stopOpacity="0" />
+            <stop offset="48%" stopColor="#60A5FA" stopOpacity="0.48" />
+            <stop offset="100%" stopColor="#D946EF" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient
+            id="featuredMobileDeviceGlow"
+            x1="0"
+            y1="0"
+            x2="1"
+            y2="1"
+          >
+            <stop offset="0%" stopColor="#67E8F9" stopOpacity="0.2" />
+            <stop offset="100%" stopColor="#C084FC" stopOpacity="0.16" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M-42 76H68C102 76 106 34 142 34H426"
+          stroke="url(#featuredMobileTrace)"
+          strokeWidth="1.6"
+          fill="none"
+        />
+        <path
+          d="M-42 660H70C112 660 126 592 170 592H250C292 592 302 714 342 714H430"
+          stroke="url(#featuredMobileTrace)"
+          strokeWidth="1.6"
+          fill="none"
+        />
+        <path
+          d="M68 76V36H142M170 592V540H238M342 714V772H382"
+          stroke="rgba(191,219,254,0.2)"
+          strokeWidth="1.3"
+          fill="none"
+        />
+        <rect
+          x="-18"
+          y="296"
+          width="58"
+          height="112"
+          rx="14"
+          stroke="url(#featuredMobileDeviceGlow)"
+          strokeWidth="1.5"
+          fill="rgba(14,165,233,0.04)"
+        />
+        <rect
+          x="280"
+          y="456"
+          width="82"
+          height="56"
+          rx="12"
+          stroke="url(#featuredMobileDeviceGlow)"
+          strokeWidth="1.5"
+          fill="rgba(168,85,247,0.05)"
+        />
+        <path
+          d="M-2 328H28M-2 350H22M-2 372H26M298 478H346M298 496H334"
+          stroke="rgba(255,255,255,0.15)"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+        <circle cx="68" cy="76" r="3.5" fill="#BAE6FD" opacity="0.36" />
+        <circle cx="170" cy="592" r="3.5" fill="#BAE6FD" opacity="0.34" />
+        <circle cx="342" cy="714" r="3.5" fill="#BAE6FD" opacity="0.34" />
+      </svg>
+      <div className="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-[#050712]/30 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[#050712]/32 to-transparent" />
+      <div className="relative mx-auto max-w-7xl px-4 pb-8 pt-10 sm:px-6 sm:pb-12 sm:pt-16 lg:px-8 lg:pb-14 lg:pt-20">
         <div className="grid items-start gap-6 sm:gap-8 lg:grid-cols-[minmax(0,0.82fr)_minmax(520px,1.18fr)] lg:gap-10 xl:grid-cols-[minmax(0,0.82fr)_minmax(640px,1.18fr)]">
           <div className="relative min-w-0 max-w-4xl lg:pt-4">
-          <p className="inline-flex max-w-full items-center gap-2 rounded-md border border-cyan-200/20 bg-blue-500/12 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.06em] text-blue-100 shadow-[0_0_32px_rgba(14,165,233,0.16)] backdrop-blur sm:text-[11px]">
+          <p className="inline-flex max-w-full items-center gap-2 rounded-md border border-cyan-200/20 bg-cyan-300/10 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.08em] text-cyan-100 shadow-[0_0_32px_rgba(14,165,233,0.16)] backdrop-blur sm:text-[11px]">
             <FaMobileAlt className="h-3 w-3 text-sky-300" />
             Featured Phones By Budget
           </p>
@@ -877,7 +950,7 @@ const FeaturedProduct = () => {
             </span>
           </h2>
 
-          <p className="mt-4 max-w-2xl text-sm leading-6 text-blue-100/78 sm:mt-5 sm:text-lg sm:leading-7">
+          <p className="mt-4 max-w-2xl text-sm font-medium leading-6 text-cyan-50/76 sm:mt-5 sm:text-lg sm:leading-7">
             Start with a price range, then explore trend filters and live picks
             that match how people actually compare smartphones.
           </p>
@@ -903,7 +976,7 @@ const FeaturedProduct = () => {
         </div>
 
         {/* Mobile: Horizontal Scroll, Desktop: Grid */}
-          <div className="relative mt-2 min-w-0 overflow-hidden rounded-lg border border-cyan-200/18 bg-[linear-gradient(135deg,rgba(6,16,42,0.74),rgba(17,34,80,0.58)_48%,rgba(76,29,128,0.5))] p-3 shadow-[0_24px_80px_rgba(37,99,235,0.18)] backdrop-blur-xl sm:mt-10 sm:p-5 sm:shadow-[0_30px_100px_rgba(37,99,235,0.2)] lg:mt-0">
+          <div className="relative mt-2 min-w-0 overflow-hidden rounded-lg border border-cyan-200/18 bg-white/[0.06] p-3 shadow-[0_24px_80px_rgba(37,99,235,0.16)] backdrop-blur-xl sm:mt-10 sm:p-5 sm:shadow-[0_30px_100px_rgba(37,99,235,0.18)] lg:mt-0">
           <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/60 to-transparent" />
           <div className="pointer-events-none absolute right-[-12%] top-[-30%] h-40 w-40 rounded-full bg-fuchsia-400/12 blur-3xl" />
           <div className="mb-4 flex items-center justify-between gap-3 sm:mb-5">
@@ -952,7 +1025,7 @@ const FeaturedProduct = () => {
           </div>
         </div>
 
-        <div className="mt-6 rounded-lg border border-cyan-200/14 bg-[#071126]/52 p-3 backdrop-blur-xl sm:mt-10">
+        <div className="mt-6 rounded-lg border border-cyan-200/14 bg-white/[0.055] p-3 backdrop-blur-xl sm:mt-10">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <span className="inline-flex w-fit items-center gap-2 whitespace-nowrap rounded-md border border-white/10 bg-white/[0.045] px-3 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-white/90 sm:text-xs sm:tracking-[0.2em]">
               <FaFire className="h-3.5 w-3.5 text-fuchsia-200" />
@@ -971,7 +1044,7 @@ const FeaturedProduct = () => {
           </div>
         </div>
 
-        <div className="mt-6 rounded-lg border border-cyan-200/18 bg-[linear-gradient(135deg,rgba(6,16,42,0.68),rgba(17,34,80,0.52)_48%,rgba(76,29,128,0.48))] p-3 shadow-[0_20px_70px_rgba(2,6,23,0.16)] backdrop-blur-xl sm:mt-8 sm:p-5 sm:shadow-[0_24px_80px_rgba(2,6,23,0.18)]">
+        <div className="mt-6 rounded-lg border border-cyan-200/18 bg-white/[0.055] p-3 shadow-[0_20px_70px_rgba(2,6,23,0.14)] backdrop-blur-xl sm:mt-8 sm:p-5 sm:shadow-[0_24px_80px_rgba(2,6,23,0.16)]">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.24em] text-cyan-100/54">
@@ -994,7 +1067,7 @@ const FeaturedProduct = () => {
             </button>
           </div>
 
-          <div className="mt-5 grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+          <div className="no-scrollbar mt-5 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 pr-8 lg:grid lg:grid-cols-2 lg:overflow-visible lg:pb-0 lg:pr-0 xl:grid-cols-3">
             {loadingFeatured
               ? Array.from({ length: FEATURED_PHONES_LIMIT }).map(
                   (_, index) => (

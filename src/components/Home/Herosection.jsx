@@ -155,19 +155,20 @@ const normalizeSmartphoneDetailPath = (rawPath = "", fallbackName = "") => {
     : "/smartphones";
 };
 
-const getImages = (item) => [
-  firstText(
-    item?.image,
-    item?.image_url,
-    item?.imageUrl,
-    item?.product_image,
-    item?.productImage,
-    item?.thumbnail,
-  ),
-  firstText(parseJsonArray(item?.images)?.[0]),
-  firstText(parseJsonArray(item?.images_json)?.[0]),
-  firstText(item?.metadata?.images?.[0]),
-].filter(Boolean);
+const getImages = (item) =>
+  [
+    firstText(
+      item?.image,
+      item?.image_url,
+      item?.imageUrl,
+      item?.product_image,
+      item?.productImage,
+      item?.thumbnail,
+    ),
+    firstText(parseJsonArray(item?.images)?.[0]),
+    firstText(parseJsonArray(item?.images_json)?.[0]),
+    firstText(item?.metadata?.images?.[0]),
+  ].filter(Boolean);
 
 const getVariants = (item) => {
   if (Array.isArray(item?.variants)) return item.variants;
@@ -353,11 +354,12 @@ const HeroSection = () => {
   const [featuredPhonesLoading, setFeaturedPhonesLoading] = useState(false);
 
   const categoryRows = useMemo(() => {
-    const phones = Array.isArray(smartphoneAll) && smartphoneAll.length
-      ? smartphoneAll
-      : Array.isArray(smartphone)
-        ? smartphone
-        : [];
+    const phones =
+      Array.isArray(smartphoneAll) && smartphoneAll.length
+        ? smartphoneAll
+        : Array.isArray(smartphone)
+          ? smartphone
+          : [];
 
     const sourceMap = {
       smartphones: phones,
@@ -375,7 +377,9 @@ const HeroSection = () => {
 
   useEffect(() => {
     const firstAvailable = categoryRows.find((category) => category.count > 0);
-    const current = categoryRows.find((category) => category.id === activeCategory);
+    const current = categoryRows.find(
+      (category) => category.id === activeCategory,
+    );
     if (firstAvailable && (!current || current.count === 0)) {
       setActiveCategory(firstAvailable.id);
     }
@@ -478,7 +482,11 @@ const HeroSection = () => {
             normalizeCard(
               item,
               resolveCategoryFromType(
-                firstText(item?.product_type, item?.productType, item?.deviceType),
+                firstText(
+                  item?.product_type,
+                  item?.productType,
+                  item?.deviceType,
+                ),
               ),
               "live",
             ),
@@ -570,16 +578,16 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="relative overflow-hidden bg-[#02030B] text-white">
-      <div className="absolute inset-0 bg-[linear-gradient(135deg,#020617_0%,#090B2E_24%,#24105E_50%,#073C8C_76%,#050712_100%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(14,165,233,0.34),transparent_32%),radial-gradient(circle_at_82%_18%,rgba(168,85,247,0.42),transparent_34%),radial-gradient(circle_at_54%_82%,rgba(59,130,246,0.28),transparent_40%)]" />
-      <div className="absolute left-[-58%] top-[7%] h-28 w-[34rem] -rotate-12 rounded-[999px] bg-gradient-to-r from-cyan-400/18 via-blue-500/24 to-fuchsia-500/22 blur-2xl sm:left-[-18%] sm:h-32 sm:w-[58rem]" />
-      <div className="absolute right-[-72%] top-[38%] h-32 w-[34rem] rotate-12 rounded-[999px] bg-gradient-to-r from-purple-600/24 via-blue-500/22 to-sky-400/16 blur-2xl sm:right-[-22%] sm:top-[34%] sm:h-40 sm:w-[54rem]" />
-      <div className="absolute bottom-[-16%] left-[-36%] h-56 w-[36rem] rounded-[999px] bg-gradient-to-r from-blue-600/18 via-violet-600/24 to-fuchsia-500/18 blur-3xl sm:bottom-[-20%] sm:left-[12%] sm:h-72 sm:w-[68rem]" />
+    <section className="relative overflow-hidden bg-[#050712] text-white">
+      <div className="absolute inset-0 bg-[linear-gradient(135deg,#073C8C_0%,#24105E_34%,#0B1547_62%,#073C8C_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_14%,rgba(34,211,238,0.3),transparent_31%),radial-gradient(circle_at_82%_16%,rgba(217,70,239,0.3),transparent_34%),radial-gradient(circle_at_52%_86%,rgba(59,130,246,0.22),transparent_42%)]" />
+      <div className="absolute left-[-28%] top-[4%] h-24 w-[22rem] -rotate-12 rounded-[999px] bg-gradient-to-r from-cyan-400/18 via-blue-500/24 to-fuchsia-500/22 blur-2xl sm:left-[-18%] sm:top-[7%] sm:h-32 sm:w-[58rem]" />
+      <div className="absolute right-[-42%] top-[30%] h-28 w-[24rem] rotate-12 rounded-[999px] bg-gradient-to-r from-purple-600/24 via-blue-500/22 to-sky-400/16 blur-2xl sm:right-[-22%] sm:top-[34%] sm:h-40 sm:w-[54rem]" />
+      <div className="absolute bottom-[-10%] left-[-28%] h-44 w-[28rem] rounded-[999px] bg-gradient-to-r from-blue-600/18 via-violet-600/24 to-fuchsia-500/18 blur-3xl sm:bottom-[-20%] sm:left-[12%] sm:h-72 sm:w-[68rem]" />
       <svg
-        className="pointer-events-none absolute inset-0 h-full w-full opacity-45 mix-blend-screen sm:opacity-90"
+        className="pointer-events-none absolute inset-0 hidden h-full w-full mix-blend-screen sm:block sm:opacity-75 lg:opacity-90"
         viewBox="0 0 1440 760"
-        preserveAspectRatio="none"
+        preserveAspectRatio="xMidYMid slice"
         aria-hidden="true"
       >
         <defs>
@@ -674,12 +682,80 @@ const HeroSection = () => {
           />
         ))}
       </svg>
-      <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#02030B] to-transparent sm:h-28" />
+      <svg
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-55 mix-blend-screen sm:hidden"
+        viewBox="0 0 390 880"
+        preserveAspectRatio="xMidYMid slice"
+        aria-hidden="true"
+      >
+        <defs>
+          <linearGradient id="heroMobileCircuit" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#22D3EE" stopOpacity="0" />
+            <stop offset="46%" stopColor="#60A5FA" stopOpacity="0.54" />
+            <stop offset="100%" stopColor="#D946EF" stopOpacity="0.22" />
+          </linearGradient>
+          <linearGradient id="heroMobilePulse" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#38BDF8" stopOpacity="0" />
+            <stop offset="50%" stopColor="#C084FC" stopOpacity="0.62" />
+            <stop offset="100%" stopColor="#38BDF8" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M-36 132H68C108 132 112 190 150 190H252C300 190 300 124 344 124H426"
+          stroke="url(#heroMobileCircuit)"
+          strokeWidth="1.6"
+          fill="none"
+        />
+        <path
+          d="M-30 548H84C124 548 126 474 166 474H250C292 474 296 594 338 594H426"
+          stroke="url(#heroMobilePulse)"
+          strokeWidth="1.6"
+          fill="none"
+        />
+        <path
+          d="M68 132V84H148M252 190V238H328M166 474V420H232M338 594V650H384"
+          stroke="rgba(191,219,254,0.22)"
+          strokeWidth="1.3"
+          fill="none"
+        />
+        <rect
+          x="32"
+          y="220"
+          width="58"
+          height="108"
+          rx="14"
+          stroke="rgba(191,219,254,0.22)"
+          strokeWidth="1.5"
+          fill="rgba(37,99,235,0.06)"
+        />
+        <rect
+          x="284"
+          y="382"
+          width="84"
+          height="58"
+          rx="12"
+          stroke="rgba(216,180,254,0.22)"
+          strokeWidth="1.5"
+          fill="rgba(168,85,247,0.06)"
+        />
+        <path
+          d="M48 252H76M48 272H70M48 292H74M302 406H350M302 424H334"
+          stroke="rgba(255,255,255,0.16)"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+        <circle cx="68" cy="132" r="4" fill="#BAE6FD" opacity="0.46" />
+        <circle cx="150" cy="190" r="4" fill="#BAE6FD" opacity="0.46" />
+        <circle cx="252" cy="190" r="4" fill="#BAE6FD" opacity="0.4" />
+        <circle cx="166" cy="474" r="4" fill="#BAE6FD" opacity="0.4" />
+        <circle cx="338" cy="594" r="4" fill="#BAE6FD" opacity="0.42" />
+      </svg>
+      <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#050712]/42 to-transparent sm:h-28" />
 
-      <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-8 sm:px-6 sm:pb-20 sm:pt-16 lg:px-8 lg:pb-24 lg:pt-20">
+      <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-8 sm:px-6 sm:pb-16 sm:pt-16 lg:px-8 lg:pb-20 lg:pt-20">
         <div className="grid items-center gap-8 sm:gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]">
           <div className="min-w-0">
-            <p className="inline-flex max-w-full items-center gap-2 rounded-md border border-cyan-200/20 bg-blue-500/12 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.06em] text-blue-100 shadow-[0_0_32px_rgba(14,165,233,0.16)] backdrop-blur sm:text-[11px]">
+            <p className="inline-flex max-w-full items-center gap-2 rounded-md border border-cyan-200/20 bg-cyan-300/10 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.08em] text-cyan-100 shadow-[0_0_32px_rgba(14,165,233,0.16)] backdrop-blur sm:text-[11px]">
               <FaBolt className="h-3 w-3 text-sky-300" />
               Live Gadget Intelligence
             </p>
@@ -691,32 +767,25 @@ const HeroSection = () => {
               </span>
             </h1>
 
-            <p className="mt-4 max-w-2xl text-sm leading-6 text-blue-100/78 sm:mt-5 sm:text-lg sm:leading-7">
-              Search once and see what is worth shortlisting, from specs and
-              variants to prices, launches, and real buyer interest.
+            <p className="mt-4 max-w-2xl text-sm font-medium leading-6 text-cyan-50/76 sm:mt-5 sm:text-lg sm:leading-7">
+              Search smarter across specs, prices, launches, and real buyer
+              interest before you shortlist your next device.
             </p>
 
             <form
               onSubmit={submitSearch}
-              className="mt-6 w-full max-w-2xl overflow-hidden rounded-lg border border-cyan-200/18 bg-[#070B24]/76 p-2 shadow-[0_30px_100px_rgba(37,99,235,0.22)] backdrop-blur-xl sm:mt-8 sm:shadow-[0_30px_100px_rgba(37,99,235,0.28)]"
+              className="mt-6 w-full max-w-2xl overflow-hidden rounded-lg border border-cyan-200/18 bg-white/[0.055] p-2 shadow-[0_30px_100px_rgba(37,99,235,0.22)] backdrop-blur-xl sm:mt-8 sm:shadow-[0_30px_100px_rgba(37,99,235,0.28)]"
             >
-              <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="flex">
                 <div className="relative min-w-0 flex-1">
                   <FaSearch className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-100/55" />
                   <input
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
                     placeholder={`Search ${activeCategoryMeta.label.toLowerCase()}...`}
-                    className="h-12 w-full rounded-md border border-blue-200/12 bg-[#071024]/92 py-3 pl-11 pr-4 text-sm font-medium text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-400/24 sm:h-[52px]"
+                    className="h-12 w-full rounded-md border border-blue-200/12 bg-transparent py-3 pl-11 pr-4 text-sm font-medium text-white outline-none transition placeholder:text-cyan-100/42 focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-400/24 sm:h-[52px]"
                   />
                 </div>
-                <button
-                  type="submit"
-                  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-md bg-gradient-to-r from-sky-400 via-blue-500 to-fuchsia-500 px-5 text-sm font-bold text-white shadow-[0_16px_36px_rgba(59,130,246,0.34)] transition hover:brightness-110 sm:h-[52px] sm:w-auto"
-                >
-                  Discover
-                  <FaArrowRight className="h-3.5 w-3.5" />
-                </button>
               </div>
 
               {searchSuggestions.length > 0 ? (
@@ -812,9 +881,9 @@ const HeroSection = () => {
           </div>
 
           <div className="relative min-w-0">
-            <div className="absolute -inset-3 rounded-lg bg-[conic-gradient(from_150deg_at_50%_50%,rgba(34,211,238,0.34),rgba(37,99,235,0.28),rgba(168,85,247,0.34),rgba(217,70,239,0.28),rgba(34,211,238,0.34))] opacity-70 blur-3xl sm:-inset-4 sm:opacity-80" />
-            <div className="relative overflow-hidden rounded-lg border border-white/14 bg-[#050817]/88 p-3 shadow-[0_26px_90px_rgba(30,64,175,0.28)] backdrop-blur-xl sm:p-4 sm:shadow-[0_34px_130px_rgba(30,64,175,0.34)]">
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_16%,rgba(14,165,233,0.24),transparent_28%),radial-gradient(circle_at_92%_12%,rgba(217,70,239,0.28),transparent_30%),linear-gradient(150deg,rgba(37,99,235,0.18),rgba(88,28,135,0.22)_68%,rgba(4,10,30,0))]" />
+            <div className="absolute -inset-3 rounded-lg bg-[conic-gradient(from_150deg_at_50%_50%,rgba(34,211,238,0.28),rgba(37,99,235,0.2),rgba(168,85,247,0.28),rgba(217,70,239,0.22),rgba(34,211,238,0.28))] opacity-60 blur-3xl sm:-inset-4 sm:opacity-70" />
+            <div className="relative overflow-hidden rounded-lg border border-cyan-200/14 bg-white/[0.06] p-3 shadow-[0_26px_90px_rgba(30,64,175,0.2)] backdrop-blur-xl sm:p-4 sm:shadow-[0_34px_130px_rgba(30,64,175,0.26)]">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_16%,rgba(14,165,233,0.2),transparent_28%),radial-gradient(circle_at_92%_12%,rgba(217,70,239,0.22),transparent_30%),linear-gradient(150deg,rgba(37,99,235,0.12),rgba(88,28,135,0.18)_68%,rgba(4,10,30,0))]" />
               <div className="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/70 to-transparent" />
 
               <div className="relative flex items-start justify-between gap-3">
@@ -848,7 +917,7 @@ const HeroSection = () => {
                 <button
                   type="button"
                   onClick={() => openCard(featuredDevice)}
-                  className="group relative mt-4 w-full overflow-hidden rounded-lg border border-cyan-200/18 bg-[linear-gradient(135deg,rgba(8,47,73,0.78),rgba(30,64,175,0.42)_45%,rgba(88,28,135,0.72))] p-3 text-left transition hover:border-fuchsia-200/42 hover:shadow-[0_22px_70px_rgba(14,165,233,0.18)] sm:mt-5 sm:p-3.5"
+                  className="group relative mt-4 w-full overflow-hidden rounded-lg border border-cyan-200/18 bg-[linear-gradient(135deg,rgba(14,165,233,0.16),rgba(37,99,235,0.14)_45%,rgba(168,85,247,0.2))] p-3 text-left transition hover:border-fuchsia-200/42 hover:bg-white/[0.075] hover:shadow-[0_22px_70px_rgba(14,165,233,0.18)] sm:mt-5 sm:p-3.5"
                 >
                   <span className="pointer-events-none absolute -right-4 -top-3 text-[86px] font-black leading-none text-white/[0.045] sm:-right-5 sm:-top-4 sm:text-[108px]">
                     01
@@ -858,8 +927,8 @@ const HeroSection = () => {
                       <span className="absolute -inset-2 rounded-lg bg-gradient-to-br from-cyan-400/22 to-fuchsia-400/18 blur-xl" />
                       <ProductThumb
                         card={featuredDevice}
-                        className="relative h-24 w-full rounded-md border-cyan-200/18 bg-[#071333]/88 shadow-[inset_0_0_34px_rgba(14,165,233,0.12)] min-[480px]:h-[124px]"
-                        imageClassName="p-2 transition duration-300 group-hover:scale-105 sm:p-2.5"
+                        className="relative h-24 w-full !border-transparent !bg-transparent min-[480px]:h-[124px]"
+                        imageClassName="p-1 drop-shadow-[0_24px_34px_rgba(2,6,23,0.44)] transition duration-300 group-hover:scale-110 sm:p-1.5"
                       />
                     </span>
                     <span className="min-w-0">
@@ -874,7 +943,7 @@ const HeroSection = () => {
                           .filter(Boolean)
                           .join(" / ")}
                       </span>
-                      <span className="mt-3 inline-flex items-center gap-2 rounded-md bg-white/[0.09] px-3 py-2 text-xs font-bold text-white ring-1 ring-white/10 transition group-hover:bg-white/[0.14] sm:mt-4 sm:px-3.5">
+                      <span className="mt-3 inline-flex items-center gap-2 rounded-md bg-gradient-to-r from-cyan-400/80 to-fuchsia-500/80 px-3 py-2 text-xs font-bold text-white ring-1 ring-white/10 transition group-hover:brightness-110 sm:mt-4 sm:px-3.5">
                         View details
                         <FaArrowRight className="h-3 w-3" />
                       </span>
@@ -902,22 +971,24 @@ const HeroSection = () => {
                         key={`${card.categoryId}-${card.name}-rail`}
                         type="button"
                         onClick={() => openCard(card)}
-                        className={`group flex w-full items-center gap-2.5 rounded-lg border border-white/10 bg-gradient-to-r ${rowColor} p-2 text-left transition hover:border-cyan-200/34 hover:brightness-110 sm:gap-3 sm:p-2.5`}
+                        className={`group flex w-full items-center gap-2.5 rounded-lg border border-cyan-200/12 bg-gradient-to-r ${rowColor} p-2 text-left transition hover:border-cyan-200/34 hover:bg-white/[0.06] hover:brightness-110 sm:gap-3 sm:p-2.5`}
                       >
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[#071333]/72 text-xs font-black text-cyan-50 ring-1 ring-white/10 sm:h-10 sm:w-10">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-white/[0.075] text-xs font-black text-cyan-50 ring-1 ring-white/10 sm:h-10 sm:w-10">
                           {String(index + 2).padStart(2, "0")}
                         </span>
                         <ProductThumb
                           card={card}
-                          className="h-12 w-12 rounded-md border-cyan-200/12 bg-[#071333]/84 sm:h-14 sm:w-14"
-                          imageClassName="p-1.5 transition duration-300 group-hover:scale-105"
+                          className="h-12 w-12 rounded-md border-cyan-200/10 bg-white/[0.045] sm:h-14 sm:w-14"
+                          imageClassName="p-1.5 drop-shadow-[0_14px_22px_rgba(2,6,23,0.34)] transition duration-300 group-hover:scale-110"
                         />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-[13px] font-black text-white sm:text-sm">
                             {card.name}
                           </span>
                           <span className="mt-0.5 block truncate text-[11px] text-cyan-100/58 sm:text-xs">
-                            {[card.brand, card.spec].filter(Boolean).join(" / ")}
+                            {[card.brand, card.spec]
+                              .filter(Boolean)
+                              .join(" / ")}
                           </span>
                         </span>
                         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/[0.06] text-fuchsia-100/50 transition group-hover:bg-cyan-300/14 group-hover:text-cyan-100 sm:h-8 sm:w-8">
