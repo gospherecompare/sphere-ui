@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { FaArrowRight } from "react-icons/fa";
-import { NEWS_BRAND_STYLES } from "./newsBrandStyles";
 import {
   createNewsStoryPath,
   usePublicNewsFeed,
@@ -20,7 +19,7 @@ const NewsStoryMedia = ({
   }, [story?.image, story?.slug]);
 
   return (
-    <div className={`overflow-hidden bg-slate-50 ${className}`}>
+    <div className={`overflow-hidden bg-[#071024]/80 ${className}`}>
       {!imageError && story?.image ? (
         <img
           src={story.image}
@@ -30,12 +29,12 @@ const NewsStoryMedia = ({
           onError={() => setImageError(true)}
         />
       ) : (
-        <div className="flex h-full items-center justify-center bg-slate-50 p-5 text-center">
+        <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_20%_18%,rgba(34,211,238,0.16),transparent_38%),radial-gradient(circle_at_82%_84%,rgba(217,70,239,0.16),transparent_42%),#071024] p-5 text-center">
           <div className="max-w-md">
-            <p className={NEWS_BRAND_STYLES.eyebrow}>
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100/70">
               {story?.label || "Newsroom"}
             </p>
-            <h3 className="mt-3 text-base font-black leading-tight tracking-tight text-slate-900 sm:text-lg">
+            <h3 className="mt-3 text-base font-black leading-tight tracking-tight text-white sm:text-lg">
               {story?.title}
             </h3>
           </div>
@@ -271,12 +270,12 @@ const LatestNewsArticlesSection = () => {
 
           {loading && !leadStory ? (
             <div className="mt-6 grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-              <div className="h-[24rem] animate-pulse rounded-2xl border border-slate-200 bg-white/80" />
+              <div className="h-[24rem] animate-pulse rounded-lg border border-cyan-200/14 bg-white/[0.055] backdrop-blur-xl" />
               <div className="space-y-4">
                 {[1, 2, 3].map((i) => (
                   <div
                     key={i}
-                    className="h-32 animate-pulse rounded-2xl border border-slate-200 bg-white/80"
+                    className="h-32 animate-pulse rounded-lg border border-cyan-200/14 bg-white/[0.055] backdrop-blur-xl"
                   />
                 ))}
               </div>
@@ -284,18 +283,18 @@ const LatestNewsArticlesSection = () => {
           ) : null}
 
           {!loading && error && !leadStory ? (
-            <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-6 sm:p-8">
-              <p className="font-semibold text-red-900">Unable to load news</p>
-              <p className="mt-2 text-red-700">{error}</p>
+            <div className="mt-6 rounded-lg border border-red-300/20 bg-red-500/10 p-6 text-red-50 shadow-[0_18px_54px_rgba(2,6,23,0.18)] backdrop-blur-xl sm:p-8">
+              <p className="font-semibold text-white">Unable to load news</p>
+              <p className="mt-2 text-sm text-red-100/75">{error}</p>
             </div>
           ) : null}
 
           {!loading && !error && !leadStory ? (
-            <div className="mt-6 rounded-2xl border border-slate-200 bg-white/80 p-8 text-center">
-              <p className="font-semibold text-slate-900">
+            <div className="mt-6 rounded-lg border border-cyan-200/14 bg-white/[0.055] p-8 text-center backdrop-blur-xl">
+              <p className="font-semibold text-white">
                 No stories published yet
               </p>
-              <p className="mt-2 text-slate-600">
+              <p className="mt-2 text-cyan-50/70">
                 Check back soon for the latest news and articles.
               </p>
             </div>
@@ -312,16 +311,16 @@ const LatestNewsArticlesSection = () => {
                   <Link
                     key={story.slug}
                     to={createNewsStoryPath(story.slug)}
-                    className="group w-[84vw] max-w-[21rem] shrink-0 snap-center rounded-2xl  bg-white p-3 shadow-[0_22px_50px_rgba(15,23,42,0.08)]"
+                    className="group w-[84vw] max-w-[21rem] shrink-0 snap-center rounded-lg border border-cyan-200/16 bg-white/[0.055] p-3 shadow-[0_22px_60px_rgba(2,6,23,0.2)] backdrop-blur-xl transition-all duration-300 hover:border-cyan-200/28 hover:bg-white/[0.075]"
                   >
-                    <div className="relative overflow-hidden rounded-2xl">
+                    <div className="relative overflow-hidden rounded-lg">
                       <NewsStoryMedia
                         story={story}
                         className="aspect-[1/1.06]"
                         imageClassName="transition-transform duration-500 group-hover:scale-[1.03]"
                       />
 
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/18 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#050712] via-[#050712]/20 to-transparent" />
 
                       <div className="absolute inset-x-0 bottom-0 p-4 text-white">
                         <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/75">
@@ -339,11 +338,11 @@ const LatestNewsArticlesSection = () => {
                     </div>
 
                     <div className="px-1 pb-1 pt-4">
-                      <p className="line-clamp-2 text-sm leading-6 text-slate-600">
+                      <p className="line-clamp-2 text-sm font-medium leading-6 text-cyan-50/70">
                         {buildStoryExcerpt(story)}
                       </p>
 
-                      <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-sky-700 transition-all duration-200 group-hover:gap-2 group-hover:text-sky-800">
+                      <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-cyan-100 transition-all duration-200 group-hover:gap-2 group-hover:text-white">
                         Read story
                         <FaArrowRight className="h-3 w-3" />
                       </span>
@@ -362,8 +361,8 @@ const LatestNewsArticlesSection = () => {
                       onClick={() => scrollToMobileStory(index)}
                       className={`h-2 rounded-full transition-all duration-200 ${
                         activeMobileIndex === index
-                          ? "w-6 bg-slate-700"
-                          : "w-2 bg-slate-300 hover:bg-slate-400"
+                          ? "w-6 bg-cyan-100"
+                          : "w-2 bg-white/[0.22] hover:bg-white/[0.38]"
                       }`}
                     />
                   ))}
@@ -376,9 +375,9 @@ const LatestNewsArticlesSection = () => {
             <div className="mt-6 hidden gap-6 lg:grid lg:grid-cols-[1.15fr_0.85fr]">
               <Link
                 to={createNewsStoryPath(leadStory.slug)}
-                className="group overflow-hidden rounded-2xl border border-white/80 bg-white p-4 shadow-[0_24px_60px_rgba(15,23,42,0.08)]"
+                className="group overflow-hidden rounded-lg border border-cyan-200/16 bg-white/[0.055] p-4 shadow-[0_24px_70px_rgba(2,6,23,0.22)] backdrop-blur-xl transition-all duration-300 hover:border-cyan-200/28 hover:bg-white/[0.075]"
               >
-                <div className="overflow-hidden rounded-2xl">
+                <div className="overflow-hidden rounded-lg">
                   <NewsStoryMedia
                     story={leadStory}
                     className="aspect-[16/11]"
@@ -387,22 +386,22 @@ const LatestNewsArticlesSection = () => {
                 </div>
 
                 <div className="mt-5 flex flex-col gap-4">
-                  <div className="flex flex-wrap items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                    <span className="text-sky-700">
+                  <div className="flex flex-wrap items-center gap-3 text-[11px] font-bold uppercase tracking-[0.18em] text-cyan-100/60">
+                    <span className="text-cyan-100">
                       {leadStory.label || "Newsroom"}
                     </span>
                     <span>{leadStory.publishedAt}</span>
                   </div>
 
-                  <h3 className="text-[1.75rem] font-black leading-[1.05] tracking-tight text-slate-950">
+                  <h3 className="text-[1.75rem] font-black leading-[1.05] tracking-tight text-white">
                     {leadStory.title}
                   </h3>
 
-                  <p className="max-w-2xl text-base leading-8 text-slate-600">
+                  <p className="max-w-2xl text-base font-medium leading-8 text-cyan-50/70">
                     {buildStoryExcerpt(leadStory)}
                   </p>
 
-                  <span className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900 transition-all duration-200 group-hover:gap-3 group-hover:text-sky-700">
+                  <span className="inline-flex items-center gap-2 text-sm font-bold text-cyan-100 transition-all duration-200 group-hover:gap-3 group-hover:text-white">
                     Read featured story
                     <FaArrowRight className="h-3.5 w-3.5" />
                   </span>
@@ -413,13 +412,13 @@ const LatestNewsArticlesSection = () => {
                 {listStories.map((story) => (
                   <article
                     key={story.slug}
-                    className="overflow-hidden rounded-2xl border border-white/80 bg-white p-4 shadow-[0_18px_42px_rgba(15,23,42,0.06)]"
+                    className="overflow-hidden rounded-lg border border-cyan-200/14 bg-white/[0.055] p-4 shadow-[0_18px_54px_rgba(2,6,23,0.18)] backdrop-blur-xl transition-all duration-300 hover:border-cyan-200/26 hover:bg-white/[0.075]"
                   >
                     <Link
                       to={createNewsStoryPath(story.slug)}
                       className="group flex items-stretch gap-4"
                     >
-                      <div className="w-40 flex-shrink-0 overflow-hidden rounded-2xl">
+                      <div className="w-40 flex-shrink-0 overflow-hidden rounded-lg">
                         <NewsStoryMedia
                           story={story}
                           className="aspect-[1/1.06] h-full"
@@ -429,26 +428,26 @@ const LatestNewsArticlesSection = () => {
 
                       <div className="flex min-w-0 flex-1 flex-col justify-between py-1">
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                            <span className="truncate text-sky-700">
+                          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-100/56">
+                            <span className="truncate text-cyan-100">
                               {story.label || "Newsroom"}
                             </span>
-                            <span className="h-1 w-1 rounded-full bg-slate-300" />
+                            <span className="h-1 w-1 rounded-full bg-cyan-100/38" />
                             <span className="truncate">
                               {story.publishedAt}
                             </span>
                           </div>
 
-                          <h4 className="mt-3 line-clamp-2 text-lg font-black leading-tight tracking-tight text-slate-900 transition-colors duration-200 group-hover:text-sky-800">
+                          <h4 className="mt-3 line-clamp-2 text-lg font-black leading-tight tracking-tight text-white transition-colors duration-200 group-hover:text-cyan-100">
                             {story.title}
                           </h4>
 
-                          <p className="mt-3 line-clamp-3 text-sm leading-7 text-slate-600">
+                          <p className="mt-3 line-clamp-3 text-sm font-medium leading-7 text-cyan-50/64">
                             {buildStoryExcerpt(story)}
                           </p>
                         </div>
 
-                        <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-slate-900 transition-all duration-200 group-hover:gap-2 group-hover:text-sky-700">
+                        <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-cyan-100 transition-all duration-200 group-hover:gap-2 group-hover:text-white">
                           Read
                           <FaArrowRight className="h-3 w-3" />
                         </span>

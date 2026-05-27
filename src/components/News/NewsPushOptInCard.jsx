@@ -107,14 +107,14 @@ const NewsPushOptInCard = () => {
       <button
         type="button"
         aria-label="Close notification prompt"
-        className="absolute inset-0 bg-slate-950/55 backdrop-blur-[3px]"
+        className="absolute inset-0 bg-sky-950/10 backdrop-blur-[2px]"
         onClick={busy ? undefined : handleClose}
       />
 
       <div className="relative z-[81] w-full max-w-md overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_30px_90px_rgba(15,23,42,0.26)]">
         <div className="flex items-start justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
           <div className="flex items-center gap-3">
-            <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-white">
+            <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-blue-600">
               <FaBell />
             </span>
             <div>
@@ -162,7 +162,7 @@ const NewsPushOptInCard = () => {
               type="button"
               onClick={handleEnable}
               disabled={busy}
-              className="inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+              className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(37,99,235,0.22)] transition hover:from-blue-500 hover:to-violet-500 disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-400"
             >
               {busy ? "Working..." : "Enable notifications"}
             </button>

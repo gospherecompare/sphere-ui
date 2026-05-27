@@ -210,7 +210,7 @@ const PopularBrands = () => {
         <div className="mt-7 flex items-center gap-4 sm:mt-8">
           <div className="h-px flex-1 bg-gradient-to-r from-transparent via-cyan-200/44 to-transparent" />
           <span className="whitespace-nowrap rounded-md border border-white/10 bg-white/[0.055] px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-cyan-100/62 backdrop-blur sm:text-xs">
-            Brand logos
+            Choose a brand
           </span>
           <div className="h-px flex-1 bg-gradient-to-r from-transparent via-fuchsia-200/36 to-transparent" />
         </div>

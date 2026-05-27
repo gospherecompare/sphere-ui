@@ -101,6 +101,7 @@ import {
   FaAlignJustify,
   FaStream,
   FaBriefcase,
+  FaTimes,
 } from "react-icons/fa";
 
 const BrandIdentity = ({ variant = "desktop" }) => {
@@ -2363,7 +2364,7 @@ const Header = () => {
         <div className="flex items-center justify-between gap-3 px-4 py-3">
           <div className="flex min-w-0 items-center gap-2">
             <button
-              className="inline-flex h-10 w-10 items-center justify-center  text-slate-600 transition-all hover:bg-slate-100/60 hover:text-slate-900 rounded-lg"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 transition-all hover:bg-slate-100/60 hover:text-slate-900"
               onClick={() => setIsMenuOpen(true)}
               aria-label="Open menu"
             >
@@ -2379,7 +2380,7 @@ const Header = () => {
             <button
               type="button"
               onClick={openSearchOverlay}
-              className="inline-flex h-10 w-10 items-center justify-center   text-slate-600 transition-all hover:bg-slate-100/60 hover:text-slate-900 hover:border-slate-300"
+              className="inline-flex h-10 w-10 items-center justify-center text-slate-600 transition-all hover:bg-slate-100/60 hover:text-slate-900 hover:border-slate-300"
               aria-label="Open search"
             >
               <FaSearch className="h-4 w-4" />
@@ -2872,12 +2873,12 @@ const Header = () => {
             />
 
             <div
-              className={`fixed inset-y-0 left-0 z-50 w-[296px] max-w-[84vw] transform overflow-hidden rounded-none border-r border-slate-100 bg-white transition-transform duration-300 lg:hidden ${
+              className={`fixed inset-y-0 left-0 z-50 w-[296px] max-w-[84vw] transform overflow-hidden border-r border-slate-100 bg-white shadow-[18px_0_60px_rgba(15,23,42,0.16)] transition-transform duration-300 lg:hidden ${
                 isMenuOpen ? "translate-x-0" : "-translate-x-full"
               }`}
             >
               <div className="flex h-full flex-col">
-                <div className="flex items-center justify-between border-b border-slate-100 px-4 py-4">
+                <div className="flex min-h-[74px] items-center justify-between border-b border-slate-100 px-4 py-4">
                   <Link
                     to="/"
                     className="flex items-center min-w-0"
@@ -2887,15 +2888,15 @@ const Header = () => {
                   </Link>
                   <button
                     type="button"
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200/80 bg-white text-slate-700 transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950"
                     onClick={() => setIsMenuOpen(false)}
                     aria-label="Close menu"
                   >
-                    <span className="text-2xl leading-none font-light">X</span>
+                    <FaTimes className="h-5 w-5" />
                   </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto px-4 py-4">
+                <div className="flex-1 overflow-y-auto px-4 py-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   <nav>
                     {drawerItems.map((item) => {
                       const isOpen = openSection === item.id;
@@ -2904,16 +2905,16 @@ const Header = () => {
                         return (
                           <section
                             key={item.id}
-                            className="border-b border-slate-100"
+                            className="border-b border-slate-100/90"
                           >
                             <button
                               type="button"
                               onClick={() =>
                                 setOpenSection(isOpen ? "" : item.id)
                               }
-                              className="flex w-full items-center justify-between py-4 text-left"
+                              className="flex w-full items-center justify-between py-[15px] text-left"
                             >
-                              <span className="text-[15px] font-semibold text-[#163b7d]">
+                              <span className="text-[15px] font-bold text-[#073377]">
                                 {item.title}
                               </span>
                               {isOpen ? (
@@ -2931,7 +2932,7 @@ const Header = () => {
                                       <Link
                                         to={subItem.href}
                                         onClick={() => setIsMenuOpen(false)}
-                                        className="flex items-center justify-between py-2.5 text-[13px] text-slate-700 transition-colors hover:text-blue-700"
+                                        className="flex items-center justify-between py-2.5 text-[13px] font-medium text-slate-700 transition-colors hover:text-[#073377]"
                                       >
                                         <span>{subItem.label}</span>
                                         <FaArrowRight className="h-3 w-3 text-slate-400" />
@@ -2960,7 +2961,7 @@ const Header = () => {
                           key={item.id}
                           to={item.href}
                           onClick={() => setIsMenuOpen(false)}
-                          className="flex items-center justify-between border-b border-slate-100 py-4 text-[15px] font-semibold text-[#163b7d]"
+                          className="flex items-center justify-between border-b border-slate-100/90 py-[15px] text-[15px] font-bold text-[#073377]"
                         >
                           <span>{item.title}</span>
                           <FaArrowRight className="h-3 w-3 text-slate-500" />

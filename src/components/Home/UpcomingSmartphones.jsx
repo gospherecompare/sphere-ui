@@ -424,7 +424,7 @@ const LatestSmartphones = () => {
             ? Array.from({ length: 6 }).map((_, i) => (
                 <div
                   key={`skeleton-${i}`}
-                  className={`flex min-w-[15.25rem] shrink-0 flex-col overflow-hidden rounded-lg border border-cyan-200/12 bg-white/[0.055] p-2.5 text-slate-100 backdrop-blur-xl transition-all duration-300 sm:min-w-[16rem] sm:p-3 ${
+                  className={`flex min-w-[15.25rem] shrink-0 flex-col overflow-hidden rounded-lg border border-cyan-200/12 bg-white/[0.055] p-2.5 text-cyan-50 backdrop-blur-xl transition-all duration-300 sm:min-w-[16rem] sm:p-3 ${
                     isLoaded
                       ? "opacity-100 translate-y-0"
                       : "opacity-0 translate-y-2"

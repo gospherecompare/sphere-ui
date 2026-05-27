@@ -12,7 +12,7 @@ import LatestNewsArticlesSection from "./LatestNewsArticlesSection";
 const Home = () => {
   useTitle({ page: "home" });
   return (
-    <div className="bg-[#050712]">
+    <div className="min-h-screen overflow-x-hidden bg-[#050712]">
       <HeroSection />
       <FeaturedProduct />
       <PopularBrands />

@@ -15,6 +15,7 @@ import {
 
 const NEWS_GRID_LIMIT = 36;
 const NEWS_MOBILE_QUERY = "(max-width: 639px)";
+const NEWS_HERO_ROTATE_MS = 5200;
 
 const NEWS_TOPICS = [
   { label: "Mobiles", matcher: (story) => isMobileStory(story) },
@@ -133,6 +134,16 @@ const buildNewsLayout = (stories = []) => {
   };
 };
 
+const uniqueStoriesBySlug = (items = []) => {
+  const seen = new Set();
+
+  return items.filter((story) => {
+    if (!story?.slug || seen.has(story.slug)) return false;
+    seen.add(story.slug);
+    return true;
+  });
+};
+
 const useIsNewsMobileLayout = () => {
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -179,38 +190,93 @@ const StoryMeta = ({ story, light = false }) => (
   </div>
 );
 
-const HeroStoryCard = ({ story }) => {
-  if (!story) return null;
+const HeroStoryCarousel = ({ stories = [] }) => {
+  const carouselStories = useMemo(
+    () => uniqueStoriesBySlug(stories).slice(0, 5),
+    [stories],
+  );
+  const carouselKey = carouselStories.map((story) => story.slug).join("|");
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [carouselKey]);
+
+  useEffect(() => {
+    if (carouselStories.length <= 1 || isPaused) return undefined;
+
+    const timerId = window.setInterval(() => {
+      setActiveIndex((currentIndex) => (currentIndex + 1) % carouselStories.length);
+    }, NEWS_HERO_ROTATE_MS);
+
+    return () => window.clearInterval(timerId);
+  }, [carouselStories.length, isPaused]);
+
+  const activeStory = carouselStories[activeIndex] || carouselStories[0];
+
+  if (!activeStory) return null;
 
   return (
-    <Link
-      to={createNewsStoryPath(story.slug)}
-      className="group relative isolate min-h-[20rem] overflow-hidden bg-[#111827] text-white sm:min-h-[30rem] lg:min-h-[34rem]"
+    <div
+      className="group relative isolate min-h-[20rem] overflow-hidden rounded-[24px] bg-[#111827] text-white shadow-[0_24px_70px_rgba(15,23,42,0.16)] sm:min-h-[30rem] lg:min-h-[34rem]"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onFocusCapture={() => setIsPaused(true)}
+      onBlurCapture={() => setIsPaused(false)}
     >
-      <StoryImage story={story} className="absolute inset-0 h-full w-full opacity-70" />
+      <Link
+        to={createNewsStoryPath(activeStory.slug)}
+        aria-label={`Read top story: ${activeStory.title}`}
+        className="absolute inset-0 z-10"
+      />
+      <StoryImage
+        key={activeStory.slug}
+        story={activeStory}
+        className="absolute inset-0 h-full w-full opacity-70"
+      />
       <div className="absolute inset-0 bg-gradient-to-t from-[#0b1020] via-[#1e3a8a]/60 to-transparent" />
 
-      <div className="relative flex h-full min-h-[20rem] flex-col justify-end p-4 sm:min-h-[30rem] sm:p-7 lg:min-h-[34rem] lg:p-8">
-        <div className="mb-4 inline-flex w-fit items-center gap-2 bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-[#2563eb]">
+      <div className="pointer-events-none relative z-20 flex h-full min-h-[20rem] flex-col justify-end p-4 sm:min-h-[30rem] sm:p-7 lg:min-h-[34rem] lg:p-8">
+        <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-full bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-[#2563eb]">
           <FaFire className="h-3 w-3 text-[#7c3aed]" />
           Top Story
         </div>
         <h1 className="line-clamp-3 max-w-4xl text-[23px] font-black leading-[1.08] tracking-[-0.04em] sm:text-[42px] lg:text-[52px]">
-          {story.title}
+          {activeStory.title}
         </h1>
         <p className="mt-3 line-clamp-3 max-w-2xl text-[14px] leading-6 text-white/82 sm:mt-4 sm:text-[17px] sm:leading-7">
-          {story.summary}
+          {activeStory.summary}
         </p>
-        <StoryMeta story={story} light />
+        <StoryMeta story={activeStory} light />
       </div>
-    </Link>
+
+      {carouselStories.length > 1 ? (
+        <div className="absolute bottom-4 right-4 z-30 flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-2.5 py-2 backdrop-blur-md sm:bottom-6 sm:right-6">
+          {carouselStories.map((story, index) => (
+            <button
+              key={story.slug}
+              type="button"
+              aria-label={`Show top story ${index + 1}`}
+              aria-current={index === activeIndex ? "true" : undefined}
+              onClick={() => setActiveIndex(index)}
+              className={`h-2 rounded-full transition-all duration-300 ${
+                index === activeIndex
+                  ? "w-7 bg-white"
+                  : "w-2 bg-white/45 hover:bg-white/75"
+              }`}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 };
 
 const NewsGridCard = ({ story, compact = false, rowCard = false }) => (
   <Link
     to={createNewsStoryPath(story.slug)}
-    className={`group block overflow-hidden bg-white transition-all hover:border-[#bfdbfe] ${
+    className={`group block overflow-hidden rounded-2xl bg-white transition-all hover:border-[#bfdbfe] ${
       rowCard && compact
         ? "min-w-[76%] snap-start border border-white/15 bg-[#1f2631] sm:min-w-0 sm:border-[#e5e7eb] sm:bg-white"
         : rowCard
@@ -255,11 +321,11 @@ const NewsGridCard = ({ story, compact = false, rowCard = false }) => (
 const RecentStoryCard = ({ story }) => (
   <Link
     to={createNewsStoryPath(story.slug)}
-    className="group grid grid-cols-[92px_minmax(0,1fr)] gap-3 border-b border-[#e5e7eb] bg-white py-3 first:pt-0 last:border-b-0 last:pb-0 sm:block sm:overflow-hidden sm:border sm:bg-white sm:py-0 sm:transition-colors sm:hover:border-[#bfdbfe]"
+    className="group grid grid-cols-[92px_minmax(0,1fr)] gap-3 border-b border-[#e5e7eb] bg-white py-3 first:pt-0 last:border-b-0 last:pb-0 sm:block sm:overflow-hidden sm:rounded-lg sm:border sm:bg-white sm:py-0 sm:transition-colors sm:hover:border-[#bfdbfe]"
   >
     <StoryImage
       story={story}
-      className="aspect-square w-full sm:aspect-[4/3]"
+      className="aspect-square w-full rounded-md sm:aspect-[4/3] sm:rounded-none"
     />
     <div className="min-w-0 sm:p-4">
       <StoryMeta story={story} />
@@ -279,9 +345,9 @@ const SpotlightList = ({ stories = [] }) => (
       <Link
         key={story.slug}
         to={createNewsStoryPath(story.slug)}
-        className="group grid grid-cols-[88px_minmax(0,1fr)] gap-3 border border-[#e5e7eb] bg-white p-2 transition-colors hover:border-[#bfdbfe] sm:grid-cols-[92px_minmax(0,1fr)]"
+        className="group grid grid-cols-[88px_minmax(0,1fr)] gap-3 rounded-2xl border border-[#e5e7eb] bg-white p-2 transition-colors hover:border-[#bfdbfe] sm:grid-cols-[92px_minmax(0,1fr)]"
       >
-        <StoryImage story={story} className="aspect-square w-full" />
+        <StoryImage story={story} className="aspect-square w-full rounded-xl" />
         <div className="min-w-0 self-center">
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#7c3aed]">
             {formatStoryLabel(story)}
@@ -354,7 +420,7 @@ const StorySection = ({
   return (
     <section
       className={`${hideOnMobile ? "hidden sm:block" : ""} ${
-        dark ? "bg-[#2b3038] p-3 sm:p-5" : ""
+        dark ? "rounded-[24px] bg-[#2b3038] p-3 sm:p-5" : ""
       }`}
     >
       <SectionHeader
@@ -403,7 +469,7 @@ const SideList = ({ title, stories = [] }) => {
   if (!stories.length) return null;
 
   return (
-    <section className="border border-[#e5e7eb] bg-white">
+    <section className="overflow-hidden rounded-lg border border-[#e5e7eb] bg-white">
       <div className="bg-gradient-to-r from-[#2563eb] to-[#7c3aed] px-4 py-2 text-[12px] font-black uppercase tracking-[0.12em] text-white">
         {title}
       </div>
@@ -414,7 +480,7 @@ const SideList = ({ title, stories = [] }) => {
             to={createNewsStoryPath(story.slug)}
             className="group grid grid-cols-[72px_minmax(0,1fr)] gap-3 py-3 first:pt-0 last:pb-0"
           >
-            <StoryImage story={story} className="aspect-[4/3] w-full" />
+            <StoryImage story={story} className="aspect-[4/3] w-full rounded-md" />
             <div className="min-w-0">
               <h3 className="line-clamp-3 text-[13px] font-semibold leading-5 text-[#20242b] group-hover:text-[#2563eb]">
                 {story.title}
@@ -432,7 +498,7 @@ const LatestLaunches = ({ stories = [] }) => {
   if (!stories.length) return null;
 
   return (
-    <section className="border border-[#e5e7eb] bg-white">
+    <section className="overflow-hidden rounded-lg border border-[#e5e7eb] bg-white">
       <div className="bg-gradient-to-r from-[#2563eb] to-[#7c3aed] px-4 py-2 text-[12px] font-black uppercase tracking-[0.12em] text-white">
         Latest Launches
       </div>
@@ -443,7 +509,7 @@ const LatestLaunches = ({ stories = [] }) => {
             to={createNewsStoryPath(story.slug)}
             className="group flex items-start gap-3 py-3 first:pt-0 last:pb-0"
           >
-            <StoryImage story={story} className="h-16 w-16 shrink-0" />
+            <StoryImage story={story} className="h-16 w-16 shrink-0 rounded-md" />
             <div className="min-w-0">
               <h3 className="line-clamp-2 text-[13px] font-semibold leading-5 text-[#20242b] group-hover:text-[#2563eb]">
                 {story.productName || story.title}
@@ -462,7 +528,7 @@ const LatestLaunches = ({ stories = [] }) => {
 const LoadingGrid = () => (
   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
     {Array.from({ length: 9 }).map((_, index) => (
-      <div key={index} className="animate-pulse border border-[#e5e7eb] bg-white">
+      <div key={index} className="animate-pulse overflow-hidden rounded-2xl border border-[#e5e7eb] bg-white">
         <div className="aspect-[4/3] bg-[#e9eef5]" />
         <div className="space-y-3 p-4">
           <div className="h-3 w-20 bg-[#e9eef5]" />
@@ -493,6 +559,16 @@ const NewsArticlesPage = () => {
       launchSide: layout.launches.slice(0, isMobileLayout ? 3 : 6),
     }),
     [isMobileLayout, layout],
+  );
+  const heroCarouselStories = useMemo(
+    () =>
+      uniqueStoriesBySlug([
+        layout.hero,
+        ...layout.trending,
+        ...layout.latest,
+        ...layout.topNews,
+      ]).slice(0, 5),
+    [layout],
   );
 
   const pageSchema = [
@@ -538,7 +614,7 @@ const NewsArticlesPage = () => {
 
         <div className="mx-auto max-w-[1280px] px-4 py-5 sm:px-6 sm:py-8 lg:px-8">
           {error ? (
-            <div className="mb-6 border border-[#bfdbfe] bg-[#eff6ff] p-4 text-sm text-[#1d4ed8]">
+            <div className="mb-6 rounded-2xl border border-[#bfdbfe] bg-[#eff6ff] p-4 text-sm text-[#1d4ed8]">
               {error}
             </div>
           ) : null}
@@ -549,7 +625,7 @@ const NewsArticlesPage = () => {
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px] xl:items-start">
               <div className="space-y-7 sm:space-y-9">
                 <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-                  <HeroStoryCard story={layout.hero} />
+                  <HeroStoryCarousel stories={heroCarouselStories} />
                   <SpotlightList stories={display.spotlight} />
                 </section>
 
@@ -594,7 +670,7 @@ const NewsArticlesPage = () => {
                 <SideList title="Recent" stories={display.recentSide} />
                 <LatestLaunches stories={display.launchSide} />
 
-                <section className="border border-[#e5e7eb] bg-white p-4">
+                <section className="rounded-lg border border-[#e5e7eb] bg-white p-4">
                   <div className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.14em] text-[#7c3aed]">
                     <FaClock className="h-3.5 w-3.5" />
                     How We Rank

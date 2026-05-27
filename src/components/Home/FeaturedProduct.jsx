@@ -624,7 +624,7 @@ const FeaturedPhoneCard = ({ phone, index, isLoaded, onClick }) => {
 const FeaturedPhoneSkeleton = ({ index, isLoaded }) => {
   return (
     <div
-      className={`flex min-w-[19rem] shrink-0 snap-start items-center gap-2.5 rounded-md border border-cyan-200/16 bg-white/[0.055] p-2.5 text-slate-100 backdrop-blur-lg transition-all duration-300 sm:min-w-[21rem] sm:gap-3 sm:p-3 lg:min-w-0 lg:shrink ${
+      className={`flex min-w-[19rem] shrink-0 snap-start items-center gap-2.5 rounded-md border border-cyan-200/16 bg-white/[0.055] p-2.5 text-cyan-50 backdrop-blur-lg transition-all duration-300 sm:min-w-[21rem] sm:gap-3 sm:p-3 lg:min-w-0 lg:shrink ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       } animate-pulse`}
       style={{ transitionDelay: `${index * 60}ms` }}
@@ -989,7 +989,7 @@ const FeaturedProduct = () => {
               </h3>
             </div>
             <span className="hidden rounded-md border border-fuchsia-200/18 bg-fuchsia-400/10 px-3 py-2 text-xs font-bold text-fuchsia-50/72 sm:inline-flex">
-              {budgetRanges.length} lanes
+              {budgetRanges.length} price ranges
             </span>
           </div>
           {/* Mobile compact grid, desktop wider cards */}
@@ -1090,7 +1090,7 @@ const FeaturedProduct = () => {
           </div>
 
           {!loadingFeatured && displayPhones.length === 0 ? (
-            <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-5 text-center text-sm text-slate-300 backdrop-blur-sm">
+            <div className="mt-6 rounded-lg border border-cyan-200/14 bg-white/[0.06] px-4 py-5 text-center text-sm font-semibold text-cyan-50/70 backdrop-blur-sm">
               {featuredError ||
                 "Live featured picks are unavailable right now."}
             </div>

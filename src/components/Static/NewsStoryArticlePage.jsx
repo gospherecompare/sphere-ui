@@ -1315,7 +1315,7 @@ const NewsStoryArticlePage = () => {
       <NewsPushOptInCard />
 
       <main className="min-h-screen bg-white text-[#111111]">
-        <section className="bg-[#f7f8fb]">
+        <section className="bg-white">
           <div className="mx-auto max-w-[1280px] px-4 py-4 sm:px-6 lg:px-8">
             <div className="line-clamp-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] leading-5 text-[#7b8796] sm:text-[12px]">
               {storyBreadcrumbs.map((item, index) => {
