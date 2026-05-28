@@ -1,12 +1,7 @@
 // src/components/Home/FeaturedProduct.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  FaArrowRight,
-  FaFire,
-  FaMobileAlt,
-  FaRupeeSign,
-} from "react-icons/fa";
+import { FaArrowRight, FaFire, FaMobileAlt, FaRupeeSign } from "react-icons/fa";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
 import { createProductPath } from "../../utils/slugGenerator";
 import { buildPublicSmartphoneFeaturePath as buildSmartphoneFeaturePath } from "../../utils/smartphoneListingRoutes";
@@ -424,7 +419,7 @@ const BudgetCard = ({
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       aria-pressed={isActive}
-      className={`group relative w-full overflow-hidden rounded-md border text-left backdrop-blur-xl transition-all duration-500 ${
+      className={`group relative w-full overflow-hidden rounded-md border text-left transition-all duration-500 ${
         isActive
           ? "border-cyan-200/45 bg-white/[0.085] shadow-[0_18px_46px_rgba(14,165,233,0.18)]"
           : "border-white/10 bg-white/[0.045] hover:border-cyan-200/28 hover:bg-white/[0.075]"
@@ -529,7 +524,7 @@ const FeaturedFilterChip = ({ label, onClick }) => {
     <button
       type="button"
       onClick={onClick}
-      className="group relative shrink-0 snap-start overflow-hidden whitespace-nowrap rounded-md border border-cyan-200/16 bg-white/[0.055] px-4 py-2.5 text-[11px] font-bold text-cyan-50/86 backdrop-blur-xl transition-all duration-300 hover:border-fuchsia-200/30 hover:bg-white/[0.08] hover:text-white sm:px-5 sm:text-xs"
+      className="group relative shrink-0 snap-start overflow-hidden whitespace-nowrap rounded-md border border-cyan-200/16 bg-white/[0.055] px-4 py-2.5 text-[11px] font-bold text-cyan-50/86 transition-all duration-300 hover:border-fuchsia-200/30 hover:bg-white/[0.08] hover:text-white sm:px-5 sm:text-xs"
     >
       <span className="absolute inset-0 bg-gradient-to-r from-cyan-400/0 via-blue-500/10 to-fuchsia-500/0 opacity-0 transition group-hover:opacity-100" />
       <span className="relative">{label}</span>
@@ -568,12 +563,15 @@ const FeaturedPhoneCard = ({ phone, index, isLoaded, onClick }) => {
       type="button"
       onClick={onClick}
       aria-label={`Open ${phone.name}`}
-      className={`group relative flex min-w-[19rem] shrink-0 snap-start items-center gap-2.5 overflow-hidden rounded-md border border-cyan-200/16 bg-white/[0.055] p-2.5 text-left text-white shadow-[0_18px_60px_rgba(2,6,23,0.14)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-cyan-200/34 hover:bg-white/[0.08] hover:shadow-[0_24px_80px_rgba(14,165,233,0.16)] sm:min-w-[21rem] sm:gap-3 sm:p-3 lg:min-w-0 lg:shrink ${
+      className={`group relative flex min-w-[19rem] shrink-0 snap-start items-center gap-2.5 overflow-hidden rounded-lg border border-cyan-200/14 bg-white/[0.055] p-3 text-left text-white shadow-[0_16px_42px_rgba(2,6,23,0.14)] transition-all duration-300 hover:-translate-y-1 hover:border-cyan-200/28 hover:bg-white/[0.075] sm:min-w-[21rem] sm:gap-3 sm:p-3.5 lg:min-w-0 lg:shrink ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
       style={{ transitionDelay: `${index * 60}ms` }}
     >
-      <div className="pointer-events-none absolute right-[-20%] top-[-40%] h-28 w-28 rounded-full bg-fuchsia-300/18 blur-3xl transition group-hover:bg-cyan-300/22" />
+      <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_22%_12%,rgba(56,189,248,0.16),transparent_32%),radial-gradient(circle_at_86%_28%,rgba(168,85,247,0.18),transparent_36%)] opacity-90" />
+      <span className="pointer-events-none absolute -right-5 top-8 text-8xl font-black leading-none text-white/[0.035] transition-transform duration-300 group-hover:scale-110">
+        {String(index + 1).padStart(2, "0")}
+      </span>
       <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-visible rounded-md border border-transparent bg-transparent sm:h-28 sm:w-28">
         <span className="absolute bottom-2 h-9 w-16 rounded-full bg-cyan-200/14 blur-xl" />
         <span className="absolute h-16 w-16 rounded-full bg-gradient-to-br from-cyan-300/12 to-fuchsia-400/12 blur-xl sm:h-20 sm:w-20" />
@@ -605,14 +603,14 @@ const FeaturedPhoneCard = ({ phone, index, isLoaded, onClick }) => {
         <p className="mt-1 text-xs font-semibold text-cyan-100/60">
           {brandLabel}
         </p>
-        <p className="mt-1 line-clamp-1 text-[10px] font-medium leading-4 text-blue-100/56 sm:text-[11px]">
+        <p className="mt-1 line-clamp-1 text-[10px] font-medium leading-4 text-cyan-100/58 sm:text-[11px]">
           {phone.note}
         </p>
         <span className="mt-3 flex items-center justify-between gap-2 border-t border-white/10 pt-2">
           <span className="text-sm font-black text-white">
             {priceLabel || "View price"}
           </span>
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-r from-cyan-400/18 to-fuchsia-400/18 text-cyan-100 transition group-hover:from-cyan-400/28 group-hover:to-fuchsia-400/28">
+          <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-br from-cyan-400/80 to-fuchsia-500/80 text-white transition-transform duration-300 group-hover:translate-x-1">
             <FaArrowRight className="h-3 w-3 transition-transform duration-300 group-hover:translate-x-0.5" />
           </span>
         </span>
@@ -624,7 +622,7 @@ const FeaturedPhoneCard = ({ phone, index, isLoaded, onClick }) => {
 const FeaturedPhoneSkeleton = ({ index, isLoaded }) => {
   return (
     <div
-      className={`flex min-w-[19rem] shrink-0 snap-start items-center gap-2.5 rounded-md border border-cyan-200/16 bg-white/[0.055] p-2.5 text-cyan-50 backdrop-blur-lg transition-all duration-300 sm:min-w-[21rem] sm:gap-3 sm:p-3 lg:min-w-0 lg:shrink ${
+      className={`flex min-w-[19rem] shrink-0 snap-start items-center gap-2.5 rounded-lg border border-cyan-200/12 bg-white/[0.055] p-3 text-cyan-50 transition-all duration-300 sm:min-w-[21rem] sm:gap-3 sm:p-3.5 lg:min-w-0 lg:shrink ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       } animate-pulse`}
       style={{ transitionDelay: `${index * 60}ms` }}
@@ -801,232 +799,196 @@ const FeaturedProduct = () => {
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
-      <div className="absolute inset-0 bg-[linear-gradient(135deg,#073C8C_0%,#24105E_34%,#0B1547_62%,#073C8C_100%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_14%,rgba(34,211,238,0.28),transparent_31%),radial-gradient(circle_at_82%_16%,rgba(217,70,239,0.28),transparent_34%),radial-gradient(circle_at_52%_86%,rgba(59,130,246,0.22),transparent_42%)]" />
-      <div className="absolute left-[-28%] top-[4%] h-24 w-[22rem] -rotate-12 rounded-[999px] bg-gradient-to-r from-cyan-400/14 via-blue-500/20 to-fuchsia-500/18 blur-2xl sm:left-[-18%] sm:top-[7%] sm:h-32 sm:w-[58rem]" />
-      <div className="absolute right-[-42%] top-[30%] h-28 w-[24rem] rotate-12 rounded-[999px] bg-gradient-to-r from-purple-600/20 via-blue-500/18 to-sky-400/14 blur-2xl sm:right-[-22%] sm:top-[34%] sm:h-40 sm:w-[54rem]" />
-      <div className="absolute bottom-[-10%] left-[-28%] h-44 w-[28rem] rounded-[999px] bg-gradient-to-r from-blue-600/14 via-violet-600/18 to-fuchsia-500/14 blur-3xl sm:bottom-[-20%] sm:left-[12%] sm:h-72 sm:w-[68rem]" />
       <svg
-        className="pointer-events-none absolute inset-0 hidden h-full w-full mix-blend-screen sm:block sm:opacity-65 lg:opacity-80"
+        className="pointer-events-none absolute inset-0 hidden h-full w-full opacity-70 sm:block"
         viewBox="0 0 1440 900"
         preserveAspectRatio="xMidYMid slice"
         aria-hidden="true"
       >
-        <defs>
-          <linearGradient id="featuredTrace" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#22D3EE" stopOpacity="0" />
-            <stop offset="45%" stopColor="#60A5FA" stopOpacity="0.62" />
-            <stop offset="100%" stopColor="#D946EF" stopOpacity="0" />
-          </linearGradient>
-          <linearGradient id="featuredDeviceGlow" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#67E8F9" stopOpacity="0.28" />
-            <stop offset="100%" stopColor="#C084FC" stopOpacity="0.22" />
-          </linearGradient>
-        </defs>
         <path
-          d="M-80 154H178C244 154 250 236 318 236H506C586 236 592 104 674 104H832C918 104 934 206 1016 206H1520"
-          stroke="url(#featuredTrace)"
-          strokeWidth="2"
+          d="M-36 194H222c94 0 102-116 192-116h252c100 0 98 150 208 150h606"
           fill="none"
+          stroke="rgba(125,211,252,0.18)"
+          strokeWidth="3"
         />
         <path
-          d="M-90 720H178C248 720 276 632 346 632H560C632 632 658 762 736 762H950C1034 762 1052 658 1136 658H1530"
-          stroke="url(#featuredTrace)"
-          strokeWidth="2"
+          d="M910 150h214c84 0 86 104 166 104h194"
           fill="none"
+          stroke="rgba(216,180,254,0.16)"
+          strokeWidth="3"
+        />
+        <path
+          d="M-18 700h244c88 0 104-144 196-144h324c104 0 114 160 224 160h490"
+          fill="none"
+          stroke="rgba(56,189,248,0.14)"
+          strokeWidth="3"
         />
         <rect
-          x="84"
-          y="392"
-          width="116"
-          height="196"
-          rx="24"
-          stroke="url(#featuredDeviceGlow)"
-          strokeWidth="2"
-          fill="rgba(14,165,233,0.04)"
+          x="1018"
+          y="322"
+          width="218"
+          height="118"
+          rx="28"
+          fill="none"
+          stroke="rgba(125,211,252,0.13)"
+          strokeWidth="3"
         />
         <rect
-          x="1182"
-          y="220"
+          x="170"
+          y="540"
           width="184"
-          height="116"
-          rx="18"
-          stroke="url(#featuredDeviceGlow)"
-          strokeWidth="2"
-          fill="rgba(168,85,247,0.05)"
-        />
-        <path
-          d="M112 448H174M112 482H164M112 516H170M1214 260H1332M1214 292H1298"
-          stroke="rgba(255,255,255,0.16)"
-          strokeWidth="2"
-          strokeLinecap="round"
+          height="104"
+          rx="28"
+          fill="none"
+          stroke="rgba(216,180,254,0.12)"
+          strokeWidth="3"
         />
       </svg>
       <svg
-        className="pointer-events-none absolute inset-0 h-full w-full opacity-34 mix-blend-screen sm:hidden"
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-65 sm:hidden"
         viewBox="0 0 390 1180"
         preserveAspectRatio="xMidYMid slice"
         aria-hidden="true"
       >
-        <defs>
-          <linearGradient id="featuredMobileTrace" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#22D3EE" stopOpacity="0" />
-            <stop offset="48%" stopColor="#60A5FA" stopOpacity="0.48" />
-            <stop offset="100%" stopColor="#D946EF" stopOpacity="0" />
-          </linearGradient>
-          <linearGradient
-            id="featuredMobileDeviceGlow"
-            x1="0"
-            y1="0"
-            x2="1"
-            y2="1"
-          >
-            <stop offset="0%" stopColor="#67E8F9" stopOpacity="0.2" />
-            <stop offset="100%" stopColor="#C084FC" stopOpacity="0.16" />
-          </linearGradient>
-        </defs>
         <path
-          d="M-42 76H68C102 76 106 34 142 34H426"
-          stroke="url(#featuredMobileTrace)"
-          strokeWidth="1.6"
+          d="M-34 102H108c60 0 58 82 116 82h202"
           fill="none"
+          stroke="rgba(125,211,252,0.18)"
+          strokeWidth="2"
         />
         <path
-          d="M-42 660H70C112 660 126 592 170 592H250C292 592 302 714 342 714H430"
-          stroke="url(#featuredMobileTrace)"
-          strokeWidth="1.6"
+          d="M52 420h108c45 0 44 68 90 68h176"
           fill="none"
+          stroke="rgba(216,180,254,0.15)"
+          strokeWidth="2"
         />
         <path
-          d="M68 76V36H142M170 592V540H238M342 714V772H382"
-          stroke="rgba(191,219,254,0.2)"
-          strokeWidth="1.3"
+          d="M-20 760h120c52 0 52-76 104-76h214"
           fill="none"
+          stroke="rgba(56,189,248,0.12)"
+          strokeWidth="2"
         />
         <rect
-          x="-18"
-          y="296"
-          width="58"
+          x="286"
+          y="316"
+          width="78"
           height="112"
-          rx="14"
-          stroke="url(#featuredMobileDeviceGlow)"
-          strokeWidth="1.5"
-          fill="rgba(14,165,233,0.04)"
+          rx="20"
+          fill="none"
+          stroke="rgba(125,211,252,0.13)"
+          strokeWidth="2"
         />
         <rect
-          x="280"
-          y="456"
-          width="82"
-          height="56"
-          rx="12"
-          stroke="url(#featuredMobileDeviceGlow)"
-          strokeWidth="1.5"
-          fill="rgba(168,85,247,0.05)"
+          x="24"
+          y="614"
+          width="92"
+          height="142"
+          rx="22"
+          fill="none"
+          stroke="rgba(216,180,254,0.12)"
+          strokeWidth="2"
         />
-        <path
-          d="M-2 328H28M-2 350H22M-2 372H26M298 478H346M298 496H334"
-          stroke="rgba(255,255,255,0.15)"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        />
-        <circle cx="68" cy="76" r="3.5" fill="#BAE6FD" opacity="0.36" />
-        <circle cx="170" cy="592" r="3.5" fill="#BAE6FD" opacity="0.34" />
-        <circle cx="342" cy="714" r="3.5" fill="#BAE6FD" opacity="0.34" />
+        <circle cx="108" cy="102" r="4" fill="rgba(103,232,249,0.55)" />
+        <circle cx="250" cy="488" r="4" fill="rgba(216,180,254,0.5)" />
       </svg>
-      <div className="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-[#050712]/30 to-transparent" />
-      <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[#050712]/32 to-transparent" />
+      <div className="pointer-events-none absolute left-[-7rem] top-12 hidden h-80 w-80 rounded-full border border-cyan-300/12 sm:block" />
+      <div className="pointer-events-none absolute right-[-8rem] bottom-8 hidden h-80 w-80 rounded-full border border-fuchsia-300/14 sm:block" />
+      <div className="pointer-events-none absolute inset-x-0 top-1/2 hidden h-px bg-gradient-to-r from-transparent via-cyan-300/18 to-transparent sm:block" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-[#050712]/32 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[#050712]/32 to-transparent" />
       <div className="relative mx-auto max-w-7xl px-4 pb-8 pt-10 sm:px-6 sm:pb-12 sm:pt-16 lg:px-8 lg:pb-14 lg:pt-20">
         <div className="grid items-start gap-6 sm:gap-8 lg:grid-cols-[minmax(0,0.82fr)_minmax(520px,1.18fr)] lg:gap-10 xl:grid-cols-[minmax(0,0.82fr)_minmax(640px,1.18fr)]">
           <div className="relative min-w-0 max-w-4xl lg:pt-4">
-          <p className="inline-flex max-w-full items-center gap-2 rounded-md border border-cyan-200/20 bg-cyan-300/10 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.08em] text-cyan-100 shadow-[0_0_32px_rgba(14,165,233,0.16)] backdrop-blur sm:text-[11px]">
-            <FaMobileAlt className="h-3 w-3 text-sky-300" />
-            Featured Phones By Budget
-          </p>
+            <p className="inline-flex max-w-full items-center gap-2 rounded-md border border-cyan-200/20 bg-cyan-300/10 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.08em] text-cyan-100 shadow-[0_0_32px_rgba(14,165,233,0.16)] backdrop-blur sm:text-[11px]">
+              <FaMobileAlt className="h-3 w-3 text-sky-300" />
+              Featured Phones By Budget
+            </p>
 
-          <h2 className="mt-5 max-w-3xl text-[2.15rem] font-black leading-[1.03] text-white sm:mt-6 sm:text-5xl sm:leading-[1.02] lg:text-6xl">
-            Featured phones
-            <span className="block bg-gradient-to-r from-sky-200 via-white to-fuchsia-200 bg-clip-text text-transparent">
-              across every budget.
-            </span>
-          </h2>
+            <h2 className="mt-5 max-w-3xl text-[2.15rem] font-black leading-[1.03] text-white sm:mt-6 sm:text-5xl sm:leading-[1.02] lg:text-6xl">
+              Featured phones
+              <span className="block bg-gradient-to-r from-sky-200 via-white to-fuchsia-200 bg-clip-text text-transparent">
+                across every budget.
+              </span>
+            </h2>
 
-          <p className="mt-4 max-w-2xl text-sm font-medium leading-6 text-cyan-50/76 sm:mt-5 sm:text-lg sm:leading-7">
-            Start with a price range, then explore trend filters and live picks
-            that match how people actually compare smartphones.
-          </p>
+            <p className="mt-4 max-w-2xl text-sm font-medium leading-6 text-cyan-50/76 sm:mt-5 sm:text-lg sm:leading-7">
+              Start with a price range, then explore trend filters and live
+              picks that match how people actually compare smartphones.
+            </p>
 
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
-            <button
-              type="button"
-              onClick={() => handleBudgetClick(budgetRanges[2])}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-gradient-to-r from-sky-400 via-blue-500 to-fuchsia-500 px-3 py-3 text-center text-xs font-black text-white shadow-[0_16px_36px_rgba(59,130,246,0.34)] transition hover:brightness-110 sm:px-5 sm:text-sm"
-            >
-              Browse under {RUPEE}20k
-              <FaArrowRight className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate("/trending/smartphones")}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-fuchsia-200/20 bg-purple-500/14 px-3 py-3 text-center text-xs font-bold text-white backdrop-blur transition hover:border-purple-300/50 hover:bg-purple-400/18 sm:px-5 sm:text-sm"
-            >
-              See live picks
-              <FaFire className="h-3.5 w-3.5 text-fuchsia-200" />
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile: Horizontal Scroll, Desktop: Grid */}
-          <div className="relative mt-2 min-w-0 overflow-hidden rounded-lg border border-cyan-200/18 bg-white/[0.06] p-3 shadow-[0_24px_80px_rgba(37,99,235,0.16)] backdrop-blur-xl sm:mt-10 sm:p-5 sm:shadow-[0_30px_100px_rgba(37,99,235,0.18)] lg:mt-0">
-          <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/60 to-transparent" />
-          <div className="pointer-events-none absolute right-[-12%] top-[-30%] h-40 w-40 rounded-full bg-fuchsia-400/12 blur-3xl" />
-          <div className="mb-4 flex items-center justify-between gap-3 sm:mb-5">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-100/54 sm:tracking-[0.2em]">
-                Choose Price
-              </p>
-              <h3 className="mt-1 text-lg font-black text-white sm:text-xl">
-                Browse by budget
-              </h3>
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
+              <button
+                type="button"
+                onClick={() => handleBudgetClick(budgetRanges[2])}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-gradient-to-r from-sky-400 via-blue-500 to-fuchsia-500 px-3 py-3 text-center text-xs font-black text-white shadow-[0_16px_36px_rgba(59,130,246,0.34)] transition hover:brightness-110 sm:px-5 sm:text-sm"
+              >
+                Browse under {RUPEE}20k
+                <FaArrowRight className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate("/trending/smartphones")}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-fuchsia-200/20 bg-purple-500/14 px-3 py-3 text-center text-xs font-bold text-white transition hover:border-purple-300/50 hover:bg-purple-400/18 sm:px-5 sm:text-sm"
+              >
+                See live picks
+                <FaFire className="h-3.5 w-3.5 text-fuchsia-200" />
+              </button>
             </div>
-            <span className="hidden rounded-md border border-fuchsia-200/18 bg-fuchsia-400/10 px-3 py-2 text-xs font-bold text-fuchsia-50/72 sm:inline-flex">
-              {budgetRanges.length} price ranges
-            </span>
-          </div>
-          {/* Mobile compact grid, desktop wider cards */}
-          <div className="grid grid-cols-2 gap-2 lg:hidden">
-            {budgetRanges.map((item, index) => (
-              <BudgetMobileTile
-                key={item.slug}
-                item={item}
-                index={index}
-                isActive={activeBudget === item.value}
-                isLoaded={isLoaded}
-                onClick={() => handleBudgetClick(item)}
-              />
-            ))}
           </div>
 
-          {/* Desktop grid */}
-          <div className="hidden grid-cols-2 gap-2.5 lg:grid">
-            {budgetRanges.map((item, index) => (
-              <BudgetCard
-                key={item.slug}
-                item={item}
-                index={index}
-                isActive={activeBudget === item.value}
-                isHovered={hoveredBudget === item.value}
-                isLoaded={isLoaded}
-                onClick={() => handleBudgetClick(item)}
-                onMouseEnter={() => setHoveredBudget(item.value)}
-                onMouseLeave={() => setHoveredBudget(null)}
-              />
-            ))}
-          </div>
+          {/* Mobile: Horizontal Scroll, Desktop: Grid */}
+          <div className="relative mt-2 min-w-0 overflow-hidden rounded-lg border border-cyan-200/14 bg-white/[0.055] p-3 shadow-[0_16px_42px_rgba(2,6,23,0.14)] sm:mt-10 sm:p-5 sm:shadow-[0_18px_48px_rgba(2,6,23,0.14)] lg:mt-0">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_22%_12%,rgba(56,189,248,0.14),transparent_32%),radial-gradient(circle_at_86%_24%,rgba(168,85,247,0.16),transparent_36%)] opacity-90" />
+            <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/60 to-transparent" />
+            <div className="relative z-10 mb-4 flex items-center justify-between gap-3 sm:mb-5">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-100/54 sm:tracking-[0.2em]">
+                  Choose Price
+                </p>
+                <h3 className="mt-1 text-lg font-black text-white sm:text-xl">
+                  Browse by budget
+                </h3>
+              </div>
+              <span className="hidden rounded-md border border-white/10 bg-white/[0.055] px-3 py-2 text-xs font-bold text-cyan-50/72 sm:inline-flex">
+                {budgetRanges.length} price ranges
+              </span>
+            </div>
+            {/* Mobile compact grid, desktop wider cards */}
+            <div className="relative z-10 grid grid-cols-2 gap-2 lg:hidden">
+              {budgetRanges.map((item, index) => (
+                <BudgetMobileTile
+                  key={item.slug}
+                  item={item}
+                  index={index}
+                  isActive={activeBudget === item.value}
+                  isLoaded={isLoaded}
+                  onClick={() => handleBudgetClick(item)}
+                />
+              ))}
+            </div>
+
+            {/* Desktop grid */}
+            <div className="relative z-10 hidden grid-cols-2 gap-2.5 lg:grid">
+              {budgetRanges.map((item, index) => (
+                <BudgetCard
+                  key={item.slug}
+                  item={item}
+                  index={index}
+                  isActive={activeBudget === item.value}
+                  isHovered={hoveredBudget === item.value}
+                  isLoaded={isLoaded}
+                  onClick={() => handleBudgetClick(item)}
+                  onMouseEnter={() => setHoveredBudget(item.value)}
+                  onMouseLeave={() => setHoveredBudget(null)}
+                />
+              ))}
+            </div>
           </div>
         </div>
 
-        <div className="mt-6 rounded-lg border border-cyan-200/14 bg-white/[0.055] p-3 backdrop-blur-xl sm:mt-10">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative mt-6 overflow-hidden rounded-lg border border-cyan-200/14 bg-white/[0.055] p-3 sm:mt-10">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_22%,rgba(56,189,248,0.08),transparent_28%),radial-gradient(circle_at_84%_36%,rgba(168,85,247,0.1),transparent_34%)]" />
+          <div className="relative z-10 flex flex-col gap-3 sm:flex-row sm:items-center">
             <span className="inline-flex w-fit items-center gap-2 whitespace-nowrap rounded-md border border-white/10 bg-white/[0.045] px-3 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-white/90 sm:text-xs sm:tracking-[0.2em]">
               <FaFire className="h-3.5 w-3.5 text-fuchsia-200" />
               Trending filters
@@ -1044,8 +1006,10 @@ const FeaturedProduct = () => {
           </div>
         </div>
 
-        <div className="mt-6 rounded-lg border border-cyan-200/18 bg-white/[0.055] p-3 shadow-[0_20px_70px_rgba(2,6,23,0.14)] backdrop-blur-xl sm:mt-8 sm:p-5 sm:shadow-[0_24px_80px_rgba(2,6,23,0.16)]">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="relative mt-6 overflow-hidden rounded-lg border border-cyan-200/18 bg-white/[0.055] p-3 shadow-[0_16px_42px_rgba(2,6,23,0.12)] sm:mt-8 sm:p-5 sm:shadow-[0_18px_48px_rgba(2,6,23,0.14)]">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_22%_12%,rgba(56,189,248,0.14),transparent_32%),radial-gradient(circle_at_86%_24%,rgba(168,85,247,0.16),transparent_36%)] opacity-90" />
+          <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/60 to-transparent" />
+          <div className="relative z-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.24em] text-cyan-100/54">
                 Live Standouts
@@ -1067,7 +1031,7 @@ const FeaturedProduct = () => {
             </button>
           </div>
 
-          <div className="no-scrollbar mt-5 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 pr-8 lg:grid lg:grid-cols-2 lg:overflow-visible lg:pb-0 lg:pr-0 xl:grid-cols-3">
+          <div className="relative z-10 no-scrollbar mt-5 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 pr-8 lg:grid lg:grid-cols-2 lg:overflow-visible lg:pb-0 lg:pr-0 xl:grid-cols-3">
             {loadingFeatured
               ? Array.from({ length: FEATURED_PHONES_LIMIT }).map(
                   (_, index) => (
@@ -1090,7 +1054,7 @@ const FeaturedProduct = () => {
           </div>
 
           {!loadingFeatured && displayPhones.length === 0 ? (
-            <div className="mt-6 rounded-lg border border-cyan-200/14 bg-white/[0.06] px-4 py-5 text-center text-sm font-semibold text-cyan-50/70 backdrop-blur-sm">
+            <div className="relative z-10 mt-6 rounded-lg border border-cyan-200/14 bg-white/[0.06] px-4 py-5 text-center text-sm font-semibold text-cyan-50/70">
               {featuredError ||
                 "Live featured picks are unavailable right now."}
             </div>

@@ -29,16 +29,14 @@ const BrandCard = ({ brand, index, isActive, isLoaded, onClick }) => {
       aria-label={`Explore ${brand.name || "brand"}`}
       title={brand.name || "Brand"}
       className={`group relative flex h-16 w-28 shrink-0 snap-start items-center justify-center overflow-visible rounded-md text-white transition-all duration-300 hover:-translate-y-1 sm:h-24 sm:w-36 lg:w-40 ${
-        isActive
-          ? "opacity-100"
-          : "opacity-80 hover:opacity-100"
+        isActive ? "opacity-100" : "opacity-80 hover:opacity-100"
       } ${isLoaded ? "translate-y-0" : "opacity-0 translate-y-2"}`}
       style={{
         marginTop: `${BRAND_WAVE_OFFSETS[index % BRAND_WAVE_OFFSETS.length]}px`,
         transitionDelay: `${index * 40}ms`,
       }}
     >
-      <span className="pointer-events-none absolute left-1/2 top-1/2 h-11 w-20 -translate-x-1/2 -translate-y-1/2 rounded-md bg-white/[0.1] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_16px_34px_rgba(2,6,23,0.12)] backdrop-blur-sm transition-all duration-300 group-hover:bg-white/[0.14] sm:h-14 sm:w-24" />
+      <span className="pointer-events-none absolute left-1/2 top-1/2 h-11 w-20 -translate-x-1/2 -translate-y-1/2 rounded-md bg-white/[0.1] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_16px_34px_rgba(2,6,23,0.12)] transition-all duration-300 group-hover:bg-white/[0.14] sm:h-14 sm:w-24" />
       <span className="pointer-events-none absolute inset-x-5 bottom-2 h-6 rounded-full bg-cyan-100/[0.12] opacity-0 blur-xl transition-opacity duration-300 group-hover:opacity-100" />
       <span className="pointer-events-none absolute inset-x-8 bottom-0 h-px bg-gradient-to-r from-transparent via-cyan-100/50 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
       {brand.logo && !imageFailed ? (
@@ -144,12 +142,8 @@ const PopularBrands = () => {
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
-      <div className="absolute inset-0 bg-[linear-gradient(135deg,#073C8C_0%,#24105E_34%,#0B1547_62%,#073C8C_100%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_14%,rgba(34,211,238,0.28),transparent_31%),radial-gradient(circle_at_82%_16%,rgba(217,70,239,0.28),transparent_34%),radial-gradient(circle_at_52%_86%,rgba(59,130,246,0.2),transparent_42%)]" />
-      <div className="absolute left-[-52%] top-[10%] h-28 w-[34rem] -rotate-12 rounded-[999px] bg-gradient-to-r from-cyan-400/12 via-blue-500/18 to-fuchsia-500/14 blur-2xl sm:left-[-18%] sm:h-32 sm:w-[58rem]" />
-      <div className="absolute right-[-68%] bottom-[10%] h-32 w-[34rem] rotate-12 rounded-[999px] bg-gradient-to-r from-purple-600/18 via-blue-500/16 to-sky-400/12 blur-2xl sm:right-[-22%] sm:h-40 sm:w-[54rem]" />
       <svg
-        className="pointer-events-none absolute inset-0 h-full w-full opacity-35 mix-blend-screen sm:opacity-70"
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-22 sm:opacity-34"
         viewBox="0 0 1440 520"
         preserveAspectRatio="none"
         aria-hidden="true"
@@ -177,7 +171,7 @@ const PopularBrands = () => {
       <div className="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-[#050712]/28 to-transparent" />
       <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[#050712]/26 to-transparent" />
 
-      <div className="relative mx-auto max-w-7xl px-4 pb-8 pt-8 sm:px-6 sm:pb-12 sm:pt-10 lg:px-8 lg:pb-14 lg:pt-12">
+      <div className="relative mx-auto max-w-7xl px-4 pb-2 pt-8 sm:px-6 sm:pb-3 sm:pt-10 lg:px-8 lg:pb-4 lg:pt-12">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-2xl">
             <p className="inline-flex items-center gap-2 rounded-md border border-cyan-200/20 bg-cyan-300/10 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-cyan-100 shadow-[0_0_32px_rgba(14,165,233,0.14)] backdrop-blur sm:text-[11px]">
@@ -216,7 +210,7 @@ const PopularBrands = () => {
         </div>
 
         {uniqueBrands.length > 0 && (
-          <div className="relative mt-5 overflow-hidden py-8 sm:mt-6 sm:py-10">
+          <div className="relative mt-4 overflow-hidden py-3 sm:mt-5 sm:py-4">
             <div className="pointer-events-none absolute left-1/2 top-1/2 h-36 w-[42rem] -translate-x-1/2 -translate-y-1/2 rounded-[999px] border border-cyan-200/12 bg-white/[0.025] blur-[0.2px]" />
             <div className="pointer-events-none absolute left-1/2 top-1/2 h-20 w-[34rem] -translate-x-1/2 -translate-y-1/2 rounded-[999px] border border-fuchsia-200/12" />
             <div className="pointer-events-none absolute left-0 right-0 top-1/2 h-px bg-gradient-to-r from-transparent via-cyan-200/32 to-transparent" />
@@ -224,7 +218,7 @@ const PopularBrands = () => {
             <div className="pointer-events-none absolute left-20 right-20 top-[calc(50%-22px)] h-px bg-gradient-to-r from-transparent via-blue-200/16 to-transparent" />
             <span className="pointer-events-none absolute left-[12%] top-[calc(50%-4px)] h-2 w-2 rounded-full bg-cyan-200/60 shadow-[0_0_22px_rgba(34,211,238,0.6)]" />
             <span className="pointer-events-none absolute right-[16%] top-[calc(50%+16px)] h-2 w-2 rounded-full bg-fuchsia-200/50 shadow-[0_0_22px_rgba(217,70,239,0.5)]" />
-            <div className="no-scrollbar relative z-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-2 pb-4 pr-14 sm:gap-7 sm:px-4 sm:pr-20">
+            <div className="no-scrollbar relative z-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-2 pb-2 pr-14 sm:gap-7 sm:px-4 sm:pr-20 sm:pb-3">
               {uniqueBrands.map((brand, index) => {
                 const isActive = activeBrand === brand.id;
 

@@ -3725,7 +3725,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       }) || null,
     [visibleVariants],
   );
-
   useEffect(() => {
     setCurrentPage((prev) => Math.min(prev, totalPages));
   }, [totalPages]);
@@ -4969,6 +4968,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                                   </div>
                                 </div>
                               ) : null}
+
                             </div>
                           </div>
 
@@ -5127,6 +5127,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                                 </div>
                               </div>
                             ) : null}
+
                           </div>
                         </div>
                         <div className="hidden" />

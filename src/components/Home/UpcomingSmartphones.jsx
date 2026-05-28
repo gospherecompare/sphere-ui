@@ -184,23 +184,23 @@ const LatestSmartphoneCard = ({ device, index, isLoaded, onClick }) => {
       type="button"
       aria-label={`Open ${deviceName}`}
       onClick={onClick}
-      className={`group relative flex min-w-[15.25rem] shrink-0 flex-col overflow-hidden rounded-lg border border-cyan-200/12 bg-white/[0.055] p-2.5 text-left text-white shadow-[0_16px_48px_rgba(2,6,23,0.1)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-cyan-200/28 hover:bg-white/[0.085] sm:min-w-[16rem] sm:p-3 ${
+      className={`group relative flex min-w-[15.5rem] shrink-0 flex-col overflow-hidden rounded-lg border border-cyan-200/14 bg-white/[0.055] p-3 text-left text-white shadow-[0_16px_42px_rgba(2,6,23,0.14)] transition-all duration-300 hover:-translate-y-1 hover:border-cyan-200/28 hover:bg-white/[0.075] sm:min-w-[16.75rem] sm:p-3.5 lg:min-w-[18rem] ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
       style={{ transitionDelay: `${index * 60}ms` }}
     >
-      <span className="pointer-events-none absolute right-[-28%] top-[-42%] h-32 w-32 rounded-full bg-fuchsia-300/12 blur-3xl transition group-hover:bg-cyan-300/16" />
-      <span className="pointer-events-none absolute bottom-4 right-4 text-5xl font-black leading-none text-white/[0.028]">
+      <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_22%_12%,rgba(56,189,248,0.16),transparent_32%),radial-gradient(circle_at_86%_28%,rgba(168,85,247,0.18),transparent_36%)] opacity-90" />
+      <span className="pointer-events-none absolute -right-6 top-12 text-8xl font-black leading-none text-white/[0.035] transition-transform duration-300 group-hover:scale-110">
         {rank}
       </span>
-      <div className="relative flex h-[8.5rem] w-full items-center justify-center overflow-visible sm:h-36">
+      <div className="relative z-10 flex h-32 w-full items-center justify-center overflow-visible sm:h-36 lg:h-40">
         <span className="absolute bottom-3 h-10 w-24 rounded-full bg-cyan-100/12 blur-2xl" />
         <span className="absolute h-28 w-28 rounded-full bg-gradient-to-br from-cyan-300/10 via-blue-500/8 to-fuchsia-400/10 blur-2xl" />
         {device.image && !imageFailed ? (
           <img
             src={device.image}
             alt={deviceName}
-            className="relative h-full w-full object-contain p-2 drop-shadow-[0_24px_34px_rgba(2,6,23,0.38)] transition-transform duration-300 group-hover:scale-110"
+            className="relative h-full w-full object-contain p-1 drop-shadow-[0_24px_34px_rgba(2,6,23,0.4)] transition-transform duration-300 group-hover:scale-110"
             loading="lazy"
             onError={() => setImageFailed(true)}
           />
@@ -211,16 +211,16 @@ const LatestSmartphoneCard = ({ device, index, isLoaded, onClick }) => {
         )}
       </div>
 
-      <div className="relative mt-3 min-w-0 flex-1">
+      <div className="relative z-10 mt-3 min-w-0 flex-1">
         <div className="mb-2 flex items-center justify-between gap-2">
-          <span className="rounded-md bg-cyan-300/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-cyan-50/78 ring-1 ring-cyan-200/12">
+          <span className="rounded-md border border-white/10 bg-white/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-cyan-100">
             New {rank}
           </span>
-          <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-blue-100/42">
+          <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-100/46">
             Latest
           </span>
         </div>
-        <p className="line-clamp-1 text-sm font-black leading-snug text-white sm:text-[15px]">
+        <p className="line-clamp-2 text-base font-black leading-snug text-white">
           {deviceName}
         </p>
         <p className="mt-1 truncate text-xs font-semibold text-cyan-100/58">
@@ -228,11 +228,9 @@ const LatestSmartphoneCard = ({ device, index, isLoaded, onClick }) => {
         </p>
       </div>
 
-      <div className="relative mt-3 flex items-center justify-between gap-2 border-t border-white/8 pt-2.5">
-        <span className="text-xs font-bold text-blue-100/68">
-          View details
-        </span>
-        <span className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-r from-cyan-400/20 to-fuchsia-400/20 text-cyan-100 transition group-hover:from-cyan-400/30 group-hover:to-fuchsia-400/30 group-hover:text-white">
+      <div className="relative z-10 mt-4 flex items-center justify-between gap-2 border-t border-cyan-100/10 pt-3">
+        <span className="text-sm font-black text-white">View details</span>
+        <span className="grid h-8 w-8 place-items-center rounded-md bg-gradient-to-br from-cyan-400/80 to-fuchsia-500/80 text-white transition-transform duration-300 group-hover:translate-x-1">
           <FaArrowRight className="h-3 w-3 transition-transform duration-300 group-hover:translate-x-0.5" />
         </span>
       </div>
@@ -302,79 +300,108 @@ const LatestSmartphones = () => {
 
   return (
     <section
-      className={`relative overflow-hidden bg-[#050712] text-white transition-all duration-700 ${
+      className={`relative -mt-px overflow-hidden bg-[#050712] text-white transition-all duration-700 ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
-      <div className="absolute inset-0 bg-[linear-gradient(135deg,#073C8C_0%,#24105E_34%,#0B1547_62%,#073C8C_100%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_14%,rgba(34,211,238,0.26),transparent_31%),radial-gradient(circle_at_82%_16%,rgba(217,70,239,0.26),transparent_34%),radial-gradient(circle_at_52%_86%,rgba(59,130,246,0.2),transparent_42%)]" />
-      <div className="absolute left-[-28%] top-[4%] h-24 w-[22rem] -rotate-12 rounded-[999px] bg-gradient-to-r from-cyan-400/14 via-blue-500/20 to-fuchsia-500/18 blur-2xl sm:left-[-18%] sm:top-[8%] sm:h-32 sm:w-[58rem]" />
-      <div className="absolute right-[-42%] bottom-[12%] h-28 w-[24rem] rotate-12 rounded-[999px] bg-gradient-to-r from-purple-600/18 via-blue-500/16 to-sky-400/12 blur-2xl sm:right-[-22%] sm:h-40 sm:w-[54rem]" />
       <svg
-        className="pointer-events-none absolute inset-0 hidden h-full w-full mix-blend-screen sm:block sm:opacity-65 lg:opacity-70"
+        className="pointer-events-none absolute inset-0 hidden h-full w-full opacity-70 sm:block"
         viewBox="0 0 1440 560"
         preserveAspectRatio="xMidYMid slice"
         aria-hidden="true"
       >
-        <defs>
-          <linearGradient id="latestTrace" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#22D3EE" stopOpacity="0" />
-            <stop offset="46%" stopColor="#60A5FA" stopOpacity="0.58" />
-            <stop offset="100%" stopColor="#D946EF" stopOpacity="0" />
-          </linearGradient>
-        </defs>
         <path
-          d="M-90 138H180C246 138 252 220 318 220H506C586 220 594 98 674 98H832C918 98 936 202 1018 202H1530"
-          stroke="url(#latestTrace)"
-          strokeWidth="2"
+          d="M-40 138H210c96 0 102-118 192-118h260c100 0 98 154 208 154h620"
           fill="none"
+          stroke="rgba(125,211,252,0.18)"
+          strokeWidth="3"
         />
         <path
-          d="M-80 438H198C262 438 288 360 356 360H568C638 360 662 474 736 474H950C1034 474 1056 388 1138 388H1520"
-          stroke="url(#latestTrace)"
-          strokeWidth="2"
+          d="M910 102h214c84 0 86 96 166 96h190"
           fill="none"
+          stroke="rgba(216,180,254,0.16)"
+          strokeWidth="3"
+        />
+        <path
+          d="M-24 438h246c92 0 100-138 190-138h300c106 0 118 148 230 148h542"
+          fill="none"
+          stroke="rgba(56,189,248,0.14)"
+          strokeWidth="3"
+        />
+        <rect
+          x="1006"
+          y="206"
+          width="210"
+          height="118"
+          rx="28"
+          fill="none"
+          stroke="rgba(125,211,252,0.13)"
+          strokeWidth="3"
+        />
+        <rect
+          x="208"
+          y="332"
+          width="164"
+          height="94"
+          rx="26"
+          fill="none"
+          stroke="rgba(216,180,254,0.12)"
+          strokeWidth="3"
         />
       </svg>
       <svg
-        className="pointer-events-none absolute inset-0 h-full w-full opacity-45 mix-blend-screen sm:hidden"
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-65 sm:hidden"
         viewBox="0 0 390 720"
         preserveAspectRatio="xMidYMid slice"
         aria-hidden="true"
       >
-        <defs>
-          <linearGradient id="latestMobileTrace" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#22D3EE" stopOpacity="0" />
-            <stop offset="48%" stopColor="#60A5FA" stopOpacity="0.48" />
-            <stop offset="100%" stopColor="#D946EF" stopOpacity="0" />
-          </linearGradient>
-        </defs>
         <path
-          d="M-34 122H72C110 122 116 184 154 184H248C292 184 298 120 342 120H426"
-          stroke="url(#latestMobileTrace)"
-          strokeWidth="1.6"
+          d="M-34 122H112c60 0 58 82 116 82h196"
           fill="none"
+          stroke="rgba(125,211,252,0.18)"
+          strokeWidth="2"
         />
         <path
-          d="M-36 522H78C118 522 128 454 168 454H250C292 454 302 566 344 566H426"
-          stroke="url(#latestMobileTrace)"
-          strokeWidth="1.6"
+          d="M52 342h108c45 0 44 68 90 68h176"
           fill="none"
+          stroke="rgba(216,180,254,0.15)"
+          strokeWidth="2"
         />
         <path
-          d="M72 122V82H148M248 184V232H330M168 454V404H236M344 566V620H382"
-          stroke="rgba(191,219,254,0.2)"
-          strokeWidth="1.3"
+          d="M-20 600h120c52 0 52-76 104-76h214"
           fill="none"
+          stroke="rgba(56,189,248,0.12)"
+          strokeWidth="2"
         />
-        <circle cx="72" cy="122" r="4" fill="#BAE6FD" opacity="0.4" />
-        <circle cx="154" cy="184" r="4" fill="#BAE6FD" opacity="0.4" />
-        <circle cx="248" cy="184" r="4" fill="#BAE6FD" opacity="0.34" />
-        <circle cx="168" cy="454" r="4" fill="#BAE6FD" opacity="0.36" />
-        <circle cx="344" cy="566" r="4" fill="#BAE6FD" opacity="0.36" />
+        <rect
+          x="282"
+          y="252"
+          width="78"
+          height="116"
+          rx="20"
+          fill="none"
+          stroke="rgba(125,211,252,0.13)"
+          strokeWidth="2"
+        />
+        <rect
+          x="22"
+          y="488"
+          width="94"
+          height="146"
+          rx="22"
+          fill="none"
+          stroke="rgba(216,180,254,0.12)"
+          strokeWidth="2"
+        />
+        <circle cx="112" cy="122" r="4" fill="rgba(103,232,249,0.55)" />
+        <circle cx="250" cy="410" r="4" fill="rgba(216,180,254,0.5)" />
       </svg>
-      <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[#050712]/45 to-transparent" />
-      <div className="relative mx-auto max-w-7xl px-4 pb-12 pt-10 sm:px-6 sm:pb-16 sm:pt-14 lg:px-8 lg:pb-20 lg:pt-16">
+      <div className="pointer-events-none absolute left-[-7rem] top-12 hidden h-80 w-80 rounded-full border border-cyan-300/12 sm:block" />
+      <div className="pointer-events-none absolute right-[-8rem] bottom-8 hidden h-80 w-80 rounded-full border border-fuchsia-300/14 sm:block" />
+      <div className="pointer-events-none absolute inset-x-0 top-1/2 hidden h-px bg-gradient-to-r from-transparent via-cyan-300/18 to-transparent sm:block" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-[#050712]/32 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[#050712]/32 to-transparent" />
+      <div className="relative mx-auto max-w-7xl px-4 pb-12 pt-5 sm:px-6 sm:pb-16 sm:pt-7 lg:px-8 lg:pb-20 lg:pt-9">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-3xl">
             <p className="inline-flex items-center gap-2 rounded-md border border-cyan-200/20 bg-blue-500/12 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-blue-100 shadow-[0_0_32px_rgba(14,165,233,0.14)] backdrop-blur sm:text-[11px]">
@@ -389,8 +416,8 @@ const LatestSmartphones = () => {
               </span>
             </h2>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-blue-100/70 sm:text-base sm:leading-7">
-              Freshly released smartphones from the live catalog, ready to
-              open, compare, and shortlist.
+              Freshly released smartphones from the live catalog, ready to open,
+              compare, and shortlist.
             </p>
           </div>
 
@@ -405,15 +432,15 @@ const LatestSmartphones = () => {
 
         <div className="mt-8 flex items-center gap-4 sm:mt-10">
           <div className="h-px flex-1 bg-gradient-to-r from-transparent via-cyan-200/44 to-transparent" />
-          <span className="whitespace-nowrap text-[10px] font-black uppercase tracking-[0.24em] text-cyan-100/58 sm:text-xs">
+          <span className="whitespace-nowrap rounded-md border border-white/10 bg-white/[0.06] px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-100/70 sm:tracking-[0.28em]">
             Fresh Launch Lane
           </span>
           <div className="h-px flex-1 bg-gradient-to-r from-transparent via-fuchsia-200/36 to-transparent" />
         </div>
 
         {loadingLatest ? null : currentDevices.length === 0 ? (
-          <div className="py-12 text-center">
-            <p className="text-sm font-semibold text-blue-100/70">
+          <div className="mt-8 rounded-lg border border-cyan-200/14 bg-white/[0.055] px-6 py-8 text-center text-sm font-semibold text-cyan-50/70">
+            <p className="text-sm font-semibold text-cyan-50/70">
               No released smartphones available right now.
             </p>
           </div>
@@ -424,26 +451,31 @@ const LatestSmartphones = () => {
             ? Array.from({ length: 6 }).map((_, i) => (
                 <div
                   key={`skeleton-${i}`}
-                  className={`flex min-w-[15.25rem] shrink-0 flex-col overflow-hidden rounded-lg border border-cyan-200/12 bg-white/[0.055] p-2.5 text-cyan-50 backdrop-blur-xl transition-all duration-300 sm:min-w-[16rem] sm:p-3 ${
+                  className={`relative flex min-w-[15.5rem] shrink-0 flex-col overflow-hidden rounded-lg border border-cyan-200/12 bg-white/[0.055] p-3 text-cyan-50 transition-all duration-300 animate-pulse sm:min-w-[16.75rem] sm:p-3.5 lg:min-w-[18rem] ${
                     isLoaded
                       ? "opacity-100 translate-y-0"
                       : "opacity-0 translate-y-2"
-                  } animate-pulse`}
+                  }`}
                   style={{ transitionDelay: `${i * 60}ms` }}
                 >
-                  <div className="relative flex h-[8.5rem] w-full items-center justify-center overflow-visible sm:h-36">
+                  <div className="relative mt-4 flex h-32 w-full items-center justify-center overflow-visible sm:h-36 lg:h-40">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_12%,rgba(56,189,248,0.08),transparent_32%),radial-gradient(circle_at_86%_28%,rgba(168,85,247,0.1),transparent_36%)] opacity-90" />
                     <span className="absolute bottom-3 h-10 w-24 rounded-full bg-cyan-100/12 blur-2xl" />
                     <div className="h-12 w-12 rounded-full bg-white/10" />
                   </div>
 
-                  <div className="mt-3 flex-1">
+                  <div className="relative z-10 mt-3 flex-1">
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <div className="h-7 w-20 rounded-md bg-white/10" />
+                      <div className="h-6 w-10 rounded-md bg-white/10" />
+                    </div>
                     <div className="h-3 w-4/5 rounded bg-white/15" />
                     <div className="mt-2 h-2 w-16 rounded bg-white/10" />
                   </div>
 
-                  <div className="mt-3 flex items-center justify-between gap-2 border-t border-white/10 pt-2.5">
+                  <div className="relative z-10 mt-4 flex items-center justify-between gap-2 border-t border-cyan-100/10 pt-3">
                     <div className="h-2.5 w-20 rounded bg-white/15" />
-                    <div className="h-3 w-3 rounded-full bg-white/15 sm:h-3.5 sm:w-3.5" />
+                    <div className="h-8 w-8 rounded-md bg-white/10" />
                   </div>
                 </div>
               ))

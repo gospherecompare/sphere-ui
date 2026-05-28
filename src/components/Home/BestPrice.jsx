@@ -64,7 +64,7 @@ const TrendSpecScoreBadge = ({ score }) => {
   const value = Number.isFinite(Number(score)) ? Number(score) : null;
   const label = value != null ? `${value.toFixed(1)}%` : "Live";
   return (
-    <div className="inline-flex flex-col items-center justify-center rounded-md border border-cyan-200/20 bg-cyan-300/10 px-2 py-1 leading-none shadow-[0_10px_28px_rgba(8,145,178,0.18)] backdrop-blur">
+    <div className="inline-flex flex-col items-center justify-center rounded-md border border-cyan-200/20 bg-cyan-300/10 px-2 py-1 leading-none shadow-[0_10px_28px_rgba(8,145,178,0.18)]">
       <span className="text-[10px] font-black text-cyan-100">{label}</span>
       <span className="mt-0.5 text-[8px] font-bold uppercase tracking-wide text-cyan-200/70">
         Score
@@ -450,7 +450,7 @@ const BestPriceCard = ({
       type="button"
       aria-label={`Open ${device.name}`}
       onClick={onClick}
-      className={`group relative flex min-w-[15.5rem] shrink-0 snap-start flex-col overflow-hidden rounded-lg border border-cyan-200/14 bg-white/[0.055] p-3 text-left text-white shadow-[0_24px_70px_rgba(2,6,23,0.22)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-cyan-200/28 hover:bg-white/[0.075] sm:min-w-[16.75rem] sm:p-3.5 lg:min-w-[18rem] ${
+      className={`group relative flex min-w-[15.5rem] shrink-0 snap-start flex-col overflow-hidden rounded-lg border border-cyan-200/14 bg-white/[0.055] p-3 text-left text-white shadow-[0_16px_42px_rgba(2,6,23,0.14)] transition-all duration-300 hover:-translate-y-1 hover:border-cyan-200/28 hover:bg-white/[0.075] sm:min-w-[16.75rem] sm:p-3.5 lg:min-w-[18rem] ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
       style={{ transitionDelay: `${index * 60}ms` }}
@@ -491,9 +491,7 @@ const BestPriceCard = ({
         <p className="line-clamp-2 text-base font-black leading-snug text-white">
           {device.name}
         </p>
-        <p className="mt-1 text-xs font-bold text-cyan-100/65">
-          {metaLabel}
-        </p>
+        <p className="mt-1 text-xs font-bold text-cyan-100/65">{metaLabel}</p>
         {(device.ram || device.storage) && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {device.ram && (
@@ -511,9 +509,7 @@ const BestPriceCard = ({
       </div>
 
       <div className="relative z-10 mt-4 flex items-center justify-between gap-3 border-t border-cyan-100/10 pt-3">
-        <span className="text-sm font-black text-white">
-          {priceLabel}
-        </span>
+        <span className="text-sm font-black text-white">{priceLabel}</span>
         <span className="grid h-8 w-8 place-items-center rounded-md bg-gradient-to-br from-cyan-400/80 to-fuchsia-500/80 text-white transition-transform duration-300 group-hover:translate-x-1">
           <FaArrowRight className="h-3 w-3" />
         </span>
@@ -524,7 +520,7 @@ const BestPriceCard = ({
 
 const BestPriceSkeleton = ({ index, isLoaded }) => (
   <div
-    className={`relative flex min-w-[15.5rem] shrink-0 flex-col overflow-hidden rounded-lg border border-cyan-200/12 bg-white/[0.055] p-3 backdrop-blur-xl transition-all duration-300 sm:min-w-[16.75rem] sm:p-3.5 lg:min-w-[18rem] ${
+    className={`relative flex min-w-[15.5rem] shrink-0 flex-col overflow-hidden rounded-lg border border-cyan-200/12 bg-white/[0.055] p-3 transition-all duration-300 sm:min-w-[16.75rem] sm:p-3.5 lg:min-w-[18rem] ${
       isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
     } animate-pulse`}
     style={{ transitionDelay: `${index * 60}ms` }}
@@ -760,11 +756,8 @@ const BestPriceSection = () => {
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,#073C8C_0%,#24105E_34%,#0B1547_62%,#073C8C_100%)]" />
-      <div className="pointer-events-none absolute inset-0 hidden bg-[radial-gradient(circle_at_16%_12%,rgba(34,211,238,0.28),transparent_30%),radial-gradient(circle_at_84%_8%,rgba(217,70,239,0.24),transparent_32%),radial-gradient(circle_at_50%_92%,rgba(59,130,246,0.22),transparent_42%)] sm:block" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_14%_8%,rgba(34,211,238,0.2),transparent_42%),radial-gradient(circle_at_94%_22%,rgba(217,70,239,0.18),transparent_42%),radial-gradient(circle_at_42%_82%,rgba(59,130,246,0.16),transparent_48%)] sm:hidden" />
       <svg
-        className="pointer-events-none absolute inset-0 hidden h-full w-full opacity-70 mix-blend-screen sm:block"
+        className="pointer-events-none absolute inset-0 hidden h-full w-full opacity-34 sm:block"
         viewBox="0 0 1440 660"
         preserveAspectRatio="xMidYMid slice"
         aria-hidden="true"
@@ -816,7 +809,7 @@ const BestPriceSection = () => {
         <circle cx="810" cy="568" r="5" fill="rgba(216,180,254,0.4)" />
       </svg>
       <svg
-        className="pointer-events-none absolute inset-0 h-full w-full opacity-36 mix-blend-screen sm:hidden"
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-18 sm:hidden"
         viewBox="0 0 390 820"
         preserveAspectRatio="xMidYMid slice"
         aria-hidden="true"
@@ -876,8 +869,8 @@ const BestPriceSection = () => {
       <div className="pointer-events-none absolute -left-24 top-16 hidden h-72 w-72 rounded-full border border-cyan-300/12 sm:block" />
       <div className="pointer-events-none absolute -right-28 bottom-8 hidden h-80 w-80 rounded-full border border-fuchsia-300/14 sm:block" />
       <div className="pointer-events-none absolute inset-x-0 top-1/2 hidden h-px bg-gradient-to-r from-transparent via-cyan-300/20 to-transparent sm:block" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-[#073C8C]/14 to-transparent" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[#050712]/36 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-12" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12" />
       <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-12 sm:px-6 sm:pb-14 sm:pt-16 lg:px-8 lg:pb-16 lg:pt-20">
         {/* Header Section */}
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -894,7 +887,7 @@ const BestPriceSection = () => {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2 rounded-lg border border-white/10 bg-white/[0.055] p-1.5 backdrop-blur-xl">
+          <div className="flex flex-wrap gap-2 rounded-lg border border-white/10 bg-white/[0.055] p-1.5">
             {categories.map((category) => {
               const Icon = category.icon;
               const isActive = activeCategory === category.id;
@@ -948,7 +941,7 @@ const BestPriceSection = () => {
               />
             ))
           ) : (
-            <div className="w-full rounded-lg border border-cyan-200/14 bg-white/[0.055] p-6 text-sm font-semibold text-cyan-50/70 backdrop-blur-xl">
+            <div className="w-full rounded-lg border border-cyan-200/14 bg-white/[0.055] p-6 text-sm font-semibold text-cyan-50/70">
               Live trending data is not available right now. Please check back
               in a moment.
             </div>

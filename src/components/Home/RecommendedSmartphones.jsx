@@ -116,7 +116,7 @@ const TrendSpecScoreBadge = ({ score }) => {
   const value = Number.isFinite(Number(score)) ? Number(score) : null;
   const label = value != null ? `${value.toFixed(1)}%` : "Live";
   return (
-    <div className="inline-flex flex-col items-center justify-center rounded-md border border-cyan-200/20 bg-cyan-300/10 px-2 py-1 leading-none shadow-[0_10px_28px_rgba(8,145,178,0.16)] backdrop-blur">
+    <div className="inline-flex flex-col items-center justify-center rounded-md border border-cyan-200/20 bg-cyan-300/10 px-2 py-1 leading-none shadow-[0_10px_28px_rgba(8,145,178,0.16)]">
       <span className="text-[10px] font-black text-cyan-100">{label}</span>
       <span className="mt-0.5 text-[8px] font-bold uppercase tracking-wide text-cyan-200/70">
         Match
@@ -152,7 +152,7 @@ const RecommendationRailCard = ({
     <button
       type="button"
       onClick={onClick}
-      className={`group relative flex min-w-[15.5rem] shrink-0 snap-start flex-col overflow-hidden rounded-lg border border-cyan-200/14 bg-white/[0.055] p-3 text-left text-white shadow-[0_24px_70px_rgba(2,6,23,0.22)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-cyan-200/28 hover:bg-white/[0.075] sm:min-w-[16.75rem] sm:p-3.5 lg:min-w-[18rem] ${
+      className={`group relative flex min-w-[15.5rem] shrink-0 snap-start flex-col overflow-hidden rounded-lg border border-cyan-200/14 bg-white/[0.055] p-3 text-left text-white shadow-[0_16px_42px_rgba(2,6,23,0.14)] transition-all duration-300 hover:-translate-y-1 hover:border-cyan-200/28 hover:bg-white/[0.075] sm:min-w-[16.75rem] sm:p-3.5 lg:min-w-[18rem] ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
       style={{ transitionDelay: `${index * 60}ms` }}
@@ -197,9 +197,7 @@ const RecommendationRailCard = ({
       </div>
 
       <div className="relative z-10 mt-4 flex items-center justify-between gap-3 border-t border-cyan-100/10 pt-3">
-        <span className="text-sm font-black text-white">
-          {visiblePrice}
-        </span>
+        <span className="text-sm font-black text-white">{visiblePrice}</span>
         <span className="grid h-8 w-8 place-items-center rounded-md bg-gradient-to-br from-cyan-400/80 to-fuchsia-500/80 text-white transition-transform duration-300 group-hover:translate-x-1">
           <FaArrowRight className="h-3 w-3" />
         </span>
@@ -210,7 +208,7 @@ const RecommendationRailCard = ({
 
 const RecommendationRailSkeleton = ({ index, isLoaded }) => (
   <div
-    className={`relative flex min-w-[15.5rem] shrink-0 flex-col overflow-hidden rounded-lg border border-cyan-200/12 bg-white/[0.055] p-3 backdrop-blur-xl transition-all duration-300 animate-pulse sm:min-w-[16.75rem] sm:p-3.5 lg:min-w-[18rem] ${
+    className={`relative flex min-w-[15.5rem] shrink-0 flex-col overflow-hidden rounded-lg border border-cyan-200/12 bg-white/[0.055] p-3 transition-all duration-300 animate-pulse sm:min-w-[16.75rem] sm:p-3.5 lg:min-w-[18rem] ${
       isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
     }`}
     style={{ transitionDelay: `${index * 60}ms` }}
@@ -773,9 +771,6 @@ const RecommendedSmartphones = ({
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,#073C8C_0%,#24105E_34%,#0B1547_62%,#073C8C_100%)]" />
-      <div className="pointer-events-none absolute inset-0 hidden bg-[radial-gradient(circle_at_14%_18%,rgba(34,211,238,0.25),transparent_30%),radial-gradient(circle_at_84%_16%,rgba(217,70,239,0.22),transparent_32%),radial-gradient(circle_at_46%_95%,rgba(59,130,246,0.2),transparent_42%)] sm:block" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_8%,rgba(34,211,238,0.2),transparent_40%),radial-gradient(circle_at_92%_22%,rgba(217,70,239,0.18),transparent_42%),radial-gradient(circle_at_38%_82%,rgba(59,130,246,0.16),transparent_45%)] sm:hidden" />
       <svg
         className="pointer-events-none absolute inset-0 hidden h-full w-full opacity-70 sm:block"
         viewBox="0 0 1440 620"
@@ -873,14 +868,14 @@ const RecommendedSmartphones = ({
               </p>
             </div>
 
-            <p className="hidden max-w-xs rounded-lg border border-white/10 bg-white/[0.055] p-4 text-xs font-bold leading-5 text-cyan-50/70 backdrop-blur-xl sm:block">
+            <p className="hidden max-w-xs rounded-lg border border-white/10 bg-white/[0.055] p-4 text-xs font-bold leading-5 text-cyan-50/70 sm:block">
               The rail adapts as people compare, shortlist, and search across
               Hooks.
             </p>
           </div>
 
           {showEmpty ? (
-            <div className="mt-8 rounded-lg border border-cyan-200/14 bg-white/[0.055] px-6 py-8 text-center text-sm font-semibold text-cyan-50/70 backdrop-blur-xl">
+            <div className="mt-8 rounded-lg border border-cyan-200/14 bg-white/[0.055] px-6 py-8 text-center text-sm font-semibold text-cyan-50/70">
               Browse a smartphone to unlock recommendations.
             </div>
           ) : null}

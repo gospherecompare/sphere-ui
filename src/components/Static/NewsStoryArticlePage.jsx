@@ -11,6 +11,7 @@ import {
 } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
 import SEO from "../SEO";
+import AffiliatePlacementCard from "../ui/AffiliatePlacementCard";
 import NotFound from "./NotFound";
 import NewsPushOptInCard from "../News/NewsPushOptInCard";
 import {
@@ -23,6 +24,7 @@ import {
   usePublicNewsFeed,
   usePublicNewsStory,
 } from "../../hooks/usePublicNews";
+import useAffiliatePlacements from "../../hooks/useAffiliatePlacements";
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -1063,6 +1065,20 @@ const NewsStoryArticlePage = () => {
   const { slug = "" } = useParams();
   const { story, loading, error, notFound } = usePublicNewsStory(slug);
   const { stories: feedStories = [] } = usePublicNewsFeed({ limit: 18 });
+  const primaryStoryProductId = useMemo(
+    () =>
+      Number(story?.productId) ||
+      (Array.isArray(story?.productIds) ? Number(story.productIds[0]) : null) ||
+      null,
+    [story],
+  );
+  const { placements: newsAffiliatePlacements = [] } = useAffiliatePlacements({
+    pageType: "news",
+    blogId: story?.id || null,
+    productId: primaryStoryProductId,
+    enabled: Boolean(story?.id),
+  });
+  const newsAffiliatePlacement = newsAffiliatePlacements[0] || null;
   const [relatedPage, setRelatedPage] = useState(0);
   const [isRelatedMobileLayout, setIsRelatedMobileLayout] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -1459,6 +1475,17 @@ const NewsStoryArticlePage = () => {
 
                       <InlineStoryLinksPanel stories={inlineStories} />
 
+                      {newsAffiliatePlacement ? (
+                        <AffiliatePlacementCard
+                          placement={newsAffiliatePlacement}
+                          pageType="news"
+                          productId={primaryStoryProductId}
+                          blogId={story?.id || null}
+                          variant="news"
+                          className="mt-5 sm:mt-6"
+                        />
+                      ) : null}
+
                       {structuredRestHtml ? (
                         <div
                           className={ARTICLE_PROSE_CONTINUATION_CLASS}
@@ -1486,6 +1513,17 @@ const NewsStoryArticlePage = () => {
                       </div>
 
                       <InlineStoryLinksPanel stories={inlineStories} />
+
+                      {newsAffiliatePlacement ? (
+                        <AffiliatePlacementCard
+                          placement={newsAffiliatePlacement}
+                          pageType="news"
+                          productId={primaryStoryProductId}
+                          blogId={story?.id || null}
+                          variant="news"
+                          className="mt-5 sm:mt-6"
+                        />
+                      ) : null}
 
                       {remainingParagraphs.length ? (
                         <div className="space-y-5 text-[15px] leading-7 text-[#32363d] sm:space-y-7 sm:text-[18px] sm:leading-9">

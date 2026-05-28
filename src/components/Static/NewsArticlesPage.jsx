@@ -1,12 +1,16 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { FaArrowRight, FaChevronRight, FaClock, FaFire } from "react-icons/fa";
+import {
+  FaChevronRight,
+  FaFire,
+} from "react-icons/fa";
 import SEO from "../SEO";
 import NewsPushOptInCard from "../News/NewsPushOptInCard";
 import {
   createCollectionSchema,
   createItemListSchema,
 } from "../../utils/schemaGenerators";
+import { useDevice } from "../../hooks/useDevice";
 import {
   createNewsStoryPath,
   usePublicNewsFeed,
@@ -144,6 +148,38 @@ const uniqueStoriesBySlug = (items = []) => {
   });
 };
 
+const getBrandShortLabel = (name = "") =>
+  String(name || "Brand")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || "")
+    .join("");
+
+const normalizeBrandKey = (brand = {}) =>
+  String(brand?.slug || brand?.name || brand?.id || "")
+    .trim()
+    .toLowerCase();
+
+const buildNewsBrands = (brands = []) => {
+  const seen = new Set();
+
+  return brands
+    .filter((brand) => {
+      const key = normalizeBrandKey(brand);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return Boolean(brand?.name);
+    })
+    .sort((left, right) => {
+      const leftProducts = Number(left?.published_products || 0);
+      const rightProducts = Number(right?.published_products || 0);
+      if (rightProducts !== leftProducts) return rightProducts - leftProducts;
+      return String(left?.name || "").localeCompare(String(right?.name || ""));
+    })
+    .slice(0, 8);
+};
+
 const useIsNewsMobileLayout = () => {
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -219,23 +255,25 @@ const HeroStoryCarousel = ({ stories = [] }) => {
 
   return (
     <div
-      className="group relative isolate min-h-[20rem] overflow-hidden rounded-[24px] bg-[#111827] text-white shadow-[0_24px_70px_rgba(15,23,42,0.16)] sm:min-h-[30rem] lg:min-h-[34rem]"
+      className="group relative isolate min-h-[20rem] bg-[#111827] text-white shadow-[0_24px_70px_rgba(15,23,42,0.16)] sm:min-h-[30rem] lg:min-h-[34rem]"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onFocusCapture={() => setIsPaused(true)}
       onBlurCapture={() => setIsPaused(false)}
     >
+      <div className="absolute inset-0 overflow-hidden rounded-[24px]">
+        <StoryImage
+          key={activeStory.slug}
+          story={activeStory}
+          className="h-full w-full opacity-70"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0b1020] via-[#1e3a8a]/60 to-transparent" />
+      </div>
       <Link
         to={createNewsStoryPath(activeStory.slug)}
         aria-label={`Read top story: ${activeStory.title}`}
         className="absolute inset-0 z-10"
       />
-      <StoryImage
-        key={activeStory.slug}
-        story={activeStory}
-        className="absolute inset-0 h-full w-full opacity-70"
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0b1020] via-[#1e3a8a]/60 to-transparent" />
 
       <div className="pointer-events-none relative z-20 flex h-full min-h-[20rem] flex-col justify-end p-4 sm:min-h-[30rem] sm:p-7 lg:min-h-[34rem] lg:p-8">
         <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-full bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-[#2563eb]">
@@ -273,61 +311,76 @@ const HeroStoryCarousel = ({ stories = [] }) => {
   );
 };
 
-const NewsGridCard = ({ story, compact = false, rowCard = false }) => (
+const NewsGridCard = ({
+  story,
+  compact = false,
+  rowCard = false,
+  desktopRow = false,
+}) => (
   <Link
     to={createNewsStoryPath(story.slug)}
-    className={`group block overflow-hidden rounded-2xl bg-white transition-all hover:border-[#bfdbfe] ${
+    className={`group block overflow-hidden bg-white transition-all hover:border-[#bfdbfe] ${
       rowCard && compact
-        ? "min-w-[76%] snap-start border border-white/15 bg-[#1f2631] sm:min-w-0 sm:border-[#e5e7eb] sm:bg-white"
+        ? desktopRow
+          ? "min-w-[76%] snap-start border border-white/15 bg-[#1f2631] sm:min-w-[15.5rem] sm:border-[#e5e7eb] sm:bg-white lg:min-w-[17rem] xl:min-w-[18rem]"
+          : "min-w-[76%] snap-start border border-white/15 bg-[#1f2631] sm:min-w-0 sm:border-[#e5e7eb] sm:bg-white"
         : rowCard
-          ? "min-w-[84%] snap-start border border-[#dde7f3] sm:min-w-0"
-        : "border border-[#e5e7eb]"
+          ? desktopRow
+            ? "min-w-[84%] snap-start border border-[#dde7f3] sm:min-w-[15.5rem] lg:min-w-[17rem] xl:min-w-[18rem]"
+            : "min-w-[84%] snap-start border border-[#dde7f3] sm:min-w-0"
+          : "border border-[#e5e7eb]"
     }`}
   >
-    <StoryImage
-      story={story}
-      className={
-        rowCard
-          ? "aspect-[16/9] w-full sm:aspect-[4/3]"
-          : compact
-            ? "aspect-[16/10] w-full"
-            : "aspect-[4/3] w-full"
-      }
-    />
-    <div className={rowCard ? "p-3 sm:p-4" : "p-3 sm:p-4"}>
-      <StoryMeta story={story} />
-      <h3
-        className={`mt-2 font-semibold leading-[1.35] text-[#20242b] transition-colors group-hover:text-[#2563eb] ${
-          compact
-            ? rowCard
-              ? "line-clamp-3 text-[14px] text-white sm:line-clamp-2 sm:text-[#20242b]"
-              : "line-clamp-2 text-[14px]"
-            : rowCard
-              ? "line-clamp-2 text-[16px]"
-              : "line-clamp-3 text-[16px]"
-        }`}
-      >
-        {story.title}
-      </h3>
-      {!compact ? (
-        <p className="mt-2 line-clamp-2 text-[13px] leading-6 text-[#667689]">
-          {story.summary}
-        </p>
-      ) : null}
+    <div className="p-3 sm:p-4">
+      <StoryImage
+        story={story}
+        className={
+          rowCard
+            ? "aspect-[16/9] w-full rounded-2xl sm:aspect-[4/3]"
+            : compact
+              ? "aspect-[16/10] w-full rounded-2xl"
+              : "aspect-[4/3] w-full rounded-2xl"
+        }
+      />
+      <div className="pt-3 sm:pt-4">
+        <StoryMeta story={story} />
+        <h3
+          className={`mt-2 font-semibold leading-[1.35] text-[#20242b] transition-colors group-hover:text-[#2563eb] ${
+            compact
+              ? rowCard
+                ? "line-clamp-3 text-[14px] text-white sm:line-clamp-2 sm:text-[#20242b]"
+                : "line-clamp-2 text-[14px]"
+              : rowCard
+                ? "line-clamp-2 text-[16px]"
+                : "line-clamp-3 text-[16px]"
+          }`}
+        >
+          {story.title}
+        </h3>
+        {!compact ? (
+          <p className="mt-2 line-clamp-2 text-[13px] leading-6 text-[#667689]">
+            {story.summary}
+          </p>
+        ) : null}
+      </div>
     </div>
   </Link>
 );
 
-const RecentStoryCard = ({ story }) => (
+const RecentStoryCard = ({ story, desktopRow = false }) => (
   <Link
     to={createNewsStoryPath(story.slug)}
-    className="group grid grid-cols-[92px_minmax(0,1fr)] gap-3 border-b border-[#e5e7eb] bg-white py-3 first:pt-0 last:border-b-0 last:pb-0 sm:block sm:overflow-hidden sm:rounded-lg sm:border sm:bg-white sm:py-0 sm:transition-colors sm:hover:border-[#bfdbfe]"
+    className={`group grid grid-cols-[92px_minmax(0,1fr)] gap-3 border-b border-[#e5e7eb] bg-white py-3 first:pt-0 last:border-b-0 last:pb-0 sm:block sm:overflow-hidden sm:border sm:bg-white sm:p-3 sm:transition-colors sm:hover:border-[#bfdbfe] ${
+      desktopRow
+        ? "sm:min-w-[15.5rem] lg:min-w-[17rem] xl:min-w-[18rem]"
+        : ""
+    }`}
   >
     <StoryImage
       story={story}
-      className="aspect-square w-full rounded-md sm:aspect-[4/3] sm:rounded-none"
+      className="aspect-square w-full rounded-md sm:aspect-[4/3] sm:rounded-xl"
     />
-    <div className="min-w-0 sm:p-4">
+    <div className="min-w-0 sm:px-1 sm:pb-1 sm:pt-4">
       <StoryMeta story={story} />
       <h3 className="mt-1 line-clamp-3 text-[14px] font-semibold leading-5 text-[#20242b] transition-colors group-hover:text-[#2563eb] sm:mt-2 sm:text-[16px] sm:leading-[1.35]">
         {story.title}
@@ -345,7 +398,7 @@ const SpotlightList = ({ stories = [] }) => (
       <Link
         key={story.slug}
         to={createNewsStoryPath(story.slug)}
-        className="group grid grid-cols-[88px_minmax(0,1fr)] gap-3 rounded-2xl border border-[#e5e7eb] bg-white p-2 transition-colors hover:border-[#bfdbfe] sm:grid-cols-[92px_minmax(0,1fr)]"
+        className="group grid grid-cols-[88px_minmax(0,1fr)] gap-3 border border-[#e5e7eb] bg-white p-2 transition-colors hover:border-[#bfdbfe] sm:grid-cols-[92px_minmax(0,1fr)]"
       >
         <StoryImage story={story} className="aspect-square w-full rounded-xl" />
         <div className="min-w-0 self-center">
@@ -365,6 +418,7 @@ const SectionHeader = ({
   title,
   eyebrow,
   actionLabel = "More News",
+  showAction = true,
   dark = false,
   singleRow = false,
 }) => (
@@ -391,18 +445,22 @@ const SectionHeader = ({
         {title}
       </h2>
     </div>
-    <Link
-      to="/news"
-      className="hidden items-center gap-1 text-[12px] font-semibold text-[#2563eb] sm:inline-flex"
-    >
-      {actionLabel}
-      <FaChevronRight className="h-2.5 w-2.5" />
-    </Link>
-    {singleRow ? (
-      <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#94a3b8] sm:hidden">
-        Swipe
-      </span>
-    ) : null}
+    <div className="flex items-center gap-2 sm:gap-3">
+      {showAction ? (
+        <Link
+          to="/news"
+          className="hidden items-center gap-1 text-[12px] font-semibold text-[#2563eb] sm:inline-flex"
+        >
+          {actionLabel}
+          <FaChevronRight className="h-2.5 w-2.5" />
+        </Link>
+      ) : null}
+      {singleRow ? (
+        <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#94a3b8] sm:hidden">
+          Swipe
+        </span>
+      ) : null}
+    </div>
   </div>
 );
 
@@ -412,10 +470,67 @@ const StorySection = ({
   stories = [],
   dark = false,
   singleRow = false,
+  desktopSingleRow = false,
   hideOnMobile = false,
   compactMobile = false,
 }) => {
-  if (!stories.length) return null;
+  const hasStories = stories.length > 0;
+  const railRef = useRef(null);
+  const [isRailDragging, setIsRailDragging] = useState(false);
+  const dragStateRef = useRef({
+    active: false,
+    moved: false,
+    startX: 0,
+    scrollLeft: 0,
+  });
+
+  const isMouseDraggableRow = singleRow && desktopSingleRow;
+
+  const stopRailDrag = () => {
+    dragStateRef.current.active = false;
+    setIsRailDragging(false);
+  };
+
+  const handleRailMouseDown = (event) => {
+    if (!isMouseDraggableRow) return;
+
+    const rail = railRef.current;
+    if (!rail) return;
+
+    event.preventDefault();
+    dragStateRef.current = {
+      active: true,
+      moved: false,
+      startX: event.pageX,
+      scrollLeft: rail.scrollLeft,
+    };
+    setIsRailDragging(true);
+  };
+
+  const handleRailMouseMove = (event) => {
+    if (!isMouseDraggableRow || !dragStateRef.current.active) return;
+
+    const rail = railRef.current;
+    if (!rail) return;
+
+    const deltaX = event.pageX - dragStateRef.current.startX;
+    if (Math.abs(deltaX) > 6) {
+      dragStateRef.current.moved = true;
+      event.preventDefault();
+    }
+
+    rail.scrollLeft = dragStateRef.current.scrollLeft - deltaX;
+  };
+
+  const handleRailClickCapture = (event) => {
+    if (!dragStateRef.current.moved) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    dragStateRef.current.moved = false;
+  };
+
+  if (!hasStories) return null;
 
   return (
     <section
@@ -427,13 +542,30 @@ const StorySection = ({
         title={title}
         eyebrow={eyebrow}
         dark={dark}
-        singleRow={singleRow}
+        singleRow={singleRow && !compactMobile}
       />
       <div className={singleRow ? "relative" : ""}>
         <div
+          ref={isMouseDraggableRow ? railRef : null}
+          onMouseDown={handleRailMouseDown}
+          onMouseMove={handleRailMouseMove}
+          onMouseUp={stopRailDrag}
+          onMouseLeave={stopRailDrag}
+          onClickCapture={handleRailClickCapture}
+          onDragStart={(event) => {
+            if (isMouseDraggableRow) event.preventDefault();
+          }}
           className={
             singleRow
-              ? "-mx-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3"
+              ? desktopSingleRow
+                ? compactMobile
+                  ? `grid grid-cols-1 gap-0 sm:flex sm:gap-4 sm:overflow-x-auto sm:pb-2 sm:[scrollbar-width:none] sm:[&::-webkit-scrollbar]:hidden sm:select-none ${
+                      isRailDragging ? "sm:cursor-grabbing" : "sm:cursor-grab"
+                    }`
+                  : `-mx-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:snap-none sm:gap-4 sm:px-0 sm:pb-2 sm:select-none ${
+                      isRailDragging ? "sm:cursor-grabbing" : "sm:cursor-grab"
+                    }`
+                : "-mx-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3"
               : compactMobile
                 ? "grid grid-cols-1 gap-0 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3"
                 : "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
@@ -441,18 +573,23 @@ const StorySection = ({
         >
           {stories.map((story) => (
             compactMobile ? (
-              <RecentStoryCard key={story.slug} story={story} />
+              <RecentStoryCard
+                key={story.slug}
+                story={story}
+                desktopRow={desktopSingleRow}
+              />
             ) : (
               <NewsGridCard
                 key={story.slug}
                 story={story}
                 compact={dark}
                 rowCard={singleRow}
+                desktopRow={desktopSingleRow}
               />
             )
           ))}
         </div>
-        {singleRow ? (
+        {singleRow && !compactMobile ? (
           <div
             aria-hidden="true"
             className={`pointer-events-none absolute bottom-4 right-0 top-0 w-10 bg-gradient-to-l ${
@@ -465,11 +602,132 @@ const StorySection = ({
   );
 };
 
+const BrandRailCard = ({ brand }) => {
+  const [imageFailed, setImageFailed] = useState(false);
+  const showLogo = Boolean(brand?.logo) && !imageFailed;
+  const shortLabel = getBrandShortLabel(brand?.name);
+
+  return (
+    <Link
+      to={`/brand/${encodeURIComponent(brand?.slug || brand?.name || "")}`}
+      className="group block w-[5.75rem] min-w-[5.75rem] shrink-0 sm:w-[6.25rem] sm:min-w-[6.25rem] lg:w-[6.5rem] lg:min-w-[6.5rem]"
+      title={brand?.name || "Brand"}
+    >
+      <div className="flex aspect-square w-full items-center justify-center rounded-2xl bg-[#edf3fb] p-3 transition-colors group-hover:bg-[#e6f0ff] sm:p-4">
+        {showLogo ? (
+          <img
+            src={brand.logo}
+            alt={brand.name}
+            loading="lazy"
+            className="max-h-8 w-auto max-w-full object-contain sm:max-h-10"
+            onError={() => setImageFailed(true)}
+          />
+        ) : (
+          <span className="text-sm font-black uppercase tracking-[0.08em] text-[#f97316] sm:text-base">
+            {shortLabel}
+          </span>
+        )}
+      </div>
+    </Link>
+  );
+};
+
+const BrandRailSection = ({ brands = [] }) => {
+  const railRef = useRef(null);
+  const [isRailDragging, setIsRailDragging] = useState(false);
+  const dragStateRef = useRef({
+    active: false,
+    moved: false,
+    startX: 0,
+    scrollLeft: 0,
+  });
+
+  const stopRailDrag = () => {
+    dragStateRef.current.active = false;
+    setIsRailDragging(false);
+  };
+
+  const handleRailMouseDown = (event) => {
+    const rail = railRef.current;
+    if (!rail) return;
+
+    event.preventDefault();
+    dragStateRef.current = {
+      active: true,
+      moved: false,
+      startX: event.pageX,
+      scrollLeft: rail.scrollLeft,
+    };
+    setIsRailDragging(true);
+  };
+
+  const handleRailMouseMove = (event) => {
+    if (!dragStateRef.current.active) return;
+
+    const rail = railRef.current;
+    if (!rail) return;
+
+    const deltaX = event.pageX - dragStateRef.current.startX;
+    if (Math.abs(deltaX) > 6) {
+      dragStateRef.current.moved = true;
+      event.preventDefault();
+    }
+
+    rail.scrollLeft = dragStateRef.current.scrollLeft - deltaX;
+  };
+
+  const handleRailClickCapture = (event) => {
+    if (!dragStateRef.current.moved) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    dragStateRef.current.moved = false;
+  };
+
+  if (!brands.length) return null;
+
+  return (
+    <section>
+      <SectionHeader
+        title="Popular Brands"
+        eyebrow="Browse By Brand"
+        showAction={false}
+        singleRow
+      />
+      <div className="relative">
+        <div
+          ref={railRef}
+          onMouseDown={handleRailMouseDown}
+          onMouseMove={handleRailMouseMove}
+          onMouseUp={stopRailDrag}
+          onMouseLeave={stopRailDrag}
+          onClickCapture={handleRailClickCapture}
+          onDragStart={(event) => event.preventDefault()}
+          className={`-mx-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:snap-none sm:gap-4 sm:px-0 sm:pb-2 sm:select-none ${
+            isRailDragging ? "sm:cursor-grabbing" : "sm:cursor-grab"
+          }`}
+        >
+          {brands.map((brand) => (
+            <BrandRailCard
+              key={brand?.id || brand?.slug || brand?.name}
+              brand={brand}
+            />
+          ))}
+        </div>
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute bottom-4 right-0 top-0 w-10 bg-gradient-to-l from-[#f7f8fb] to-transparent sm:hidden"
+        />
+      </div>
+    </section>
+  );
+};
+
 const SideList = ({ title, stories = [] }) => {
   if (!stories.length) return null;
 
   return (
-    <section className="overflow-hidden rounded-lg border border-[#e5e7eb] bg-white">
+    <section className="overflow-hidden border border-[#e5e7eb] bg-white">
       <div className="bg-gradient-to-r from-[#2563eb] to-[#7c3aed] px-4 py-2 text-[12px] font-black uppercase tracking-[0.12em] text-white">
         {title}
       </div>
@@ -498,7 +756,7 @@ const LatestLaunches = ({ stories = [] }) => {
   if (!stories.length) return null;
 
   return (
-    <section className="overflow-hidden rounded-lg border border-[#e5e7eb] bg-white">
+    <section className="overflow-hidden border border-[#e5e7eb] bg-white">
       <div className="bg-gradient-to-r from-[#2563eb] to-[#7c3aed] px-4 py-2 text-[12px] font-black uppercase tracking-[0.12em] text-white">
         Latest Launches
       </div>
@@ -528,8 +786,8 @@ const LatestLaunches = ({ stories = [] }) => {
 const LoadingGrid = () => (
   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
     {Array.from({ length: 9 }).map((_, index) => (
-      <div key={index} className="animate-pulse overflow-hidden rounded-2xl border border-[#e5e7eb] bg-white">
-        <div className="aspect-[4/3] bg-[#e9eef5]" />
+      <div key={index} className="animate-pulse overflow-hidden border border-[#e5e7eb] bg-white">
+        <div className="aspect-[4/3] rounded-2xl bg-[#e9eef5]" />
         <div className="space-y-3 p-4">
           <div className="h-3 w-20 bg-[#e9eef5]" />
           <div className="h-4 w-full bg-[#e9eef5]" />
@@ -543,8 +801,13 @@ const LoadingGrid = () => (
 const NewsArticlesPage = () => {
   const canonical = "https://tryhook.shop/news";
   const { stories, loading, error } = usePublicNewsFeed({ limit: NEWS_GRID_LIMIT });
+  const deviceContext = useDevice();
   const storySchemaItems = useStoryListSchemaItems(stories);
   const layout = useMemo(() => buildNewsLayout(stories), [stories]);
+  const featuredBrands = useMemo(
+    () => buildNewsBrands(deviceContext?.brands || []),
+    [deviceContext?.brands],
+  );
   const isMobileLayout = useIsNewsMobileLayout();
   const display = useMemo(
     () => ({
@@ -634,6 +897,7 @@ const NewsArticlesPage = () => {
                   eyebrow="Trending Now"
                   stories={display.topNews}
                   singleRow
+                  desktopSingleRow
                 />
 
                 <StorySection
@@ -648,19 +912,14 @@ const NewsArticlesPage = () => {
                   stories={display.guides}
                 />
 
-                <StorySection
-                  title="Latest Launches"
-                  eyebrow="Prices & Availability"
-                  stories={display.launches}
-                  dark
-                  singleRow
-                  hideOnMobile
-                />
+                <BrandRailSection brands={featuredBrands} />
 
                 <StorySection
                   title="Recent Updates"
                   eyebrow="Latest"
                   stories={display.latest}
+                  singleRow
+                  desktopSingleRow
                   compactMobile
                 />
               </div>
@@ -669,24 +928,6 @@ const NewsArticlesPage = () => {
                 <SideList title="Trending" stories={display.trendingSide} />
                 <SideList title="Recent" stories={display.recentSide} />
                 <LatestLaunches stories={display.launchSide} />
-
-                <section className="rounded-lg border border-[#e5e7eb] bg-white p-4">
-                  <div className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.14em] text-[#7c3aed]">
-                    <FaClock className="h-3.5 w-3.5" />
-                    How We Rank
-                  </div>
-                  <p className="mt-3 text-[13px] leading-6 text-[#667689]">
-                    Trending uses pinned, trending, featured, freshness, and image
-                    signals. Recent is sorted strictly by publish time.
-                  </p>
-                  <Link
-                    to="/news"
-                    className="mt-4 inline-flex items-center gap-2 text-[13px] font-semibold text-[#2563eb]"
-                  >
-                    Explore all stories
-                    <FaArrowRight className="h-3 w-3" />
-                  </Link>
-                </section>
               </aside>
             </div>
           )}
