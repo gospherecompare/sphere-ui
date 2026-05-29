@@ -255,19 +255,19 @@ const HeroStoryCarousel = ({ stories = [] }) => {
 
   return (
     <div
-      className="group relative isolate min-h-[20rem] bg-[#111827] text-white shadow-[0_24px_70px_rgba(15,23,42,0.16)] sm:min-h-[30rem] lg:min-h-[34rem]"
+      className="group relative isolate min-h-[20rem] w-full max-w-full overflow-hidden rounded-[22px] bg-[#111827] text-white shadow-[0_24px_70px_rgba(15,23,42,0.16)] sm:min-h-[30rem] sm:rounded-[24px] lg:min-h-[34rem]"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onFocusCapture={() => setIsPaused(true)}
       onBlurCapture={() => setIsPaused(false)}
     >
-      <div className="absolute inset-0 overflow-hidden rounded-[24px]">
+      <div className="absolute inset-0 overflow-hidden rounded-[inherit]">
         <StoryImage
           key={activeStory.slug}
           story={activeStory}
           className="h-full w-full opacity-70"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0b1020] via-[#1e3a8a]/60 to-transparent" />
+        <div className="absolute inset-0 rounded-[inherit] bg-gradient-to-t from-[#0b1020] via-[#1e3a8a]/60 to-transparent" />
       </div>
       <Link
         to={createNewsStoryPath(activeStory.slug)}
@@ -280,10 +280,10 @@ const HeroStoryCarousel = ({ stories = [] }) => {
           <FaFire className="h-3 w-3 text-[#7c3aed]" />
           Top Story
         </div>
-        <h1 className="line-clamp-3 max-w-4xl text-[23px] font-black leading-[1.08] tracking-[-0.04em] sm:text-[42px] lg:text-[52px]">
+        <h1 className="line-clamp-3 max-w-4xl break-words text-[23px] font-black leading-[1.08] tracking-[-0.04em] sm:text-[42px] lg:text-[52px]">
           {activeStory.title}
         </h1>
-        <p className="mt-3 line-clamp-3 max-w-2xl text-[14px] leading-6 text-white/82 sm:mt-4 sm:text-[17px] sm:leading-7">
+        <p className="mt-3 line-clamp-3 max-w-2xl break-words text-[14px] leading-6 text-white/82 sm:mt-4 sm:text-[17px] sm:leading-7">
           {activeStory.summary}
         </p>
         <StoryMeta story={activeStory} light />
@@ -862,7 +862,7 @@ const NewsArticlesPage = () => {
       />
       <NewsPushOptInCard />
 
-      <main className="bg-[#f7f8fb] text-[#111827]">
+      <main className="overflow-x-hidden bg-[#f7f8fb] text-[#111827]">
         <section>
           <div className="mx-auto max-w-[1280px] px-4 py-4 sm:px-6 lg:px-8">
             <div className="flex flex-wrap items-center gap-2 text-[12px] text-[#7d8898]">
@@ -885,9 +885,9 @@ const NewsArticlesPage = () => {
           {loading && !stories.length ? (
             <LoadingGrid />
           ) : (
-            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px] xl:items-start">
-              <div className="space-y-7 sm:space-y-9">
-                <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+            <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_300px] xl:items-start">
+              <div className="min-w-0 space-y-7 sm:space-y-9">
+                <section className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
                   <HeroStoryCarousel stories={heroCarouselStories} />
                   <SpotlightList stories={display.spotlight} />
                 </section>
@@ -924,7 +924,7 @@ const NewsArticlesPage = () => {
                 />
               </div>
 
-              <aside className="space-y-5 xl:sticky xl:top-6">
+              <aside className="min-w-0 space-y-5 xl:sticky xl:top-6">
                 <SideList title="Trending" stories={display.trendingSide} />
                 <SideList title="Recent" stories={display.recentSide} />
                 <LatestLaunches stories={display.launchSide} />

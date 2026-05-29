@@ -11,7 +11,6 @@ import {
 } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
 import SEO from "../SEO";
-import AffiliatePlacementCard from "../ui/AffiliatePlacementCard";
 import NotFound from "./NotFound";
 import NewsPushOptInCard from "../News/NewsPushOptInCard";
 import {
@@ -24,7 +23,6 @@ import {
   usePublicNewsFeed,
   usePublicNewsStory,
 } from "../../hooks/usePublicNews";
-import useAffiliatePlacements from "../../hooks/useAffiliatePlacements";
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -173,35 +171,6 @@ const formatAbsoluteDate = (story) => {
   return DATE_FORMATTER.format(date);
 };
 
-const formatHeaderDateTime = (story) => {
-  const date = parseStoryDate(story);
-  if (!date) return `${formatAbsoluteDate(story)} IST`;
-
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "Asia/Kolkata",
-  }).formatToParts(date);
-
-  const lookup = Object.fromEntries(
-    parts
-      .filter((part) => part.type !== "literal")
-      .map((part) => [part.type, part.value]),
-  );
-
-  const day = lookup.day || "";
-  const month = lookup.month || "";
-  const year = lookup.year || "";
-  const hour = lookup.hour || "";
-  const minute = lookup.minute || "";
-
-  return `${day} ${month} ${year} ${hour}:${minute} IST`.trim();
-};
-
 const formatImageCredit = (story) => {
   const raw = String(
     story?.heroImageCaption || story?.heroImageSource || "",
@@ -310,17 +279,7 @@ const createShortBreadcrumbLabel = (label, wordLimit = 3) => {
   return `${words.slice(0, wordLimit).join(" ")}...`;
 };
 
-const createSafeShareFileName = (value = "story") => {
-  const normalized = String(value)
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-
-  return normalized || "story";
-};
-
-const HEADLINE_WORD_TARGET = 8;
+const HEADLINE_WORD_TARGET = 12;
 const HEADLINE_MIN_LAST_LINE_WORDS = 3;
 const HEADLINE_END_AVOID = new Set([
   "a",
@@ -582,103 +541,60 @@ const InstagramBrandIcon = ({ className = "" }) => (
   </svg>
 );
 
-const HeroShareButtons = ({ title, description, image, url }) => {
+const ArticleShareLinks = ({ title, description, url }) => {
   const [copied, setCopied] = useState(false);
   const fallbackUrl = typeof window !== "undefined" ? window.location.href : "";
   const currentUrl = url || fallbackUrl;
-  const shareTitle = String(title || "Hooks").trim();
-  const shareDescription = String(description || "").trim();
+  const shareTitle = stripMarkup(title || "Hooks");
+  const shareDescription = stripMarkup(description || "");
   const shareText = [shareTitle, shareDescription].filter(Boolean).join("\n\n");
-  const shareImageUrl = (() => {
-    if (!image) return "";
-    try {
-      return new URL(image, currentUrl || fallbackUrl).href;
-    } catch {
-      return String(image).trim();
-    }
-  })();
-
   const encodedUrl = encodeURIComponent(currentUrl || "");
   const encodedText = encodeURIComponent(shareText || shareTitle || "");
   const encodedQuote = encodeURIComponent(shareDescription || shareTitle || "");
 
-  const loadShareImageFile = async () => {
-    if (!shareImageUrl || typeof File === "undefined") return null;
-
-    try {
-      const response = await fetch(shareImageUrl, { mode: "cors" });
-      if (!response.ok) return null;
-
-      const blob = await response.blob();
-      if (!blob.size) return null;
-
-      const type = blob.type || "image/jpeg";
-      const extension = type.split("/")[1] || "jpg";
-      const fileName = `${createSafeShareFileName(shareTitle)}.${extension}`;
-
-      return new File([blob], fileName, { type });
-    } catch {
-      return null;
-    }
-  };
-
   const copyLink = async () => {
+    if (!currentUrl || typeof navigator === "undefined") return;
+
     try {
-      if (!currentUrl) return;
       await navigator.clipboard.writeText(currentUrl);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1800);
     } catch {
-      // ignore clipboard failures
+      // Clipboard access can be unavailable in older browsers or insecure origins.
     }
   };
 
   const shareOnInstagram = async () => {
     try {
       if (typeof navigator !== "undefined" && navigator.share) {
-        const shareData = {
+        await navigator.share({
           title: shareTitle || "Hooks",
           text: shareText || shareTitle || "Hooks",
           url: currentUrl,
-        };
-
-        const imageFile = await loadShareImageFile();
-        if (
-          imageFile &&
-          typeof navigator.canShare === "function" &&
-          navigator.canShare({ files: [imageFile] })
-        ) {
-          shareData.files = [imageFile];
-        }
-
-        await navigator.share(shareData);
+        });
         return;
       }
     } catch {
-      // fall through
+      // If native share is cancelled or unavailable, fall back to opening Instagram.
     }
 
     await copyLink();
     if (typeof window !== "undefined") {
-      window.open(
-        "https://www.instagram.com/",
-        "_blank",
-        "noopener,noreferrer",
-      );
+      window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
     }
   };
 
-  const items = [
+  const shareLinks = [
     {
       name: "Facebook",
       icon: FaFacebookF,
-      className: "text-[#4f46e5]",
+      className: "text-[#1877f2]",
       url: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedQuote}`,
     },
     {
       name: "X",
       icon: FaXTwitter,
-      className: "text-[#475569]",
+      className: "text-[#111827]",
       url: `https://x.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
     },
     {
@@ -696,10 +612,13 @@ const HeroShareButtons = ({ title, description, image, url }) => {
   ];
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      {items.map((item) => {
+    <div
+      className="mt-4 flex flex-wrap items-center gap-2 sm:mt-5"
+      aria-label="Share this article"
+    >
+      {shareLinks.map((item) => {
         const Icon = item.icon;
-        const buttonClass = `inline-flex h-8 w-8 items-center justify-center rounded-[4px] bg-transparent transition-opacity hover:opacity-75 sm:h-10 sm:w-10 ${item.className}`;
+        const className = `inline-flex h-8 w-8 items-center justify-center rounded-[4px] bg-[#f5f7fb] transition-opacity hover:opacity-75 ${item.className}`;
 
         if (item.onClick) {
           return (
@@ -708,7 +627,7 @@ const HeroShareButtons = ({ title, description, image, url }) => {
               type="button"
               onClick={item.onClick}
               aria-label={`Share on ${item.name}`}
-              className={buttonClass}
+              className={className}
             >
               <Icon className="h-3.5 w-3.5" />
             </button>
@@ -722,7 +641,7 @@ const HeroShareButtons = ({ title, description, image, url }) => {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`Share on ${item.name}`}
-            className={buttonClass}
+            className={className}
           >
             <Icon className="h-3.5 w-3.5" />
           </a>
@@ -732,14 +651,14 @@ const HeroShareButtons = ({ title, description, image, url }) => {
       <button
         type="button"
         onClick={copyLink}
-        aria-label="Copy link"
-        className="inline-flex h-8 w-8 items-center justify-center rounded-[4px] bg-transparent text-[#475569] transition-opacity hover:opacity-75 sm:h-10 sm:w-10"
+        aria-label="Copy article link"
+        className="inline-flex h-8 w-8 items-center justify-center rounded-[4px] bg-[#f5f7fb] text-[#475569] transition-opacity hover:opacity-75"
       >
         <FaLink className="h-3.5 w-3.5" />
       </button>
 
       {copied ? (
-        <span className="text-xs text-[#6b7280]">Link copied</span>
+        <span className="text-xs font-medium text-[#667689]">Link copied</span>
       ) : null}
     </div>
   );
@@ -1065,20 +984,6 @@ const NewsStoryArticlePage = () => {
   const { slug = "" } = useParams();
   const { story, loading, error, notFound } = usePublicNewsStory(slug);
   const { stories: feedStories = [] } = usePublicNewsFeed({ limit: 18 });
-  const primaryStoryProductId = useMemo(
-    () =>
-      Number(story?.productId) ||
-      (Array.isArray(story?.productIds) ? Number(story.productIds[0]) : null) ||
-      null,
-    [story],
-  );
-  const { placements: newsAffiliatePlacements = [] } = useAffiliatePlacements({
-    pageType: "news",
-    blogId: story?.id || null,
-    productId: primaryStoryProductId,
-    enabled: Boolean(story?.id),
-  });
-  const newsAffiliatePlacement = newsAffiliatePlacements[0] || null;
   const [relatedPage, setRelatedPage] = useState(0);
   const [isRelatedMobileLayout, setIsRelatedMobileLayout] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -1332,7 +1237,7 @@ const NewsStoryArticlePage = () => {
 
       <main className="min-h-screen bg-white text-[#111111]">
         <section className="bg-white">
-          <div className="mx-auto max-w-[1280px] px-4 py-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-[1280px] px-4 pb-1 pt-2 sm:px-6 sm:pt-2 lg:px-8">
             <div className="line-clamp-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] leading-5 text-[#7b8796] sm:text-[12px]">
               {storyBreadcrumbs.map((item, index) => {
                 const isLast = index === storyBreadcrumbs.length - 1;
@@ -1374,8 +1279,8 @@ const NewsStoryArticlePage = () => {
         </section>
 
         <section className="bg-white">
-          <div className="mx-auto max-w-[1280px] px-4 pb-3 pt-3 sm:px-6 sm:pb-5 sm:pt-5 lg:px-8">
-            <div className="mt-2 max-w-[1120px] sm:mt-4">
+          <div className="mx-auto max-w-[1280px] px-4 pb-3 pt-1 sm:px-6 sm:pb-4 sm:pt-2 lg:px-8 lg:pb-3">
+            <div className="max-w-[1120px]">
               <h1 className="text-[19px] font-black leading-[1.18] tracking-[-0.02em] text-[#20242b] sm:text-[25px] sm:leading-[1.14] lg:text-[28px] xl:text-[30px]">
                 <HeadlineText
                   lines={headlineLines}
@@ -1386,30 +1291,9 @@ const NewsStoryArticlePage = () => {
               <p className="mt-2 max-w-[72ch] text-[13.5px] leading-6 text-[#5f6670] sm:mt-3 sm:text-[17px] sm:leading-7">
                 {articleDescription}
               </p>
-            </div>
-
-            <div className="mt-4 flex flex-col gap-2 sm:mt-5 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] leading-5 text-[#667689] sm:text-[13.5px]">
-                <span>Written by</span>
-                <span className="font-semibold text-[#2563eb]">
-                  {storyAuthor}
-                </span>
-                {story?.authorRole ? (
-                  <>
-                    <span className="hidden text-[#cbd5e1] sm:inline">|</span>
-                    <span>{story.authorRole}</span>
-                  </>
-                ) : null}
-                <span className="hidden text-[#cbd5e1] sm:inline">|</span>
-                <span className="text-[#7d8898]">
-                  Updated {formatHeaderDateTime(story)}
-                </span>
-              </div>
-
-              <HeroShareButtons
+              <ArticleShareLinks
                 title={story.title}
                 description={articleDescription}
-                image={story.image}
                 url={canonicalUrl}
               />
             </div>
@@ -1417,10 +1301,10 @@ const NewsStoryArticlePage = () => {
         </section>
 
         <section className="bg-white">
-          <div className="mx-auto max-w-[1280px] px-4 py-4 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+          <div className="mx-auto max-w-[1280px] px-4 pb-4 pt-2 sm:px-6 sm:pb-8 sm:pt-3 lg:px-8 lg:pb-10 lg:pt-0">
             <div className="grid gap-5 sm:gap-8 xl:grid-cols-[160px_minmax(0,1fr)_300px] xl:items-start xl:gap-10">
-              <aside className="hidden xl:block">
-                <div className="sticky top-6 space-y-8">
+              <aside className="hidden xl:block xl:self-start">
+                <div className="sticky top-6 max-h-[calc(100vh-3rem)] space-y-8 overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   <RailPanel title="Highlights" items={editorialHighlights} />
                   <RailPanel
                     title="Jump To"
@@ -1475,17 +1359,6 @@ const NewsStoryArticlePage = () => {
 
                       <InlineStoryLinksPanel stories={inlineStories} />
 
-                      {newsAffiliatePlacement ? (
-                        <AffiliatePlacementCard
-                          placement={newsAffiliatePlacement}
-                          pageType="news"
-                          productId={primaryStoryProductId}
-                          blogId={story?.id || null}
-                          variant="news"
-                          className="mt-5 sm:mt-6"
-                        />
-                      ) : null}
-
                       {structuredRestHtml ? (
                         <div
                           className={ARTICLE_PROSE_CONTINUATION_CLASS}
@@ -1513,17 +1386,6 @@ const NewsStoryArticlePage = () => {
                       </div>
 
                       <InlineStoryLinksPanel stories={inlineStories} />
-
-                      {newsAffiliatePlacement ? (
-                        <AffiliatePlacementCard
-                          placement={newsAffiliatePlacement}
-                          pageType="news"
-                          productId={primaryStoryProductId}
-                          blogId={story?.id || null}
-                          variant="news"
-                          className="mt-5 sm:mt-6"
-                        />
-                      ) : null}
 
                       {remainingParagraphs.length ? (
                         <div className="space-y-5 text-[15px] leading-7 text-[#32363d] sm:space-y-7 sm:text-[18px] sm:leading-9">
@@ -1631,7 +1493,7 @@ const NewsStoryArticlePage = () => {
                 ) : null}
               </div>
 
-              <aside className="space-y-5 xl:sticky xl:top-6 xl:self-start">
+              <aside className="space-y-5 xl:sticky xl:top-6 xl:max-h-[calc(100vh-3rem)] xl:self-start xl:overflow-y-auto xl:pr-1 xl:[scrollbar-width:none] xl:[&::-webkit-scrollbar]:hidden">
                 <SidebarSection title="Trending News" mobileSoft>
                   <div className="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#7c3aed]">
                     <FaFire className="h-3.5 w-3.5" />

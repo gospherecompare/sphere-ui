@@ -684,6 +684,66 @@ const SEARCH_SORT_OPTIONS = [
   { id: "nameAsc", label: "Name" },
 ];
 
+const SEARCH_PRICE_RANGE_OPTIONS = [
+  { id: "all", label: "Any price" },
+  { id: "0-20000", label: "Under ₹20,000" },
+  { id: "20000-40000", label: "₹20,000 to ₹40,000" },
+  { id: "40000-70000", label: "₹40,000 to ₹70,000" },
+  { id: "70000+", label: "Above ₹70,000" },
+];
+
+const PRODUCT_TYPE_LABELS = Object.freeze({
+  smartphone: "Smartphones",
+  laptop: "Laptops",
+  tv: "TVs",
+  tablet: "Tablets",
+  audio: "Audio",
+  networking: "Networking",
+});
+
+const formatProductTypeLabel = (value) => {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  if (!normalized) return "All categories";
+  return (
+    PRODUCT_TYPE_LABELS[normalized] ||
+    normalized.replace(/[_-]+/g, " ").replace(/^./, (ch) => ch.toUpperCase())
+  );
+};
+
+const getDeviceLaunchYear = (device) => {
+  const direct =
+    parseDateOnly(
+      device?.launch_date ||
+        device?.launchDate ||
+        device?.release_date ||
+        device?.releaseDate ||
+        null,
+    ) || null;
+  if (direct) return direct.getFullYear();
+
+  const fallbackText = String(
+    device?.launch_date ||
+      device?.launchDate ||
+      device?.release_date ||
+      device?.releaseDate ||
+      "",
+  ).trim();
+  const yearMatch = fallbackText.match(/\b(20\d{2})\b/);
+  return yearMatch ? Number(yearMatch[1]) : null;
+};
+
+const matchesPriceRange = (price, rangeId) => {
+  if (rangeId === "all") return true;
+  if (!Number.isFinite(price) || price <= 0) return false;
+  if (rangeId === "0-20000") return price < 20000;
+  if (rangeId === "20000-40000") return price >= 20000 && price < 40000;
+  if (rangeId === "40000-70000") return price >= 40000 && price < 70000;
+  if (rangeId === "70000+") return price >= 70000;
+  return true;
+};
+
 const EMPTY_COMPARE_INSIGHTS = Object.freeze({
   scoreVersion: "",
   productType: "",
@@ -776,10 +836,16 @@ const MobileCompare = () => {
     SECTIONS[0]?.id || "overview",
   );
   const [activeVariantPickerId, setActiveVariantPickerId] = useState(null);
-  const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchSort, setSearchSort] = useState("popularity");
+  const [catalogCategoryFilter, setCatalogCategoryFilter] = useState("all");
+  const [catalogBrandFilter, setCatalogBrandFilter] = useState("all");
+  const [catalogPriceFilter, setCatalogPriceFilter] = useState("all");
+  const [catalogReleaseYearFilter, setCatalogReleaseYearFilter] =
+    useState("all");
+  const [catalogVisibleCount, setCatalogVisibleCount] = useState(6);
   const [isComparing, setIsComparing] = useState(false);
+  const [showMobileCatalog, setShowMobileCatalog] = useState(false);
   const [sharedDescription, setSharedDescription] = useState("");
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [modalDevice, setModalDevice] = useState(null);
@@ -791,6 +857,8 @@ const MobileCompare = () => {
   const [signalsFetched, setSignalsFetched] = useState(false);
   const [activeQuickFilter, setActiveQuickFilter] = useState("all");
   const searchResultsRef = useRef(null);
+  const catalogSidebarRef = useRef(null);
+  const catalogSearchInputRef = useRef(null);
 
   const { devices: availableDevices = [], loading, getDevice } = useDevice();
   const location = useLocation();
@@ -830,6 +898,11 @@ const MobileCompare = () => {
   const selectedSetupProgress = maxDevices
     ? Math.min(100, Math.round((activeDevices.length / maxDevices) * 100))
     : 0;
+  const catalogLockedType = getResolvedProductType(
+    (isComparing && comparedDevices.length > 0
+      ? comparedDevices
+      : selectedDevices)?.[0],
+  );
   const activeDeviceIdSet = useMemo(
     () =>
       new Set(
@@ -840,6 +913,24 @@ const MobileCompare = () => {
       ),
     [activeDevices],
   );
+
+  const focusCatalogSidebar = () => {
+    catalogSidebarRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+    requestAnimationFrame(() => {
+      catalogSearchInputRef.current?.focus();
+    });
+  };
+
+  const openCatalogPanel = () => {
+    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+      setShowMobileCatalog(true);
+      return;
+    }
+    focusCatalogSidebar();
+  };
 
   const getDeviceRankingKeys = (device) =>
     [
@@ -902,10 +993,10 @@ const MobileCompare = () => {
   }, []);
 
   useEffect(() => {
-    if (showSearch || isComparing) {
+    if (isComparing) {
       setActiveVariantPickerId(null);
     }
-  }, [showSearch, isComparing]);
+  }, [isComparing]);
 
   const productLookupById = useMemo(() => {
     const lookup = new Map();
@@ -1497,7 +1588,7 @@ const MobileCompare = () => {
     // Run when location.search changes or when comparison UI is activated
   }, [location.search, isComparing, comparedDevices, selectedDevices]);
 
-  // Build a list of candidate items: one entry per variant. Each item has { base, variantIndex, variant }
+  // Build a list of candidate items: one entry per product using the active or default variant.
   const filteredDevices = useMemo(() => {
     const parseNumber = (input) => {
       if (typeof input === "number" && Number.isFinite(input)) return input;
@@ -1765,47 +1856,71 @@ const MobileCompare = () => {
       }
     };
 
-    let candidates = (availableDevices || []).flatMap((device) => {
-      const vars =
+    let candidates = (availableDevices || []).map((device) => {
+      const resolvedId = getResolvedProductId(device);
+      const matchedEntry = [...comparedDevices, ...selectedDevices].find(
+        (entry) => String(entry?.id) === String(resolvedId),
+      );
+      const variants =
         Array.isArray(device.variants) && device.variants.length
           ? device.variants
-          : [null];
-      return vars.map((v, vi) => ({
+          : [];
+      const rawVariantIndex =
+        variantSelection[resolvedId] ?? matchedEntry?.selectedVariantIndex ?? 0;
+      const safeVariantIndex =
+        variants.length > 0 && variants[rawVariantIndex]
+          ? rawVariantIndex
+          : 0;
+
+      return {
         base: device,
-        variant: v,
-        variantIndex: vi,
-      }));
+        variant: variants[safeVariantIndex] || null,
+        variantIndex: safeVariantIndex,
+      };
     });
 
-    const chosenDevices = isComparing
-      ? [...comparedDevices, ...selectedDevices]
-      : selectedDevices;
-    const typeSource =
-      (isComparing && comparedDevices.length > 0
-        ? comparedDevices
-        : selectedDevices) || [];
+    const effectiveCategory =
+      catalogLockedType ||
+      (catalogCategoryFilter !== "all" ? catalogCategoryFilter : "");
 
-    // If there's already a selected device, restrict candidates to that deviceType
-    if (typeSource.length > 0) {
-      const allowedType = getResolvedProductType(typeSource[0]);
-      if (allowedType) {
-        candidates = candidates.filter((c) => {
-          const t = getResolvedProductType(c.base);
-          return t === allowedType;
-        });
-      }
+    if (effectiveCategory) {
+      candidates = candidates.filter((candidate) => {
+        const candidateType = getResolvedProductType(candidate.base);
+        return candidateType === effectiveCategory;
+      });
     }
 
-    // Remove already-selected devices (regardless of which variant is shown in the search list)
-    const notSelected = candidates.filter((it) => {
-      const candidateId = getResolvedProductId(it.base);
-      if (candidateId == null) return true;
-      return !chosenDevices.some((sd) => String(sd.id) === String(candidateId));
-    });
+    if (catalogBrandFilter !== "all") {
+      candidates = candidates.filter(
+        (candidate) =>
+          String(candidate.base?.brand || "").trim().toLowerCase() ===
+          catalogBrandFilter,
+      );
+    }
+
+    candidates = candidates
+      .map((candidate) => {
+        const displayPrice = getCandidatePrice(candidate.base, candidate.variant);
+        const releaseYear = getDeviceLaunchYear(candidate.base);
+        return {
+          ...candidate,
+          displayPrice,
+          releaseYear,
+          trendSortScore: getTrendSortScore(candidate.base),
+        };
+      })
+      .filter((candidate) =>
+        matchesPriceRange(candidate.displayPrice, catalogPriceFilter),
+      )
+      .filter((candidate) =>
+        catalogReleaseYearFilter === "all"
+          ? true
+          : String(candidate.releaseYear || "") === catalogReleaseYearFilter,
+      );
 
     const query = searchQuery.trim().toLowerCase();
     const searched = query
-      ? notSelected.filter((it) => {
+      ? candidates.filter((it) => {
           const searchableBlob = toLowerBlob([
             it.base?.name,
             it.base?.brand,
@@ -1822,18 +1937,13 @@ const MobileCompare = () => {
           ]);
           return searchableBlob.includes(query);
         })
-      : notSelected;
+      : candidates;
 
     const quickFiltered = searched.filter((it) =>
       quickFilterMatch(it.base, it.variant),
     );
 
     return quickFiltered
-      .map((it) => ({
-        ...it,
-        trendSortScore: getTrendSortScore(it.base),
-        displayPrice: getCandidatePrice(it.base, it.variant),
-      }))
       .sort((a, b) => {
         if (searchSort === "priceAsc" || searchSort === "priceDesc") {
           const aPrice = Number.isFinite(a.displayPrice)
@@ -1870,22 +1980,116 @@ const MobileCompare = () => {
           String(b.base?.name || ""),
         );
       })
-      .slice(0, 20)
-      .map(({ trendSortScore, displayPrice, ...item }) => item);
+      .map(({ trendSortScore, displayPrice, releaseYear, ...item }) => item);
   }, [
     availableDevices,
     searchQuery,
     selectedDevices,
     comparedDevices,
     isComparing,
+    variantSelection,
     trendSignalsByProductId,
     compareSignalsByProductId,
     activeQuickFilter,
     searchSort,
+    catalogLockedType,
+    catalogCategoryFilter,
+    catalogBrandFilter,
+    catalogPriceFilter,
+    catalogReleaseYearFilter,
   ]);
 
+  const catalogCategoryOptions = useMemo(() => {
+    const types = Array.from(
+      new Set(
+        (availableDevices || [])
+          .map((device) => getResolvedProductType(device))
+          .filter(Boolean),
+      ),
+    ).sort();
+
+    return [
+      { id: "all", label: "All categories" },
+      ...types.map((type) => ({
+        id: type,
+        label: formatProductTypeLabel(type),
+      })),
+    ];
+  }, [availableDevices]);
+
+  const catalogBrandOptions = useMemo(() => {
+    const effectiveCategory =
+      catalogLockedType ||
+      (catalogCategoryFilter !== "all" ? catalogCategoryFilter : "");
+
+    const brands = Array.from(
+      new Set(
+        (availableDevices || [])
+          .filter((device) => {
+            if (!effectiveCategory) return true;
+            return getResolvedProductType(device) === effectiveCategory;
+          })
+          .map((device) => String(device?.brand || "").trim())
+          .filter(Boolean),
+      ),
+    ).sort((left, right) => left.localeCompare(right));
+
+    return [
+      { id: "all", label: "All brands" },
+      ...brands.map((brand) => ({ id: brand.toLowerCase(), label: brand })),
+    ];
+  }, [availableDevices, catalogCategoryFilter, catalogLockedType]);
+
+  const catalogReleaseYearOptions = useMemo(() => {
+    const effectiveCategory =
+      catalogLockedType ||
+      (catalogCategoryFilter !== "all" ? catalogCategoryFilter : "");
+
+    const years = Array.from(
+      new Set(
+        (availableDevices || [])
+          .filter((device) => {
+            if (!effectiveCategory) return true;
+            return getResolvedProductType(device) === effectiveCategory;
+          })
+          .map((device) => getDeviceLaunchYear(device))
+          .filter((value) => Number.isFinite(value)),
+      ),
+    ).sort((left, right) => right - left);
+
+    return [
+      { id: "all", label: "Any year" },
+      ...years.map((year) => ({ id: String(year), label: String(year) })),
+    ];
+  }, [availableDevices, catalogCategoryFilter, catalogLockedType]);
+
+  const visibleCatalogDevices = useMemo(
+    () => filteredDevices.slice(0, catalogVisibleCount),
+    [filteredDevices, catalogVisibleCount],
+  );
+
   useEffect(() => {
-    if (!showSearch || signalsFetched) return;
+    if (
+      catalogBrandFilter !== "all" &&
+      !catalogBrandOptions.some((option) => option.id === catalogBrandFilter)
+    ) {
+      setCatalogBrandFilter("all");
+    }
+  }, [catalogBrandFilter, catalogBrandOptions]);
+
+  useEffect(() => {
+    if (
+      catalogReleaseYearFilter !== "all" &&
+      !catalogReleaseYearOptions.some(
+        (option) => option.id === catalogReleaseYearFilter,
+      )
+    ) {
+      setCatalogReleaseYearFilter("all");
+    }
+  }, [catalogReleaseYearFilter, catalogReleaseYearOptions]);
+
+  useEffect(() => {
+    if (signalsFetched || (availableDevices || []).length === 0) return;
 
     let cancelled = false;
 
@@ -1962,20 +2166,22 @@ const MobileCompare = () => {
     return () => {
       cancelled = true;
     };
-  }, [showSearch, signalsFetched]);
+  }, [availableDevices, signalsFetched]);
 
   useEffect(() => {
-    if (!showSearch) {
-      setActiveQuickFilter("all");
-    }
-  }, [showSearch]);
-
-  useEffect(() => {
-    if (!showSearch) return;
     const container = searchResultsRef.current;
     if (!container) return;
     container.scrollTop = 0;
-  }, [showSearch, searchQuery, activeQuickFilter, searchSort]);
+    setCatalogVisibleCount(6);
+  }, [
+    searchQuery,
+    activeQuickFilter,
+    searchSort,
+    catalogCategoryFilter,
+    catalogBrandFilter,
+    catalogPriceFilter,
+    catalogReleaseYearFilter,
+  ]);
 
   // Get device specs
   // Format price (hoisted so it can be used by other functions)
@@ -3563,8 +3769,6 @@ const MobileCompare = () => {
             : d,
         ),
       );
-      setShowSearch(false);
-      setSearchQuery("");
       return;
     }
 
@@ -3605,8 +3809,6 @@ const MobileCompare = () => {
       setSelectedDevices((prev) => [...prev, entry]);
     }
     setVariantSelection((vs) => ({ ...vs, [entry.id]: variantIndex }));
-    setShowSearch(false);
-    setSearchQuery("");
   };
 
   // Hydrate compare state from slug or legacy URL params.
@@ -3987,6 +4189,253 @@ const MobileCompare = () => {
     return parts.join(" | ");
   };
 
+  const renderSelectedDeviceCard = (device, comparing = false) => {
+    const selectedVariant = getSelectedVariant(device);
+    const variants = Array.isArray(device.variants) ? device.variants : [];
+    const rawVariantIndex =
+      variantSelection[device.id] ?? device.selectedVariantIndex ?? 0;
+    const safeVariantIndex =
+      variants.length > 0 && variants[rawVariantIndex] ? rawVariantIndex : 0;
+    const summaryText = getCardSummary(
+      device,
+      selectedVariant || variants[safeVariantIndex] || null,
+    );
+    const price = getCardPrice(device, selectedVariant);
+    const serverScoreEntry = comparing ? getServerScoreEntry(device) : null;
+    const isOverallWinner =
+      comparing &&
+      overallWinnerId &&
+      getDeviceRankingKeys(device).includes(overallWinnerId);
+    const liveRank =
+      serverScoreEntry?.rank ||
+      (isOverallWinner ? 1 : null) ||
+      null;
+
+    return (
+      <div
+        key={device.id}
+        className="relative flex h-full min-h-[30rem] flex-col border-b border-slate-200 bg-white px-5 py-6 sm:px-6 lg:border-b-0 lg:border-r"
+      >
+        <button
+          type="button"
+          onClick={() =>
+            comparing ? removeComparedDevice(device.id) : removeDevice(device.id)
+          }
+          className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full border border-transparent text-slate-400 transition-colors hover:border-slate-200 hover:bg-slate-50 hover:text-slate-600"
+          aria-label="Remove device"
+          title="Remove device"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        <div className="flex flex-1 flex-col">
+          <div className="flex justify-center">
+            <div className="relative flex h-[140px] w-[140px] items-center justify-center overflow-hidden rounded-[24px] border border-slate-200 bg-slate-50 shadow-sm sm:h-[156px] sm:w-[156px]">
+              <img
+                src={getPrimaryImage(device) || null}
+                alt={device.name}
+                className="h-full w-full object-contain p-3"
+                onError={(event) => {
+                  event.target.src = `/api/placeholder/320/240?text=${encodeURIComponent(
+                    (device.brand || "D").slice(0, 1),
+                  )}`;
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="mt-5 text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+              {device.brand || "Brand"}
+            </p>
+            <h3 className="mt-2 text-[1.45rem] font-semibold leading-tight tracking-tight text-slate-900 sm:text-[1.6rem]">
+              {device.name || device.model || device.title || "Device"}
+            </h3>
+            <p className="mx-auto mt-3 max-w-[20rem] text-sm leading-6 text-slate-500 line-clamp-3">
+              {summaryText}
+            </p>
+          </div>
+
+          <div className="mt-6">
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-900">
+                Selected Variant
+              </span>
+              {variants.length > 0 ? (
+                <select
+                  value={safeVariantIndex}
+                  onChange={(event) =>
+                    updateDeviceVariant(device.id, Number(event.target.value))
+                  }
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                >
+                  {variants.map((variant, index) => (
+                    <option
+                      key={`${device.id}-variant-${index}`}
+                      value={index}
+                    >
+                      {formatVariantCompactLabel(variant, index)}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                  Variant information not available
+                </div>
+              )}
+            </label>
+          </div>
+
+          <div className="mt-auto pt-6 text-center">
+            <p
+              className={`text-[2rem] font-semibold tracking-tight ${
+                price ? "text-slate-900" : "text-slate-400"
+              }`}
+              title={price ? "Price" : "Price not available"}
+            >
+              {price ? formatPrice(price) : "N/A"}
+            </p>
+            {comparing ? (
+              <p className="mt-3 text-sm leading-7 text-slate-500">
+                Live compare score{" "}
+                <span className="font-medium text-slate-700">
+                  {serverScoreEntry?.totalScore != null
+                    ? formatSpecScoreLabel(serverScoreEntry.totalScore)
+                    : "N/A"}
+                </span>
+                {liveRank ? (
+                  <>
+                    , currently ranked{" "}
+                    <span className="font-semibold text-blue-600">
+                      #{liveRank}
+                    </span>{" "}
+                    overall.
+                  </>
+                ) : (
+                  "."
+                )}
+              </p>
+            ) : (
+              <div className="mt-3 flex items-center justify-center gap-1.5 text-sm text-slate-500">
+                <span>Score available after comparison</span>
+                <Info className="h-3.5 w-3.5" />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderCompactMobileDeviceCard = (device, comparing = false) => {
+    const selectedVariant = getSelectedVariant(device);
+    const variants = Array.isArray(device.variants) ? device.variants : [];
+    const rawVariantIndex =
+      variantSelection[device.id] ?? device.selectedVariantIndex ?? 0;
+    const safeVariantIndex =
+      variants.length > 0 && variants[rawVariantIndex] ? rawVariantIndex : 0;
+    const variant = selectedVariant || variants[safeVariantIndex] || null;
+    const summaryText = getCardSummary(device, variant);
+    const price = getCardPrice(device, selectedVariant);
+    const serverScoreEntry = comparing ? getServerScoreEntry(device) : null;
+    const isOverallWinner =
+      comparing &&
+      overallWinnerId &&
+      getDeviceRankingKeys(device).includes(overallWinnerId);
+    const liveRank =
+      serverScoreEntry?.rank ||
+      (isOverallWinner ? 1 : null) ||
+      null;
+    const variantMeta = getVariantSecondaryMeta(variant, device);
+    const mobileLabel = comparing
+      ? serverScoreEntry?.totalScore != null
+        ? formatSpecScoreLabel(serverScoreEntry.totalScore)
+        : "N/A"
+      : "Score available after comparison";
+
+    return (
+      <div className="relative flex h-full min-h-[22rem] flex-col rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm">
+        <button
+          type="button"
+          onClick={() =>
+            comparing ? removeComparedDevice(device.id) : removeDevice(device.id)
+          }
+          className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm"
+          aria-label="Remove device"
+          title="Remove device"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        <div className="flex justify-center pt-2">
+          <div className="relative flex h-[132px] w-[132px] items-center justify-center overflow-hidden rounded-[24px] border border-slate-200 bg-slate-50 p-3 shadow-sm">
+            <img
+              src={getPrimaryImage(device) || null}
+              alt={device.name}
+              className="h-full w-full object-contain"
+              onError={(event) => {
+                event.target.src = `/api/placeholder/320/240?text=${encodeURIComponent(
+                  (device.brand || "D").slice(0, 1),
+                )}`;
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="mt-4 text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+            {device.brand || "Brand"}
+          </p>
+          <h3 className="mt-1.5 text-[1.15rem] font-semibold leading-tight tracking-tight text-slate-900">
+            {device.name || device.model || device.title || "Device"}
+          </h3>
+          <p className="mx-auto mt-2 max-w-[18rem] text-xs leading-5 text-slate-500 line-clamp-3">
+            {summaryText}
+          </p>
+        </div>
+
+        <div className="mt-4 rounded-[22px] border border-slate-200 bg-white px-3 py-3">
+          <p className="text-xs font-medium text-slate-900">Selected Variant</p>
+          <p className="mt-1 text-sm font-semibold text-slate-700">
+            {formatVariantPrimaryLabel(variant, safeVariantIndex)}
+          </p>
+          <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+            {variantMeta.color ? <span>{variantMeta.color}</span> : null}
+            {variantMeta.color ? (
+              <span className="h-1 w-1 rounded-full bg-slate-300" aria-hidden="true" />
+            ) : null}
+            <span className={getVariantAvailabilityTone(variantMeta.availability)}>
+              {variantMeta.availability}
+            </span>
+          </p>
+        </div>
+
+        <div className="mt-auto pt-4 text-center">
+          <p className="text-[1.6rem] font-semibold tracking-tight text-slate-900">
+            {price ? formatPrice(price) : "N/A"}
+          </p>
+          <p className="mt-2 text-sm text-slate-500">
+            {comparing ? (
+              <>
+                Live compare score{" "}
+                <span className="font-medium text-slate-700">{mobileLabel}</span>
+                {liveRank ? (
+                  <>
+                    , ranked <span className="font-semibold text-blue-600">#{liveRank}</span>
+                  </>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <span>{mobileLabel}</span>
+              </>
+            )}
+          </p>
+        </div>
+      </div>
+    );
+  };
+
   // Start comparison
   const startComparison = () => {
     const scrollToComparison = () => {
@@ -4002,6 +4451,7 @@ const MobileCompare = () => {
         alert(`Please select at least ${MIN_DEVICES} devices to compare`);
         return;
       }
+      setShowMobileCatalog(false);
       setComparedDevices(selectedDevices);
       setSelectedDevices([]);
       setIsComparing(true);
@@ -4017,6 +4467,7 @@ const MobileCompare = () => {
     setSelectedDevices([]);
     setComparedDevices([]);
     setIsComparing(false);
+    setShowMobileCatalog(false);
     navigate("/compare", { replace: true });
   };
 
@@ -4261,6 +4712,429 @@ const MobileCompare = () => {
     upsertCanonicalLink(canonicalCompareUrl);
   }, [canonicalCompareUrl, metaDescription, metaKeywords, normalizedMetaTitle]);
 
+  const effectiveCatalogCategoryValue =
+    catalogLockedType || catalogCategoryFilter;
+
+  const resetCatalogFilters = () => {
+    setSearchQuery("");
+    setActiveQuickFilter("all");
+    setSearchSort("popularity");
+    setCatalogCategoryFilter("all");
+    setCatalogBrandFilter("all");
+    setCatalogPriceFilter("all");
+    setCatalogReleaseYearFilter("all");
+    setCatalogVisibleCount(6);
+    requestAnimationFrame(() => {
+      catalogSearchInputRef.current?.focus();
+    });
+  };
+
+  const catalogSidebar = (
+    <aside
+      ref={catalogSidebarRef}
+      className="xl:sticky xl:top-6 xl:self-start"
+    >
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="p-4 sm:p-5">
+          <h2 className="text-xl font-semibold tracking-tight text-slate-900">
+            Add a product
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            Search and select a product to add to your comparison.
+          </p>
+
+          <div className="relative mt-4">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
+              <Search className="h-4 w-4" />
+            </div>
+            <input
+              ref={catalogSearchInputRef}
+              type="text"
+              placeholder="Search for phones, laptops..."
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-slate-700 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 placeholder:text-slate-400"
+            />
+          </div>
+
+          <div className="mt-5 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-slate-900">Filters</h3>
+            <button
+              type="button"
+              onClick={resetCatalogFilters}
+              className="text-sm font-medium text-slate-500 transition-colors hover:text-blue-600"
+            >
+              Reset
+            </button>
+          </div>
+
+          <div className="mt-3 space-y-3">
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                Category
+              </span>
+              <select
+                value={effectiveCatalogCategoryValue || "all"}
+                onChange={(event) => setCatalogCategoryFilter(event.target.value)}
+                disabled={Boolean(catalogLockedType)}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-50"
+              >
+                {catalogCategoryOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                Brand
+              </span>
+              <select
+                value={catalogBrandFilter}
+                onChange={(event) => setCatalogBrandFilter(event.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+              >
+                {catalogBrandOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                Price range
+              </span>
+              <select
+                value={catalogPriceFilter}
+                onChange={(event) => setCatalogPriceFilter(event.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+              >
+                {SEARCH_PRICE_RANGE_OPTIONS.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                Release year
+              </span>
+              <select
+                value={catalogReleaseYearFilter}
+                onChange={(event) =>
+                  setCatalogReleaseYearFilter(event.target.value)
+                }
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+              >
+                {catalogReleaseYearOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                Sort by
+              </span>
+              <select
+                value={searchSort}
+                onChange={(event) => setSearchSort(event.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+              >
+                {SEARCH_SORT_OPTIONS.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {QUICK_FILTER_CHIPS.map((chip) => {
+              const Icon = chip.icon;
+              const active = activeQuickFilter === chip.id;
+              return (
+                <button
+                  key={chip.id}
+                  type="button"
+                  onClick={() => setActiveQuickFilter(chip.id)}
+                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    active
+                      ? "border-blue-300 bg-blue-50 text-blue-700"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700"
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  <span>{chip.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <p className="mt-4 text-xs font-medium text-slate-500">
+            {filteredDevices.length.toLocaleString("en-IN")} results found
+          </p>
+        </div>
+
+        <div
+          ref={searchResultsRef}
+          className="max-h-[560px] space-y-3 overflow-y-auto border-t border-slate-200 px-4 py-4 sm:px-5"
+        >
+          {visibleCatalogDevices.map((item) => {
+            const base = item.base;
+            const variant = item.variant;
+            const variantIndex = item.variantIndex ?? 0;
+            const productId = getResolvedProductId(base);
+            const isSelected =
+              productId != null && activeDeviceIdSet.has(String(productId));
+            const canAdd = isSelected || visibleRemainingSlots > 0;
+            const price = getCardPrice(base, variant);
+
+            return (
+              <div
+                key={`catalog-${productId ?? base?.model ?? variantIndex}`}
+                className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3"
+              >
+                <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-1.5">
+                  <img
+                    src={getPrimaryImage(base) || null}
+                    alt={base.name}
+                    className="h-full w-full object-contain"
+                    onError={(event) => {
+                      event.target.src = `/api/placeholder/160/160?text=${encodeURIComponent(
+                        (base.brand || "D").slice(0, 1),
+                      )}`;
+                    }}
+                  />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-slate-900">
+                    {base.name || base.model || "Device"}
+                  </p>
+                  <p className="mt-1 truncate text-xs text-slate-500">
+                    {formatVariantCompactLabel(variant, variantIndex)}
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-slate-700">
+                    {price ? formatPrice(price) : "N/A"}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => addDevice(base, variantIndex)}
+                  disabled={!canAdd}
+                  className={`inline-flex h-10 items-center justify-center rounded-lg px-3 text-sm font-semibold transition-colors ${
+                    isSelected
+                      ? "border border-blue-200 bg-blue-50 text-blue-700"
+                      : canAdd
+                        ? "bg-blue-600 text-white hover:bg-blue-700"
+                        : "cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400"
+                  }`}
+                >
+                  {isSelected ? "Added" : canAdd ? "Add" : "Full"}
+                </button>
+              </div>
+            );
+          })}
+
+          {filteredDevices.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+              No products matched these filters.
+            </div>
+          ) : null}
+        </div>
+
+        {filteredDevices.length > visibleCatalogDevices.length ? (
+          <div className="border-t border-slate-200 px-4 py-3 sm:px-5">
+            <button
+              type="button"
+              onClick={() =>
+                setCatalogVisibleCount((count) =>
+                  Math.min(count + 6, filteredDevices.length),
+                )
+              }
+              className="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+            >
+              Load more
+            </button>
+          </div>
+        ) : null}
+      </div>
+    </aside>
+  );
+
+  const setupPanel =
+    activeDevices.length === 0 ? (
+      <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center shadow-sm">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+          <BarChart3 className="h-8 w-8" />
+        </div>
+        <h2 className="mt-5 text-2xl font-semibold text-slate-900">
+          Start your comparison
+        </h2>
+        <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-slate-500 sm:text-base">
+          Use the product listing to add up to {maxDevices} devices. Once you
+          have at least {MIN_DEVICES}, you can compare them side by side here.
+        </p>
+        <button
+          type="button"
+          onClick={openCatalogPanel}
+          className="mt-6 inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
+        >
+          <Plus className="h-4 w-4" />
+          Add product
+        </button>
+      </div>
+    ) : isComparing ? (
+      <>
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:hidden">
+          <div className="flex gap-4 overflow-x-auto p-4 pb-5 snap-x snap-mandatory">
+            {activeDevices.map((device) => (
+              <div
+                key={`mobile-compare-${device.id}`}
+                className="min-w-[84vw] max-w-[360px] snap-start"
+              >
+                {renderCompactMobileDeviceCard(device, true)}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:block">
+          <div
+            className="grid min-h-full divide-y divide-slate-200 lg:divide-x lg:divide-y-0"
+            style={{
+              gridTemplateColumns: `repeat(${Math.max(
+                activeDevices.length,
+                1,
+              )}, minmax(0, 1fr))`,
+            }}
+          >
+            {activeDevices.map((device) =>
+              renderSelectedDeviceCard(device, true),
+            )}
+          </div>
+        </div>
+      </>
+    ) : (
+      <>
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:hidden">
+          <div className="flex gap-4 overflow-x-auto p-4 pb-5 snap-x snap-mandatory">
+            {activeDevices.map((device) => (
+              <div
+                key={`mobile-selected-${device.id}`}
+                className="min-w-[84vw] max-w-[360px] snap-start"
+              >
+                {renderCompactMobileDeviceCard(device, false)}
+              </div>
+            ))}
+            {visibleRemainingSlots > 0 ? (
+              <button
+                type="button"
+                onClick={openCatalogPanel}
+                className="group flex min-w-[72vw] max-w-[280px] snap-start flex-col items-center justify-center rounded-[28px] border-2 border-dashed border-slate-200 bg-white px-6 py-8 text-center transition-colors hover:border-slate-300 hover:bg-slate-50/50"
+              >
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-900 transition-colors group-hover:bg-slate-200">
+                  <Plus className="h-7 w-7" />
+                </div>
+                <p className="mt-6 text-2xl font-semibold tracking-tight text-slate-900">
+                  Add Device
+                </p>
+                <p className="mt-2 text-sm text-slate-500">
+                  {visibleRemainingSlots} slot
+                  {visibleRemainingSlots !== 1 ? "s" : ""} left
+                </p>
+              </button>
+            ) : null}
+          </div>
+
+          <div className="border-t border-slate-200 bg-white px-5 py-4 sm:px-6">
+            <div className="flex flex-col gap-3">
+              <div>
+                <p className="text-sm font-medium text-slate-900">
+                  Your comparison is private and saved
+                </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  You can come back any time and continue.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={startComparison}
+                className="inline-flex w-full items-center justify-center rounded-2xl bg-slate-900 px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800 sm:text-base"
+              >
+                Start Comparing
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:block">
+          <div
+            className="grid min-h-full divide-y divide-slate-200 lg:divide-x lg:divide-y-0"
+            style={{
+              gridTemplateColumns: `repeat(${Math.max(
+                activeDevices.length + (visibleRemainingSlots > 0 ? 1 : 0),
+                1,
+              )}, minmax(0, 1fr))`,
+            }}
+          >
+            {activeDevices.map((device) =>
+              renderSelectedDeviceCard(device, false),
+            )}
+            {visibleRemainingSlots > 0 ? (
+              <button
+                type="button"
+                onClick={openCatalogPanel}
+                className="group flex min-h-[30rem] flex-col items-center justify-center border-b border-slate-200 bg-white px-6 py-8 text-center transition-colors hover:bg-slate-50/50 lg:border-b-0 lg:border-l"
+              >
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 text-slate-900 transition-colors group-hover:bg-slate-200">
+                  <Plus className="h-8 w-8" />
+                </div>
+                <p className="mt-8 text-3xl font-semibold tracking-tight text-slate-900">
+                  Add Device
+                </p>
+                <p className="mt-3 text-base text-slate-500">
+                  {visibleRemainingSlots} slot
+                  {visibleRemainingSlots !== 1 ? "s" : ""} left
+                </p>
+              </button>
+            ) : null}
+          </div>
+
+          <div className="border-t border-slate-200 bg-white px-5 py-4 sm:px-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-900">
+                  Your comparison is private and saved
+                </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  You can come back any time and continue.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={startComparison}
+                className="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800 sm:text-base"
+              >
+                Start Comparing
+              </button>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+
   return (
     <div className="min-h-screen overflow-x-hidden bg-slate-50 text-slate-900">
       <Helmet prioritizeSeoTags>
@@ -4317,47 +5191,87 @@ const MobileCompare = () => {
         )}
       </Helmet>
       {/* Page Header */}
-      <div className="w-full px-4 pt-6 sm:px-6 lg:px-8">
-        <div className="mx-auto flex max-w-[1560px] flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-[11px] font-bold uppercase tracking-[0.32em] text-purple-600 sm:text-xs">
-              Compare Devices
-            </h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
-              Compare specifications, variants, prices, and server-based
-              recommendations side by side in one professional view.
-            </p>
-            <p className="mt-2 text-sm font-medium text-slate-500">
-              {activeDevices.length} product
-              {activeDevices.length !== 1 ? "s" : ""} selected
-            </p>
+      <div className="sticky top-0 z-40 w-full border-b border-slate-200/60 bg-slate-50/95 px-4 pt-4 backdrop-blur sm:px-6 sm:pt-6 lg:px-8">
+        <div className="mx-auto flex max-w-[1560px] items-start justify-between gap-4 pb-4">
+          <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition-colors hover:bg-slate-50 md:hidden"
+              aria-label="Go back"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
+                Compare
+              </h1>
+              <p className="mt-1 text-sm font-medium text-slate-500">
+                Up to {maxDevices} products
+              </p>
+            </div>
           </div>
 
           {(activeDevices.length > 0 || selectedDevices.length > 0) && (
-            <div className="flex items-center gap-3 self-start">
+            <div className="flex items-center gap-2 self-start sm:gap-3">
               {activeDevices.length > 0 ? (
                 <button
                   onClick={shareComparison}
-                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 sm:px-4"
                   title="Share comparison"
                 >
                   <Share2 className="h-4 w-4" />
-                  <span>Share</span>
+                  <span className="hidden sm:inline">Share</span>
                 </button>
               ) : null}
               <button
                 onClick={clearAll}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 sm:px-4"
               >
                 <Trash2 className="h-4 w-4" />
-                <span>Clear all</span>
+                <span className="hidden sm:inline">Clear all</span>
               </button>
             </div>
           )}
         </div>
       </div>
 
+      {showMobileCatalog && (
+        <div className="fixed inset-0 z-50 overflow-hidden bg-slate-950/45 backdrop-blur-md lg:hidden">
+          <div className="flex h-full flex-col">
+            <div className="flex items-center justify-between px-4 pt-4 sm:px-6">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">
+                  Add product
+                </h2>
+                <p className="text-sm text-slate-500">
+                  Search and select devices to compare
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMobileCatalog(false)}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition-colors hover:bg-slate-50"
+                aria-label="Close add product drawer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-4 pb-4 pt-4 sm:px-6">
+              {catalogSidebar}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mx-auto max-w-[1560px] px-4 pb-10 pt-4 sm:px-6 sm:pt-6 lg:px-8">
+        <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start">
+          <div className="hidden lg:block">{catalogSidebar}</div>
+
+          <div className="space-y-6">
+            {setupPanel}
+            {false ? (
+              <>
         {/* Hero Section */}
         {usedSlots === 0 && (
           <div className="mb-6 px-4 py-4 text-center sm:px-6">
@@ -4416,7 +5330,7 @@ const MobileCompare = () => {
                 {visibleRemainingSlots > 0 ? (
                   <button
                     type="button"
-                    onClick={() => setShowSearch(true)}
+                    onClick={openCatalogPanel}
                     className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-100"
                   >
                     <Plus className="h-4 w-4" />
@@ -4425,83 +5339,18 @@ const MobileCompare = () => {
                 ) : null}
               </aside>
 
-              <div className="overflow-x-auto">
-                <div
-                  className="grid min-h-full divide-y divide-slate-200 md:divide-x md:divide-y-0"
-                  style={{
-                    gridTemplateColumns: `repeat(${Math.max(
-                      activeDevices.length,
-                      1,
-                    )}, minmax(260px, 1fr))`,
-                    minWidth: `${Math.max(activeDevices.length, 1) * 260}px`,
-                  }}
-                >
-                  {activeDevices.map((device) => {
-                    const selectedVariant = getSelectedVariant(device);
-                    const variants = Array.isArray(device.variants)
-                      ? device.variants
-                      : [];
-                    const rawVariantIndex =
-                      variantSelection[device.id] ??
-                      device.selectedVariantIndex ??
-                      0;
-                    const safeVariantIndex =
-                      variants.length > 0 && variants[rawVariantIndex]
-                        ? rawVariantIndex
-                        : 0;
-                    const summaryText = getCardSummary(
-                      device,
-                      selectedVariant || variants[safeVariantIndex] || null,
-                    );
-                    const price = getCardPrice(device, selectedVariant);
-
-                    return (
-                      <div
-                        key={device.id}
-                        className="relative flex h-70 flex-col justify-between bg-white px-5 py-6 sm:px-6"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => removeComparedDevice(device.id)}
-                          className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full border border-transparent text-slate-400 transition-colors hover:border-slate-200 hover:bg-slate-50 hover:text-slate-600"
-                          aria-label="Remove device"
-                          title="Remove device"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-
-                        <div>
-                          <div className="flex justify-center">
-                            <div className="relative flex h-[140px] w-[140px] items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50  sm:h-[160px] sm:w-[160px]">
-                              <img
-                                src={getPrimaryImage(device) || null}
-                                alt={device.name}
-                                className="h-full w-full object-contain p-2.5 sm:p-3"
-                                onError={(event) => {
-                                  event.target.src = `/api/placeholder/320/240?text=${encodeURIComponent(
-                                    (device.brand || "D").slice(0, 1),
-                                  )}`;
-                                }}
-                              />
-                            </div>
-                          </div>
-
-                          <div className="mt-5 text-center">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                              {device.brand || "Brand"}
-                            </p>
-                            <h3 className="mt-2 text-lg font-semibold leading-tight text-slate-900 sm:text-xl">
-                              {device.name ||
-                                device.model ||
-                                device.title ||
-                                "Device"}
-                            </h3>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+              <div
+                className="grid min-h-full divide-y divide-slate-200 xl:divide-x xl:divide-y-0"
+                style={{
+                  gridTemplateColumns: `repeat(${Math.max(
+                    activeDevices.length,
+                    1,
+                  )}, minmax(0, 1fr))`,
+                }}
+              >
+                {activeDevices.map((device) =>
+                  renderSelectedDeviceCard(device, true),
+                )}
               </div>
             </div>
           </div>
@@ -4540,7 +5389,7 @@ const MobileCompare = () => {
                     {visibleRemainingSlots > 0 ? (
                       <button
                         type="button"
-                        onClick={() => setShowSearch(true)}
+                        onClick={openCatalogPanel}
                         className="inline-flex w-full items-center justify-center gap-3 rounded-2xl border border-blue-500 bg-white px-5 py-4 text-base font-semibold text-blue-600 transition-colors hover:bg-blue-50"
                       >
                         <Plus className="h-5 w-5" />
@@ -4785,8 +5634,8 @@ const MobileCompare = () => {
                   {visibleRemainingSlots > 0 ? (
                     <button
                       type="button"
-                      onClick={() => setShowSearch(true)}
-                      className="group flex h-full min-h-[31rem] flex-col items-center justify-center rounded-[28px] border-2 border-dashed border-slate-200 bg-white px-6 py-8 text-center transition-colors hover:border-slate-300 hover:bg-slate-50/50"
+                      onClick={openCatalogPanel}
+                      className="group flex h-full min-h-[30rem] flex-col items-center justify-center rounded-[28px] border-2 border-dashed border-slate-200 bg-white px-6 py-8 text-center transition-colors hover:border-slate-300 hover:bg-slate-50/50"
                     >
                       <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 text-slate-900 transition-colors group-hover:bg-slate-200">
                         <Plus className="h-8 w-8" />
@@ -4841,7 +5690,7 @@ const MobileCompare = () => {
           </div>
         ) : null}
         {/* Search Modal */}
-        {showSearch && (
+        {false && (
           <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/45 p-4 backdrop-blur-md sm:p-6 lg:p-10">
             <div className="mx-auto flex min-h-full items-center justify-center">
               <div className="flex max-h-[94vh] w-full max-w-[1180px] flex-col overflow-hidden rounded-[32px] border border-slate-200/90 bg-white shadow-[0_40px_120px_rgba(15,23,42,0.22)]">
@@ -5156,6 +6005,8 @@ const MobileCompare = () => {
             </div>
           </div>
         )}
+              </>
+            ) : null}
         {/* Comparison Section */}
         {isComparing && comparedDevices.length >= MIN_DEVICES && (
           <div
@@ -5174,6 +6025,51 @@ const MobileCompare = () => {
                 {compareInsights.warnings[0]}
               </div>
             ) : null}
+
+            <div className="sticky top-[72px] z-20 -mx-4 border-b border-slate-200 bg-slate-50/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:hidden">
+              <div className="flex gap-3 overflow-x-auto pb-1">
+                {comparedDevices.map((device, index) => {
+                  const selectedVariant = getSelectedVariant(device);
+                  return (
+                    <button
+                      key={`mobile-compare-tab-${device.id}`}
+                      type="button"
+                      onClick={() =>
+                        document
+                          .getElementById("comparison-section")
+                          ?.scrollIntoView({ behavior: "smooth" })
+                      }
+                      className={`min-w-[96px] shrink-0 rounded-[20px] border bg-white px-3 py-3 text-center shadow-sm transition-colors ${
+                        index === 0
+                          ? "border-blue-200 ring-1 ring-blue-100"
+                          : "border-slate-200"
+                      }`}
+                    >
+                      <div className="mx-auto flex h-12 w-12 items-center justify-center overflow-hidden rounded-[16px] border border-slate-200 bg-slate-50">
+                        <img
+                          src={getPrimaryImage(device) || null}
+                          alt={device.name}
+                          className="h-full w-full object-contain p-1.5"
+                          onError={(event) => {
+                            event.target.src = `/api/placeholder/160/160?text=${encodeURIComponent(
+                              (device.brand || "D").slice(0, 1),
+                            )}`;
+                          }}
+                        />
+                      </div>
+                      <p className="mt-2 truncate text-xs font-medium text-slate-500">
+                        {device.name || device.model || "Device"}
+                      </p>
+                      {selectedVariant ? (
+                        <p className="mt-1 truncate text-[11px] text-slate-400">
+                          {formatVariantCompactLabel(selectedVariant, 0)}
+                        </p>
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
             <div className="grid gap-4 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-start">
               <aside className="hidden xl:block">
@@ -5400,8 +6296,10 @@ const MobileCompare = () => {
             ) : null}
           </div>
         )}
+          </div>
+        </div>
         {/* Empty State */}
-        {usedSlots === 0 && !showSearch && (
+        {false && usedSlots === 0 && (
           <div className="py-8 text-center">
             <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center   bg-blue-50">
               <BarChart3 className="h-10 w-10 text-blue-600" />
@@ -5413,7 +6311,7 @@ const MobileCompare = () => {
               Add 2-4 devices to see detailed specifications side by side
             </p>
             <button
-              onClick={() => setShowSearch(true)}
+              onClick={focusCatalogSidebar}
               className="inline-flex items-center gap-2   bg-blue-600 px-6 py-2.5 font-semibold text-white transition-colors hover:bg-blue-700"
             >
               <Plus className="h-4 w-4" />

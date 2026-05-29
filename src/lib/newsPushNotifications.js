@@ -11,6 +11,9 @@ const DEFAULT_API_BASE = "https://api.apisphere.in";
 const NEWS_PUSH_TOPIC = "news-all";
 const TOKEN_STORAGE_KEY = "hooks.news_push.token";
 const ENABLED_STORAGE_KEY = "hooks.news_push.enabled";
+const SERVER_STATUS_STORAGE_KEY = "hooks.news_push.server_status";
+const SERVER_STATUS_CACHE_MS = 10 * 60 * 1000;
+const SERVER_STATUS_ROUTE = "/api/public/push/fcm/status";
 const SW_PATH = "/firebase-messaging-sw.js";
 const SW_READY_TIMEOUT_MS = 10000;
 
@@ -77,6 +80,56 @@ const createRequestError = (message, status, url) => {
   error.status = status;
   error.url = url;
   return error;
+};
+
+const getJson = async (routePath) => {
+  const urls = [...new Set(getApiBaseCandidates().map((base) => buildApiUrl(base, routePath)))];
+  let lastError = null;
+
+  for (let index = 0; index < urls.length; index += 1) {
+    const url = urls[index];
+
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      const payload = await readJsonPayload(response);
+
+      if (response.ok) {
+        return payload;
+      }
+
+      const error = createRequestError(
+        payload?.message || "Push notification status request failed",
+        response.status,
+        url,
+      );
+
+      if (response.status === 404 && index < urls.length - 1) {
+        lastError = error;
+        continue;
+      }
+
+      throw error;
+    } catch (error) {
+      lastError = error;
+
+      if (
+        index < urls.length - 1 &&
+        (error?.status === 404 || typeof error?.status === "undefined")
+      ) {
+        continue;
+      }
+
+      break;
+    }
+  }
+
+  throw lastError || new Error("Push notification status request failed");
 };
 
 const postJson = async (routePath, body) => {
@@ -149,6 +202,79 @@ const postJson = async (routePath, body) => {
   throw lastError || new Error("Push notification request failed");
 };
 
+const readStoredServerStatus = () => {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.localStorage.getItem(SERVER_STATUS_STORAGE_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    if (Date.now() - Number(parsed.checkedAt || 0) > SERVER_STATUS_CACHE_MS) {
+      return null;
+    }
+
+    return {
+      configured: parsed.configured === true,
+      reason: String(parsed.reason || ""),
+    };
+  } catch (_error) {
+    return null;
+  }
+};
+
+const writeStoredServerStatus = (status) => {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(
+      SERVER_STATUS_STORAGE_KEY,
+      JSON.stringify({
+        configured: status?.configured === true,
+        reason: String(status?.reason || ""),
+        checkedAt: Date.now(),
+      }),
+    );
+  } catch (_error) {
+    // Local storage can be unavailable in private browsing modes.
+  }
+};
+
+const getPushServerStatus = async ({ force = false } = {}) => {
+  if (!force) {
+    const cached = readStoredServerStatus();
+    if (cached) return cached;
+  }
+
+  try {
+    const payload = await getJson(SERVER_STATUS_ROUTE);
+    const configured = payload?.configured === true;
+    const status = {
+      configured,
+      reason: configured
+        ? ""
+        : payload?.message || "Push notifications are not configured on the server yet.",
+    };
+
+    writeStoredServerStatus(status);
+    return status;
+  } catch (error) {
+    if (error?.status === 404) {
+      const status = { configured: true, reason: "" };
+      writeStoredServerStatus(status);
+      return status;
+    }
+
+    const status = {
+      configured: false,
+      reason: "News alerts are temporarily unavailable. Please try again later.",
+    };
+    writeStoredServerStatus(status);
+    return status;
+  }
+};
+
 const getStoredToken = () => {
   if (typeof window === "undefined") return "";
   return String(window.localStorage.getItem(TOKEN_STORAGE_KEY) || "").trim();
@@ -206,6 +332,14 @@ const ensureBrowserSupport = async () => {
     };
   }
 
+  const serverStatus = await getPushServerStatus();
+  if (!serverStatus.configured) {
+    return {
+      supported: false,
+      reason: serverStatus.reason,
+    };
+  }
+
   return { supported: true, reason: "" };
 };
 
@@ -245,6 +379,11 @@ export const registerForNewsPush = async () => {
   const support = await ensureBrowserSupport();
   if (!support.supported) throw new Error(support.reason);
 
+  const serverStatus = await getPushServerStatus({ force: true });
+  if (!serverStatus.configured) {
+    throw new Error(serverStatus.reason);
+  }
+
   const permission = await Notification.requestPermission();
   if (permission !== "granted") {
     throw new Error(
@@ -275,11 +414,23 @@ export const registerForNewsPush = async () => {
     throw new Error("Unable to create a browser push token.");
   }
 
-  await postJson("/api/public/push/fcm/register", {
-    token,
-    topic: NEWS_PUSH_TOPIC,
-    permission,
-  });
+  try {
+    await postJson("/api/public/push/fcm/register", {
+      token,
+      topic: NEWS_PUSH_TOPIC,
+      permission,
+    });
+  } catch (error) {
+    if ([502, 503, 504].includes(Number(error?.status))) {
+      writeStoredServerStatus({
+        configured: false,
+        reason: "News alerts are temporarily unavailable. Please try again later.",
+      });
+      throw new Error("News alerts are temporarily unavailable. Please try again later.");
+    }
+
+    throw error;
+  }
 
   setStoredToken(token);
 

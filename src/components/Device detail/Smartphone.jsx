@@ -1930,11 +1930,19 @@ const MobileDetailCard = () => {
   }, [allowSpecScore, scoreSourceData]);
   const headerSpecScoreBlock =
     headerSpecScoreValue != null ? (
-      <div className="flex items-end gap-1 leading-none">
-        <span className="text-3xl font-semibold leading-none text-blue-600">
-          {headerSpecScoreValue}
-        </span>
-        <div className="flex flex-col items-start leading-none">
+      <div
+        className="flex items-end gap-1.5 leading-none"
+        aria-label={`Spec score ${headerSpecScoreValue} out of 100`}
+      >
+        <div className="flex items-baseline leading-none">
+          <span className="text-3xl font-semibold leading-none text-blue-600">
+            {headerSpecScoreValue}
+          </span>
+          <span className="ml-0.5 text-[13px] font-semibold leading-none text-blue-500">
+            /100
+          </span>
+        </div>
+        <div className="mb-0.5 flex flex-col items-start leading-none">
           <span className="text-[8px] font-semibold uppercase tracking-[0.32em] text-blue-400">
             Spec
           </span>
@@ -2569,8 +2577,8 @@ const MobileDetailCard = () => {
         .filter(Boolean);
       return parts.length ? parts.join(" | ") : JSON.stringify(value);
     }
-    if (value === true) return "âœ“ Yes";
-    if (value === false) return "âœ— No";
+    if (value === true) return "Yes";
+    if (value === false) return "No";
     return String(value);
   };
 
@@ -5154,13 +5162,9 @@ Price: ${price}
 
       <section className="w-full text-slate-900">
         <div
-          className={`mx-auto max-w-7xl ${combineResponsiveClasses(RESPONSIVE_SPACING.pageMarginX)} ${combineResponsiveClasses(RESPONSIVE_SPACING.pageMarginY)}`}
+          className={`mx-auto max-w-7xl ${combineResponsiveClasses(RESPONSIVE_SPACING.pageMarginX)} pb-4 pt-0 sm:pb-5 sm:pt-0 lg:pb-6 lg:pt-0`}
         >
-          <div
-            className={combineResponsiveClasses(
-              RESPONSIVE_SPACING.headerPadding,
-            )}
-          >
+          <div className="px-3 pb-3 pt-3 sm:px-6 sm:pb-6 sm:pt-4 lg:px-7 lg:pb-7 lg:pt-4">
             <div
               className={`flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between`}
             >
