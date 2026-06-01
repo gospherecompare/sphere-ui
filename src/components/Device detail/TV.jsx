@@ -9,7 +9,6 @@ import {
   createWebPageSchema,
 } from "../../utils/schemaGenerators";
 import { Helmet } from "react-helmet-async";
-import { buildCanonicalComparePath } from "../../utils/compareRoutes";
 import usePageEngagementTracker from "../../hooks/usePageEngagementTracker";
 
 // Icons
@@ -20,6 +19,7 @@ import {
   FaExternalLinkAlt,
   FaStore,
   FaChevronDown,
+  FaChevronLeft,
   FaChevronRight,
   FaTag,
   FaInfoCircle,
@@ -51,13 +51,13 @@ import {
   FaEnvelope,
   FaLink,
   FaSyncAlt,
-  FaPlus,
 } from "react-icons/fa";
 
 import "../../styles/hideScrollbar.css";
 import Spinner from "../ui/Spinner";
 import { tvMeta } from "../../constants/meta";
 import useStoreLogos from "../../hooks/useStoreLogos";
+import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
 import ProductDiscoverySections from "../ui/ProductDiscoverySections";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
@@ -153,6 +153,7 @@ const TVDetailCard = () => {
   const [copied, setCopied] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [showHeaderSummaryFull, setShowHeaderSummaryFull] = useState(false);
   // Review form removed
 
   const [loading, setLoading] = useState(false);
@@ -172,8 +173,12 @@ const TVDetailCard = () => {
   const modelFromSlug = routeSlug ? extractNameFromSlug(routeSlug) : null;
   const searchModel = query.get("model") || modelFromSlug;
 
-  const { homeAppliances, homeAppliancesLoading, refreshHomeAppliances } =
-    useDevice();
+  const {
+    homeAppliances,
+    homeAppliancesLoading,
+    refreshHomeAppliances,
+    brands,
+  } = useDevice();
 
   // Helper function to find appliance by slug locally
   const findApplianceBySlug = (slug) => {
@@ -450,9 +455,19 @@ const TVDetailCard = () => {
     ]
       .filter(Boolean)
       .join(" x ");
+    const serverSpecScore = normalizeScore100(
+      a.spec_score_v2 ??
+        a.specScoreV2 ??
+        a.overall_score_v2 ??
+        a.overallScoreV2,
+    );
     const normalizedAppliance = {
       ...a,
       id: a.product_id || a.id || a.productId || null,
+      spec_score: serverSpecScore,
+      overall_score: serverSpecScore,
+      spec_score_display: serverSpecScore,
+      overall_score_display: serverSpecScore,
       product_name: firstNonEmpty(a.product_name, a.name, basicInfo.title),
       model_number: firstNonEmpty(
         a.model_number,
@@ -559,20 +574,6 @@ const TVDetailCard = () => {
       deviceFieldProfiles,
     );
     normalizedAppliance.field_profile = profileResult;
-    const incomingScore = normalizeScore100(
-      normalizedAppliance.spec_score ??
-        normalizedAppliance.overall_score ??
-        normalizedAppliance.hook_score,
-    );
-    const fallbackProfileScore = normalizeScore100(profileResult.score);
-    if (
-      (incomingScore == null || incomingScore <= 0) &&
-      fallbackProfileScore != null &&
-      fallbackProfileScore > 0
-    ) {
-      normalizedAppliance.spec_score = fallbackProfileScore;
-      normalizedAppliance.overall_score = fallbackProfileScore;
-    }
 
     return normalizedAppliance;
   };
@@ -817,6 +818,18 @@ const TVDetailCard = () => {
       : Array.isArray(applianceData?.images)
         ? applianceData.images
         : [];
+  const goToPreviousImage = () => {
+    if (!galleryImages.length) return;
+    setActiveImage((current) =>
+      current === 0 ? galleryImages.length - 1 : current - 1,
+    );
+  };
+  const goToNextImage = () => {
+    if (!galleryImages.length) return;
+    setActiveImage((current) =>
+      current === galleryImages.length - 1 ? 0 : current + 1,
+    );
+  };
   const currentVariantBestPrice = getVariantBestPrice(currentVariant);
   const fallbackBestPrice = variants
     .map((variant) => getVariantBestPrice(variant))
@@ -1015,6 +1028,10 @@ const TVDetailCard = () => {
   }, [selectedVariant, galleryImages.length]);
 
   useEffect(() => {
+    setShowHeaderSummaryFull(false);
+  }, [applianceData?.id, selectedVariant]);
+
+  useEffect(() => {
     setShowAllStores(false);
   }, [selectedVariant]);
 
@@ -1024,74 +1041,6 @@ const TVDetailCard = () => {
       setSelectedVariant(0);
     }
   }, [selectedVariant, variants.length]);
-
-  const popularComparisonTargets = (() => {
-    const list = Array.isArray(homeAppliances) ? homeAppliances : [];
-    if (!currentProductId || list.length === 0) return [];
-
-    const normalizePrice = (d) => {
-      const vars = Array.isArray(d?.variants) ? d.variants : [];
-      const variantPrices = vars
-        .map((variant) => getVariantBestPrice(variant))
-        .filter((price) => price !== null && price > 0);
-      if (variantPrices.length) return Math.min(...variantPrices);
-      const fallback = toNumericPrice(d?.base_price ?? d?.price ?? null);
-      return fallback !== null && fallback > 0 ? fallback : null;
-    };
-
-    const normalized = list
-      .map((d) => normalizeAppliance(d))
-      .filter(Boolean)
-      .filter((d) => {
-        const typeText = String(
-          d?.category || d?.appliance_type || d?.product_type || "",
-        ).toLowerCase();
-        return typeText.includes("tv") || typeText.includes("television");
-      })
-      .filter((d) => String(d.id ?? "") !== String(currentProductId));
-
-    const currentBrand = String(applianceData?.brand || "").toLowerCase();
-
-    return normalized
-      .map((d) => {
-        const brand = String(d.brand || "").toLowerCase();
-        const sameBrand = Boolean(currentBrand && brand === currentBrand);
-        const rating = Number(d.rating ?? d.avg_rating ?? d.score ?? 0) || 0;
-        const price = normalizePrice(d);
-        return { d, sameBrand, rating, price };
-      })
-      .sort((a, b) => {
-        if (a.sameBrand !== b.sameBrand) return a.sameBrand ? -1 : 1;
-        if (b.rating !== a.rating) return b.rating - a.rating;
-        if (a.price == null && b.price != null) return 1;
-        if (a.price != null && b.price == null) return -1;
-        if (a.price != null && b.price != null) return a.price - b.price;
-        return 0;
-      })
-      .slice(0, 6)
-      .map((x) => x.d);
-  })();
-  const compareTarget = popularComparisonTargets[0] || null;
-
-  const handlePopularCompare = (other) => {
-    const otherId = other?.id ?? other?.product_id ?? other?.productId ?? null;
-    if (!currentProductId || !otherId) return;
-    navigate(
-      buildCanonicalComparePath({
-        leftName:
-          applianceData?.name ||
-          applianceData?.product_name ||
-          applianceData?.model,
-        rightName: other?.name || other?.product_name || other?.model,
-        leftId: currentProductId,
-        rightId: otherId,
-        type: "tv",
-      }),
-      {
-        state: { initialProduct: applianceData },
-      },
-    );
-  };
 
   const allStorePrices =
     variants?.flatMap((variant) => {
@@ -2106,16 +2055,16 @@ const TVDetailCard = () => {
     return (
       <>
         {/* Mobile: Stacked Layout */}
-        <div className="sm:hidden space-y-2 px-1">
+        <div className="space-y-3 sm:hidden">
           {rows.map(([key, value]) => (
             <div
               key={key}
-              className="rounded-md border border-slate-200 bg-white p-2.5"
+              className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-start gap-x-4 gap-y-1 py-1"
             >
-              <div className="text-xs font-semibold uppercase tracking-wide text-slate-600 mb-0.5">
+              <div className="text-[13px] font-medium leading-5 text-[#45608f]">
                 {toNormalCase(key)}
               </div>
-              <div className="text-sm font-semibold text-slate-900 break-words">
+              <div className="break-words text-[15px] font-semibold leading-6 text-[#0d347f]">
                 {renderSpecValue(value)}
               </div>
             </div>
@@ -2123,36 +2072,20 @@ const TVDetailCard = () => {
         </div>
 
         {/* Desktop: Table Layout */}
-        <div className="hidden sm:block overflow-hidden rounded-lg border border-slate-200 bg-white">
-          <table className="w-full">
-            <thead className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
-              <tr>
-                <th className="px-5 py-3 text-left text-sm font-semibold text-slate-700">
-                  Spec
-                </th>
-                <th className="px-5 py-3 text-left text-sm font-semibold text-slate-700">
-                  Details
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {rows.map(([key, value], idx) => (
-                <tr
-                  key={key}
-                  className={`transition-colors hover:bg-blue-50 ${
-                    idx % 2 === 0 ? "bg-white" : "bg-slate-50"
-                  }`}
-                >
-                  <td className="px-5 py-4 text-sm font-medium text-slate-600 w-1/3 align-top">
-                    {toNormalCase(key)}
-                  </td>
-                  <td className="px-5 py-4 text-sm font-semibold text-slate-900 break-words w-2/3">
-                    {renderSpecValue(value)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="hidden space-y-4 sm:block">
+          {rows.map(([key, value]) => (
+            <div
+              key={key}
+              className="grid gap-2 py-1 sm:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] sm:gap-6"
+            >
+              <div className="text-sm font-medium text-[#58709d]">
+                {toNormalCase(key)}
+              </div>
+              <div className="break-words text-sm font-semibold text-[#123986]">
+                {renderSpecValue(value)}
+              </div>
+            </div>
+          ))}
         </div>
       </>
     );
@@ -2211,215 +2144,101 @@ const TVDetailCard = () => {
     };
 
     if (isTvProduct) {
-      return (
-        <div id="tv-specifications" className="mx-auto max-w-7xl space-y-6">
-          <div className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
-            <div className="mb-6 flex items-center justify-between gap-2">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <FaMicrochip className={currentColor.text} />
-                Core Specifications
-              </h3>
+      const renderTvSpecSection = (sectionId, title, data) => {
+        if (!hasContent(data)) return null;
+        return (
+          <section
+            id={sectionId}
+            className="overflow-hidden rounded-2xl border border-[#dde1ff] bg-gradient-to-br from-[#edf4ff] via-[#fbfcff] to-[#f3efff] shadow-[0_18px_44px_rgba(99,102,241,0.10)]"
+          >
+            <div className="px-4 pt-4 sm:px-6 sm:pt-6">
+              <h4 className="text-xl font-semibold tracking-tight text-[#123986] sm:text-2xl">
+                {title}
+              </h4>
+              <div className="mt-4 h-px w-full bg-gradient-to-r from-[#6fa8ff] via-[#8e87ff] to-[#d2b6ff]" />
             </div>
-            {renderSpecTable(generalSection)}
+            <div className="mt-5 px-4 pb-4 sm:px-6 sm:pb-6">
+              {renderSpecTable(data)}
+            </div>
+          </section>
+        );
+      };
+
+      return (
+        <div
+          id="tv-specifications"
+          className="w-full max-w-4xl px-2 sm:px-0"
+        >
+          <div className="hidden text-slate-900 sm:block">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-blue-600">
+              Full Specifications
+            </p>
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-[#556b95]">
+              {headerTitle} specifications cover display quality, smart TV
+              features, audio, connectivity, ports, gaming, and physical
+              details.
+            </p>
           </div>
 
-          {hasContent(
-            applianceData.key_specs_json || applianceData.specifications,
-          ) && (
-            <div
-              id="tv-display"
-              className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
-            >
-              <div className="mb-6 flex items-center justify-between gap-2">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <FaTv className={currentColor.text} />
-                  Display
-                </h3>
-              </div>
-              {renderSpecTable(
-                applianceData.display_json ||
-                  applianceData.key_specs_json ||
-                  applianceData.specifications,
-              )}
-            </div>
-          )}
-
-          {hasContent(applianceData.video_engine_json) && (
-            <div
-              id="tv-video_engine"
-              className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
-            >
-              <div className="mb-6 flex items-center justify-between gap-2">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <FaChartBar className={currentColor.text} />
-                  Video Engine
-                </h3>
-              </div>
-              {renderSpecTable(applianceData.video_engine_json)}
-            </div>
-          )}
-
-          {hasContent(applianceData.audio_json) && (
-            <div
-              id="tv-audio"
-              className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
-            >
-              <div className="mb-6 flex items-center justify-between gap-2">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <FaVolumeUp className={currentColor.text} />
-                  Audio
-                </h3>
-              </div>
-              {renderSpecTable(applianceData.audio_json)}
-            </div>
-          )}
-
-          {hasContent(applianceData.smart_tv_json) && (
-            <div
-              id="tv-smart_tv"
-              className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
-            >
-              <div className="mb-6 flex items-center justify-between gap-2">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <FaBolt className={currentColor.text} />
-                  Smart TV
-                </h3>
-              </div>
-              {renderSpecTable(applianceData.smart_tv_json)}
-            </div>
-          )}
-
-          {hasContent(applianceData.connectivity_json) && (
-            <div
-              id="tv-connectivity"
-              className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
-            >
-              <div className="mb-6 flex items-center justify-between gap-2">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <FaWifi className={currentColor.text} />
-                  Connectivity
-                </h3>
-              </div>
-              {renderSpecTable(applianceData.connectivity_json)}
-            </div>
-          )}
-
-          {hasContent(applianceData.ports_json) && (
-            <div
-              id="tv-ports"
-              className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
-            >
-              <div className="mb-6 flex items-center justify-between gap-2">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <FaPlug className={currentColor.text} />
-                  Ports
-                </h3>
-              </div>
-              {renderSpecTable(applianceData.ports_json)}
-            </div>
-          )}
-
-          {hasContent(applianceData.gaming_json) && (
-            <div
-              id="tv-gaming"
-              className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
-            >
-              <div className="mb-6 flex items-center justify-between gap-2">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <FaGamepad className={currentColor.text} />
-                  Gaming
-                </h3>
-              </div>
-              {renderSpecTable(applianceData.gaming_json)}
-            </div>
-          )}
-
-          {hasContent(applianceData.power_json) && (
-            <div
-              id="tv-power"
-              className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
-            >
-              <div className="mb-6 flex items-center justify-between gap-2">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <FaBatteryFull className={currentColor.text} />
-                  Power
-                </h3>
-              </div>
-              {renderSpecTable(applianceData.power_json)}
-            </div>
-          )}
-
-          {hasContent(
-            applianceData.physical_json ||
-              applianceData.dimensions_json ||
-              applianceData.physical_details,
-          ) && (
-            <div
-              id="tv-physical_details"
-              className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
-            >
-              <div className="mb-6 flex items-center justify-between gap-2">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <FaRuler className={currentColor.text} />
-                  Physical
-                </h3>
-              </div>
-              {renderSpecTable(
-                applianceData.physical_json ||
-                  applianceData.dimensions_json ||
-                  applianceData.physical_details,
-              )}
-            </div>
-          )}
-
-          {hasContent(applianceData.product_details_json) && (
-            <div
-              id="tv-product_details"
-              className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
-            >
-              <div className="mb-6 flex items-center justify-between gap-2">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <FaInfoCircle className={currentColor.text} />
-                  Product Details
-                </h3>
-              </div>
-              {renderSpecTable(applianceData.product_details_json)}
-            </div>
-          )}
-
-          {hasContent(applianceData.in_the_box_json) && (
-            <div
-              id="tv-in_the_box"
-              className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
-            >
-              <div className="mb-6 flex items-center justify-between gap-2">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <FaShoppingCart className={currentColor.text} />
-                  In The Box
-                </h3>
-              </div>
-              {renderSpecTable(applianceData.in_the_box_json)}
-            </div>
-          )}
-
-          {hasContent(
-            applianceData.warranty_json || applianceData.warranty,
-          ) && (
-            <div
-              id="tv-warranty"
-              className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
-            >
-              <div className="mb-6 flex items-center justify-between gap-2">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <FaShieldAlt className={currentColor.text} />
-                  Warranty
-                </h3>
-              </div>
-              {renderSpecTable(
-                applianceData.warranty_json || applianceData.warranty,
-              )}
-            </div>
-          )}
+          <div className="space-y-4 sm:mt-6 sm:space-y-5">
+            {renderTvSpecSection(
+              "tv-core",
+              "General",
+              generalSection,
+            )}
+            {renderTvSpecSection(
+              "tv-display",
+              "Display",
+              applianceData.display_json ||
+                applianceData.key_specs_json ||
+                applianceData.specifications,
+            )}
+            {renderTvSpecSection(
+              "tv-video_engine",
+              "Video Engine",
+              applianceData.video_engine_json,
+            )}
+            {renderTvSpecSection("tv-audio", "Audio", applianceData.audio_json)}
+            {renderTvSpecSection(
+              "tv-smart_tv",
+              "Smart TV",
+              applianceData.smart_tv_json,
+            )}
+            {renderTvSpecSection(
+              "tv-connectivity",
+              "Connectivity",
+              applianceData.connectivity_json,
+            )}
+            {renderTvSpecSection("tv-ports", "Ports", applianceData.ports_json)}
+            {renderTvSpecSection(
+              "tv-gaming",
+              "Gaming",
+              applianceData.gaming_json,
+            )}
+            {renderTvSpecSection("tv-power", "Power", applianceData.power_json)}
+            {renderTvSpecSection(
+              "tv-physical_details",
+              "Physical",
+              applianceData.physical_json ||
+                applianceData.dimensions_json ||
+                applianceData.physical_details,
+            )}
+            {renderTvSpecSection(
+              "tv-product_details",
+              "Product Details",
+              applianceData.product_details_json,
+            )}
+            {renderTvSpecSection(
+              "tv-in_the_box",
+              "In The Box",
+              applianceData.in_the_box_json,
+            )}
+            {renderTvSpecSection(
+              "tv-warranty",
+              "Warranty",
+              applianceData.warranty_json || applianceData.warranty,
+            )}
+          </div>
         </div>
       );
     }
@@ -2559,7 +2378,79 @@ const TVDetailCard = () => {
     headerPanel,
     headerRefresh,
   ]).join(" | ");
-  const headerLaunchText = toSafeText(applianceData?.release_year || "");
+  const headerLaunchRaw =
+    applianceData?.launch_date ||
+    applianceData?.launchDate ||
+    applianceData?.created_at ||
+    "";
+  const headerLaunchDate = headerLaunchRaw ? new Date(headerLaunchRaw) : null;
+  const headerLaunchText =
+    headerLaunchDate && !Number.isNaN(headerLaunchDate.getTime())
+      ? headerLaunchDate.toLocaleDateString("en-US", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+      : toSafeText(applianceData?.release_year || "");
+  const headerSpecScoreValue = normalizeScore100(applianceData?.spec_score);
+  const headerSpecScoreBlock =
+    headerSpecScoreValue != null ? (
+      <div
+        className="flex items-end gap-1.5 leading-none"
+        aria-label={`Spec score ${Math.round(headerSpecScoreValue)} out of 100`}
+      >
+        <div className="flex items-baseline leading-none">
+          <span className="text-3xl font-semibold leading-none text-blue-600">
+            {Math.round(headerSpecScoreValue)}
+          </span>
+          <span className="ml-0.5 text-[13px] font-semibold leading-none text-blue-500">
+            /100
+          </span>
+        </div>
+        <div className="mb-0.5 flex flex-col items-start leading-none">
+          <span className="text-[8px] font-semibold uppercase tracking-[0.32em] text-blue-400">
+            Spec
+          </span>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-blue-500">
+            Score
+          </span>
+        </div>
+      </div>
+    ) : null;
+  const headerAudio = toSafeText(
+    applianceData?.audio_json?.output_power ||
+      applianceData?.key_specs_json?.audio_output ||
+      applianceData?.specifications?.audio_output ||
+      "",
+  );
+  const headerOs = toSafeText(
+    applianceData?.smart_tv_json?.operating_system ||
+      applianceData?.key_specs_json?.operating_system ||
+      applianceData?.specifications?.operating_system ||
+      "",
+  );
+  const headerSummary = `${headerTitle} brings ${
+    headerPanel || "smart display"
+  } picture quality${
+    headerRefresh ? ` with a ${headerRefresh} refresh rate` : ""
+  }${headerProcessor ? `, powered by ${headerProcessor}` : ""}${
+    headerOs ? `, and ${headerOs} smart TV features` : ""
+  }${headerAudio ? ` with ${headerAudio} audio output` : ""}. ${
+    headlinePrice
+      ? `The selected variant starts at ${RUPEE_SYMBOL} ${formatPrice(
+          headlinePrice,
+        )}.`
+      : "Available variants and live store offers are shown below."
+  } Compare sizes, display details, connectivity, and store prices before choosing the right screen for your room.`;
+  const headerSummaryWords = headerSummary.trim().split(/\s+/).filter(Boolean);
+  const headerSummaryLimit = 50;
+  const headerSummaryHasMore = headerSummaryWords.length > headerSummaryLimit;
+  const headerSummaryPreview = headerSummaryHasMore
+    ? `${headerSummaryWords.slice(0, headerSummaryLimit).join(" ")}...`
+    : headerSummary;
+  const visibleHeaderSummary = showHeaderSummaryFull
+    ? headerSummary
+    : headerSummaryPreview;
   const metaName =
     descriptiveTitle || getDisplayProductName(applianceData) || "TV";
   const metaBrand = applianceData?.brand || applianceData?.brand_name || "";
@@ -2715,7 +2606,7 @@ const TVDetailCard = () => {
     : [];
 
   return (
-    <div className="mx-auto max-w-7xl w-full  px-2 lg:px-4">
+    <div className="w-full">
       <Helmet prioritizeSeoTags>
         <title>{metaTitleWithMonthYear}</title>
         <meta name="description" content={metaDescription} />
@@ -2826,35 +2717,40 @@ const TVDetailCard = () => {
 
       <div className="overflow-hidden">
         <section className="w-full text-slate-900">
-          <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
-            <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-slate-50 via-blue-50/50 to-slate-50 p-5 sm:p-6 xl:p-8">
-              <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+          <div className="mx-auto max-w-7xl px-3 pb-4 pt-0 sm:px-6 sm:pb-5 lg:px-8 lg:pb-6">
+            <div className="px-3 pb-3 pt-3 sm:px-6 sm:pb-6 sm:pt-4 lg:px-7 lg:pb-7 lg:pt-4">
+              <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                 <div className="min-w-0 flex-1">
                   {headerDescriptor ? (
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.32em] text-blue-600">
+                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.32em] text-blue-500 sm:text-xs">
                       {headerDescriptor}
                     </p>
                   ) : null}
-                  <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                     <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-[2rem]">
                       {headerTitle}
                     </h1>
-                    <button
-                      onClick={() => {
-                        if (compareTarget) {
-                          handlePopularCompare(compareTarget);
-                          return;
-                        }
-                        navigate("/compare");
-                      }}
-                      className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-slate-800"
-                    >
-                      <FaPlus className="text-sm" />
-                      Compare
-                    </button>
                   </div>
 
-                  <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+                  <div className="mt-2 max-w-3xl">
+                    <p className="text-sm leading-6 text-slate-600 sm:text-base">
+                      {visibleHeaderSummary}
+                    </p>
+                    {headerSummaryHasMore ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowHeaderSummaryFull((current) => !current)
+                        }
+                        className="mt-2 inline-flex items-center text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700"
+                        aria-expanded={showHeaderSummaryFull}
+                      >
+                        {showHeaderSummaryFull ? "Show less" : "Read more"}
+                      </button>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-[13px] sm:text-sm">
                     {currentVariantLabel ? (
                       <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-medium text-slate-700">
                         {currentVariantLabel}
@@ -2862,42 +2758,103 @@ const TVDetailCard = () => {
                     ) : null}
                   </div>
 
-                  {headlinePrice ? (
-                    <div className="mt-4 flex flex-wrap items-end gap-2">
-                      <div className="text-3xl font-bold tracking-tight text-emerald-600">
-                        {RUPEE_SYMBOL} {formatPrice(headlinePrice)}
+                  {headlinePrice || headerSpecScoreBlock ? (
+                    <div className="mt-4 flex items-start justify-between gap-3 sm:block">
+                      <div className="min-w-0">
+                        {headlinePrice ? (
+                          <div className="text-[2rem] font-bold tracking-tight text-emerald-600 sm:text-3xl">
+                            {RUPEE_SYMBOL} {formatPrice(headlinePrice)}
+                          </div>
+                        ) : null}
                       </div>
+                      {headerSpecScoreBlock ? (
+                        <div className="shrink-0 sm:hidden">
+                          {headerSpecScoreBlock}
+                        </div>
+                      ) : null}
                     </div>
                   ) : null}
+
+                  <div className="mt-5 flex flex-col gap-3 xl:hidden">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={toggleFavorite}
+                        className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
+                      >
+                        <FaHeart
+                          className={`text-lg ${
+                            isFavorite
+                              ? "text-rose-500 fill-current"
+                              : "text-slate-500"
+                          }`}
+                        />
+                      </button>
+                      <button
+                        onClick={handleShare}
+                        className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
+                      >
+                        <FaShareAlt className="text-lg text-slate-500" />
+                      </button>
+                    </div>
+
+                    {headerSpecScoreBlock ? (
+                      <div className="hidden flex-wrap items-center gap-2 text-[13px] text-slate-600 sm:flex sm:gap-3 sm:text-sm">
+                        {headerSpecScoreBlock}
+                      </div>
+                    ) : null}
+
+                    {headerLaunchText ? (
+                      <div className="flex flex-wrap items-center gap-2 text-[13px] text-slate-600 sm:text-sm">
+                        <span>
+                          Launched On:{" "}
+                          <span className="font-semibold text-slate-900">
+                            {headerLaunchText}
+                          </span>
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
 
-                <div className="flex flex-col items-start gap-3 xl:items-end">
+                <div className="hidden flex-col items-start gap-3 xl:flex xl:items-end">
                   <div className="flex items-center gap-2">
                     <button
                       onClick={toggleFavorite}
-                      className="rounded-full border border-slate-200 bg-white p-2 transition-colors hover:bg-slate-50"
+                      className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
                     >
                       <FaHeart
                         className={`text-lg ${
                           isFavorite
-                            ? "text-red-500 fill-current"
-                            : "text-slate-400"
+                            ? "text-rose-500 fill-current"
+                            : "text-slate-500"
                         }`}
                       />
                     </button>
                     <button
                       onClick={handleShare}
-                      className="rounded-full border border-slate-200 bg-white p-2 transition-colors hover:bg-slate-50"
+                      className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
                     >
-                      <FaShareAlt className="text-lg text-slate-600" />
+                      <FaShareAlt className="text-lg text-slate-500" />
                     </button>
                   </div>
 
+                  {headerSpecScoreBlock ? (
+                    <div className="flex flex-wrap items-center gap-2 text-[13px] text-slate-600 sm:gap-3 sm:text-sm">
+                      {headerSpecScoreBlock}
+                    </div>
+                  ) : null}
+
                   {headerLaunchText ? (
-                    <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm">
-                      <span className="text-slate-500">Launched On:</span>
-                      <span className="font-semibold text-slate-900">
-                        {headerLaunchText}
+                    <div className="flex flex-wrap items-center gap-2 text-[13px] text-slate-600 sm:text-sm">
+                      <span
+                        className="hidden h-4 w-px bg-slate-200 sm:inline-block"
+                        aria-hidden="true"
+                      />
+                      <span>
+                        Launched On:{" "}
+                        <span className="font-semibold text-slate-900">
+                          {headerLaunchText}
+                        </span>
                       </span>
                     </div>
                   ) : null}
@@ -2907,80 +2864,33 @@ const TVDetailCard = () => {
           </div>
         </section>
 
-        {/* Popular Comparisons */}
-        {popularComparisonTargets.length > 0 && (
-          <div className="mx-auto max-w-7xl px-4 pb-1 sm:px-6 lg:px-8">
-            <div className="mb-3 flex flex-col gap-1 sm:mb-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-500">
-                Recommended Comparisons
-              </p>
-              <h2 className="text-lg font-semibold tracking-tight text-slate-900">
-                Compare with{" "}
-                <span className="text-blue-600">
-                  {metaBrand || "this brand"}
-                </span>{" "}
-                TVs
-              </h2>
-              <p className="max-w-3xl text-sm leading-6 text-slate-500">
-                Explore popular alternatives and see how this model stacks up
-                against other TVs from the same brand.
-              </p>
-            </div>
-            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-3">
-              {popularComparisonTargets.map((d) => {
-                const otherId = d?.id ?? d?.product_id ?? d?.productId ?? null;
-                const otherName =
-                  d?.product_name || d?.name || d?.model || "TV";
-                const otherImg = d?.images?.[0] || d?.image || "";
-
-                return (
-                  <button
-                    key={String(otherId || otherName)}
-                    type="button"
-                    onClick={() => handlePopularCompare(d)}
-                    className="min-w-[240px] max-w-[280px] flex-shrink-0 rounded-xl border border-slate-200 bg-white p-3 text-left  transition-colors hover:border-blue-200"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-slate-100">
-                        {otherImg ? (
-                          <img
-                            src={otherImg}
-                            alt={otherName}
-                            className="h-full w-full object-contain"
-                            onError={(e) => {
-                              e.currentTarget.style.display = "none";
-                            }}
-                          />
-                        ) : (
-                          <FaTv className="text-sm text-slate-400" />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-[11px] text-slate-500">
-                          Compare with
-                        </div>
-                        <div className="truncate text-sm font-semibold text-slate-900">
-                          {otherName}
-                        </div>
-                      </div>
-                      <span className="text-xs font-semibold text-blue-700">
-                        Compare
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-3 py-6 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-6 lg:flex-row">
             {/* Images Section */}
             <div className="lg:w-2/5 rounded-md bg-transparent p-4 shadow-none sm:p-6">
               <div className="space-y-5">
                 {/* Main Image */}
-                <div className="relative overflow-hidden rounded-md border border-slate-200 bg-gradient-to-b from-slate-50 via-white to-slate-50 p-4 sm:p-6">
+                <div className="relative overflow-hidden rounded-[28px] bg-white px-4 py-8 sm:px-10 sm:py-12">
+                  {galleryImages.length > 1 ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={goToPreviousImage}
+                        aria-label="Previous image"
+                        className="absolute left-4 top-1/2 z-10 -translate-y-1/2 rounded-full border border-slate-200 bg-white/95 p-3 text-slate-600 shadow-md transition-all hover:border-blue-300 hover:text-blue-700"
+                      >
+                        <FaChevronLeft className="text-sm" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={goToNextImage}
+                        aria-label="Next image"
+                        className="absolute right-4 top-1/2 z-10 -translate-y-1/2 rounded-full border border-slate-200 bg-white/95 p-3 text-slate-600 shadow-md transition-all hover:border-blue-300 hover:text-blue-700"
+                      >
+                        <FaChevronRight className="text-sm" />
+                      </button>
+                    </>
+                  ) : null}
                   <div className="flex min-h-[340px] items-center justify-center sm:min-h-[420px]">
                     <img
                       src={
@@ -2995,52 +2905,58 @@ const TVDetailCard = () => {
                       }}
                     />
                   </div>
-                </div>
 
-                {/* Thumbnails */}
-                {galleryImages && galleryImages.length > 1 && (
-                  <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
-                    {galleryImages.slice(0, 6).map((image, index) => (
+                  {galleryImages.length > 1 ? (
+                    <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2">
+                      {galleryImages.map((_, index) => (
                       <button
                         key={index}
+                        type="button"
                         onClick={() => setActiveImage(index)}
-                        className={`flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-md border p-1.5 transition-all duration-200 ${
+                        aria-label={`Go to image ${index + 1}`}
+                        className={`h-2 rounded-full transition-all duration-300 ${
                           activeImage === index
-                            ? "border-blue-500 bg-white shadow-sm ring-2 ring-blue-100"
-                            : "border-slate-200 bg-slate-50 hover:border-blue-300 hover:bg-white"
+                            ? "w-10 bg-slate-700"
+                            : "w-2.5 bg-slate-300 hover:bg-slate-400"
                         }`}
-                      >
-                        <img
-                          src={image}
-                          alt={`${applianceData.product_name} view ${index + 1}`}
-                          className="h-full w-full object-contain"
-                        />
-                      </button>
-                    ))}
-                  </div>
-                )}
+                      />
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="mb-4 flex gap-2 lg:hidden">
+                <button
+                  type="button"
+                  onClick={handleShare}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-blue-50 py-3 font-semibold text-slate-700 transition-all hover:bg-blue-100"
+                >
+                  <FaShareAlt className="text-blue-500" />
+                  <span>Share</span>
+                </button>
               </div>
 
               {/* Variant Selection */}
               {variants && variants.length > 0 && (
-                <div className="mb-6">
-                  <h4 className="mb-4 text-lg font-semibold text-slate-900">
+                <div className="mb-2">
+                  <h4 className="mb-3 text-base font-semibold text-slate-900">
                     Available Variants
                   </h4>
-                  <div className="grid grid-cols-2 gap-2.5">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     {variants.map((variant, index) => (
                       <button
                         key={variant.id || index}
                         onClick={() => setSelectedVariant(index)}
                         aria-pressed={selectedVariant === index}
-                        className={`relative rounded-md border text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 p-2.5 ${
+                        className={`relative rounded-2xl border p-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 sm:p-4 ${
                           selectedVariant === index
                             ? "border-blue-600 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-600 text-white shadow-md"
                             : "border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/40"
                         }`}
                       >
                         {selectedVariant === index ? (
-                          <span className="absolute top-2 right-2 inline-flex h-4 w-4 items-center justify-center rounded-full bg-white text-blue-600">
+                          <span className="absolute right-2 top-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-blue-600 shadow-sm">
                             <FaCheck className="text-[9px]" />
                           </span>
                         ) : null}
@@ -3092,10 +3008,10 @@ const TVDetailCard = () => {
             </div>
 
             {/* Details Section */}
-            <div className="lg:w-3/5 p-4">
+            <div className="flex flex-col lg:w-3/5">
               {/* Store Prices Section */}
               {sortedStores.length > 0 && (
-                <div className="mb-5 mt-5">
+                <div className="order-2 mb-5 mt-5">
                   <div className="mb-4 flex items-start justify-between gap-3">
                     <div className="space-y-1">
                       <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
@@ -3198,7 +3114,7 @@ const TVDetailCard = () => {
               )}
 
               {tvSummarySections.length > 0 ? (
-                <div className="mt-5 space-y-5">
+                <div className="order-1 mt-5 space-y-5">
                   <div className="max-w-2xl">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-blue-600">
                       Key Specifications
@@ -3211,50 +3127,52 @@ const TVDetailCard = () => {
                       and connectivity details that matter most.
                     </p>
                   </div>
-                  <div className="grid items-stretch gap-4 md:grid-cols-2 xl:gap-5">
-                    {tvSummarySections.map((section) => {
-                      const Icon = section.Icon;
-                      return (
-                        <div
-                          key={section.key}
-                          className="flex h-full flex-col rounded-md border border-slate-200 bg-white p-5 transition-all duration-200 sm:p-6"
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-50 ring-1 ring-slate-200">
-                              <Icon className={`text-base ${section.color}`} />
+                  <div className="rounded-2xl border border-[#dce4f3] bg-gradient-to-br from-[#eef3ff] via-[#f7f8ff] to-[#f2eeff] p-3 sm:p-4 md:p-5">
+                    <div className="grid items-stretch gap-3 md:grid-cols-2 lg:gap-5">
+                      {tvSummarySections.map((section) => {
+                        const Icon = section.Icon;
+                        return (
+                          <div
+                            key={section.key}
+                            className="flex h-full flex-col rounded-2xl border border-[#dce4f3] bg-white/75 p-4 transition-all duration-200 sm:p-5"
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-50 ring-1 ring-slate-200">
+                                <Icon className={`text-base ${section.color}`} />
+                              </div>
+                              <div className="min-w-0">
+                                <h4 className="text-[1rem] font-semibold leading-snug text-slate-900 sm:text-[1.08rem]">
+                                  {section.title}
+                                </h4>
+                                {section.description ? (
+                                  <p className="mt-1 line-clamp-2 text-[13px] leading-5 text-slate-500">
+                                    {section.description}
+                                  </p>
+                                ) : null}
+                              </div>
                             </div>
-                            <div className="min-w-0">
-                              <h4 className="text-[1rem] font-semibold leading-snug text-slate-900 sm:text-[1.08rem]">
-                                {section.title}
-                              </h4>
-                              {section.description ? (
-                                <p className="mt-1 line-clamp-2 text-[13px] leading-5 text-slate-500">
-                                  {section.description}
-                                </p>
-                              ) : null}
-                            </div>
-                          </div>
 
-                          <ul className="mt-4 space-y-2.5">
-                            {section.points.slice(0, 3).map((point, idx) => (
-                              <li
-                                key={idx}
-                                className="flex items-start gap-2.5 text-sm leading-6 text-slate-700"
-                              >
-                                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-gradient-to-r from-blue-500 via-blue-500 to-blue-500" />
-                                <span className="min-w-0">{point}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      );
-                    })}
+                            <ul className="mt-4 space-y-2.5">
+                              {section.points.slice(0, 3).map((point, idx) => (
+                                <li
+                                  key={idx}
+                                  className="flex items-start gap-2.5 text-sm leading-6 text-slate-700"
+                                >
+                                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
+                                  <span className="min-w-0">{point}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                   <div className="flex justify-center pt-1 sm:justify-end">
                     <button
                       type="button"
                       onClick={() => handleTabClick("specifications")}
-                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 transition-all duration-200 hover:border-blue-200 hover:bg-blue-50"
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-blue-700 bg-blue-700 px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-blue-800 sm:w-auto sm:py-2"
                     >
                       See full specifications
                       <FaChevronRight className="text-xs" />
@@ -3265,72 +3183,22 @@ const TVDetailCard = () => {
             </div>
           </div>
 
-          <div className="mt-5 rounded-2xl bg-transparent p-4 sm:p-5">
-            <div className="max-w-3xl">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-blue-600">
-                FULL SPECIFICATIONS
-              </p>
-              <h3 className="mt-2 text-xl font-semibold text-slate-900 sm:text-2xl">
-                {headerTitle}
-                {currentVariantLabel ? (
-                  <span className="text-blue-600">
-                    {" "}
-                    ({currentVariantLabel})
-                  </span>
-                ) : null}
-                <span className="text-blue-600"> Specs</span>
-              </h3>
-              <p className="mt-2 text-sm leading-6 text-slate-500 sm:text-base">
-                Explore the key hardware sections below with quick jumps.
-              </p>
-            </div>
+          <LatestNewsRouteSection
+            className="mt-6"
+            productType="tv"
+            subtitle="Fresh TV launches, display technology updates, and buying context from the Hooks newsroom."
+          />
 
-            <div className="mt-4 rounded-2xl bg-transparent p-4 sm:p-5">
-              <div className="mt-4 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-                {tabs.map((tab) => {
-                  const IconComponent = tab.icon;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => handleTabClick(tab.id)}
-                      className={`group relative flex flex-shrink-0 items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors duration-200 focus-visible:outline-none ${
-                        activeTab === tab.id
-                          ? "bg-white text-blue-600 shadow-sm ring-1 ring-slate-200"
-                          : "text-gray-500 hover:text-gray-700"
-                      }`}
-                    >
-                      <IconComponent
-                        className={`text-sm ${
-                          activeTab === tab.id
-                            ? "text-blue-500"
-                            : "text-gray-500 group-hover:text-gray-700"
-                        }`}
-                      />
-                      <span
-                        className={
-                          activeTab === tab.id ? "font-semibold" : ""
-                        }
-                      >
-                        {tab.label}
-                      </span>
-                      {activeTab === tab.id ? (
-                        <span className="pointer-events-none absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600" />
-                      ) : null}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          <div className="p-0 sm:p-2">{renderTabContent()}</div>
+          <div className="mt-6 p-0 sm:p-2">{renderTabContent()}</div>
 
           {currentProductId ? (
             <ProductDiscoverySections
               productId={currentProductId}
               currentBrand={applianceData?.brand || ""}
               entityType="tvs"
-              className="w-full border-t border-slate-200 px-4 sm:px-0"
+              catalogItems={homeAppliances}
+              brandCatalog={brands}
+              className="mt-6 w-full px-4 sm:px-0"
             />
           ) : null}
         </div>

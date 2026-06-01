@@ -674,13 +674,19 @@ const fetchJson = async (url, { signal } = {}) => {
   return data;
 };
 
-const buildNewsFeedEndpoint = ({ limit = 12, category = "", productId = null } = {}) => {
+const buildNewsFeedEndpoint = ({
+  limit = 12,
+  category = "",
+  productId = null,
+  productType = "",
+} = {}) => {
   const params = new URLSearchParams();
   params.set("limit", String(limit));
   if (safeText(category)) params.set("category", safeText(category));
   if (productId != null && productId !== "") {
     params.set("productId", String(productId));
   }
+  if (safeText(productType)) params.set("productType", safeText(productType));
   return `${API_BASE}/api/public/blogs?${params.toString()}`;
 };
 
@@ -715,11 +721,12 @@ export const usePublicNewsFeed = ({
   limit = 12,
   category = "",
   productId = null,
+  productType = "",
   enabled = true,
 } = {}) => {
   const endpoint = useMemo(
-    () => buildNewsFeedEndpoint({ limit, category, productId }),
-    [category, limit, productId],
+    () => buildNewsFeedEndpoint({ limit, category, productId, productType }),
+    [category, limit, productId, productType],
   );
   const preloadedStories = useMemo(
     () => normalizeStoriesFromPayload(readPreloadedApiResponse(endpoint)),

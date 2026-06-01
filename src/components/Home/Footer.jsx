@@ -42,7 +42,7 @@ const footerSections = [
     links: [
       { label: "All TVs", href: "/tvs" },
       { label: "Trending TVs", href: "/trending/tvs" },
-      { label: "New Launches", href: "/tvs?filter=new" },
+      { label: "New Launches", href: "/tvs/latest" },
       { label: "Compare TVs", href: "/compare" },
     ],
   },

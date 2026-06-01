@@ -58,6 +58,44 @@ const SMARTPHONE_FILTER_ROUTE_PATHS = new Set(
     (slug) => `/smartphones/filter/${slug}`,
   ),
 );
+const TV_FEATURE_ROUTE_META = {
+  "large-screen": { name: '55"+ Screen', seoName: "55 Inch and Above" },
+  "ultra-hd-4k": { name: "4K Ultra HD", seoName: "4K Ultra HD" },
+  "high-refresh-rate": { name: "120Hz+", seoName: "120Hz" },
+  "oled-qled": { name: "OLED/QLED", seoName: "OLED and QLED" },
+  "smart-tv": { name: "Smart TV", seoName: "Smart" },
+  hdr: { name: "HDR", seoName: "HDR" },
+  "dolby-audio": { name: "Dolby Audio", seoName: "Dolby Audio" },
+  gaming: { name: "Gaming Ready", seoName: "Gaming" },
+  wifi: { name: "Wi-Fi", seoName: "Wi-Fi" },
+  "voice-assistant": { name: "Voice Assistant", seoName: "Voice Assistant" },
+  bluetooth: { name: "Bluetooth", seoName: "Bluetooth" },
+  "hdmi-2-1": { name: "HDMI 2.1", seoName: "HDMI 2.1" },
+  earc: { name: "eARC", seoName: "eARC" },
+  "dolby-vision": { name: "Dolby Vision", seoName: "Dolby Vision" },
+  "ai-features": { name: "AI Features", seoName: "AI Smart" },
+  "av-input": { name: "AV Input", seoName: "AV Input" },
+  usb: { name: "USB", seoName: "USB" },
+  "wifi-6": { name: "Wi-Fi 6", seoName: "Wi-Fi 6" },
+  "wifi-7": { name: "Wi-Fi 7", seoName: "Wi-Fi 7" },
+  "dolby-atmos": { name: "Dolby Atmos", seoName: "Dolby Atmos" },
+  "hdr10-plus": { name: "HDR10+", seoName: "HDR10+" },
+  vrr: { name: "VRR", seoName: "VRR" },
+  allm: { name: "ALLM", seoName: "ALLM" },
+  memc: { name: "MEMC", seoName: "MEMC" },
+  "filmmaker-mode": { name: "Filmmaker Mode", seoName: "Filmmaker Mode" },
+  "screen-mirroring": { name: "Screen Mirroring", seoName: "Screen Mirroring" },
+  airplay: { name: "AirPlay", seoName: "AirPlay" },
+  chromecast: { name: "Chromecast", seoName: "Chromecast" },
+  "google-tv": { name: "Google TV", seoName: "Google TV" },
+  ethernet: { name: "Ethernet / LAN", seoName: "Ethernet LAN" },
+  "optical-audio": { name: "Optical Audio", seoName: "Optical Audio" },
+  "headphone-jack": { name: "Headphone Jack", seoName: "Headphone Jack" },
+  "rf-input": { name: "RF Input", seoName: "RF Input" },
+};
+const TV_FEATURE_ROUTE_PATHS = new Set(
+  Object.keys(TV_FEATURE_ROUTE_META).map((slug) => `/tvs/features/${slug}`),
+);
 const PRELOAD_CANONICAL_PATHS = new Set([
   "/",
   "/news",
@@ -67,6 +105,7 @@ const PRELOAD_CANONICAL_PATHS = new Set([
   ...SMARTPHONE_FILTER_ROUTE_PATHS,
   "/laptops",
   "/tvs",
+  "/tvs/latest",
   "/networking",
   "/compare",
   "/trending/smartphones",
@@ -123,6 +162,11 @@ const PRELOAD_STRIP_KEY_PATTERNS = [
   /^spec_score_feature_coverage$/i,
 ];
 const CURRENT_YEAR = new Date().getFullYear();
+const CURRENT_FULL_DATE = new Intl.DateTimeFormat("en-GB", {
+  day: "2-digit",
+  month: "long",
+  year: "numeric",
+}).format(new Date());
 const BUDGET_PHONE_KEYWORDS =
   "budget phones under 10000, budget phones under 15000, budget phones under 20000, budget phones under 30000, budget phones under 50000";
 const DEFAULT_SEO_KEYWORDS = `hook, best gadget comparison site, mobile price comparison india, moblie price comparison india, compare laptops smartphones tvs, compare smartphone tv laptops, compare specs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch phones, trending phone in india, most popular mobiles, top selling gadgets india, 5g phones in india, ai phones in india, ${BUDGET_PHONE_KEYWORDS}, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, gaming laptops india, student laptops india, laptop comparison india, vacuum cooler laptop and phone, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000, smart tv comparison india`;
@@ -135,6 +179,7 @@ const STATIC_PRERENDER_ROUTES = [
   ...SMARTPHONE_FILTER_ROUTE_PATHS,
   "/laptops",
   "/tvs",
+  "/tvs/latest",
   "/networking",
   "/compare",
   "/popular-comparisons",
@@ -277,6 +322,19 @@ const extractDetailSlugName = (path, prefix, normalizeTail) => {
   if (!normalizedTail) return "";
   return toReadableTitleFromSlug(normalizedTail);
 };
+
+const getTvListingRouteMeta = (path = "") => {
+  if (path === "/tvs/latest") return { type: "latest" };
+  const match = String(path || "").match(/^\/tvs\/features\/([^/]+)$/i);
+  if (!match) return null;
+  const feature = TV_FEATURE_ROUTE_META[String(match[1] || "").toLowerCase()];
+  return feature ? { type: "feature", feature } : null;
+};
+
+const getTvDetailName = (canonicalPath = "") =>
+  getTvListingRouteMeta(canonicalPath)
+    ? ""
+    : extractDetailSlugName(canonicalPath, "/tvs/");
 
 const extractCompareRouteNames = (path) => {
   const legacyMatch = String(path || "").match(/^\/compare\/([^/]+)-vs-([^/]+)$/i);
@@ -778,6 +836,14 @@ const fetchRouteSpecificPreloadedPayload = async (
     return fetchPayloadForEndpoints([`${API_BASE_URL}/laptops`]);
   }
 
+  const tvListingRoute = getTvListingRouteMeta(canonicalPath);
+  if (tvListingRoute?.type === "latest") {
+    return fetchPayloadForEndpoints([`${API_BASE_URL}/public/new/tvs`]);
+  }
+  if (tvListingRoute?.type === "feature") {
+    return fetchPayloadForEndpoints([`${API_BASE_URL}/tvs`]);
+  }
+
   if (getSingleSegmentRouteTail(canonicalPath, "/tvs")) {
     return fetchPayloadForEndpoints([`${API_BASE_URL}/tvs`]);
   }
@@ -1022,6 +1088,94 @@ const fetchSmartphoneListingRoutesFromApi = async () => {
   return routes;
 };
 
+const matchesTvFeatureRoute = (row, featureSlug) => {
+  const text = JSON.stringify(row || {}).toLowerCase();
+  switch (featureSlug) {
+    case "large-screen":
+      return /(?:55|5[6-9]|[6-9]\d|1\d{2})\s*(?:inch|inches|")/.test(text);
+    case "ultra-hd-4k":
+      return /4k|uhd|2160/.test(text);
+    case "high-refresh-rate":
+      return /(?:120|144|165|240)\s*hz/.test(text);
+    case "oled-qled":
+      return /oled|qled|mini\s*led|qd-?oled/.test(text);
+    case "smart-tv":
+      return /smart\s*tv|google\s*tv|android\s*tv|tizen|webos|fire\s*tv/.test(
+        text,
+      );
+    case "hdr":
+      return /\bhdr|dolby\s*vision|hlg/.test(text);
+    case "dolby-audio":
+      return /dolby/.test(text);
+    case "gaming":
+      return /gaming|\bvrr\b|\ballm\b|freesync|g-?sync|hdmi\s*2(?:\.|\s*)1/.test(
+        text,
+      );
+    case "wifi":
+      return /wi-?fi|802\.11/.test(text);
+    case "voice-assistant":
+      return /alexa|google\s*assistant|voice\s*(assistant|control)/.test(text);
+    case "bluetooth":
+      return /\bbluetooth\b|\bbt\s*\d/.test(text);
+    case "hdmi-2-1":
+      return /hdmi\s*2(?:\.|\s*)1/.test(text);
+    case "earc":
+      return /\bearc\b|enhanced\s+audio\s+return/.test(text);
+    case "dolby-vision":
+      return /dolby\s*vision/.test(text);
+    case "ai-features":
+      return /\bai\b|artificial\s+intelligence|ai[-\s]?(picture|sound|upscal|processor|enhance)/.test(
+        text,
+      );
+    case "av-input":
+      return /\bav\s*(input|in)\b|composite|rca/.test(text);
+    case "usb":
+      return /\busb\b/.test(text);
+    case "wifi-6":
+      return /wi-?fi\s*6|802\.11ax/.test(text);
+    case "wifi-7":
+      return /wi-?fi\s*7|802\.11be/.test(text);
+    case "dolby-atmos":
+      return /dolby\s*atmos/.test(text);
+    case "hdr10-plus":
+      return /hdr\s*10\s*\+|hdr10plus/.test(text);
+    case "vrr":
+      return /\bvrr\b|variable\s+refresh\s+rate/.test(text);
+    case "allm":
+      return /\ballm\b|auto(?:matic)?\s+low\s+latency/.test(text);
+    case "memc":
+      return /\bmemc\b|motion\s+estimation/.test(text);
+    case "filmmaker-mode":
+      return /filmmaker\s+mode/.test(text);
+    case "screen-mirroring":
+      return /screen\s+mirror|miracast|screen\s+cast|cast\s+screen/.test(text);
+    case "airplay":
+      return /airplay/.test(text);
+    case "chromecast":
+      return /chromecast|google\s+cast/.test(text);
+    case "google-tv":
+      return /google\s+tv/.test(text);
+    case "ethernet":
+      return /\bethernet\b|\blan\b|rj-?45/.test(text);
+    case "optical-audio":
+      return /optical|s\/?pdif|toslink/.test(text);
+    case "headphone-jack":
+      return /headphone|3\.5\s*mm|audio\s+jack/.test(text);
+    case "rf-input":
+      return /\brf\s*(input|in)\b|antenna\s*(input|in)/.test(text);
+    default:
+      return false;
+  }
+};
+
+const fetchTvListingRoutesFromApi = async () => {
+  const rows = await fetchApiRows(`${API_BASE_URL}/tvs`, ["tvs"]);
+  return [...TV_FEATURE_ROUTE_PATHS].filter((routePath) => {
+    const featureSlug = routePath.slice("/tvs/features/".length);
+    return rows.some((row) => matchesTvFeatureRoute(row, featureSlug));
+  });
+};
+
 const filterValidPrerenderRoutes = async (routes = []) => {
   const uniqueRoutes = [
     ...new Set(
@@ -1053,6 +1207,7 @@ const getPrerenderRoutes = async () => {
   const compareRoutes = await fetchCompareRoutesFromApi();
   const newsRoutes = await fetchNewsRoutesFromApi();
   const smartphoneListingRoutes = await fetchSmartphoneListingRoutesFromApi();
+  const tvListingRoutes = await fetchTvListingRoutesFromApi();
   return filterValidPrerenderRoutes([
     ...new Set([
       "/",
@@ -1062,6 +1217,7 @@ const getPrerenderRoutes = async () => {
       ...compareRoutes,
       ...newsRoutes,
       ...smartphoneListingRoutes,
+      ...tvListingRoutes,
     ]),
   ]);
 };
@@ -1196,7 +1352,8 @@ const resolveSeo = (routePath) => {
     return name;
   })();
   const laptopDetailName = extractDetailSlugName(canonicalPath, "/laptops/");
-  const tvDetailName = extractDetailSlugName(canonicalPath, "/tvs/");
+  const tvListingRoute = getTvListingRouteMeta(canonicalPath);
+  const tvDetailName = getTvDetailName(canonicalPath);
   const compareNames = extractCompareRouteNames(canonicalPath);
   const compareJoinedNames = joinCompareNamesWithoutCommas(compareNames);
   const publishedCompareSeo = publishedCompareRouteMeta.get(canonicalPath) || null;
@@ -1239,6 +1396,23 @@ const resolveSeo = (routePath) => {
       title: `${laptopDetailName} Price, Specs & Comparison in India (${CURRENT_YEAR}) | Hooks`,
       description: `Compare ${laptopDetailName} laptop price in India, full specifications, variants, and best store offers on Hook.`,
       keywords: `${laptopDetailName.toLowerCase()}, ${laptopDetailName.toLowerCase()} price in india, ${laptopDetailName.toLowerCase()} specs, compare laptops india, laptop prices list ${CURRENT_YEAR}`,
+    },
+    {
+      test: () => tvListingRoute?.type === "latest",
+      title: `Latest Smart TVs in India (${CURRENT_FULL_DATE}) - Hooks`,
+      description:
+        "Browse newly launched smart TVs in India with updated prices, display specifications, screen sizes, and store availability on Hooks.",
+      keywords: `latest smart tvs in india ${CURRENT_YEAR}, new tv launches india, latest tv prices, compare smart tv specs`,
+    },
+    {
+      test: () => tvListingRoute?.type === "feature",
+      title: `Best ${tvListingRoute?.feature?.seoName || ""} TVs in India (${CURRENT_FULL_DATE}) - Hooks`,
+      description: `Browse the best ${tvListingRoute?.feature?.seoName || ""} TVs in India with updated prices, display specifications, screen sizes, smart features, and store availability on Hooks.`,
+      keywords: `best ${String(
+        tvListingRoute?.feature?.seoName || "",
+      ).toLowerCase()} tvs in india, ${String(
+        tvListingRoute?.feature?.seoName || "",
+      ).toLowerCase()} tv prices, compare tv specs`,
     },
     {
       test: () => Boolean(tvDetailName),
@@ -1325,7 +1499,7 @@ const resolveSeo = (routePath) => {
     },
     {
       test: (p) => p.startsWith("/tvs"),
-      title: "TVs - Compare Screen Sizes, Specs & Prices | Hooks",
+      title: `Latest Smart TVs in India (${CURRENT_FULL_DATE}) - Hooks`,
       description:
         "Compare TVs across 43, 55, 65, and larger screen sizes with full specifications, variant pricing, and store availability on Hook.",
       keywords: `tvs, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, smart tv comparison india, compare tv prices india, compare tv specs, 43 inch tv, 55 inch tv, 65 inch tv, 75 inch tv, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000`,
@@ -1467,7 +1641,7 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
     ];
   }
 
-  const tvDetailName = extractDetailSlugName(canonicalPath, "/tvs/");
+  const tvDetailName = getTvDetailName(canonicalPath);
   if (tvDetailName) {
     return [
       createWebPageSchema({
@@ -1596,10 +1770,25 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
   }
 
   if (canonicalPath.startsWith("/tvs")) {
-    const rows = getPreloadedRows(preloadedApiPayload, `${API_BASE_URL}/tvs`, [
+    const tvListingRoute = getTvListingRouteMeta(canonicalPath);
+    const tvEndpoint =
+      tvListingRoute?.type === "latest"
+        ? `${API_BASE_URL}/public/new/tvs`
+        : `${API_BASE_URL}/tvs`;
+    const rows = getPreloadedRows(preloadedApiPayload, tvEndpoint, [
       "tvs",
+      "results",
     ]);
-    const items = buildItemListFromRows(rows, {
+    const filteredRows =
+      tvListingRoute?.type === "feature"
+        ? rows.filter((row) =>
+            matchesTvFeatureRoute(
+              row,
+              canonicalPath.slice("/tvs/features/".length),
+            ),
+          )
+        : rows;
+    const items = buildItemListFromRows(filteredRows, {
       basePath: "/tvs",
     });
     return [
@@ -1608,12 +1797,14 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
         description: seo.description,
         url: canonicalUrl,
       }),
-      createItemListSchema({
-        name: seo.title,
-        url: canonicalUrl,
-        items,
-      }),
-    ];
+      items.length
+        ? createItemListSchema({
+            name: seo.title,
+            url: canonicalUrl,
+            items,
+          })
+        : null,
+    ].filter(Boolean);
   }
 
   if (canonicalPath.startsWith("/networking")) {
@@ -1830,6 +2021,7 @@ const resolvePrerenderRoutePath = (renderedRoute) => {
 const usesSharedPreloadedPayload = (canonicalPath = "/") =>
   PRELOAD_CANONICAL_PATHS.has(canonicalPath) ||
   SMARTPHONE_FILTER_ROUTE_PATHS.has(canonicalPath) ||
+  canonicalPath.startsWith("/tvs/features/") ||
   Boolean(
     parseSmartphoneListingPath(canonicalPath)?.canonicalPath &&
       canonicalPath !== "/smartphones",

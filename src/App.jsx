@@ -50,6 +50,7 @@ import {
   buildPublicSmartphoneBrandPath as buildSmartphoneBrandPath,
   buildPublicSmartphoneListingPath as buildSmartphoneListingPath,
 } from "./utils/smartphoneListingRoutes";
+import { getTvRouteFeatureMeta } from "./utils/tvPopularFeatures";
 import { toCanonicalPagePath, toCanonicalPageUrl } from "./utils/publicUrl";
 
 const SITE_ORIGIN = "https://tryhook.shop";
@@ -57,6 +58,11 @@ const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/hook-logo.svg`;
 const CURRENT_YEAR = new Date().getFullYear();
 const CURRENT_MONTH_YEAR = new Intl.DateTimeFormat("en-US", {
   month: "short",
+  year: "numeric",
+}).format(new Date());
+const CURRENT_FULL_DATE = new Intl.DateTimeFormat("en-GB", {
+  day: "2-digit",
+  month: "long",
   year: "numeric",
 }).format(new Date());
 const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
@@ -227,6 +233,14 @@ const extractDetailSlugName = (path, prefix, normalizeTail) => {
   return toReadableTitleFromSlug(normalizedTail);
 };
 
+const getTvListingRouteMeta = (path = "") => {
+  if (path === "/tvs/latest") return { type: "latest" };
+  const match = String(path || "").match(/^\/tvs\/features\/([^/]+)$/i);
+  if (!match) return null;
+  const feature = getTvRouteFeatureMeta(match[1]);
+  return feature ? { type: "feature", feature } : null;
+};
+
 const resolveSeoMeta = (pathname) => {
   const path = normalizeSeoPath(pathname);
   const canonicalPath = toCanonicalPath(path);
@@ -243,7 +257,10 @@ const resolveSeoMeta = (pathname) => {
     return name;
   })();
   const laptopDetailName = extractDetailSlugName(canonicalPath, "/laptops/");
-  const tvDetailName = extractDetailSlugName(canonicalPath, "/tvs/");
+  const tvListingRoute = getTvListingRouteMeta(canonicalPath);
+  const tvDetailName = tvListingRoute
+    ? ""
+    : extractDetailSlugName(canonicalPath, "/tvs/");
   const smartphoneFilterSlug = (() => {
     const match = canonicalPath.match(/^\/smartphones\/filter\/([^/]+)$/i);
     if (!match) return "";
@@ -336,8 +353,25 @@ const resolveSeoMeta = (pathname) => {
       keywords: `laptops, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, compare laptops india, laptop comparison site, laptop compare specs, gaming laptops india, student laptops india, productivity laptops, vacuum cooler laptop and phone`,
     },
     {
+      test: () => tvListingRoute?.type === "latest",
+      title: `Latest Smart TVs in India (${CURRENT_FULL_DATE}) - Hooks`,
+      description:
+        "Browse newly launched smart TVs in India with updated prices, display specifications, screen sizes, and store availability on Hooks.",
+      keywords: `latest smart tvs in india ${CURRENT_YEAR}, new tv launches india, latest tv prices, compare smart tv specs`,
+    },
+    {
+      test: () => tvListingRoute?.type === "feature",
+      title: `Best ${tvListingRoute?.feature?.seoName || ""} TVs in India (${CURRENT_FULL_DATE}) - Hooks`,
+      description: `Browse the best ${tvListingRoute?.feature?.seoName || ""} TVs in India with updated prices, display specifications, screen sizes, smart features, and store availability on Hooks.`,
+      keywords: `best ${String(
+        tvListingRoute?.feature?.seoName || "",
+      ).toLowerCase()} tvs in india, ${String(
+        tvListingRoute?.feature?.seoName || "",
+      ).toLowerCase()} tv prices, compare tv specs`,
+    },
+    {
       test: (p) => p.startsWith("/tvs") || p.startsWith("/appliances"),
-      title: `Best TVs (${CURRENT_MONTH_YEAR}) - Compare Screen Sizes, Specs & Prices - Hooks`,
+      title: `Latest Smart TVs in India (${CURRENT_FULL_DATE}) - Hooks`,
       description:
         "Compare TVs across 43, 55, 65, and larger screen sizes with full specifications, variant pricing, and store availability on Hooks.",
       keywords: `tvs, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, smart tv comparison india, compare tv prices india, compare tv specs, 43 inch tv, 55 inch tv, 65 inch tv, 75 inch tv, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000`,
@@ -673,6 +707,8 @@ function App() {
           <Route path="/laptops" element={<Laptops />} />
           <Route path="/laptop" element={<Navigate to="/laptops" replace />} />
           <Route path="/tvs" element={<TVs />} />
+          <Route path="/tvs/latest" element={<TVs />} />
+          <Route path="/tvs/features/:featureSlug" element={<TVs />} />
           <Route path="/appliances" element={<AppliancesListRedirect />} />
           <Route path="/networking" element={<Networking />} />
 

@@ -7,6 +7,11 @@ import {
   buildPublicSmartphoneBrandPath as buildSmartphoneBrandPath,
   buildPublicSmartphoneListingPath as buildSmartphoneListingPath,
 } from "../../utils/smartphoneListingRoutes";
+import {
+  matchesTvFeature,
+  TV_FEATURE_CATALOG,
+} from "../../utils/tvPopularFeatures";
+import { TV_DISCOVERY_PRICE_BUCKETS } from "../../utils/tvPriceRanges";
 
 const API_BASE = (
   import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in"
@@ -187,6 +192,153 @@ const formatCountTag = (value, noun = "items") => {
   const normalizedNoun =
     count === 1 && noun.endsWith("s") ? noun.slice(0, -1) : noun;
   return `${new Intl.NumberFormat("en-IN").format(count)} ${normalizedNoun}`;
+};
+
+const toCatalogProductKey = (item = {}) =>
+  normalizeText(
+    item?.productId ||
+      item?.product_id ||
+      item?.id ||
+      item?.name ||
+      item?.product_name ||
+      item?.model,
+  ).toLowerCase();
+
+const toCatalogPrice = (item = {}) => {
+  const prices = [];
+  const appendPrice = (value) => {
+    const parsedPrice = Number(
+      String(value ?? "")
+        .replace(/[^\d.]/g, "")
+        .trim(),
+    );
+    if (Number.isFinite(parsedPrice) && parsedPrice > 0) {
+      prices.push(parsedPrice);
+    }
+  };
+  const toArray = (value) => {
+    if (Array.isArray(value)) return value;
+    if (typeof value !== "string") return [];
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  };
+
+  [
+    item?.numericPrice,
+    item?.price,
+    item?.base_price,
+    item?.basePrice,
+  ].forEach(appendPrice);
+
+  toArray(item?.variants || item?.variants_json).forEach((variant) => {
+    [
+      variant?.numericPrice,
+      variant?.price,
+      variant?.base_price,
+      variant?.basePrice,
+    ].forEach(appendPrice);
+    toArray(variant?.store_prices || variant?.storePrices).forEach((store) => {
+      appendPrice(store?.price);
+    });
+  });
+
+  return prices.length ? Math.min(...prices) : 0;
+};
+
+const buildTvCatalogSections = (catalogItems = [], brandCatalog = []) => {
+  const uniqueItems = [];
+  const seenProducts = new Set();
+  const brandLogoByName = new Map();
+
+  (Array.isArray(brandCatalog) ? brandCatalog : []).forEach((brand) => {
+    const brandName = normalizeText(brand?.name || brand?.brand_name);
+    const logoUrl = normalizeText(
+      brand?.logo || brand?.image || brand?.logo_url || brand?.logoUrl,
+    );
+    if (!brandName || !logoUrl) return;
+    brandLogoByName.set(brandName.toLowerCase(), logoUrl);
+  });
+
+  for (const item of Array.isArray(catalogItems) ? catalogItems : []) {
+    const key = toCatalogProductKey(item);
+    if (!key || seenProducts.has(key)) continue;
+    seenProducts.add(key);
+    uniqueItems.push(item);
+  }
+
+  if (!uniqueItems.length) return {};
+
+  const brandCounts = new Map();
+  uniqueItems.forEach((item) => {
+    const brand = normalizeText(item?.brand || item?.brand_name);
+    if (!brand) return;
+    const catalogLogo = brandLogoByName.get(brand.toLowerCase()) || "";
+    const existing = brandCounts.get(brand) || {
+      brand_name: brand,
+      logo_url:
+        catalogLogo || normalizeText(item?.brand_logo || item?.logo_url),
+      product_count: 0,
+    };
+    if (!existing.logo_url && catalogLogo) existing.logo_url = catalogLogo;
+    existing.product_count += 1;
+    brandCounts.set(brand, existing);
+  });
+
+  const budgetSegments = TV_DISCOVERY_PRICE_BUCKETS
+    .map((maxPrice) => {
+      const productCount = uniqueItems.filter((item) => {
+        const price = toCatalogPrice(item);
+        return price > 0 && price <= maxPrice;
+      }).length;
+      return {
+        label: `Under \u20B9${new Intl.NumberFormat("en-IN").format(maxPrice)}`,
+        path: `/tvs?maxPrice=${maxPrice}`,
+        product_count: productCount,
+      };
+    });
+
+  const smartDiscoveries = [
+    {
+      label: "Latest Smart TVs in India",
+      path: "/tvs/latest",
+    },
+    ...TV_FEATURE_CATALOG.filter((feature) =>
+      uniqueItems.some((item) => matchesTvFeature(item, feature.id)),
+    ).map((feature) => ({
+      label: `Best ${feature.name} TVs`,
+      path: `/tvs/features/${feature.id}`,
+    })),
+  ];
+
+  const latestReleases = [...uniqueItems]
+    .sort(
+      (a, b) =>
+        new Date(b?.launchDate || b?.launch_date || b?.created_at || 0) -
+        new Date(a?.launchDate || a?.launch_date || a?.created_at || 0),
+    )
+    .slice(0, 5)
+    .map((item) => ({
+      ...item,
+      brand_name: normalizeText(item?.brand || item?.brand_name),
+      image_url: normalizeText(item?.image || item?.image_url),
+      price: toCatalogPrice(item),
+      launch_date: item?.launchDate || item?.launch_date || item?.created_at,
+    }));
+
+  return {
+    latest_releases: latestReleases,
+    budget_segments: budgetSegments,
+    brand_hub: Array.from(brandCounts.values()).sort(
+      (a, b) =>
+        b.product_count - a.product_count ||
+        a.brand_name.localeCompare(b.brand_name),
+    ),
+    smart_discoveries: smartDiscoveries,
+  };
 };
 
 const RowVisual = ({ src = "", label = "" }) => {
@@ -600,6 +752,8 @@ const ProductDiscoverySections = ({
   productId,
   currentBrand = "",
   entityType = "smartphones",
+  catalogItems = [],
+  brandCatalog = [],
   layout = "full",
   className = "",
 }) => {
@@ -669,6 +823,13 @@ const ProductDiscoverySections = ({
   }, [discoveryEndpoint, entityType]);
 
   const entityConfig = useMemo(() => getEntityConfig(entityType), [entityType]);
+  const catalogSections = useMemo(
+    () =>
+      entityConfig.type === "tvs"
+        ? buildTvCatalogSections(catalogItems, brandCatalog)
+        : {},
+    [brandCatalog, catalogItems, entityConfig.type],
+  );
   const isLatestPhonesLayout =
     layout === "latestPhones" && entityConfig.type === "smartphones";
   const isBudgetSidebarLayout =
@@ -676,7 +837,7 @@ const ProductDiscoverySections = ({
 
   const { latestReleases, budgetSegments, brandHub, smartDiscoveries } =
     useMemo(() => {
-      const sections = payload?.sections || {};
+      const sections = payload?.sections || catalogSections;
       return {
         latestReleases: Array.isArray(sections.latest_releases)
           ? sections.latest_releases
@@ -689,7 +850,7 @@ const ProductDiscoverySections = ({
           ? sections.smart_discoveries
           : [],
       };
-    }, [payload]);
+    }, [catalogSections, payload]);
 
   const brandName = normalizeText(payload?.brand_name || currentBrand);
 
@@ -743,7 +904,7 @@ const ProductDiscoverySections = ({
   }, [brandName, smartDiscoveries, entityConfig]);
 
   const byPriceLinks = useMemo(() => {
-    const links = budgetSegments.slice(0, 4).map((segment) => ({
+    const links = budgetSegments.slice(0, 5).map((segment) => ({
       label: `Best ${entityConfig.pluralTitle} ${fixCurrencyText(segment?.label)}`,
       path: normalizeDiscoveryPath(
         segment?.path || entityConfig.basePath,
@@ -760,7 +921,7 @@ const ProductDiscoverySections = ({
       path: entityConfig.basePath,
     });
 
-    return links.slice(0, 5);
+    return links.slice(0, 6);
   }, [budgetSegments, entityConfig]);
 
   const latestLaunchLinks = useMemo(

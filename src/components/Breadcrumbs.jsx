@@ -6,12 +6,14 @@ import {
   getSmartphoneFeatureRouteMeta,
   toReadableListingLabel,
 } from "../utils/smartphoneListingRoutes";
+import { getTvRouteFeatureMeta } from "../utils/tvPopularFeatures";
 
 const PRODUCT_DETAIL_PATH_RE =
   /^\/(smartphones|laptops|tvs|appliances|networking)\/[^/]+\/?$/i;
 const LEGACY_DETAILS_PATH_RE =
   /^\/(smartphones|laptops|tvs|appliances|networking)\/details\/?$/i;
 const NEWS_ROUTE_RE = /^\/news(?:\/|$)/i;
+const TV_LISTING_PATH_RE = /^\/tvs\/(?:latest|features\/[^/]+)\/?$/i;
 const DETAIL_QUERY_KEYS = ["name", "product_name", "product", "title", "model"];
 
 const safeDecode = (value) => {
@@ -95,6 +97,10 @@ const renderSmartphoneFeatureBreadcrumb = ({ match }) =>
   getSmartphoneFeatureRouteMeta(match?.params?.featureSlug || "")?.name ||
   toReadableListingLabel(match?.params?.featureSlug || "Feature");
 
+const renderTvFeatureBreadcrumb = ({ match }) =>
+  getTvRouteFeatureMeta(match?.params?.featureSlug || "")?.name ||
+  toReadableListingLabel(match?.params?.featureSlug || "Feature");
+
 const getLabelText = (label) => {
   if (typeof label === "string" || typeof label === "number") {
     return String(label);
@@ -135,6 +141,12 @@ const routes = [
   { path: "/laptops", breadcrumb: "Laptops" },
   { path: "/networking", breadcrumb: "Networking" },
   { path: "/tvs", breadcrumb: "TVs" },
+  { path: "/tvs/latest", breadcrumb: "Latest TVs" },
+  { path: "/tvs/features", breadcrumb: null },
+  {
+    path: "/tvs/features/:featureSlug",
+    breadcrumb: renderTvFeatureBreadcrumb,
+  },
   { path: "/appliances", breadcrumb: "TVs" },
   { path: "/smartphones/filter", breadcrumb: null },
   {
@@ -200,7 +212,8 @@ export default function Breadcrumbs() {
       setDetailCrumbLabel("");
       return;
     }
-    const isProductDetailPath = PRODUCT_DETAIL_PATH_RE.test(pathname);
+    const isProductDetailPath =
+      PRODUCT_DETAIL_PATH_RE.test(pathname) && !TV_LISTING_PATH_RE.test(pathname);
 
     if (!isProductDetailPath) {
       setDetailCrumbLabel("");
@@ -301,7 +314,8 @@ export default function Breadcrumbs() {
 
   const path = String(location.pathname || "");
   const isLegacyDetailsPath = LEGACY_DETAILS_PATH_RE.test(path);
-  const isProductDetailPath = PRODUCT_DETAIL_PATH_RE.test(path);
+  const isProductDetailPath =
+    PRODUCT_DETAIL_PATH_RE.test(path) && !TV_LISTING_PATH_RE.test(path);
   const shouldCompactOnMobile = visibleBreadcrumbs.length > 2;
   const mobileBreadcrumbs = shouldCompactOnMobile
     ? [visibleBreadcrumbs[0], visibleBreadcrumbs[visibleBreadcrumbs.length - 1]]
