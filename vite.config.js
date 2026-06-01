@@ -22,6 +22,13 @@ import {
   getSmartphoneFeatureRouteMeta,
   toReadableListingLabel,
 } from "./src/utils/smartphoneListingRoutes.js";
+import {
+  LAPTOP_DISCOVERY_PRICE_BUCKETS,
+  LAPTOP_FEATURE_ROUTE_META,
+  buildLaptopListingPath,
+  buildLaptopListingSeoMeta,
+  parseLaptopListingPath,
+} from "./src/utils/laptopListingRoutes.js";
 import { toCanonicalPageUrl } from "./src/utils/publicUrl.js";
 
 const require = createRequire(import.meta.url);
@@ -96,6 +103,11 @@ const TV_FEATURE_ROUTE_META = {
 const TV_FEATURE_ROUTE_PATHS = new Set(
   Object.keys(TV_FEATURE_ROUTE_META).map((slug) => `/tvs/features/${slug}`),
 );
+const LAPTOP_BUDGET_ROUTE_PATHS = new Set(
+  LAPTOP_DISCOVERY_PRICE_BUCKETS.map((budget) =>
+    buildLaptopListingPath({ budget }),
+  ),
+);
 const PRELOAD_CANONICAL_PATHS = new Set([
   "/",
   "/news",
@@ -104,6 +116,8 @@ const PRELOAD_CANONICAL_PATHS = new Set([
   "/smartphones/upcoming",
   ...SMARTPHONE_FILTER_ROUTE_PATHS,
   "/laptops",
+  "/laptops/latest",
+  ...LAPTOP_BUDGET_ROUTE_PATHS,
   "/tvs",
   "/tvs/latest",
   "/networking",
@@ -167,6 +181,10 @@ const CURRENT_FULL_DATE = new Intl.DateTimeFormat("en-GB", {
   month: "long",
   year: "numeric",
 }).format(new Date());
+const CURRENT_MONTH_LONG_YEAR = new Intl.DateTimeFormat("en-US", {
+  month: "long",
+  year: "numeric",
+}).format(new Date());
 const BUDGET_PHONE_KEYWORDS =
   "budget phones under 10000, budget phones under 15000, budget phones under 20000, budget phones under 30000, budget phones under 50000";
 const DEFAULT_SEO_KEYWORDS = `hook, best gadget comparison site, mobile price comparison india, moblie price comparison india, compare laptops smartphones tvs, compare smartphone tv laptops, compare specs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch phones, trending phone in india, most popular mobiles, top selling gadgets india, 5g phones in india, ai phones in india, ${BUDGET_PHONE_KEYWORDS}, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, gaming laptops india, student laptops india, laptop comparison india, vacuum cooler laptop and phone, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000, smart tv comparison india`;
@@ -178,6 +196,8 @@ const STATIC_PRERENDER_ROUTES = [
   "/smartphones/upcoming",
   ...SMARTPHONE_FILTER_ROUTE_PATHS,
   "/laptops",
+  "/laptops/latest",
+  ...LAPTOP_BUDGET_ROUTE_PATHS,
   "/tvs",
   "/tvs/latest",
   "/networking",
@@ -832,6 +852,14 @@ const fetchRouteSpecificPreloadedPayload = async (
     ]);
   }
 
+  const laptopListingRoute = parseLaptopListingPath(canonicalPath);
+  if (laptopListingRoute?.latest) {
+    return fetchPayloadForEndpoints([`${API_BASE_URL}/public/new/laptops`]);
+  }
+  if (laptopListingRoute) {
+    return fetchPayloadForEndpoints([`${API_BASE_URL}/laptops`]);
+  }
+
   if (getSingleSegmentRouteTail(canonicalPath, "/laptops")) {
     return fetchPayloadForEndpoints([`${API_BASE_URL}/laptops`]);
   }
@@ -1088,6 +1116,156 @@ const fetchSmartphoneListingRoutesFromApi = async () => {
   return routes;
 };
 
+const getLaptopBrandName = (row = {}) =>
+  row?.brand ||
+  row?.brand_name ||
+  row?.basic_info?.brand ||
+  row?.basic_info?.brand_name ||
+  "";
+
+const getLaptopListingPrice = (row = {}) => {
+  const prices = [];
+  const visit = (value, key = "") => {
+    if (value == null) return;
+    if (Array.isArray(value)) {
+      value.forEach((item) => visit(item, key));
+      return;
+    }
+    if (typeof value === "object") {
+      Object.entries(value).forEach(([childKey, childValue]) =>
+        visit(childValue, childKey),
+      );
+      return;
+    }
+    if (!/price/i.test(key)) return;
+    const numeric = Number(String(value).replace(/[^\d.]/g, ""));
+    if (Number.isFinite(numeric) && numeric > 0) prices.push(numeric);
+  };
+  visit(row);
+  return prices.length ? Math.min(...prices) : 0;
+};
+
+const matchesLaptopFeatureRoute = (row, featureSlug) => {
+  const text = JSON.stringify(row || {}).toLowerCase();
+  switch (featureSlug) {
+    case "gaming":
+      return /gaming|rtx|gtx|geforce|radeon\s*rx/.test(text);
+    case "high-ram":
+      return /(?:16|24|32|48|64)\s*gb.{0,30}(?:ram|ddr)|(?:ram|ddr).{0,30}(?:16|24|32|48|64)\s*gb/.test(
+        text,
+      );
+    case "high-storage":
+      return /(?:512\s*gb|[1-9]\s*tb).{0,30}(?:ssd|storage)|(?:ssd|storage).{0,30}(?:512\s*gb|[1-9]\s*tb)/.test(
+        text,
+      );
+    case "lightweight":
+      return /(?:weight|net_weight).{0,20}(?:0\.\d+|1\.[0-5])\s*kg/.test(text);
+    case "long-battery":
+      return /(?:60|6[1-9]|[7-9]\d|1\d{2})\s*wh/.test(text);
+    case "high-refresh-rate":
+      return /(?:120|144|165|240)\s*hz/.test(text);
+    case "oled-display":
+      return /\boled\b/.test(text);
+    case "touchscreen":
+      return /touch\s*screen|touchscreen/.test(text);
+    case "intel":
+      return /\bintel\b/.test(text);
+    case "amd":
+      return /\bamd\b|\bryzen\b/.test(text);
+    default:
+      return false;
+  }
+};
+
+const matchesLaptopListingRoute = (row, routeMeta = {}) => {
+  const brandSlug = toSlug(getLaptopBrandName(row));
+  if (routeMeta.brandSlug && brandSlug !== routeMeta.brandSlug) return false;
+  if (
+    routeMeta.featureSlugs?.some(
+      (featureSlug) => !matchesLaptopFeatureRoute(row, featureSlug),
+    )
+  ) {
+    return false;
+  }
+  if (routeMeta.budget) {
+    const price = getLaptopListingPrice(row);
+    if (!price || price > routeMeta.budget) return false;
+  }
+  return true;
+};
+
+const fetchLaptopListingRoutesFromApi = async () => {
+  const rows = await fetchApiRows(`${API_BASE_URL}/laptops`, ["laptops"]);
+  const routes = new Set(["/laptops/latest", ...LAPTOP_BUDGET_ROUTE_PATHS]);
+  const featureIds = Object.keys(LAPTOP_FEATURE_ROUTE_META).filter((featureId) =>
+    rows.some((row) => matchesLaptopFeatureRoute(row, featureId)),
+  );
+  const brands = new Map();
+
+  rows.forEach((row) => {
+    const brandName = getLaptopBrandName(row);
+    const brandSlug = toSlug(brandName);
+    if (!brandSlug) return;
+    if (!brands.has(brandSlug)) brands.set(brandSlug, []);
+    brands.get(brandSlug).push(row);
+  });
+
+  featureIds.forEach((featureId) => {
+    routes.add(buildLaptopListingPath({ feature: featureId }));
+    LAPTOP_DISCOVERY_PRICE_BUCKETS.forEach((budget) => {
+      if (
+        rows.some(
+          (row) =>
+            matchesLaptopFeatureRoute(row, featureId) &&
+            getLaptopListingPrice(row) > 0 &&
+            getLaptopListingPrice(row) <= budget,
+        )
+      ) {
+        routes.add(buildLaptopListingPath({ feature: featureId, budget }));
+      }
+    });
+  });
+
+  featureIds.forEach((firstFeature, index) => {
+    featureIds.slice(index + 1).forEach((secondFeature) => {
+      if (
+        rows.some(
+          (row) =>
+            matchesLaptopFeatureRoute(row, firstFeature) &&
+            matchesLaptopFeatureRoute(row, secondFeature),
+        )
+      ) {
+        routes.add(
+          buildLaptopListingPath({
+            features: [firstFeature, secondFeature],
+          }),
+        );
+      }
+    });
+  });
+
+  brands.forEach((brandRows, brandSlug) => {
+    routes.add(buildLaptopListingPath({ brand: brandSlug }));
+    LAPTOP_DISCOVERY_PRICE_BUCKETS.forEach((budget) => {
+      if (
+        brandRows.some((row) => {
+          const price = getLaptopListingPrice(row);
+          return price > 0 && price <= budget;
+        })
+      ) {
+        routes.add(buildLaptopListingPath({ brand: brandSlug, budget }));
+      }
+    });
+    featureIds.forEach((featureId) => {
+      if (brandRows.some((row) => matchesLaptopFeatureRoute(row, featureId))) {
+        routes.add(buildLaptopListingPath({ brand: brandSlug, feature: featureId }));
+      }
+    });
+  });
+
+  return [...routes];
+};
+
 const matchesTvFeatureRoute = (row, featureSlug) => {
   const text = JSON.stringify(row || {}).toLowerCase();
   switch (featureSlug) {
@@ -1207,6 +1385,7 @@ const getPrerenderRoutes = async () => {
   const compareRoutes = await fetchCompareRoutesFromApi();
   const newsRoutes = await fetchNewsRoutesFromApi();
   const smartphoneListingRoutes = await fetchSmartphoneListingRoutesFromApi();
+  const laptopListingRoutes = await fetchLaptopListingRoutesFromApi();
   const tvListingRoutes = await fetchTvListingRoutesFromApi();
   return filterValidPrerenderRoutes([
     ...new Set([
@@ -1217,6 +1396,7 @@ const getPrerenderRoutes = async () => {
       ...compareRoutes,
       ...newsRoutes,
       ...smartphoneListingRoutes,
+      ...laptopListingRoutes,
       ...tvListingRoutes,
     ]),
   ]);
@@ -1351,7 +1531,14 @@ const resolveSeo = (routePath) => {
     if (SMARTPHONE_LIST_SLUGS.has(tail.toLowerCase())) return "";
     return name;
   })();
-  const laptopDetailName = extractDetailSlugName(canonicalPath, "/laptops/");
+  const laptopListingRoute = parseLaptopListingPath(canonicalPath);
+  const laptopListingSeo = buildLaptopListingSeoMeta(laptopListingRoute || {}, {
+    monthYear: CURRENT_MONTH_LONG_YEAR,
+    fullDate: CURRENT_FULL_DATE,
+  });
+  const laptopDetailName = laptopListingRoute
+    ? ""
+    : extractDetailSlugName(canonicalPath, "/laptops/");
   const tvListingRoute = getTvListingRouteMeta(canonicalPath);
   const tvDetailName = getTvDetailName(canonicalPath);
   const compareNames = extractCompareRouteNames(canonicalPath);
@@ -1491,10 +1678,9 @@ const resolveSeo = (routePath) => {
       keywords: `smartphones, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch mobiles, trending phone in india, most popular mobiles, mobile price comparison india, moblie price comparison india, compare smartphone specs, compare smartphone prices, 5g phones in india, ai phone, ai budget phone, ${BUDGET_PHONE_KEYWORDS}`,
     },
     {
-      test: (p) => p.startsWith("/laptops"),
-      title: "Laptops - Compare Models, Prices & Specifications | Hooks",
-      description:
-        "Discover and compare laptops by processor, RAM, storage, display, and price. View current deals and top laptop picks on Hook.",
+      test: () => Boolean(laptopListingRoute),
+      title: laptopListingSeo.title,
+      description: laptopListingSeo.description,
       keywords: `laptops, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, compare laptops india, laptop comparison site, laptop compare specs, gaming laptops india, student laptops india, productivity laptops, vacuum cooler laptop and phone`,
     },
     {
@@ -1625,7 +1811,10 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
     ];
   }
 
-  const laptopDetailName = extractDetailSlugName(canonicalPath, "/laptops/");
+  const laptopListingRoute = parseLaptopListingPath(canonicalPath);
+  const laptopDetailName = laptopListingRoute
+    ? ""
+    : extractDetailSlugName(canonicalPath, "/laptops/");
   if (laptopDetailName) {
     return [
       createWebPageSchema({
@@ -1747,12 +1936,18 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
   }
 
   if (canonicalPath.startsWith("/laptops")) {
+    const laptopEndpoint = laptopListingRoute?.latest
+      ? `${API_BASE_URL}/public/new/laptops`
+      : `${API_BASE_URL}/laptops`;
     const rows = getPreloadedRows(
       preloadedApiPayload,
-      `${API_BASE_URL}/laptops`,
-      ["laptops"],
+      laptopEndpoint,
+      ["laptops", "results"],
     );
-    const items = buildItemListFromRows(rows, {
+    const filteredRows = laptopListingRoute
+      ? rows.filter((row) => matchesLaptopListingRoute(row, laptopListingRoute))
+      : rows;
+    const items = buildItemListFromRows(filteredRows, {
       basePath: "/laptops",
     });
     return [

@@ -12,6 +12,15 @@ import {
   TV_FEATURE_CATALOG,
 } from "../../utils/tvPopularFeatures";
 import { TV_DISCOVERY_PRICE_BUCKETS } from "../../utils/tvPriceRanges";
+import {
+  LAPTOP_FEATURE_CATALOG,
+  matchesLaptopFeature,
+} from "../../utils/laptopPopularFeatures";
+import {
+  buildLaptopListingPath,
+  LAPTOP_DISCOVERY_PRICE_BUCKETS,
+  stripLaptopSeoQueryParams,
+} from "../../utils/laptopListingRoutes";
 
 const API_BASE = (
   import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in"
@@ -65,7 +74,9 @@ const getEntityConfig = (entityType) => {
       defaultPriceLabel: "Under \u20B950,000",
       secondaryPopularLabel: "{brand} Gaming Laptops",
       secondaryPopularPath: (brand) =>
-        `/laptops?brand=${brand}&category=gaming`,
+        buildLaptopListingPath({ brand, feature: "gaming" }),
+      brandBudgetPath: (brand) =>
+        buildLaptopListingPath({ brand, budget: 50000 }),
     };
   }
 
@@ -131,6 +142,27 @@ const normalizeDiscoveryPath = (rawPath, entityType = "smartphones") => {
           brand,
           feature,
           query: url.searchParams,
+        });
+      }
+    }
+    if (
+      config.type === "laptops" &&
+      url.pathname.replace(/\/+$/g, "") === config.basePath
+    ) {
+      const brand = url.searchParams.get("brand") || "";
+      const feature = url.searchParams.get("feature") || "";
+      const budget =
+        url.searchParams.get("maxPrice") ||
+        url.searchParams.get("priceMax") ||
+        "";
+      const latest = url.searchParams.get("filter") === "new";
+      if (brand || feature || budget || latest) {
+        return buildLaptopListingPath({
+          brand,
+          feature,
+          budget,
+          latest,
+          query: stripLaptopSeoQueryParams(url.search),
         });
       }
     }
@@ -311,6 +343,97 @@ const buildTvCatalogSections = (catalogItems = [], brandCatalog = []) => {
     ).map((feature) => ({
       label: `Best ${feature.name} TVs`,
       path: `/tvs/features/${feature.id}`,
+    })),
+  ];
+
+  const latestReleases = [...uniqueItems]
+    .sort(
+      (a, b) =>
+        new Date(b?.launchDate || b?.launch_date || b?.created_at || 0) -
+        new Date(a?.launchDate || a?.launch_date || a?.created_at || 0),
+    )
+    .slice(0, 5)
+    .map((item) => ({
+      ...item,
+      brand_name: normalizeText(item?.brand || item?.brand_name),
+      image_url: normalizeText(item?.image || item?.image_url),
+      price: toCatalogPrice(item),
+      launch_date: item?.launchDate || item?.launch_date || item?.created_at,
+    }));
+
+  return {
+    latest_releases: latestReleases,
+    budget_segments: budgetSegments,
+    brand_hub: Array.from(brandCounts.values()).sort(
+      (a, b) =>
+        b.product_count - a.product_count ||
+        a.brand_name.localeCompare(b.brand_name),
+    ),
+    smart_discoveries: smartDiscoveries,
+  };
+};
+
+const buildLaptopCatalogSections = (catalogItems = [], brandCatalog = []) => {
+  const uniqueItems = [];
+  const seenProducts = new Set();
+  const brandLogoByName = new Map();
+
+  (Array.isArray(brandCatalog) ? brandCatalog : []).forEach((brand) => {
+    const brandName = normalizeText(brand?.name || brand?.brand_name);
+    const logoUrl = normalizeText(
+      brand?.logo || brand?.image || brand?.logo_url || brand?.logoUrl,
+    );
+    if (!brandName || !logoUrl) return;
+    brandLogoByName.set(brandName.toLowerCase(), logoUrl);
+  });
+
+  for (const item of Array.isArray(catalogItems) ? catalogItems : []) {
+    const key = toCatalogProductKey(item);
+    if (!key || seenProducts.has(key)) continue;
+    seenProducts.add(key);
+    uniqueItems.push(item);
+  }
+
+  if (!uniqueItems.length) return {};
+
+  const brandCounts = new Map();
+  uniqueItems.forEach((item) => {
+    const brand = normalizeText(item?.brand || item?.brand_name);
+    if (!brand) return;
+    const catalogLogo = brandLogoByName.get(brand.toLowerCase()) || "";
+    const existing = brandCounts.get(brand) || {
+      brand_name: brand,
+      logo_url:
+        catalogLogo || normalizeText(item?.brand_logo || item?.logo_url),
+      product_count: 0,
+    };
+    if (!existing.logo_url && catalogLogo) existing.logo_url = catalogLogo;
+    existing.product_count += 1;
+    brandCounts.set(brand, existing);
+  });
+
+  const budgetSegments = LAPTOP_DISCOVERY_PRICE_BUCKETS.map((maxPrice) => {
+    const productCount = uniqueItems.filter((item) => {
+      const price = toCatalogPrice(item);
+      return price > 0 && price <= maxPrice;
+    }).length;
+    return {
+      label: `Under \u20B9${new Intl.NumberFormat("en-IN").format(maxPrice)}`,
+      path: buildLaptopListingPath({ budget: maxPrice }),
+      product_count: productCount,
+    };
+  });
+
+  const smartDiscoveries = [
+    {
+      label: "Latest Laptops in India",
+      path: buildLaptopListingPath({ latest: true }),
+    },
+    ...LAPTOP_FEATURE_CATALOG.filter((feature) =>
+      uniqueItems.some((item) => matchesLaptopFeature(item, feature.id)),
+    ).map((feature) => ({
+      label: `Best ${feature.name} Laptops`,
+      path: buildLaptopListingPath({ feature: feature.id }),
     })),
   ];
 
@@ -824,10 +947,15 @@ const ProductDiscoverySections = ({
 
   const entityConfig = useMemo(() => getEntityConfig(entityType), [entityType]);
   const catalogSections = useMemo(
-    () =>
-      entityConfig.type === "tvs"
-        ? buildTvCatalogSections(catalogItems, brandCatalog)
-        : {},
+    () => {
+      if (entityConfig.type === "tvs") {
+        return buildTvCatalogSections(catalogItems, brandCatalog);
+      }
+      if (entityConfig.type === "laptops") {
+        return buildLaptopCatalogSections(catalogItems, brandCatalog);
+      }
+      return {};
+    },
     [brandCatalog, catalogItems, entityConfig.type],
   );
   const isLatestPhonesLayout =
@@ -861,7 +989,9 @@ const ProductDiscoverySections = ({
       const brandBrowsePath =
         entityConfig.type === "smartphones"
           ? buildSmartphoneBrandPath(brandName)
-          : `${entityConfig.basePath}?brand=${encodeURIComponent(brandName)}`;
+          : entityConfig.type === "laptops"
+            ? buildLaptopListingPath({ brand: brandName })
+            : `${entityConfig.basePath}?brand=${encodeURIComponent(brandName)}`;
       links.push({
         label: `All ${brandName} ${entityConfig.pluralTitle}`,
         path: normalizeDiscoveryPath(brandBrowsePath, entityConfig.type),
@@ -875,7 +1005,10 @@ const ProductDiscoverySections = ({
       });
       links.push({
         label: `${brandName} ${entityConfig.pluralTitle} ${entityConfig.defaultPriceLabel}`,
-        path: normalizeDiscoveryPath(brandBrowsePath, entityConfig.type),
+        path: normalizeDiscoveryPath(
+          entityConfig.brandBudgetPath?.(brandName) || brandBrowsePath,
+          entityConfig.type,
+        ),
       });
     }
 
@@ -959,7 +1092,9 @@ const ProductDiscoverySections = ({
           const brandPath =
             entityConfig.type === "smartphones"
               ? buildSmartphoneBrandPath(labelBrand)
-              : `${entityConfig.basePath}?brand=${encodeURIComponent(labelBrand)}`;
+              : entityConfig.type === "laptops"
+                ? buildLaptopListingPath({ brand: labelBrand })
+                : `${entityConfig.basePath}?brand=${encodeURIComponent(labelBrand)}`;
           return {
             name: labelBrand,
             label: `${labelBrand} ${entityConfig.brandSuffix}`,
@@ -1107,7 +1242,14 @@ const ProductDiscoverySections = ({
         ) : (
           <div className="grid grid-cols-1 gap-3 p-3 sm:gap-4 sm:p-5 md:grid-cols-2 md:gap-4">
             <div className="space-y-3 sm:space-y-4 md:pr-1">
-              <LinkListBlock title="Smart Popular Links" items={popularLinks} />
+              <LinkListBlock
+                title={
+                  entityConfig.type === "laptops"
+                    ? "Laptop Popular Links"
+                    : "Smart Popular Links"
+                }
+                items={popularLinks}
+              />
             </div>
 
             <div className="space-y-3 sm:space-y-4">

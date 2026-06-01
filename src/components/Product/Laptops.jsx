@@ -12,11 +12,9 @@ import {
   FaFilter,
   FaTimes,
   FaSearch,
-  FaChevronRight,
   FaStore,
   FaMoneyBill,
   FaWeight,
-  FaSort,
   FaEye,
   FaShoppingBag,
   FaCalendarAlt,
@@ -26,7 +24,6 @@ import {
   FaWindowRestore,
   FaClock,
   FaTag,
-  FaExchangeAlt,
 } from "react-icons/fa";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
@@ -56,8 +53,17 @@ import {
   LAPTOP_FEATURE_CATALOG,
   matchesLaptopFeature,
 } from "../../utils/laptopPopularFeatures";
-import { buildCanonicalComparePathFromDevices } from "../../utils/compareRoutes";
+import {
+  buildLaptopListingPath,
+  buildLaptopListingSeoMeta,
+  normalizeLaptopBudget,
+  normalizeLaptopListingSlug,
+  parseLaptopListingPath,
+  stripLaptopSeoQueryParams,
+} from "../../utils/laptopListingRoutes";
 import { isPublishedProduct } from "../../utils/publishedProducts";
+import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
+import ProductDiscoverySections from "../ui/ProductDiscoverySections";
 
 // Enhanced Image Carousel - Reusable from smartphone
 // Note: removed mock fallback — rely on `useDevice()` data from the store
@@ -128,6 +134,7 @@ const ImageCarousel = ({ images = [] }) => {
 const SITE_ORIGIN = "https://tryhook.shop";
 
 const clampScore100 = (value) => {
+  if (value === null || value === undefined || value === "") return null;
   const n = Number(value);
   if (!Number.isFinite(n)) return null;
   if (n <= 1) return Math.max(0, Math.min(100, n * 100));
@@ -135,16 +142,10 @@ const clampScore100 = (value) => {
   return Math.max(0, Math.min(100, n));
 };
 
-const mapScoreToDisplayBand = (score, minTarget = 80, maxTarget = 98) => {
-  const normalized = clampScore100(score);
-  if (normalized == null) return null;
-  const mapped = minTarget + (normalized / 100) * (maxTarget - minTarget);
-  return Number(mapped.toFixed(1));
-};
-
 const CircularScoreBadge = ({ score, size = 42 }) => {
   const normalized = clampScore100(score);
   const value = normalized != null ? Math.round(normalized) : null;
+  if (value == null) return null;
 
   return (
     <div
@@ -154,10 +155,10 @@ const CircularScoreBadge = ({ score, size = 42 }) => {
         value != null ? `Spec score ${value} percent` : "Spec score unavailable"
       }
     >
-      <span className="text-[34px] font-bold leading-none text-violet-600 sm:text-[38px]">
-        {value != null ? value : "--"}
+      <span className="text-[34px] font-semibold leading-none text-blue-600 sm:text-[38px]">
+        {value}
       </span>
-      <span className="flex flex-col text-[7px] font-semibold uppercase tracking-[0.28em] text-violet-400 leading-[0.92]">
+      <span className="flex flex-col text-[7px] font-semibold uppercase tracking-[0.28em] text-blue-400 leading-[0.92]">
         <span>SPEC</span>
         <span>SCORE</span>
       </span>
@@ -188,12 +189,28 @@ const Laptops = () => {
     }
   `;
 
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { search } = location;
   const [params] = useSearchParams();
-  const filter = params.get("filter");
-  const feature = params.get("feature");
-  const normalizedFeature = feature
-    ? feature.toString().toLowerCase().replace(/\s+/g, "-")
-    : null;
+  const listingRouteMeta = useMemo(
+    () => parseLaptopListingPath(location.pathname),
+    [location.pathname],
+  );
+  const legacyFilter = params.get("filter");
+  const legacyFeature = params.get("feature");
+  const filter = listingRouteMeta?.latest ? "new" : legacyFilter;
+  const normalizedFeatures = useMemo(() => {
+    const values = listingRouteMeta?.featureSlugs?.length
+      ? listingRouteMeta.featureSlugs
+      : legacyFeature
+        ? [legacyFeature]
+        : [];
+    return values.map(normalizeLaptopListingSlug).filter(Boolean);
+  }, [legacyFeature, listingRouteMeta]);
+  const normalizedFeature = normalizedFeatures[0] || null;
+  const routeBrandSlug = listingRouteMeta?.brandSlug || "";
+  const routeBudget = listingRouteMeta?.budget || null;
   const dispatch = useDispatch();
   const deviceFieldProfiles = useDeviceFieldProfiles();
   const [sortBy, setSortBy] = useState("featured");
@@ -587,29 +604,12 @@ const Laptops = () => {
           : Number(raw.rating) || 0;
 
     const toFiniteNumber = (value) => {
+      if (value === null || value === undefined || value === "") return null;
       const n = Number(value);
       return Number.isFinite(n) ? n : null;
     };
     const overallScoreRaw = toFiniteNumber(
-      raw.spec_score_v2 ??
-        raw.specScoreV2 ??
-        raw.overall_score_v2 ??
-        raw.overallScoreV2 ??
-        raw.spec_score ??
-        raw.specScore ??
-        raw.overall_score ??
-        raw.overallScore ??
-        profileResult.score,
-    );
-    const overallScoreDisplay = toFiniteNumber(
-      raw.spec_score_v2_display_80_98 ??
-        raw.specScoreV2Display8098 ??
-        raw.overall_score_v2_display_80_98 ??
-        raw.overallScoreV2Display8098 ??
-        raw.spec_score_display ??
-        raw.specScoreDisplay ??
-        raw.overall_score_display ??
-        raw.overallScoreDisplay,
+      raw.spec_score_v2 ?? raw.specScoreV2,
     );
     const trendScore = toFiniteNumber(
       raw.trend_score ?? raw.trending_score ?? raw.trendScore,
@@ -678,6 +678,7 @@ const Laptops = () => {
           : "",
       image: images[0] || "",
       images,
+      spec_score_v2: overallScoreRaw,
       spec_score: overallScoreRaw,
       specs: {
         cpu: processorName || `${cpuBrand} ${cpuModel}`.trim(),
@@ -742,10 +743,7 @@ const Laptops = () => {
         metadata.created_at ||
         "",
       overall_score: overallScoreRaw,
-      overall_score_display:
-        overallScoreDisplay != null
-          ? overallScoreDisplay
-          : mapScoreToDisplayBand(overallScoreRaw),
+      overall_score_display: overallScoreRaw,
       trendBadge:
         trendBadge ||
         (trendScore != null
@@ -1003,8 +1001,6 @@ const Laptops = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [brandFilterQuery, setBrandFilterQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [showSort, setShowSort] = useState(false);
-  const [compareItems, setCompareItems] = useState([]);
 
   // Set page title
   useTitle({
@@ -1013,7 +1009,8 @@ const Laptops = () => {
 
   const deviceContext = useDevice();
   const filterBrand =
-    Array.isArray(filters?.brand) && filters.brand[0] ? filters.brand[0] : null;
+    routeBrandSlug ||
+    (Array.isArray(filters?.brand) && filters.brand[0] ? filters.brand[0] : null);
   const currentBrandObj = (() => {
     const b = filterBrand;
     if (!b) return null;
@@ -1044,14 +1041,52 @@ const Laptops = () => {
     );
   }, [brands, brandFilterQuery]);
 
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { search } = location;
+  useEffect(() => {
+    const searchParams = new URLSearchParams(search || "");
+    const legacyBrand = searchParams.get("brand") || "";
+    const legacySeoFeature = searchParams.get("feature") || "";
+    const legacyBudget = normalizeLaptopBudget(
+      searchParams.get("maxPrice") ||
+        searchParams.get("priceMax") ||
+        searchParams.get("max_price") ||
+        searchParams.get("budget"),
+    );
+    const hasPathSeoIntent = Boolean(
+      listingRouteMeta?.latest ||
+        listingRouteMeta?.brandSlug ||
+        listingRouteMeta?.featureSlugs?.length ||
+        listingRouteMeta?.budget,
+    );
+    const hasLegacySeoIntent = Boolean(
+      legacyBrand ||
+        legacySeoFeature ||
+        legacyBudget ||
+        searchParams.get("filter") === "new",
+    );
+    if (!hasPathSeoIntent && !hasLegacySeoIntent) return;
+
+    const nextParams = stripLaptopSeoQueryParams(search);
+    const desiredUrl = buildLaptopListingPath({
+      brand: listingRouteMeta?.brandSlug || legacyBrand,
+      features: listingRouteMeta?.featureSlugs?.length
+        ? listingRouteMeta.featureSlugs
+        : legacySeoFeature
+          ? [legacySeoFeature]
+          : [],
+      budget: listingRouteMeta?.budget || legacyBudget,
+      latest: listingRouteMeta?.latest || searchParams.get("filter") === "new",
+      query: nextParams,
+    });
+    const currentUrl = `${location.pathname}${search || ""}`;
+    if (desiredUrl !== currentUrl) {
+      navigate(desiredUrl, { replace: true });
+    }
+  }, [listingRouteMeta, location.pathname, navigate, search]);
 
   // Apply query param filters
   useEffect(() => {
     const params = new URLSearchParams(search);
-    const brandParam = params.get("brand");
+    const brandParam = routeBrandSlug || params.get("brand");
     const qParam =
       params.get("q") || params.get("query") || params.get("search") || null;
     const sortParam = params.get("sort");
@@ -1072,21 +1107,30 @@ const Laptops = () => {
 
     // Parse price range
     const rawMin = params.get("priceMin") || params.get("minPrice");
-    const rawMax = params.get("priceMax") || params.get("maxPrice");
+    const rawMax =
+      routeBudget || params.get("priceMax") || params.get("maxPrice");
     const priceMin = rawMin ? Number(rawMin) : MIN_PRICE;
     const priceMax = rawMax ? Number(rawMax) : MAX_PRICE;
 
     setFilters((prev) => ({
       ...prev,
-      brand: brandParam ? [brandParam] : prev.brand,
+      brand: brandParam
+        ? [
+            brands.find(
+              (brand) =>
+                normalizeLaptopListingSlug(brand) ===
+                normalizeLaptopListingSlug(brandParam),
+            ) || brandParam,
+          ]
+        : [],
       priceRange: {
         min: !isNaN(priceMin) ? priceMin : prev.priceRange.min,
         max: !isNaN(priceMax) ? priceMax : prev.priceRange.max,
       },
-      ram: ramArr.length ? ramArr : prev.ram,
-      storage: storageArr.length ? storageArr : prev.storage,
-      cpuBrand: cpuArr.length ? cpuArr : prev.cpuBrand,
-      os: osArr.length ? osArr : prev.os,
+      ram: ramArr,
+      storage: storageArr,
+      cpuBrand: cpuArr,
+      os: osArr,
     }));
 
     if (brandParam && !sortParam) {
@@ -1098,7 +1142,7 @@ const Laptops = () => {
     if (qParam !== null) {
       setSearchQuery(qParam);
     }
-  }, [search]);
+  }, [brands, routeBrandSlug, routeBudget, search]);
 
   const updatePriceRange = (newMin, newMax) => {
     let min = Number(newMin ?? filters.priceRange.min);
@@ -1120,21 +1164,6 @@ const Laptops = () => {
     });
   };
 
-  const handleSortChange = (value) => {
-    setSortBy(value);
-    setShowSort(false);
-    try {
-      const params = new URLSearchParams(search);
-      if (value && value !== "featured") params.set("sort", value);
-      else params.delete("sort");
-      const qs = params.toString();
-      const path = `/laptops${qs ? `?${qs}` : ""}`;
-      navigate(path, { replace: true });
-    } catch {
-      // ignore
-    }
-  };
-
   // Filter logic
   const filteredVariants = variantCards.filter((device) => {
     // Search filter
@@ -1149,7 +1178,11 @@ const Laptops = () => {
       if (!matchesSearch) return false;
     }
 
-    if (normalizedFeature && !matchesLaptopFeature(device, normalizedFeature)) {
+    if (
+      normalizedFeatures.some(
+        (featureId) => !matchesLaptopFeature(device, featureId),
+      )
+    ) {
       return false;
     }
 
@@ -1313,7 +1346,7 @@ const Laptops = () => {
     setSearchQuery("");
     setBrandFilterQuery("");
     try {
-      const params = new URLSearchParams(search);
+      const params = stripLaptopSeoQueryParams(search);
       params.delete("brand");
       params.delete("q");
       params.delete("ram");
@@ -1391,45 +1424,23 @@ const Laptops = () => {
   };
 
   const setFeatureParam = (featureId) => {
-    const sp = new URLSearchParams(search || "");
+    const sp = stripLaptopSeoQueryParams(search || "");
     if (featureId) trackFeatureClick(featureId);
-    if (featureId) sp.set("feature", featureId);
-    else sp.delete("feature");
-    sp.delete("filter");
-    const next = sp.toString();
-    navigate(`/laptops${next ? `?${next}` : ""}`);
+    navigate(
+      buildLaptopListingPath({
+        brand: routeBrandSlug,
+        feature: featureId || "",
+        budget: routeBudget,
+        query: sp,
+      }),
+    );
   };
 
   const handleView = (device, e, store) => {
     if (e && e.stopPropagation) e.stopPropagation();
-    const params = new URLSearchParams();
-    params.set("type", "laptop");
-
-    // Prefer brand and model names over internal ids
-    if (device.brand) params.set("brand", String(device.brand));
-    if (device.name) params.set("model", String(device.name));
-
-    // Variant-level details (ram/storage/variant id)
-    if (device.variant?.variant_id)
-      params.set("variantId", String(device.variant.variant_id));
-    if (device.variant?.ram) params.set("ram", String(device.variant.ram));
-    if (device.variant?.storage)
-      params.set("storage", String(device.variant.storage));
-
-    // Additional spec filters useful for detail page
-    if (device.specs?.cpuBrand)
-      params.set("cpu", String(device.specs.cpuBrand));
-    if (device.specs?.os) params.set("os", String(device.specs.os));
-
-    // Store info
-    if (store?.id) params.set("storeId", String(store.id));
-    if (store?.store) params.set("storeName", String(store.store));
-
-    // Generate SEO-friendly slug-based URL
     const slug = generateSlug(
       device.name || device.model || device.brand || String(device.id),
     );
-    const qs = params.toString();
 
     // record a product view (best-effort) for trending stats
     try {
@@ -1444,59 +1455,17 @@ const Laptops = () => {
       return;
     }
 
-    navigate(`/laptops/${slug}${qs ? `?${qs}` : ""}`);
+    navigate(`/laptops/${slug}`);
   };
-
-  const handleCompareToggle = (device, e) => {
-    if (e) e.stopPropagation();
-    const deviceId = device.productId ?? device.id ?? device.model;
-    setCompareItems((prev) => {
-      const isAlreadyAdded = prev.some(
-        (item) => (item.productId ?? item.id ?? item.model) === deviceId,
-      );
-      if (isAlreadyAdded) {
-        return prev.filter(
-          (item) => (item.productId ?? item.id ?? item.model) !== deviceId,
-        );
-      } else {
-        return [...prev, device];
-      }
-    });
-  };
-
-  const isCompareSelected = (device) => {
-    const deviceId = device.productId ?? device.id ?? device.model;
-    return compareItems.some(
-      (item) => (item.productId ?? item.id ?? item.model) === deviceId,
-    );
-  };
-
-  const handleCompareNavigate = (e) => {
-    if (e) e.stopPropagation();
-    if (compareItems.length === 0) return;
-
-    const comparePath = buildCanonicalComparePathFromDevices({
-      devices: compareItems,
-      getName: (device) => device?.name || device?.model || "",
-      getId: (device) => device?.productId ?? device?.id ?? device?.model ?? null,
-    });
-
-    navigate(comparePath, {
-      state: { initialProducts: compareItems },
-    });
-  };
-
-  const headerLabel = currentBrandObj?.name
-    ? `${String(currentBrandObj.name).toUpperCase()} LAPTOPS`
-    : filter === "trending"
-      ? "TRENDING NOW"
-      : filter === "new"
-        ? "LATEST COLLECTION"
-        : "LAPTOP COLLECTION";
 
   const currentYear = new Date().getFullYear();
   const currentMonthYear = new Intl.DateTimeFormat("en-US", {
-    month: "short",
+    month: "long",
+    year: "numeric",
+  }).format(new Date());
+  const currentFullDate = new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "long",
     year: "numeric",
   }).format(new Date());
   const sanitizeDescription = (desc = "") => {
@@ -1507,53 +1476,41 @@ const Laptops = () => {
     return text.length > 180 ? `${text.slice(0, 177)}...` : text;
   };
 
-  const isLongHeroDescriptionPath = !currentBrandObj;
+  const seoLandingMeta = buildLaptopListingSeoMeta(listingRouteMeta || {}, {
+    brandName: currentBrandObj?.name || "",
+    monthYear: currentMonthYear,
+    fullDate: currentFullDate,
+  });
+  const hasSpecificSeoLanding = Boolean(
+    listingRouteMeta?.latest ||
+      listingRouteMeta?.brandSlug ||
+      listingRouteMeta?.featureSlugs?.length ||
+      listingRouteMeta?.budget,
+  );
+  const headerLabel =
+    filter === "trending" ? "TRENDING NOW" : seoLandingMeta.eyebrow;
+  const isLongHeroDescriptionPath =
+    !currentBrandObj && !hasSpecificSeoLanding;
 
-  const heroTitleText = currentBrandObj
-    ? `${currentBrandObj.name} Laptops`
-    : filter === "trending"
-      ? "Trending Laptops"
-      : filter === "new"
-        ? "Latest Laptops"
-        : "Browse Laptops in India";
+  const heroTitleText =
+    filter === "trending" ? "Trending Laptops" : seoLandingMeta.heading;
 
-  const heroSubtitleText = currentBrandObj
-    ? sanitizeDescription(
-        currentBrandObj.description ||
-          `Browse ${currentBrandObj.name} laptops with detailed specifications, updated prices, and store offers before you decide.`,
-      )
-    : filter === "trending"
+  const heroSubtitleText =
+    filter === "trending"
       ? "Browse the laptops buyers are watching most and quickly spot the models that are getting attention right now. This page brings together updated prices, processor details, RAM, storage, battery life, display quality, and laptop variants in one place so you can compare the practical details that matter without opening multiple store pages. Whether you are looking for a thin-and-light everyday machine, a gaming-ready notebook, a creator-focused device, or a budget-friendly student laptop, the trending collection helps you narrow the field with confidence. Use the filters and product cards to sort by brand, price, memory, storage, and feature, then open the listings that look the most promising."
       : filter === "new"
         ? "Browse the newest laptop releases and keep up with fresh launches as they arrive. This page brings together updated pricing, processor details, RAM, storage, battery information, display sizes, and variant options so you can track what is new in one place. If you are waiting for a newly announced model, planning a future upgrade, or checking how the latest releases stack up, the new-launch collection makes it easy to review the important details without jumping between many product pages. Use the filters and product cards to sort by brand, price, processor, and feature, then open the laptops that are most worth watching."
-        : "Browse laptops in India across brands, price ranges, processor families, memory options, display sizes, and battery capacities so you can quickly find a device that matches your work, study, or gaming needs. This page brings updated prices, key specifications, ratings, and model variants together in one place, making it easier to review performance, portability, battery life, storage, and value without switching between multiple store pages. Whether you are looking for a budget laptop, a gaming machine, a creator notebook, or a reliable everyday system, the collection helps you scan what is new, what is popular, and what is worth shortlisting. Use the filters, search, and product cards to narrow results by brand, price, or feature, then open the laptops that stand out most.";
+        : hasSpecificSeoLanding
+          ? seoLandingMeta.description
+          : "Browse laptops in India across brands, price ranges, processor families, memory options, display sizes, and battery capacities so you can quickly find a device that matches your work, study, or gaming needs. This page brings updated prices, key specifications, ratings, and model variants together in one place, making it easier to review performance, portability, battery life, storage, and value without switching between multiple store pages. Whether you are looking for a budget laptop, a gaming machine, a creator notebook, or a reliable everyday system, the collection helps you scan what is new, what is popular, and what is worth shortlisting. Use the filters, search, and product cards to narrow results by brand, price, or feature, then open the laptops that stand out most.";
   useEffect(() => {
     if (isLongHeroDescriptionPath) {
       setShowHeroDescription(false);
     }
   }, [isLongHeroDescriptionPath, filter]);
 
-  let seoTitle = `Browse Laptops (${currentMonthYear}) Prices Specifications & Deals Hooks`;
-  let seoDescription =
-    "Browse the latest laptops on Hooks with updated prices, key specifications, and featured launches. Use filters to explore brands, budgets, and performance tiers in one place.";
-
-  if (filter === "trending") {
-    seoTitle = `Trending Laptops (${currentMonthYear}) - Popular Models, Prices & Specs - Hooks`;
-    seoDescription =
-      "Browse trending laptops with rising buyer interest, latest prices, and key specifications to find the strongest options quickly on Hooks.";
-  } else if (filter === "new") {
-    seoTitle = `Latest Laptops (${currentMonthYear}) - New Launches, Specs & Prices - Hooks`;
-    seoDescription =
-      "Browse newly launched laptops with updated prices, processor details, RAM and storage options, and full specification breakdowns on Hooks.";
-  }
-
-  if (currentBrandObj) {
-    seoTitle = `${currentBrandObj.name} Laptops (${currentMonthYear}) - Models, Prices & Specs - Hooks`;
-    seoDescription = sanitizeDescription(
-      currentBrandObj.description ||
-        `Browse ${currentBrandObj.name} laptops with detailed specifications, latest prices, and top deals on Hooks.`,
-    );
-  }
+  const seoTitle = seoLandingMeta.title;
+  const seoDescription = sanitizeDescription(seoLandingMeta.description);
   const seoKeywords = useMemo(
     () =>
       buildListSeoKeywords({
@@ -1563,11 +1520,19 @@ const Laptops = () => {
         baseTerms: ["laptops", "laptop price in india", "compare laptop specs"],
         contextTerms: [
           filter === "new" ? "latest laptop launches" : "",
-          filter === "trending" ? "trending laptops" : "",
           currentBrandObj?.name ? `${currentBrandObj.name} laptops` : "",
+          routeBudget ? `laptops under ${routeBudget}` : "",
+          ...normalizedFeatures.map((item) => `${item} laptops`),
         ],
       }),
-    [currentYear, filter, currentBrandObj, sortedVariants],
+    [
+      currentYear,
+      filter,
+      currentBrandObj,
+      normalizedFeatures,
+      routeBudget,
+      sortedVariants,
+    ],
   );
 
   const siteOrigin =
@@ -1593,10 +1558,12 @@ const Laptops = () => {
     return toAbsoluteUrl(raw);
   }, [sortedVariants, siteOrigin]);
 
-  const listSchemaUrl = toCanonicalPageUrl(
-    location?.pathname ? location.pathname : "/laptops",
-    SITE_ORIGIN,
-  );
+  const listCanonicalPath =
+    listingRouteMeta?.canonicalPath || "/laptops";
+  const listSchemaUrl = toCanonicalPageUrl(listCanonicalPath, SITE_ORIGIN);
+  const listRobots = search
+    ? "noindex, follow, max-image-preview:large"
+    : "index, follow, max-image-preview:large";
 
   const listSchemaItems = useMemo(() => {
     const items = sortedVariants.slice(0, 20).map((device) => {
@@ -1649,6 +1616,7 @@ const Laptops = () => {
         <title>{seoTitle}</title>
         <meta name="description" content={seoDescription} />
         <meta name="keywords" content={seoKeywords} />
+        <meta name="robots" content={listRobots} />
 
         {/* Canonical URL - CRITICAL for SEO per route */}
         <link rel="canonical" href={listSchemaUrl} />
@@ -1685,31 +1653,21 @@ const Laptops = () => {
       {/* Main Content */}
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-0 pb-8 sm:pb-12 md:pb-16 lg:pb-20">
         <div className="relative">
-          <section className="relative left-1/2 isolate w-screen -translate-x-1/2 overflow-hidden bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950 px-4 py-6 text-white sm:px-6 sm:py-8 lg:px-8 lg:py-10">
-            <div className="absolute inset-0 opacity-35 [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:72px_72px]" />
-            <div className="absolute -left-20 top-0 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
-            <div className="absolute right-0 top-20 h-80 w-80 rounded-full bg-emerald-300/10 blur-3xl" />
-            <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/10 to-transparent" />
-
+          <section className="relative left-1/2 isolate w-screen -translate-x-1/2 overflow-hidden px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
             <div className="relative mx-auto max-w-7xl">
               <div
                 className={
                   isLongHeroDescriptionPath ? "max-w-6xl" : "max-w-4xl"
                 }
               >
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-emerald-100">
-                  <FaLaptop className="h-3.5 w-3.5" />
-                  {headerLabel}
-                </span>
-
-                <h1 className="mt-6 max-w-7xl text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">
+                <h1 className="text-[11px] font-bold uppercase tracking-[0.32em] text-purple-600 sm:text-xs">
                   {heroTitleText}
                 </h1>
 
                 <h4
-                  className={`mt-4 ${
+                  className={`mt-3 ${
                     isLongHeroDescriptionPath ? "max-w-6xl" : "max-w-3xl"
-                  } text-base leading-7 text-white/80 sm:text-lg sm:leading-8`}
+                  } text-sm leading-7 text-slate-600 sm:text-base sm:leading-8`}
                   style={
                     isLongHeroDescriptionPath && !showHeroDescription
                       ? {
@@ -1728,35 +1686,19 @@ const Laptops = () => {
                   <button
                     type="button"
                     onClick={() => setShowHeroDescription((prev) => !prev)}
-                    className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-emerald-100 transition-colors duration-200 hover:text-white"
+                    className="mt-2.5 inline-flex items-center gap-2 text-sm font-semibold text-blue-700 transition-colors duration-200 hover:text-blue-900"
                     aria-expanded={showHeroDescription}
                   >
                     {showHeroDescription ? "Show less" : "Read more"}
                   </button>
                 ) : null}
 
-                <div className="mt-8 flex flex-wrap gap-3">
-                  <button
-                    onClick={() => navigate("/compare")}
-                    className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition-colors duration-200 hover:bg-slate-100"
-                  >
-                    Compare laptops
-                    <FaExchangeAlt className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    onClick={() => navigate("/brands")}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:border-white/25 hover:bg-white/15"
-                  >
-                    Browse brands
-                    <FaChevronRight className="h-3.5 w-3.5" />
-                  </button>
-                </div>
               </div>
             </div>
           </section>
 
-          <div className="mt-6">
-            <div className="overflow-hidden pt-0 pb-4 sm:pb-5">
+          <div className="mt-4">
+            <div className="overflow-hidden pt-0 pb-2 sm:pb-3">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <FaFilter className="text-blue-500" />
@@ -1786,10 +1728,10 @@ const Laptops = () => {
                     <button
                       key={pf.id}
                       onClick={() => setFeatureParam(pf.id)}
-                      className={`flex items-center gap-2 px-4 py-2.5 rounded-full border text-xs sm:text-sm font-semibold whitespace-nowrap transition-all duration-300 backdrop-blur-sm ${
+                      className={`flex items-center gap-2 rounded-full px-3 py-2 text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors duration-200 ${
                         isActive
-                          ? "bg-gradient-to-b from-blue-600 via-blue-500 to-blue-600 text-white border-blue-400 shadow-lg shadow-blue-500/30"
-                          : "bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm"
+                          ? "bg-blue-600 text-white"
+                          : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                       }`}
                     >
                       <span
@@ -1804,128 +1746,37 @@ const Laptops = () => {
               </div>
             </div>
 
-            {/* Control Bar */}
-            <div className="overflow-hidden">
-              {/* Desktop Search and Sort */}
-              <div className="hidden lg:flex items-center justify-between">
-                <div className="flex-1 min-w-0 max-w-4xl ">
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <FaSearch className="text-blue-500 group-focus-within:text-blue-600 transition-colors duration-200" />
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Search laptops by brand, model, processor, or features..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 rounded-md
-            border border-slate-200 bg-white 
-             text-slate-900 placeholder:text-slate-400
-             focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent
-             text-sm sm:text-base transition-all duration-200
-             disabled:opacity-50 disabled:cursor-not-allowed
-"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <FaSort className="text-blue-500" />
-                    <span className="text-sm text-slate-600 font-medium">
-                      Sort by:
-                    </span>
-                  </div>
-                  <div className="relative min-w-[200px]">
-                    <select
-                      value={sortBy}
-                      onChange={(e) => handleSortChange(e.target.value)}
-                      className="w-full appearance-none rounded-md border border-slate-200 bg-white px-4 py-2.5 pr-10 font-semibold text-slate-900  transition-all duration-200 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    >
-                      <option value="featured" className="bg-white">
-                        Featured Devices
-                      </option>
-                      <option value="price-low" className="bg-white">
-                        Price: Low to High
-                      </option>
-                      <option value="price-high" className="bg-white">
-                        Price: High to Low
-                      </option>
-                      <option value="rating" className="bg-white">
-                        Highest Rated
-                      </option>
-                      <option value="newest" className="bg-white">
-                        Newest First
-                      </option>
-                      <option value="weight" className="bg-white">
-                        Lightest First
-                      </option>
-                      <option value="battery" className="bg-white">
-                        Best Battery
-                      </option>
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
-                      <svg
-                        className="fill-current h-4 w-4"
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                      >
-                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                      </svg>
-                    </div>
-                  </div>
-
-                  {getActiveFiltersCount() > 0 && (
-                    <button
-                      onClick={clearFilters}
-                      className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-blue-600 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all duration-200 border border-slate-200"
-                    >
-                      <FaTimes />
-                      Clear
-                    </button>
-                  )}
-                </div>
+            <div className="mb-3 overflow-hidden">
+              <div className="hidden items-center justify-end gap-4 lg:flex">
+                {getActiveFiltersCount() > 0 && (
+                  <button
+                    onClick={clearFilters}
+                    className="flex items-center gap-2 rounded-[18px] px-4 py-2.5 text-sm font-medium text-blue-600 transition-colors duration-200 hover:bg-blue-50 hover:text-blue-700"
+                  >
+                    <FaTimes />
+                    Clear
+                  </button>
+                )}
               </div>
 
-              {/* Mobile Search and Filter Bar */}
-              <div className="lg:hidden space-y-3 sm:space-y-4 mb-6 sm:mb-8">
-                <div className="relative group">
-                  <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-500 group-focus-within:text-blue-600 transition-colors duration-200" />
-                  <input
-                    type="text"
-                    placeholder="Search laptops..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full h-12 pl-12 pr-4 py-2 border border-slate-200 bg-white rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent text-slate-900 placeholder:text-slate-400 transition-all duration-200 shadow-sm"
-                  />
-                </div>
-
-                <div className="flex gap-3">
+              <div className="space-y-3 sm:space-y-4 lg:hidden">
+                <div className="flex">
                   <button
                     onClick={() => setShowFilters(true)}
-                    className="flex items-center justify-center gap-2 flex-1 h-12 text-white px-4 rounded-xl bg-gradient-to-r from-blue-500 to-sky-500 transition-all duration-300 font-semibold hover:from-blue-600 hover:to-sky-600 hover:shadow-lg hover:shadow-blue-500/20 border border-blue-400/50"
+                    className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-sky-500 px-4 font-semibold text-white transition-colors duration-300 hover:from-blue-600 hover:to-sky-600"
                   >
                     <FaFilter />
                     Filters
                     {getActiveFiltersCount() > 0 && (
-                      <span className=" text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center bg-white/20">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white">
                         {getActiveFiltersCount()}
                       </span>
                     )}
                   </button>
-
-                  <button
-                    onClick={() => setShowSort(true)}
-                    className="flex items-center justify-center gap-2 flex-1 h-12 text-slate-700 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-all duration-300 font-semibold shadow-sm"
-                  >
-                    <FaSort />
-                    Sort
-                  </button>
                 </div>
 
-                {/* Active Filters Badge - Mobile */}
                 {getActiveFiltersCount() > 0 && (
-                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
+                  <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4">
                     <div className="flex items-center gap-3">
                       <FaInfoCircle className="text-blue-500" />
                       <div>
@@ -1933,30 +1784,28 @@ const Laptops = () => {
                           {getActiveFiltersCount()} filter
                           {getActiveFiltersCount() > 1 ? "s" : ""} applied
                         </span>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          Showing {filteredVariants.length} of{" "}
-                          {variantCards.length} options
+                        <p className="mt-0.5 text-xs text-slate-500">
+                          Found {filteredVariants.length} of {variantCards.length}{" "}
+                          options
                         </p>
                       </div>
                     </div>
                     <button
                       onClick={clearFilters}
-                      className="text-blue-600 hover:text-blue-500 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors duration-200"
+                      className="rounded-lg px-3 py-1.5 text-sm font-medium text-blue-600 transition-colors duration-200 hover:bg-slate-100 hover:text-blue-700"
                     >
                       Clear all
                     </button>
                   </div>
                 )}
               </div>
-
-              {/* Desktop Layout */}
             </div>
           </div>
 
-          <div className="mt-6 flex flex-col gap-6 md:gap-8 lg:flex-row">
+          <div className="flex flex-col gap-4 lg:flex-row md:gap-6">
             {/* Desktop Filter Sidebar */}
             <div className="hidden lg:block lg:w-72 flex-shrink-0 ">
-              <div className="sticky top-6 p-5 border border-slate-200 bg-white lg:p-6">
+              <div className="sticky top-6 rounded-2xl border border-white p-5 shadow-[0_2px_4px_rgba(0,0,0,0.1)] lg:p-6">
                 {/* Filters Header */}
                 <div className="mb-6 flex items-center justify-between border-b border-slate-200 px-2 pb-4 sm:mb-8 sm:px-3 md:px-4">
                   <div>
@@ -1995,8 +1844,9 @@ const Laptops = () => {
                   </div>
                 )}
 
+                <div className="flex flex-col">
                 {/* Price Range Filter */}
-                <div className="mb-8">
+                <div className="order-2 mb-8">
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h4 className="text-base font-bold text-slate-900">
@@ -2096,10 +1946,10 @@ const Laptops = () => {
                 </div>
 
                 {/* Brand Filter */}
-                <div className="mb-6">
+                <div className="order-1 mb-6">
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
-                      Brand
+                      Brands
                     </h4>
                     <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-gray-500">
                       {filters.brand.length} selected
@@ -2141,6 +1991,7 @@ const Laptops = () => {
                       </div>
                     )}
                   </div>
+                </div>
                 </div>
 
                 {/* RAM Filter */}
@@ -2395,16 +2246,10 @@ const Laptops = () => {
               {/* Products Grid */}
               <div className="grid grid-cols-1 gap-4 sm:gap-5 md:gap-6 auto-rows-max">
                 {sortedVariants.map((device, idx) => {
-                  const scoreValueRaw = Number(
-                    device.overall_score_display ?? device.overall_score,
-                  );
-                  const scoreValue = Number.isFinite(scoreValueRaw)
-                    ? Math.round(scoreValueRaw)
-                    : null;
                   const cardBadgeLabel =
                     filter === "trending" || device.trendBadge
                       ? device.trendBadge || "Trending"
-                      : null;
+                      : "Laptop";
                   const launchDateParsed = device.launchDate
                     ? new Date(device.launchDate)
                     : null;
@@ -2436,11 +2281,7 @@ const Laptops = () => {
                     <div
                       key={`${device.id ?? device.model ?? ""}-${idx}`}
                       onClick={(e) => handleView(device, e)}
-                      className={`h-full w-full mx-auto smooth-transition fade-in-up overflow-hidden bg-white border border-slate-200 cursor-pointer transition-all duration-200 ${
-                        isCompareSelected(device)
-                          ? "ring-2 ring-blue-300/70 bg-blue-50/20"
-                          : "hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_16px_36px_rgba(15,23,42,0.08)]"
-                      }`}
+                      className="h-full w-full mx-auto smooth-transition fade-in-up overflow-hidden rounded-lg bg-white cursor-pointer transition-all duration-300 hover:bg-slate-50"
                     >
                       <div className="p-5 sm:p-6 transition-all duration-300">
                         <div className="hidden flex-col gap-4 lg:flex lg:flex-row lg:items-start lg:justify-between">
@@ -2459,21 +2300,10 @@ const Laptops = () => {
 
                         <div className="mt-4 hidden flex-col gap-3 lg:flex lg:flex-row lg:items-center lg:justify-between">
                           <div className="flex flex-wrap items-center gap-4">
-                            {scoreValue != null ? (
-                              <div className="flex items-end gap-1 leading-none">
-                                <span className="text-3xl font-semibold leading-none text-violet-600">
-                                  {scoreValue}
-                                </span>
-                                <div className="flex flex-col items-start leading-none">
-                                  <span className="text-[8px] font-semibold uppercase tracking-[0.32em] text-violet-400">
-                                    Spec
-                                  </span>
-                                  <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-violet-500">
-                                    Score
-                                  </span>
-                                </div>
-                              </div>
-                            ) : null}
+                            <CircularScoreBadge
+                              score={device.overall_score_display}
+                              size={42}
+                            />
                           </div>
 
                           {hasLaunchDate ? (
@@ -2519,28 +2349,11 @@ const Laptops = () => {
                                 {device.name || device.model}
                               </h3>
 
-                              {scoreValue != null ? (
-                                <div className="flex items-end gap-1 leading-none">
-                                  <span className="text-3xl font-semibold leading-none text-violet-600">
-                                    {scoreValue}
-                                  </span>
-                                  <div className="flex flex-col items-start leading-none">
-                                    <span className="text-[8px] font-semibold uppercase tracking-[0.32em] text-violet-400">
-                                      Spec
-                                    </span>
-                                    <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-violet-500">
-                                      Score
-                                    </span>
-                                  </div>
-                                </div>
-                              ) : null}
+                              <CircularScoreBadge
+                                score={device.overall_score_display}
+                                size={42}
+                              />
                             </div>
-                            {device.brand ? (
-                              <p className="text-sm font-semibold text-blue-600 mb-1">
-                                {device.brand}
-                              </p>
-                            ) : null}
-
                             <div className="hidden lg:block text-[13px] leading-6 text-slate-700 sm:text-sm sm:leading-7 sm:text-base">
                               {specLine}
                             </div>
@@ -2610,18 +2423,24 @@ const Laptops = () => {
                                                 )}
                                               </span>
                                             </div>
-                                            <a
-                                              href={storePrice.url}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              onClick={(e) =>
-                                                e.stopPropagation()
-                                              }
-                                              className="text-violet-600 hover:text-violet-700 text-xs font-medium flex items-center gap-1 shrink-0"
-                                            >
-                                              Buy Now
-                                              <FaExternalLinkAlt className="text-xs opacity-80" />
-                                            </a>
+                                            {storePrice.url ? (
+                                              <a
+                                                href={storePrice.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                onClick={(e) =>
+                                                  e.stopPropagation()
+                                                }
+                                                className="flex shrink-0 items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700"
+                                              >
+                                                Buy Now
+                                                <FaExternalLinkAlt className="text-xs opacity-80" />
+                                              </a>
+                                            ) : (
+                                              <span className="shrink-0 text-xs font-semibold text-slate-400">
+                                                Coming Soon
+                                              </span>
+                                            )}
                                           </div>
                                         </div>
                                       );
@@ -2635,48 +2454,109 @@ const Laptops = () => {
                               </div>
                             ) : null}
 
-                            <label
-                              className="mt-4 flex cursor-pointer items-center gap-2 text-sm font-semibold text-[#14255e]"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={isCompareSelected(device)}
-                                onClick={(e) => e.stopPropagation()}
-                                onChange={(e) => handleCompareToggle(device, e)}
-                                className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white transition-all duration-200 checked:border-blue-500 checked:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1"
-                              />
-                              <span>Add to Compare</span>
-                            </label>
                           </div>
                         </div>
                       </div>
+
+                      <div className="mt-4 flex items-center justify-end gap-3">
+                        {hasLaunchDate ? (
+                          <div className="flex items-center gap-1.5 text-sm text-slate-700 lg:hidden">
+                            <FaCalendarAlt className="text-slate-400" />
+                            <span>
+                              Launched:{" "}
+                              <span className="font-semibold text-slate-900">
+                                {launchDateParsed.toLocaleDateString("en-US", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                })}
+                              </span>
+                            </span>
+                          </div>
+                        ) : null}
+                      </div>
+
+                      {storePrices.length > 0 ? (
+                        <div className="mt-4 rounded-[20px] border border-blue-100 bg-[#f8fbff] p-3 sm:p-4 lg:hidden">
+                          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
+                            <FaStore className="text-emerald-500" />
+                            Check Price On
+                          </div>
+                          <div className="space-y-2">
+                            {storePrices.slice(0, 2).map((storePrice, i) => {
+                              const storeObj =
+                                storePrice.storeObj ||
+                                (getStore
+                                  ? getStore(
+                                      storePrice.store ||
+                                        storePrice.store_name ||
+                                        storePrice.storeName ||
+                                        "",
+                                    )
+                                  : null);
+                              const storeNameCandidate =
+                                storePrice.store ||
+                                storePrice.store_name ||
+                                storePrice.storeName ||
+                                storeObj?.name ||
+                                "";
+                              const logoSrc =
+                                storePrice.logo ||
+                                (getStoreLogo
+                                  ? getStoreLogo(storeNameCandidate)
+                                  : getLogo(storeNameCandidate));
+                              return (
+                                <div
+                                  key={`${device.id}-mobile-store-${i}`}
+                                  className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-white px-3 py-2.5"
+                                >
+                                  <div className="flex min-w-0 items-center gap-3">
+                                    {logoSrc ? (
+                                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white">
+                                        <img
+                                          src={logoSrc}
+                                          alt={storePrice.store}
+                                          className="h-full w-full object-contain"
+                                        />
+                                      </div>
+                                    ) : (
+                                      <FaStore className="h-8 w-8 shrink-0 text-slate-300" />
+                                    )}
+                                    <span className="truncate text-sm font-medium text-slate-900">
+                                      {storePrice.store || "Online Store"}
+                                    </span>
+                                  </div>
+                                  <div className="flex shrink-0 items-center gap-2">
+                                    <span className="text-sm font-bold text-emerald-600">
+                                      {formatPriceDisplay(storePrice.price)}
+                                    </span>
+                                    {storePrice.url ? (
+                                      <a
+                                        href={storePrice.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700"
+                                      >
+                                        Buy Now
+                                        <FaExternalLinkAlt className="text-xs opacity-80" />
+                                      </a>
+                                    ) : (
+                                      <span className="text-xs font-semibold text-slate-400">
+                                        Coming Soon
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
                   );
                 })}
               </div>
-
-              {/* Floating Compare Bar - Appears when 2+ items selected */}
-              {compareItems.length >= 2 && (
-                <div className="fixed bottom-6 left-4 right-4 md:bottom-8 md:left-auto md:right-8 z-40 max-w-sm bg-white rounded-xl p-4 animate-slide-up md:shadow-2xl md:border-2 md:border-blue-500">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">
-                        {compareItems.length} laptops selected
-                      </p>
-                      <p className="text-xs text-gray-600 mt-0.5">
-                        Ready to compare specifications
-                      </p>
-                    </div>
-                    <button
-                      onClick={handleCompareNavigate}
-                      className="flex-shrink-0 bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:from-blue-600 hover:to-blue-600 transition-all duration-200 whitespace-nowrap text-sm"
-                    >
-                      Compare Now
-                    </button>
-                  </div>
-                </div>
-              )}
 
               {/* No Results State */}
               {sortedVariants.length === 0 && (
@@ -2749,92 +2629,19 @@ const Laptops = () => {
             </div>
           </div>
 
-          {/* Mobile Sort Modal */}
-          {showSort && (
-            <div className="lg:hidden fixed inset-0 z-50">
-              <div
-                className="absolute inset-0 bg-black bg-opacity-50 transition-opacity duration-300"
-                onClick={() => setShowSort(false)}
-              ></div>
+          <LatestNewsRouteSection
+            className="mt-6"
+            productType="laptop"
+            subtitle="Fresh laptop launches, processor updates, and buying context from the Hooks newsroom."
+          />
 
-              <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl transform transition-transform duration-300 max-h-[70vh] overflow-hidden">
-                <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-white">
-                  <div className="flex items-center gap-3">
-                    <FaSort className="text-blue-600 text-xl" />
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900">
-                        Sort Options
-                      </h3>
-                      <p className="text-sm text-gray-500">
-                        Arrange laptops by preference
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setShowSort(false)}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-                  >
-                    <FaTimes className="text-gray-500 text-lg" />
-                  </button>
-                </div>
-
-                <div className="p-6 space-y-3">
-                  {[
-                    {
-                      value: "featured",
-                      label: "Featured Devices",
-                      desc: "Curated selection of popular models",
-                    },
-                    {
-                      value: "price-low",
-                      label: "Price: Low to High",
-                      desc: "Budget-friendly options first",
-                    },
-                    {
-                      value: "price-high",
-                      label: "Price: High to Low",
-                      desc: "Premium laptops first",
-                    },
-                    {
-                      value: "rating",
-                      label: "Top Rated",
-                      desc: "Highest user ratings",
-                    },
-                    {
-                      value: "newest",
-                      label: "Newest First",
-                      desc: "Latest releases",
-                    },
-                    {
-                      value: "weight",
-                      label: "Lightest First",
-                      desc: "Portable laptops first",
-                    },
-                    {
-                      value: "battery",
-                      label: "Best Battery Life",
-                      desc: "Longest battery first",
-                    },
-                  ].map((option) => (
-                    <button
-                      key={option.value}
-                      onClick={() => handleSortChange(option.value)}
-                      className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 ${
-                        sortBy === option.value
-                          ? "bg-blue-50 border-blue-500 text-blue-700"
-                          : "bg-gray-50 border-gray-200 text-gray-700 hover:border-gray-300"
-                      }`}
-                    >
-                      <div className="font-semibold">{option.label}</div>
-                      <div className="text-sm text-gray-500 mt-1">
-                        {option.desc}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+          <ProductDiscoverySections
+            entityType="laptops"
+            catalogItems={devices}
+            brandCatalog={deviceContext?.brands || []}
+            currentBrand={currentBrandObj?.name || filterBrand || ""}
+            className="mt-6"
+          />
 
           {/* Mobile Filter Overlay */}
           {showFilters && (
@@ -2865,8 +2672,9 @@ const Laptops = () => {
                 </div>
 
                 <div className="p-6 overflow-y-auto max-h-[70vh] pb-40 space-y-6">
+                  <div className="flex flex-col gap-6">
                   {/* Price Range */}
-                  <div>
+                  <div className="order-2">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="font-semibold text-gray-900 text-lg">
                         Price Range
@@ -2945,9 +2753,9 @@ const Laptops = () => {
                   </div>
 
                   {/* Brand */}
-                  <div>
+                  <div className="order-1">
                     <h4 className="font-semibold text-gray-900 text-lg mb-3">
-                      Brand
+                      Brands
                     </h4>
                     <div className="relative mb-3">
                       <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
@@ -2984,6 +2792,7 @@ const Laptops = () => {
                         No brands found
                       </div>
                     )}
+                  </div>
                   </div>
 
                   {/* RAM */}
@@ -3122,29 +2931,6 @@ const Laptops = () => {
         </div>
       </div>
 
-      {/* Help Section */}
-      <div className="mt-12 lg:mt-16">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm lg:p-8">
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
-            <div>
-              <h3 className="mb-2 text-xl font-bold text-slate-900">
-                Need help choosing?
-              </h3>
-              <p className="mb-4 text-slate-600 lg:mb-0">
-                Use our comparison tool to side-by-side compare multiple laptops
-                and make an informed decision based on your specific
-                requirements.
-              </p>
-            </div>
-            <button
-              onClick={() => navigate("/compare")}
-              className="whitespace-nowrap rounded-xl border border-blue-400/50 bg-gradient-to-r from-blue-500 to-sky-500 px-8 py-3 font-semibold text-white transition-all duration-200 hover:from-blue-600 hover:to-sky-600"
-            >
-              Open Comparison Tool
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

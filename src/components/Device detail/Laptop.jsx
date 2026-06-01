@@ -8,7 +8,6 @@ import {
   FaShareAlt,
   FaShare,
   FaLaptop,
-  FaPlus,
   FaMicrochip,
   FaMemory,
   FaExpand,
@@ -20,6 +19,8 @@ import {
   FaStore,
   FaHdd,
   FaExternalLinkAlt,
+  FaCheck,
+  FaChevronLeft,
   FaChevronDown,
   FaChevronRight,
   FaWhatsapp,
@@ -35,16 +36,16 @@ import {
   createWebPageSchema,
 } from "../../utils/schemaGenerators";
 import { Helmet } from "react-helmet-async";
-import { buildCanonicalComparePath } from "../../utils/compareRoutes";
 import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
 import { toCanonicalPageUrl } from "../../utils/publicUrl";
-import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import usePageEngagementTracker from "../../hooks/usePageEngagementTracker";
-import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
+import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
+import ProductDiscoverySections from "../ui/ProductDiscoverySections";
 
 const SITE_ORIGIN = "https://tryhook.shop";
 
 const normalizeScore100 = (value) => {
+  if (value === null || value === undefined || value === "") return null;
   const n = Number(value);
   if (!Number.isFinite(n)) return null;
   if (n <= 1) return Math.max(0, Math.min(100, n * 100));
@@ -54,7 +55,6 @@ const normalizeScore100 = (value) => {
 
 const LaptopDetailCard = () => {
   const { getLogo } = useStoreLogos();
-  const deviceFieldProfiles = useDeviceFieldProfiles();
   const normalizeLaptop = (l) => {
     if (!l) return l;
 
@@ -378,9 +378,13 @@ const LaptopDetailCard = () => {
       warranty_years: warrantyYears,
       features: features.length ? features : toArray(existingSpecs.features),
     };
+    const serverSpecScore = normalizeScore100(l.spec_score_v2 ?? l.specScoreV2);
 
     const normalizedLaptop = {
       ...l,
+      spec_score_v2: serverSpecScore,
+      spec_score: serverSpecScore,
+      overall_score: serverSpecScore,
       id: l.id || l.product_id || null,
       product_id: l.product_id || l.id || null,
       product_name:
@@ -432,20 +436,6 @@ const LaptopDetailCard = () => {
       specifications,
       images,
     };
-    const profileResult = resolveDeviceFieldProfile(
-      "laptop",
-      normalizedLaptop,
-      deviceFieldProfiles,
-    );
-    normalizedLaptop.field_profile = profileResult;
-    if (
-      normalizedLaptop.spec_score == null &&
-      normalizedLaptop.overall_score == null &&
-      normalizedLaptop.hook_score == null
-    ) {
-      normalizedLaptop.spec_score = profileResult.score;
-      normalizedLaptop.overall_score = profileResult.score;
-    }
 
     return normalizedLaptop;
   };
@@ -463,20 +453,20 @@ const LaptopDetailCard = () => {
   const modelFromSlug = routeSlug ? extractNameFromSlug(routeSlug) : null;
   const searchModel = query.get("model") || modelFromSlug;
 
-  const { laptops } = useDevice();
+  const { laptops, brands } = useDevice();
 
   // local state
   const navigate = useNavigate();
   const [laptopData, setLaptopData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState(0);
-  const [showAllSpecs, setShowAllSpecs] = useState(false);
   const [showAllStores, setShowAllStores] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [activeImage, setActiveImage] = useState(0);
   const [activeStoreId, setActiveStoreId] = useState(null);
   const [activeTab, setActiveTab] = useState("specifications");
+  const [showHeaderSummaryFull, setShowHeaderSummaryFull] = useState(false);
 
   // Helper function to find laptop by slug locally
   const findLaptopBySlug = (slug) => {
@@ -639,8 +629,8 @@ const LaptopDetailCard = () => {
     if (!canonicalSlug) return;
     const desiredPath = `/laptops/${canonicalSlug}`;
     const currentPath = window.location.pathname;
-    if (currentPath !== desiredPath) {
-      navigate(desiredPath + (location.search || ""), { replace: true });
+    if (currentPath !== desiredPath || location.search) {
+      navigate(desiredPath, { replace: true });
     }
   }, [laptopData, navigate, location.search]);
 
@@ -686,128 +676,7 @@ const LaptopDetailCard = () => {
     source: "laptop-detail",
     enabled: Boolean(currentProductId),
   });
-  const pickScore100 = (...values) => {
-    for (const value of values) {
-      const normalized = normalizeScore100(value);
-      if (normalized != null) return normalized;
-    }
-    return null;
-  };
-  const sectionScores = {
-    specifications: pickScore100(
-      laptopData?.specifications?.score,
-      laptopData?.specifications?.spec_score,
-      laptopData?.spec_score,
-      laptopData?.specScore,
-      laptopData?.field_profile?.score,
-    ),
-    display: pickScore100(
-      laptopData?.display?.score,
-      laptopData?.specifications?.display_score,
-      laptopData?.field_profile?.section_scores?.display,
-    ),
-    performance: pickScore100(
-      laptopData?.performance?.score,
-      laptopData?.specifications?.performance_score,
-      laptopData?.field_profile?.section_scores?.core,
-    ),
-    battery: pickScore100(
-      laptopData?.battery?.score,
-      laptopData?.specifications?.battery_score,
-      laptopData?.field_profile?.section_scores?.core,
-    ),
-    build: pickScore100(
-      laptopData?.physical?.score,
-      laptopData?.specifications?.build_score,
-      laptopData?.field_profile?.section_scores?.core,
-    ),
-    connectivity: pickScore100(
-      laptopData?.connectivity?.score,
-      laptopData?.specifications?.connectivity_score,
-      laptopData?.specifications?.network_score,
-      laptopData?.field_profile?.section_scores?.display,
-    ),
-    software: pickScore100(
-      laptopData?.software?.score,
-      laptopData?.warranty?.score,
-      laptopData?.specifications?.software_score,
-      laptopData?.field_profile?.section_scores?.display,
-    ),
-  };
-  const numericSectionScores = Object.values(sectionScores).filter((score) =>
-    Number.isFinite(score),
-  );
-  const overallScore = pickScore100(
-    laptopData?.spec_score,
-    laptopData?.specScore,
-    laptopData?.overall_score,
-    laptopData?.overallScore,
-    laptopData?.hook_score,
-    laptopData?.hookScore,
-    laptopData?.field_profile?.score,
-    laptopData?.rating,
-    laptopData?.avg_rating,
-    numericSectionScores.length
-      ? numericSectionScores.reduce((sum, score) => sum + score, 0) /
-          numericSectionScores.length
-      : null,
-  );
-  const popularComparisonTargets = (() => {
-    const list = Array.isArray(laptops) ? laptops : [];
-    if (!currentProductId || list.length === 0) return [];
-
-    const normalizePrice = (d) => {
-      const vars = Array.isArray(d?.variants) ? d.variants : [];
-      const raw = vars?.[0]?.base_price ?? d?.base_price ?? d?.price ?? null;
-      const n = Number(raw);
-      return Number.isFinite(n) ? n : null;
-    };
-
-    const normalized = list
-      .map((d) => normalizeLaptop(d))
-      .filter(Boolean)
-      .filter((d) => String(d.id ?? "") !== String(currentProductId));
-
-    const currentBrand = String(laptopData?.brand || "").toLowerCase();
-
-    return normalized
-      .map((d) => {
-        const brand = String(d.brand || "").toLowerCase();
-        const sameBrand = Boolean(currentBrand && brand === currentBrand);
-        const rating = Number(d.rating ?? d.avg_rating ?? d.score ?? 0) || 0;
-        const price = normalizePrice(d);
-        return { d, sameBrand, rating, price };
-      })
-      .sort((a, b) => {
-        if (a.sameBrand !== b.sameBrand) return a.sameBrand ? -1 : 1;
-        if (b.rating !== a.rating) return b.rating - a.rating;
-        if (a.price == null && b.price != null) return 1;
-        if (a.price != null && b.price == null) return -1;
-        if (a.price != null && b.price != null) return a.price - b.price;
-        return 0;
-      })
-      .slice(0, 6)
-      .map((x) => x.d);
-  })();
-
-  const handlePopularCompare = (other) => {
-    const otherId = other?.id ?? other?.product_id ?? other?.productId ?? null;
-    if (!currentProductId || !otherId) return;
-    navigate(
-      buildCanonicalComparePath({
-        leftName:
-          laptopData?.name || laptopData?.product_name || laptopData?.model,
-        rightName: other?.name || other?.product_name || other?.model,
-        leftId: currentProductId,
-        rightId: otherId,
-        type: "laptop",
-      }),
-      {
-        state: { initialProduct: laptopData },
-      },
-    );
-  };
-
+  const overallScore = normalizeScore100(laptopData?.spec_score_v2);
   const allStorePrices =
     variants?.flatMap(
       (variant) =>
@@ -1293,7 +1162,7 @@ const LaptopDetailCard = () => {
 
   const isScoreKey = (key) => /(^|[_-])score$/i.test(String(key || ""));
 
-  const renderSpecItems = (data, limit = 6) => {
+  const renderSpecItems = (data) => {
     if (!data || typeof data !== "object") {
       return (
         <div className="text-center py-4 text-gray-500">No data available</div>
@@ -1310,8 +1179,6 @@ const LaptopDetailCard = () => {
         <div className="text-center py-4 text-gray-500">No data available</div>
       );
     }
-
-    const displayEntries = showAllSpecs ? entries : entries.slice(0, limit);
 
     const toDisplayValue = (value) => {
       if (value === true) return "Yes";
@@ -1332,68 +1199,37 @@ const LaptopDetailCard = () => {
 
     return (
       <>
-        {/* Mobile: Stacked Layout */}
-        <div className="sm:hidden space-y-2 px-1">
-          {displayEntries.map(([key, value]) => (
+        <div className="space-y-3 sm:hidden">
+          {entries.map(([key, value]) => (
             <div
               key={key}
-              className="rounded-md border border-slate-200 bg-white p-2.5"
+              className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-start gap-x-4 gap-y-1 py-1"
             >
-              <div className="text-xs font-semibold uppercase tracking-wide text-slate-600 mb-0.5">
+              <div className="text-[13px] font-medium leading-5 text-[#45608f]">
                 {toNormalCase(key)}
               </div>
-              <div className="text-sm font-semibold text-slate-900 break-words">
+              <div className="break-words text-[15px] font-semibold leading-6 text-[#0d347f]">
                 {toDisplayValue(value)}
               </div>
             </div>
           ))}
         </div>
 
-        {/* Desktop: Table Layout */}
-        <div className="hidden sm:block overflow-hidden rounded-lg border border-slate-200 bg-white">
-          <table className="w-full">
-            <thead className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-700">
-                  Spec
-                </th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-700">
-                  Details
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {displayEntries.map(([key, value], idx) => (
-                <tr
-                  key={key}
-                  className={`transition-colors hover:bg-blue-50 ${
-                    idx % 2 === 0 ? "bg-white" : "bg-slate-50"
-                  }`}
-                >
-                  <td className="px-6 py-4 text-sm font-medium text-slate-600 w-1/3 align-top">
-                    {toNormalCase(key)}
-                  </td>
-                  <td className="px-6 py-4 text-sm font-semibold text-slate-900 w-2/3">
-                    {toDisplayValue(value)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="hidden space-y-4 sm:block">
+          {entries.map(([key, value]) => (
+            <div
+              key={key}
+              className="grid gap-2 py-1 sm:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] sm:gap-6"
+            >
+              <div className="text-sm font-medium text-[#58709d]">
+                {toNormalCase(key)}
+              </div>
+              <div className="break-words text-sm font-semibold text-[#123986]">
+                {toDisplayValue(value)}
+              </div>
+            </div>
+          ))}
         </div>
-        {entries.length > limit && (
-          <button
-            onClick={() => setShowAllSpecs(!showAllSpecs)}
-            className="w-full mt-4 py-2 text-cyan-600 hover:text-cyan-700 font-medium text-sm flex items-center justify-center gap-1 hover:bg-cyan-50 rounded-lg transition-colors"
-          >
-            {showAllSpecs ? "Show Less" : `Show ${entries.length - limit} More`}
-            <FaChevronDown
-              className={`text-xs transition-transform ${
-                showAllSpecs ? "rotate-180" : ""
-              }`}
-            />
-          </button>
-        )}
       </>
     );
   };
@@ -1552,6 +1388,17 @@ const LaptopDetailCard = () => {
     const sectionBuild = filterSpecsByCategory("build");
     const sectionConnectivity = filterSpecsByCategory("connectivity");
     const sectionSoftware = filterSpecsByCategory("software");
+    const generalSection = {
+      brand: laptopData.brand || laptopData.brand_name || "",
+      model: laptopData.model_number || laptopData.model || "",
+      category: laptopData.product_type || "laptop",
+      processor: laptopData.specifications?.processor || "",
+      ram: laptopData.specifications?.ram || currentVariant?.ram || "",
+      storage:
+        laptopData.specifications?.storage || currentVariant?.storage || "",
+      operating_system: laptopData.specifications?.operating_system || "",
+      release_year: laptopData.release_year || "",
+    };
 
     const hasAnySection =
       hasSectionData(sectionSpecifications) ||
@@ -1574,6 +1421,11 @@ const LaptopDetailCard = () => {
     }
 
     const specSections = [
+      {
+        id: "spec-general",
+        title: "General",
+        data: generalSection,
+      },
       {
         id: "spec-specifications-main",
         title: "Processor & Memory",
@@ -1626,25 +1478,36 @@ const LaptopDetailCard = () => {
     ].filter((section) => hasSectionData(section.data));
 
     return (
-      <div id="spec-specifications" className="space-y-5">
-        {specSections.map((section) => {
-          const SectionIcon = section.icon;
-          return (
-            <div
+      <div id="spec-specifications" className="w-full max-w-4xl px-2 sm:px-0">
+        <div className="hidden text-slate-900 sm:block">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-blue-600">
+            Full Specifications
+          </p>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-[#556b95]">
+            {headerTitle} specifications cover processor, memory, display,
+            battery, build, ports, and software details.
+          </p>
+        </div>
+
+        <div className="space-y-4 sm:mt-6 sm:space-y-5">
+          {specSections.map((section) => (
+            <section
               key={section.id}
               id={section.id}
-              className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
+              className="overflow-hidden rounded-2xl border border-[#dde1ff] bg-gradient-to-br from-[#edf4ff] via-[#fbfcff] to-[#f3efff] shadow-[0_18px_44px_rgba(99,102,241,0.10)]"
             >
-              <div className="mb-3 flex items-center gap-2">
-                <SectionIcon className={section.color} />
-                <h4 className="text-lg font-semibold text-slate-900">
+              <div className="px-4 pt-4 sm:px-6 sm:pt-6">
+                <h4 className="text-xl font-semibold tracking-tight text-[#123986] sm:text-2xl">
                   {section.title}
                 </h4>
+                <div className="mt-4 h-px w-full bg-gradient-to-r from-[#6fa8ff] via-[#8e87ff] to-[#d2b6ff]" />
               </div>
-              <div className="mt-4">{renderSpecItems(section.data)}</div>
-            </div>
-          );
-        })}
+              <div className="mt-5 px-4 pb-4 sm:px-6 sm:pb-6">
+                {renderSpecItems(section.data)}
+              </div>
+            </section>
+          ))}
+        </div>
       </div>
     );
   };
@@ -1752,6 +1615,58 @@ const LaptopDetailCard = () => {
   const headerOsLabel = normalizeInlineText(
     laptopData?.specifications?.operating_system || "",
   );
+  const galleryImages = Array.isArray(laptopData?.images)
+    ? laptopData.images.filter(Boolean)
+    : [];
+  const goToPreviousImage = () => {
+    if (galleryImages.length <= 1) return;
+    setActiveImage((current) =>
+      current === 0 ? galleryImages.length - 1 : current - 1,
+    );
+  };
+  const goToNextImage = () => {
+    if (galleryImages.length <= 1) return;
+    setActiveImage((current) =>
+      current === galleryImages.length - 1 ? 0 : current + 1,
+    );
+  };
+  const generatedHeaderSummary = [
+    headerTitle,
+    headerProcessor ? `is powered by ${headerProcessor}` : "",
+    headerDisplay ? `and features a ${headerDisplay} display` : "",
+    headerVariantLabel ? `with a ${headerVariantLabel} configuration` : "",
+    headerOsLabel ? `running ${headerOsLabel}` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const headerSummary = normalizeInlineText(
+    laptopData?.description ||
+      laptopData?.short_description ||
+      laptopData?.summary ||
+      generatedHeaderSummary,
+  );
+  const headerSummaryHasMore = headerSummary.length > 280;
+  const visibleHeaderSummary =
+    headerSummaryHasMore && !showHeaderSummaryFull
+      ? `${headerSummary.slice(0, 277).trim()}...`
+      : headerSummary;
+  const headerSpecScoreBlock =
+    headerSpecScoreLabel != null ? (
+      <div className="flex items-end gap-1 leading-none">
+        <span className="text-3xl font-semibold leading-none text-blue-600">
+          {headerSpecScoreLabel}
+        </span>
+        <span className="pb-0.5 text-sm font-semibold text-blue-600">/100</span>
+        <div className="flex flex-col items-start pb-0.5 leading-none">
+          <span className="text-[8px] font-semibold uppercase tracking-[0.32em] text-blue-400">
+            Spec
+          </span>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-blue-500">
+            Score
+          </span>
+        </div>
+      </div>
+    ) : null;
   const buildLaptopPoints = (...values) =>
     values.map((value) => normalizeInlineText(value)).filter(Boolean);
   const laptopSummarySections = [
@@ -1932,11 +1847,10 @@ const LaptopDetailCard = () => {
     ];
     return JSON.stringify(schemas);
   })();
-  const showHiddenLaptopSections =
-    typeof window !== "undefined" && window.innerWidth < 0;
+  const showHiddenLaptopSections = false;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 w-full ">
+    <div className="w-full">
       <Helmet prioritizeSeoTags>
         <title>{metaTitleWithMonthYear}</title>
         <meta name="description" content={metaDescription} />
@@ -2024,7 +1938,7 @@ const LaptopDetailCard = () => {
 
       <div className="overflow-hidden">
         {/* Mobile Header */}
-        <div className="p-4 bg-white border-b border-gray-200 lg:hidden">
+        <div className="hidden">
           <div className="flex justify-between items-start mb-3">
             <div>
               {showHiddenLaptopSections ? (
@@ -2076,31 +1990,38 @@ const LaptopDetailCard = () => {
           </div>
         </div>
 
-        <div className="hidden lg:block mb-6 text-slate-900">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+        <section className="w-full text-slate-900">
+          <div className="mx-auto max-w-7xl px-3 pb-4 pt-0 sm:px-6 sm:pb-5 lg:px-8 lg:pb-6">
+            <div className="px-3 pb-3 pt-3 sm:px-6 sm:pb-6 sm:pt-4 lg:px-7 lg:pb-7 lg:pt-4">
+              <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div className="min-w-0 flex-1">
               {headerDescriptor ? (
-                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.32em] text-slate-500">
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.32em] text-blue-500 sm:text-xs">
                   {headerDescriptor}
                 </p>
               ) : null}
-              <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-[2rem]">
-                  {headerTitle}
-                </h1>
-                <button
-                  onClick={() => navigate("/compare")}
-                  className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-slate-800"
-                >
-                  <FaPlus className="text-sm" />
-                  Compare
-                </button>
-              </div>
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-[2rem]">
+                {headerTitle}
+              </h1>
 
-              {headerSubtitle ? (
-                <p className="mt-2 text-sm font-medium text-cyan-700">
-                  {headerSubtitle}
-                </p>
+              {visibleHeaderSummary ? (
+                <div className="mt-2 max-w-3xl">
+                  <p className="text-sm leading-6 text-slate-600 sm:text-base">
+                    {visibleHeaderSummary}
+                  </p>
+                  {headerSummaryHasMore ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowHeaderSummaryFull((current) => !current)
+                      }
+                      className="mt-2 inline-flex items-center text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700"
+                      aria-expanded={showHeaderSummaryFull}
+                    >
+                      {showHeaderSummaryFull ? "Show less" : "Read more"}
+                    </button>
+                  ) : null}
+                </div>
               ) : null}
 
               <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
@@ -2127,7 +2048,7 @@ const LaptopDetailCard = () => {
                 </div>
               ) : null}
             </div>
-            <div className="flex flex-col items-start gap-3 lg:items-end">
+            <div className="flex flex-col items-start gap-3 xl:items-end">
               <div className="flex items-center gap-2">
                 <button
                   onClick={toggleFavorite}
@@ -2151,6 +2072,8 @@ const LaptopDetailCard = () => {
                 </button>
               </div>
 
+              {headerSpecScoreBlock}
+
               {headerLaunchLabel ? (
                 <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
                   <span className="h-4 w-px bg-slate-200" aria-hidden="true" />
@@ -2163,83 +2086,40 @@ const LaptopDetailCard = () => {
                 </div>
               ) : null}
             </div>
-          </div>
-        </div>
-
-        {/* Popular Comparisons */}
-        {popularComparisonTargets.length > 0 ? (
-          <div className="mb-6">
-            <div className="mb-3 space-y-1">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-slate-500">
-                Recommended Comparisons
-              </p>
-              <h2 className="text-xl font-semibold text-slate-900">
-                Compare with {metaBrand || headerBrand || "laptop"} devices
-              </h2>
-              <p className="text-sm leading-6 text-slate-500">
-                Explore popular alternatives and see how this model stacks up
-                against other laptops from the same brand.
-              </p>
-            </div>
-            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-3">
-              {popularComparisonTargets.map((d) => {
-                const otherId = d?.id ?? d?.product_id ?? d?.productId ?? null;
-                const otherName =
-                  d?.product_name || d?.name || d?.model || "Laptop";
-                const otherImg = d?.images?.[0] || d?.image || "";
-
-                return (
-                  <button
-                    key={String(otherId || otherName)}
-                    type="button"
-                    onClick={() => handlePopularCompare(d)}
-                    className="min-w-[240px] max-w-[280px] flex-shrink-0 rounded-lg border border-slate-200 bg-white p-3 text-left transition-all hover:border-blue-200 hover:shadow-sm"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-md bg-slate-100">
-                        {otherImg ? (
-                          <img
-                            src={otherImg}
-                            alt={otherName}
-                            className="w-full h-full object-contain"
-                            onError={(e) => {
-                              e.currentTarget.style.display = "none";
-                            }}
-                          />
-                        ) : (
-                          <FaLaptop className="text-gray-400 text-sm" />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-[11px] text-slate-500">
-                          Compare with
-                        </div>
-                        <div className="truncate text-sm font-semibold text-slate-900">
-                          {otherName}
-                        </div>
-                      </div>
-                      <span className="text-xs font-semibold text-blue-700">
-                        Compare
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
+              </div>
             </div>
           </div>
-        ) : null}
+        </section>
 
-        <div className="flex flex-col lg:flex-row gap-6">
+        <div className="mx-auto max-w-7xl px-3 py-6 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-6 lg:flex-row">
           {/* Images Section */}
           <div className="lg:w-2/5 rounded-md bg-transparent p-4 shadow-none sm:p-6">
             {/* Main Image */}
-            <div className="relative mb-6 overflow-hidden rounded-md border border-slate-200 bg-gradient-to-b from-slate-50 via-white to-slate-50 p-4 sm:p-6">
+            <div className="relative mb-4 overflow-hidden rounded-[28px] bg-white px-4 py-8 sm:px-10 sm:py-12">
+              {galleryImages.length > 1 ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={goToPreviousImage}
+                    aria-label="Previous image"
+                    className="absolute left-4 top-1/2 z-10 -translate-y-1/2 rounded-full border border-slate-200 bg-white/95 p-3 text-slate-600 shadow-md transition-all hover:border-blue-300 hover:text-blue-700"
+                  >
+                    <FaChevronLeft className="text-sm" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={goToNextImage}
+                    aria-label="Next image"
+                    className="absolute right-4 top-1/2 z-10 -translate-y-1/2 rounded-full border border-slate-200 bg-white/95 p-3 text-slate-600 shadow-md transition-all hover:border-blue-300 hover:text-blue-700"
+                  >
+                    <FaChevronRight className="text-sm" />
+                  </button>
+                </>
+              ) : null}
               <div className="flex min-h-[340px] items-center justify-center sm:min-h-[420px]">
                 <img
-                  src={
-                    laptopData.images?.[activeImage] ||
-                    "/placeholder-laptop.jpg"
-                  }
+                  src={galleryImages[activeImage] || "/placeholder-laptop.jpg"}
                   alt={laptopData.product_name}
                   className="h-auto max-h-[320px] w-auto object-contain drop-shadow-[0_16px_24px_rgba(15,23,42,0.12)] sm:max-h-[380px]"
                   onError={(e) => {
@@ -2248,12 +2128,29 @@ const LaptopDetailCard = () => {
                   }}
                 />
               </div>
+              {galleryImages.length > 1 ? (
+                <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2">
+                  {galleryImages.map((_, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => setActiveImage(index)}
+                      aria-label={`Go to image ${index + 1}`}
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        activeImage === index
+                          ? "w-10 bg-slate-700"
+                          : "w-2.5 bg-slate-300 hover:bg-slate-400"
+                      }`}
+                    />
+                  ))}
+                </div>
+              ) : null}
             </div>
 
             {/* Thumbnails */}
-            {laptopData.images && laptopData.images.length > 1 && (
-              <div className="flex gap-3 mb-6 overflow-x-auto pb-1 no-scrollbar">
-                {laptopData.images.slice(0, 4).map((image, index) => (
+            {galleryImages.length > 1 && (
+              <div className="mb-6 flex gap-3 overflow-x-auto pb-1 no-scrollbar">
+                {galleryImages.slice(0, 4).map((image, index) => (
                   <button
                     key={index}
                     onClick={() => setActiveImage(index)}
@@ -2274,36 +2171,43 @@ const LaptopDetailCard = () => {
             )}
 
             {/* Variant Selection */}
-            {showHiddenLaptopSections ? (
+            {variants.length > 0 ? (
               <div className="mb-6">
-                <h4 className="text-sm font-medium text-gray-700 mb-3">
-                  Available Configurations
+                <h4 className="mb-3 text-base font-semibold text-slate-900">
+                  Available Variants
                 </h4>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {variants.map((variant, index) => (
                     <button
                       key={variant.id || index}
+                      type="button"
                       onClick={() => setSelectedVariant(index)}
-                      className={`p-4 rounded-xl border-2 transition-all duration-150 text-left ${
+                      aria-pressed={selectedVariant === index}
+                      className={`relative rounded-2xl border p-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 sm:p-4 ${
                         selectedVariant === index
-                          ? "border-cyan-600 bg-gradient-to-br from-cyan-600 via-cyan-500 to-cyan-600 text-white shadow-md"
-                          : "border-gray-200 bg-white hover:border-cyan-300 hover:bg-cyan-50/40"
+                          ? "border-blue-600 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-600 text-white shadow-md"
+                          : "border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/40"
                       }`}
                     >
+                      {selectedVariant === index ? (
+                        <span className="absolute right-2 top-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-blue-600 shadow-sm">
+                          <FaCheck className="text-[9px]" />
+                        </span>
+                      ) : null}
                       <div
-                        className={`font-semibold text-sm mb-1 ${selectedVariant === index ? "text-white" : "text-gray-900"}`}
+                        className={`mb-1 text-sm font-semibold leading-tight ${selectedVariant === index ? "text-white" : "text-gray-900"}`}
                       >
                         {variant.ram} / {variant.storage}
                       </div>
                       {variant.processor ? (
                         <div
-                          className={`text-xs mb-2 ${selectedVariant === index ? "text-cyan-50/90" : "text-gray-600"}`}
+                          className={`mb-1.5 text-[11px] leading-tight ${selectedVariant === index ? "text-white/80" : "text-gray-500"}`}
                         >
                           {variant.processor}
                         </div>
                       ) : null}
                       <div
-                        className={`text-sm font-bold ${selectedVariant === index ? "text-white" : "text-green-600"}`}
+                        className={`text-sm font-bold ${selectedVariant === index ? "text-emerald-200" : "text-green-600"}`}
                       >
                         ₹{formatPrice(variant.base_price)}
                       </div>
@@ -2370,7 +2274,7 @@ const LaptopDetailCard = () => {
           </div>
 
           {/* Details Section */}
-          <div className="lg:w-3/5 p-4 sm:p-6">
+          <div className="flex flex-col lg:w-3/5">
             {/* Desktop Header */}
             <div className="hidden">
               <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
@@ -2384,13 +2288,6 @@ const LaptopDetailCard = () => {
                     <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-[2rem]">
                       {headerTitle}
                     </h1>
-                    <button
-                      onClick={() => navigate("/compare")}
-                      className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-slate-800"
-                    >
-                      <FaPlus className="text-sm" />
-                      Compare
-                    </button>
                   </div>
 
                   {headerSubtitle ? (
@@ -2499,7 +2396,7 @@ const LaptopDetailCard = () => {
 
             {/* Store Prices Section */}
             {sortedStores.length > 0 && (
-              <div className="mb-5 mt-5">
+              <div className="order-2 mb-5 mt-5">
                 <div className="mb-4 flex items-start justify-between gap-3">
                   <div className="space-y-1">
                     <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
@@ -2532,11 +2429,11 @@ const LaptopDetailCard = () => {
                     return (
                       <div
                         key={store.id || index}
-                        className="rounded-xl border border-slate-200 bg-white p-3 transition-colors duration-200 hover:border-blue-200 hover:shadow-sm"
+                        className="rounded-xl border border-slate-200 bg-white p-2.5 transition-all duration-200 hover:border-blue-300 hover:shadow-sm"
                       >
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                          <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <div className="w-11 h-11 bg-white border border-slate-200 rounded-lg flex items-center justify-center p-2 shrink-0">
+                        <div className="flex items-center justify-between">
+                          <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 p-2 shadow-sm">
                               <img
                                 src={getStoreLogo(store.store_name)}
                                 alt={store.store_name}
@@ -2547,7 +2444,7 @@ const LaptopDetailCard = () => {
                               />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <h4 className="font-semibold text-gray-900 text-sm capitalize truncate">
+                              <h4 className="truncate text-sm font-bold capitalize text-slate-900">
                                 {store.store_name}
                               </h4>
                               {store.variantSpec ? (
@@ -2557,9 +2454,9 @@ const LaptopDetailCard = () => {
                               ) : null}
                             </div>
                           </div>
-                          <div className="flex items-center justify-between sm:justify-end gap-3">
+                          <div className="flex items-center gap-3">
                             <div className="text-right">
-                              <div className="text-base font-semibold text-green-600">
+                              <div className="text-sm font-bold text-green-600">
                                 {RUPEE_SYMBOL} {formatPrice(store.price)}
                               </div>
                             </div>
@@ -2570,10 +2467,10 @@ const LaptopDetailCard = () => {
                               onClick={(e) => {
                                 if (!hasStoreUrl) e.preventDefault();
                               }}
-                              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-all duration-200 ${
+                              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
                                 hasStoreUrl
-                                  ? "border-blue-500 bg-white text-blue-600 hover:bg-blue-50"
-                                  : "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
+                                  ? "bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 text-white shadow-sm hover:from-blue-700 hover:via-blue-600 hover:to-blue-700 hover:shadow-md"
+                                  : "cursor-not-allowed bg-slate-200 text-slate-500"
                               }`}
                             >
                               <FaExternalLinkAlt className="text-[10px]" />
@@ -2589,7 +2486,7 @@ const LaptopDetailCard = () => {
             )}
 
             {laptopSummarySections.length > 0 ? (
-              <div className="mt-5 space-y-5">
+              <div className="order-1 mt-5 space-y-5">
                 <div className="max-w-2xl">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-blue-600">
                     Key Specifications
@@ -2602,14 +2499,15 @@ const LaptopDetailCard = () => {
                     battery details that matter most.
                   </p>
                 </div>
-                <div className="grid items-stretch gap-4 md:grid-cols-2 xl:gap-5">
-                  {laptopSummarySections.map((section) => {
-                    const Icon = section.icon;
-                    return (
-                      <div
-                        key={section.key}
-                        className="flex h-full flex-col rounded-md border border-slate-200 bg-white p-5 transition-all duration-200 sm:p-6"
-                      >
+                <div className="rounded-2xl border border-[#dce4f3] bg-gradient-to-br from-[#eef3ff] via-[#f7f8ff] to-[#f2eeff] p-3 sm:p-4 md:p-5">
+                  <div className="grid items-stretch gap-3 md:grid-cols-2 lg:gap-5">
+                    {laptopSummarySections.map((section) => {
+                      const Icon = section.icon;
+                      return (
+                        <div
+                          key={section.key}
+                          className="flex h-full flex-col rounded-2xl border border-[#dce4f3] bg-white/75 p-4 transition-all duration-200 sm:p-5"
+                        >
                         <div className="flex items-start gap-3">
                           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-50 ring-1 ring-slate-200">
                             {Icon ? (
@@ -2634,20 +2532,21 @@ const LaptopDetailCard = () => {
                               key={idx}
                               className="flex items-start gap-2.5 text-sm leading-6 text-slate-700"
                             >
-                              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-gradient-to-r from-blue-500 via-blue-500 to-blue-500" />
+                              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
                               <span className="min-w-0">{point}</span>
                             </li>
                           ))}
                         </ul>
-                      </div>
-                    );
-                  })}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
                 <div className="flex justify-center pt-1 sm:justify-end">
                   <button
                     type="button"
                     onClick={() => handleTabClick("specifications")}
-                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 transition-all duration-200 hover:border-blue-200 hover:bg-blue-50"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-blue-700 bg-blue-700 px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-blue-800 sm:w-auto sm:py-2"
                   >
                     See full specifications
                     <FaChevronRight className="text-xs" />
@@ -2658,55 +2557,24 @@ const LaptopDetailCard = () => {
           </div>
         </div>
 
-        <div className="mt-6 rounded-2xl bg-transparent p-4 sm:p-5">
-          <div className="max-w-3xl">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-blue-600">
-              FULL SPECIFICATIONS
-            </p>
-            <h3 className="mt-2 text-xl font-semibold text-slate-900 sm:text-2xl">
-              {headerTitle}
-              {headerSubtitle ? (
-                <span className="text-blue-600"> ({headerSubtitle})</span>
-              ) : null}
-              <span className="text-blue-600"> Specs</span>
-            </h3>
-            <p className="mt-2 text-sm leading-6 text-slate-500 sm:text-base">
-              Explore the key hardware sections below with quick jumps.
-            </p>
-          </div>
+        <LatestNewsRouteSection
+          className="mt-6"
+          productType="laptop"
+          subtitle="Fresh laptop launches, processor updates, and buying context from the Hooks newsroom."
+        />
 
-          <div className="mt-4 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-            {availableTabs.map((tab) => {
-              const IconComponent = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => handleTabClick(tab.id)}
-                  className={`group relative flex flex-shrink-0 items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors duration-200 focus-visible:outline-none ${
-                    activeTab === tab.id
-                      ? "bg-white text-blue-600 shadow-sm ring-1 ring-slate-200"
-                      : "text-gray-500 hover:text-gray-700"
-                  }`}
-                >
-                  <IconComponent
-                    className={`text-sm ${
-                      activeTab === tab.id
-                        ? "text-blue-500"
-                        : "text-gray-500 group-hover:text-gray-700"
-                    }`}
-                  />
-                  <span className={activeTab === tab.id ? "font-semibold" : ""}>
-                    {tab.label}
-                  </span>
-                  {activeTab === tab.id ? (
-                    <span className="pointer-events-none absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600" />
-                  ) : null}
-                </button>
-              );
-            })}
-          </div>
+        <div className="mt-6 p-0 sm:p-2">{renderTabContent()}</div>
 
-          <div className="p-0 sm:p-2">{renderTabContent()}</div>
+        {currentProductId ? (
+          <ProductDiscoverySections
+            productId={currentProductId}
+            currentBrand={laptopData?.brand || ""}
+            entityType="laptops"
+            catalogItems={laptops}
+            brandCatalog={brands}
+            className="mt-6 w-full px-4 sm:px-0"
+          />
+        ) : null}
         </div>
       </div>
     </div>

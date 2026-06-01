@@ -51,6 +51,10 @@ import {
   buildPublicSmartphoneListingPath as buildSmartphoneListingPath,
 } from "./utils/smartphoneListingRoutes";
 import { getTvRouteFeatureMeta } from "./utils/tvPopularFeatures";
+import {
+  buildLaptopListingSeoMeta,
+  parseLaptopListingPath,
+} from "./utils/laptopListingRoutes";
 import { toCanonicalPagePath, toCanonicalPageUrl } from "./utils/publicUrl";
 
 const SITE_ORIGIN = "https://tryhook.shop";
@@ -58,6 +62,10 @@ const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/hook-logo.svg`;
 const CURRENT_YEAR = new Date().getFullYear();
 const CURRENT_MONTH_YEAR = new Intl.DateTimeFormat("en-US", {
   month: "short",
+  year: "numeric",
+}).format(new Date());
+const CURRENT_MONTH_LONG_YEAR = new Intl.DateTimeFormat("en-US", {
+  month: "long",
   year: "numeric",
 }).format(new Date());
 const CURRENT_FULL_DATE = new Intl.DateTimeFormat("en-GB", {
@@ -256,7 +264,14 @@ const resolveSeoMeta = (pathname) => {
     if (SMARTPHONE_LIST_SLUGS.has(tail.toLowerCase())) return "";
     return name;
   })();
-  const laptopDetailName = extractDetailSlugName(canonicalPath, "/laptops/");
+  const laptopListingRoute = parseLaptopListingPath(canonicalPath);
+  const laptopListingSeo = buildLaptopListingSeoMeta(laptopListingRoute || {}, {
+    monthYear: CURRENT_MONTH_LONG_YEAR,
+    fullDate: CURRENT_FULL_DATE,
+  });
+  const laptopDetailName = laptopListingRoute
+    ? ""
+    : extractDetailSlugName(canonicalPath, "/laptops/");
   const tvListingRoute = getTvListingRouteMeta(canonicalPath);
   const tvDetailName = tvListingRoute
     ? ""
@@ -346,10 +361,9 @@ const resolveSeoMeta = (pathname) => {
       keywords: `smartphones, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch mobiles, trending phone in india, most popular mobiles, mobile price comparison india, moblie price comparison india, compare smartphone specs, compare smartphone prices, 5g phones in india, ai phone, ai budget phone, ${BUDGET_PHONE_KEYWORDS}`,
     },
     {
-      test: (p) => p.startsWith("/laptops"),
-      title: `Best Laptops (${CURRENT_MONTH_YEAR}) - Compare Models, Prices & Specifications - Hooks`,
-      description:
-        "Discover and compare laptops by processor, RAM, storage, display, and price. View current deals and top laptop picks on Hooks.",
+      test: () => Boolean(laptopListingRoute),
+      title: laptopListingSeo.title,
+      description: laptopListingSeo.description,
       keywords: `laptops, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, compare laptops india, laptop comparison site, laptop compare specs, gaming laptops india, student laptops india, productivity laptops, vacuum cooler laptop and phone`,
     },
     {
@@ -632,16 +646,24 @@ function App() {
     );
   };
 
-  const ProductDetailRedirect = ({ toBasePath }) => {
+  const ProductDetailRedirect = ({ toBasePath, preserveSearch = true }) => {
     const { slug } = useParams();
     const location = useLocation();
+    const search = preserveSearch ? location.search || "" : "";
     return (
       <Navigate
-        to={toCanonicalPagePath(
-          `${toBasePath}/${slug}${location.search || ""}`,
-        )}
+        to={toCanonicalPagePath(`${toBasePath}/${slug}${search}`)}
         replace
       />
+    );
+  };
+
+  const LaptopRootSlugRoute = () => {
+    const location = useLocation();
+    return parseLaptopListingPath(location.pathname) ? (
+      <Laptops />
+    ) : (
+      <LaptopDetailCard />
     );
   };
 
@@ -705,6 +727,21 @@ function App() {
             element={<Navigate to="/trending/smartphones" replace />}
           />
           <Route path="/laptops" element={<Laptops />} />
+          <Route path="/laptops/latest" element={<Laptops />} />
+          <Route path="/laptops/brands/:brandSlug" element={<Laptops />} />
+          <Route
+            path="/laptops/brands/:brandSlug/:budgetSlug"
+            element={<Laptops />}
+          />
+          <Route
+            path="/laptops/brands/:brandSlug/features/:featureSlug"
+            element={<Laptops />}
+          />
+          <Route path="/laptops/features/:featureSlug" element={<Laptops />} />
+          <Route
+            path="/laptops/features/:featureSlug/:secondaryFeatureSlug"
+            element={<Laptops />}
+          />
           <Route path="/laptop" element={<Navigate to="/laptops" replace />} />
           <Route path="/tvs" element={<TVs />} />
           <Route path="/tvs/latest" element={<TVs />} />
@@ -740,10 +777,15 @@ function App() {
             path="/smartphone/:slug"
             element={<ProductDetailRedirect toBasePath="/smartphones" />}
           />
-          <Route path="/laptops/:slug" element={<LaptopDetailCard />} />
+          <Route path="/laptops/:slug" element={<LaptopRootSlugRoute />} />
           <Route
             path="/laptop/:slug"
-            element={<ProductDetailRedirect toBasePath="/laptops" />}
+            element={
+              <ProductDetailRedirect
+                toBasePath="/laptops"
+                preserveSearch={false}
+              />
+            }
           />
           <Route path="/tvs/:slug" element={<TVDetailCard />} />
           <Route
@@ -762,11 +804,21 @@ function App() {
           />
           <Route
             path="/devices/laptops/:slug"
-            element={<ProductDetailRedirect toBasePath="/laptops" />}
+            element={
+              <ProductDetailRedirect
+                toBasePath="/laptops"
+                preserveSearch={false}
+              />
+            }
           />
           <Route
             path="/devices/laptop/:slug"
-            element={<ProductDetailRedirect toBasePath="/laptops" />}
+            element={
+              <ProductDetailRedirect
+                toBasePath="/laptops"
+                preserveSearch={false}
+              />
+            }
           />
           <Route
             path="/devices/tvs/:slug"
