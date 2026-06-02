@@ -350,8 +350,6 @@ const Header = () => {
   const mapProductTypeToRoute = (ptype) => {
     if (!ptype) return "smartphones"; // default
     const t = String(ptype).toLowerCase().trim();
-    if (t.includes("phone") || t.includes("smart") || t === "smartphone")
-      return "smartphones";
     if (t.includes("laptop") || t === "laptop") return "laptops";
     if (
       t.includes("television") ||
@@ -363,6 +361,8 @@ const Header = () => {
     ) {
       return "tvs";
     }
+    if (t.includes("phone") || t.includes("smart") || t === "smartphone")
+      return "smartphones";
     if (t.includes("network") || t === "networking") return "networking";
     // Default to smartphones if can't determine
     return "smartphones";
@@ -892,6 +892,10 @@ const Header = () => {
       name,
       model: model || name,
       product_type: productType || fallbackType,
+      canonical_path: createProductPath(
+        mapProductTypeToRoute(productType || fallbackType),
+        name,
+      ),
       brand_name: brandName || null,
       image_url: image || null,
       min_price: minPrice,
@@ -931,15 +935,62 @@ const Header = () => {
     return deduped;
   }, [smartphones, laptops, tvs]);
 
+  const localProductSuggestionsById = React.useMemo(() => {
+    const byId = new Map();
+    localSearchSuggestions.forEach((item) => {
+      const id = item?.id ?? item?.product_id ?? item?.productId;
+      if (id === null || id === undefined || id === "") return;
+      byId.set(String(id), item);
+    });
+    return byId;
+  }, [localSearchSuggestions]);
+
+  const enrichApiSuggestion = (item) => {
+    if (!item || typeof item !== "object") return item;
+    if (normalizeText(item.type || "product") !== "product") return item;
+
+    const id = item.id ?? item.product_id ?? item.productId;
+    const localItem =
+      id === null || id === undefined || id === ""
+        ? null
+        : localProductSuggestionsById.get(String(id));
+
+    if (!localItem) return item;
+
+    const localVariants = getSuggestionVariantTypes(localItem);
+    const localFeatures = getSuggestionFeatures(localItem);
+
+    return {
+      ...item,
+      name: localItem.name || item.name,
+      model: localItem.model || item.model,
+      product_type: item.product_type || localItem.product_type,
+      canonical_path: localItem.canonical_path || item.canonical_path,
+      brand_name: item.brand_name || localItem.brand_name || null,
+      image_url: item.image_url || localItem.image_url || null,
+      min_price: item.min_price ?? localItem.min_price ?? null,
+      variant_types:
+        localVariants.length > 0
+          ? localVariants
+          : getSuggestionVariantTypes(item),
+      key_features:
+        localFeatures.length > 0 ? localFeatures : getSuggestionFeatures(item),
+      searchable_text: localItem.searchable_text,
+    };
+  };
+
   const mergeSuggestions = (apiResults, localResults) => {
     const merged = new Map();
 
     const buildKey = (item) => {
       const baseType = normalizeText(item.type || "product");
+      const rawId = item.id ?? item.product_id ?? item.productId ?? "";
+      if (baseType === "product" && String(rawId).trim()) {
+        return `${baseType}|${String(rawId).trim()}`;
+      }
       const normalizedName = normalizeText(item.name);
       const normalizedBrand = normalizeText(item.brand_name || item.brand);
       const normalizedProductType = normalizeText(item.product_type);
-      const rawId = item.id ?? item.product_id ?? item.productId ?? "";
       return [
         baseType,
         normalizedProductType,
@@ -1109,9 +1160,7 @@ const Header = () => {
         const json = await r.json();
         const apiResults = (json.results || [])
           .filter((item) => isPublishedProduct(item))
-          .map((it) => ({
-            ...it,
-          }));
+          .map((it) => enrichApiSuggestion(it));
 
         const localMatches = localSearchSuggestions
           .filter((item) => item.searchable_text.includes(qLower))
@@ -1447,6 +1496,8 @@ const Header = () => {
       dropdownItems: isCompareRoute ? undefined : exploreDropdownLinks,
     },
     { name: "Compare", link: toCanonicalPagePath("/compare") },
+    { name: "Laptops", link: toCanonicalPagePath("/laptops") },
+    { name: "TVs", link: toCanonicalPagePath("/tvs") },
     {
       name: "Upcoming Mobiles",
       link: toCanonicalPagePath("/smartphones/upcoming"),
@@ -1544,6 +1595,8 @@ const Header = () => {
     [
       browseNavLabel,
       "Compare",
+      "Laptops",
+      "TVs",
       "Upcoming Mobiles",
       "Latest Mobiles",
       "Trending Mobiles",

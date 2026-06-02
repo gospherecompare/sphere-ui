@@ -704,8 +704,8 @@ const TVDetailCard = () => {
     if (!canonicalSlug) return;
     const desiredPath = `/tvs/${canonicalSlug}`;
     const currentPath = window.location.pathname;
-    if (currentPath !== desiredPath) {
-      navigate(desiredPath + (location.search || ""), { replace: true });
+    if (currentPath !== desiredPath || location.search) {
+      navigate(desiredPath, { replace: true });
     }
   }, [applianceData, navigate, location.search]);
 
@@ -1409,23 +1409,7 @@ const TVDetailCard = () => {
     return toCanonicalPageUrl(path, SITE_ORIGIN);
   }, [location.pathname]);
 
-  const getShareUrl = () => {
-    try {
-      const base = getCanonicalUrl;
-      const url = new URL(base);
-      const productId =
-        applianceData?.id ||
-        applianceData?.product_id ||
-        applianceData?.productId ||
-        applianceData?.model_number ||
-        "";
-      if (productId) url.searchParams.set("id", String(productId));
-      url.searchParams.set("shared", "1");
-      return url.toString();
-    } catch (e) {
-      return getCanonicalUrl;
-    }
-  };
+  const getShareUrl = () => getCanonicalUrl;
 
   const copyTextToClipboard = async (text) => {
     if (navigator.clipboard && navigator.clipboard.writeText) {

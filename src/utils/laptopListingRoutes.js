@@ -244,9 +244,9 @@ export const buildLaptopListingSeoMeta = (
 
   if (routeMeta.latest) {
     return {
-      title: `Latest Laptops in India (${fullDate}) - New Launches & Prices - Hooks`,
+      title: `Latest Laptops in India (${fullDate}) - Prices & Specs - Hooks`,
       description:
-        "Browse the latest laptop launches in India with updated prices, processor details, RAM, storage, display specifications, and store availability on Hooks.",
+        "Browse the latest laptops added in India with updated prices, processor details, RAM, storage, display specifications, and store availability on Hooks.",
       heading: "Latest Laptops in India",
       eyebrow: "LATEST LAPTOPS",
     };

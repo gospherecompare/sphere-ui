@@ -17,7 +17,6 @@ import {
   FaWeight,
   FaEye,
   FaShoppingBag,
-  FaCalendarAlt,
   FaInfoCircle,
   FaExternalLinkAlt,
   FaPlug,
@@ -736,9 +735,7 @@ const Laptops = () => {
       numericWeight: weight,
       numericDisplaySize: displaySize,
       numericBattery: batteryCapacity,
-      launchDate:
-        raw.launch_date ||
-        basicInfo.launch_date ||
+      entryDate:
         raw.created_at ||
         metadata.created_at ||
         "",
@@ -882,6 +879,9 @@ const Laptops = () => {
 
   // Extract filter options dynamically from all devices
   const brands = [...new Set(devices.map((d) => d.brand).filter(Boolean))];
+  const brandsKey = brands
+    .map((brand) => normalizeLaptopListingSlug(brand))
+    .join("|");
 
   // Extract all unique RAM values from variants
   const allRams = [
@@ -1112,9 +1112,8 @@ const Laptops = () => {
     const priceMin = rawMin ? Number(rawMin) : MIN_PRICE;
     const priceMax = rawMax ? Number(rawMax) : MAX_PRICE;
 
-    setFilters((prev) => ({
-      ...prev,
-      brand: brandParam
+    setFilters((prev) => {
+      const nextBrand = brandParam
         ? [
             brands.find(
               (brand) =>
@@ -1122,16 +1121,34 @@ const Laptops = () => {
                 normalizeLaptopListingSlug(brandParam),
             ) || brandParam,
           ]
-        : [],
-      priceRange: {
+        : [];
+      const nextPriceRange = {
         min: !isNaN(priceMin) ? priceMin : prev.priceRange.min,
         max: !isNaN(priceMax) ? priceMax : prev.priceRange.max,
-      },
-      ram: ramArr,
-      storage: storageArr,
-      cpuBrand: cpuArr,
-      os: osArr,
-    }));
+      };
+      const matchesArray = (left = [], right = []) =>
+        left.length === right.length &&
+        left.every((value, index) => value === right[index]);
+      const unchanged =
+        matchesArray(prev.brand, nextBrand) &&
+        prev.priceRange.min === nextPriceRange.min &&
+        prev.priceRange.max === nextPriceRange.max &&
+        matchesArray(prev.ram, ramArr) &&
+        matchesArray(prev.storage, storageArr) &&
+        matchesArray(prev.cpuBrand, cpuArr) &&
+        matchesArray(prev.os, osArr);
+
+      if (unchanged) return prev;
+      return {
+        ...prev,
+        brand: nextBrand,
+        priceRange: nextPriceRange,
+        ram: ramArr,
+        storage: storageArr,
+        cpuBrand: cpuArr,
+        os: osArr,
+      };
+    });
 
     if (brandParam && !sortParam) {
       setSortBy("newest");
@@ -1142,7 +1159,7 @@ const Laptops = () => {
     if (qParam !== null) {
       setSearchQuery(qParam);
     }
-  }, [brands, routeBrandSlug, routeBudget, search]);
+  }, [brandsKey, routeBrandSlug, routeBudget, search]);
 
   const updatePriceRange = (newMin, newMax) => {
     let min = Number(newMin ?? filters.priceRange.min);
@@ -1319,7 +1336,7 @@ const Laptops = () => {
       case "rating":
         return b.rating - a.rating;
       case "newest":
-        return new Date(b.launchDate) - new Date(a.launchDate);
+        return new Date(b.entryDate) - new Date(a.entryDate);
       case "weight":
         return a.numericWeight - b.numericWeight;
       case "battery":
@@ -1439,8 +1456,14 @@ const Laptops = () => {
   const handleView = (device, e, store) => {
     if (e && e.stopPropagation) e.stopPropagation();
     const slug = generateSlug(
-      device.name || device.model || device.brand || String(device.id),
+      device.name ||
+        device.model ||
+        device.brand ||
+        String(device.product_id ?? device.productId ?? device.id ?? ""),
     );
+    if (!slug) return;
+
+    navigate(`/laptops/${slug}`);
 
     // record a product view (best-effort) for trending stats
     try {
@@ -1451,11 +1474,7 @@ const Laptops = () => {
           method: "POST",
         }).catch(() => {});
       }
-    } catch {
-      return;
-    }
-
-    navigate(`/laptops/${slug}`);
+    } catch {}
   };
 
   const currentYear = new Date().getFullYear();
@@ -1499,7 +1518,7 @@ const Laptops = () => {
     filter === "trending"
       ? "Browse the laptops buyers are watching most and quickly spot the models that are getting attention right now. This page brings together updated prices, processor details, RAM, storage, battery life, display quality, and laptop variants in one place so you can compare the practical details that matter without opening multiple store pages. Whether you are looking for a thin-and-light everyday machine, a gaming-ready notebook, a creator-focused device, or a budget-friendly student laptop, the trending collection helps you narrow the field with confidence. Use the filters and product cards to sort by brand, price, memory, storage, and feature, then open the listings that look the most promising."
       : filter === "new"
-        ? "Browse the newest laptop releases and keep up with fresh launches as they arrive. This page brings together updated pricing, processor details, RAM, storage, battery information, display sizes, and variant options so you can track what is new in one place. If you are waiting for a newly announced model, planning a future upgrade, or checking how the latest releases stack up, the new-launch collection makes it easy to review the important details without jumping between many product pages. Use the filters and product cards to sort by brand, price, processor, and feature, then open the laptops that are most worth watching."
+        ? "Browse the latest laptops added to Hooks and keep up with fresh entries as they arrive. This page brings together updated pricing, processor details, RAM, storage, battery information, display sizes, and variant options so you can track what is new in one place. If you are planning an upgrade or checking how recently added models stack up, the latest collection makes it easy to review the important details without jumping between many product pages. Use the filters and product cards to sort by brand, price, processor, and feature, then open the laptops that are most worth watching."
         : hasSpecificSeoLanding
           ? seoLandingMeta.description
           : "Browse laptops in India across brands, price ranges, processor families, memory options, display sizes, and battery capacities so you can quickly find a device that matches your work, study, or gaming needs. This page brings updated prices, key specifications, ratings, and model variants together in one place, making it easier to review performance, portability, battery life, storage, and value without switching between multiple store pages. Whether you are looking for a budget laptop, a gaming machine, a creator notebook, or a reliable everyday system, the collection helps you scan what is new, what is popular, and what is worth shortlisting. Use the filters, search, and product cards to narrow results by brand, price, or feature, then open the laptops that stand out most.";
@@ -1519,7 +1538,7 @@ const Laptops = () => {
         currentYear,
         baseTerms: ["laptops", "laptop price in india", "compare laptop specs"],
         contextTerms: [
-          filter === "new" ? "latest laptop launches" : "",
+          filter === "new" ? "recently added laptops" : "",
           currentBrandObj?.name ? `${currentBrandObj.name} laptops` : "",
           routeBudget ? `laptops under ${routeBudget}` : "",
           ...normalizedFeatures.map((item) => `${item} laptops`),
@@ -2250,12 +2269,6 @@ const Laptops = () => {
                     filter === "trending" || device.trendBadge
                       ? device.trendBadge || "Trending"
                       : "Laptop";
-                  const launchDateParsed = device.launchDate
-                    ? new Date(device.launchDate)
-                    : null;
-                  const hasLaunchDate =
-                    launchDateParsed &&
-                    !Number.isNaN(launchDateParsed.getTime());
                   const storePrices = Array.isArray(device.storePrices)
                     ? device.storePrices
                     : [];
@@ -2306,24 +2319,6 @@ const Laptops = () => {
                             />
                           </div>
 
-                          {hasLaunchDate ? (
-                            <div className="flex items-center gap-1.5 text-sm text-slate-700 sm:justify-end">
-                              <FaCalendarAlt className="text-slate-400" />
-                              <span>
-                                Launched:{" "}
-                                <span className="font-semibold text-slate-900">
-                                  {launchDateParsed.toLocaleDateString(
-                                    "en-US",
-                                    {
-                                      day: "2-digit",
-                                      month: "short",
-                                      year: "numeric",
-                                    },
-                                  )}
-                                </span>
-                              </span>
-                            </div>
-                          ) : null}
                         </div>
 
                         <div className="mt-5 grid grid-cols-[128px_minmax(0,1fr)] gap-3 sm:grid-cols-[120px_minmax(0,1fr)] lg:grid-cols-[180px_minmax(0,1fr)] sm:gap-4 lg:gap-5">
@@ -2456,24 +2451,6 @@ const Laptops = () => {
 
                           </div>
                         </div>
-                      </div>
-
-                      <div className="mt-4 flex items-center justify-end gap-3">
-                        {hasLaunchDate ? (
-                          <div className="flex items-center gap-1.5 text-sm text-slate-700 lg:hidden">
-                            <FaCalendarAlt className="text-slate-400" />
-                            <span>
-                              Launched:{" "}
-                              <span className="font-semibold text-slate-900">
-                                {launchDateParsed.toLocaleDateString("en-US", {
-                                  day: "2-digit",
-                                  month: "short",
-                                  year: "numeric",
-                                })}
-                              </span>
-                            </span>
-                          </div>
-                        ) : null}
                       </div>
 
                       {storePrices.length > 0 ? (

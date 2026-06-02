@@ -696,9 +696,31 @@ const LaptopDetailCard = () => {
 
   const getStoreLogo = (storeName) => getLogo(storeName);
 
+  const toPriceNumber = (price) => {
+    if (typeof price === "number") {
+      return Number.isFinite(price) && price > 0 ? price : null;
+    }
+    const normalized = Number(String(price ?? "").replace(/[^\d.]/g, ""));
+    return Number.isFinite(normalized) && normalized > 0 ? normalized : null;
+  };
+
+  const getVariantBestPrice = (variant) => {
+    const prices = [
+      variant?.base_price,
+      ...(Array.isArray(variant?.store_prices)
+        ? variant.store_prices.map((store) => store?.price)
+        : []),
+    ]
+      .map(toPriceNumber)
+      .filter((price) => price != null);
+
+    return prices.length ? Math.min(...prices) : null;
+  };
+
   const formatPrice = (price) => {
-    if (price == null || price === "") return "N/A";
-    return new Intl.NumberFormat("en-IN").format(price);
+    const normalized = toPriceNumber(price);
+    if (normalized == null) return "N/A";
+    return new Intl.NumberFormat("en-IN").format(normalized);
   };
   const RUPEE_SYMBOL = "\u20B9";
 
@@ -793,15 +815,8 @@ const LaptopDetailCard = () => {
       title = normalizeInlineText(title.replace(repeatedBrand, "$1"));
     }
 
-    // Remove model code from visible title when present to avoid repetition.
-    if (model) {
-      const modelRe = new RegExp(`\\b${escapeRegex(model)}\\b`, "ig");
-      const withoutModel = normalizeInlineText(
-        title.replace(modelRe, "").replace(/[\-|:|,]+$/g, ""),
-      );
-      if (withoutModel && withoutModel.length >= 6) {
-        title = withoutModel;
-      }
+    if (model && !title.toLowerCase().includes(model.toLowerCase())) {
+      title = `${title} ${model}`;
     }
 
     return title || "Laptop";
@@ -902,16 +917,17 @@ const LaptopDetailCard = () => {
   };
 
   const sortedStores = allStorePrices.slice().sort((a, b) => {
-    const priceA = a?.price || Infinity;
-    const priceB = b?.price || Infinity;
+    const priceA = toPriceNumber(a?.price) ?? Infinity;
+    const priceB = toPriceNumber(b?.price) ?? Infinity;
     return priceA - priceB;
   });
 
   const sortedVariantStores = variantStorePrices.slice().sort((a, b) => {
-    const priceA = a?.price || Infinity;
-    const priceB = b?.price || Infinity;
+    const priceA = toPriceNumber(a?.price) ?? Infinity;
+    const priceB = toPriceNumber(b?.price) ?? Infinity;
     return priceA - priceB;
   });
+  const selectedVariantPrice = getVariantBestPrice(currentVariant);
 
   const displayedStores = showAllStores
     ? sortedStores
@@ -956,8 +972,8 @@ const LaptopDetailCard = () => {
       laptopData?.gpu ||
       laptopData?.specs?.gpu ||
       "GPU info not available";
-    const price = currentVariant?.base_price
-      ? `${RUPEE_SYMBOL}${formatPrice(currentVariant.base_price)}`
+    const price = selectedVariantPrice
+      ? `${RUPEE_SYMBOL}${formatPrice(selectedVariantPrice)}`
       : "Price not available";
 
     return {
@@ -1590,7 +1606,7 @@ const LaptopDetailCard = () => {
     ? [currentVariant.ram, currentVariant.storage].filter(Boolean).join(" / ")
     : "";
   const headerSpecScoreLabel = Number.isFinite(overallScore)
-    ? Number(overallScore).toFixed(1)
+    ? Math.round(Number(overallScore))
     : null;
   const headerRatingValue = Number(
     laptopData?.rating ?? laptopData?.avg_rating ?? Number.NaN,
@@ -1598,20 +1614,6 @@ const LaptopDetailCard = () => {
   const headerRatingLabel = Number.isFinite(headerRatingValue)
     ? headerRatingValue.toFixed(1)
     : null;
-  const headerLaunchDate = laptopData?.launch_date
-    ? new Date(laptopData.launch_date)
-    : null;
-  const hasLaunchDate =
-    headerLaunchDate && !Number.isNaN(headerLaunchDate.getTime());
-  const headerLaunchLabel = hasLaunchDate
-    ? headerLaunchDate.toLocaleDateString("en-US", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
-    : laptopData?.release_year
-      ? String(laptopData.release_year)
-      : "";
   const headerOsLabel = normalizeInlineText(
     laptopData?.specifications?.operating_system || "",
   );
@@ -1984,7 +1986,7 @@ const LaptopDetailCard = () => {
           <div className="flex items-center justify-between mt-4">
             {currentVariant && (
               <span className="text-2xl font-bold text-green-600">
-                ₹{formatPrice(currentVariant.base_price)}
+                ₹{formatPrice(selectedVariantPrice)}
               </span>
             )}
           </div>
@@ -2040,7 +2042,7 @@ const LaptopDetailCard = () => {
               {currentVariant ? (
                 <div className="mt-4 flex flex-wrap items-end gap-2">
                   <div className="text-3xl font-bold tracking-tight text-emerald-600">
-                    ₹ {formatPrice(currentVariant.base_price)}
+                    ₹ {formatPrice(selectedVariantPrice)}
                   </div>
                   <div className="pb-0.5 text-sm text-slate-500">
                     ({currentVariant.ram} / {currentVariant.storage})
@@ -2074,17 +2076,6 @@ const LaptopDetailCard = () => {
 
               {headerSpecScoreBlock}
 
-              {headerLaunchLabel ? (
-                <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
-                  <span className="h-4 w-px bg-slate-200" aria-hidden="true" />
-                  <span>
-                    Launched On:{" "}
-                    <span className="font-semibold text-slate-900">
-                      {headerLaunchLabel}
-                    </span>
-                  </span>
-                </div>
-              ) : null}
             </div>
               </div>
             </div>
@@ -2209,7 +2200,7 @@ const LaptopDetailCard = () => {
                       <div
                         className={`text-sm font-bold ${selectedVariant === index ? "text-emerald-200" : "text-green-600"}`}
                       >
-                        ₹{formatPrice(variant.base_price)}
+                        ₹{formatPrice(getVariantBestPrice(variant))}
                       </div>
                     </button>
                   ))}
@@ -2312,7 +2303,7 @@ const LaptopDetailCard = () => {
                   {currentVariant ? (
                     <div className="mt-4 flex flex-wrap items-end gap-2">
                       <div className="text-3xl font-bold tracking-tight text-emerald-600">
-                        ₹ {formatPrice(currentVariant.base_price)}
+                        ₹ {formatPrice(selectedVariantPrice)}
                       </div>
                       <div className="pb-0.5 text-sm text-slate-500">
                         ({currentVariant.ram} / {currentVariant.storage})
@@ -2363,20 +2354,6 @@ const LaptopDetailCard = () => {
                       </span>
                     ) : null}
                   </div>
-                  {headerLaunchLabel ? (
-                    <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
-                      <span
-                        className="h-4 w-px bg-slate-200"
-                        aria-hidden="true"
-                      />
-                      <span>
-                        Launched On:{" "}
-                        <span className="font-semibold text-slate-900">
-                          {headerLaunchLabel}
-                        </span>
-                      </span>
-                    </div>
-                  ) : null}
                 </div>
               </div>
 
@@ -2387,7 +2364,7 @@ const LaptopDetailCard = () => {
                       Starting from
                     </div>
                     <div className="text-4xl font-bold text-green-600">
-                      ₹ {formatPrice(currentVariant.base_price)}
+                      ₹ {formatPrice(selectedVariantPrice)}
                     </div>
                   </div>
                 )}

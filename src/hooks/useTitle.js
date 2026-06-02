@@ -7,6 +7,10 @@ const CURRENT_MONTH_YEAR = new Intl.DateTimeFormat("en-US", {
   month: "short",
   year: "numeric",
 }).format(new Date());
+const CURRENT_MONTH_LONG_YEAR = new Intl.DateTimeFormat("en-US", {
+  month: "long",
+  year: "numeric",
+}).format(new Date());
 const CURRENT_FULL_DATE = new Intl.DateTimeFormat("en-GB", {
   day: "2-digit",
   month: "long",
@@ -18,7 +22,7 @@ const PAGE_TITLES = {
   home: `Compare Smartphones, Laptops & TVs in India - Specs, Prices & Reviews - ${SITE_NAME}`,
   smartphones: `Best Smartphones (${CURRENT_MONTH_YEAR}) - Compare Prices - ${SITE_NAME}`,
   laptops: `Best Laptops (${CURRENT_MONTH_YEAR}) - Compare Prices & Specs - ${SITE_NAME}`,
-  tvs: `Latest Smart TVs in India (${CURRENT_FULL_DATE}) - ${SITE_NAME}`,
+  tvs: `Best TVs in India (${CURRENT_MONTH_LONG_YEAR}) - ${SITE_NAME}`,
   appliances: `Home Appliances (${CURRENT_MONTH_YEAR}) - Compare Prices & Features - ${SITE_NAME}`,
   networking: `Networking Devices (${CURRENT_MONTH_YEAR}) - Routers, Modems & Switches - ${SITE_NAME}`,
   signin: `Sign In - ${SITE_NAME}`,

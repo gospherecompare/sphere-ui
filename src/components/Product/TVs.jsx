@@ -2453,26 +2453,10 @@ const TVs = () => {
     navigate(featureMeta ? `/tvs/features/${featureMeta.id}` : "/tvs");
   };
 
-  const handleView = (device, e, store) => {
+  const handleView = (device, e) => {
     if (e && e.stopPropagation) e.stopPropagation();
-    const params = new URLSearchParams();
     const productId =
       device.productId ?? device.product_id ?? device.id ?? device.model ?? "";
-    if (productId !== null && productId !== undefined && productId !== "") {
-      params.set("id", String(productId));
-    }
-    params.set("type", "home-appliance");
-    const variantId =
-      device.variant?.variant_id ??
-      device.variant?.id ??
-      device.variant?.variant_key ??
-      null;
-    if (variantId) {
-      params.set("variantId", String(variantId));
-    }
-    if (store?.store) {
-      params.set("store", String(store.store));
-    }
 
     // Generate SEO-friendly slug-based URL
     const slug =
@@ -2483,7 +2467,6 @@ const TVs = () => {
           device.brand ||
           String(productId || ""),
       ) || `tv-${String(productId || "detail")}`;
-    const qs = params.toString();
 
     // record a product view for trending metrics
     try {
@@ -2501,15 +2484,12 @@ const TVs = () => {
       }
     } catch {}
 
-    navigate({
-      pathname: `/tvs/${slug}`,
-      search: qs ? `?${qs}` : "",
-    });
+    navigate(`/tvs/${slug}`);
   };
 
   const currentYear = new Date().getFullYear();
   const currentMonthYear = new Intl.DateTimeFormat("en-US", {
-    month: "short",
+    month: "long",
     year: "numeric",
   }).format(new Date());
   const currentFullDate = new Intl.DateTimeFormat("en-GB", {
@@ -2534,7 +2514,7 @@ const TVs = () => {
       ? "TRENDING NOW"
       : filter === "new"
         ? "LATEST COLLECTION"
-        : "TV COLLECTION";
+        : "BEST TVS IN INDIA";
 
   const heroTitleText = routeFeatureMeta
     ? `Best ${routeFeatureSeoName} TVs`
@@ -2544,7 +2524,7 @@ const TVs = () => {
       ? "Trending TVs"
       : filter === "new"
         ? "Latest TVs"
-        : "Browse TVs in India";
+        : "Best TVs in India";
 
   const heroSubtitleText = routeFeatureMeta
     ? `Browse the best ${routeFeatureSeoName} TVs in India with updated prices, screen sizes, display details, smart features, and store availability. Compare matching models and choose the TV that fits your viewing needs.`
@@ -2557,7 +2537,7 @@ const TVs = () => {
       ? "Browse the TVs buyers are watching most and quickly spot the models that are getting attention right now. This page brings together updated prices, display technology, panel type, resolution, refresh rate, audio features, smart features, and model variants in one place so you can compare the practical details that matter without opening multiple store pages. Whether you are looking for a budget smart TV, a 4K home-theater screen, a gaming-friendly panel, or a premium flagship display, the trending collection helps you narrow the field with confidence. Use the filters and product cards to sort by brand, price, screen size, resolution, and feature, then open the listings that look the most promising."
       : filter === "new"
         ? "Browse the newest TV releases and keep up with fresh launches as they arrive. This page brings together updated pricing, panel details, refresh rates, audio information, smart platform options, and screen sizes so you can track what is new in one place. If you are waiting for a newly announced model, planning a living-room upgrade, or checking how the latest releases stack up, the new-launch collection makes it easy to review the important details without jumping between many product pages. Use the filters and product cards to sort by brand, price, size, resolution, and feature, then open the TVs that are most worth watching."
-        : "Browse TVs in India across brands, price ranges, screen sizes, panel types, and feature sets so you can quickly find a display that matches your room and viewing needs. This page brings updated prices, key specifications, ratings, and model variants together in one place, making it easier to review picture quality, audio output, smart features, refresh rates, and value without switching between multiple store pages. Whether you are looking for a budget smart TV, a family viewing screen, a gaming display, or a premium home-theater panel, the collection helps you scan what is new, what is popular, and what is worth shortlisting. Use the filters, search, and product cards to narrow results by brand, size, price, or feature, then open the TVs that stand out most.";
+        : "Browse the best TVs in India ranked using current buyer interest, product momentum, and freshness signals from Hooks. Compare brands, prices, screen sizes, panel types, smart features, refresh rates, audio output, and model variants in one place. Whether you want a budget smart TV, a family viewing screen, a gaming display, or a premium home-theater panel, use the filters and product cards to narrow the shortlist and open the TVs that fit your needs.";
 
   const isExpandedHeroDescriptionPath =
     Boolean(routeFeatureMeta) ||
@@ -2582,9 +2562,9 @@ const TVs = () => {
     }
   }, [isExpandedHeroDescriptionPath]);
 
-  let seoTitle = `Latest Smart TVs in India (${currentFullDate}) - Hooks`;
+  let seoTitle = `Best TVs in India (${currentMonthYear}) - Hooks`;
   let seoDescription =
-    "Browse the latest TVs on Hooks with updated prices, key specifications, and featured launches. Use filters to explore brands, sizes, and viewing preferences in one place.";
+    "Browse the best TVs in India ranked using buyer interest, trend momentum, and freshness signals. Compare updated prices, screen sizes, display specifications, and smart TV features on Hooks.";
 
   if (filter === "trending") {
     seoTitle = `Trending TVs (${currentMonthYear}) - Most Popular Smart TVs & Prices - Hooks`;

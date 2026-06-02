@@ -440,8 +440,7 @@ const buildLaptopCatalogSections = (catalogItems = [], brandCatalog = []) => {
   const latestReleases = [...uniqueItems]
     .sort(
       (a, b) =>
-        new Date(b?.launchDate || b?.launch_date || b?.created_at || 0) -
-        new Date(a?.launchDate || a?.launch_date || a?.created_at || 0),
+        new Date(b?.created_at || 0) - new Date(a?.created_at || 0),
     )
     .slice(0, 5)
     .map((item) => ({
@@ -449,7 +448,7 @@ const buildLaptopCatalogSections = (catalogItems = [], brandCatalog = []) => {
       brand_name: normalizeText(item?.brand || item?.brand_name),
       image_url: normalizeText(item?.image || item?.image_url),
       price: toCatalogPrice(item),
-      launch_date: item?.launchDate || item?.launch_date || item?.created_at,
+      created_at: item?.created_at,
     }));
 
   return {
@@ -1062,7 +1061,10 @@ const ProductDiscoverySections = ({
       latestReleases.slice(0, 5).map((item) => {
         const brand = normalizeText(item?.brand_name);
         const priceTag = formatPriceTag(item?.price);
-        const monthTag = formatMonthTag(item?.launch_date);
+        const isLaptopEntry = entityConfig.type === "laptops";
+        const monthTag = formatMonthTag(
+          isLaptopEntry ? item?.created_at : item?.launch_date,
+        );
 
         return {
           label: normalizeText(item?.name) || "Latest Phone",
@@ -1073,10 +1075,12 @@ const ProductDiscoverySections = ({
           image_url: normalizeText(item?.image_url),
           subtitle: brand
             ? `${brand} ${entityConfig.itemNounLower}`
-            : `Newly launched ${entityConfig.itemNounLower}`,
+            : isLaptopEntry
+              ? `Recently added ${entityConfig.itemNounLower}`
+              : `Newly launched ${entityConfig.itemNounLower}`,
           meta:
             [priceTag, monthTag].filter(Boolean).join(" \u2022 ") ||
-            "New launch",
+            (isLaptopEntry ? "Recently added" : "New launch"),
         };
       }),
     [latestReleases, entityConfig],
@@ -1199,8 +1203,11 @@ const ProductDiscoverySections = ({
                   Popular Links
                 </h3>
                 <p className="mt-1 text-[13px] leading-relaxed text-slate-500 sm:text-sm">
-                  Continue exploring with curated shortcuts, fresh launches, and
-                  brand-led discovery paths.
+                  Continue exploring with curated shortcuts,{" "}
+                  {entityConfig.type === "laptops"
+                    ? "recently added models"
+                    : "fresh launches"}
+                  , and brand-led discovery paths.
                 </p>
               </div>
             </div>

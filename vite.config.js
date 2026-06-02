@@ -1685,10 +1685,10 @@ const resolveSeo = (routePath) => {
     },
     {
       test: (p) => p.startsWith("/tvs"),
-      title: `Latest Smart TVs in India (${CURRENT_FULL_DATE}) - Hooks`,
+      title: `Best TVs in India (${CURRENT_MONTH_LONG_YEAR}) - Hooks`,
       description:
-        "Compare TVs across 43, 55, 65, and larger screen sizes with full specifications, variant pricing, and store availability on Hook.",
-      keywords: `tvs, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, smart tv comparison india, compare tv prices india, compare tv specs, 43 inch tv, 55 inch tv, 65 inch tv, 75 inch tv, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000`,
+        "Browse the best TVs in India ranked using buyer interest, trend momentum, and freshness signals. Compare screen sizes, specifications, variant pricing, and store availability on Hooks.",
+      keywords: `best tvs in india ${CURRENT_YEAR}, smart tv prices list ${CURRENT_YEAR}, smart tv comparison india, compare tv prices india, compare tv specs, 43 inch tv, 55 inch tv, 65 inch tv, 75 inch tv, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000`,
     },
     {
       test: (p) => p.startsWith("/networking"),

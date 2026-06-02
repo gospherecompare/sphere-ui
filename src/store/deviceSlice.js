@@ -744,7 +744,7 @@ export const fetchTrendingLaptops = createAsyncThunk(
   },
 );
 
-// New launch laptops
+// Latest laptop entries
 export const fetchNewLaunchLaptops = createAsyncThunk(
   "device/fetchNewLaunchLaptops",
   async (_, { rejectWithValue }) => {
@@ -755,16 +755,7 @@ export const fetchNewLaunchLaptops = createAsyncThunk(
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
-      const arr = Array.isArray(body)
-        ? body
-        : Array.isArray(body.laptops)
-          ? body.laptops
-          : Array.isArray(body.data)
-            ? body.data
-            : Array.isArray(body.rows)
-              ? body.rows
-              : [];
-      return arr;
+      return normalizeLaptopsCollection(body, ["new", "laptops"]);
     } catch (err) {
       return rejectWithValue(err.message || String(err));
     }

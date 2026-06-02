@@ -21,18 +21,13 @@ const sendEngagement = (payload) => {
 
   try {
     const body = JSON.stringify(payload);
-    if (navigator.sendBeacon) {
-      const blob = new Blob([body], { type: "application/json" });
-      navigator.sendBeacon(API_URL, blob);
-      return;
-    }
-
     fetch(API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body,
+      credentials: "omit",
       keepalive: true,
     }).catch(() => {});
   } catch {

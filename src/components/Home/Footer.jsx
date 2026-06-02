@@ -32,7 +32,7 @@ const footerSections = [
     links: [
       { label: "All Laptops", href: "/laptops" },
       { label: "Trending Laptops", href: "/trending/laptops" },
-      { label: "New Launches", href: "/laptops?filter=new" },
+      { label: "Latest Laptops", href: "/laptops/latest" },
       { label: "Compare Laptops", href: "/compare" },
     ],
   },

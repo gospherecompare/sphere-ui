@@ -637,10 +637,9 @@ function App() {
 
   const AppliancesDetailRedirect = () => {
     const { slug } = useParams();
-    const location = useLocation();
     return (
       <Navigate
-        to={toCanonicalPagePath(`/tvs/${slug}${location.search || ""}`)}
+        to={toCanonicalPagePath(`/tvs/${slug}`)}
         replace
       />
     );
@@ -822,11 +821,21 @@ function App() {
           />
           <Route
             path="/devices/tvs/:slug"
-            element={<ProductDetailRedirect toBasePath="/tvs" />}
+            element={
+              <ProductDetailRedirect
+                toBasePath="/tvs"
+                preserveSearch={false}
+              />
+            }
           />
           <Route
             path="/devices/appliances/:slug"
-            element={<ProductDetailRedirect toBasePath="/tvs" />}
+            element={
+              <ProductDetailRedirect
+                toBasePath="/tvs"
+                preserveSearch={false}
+              />
+            }
           />
 
           {/* Comparison */}
