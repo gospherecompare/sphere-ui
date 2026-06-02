@@ -200,6 +200,7 @@ export default function Breadcrumbs() {
   const breadcrumbs = useBreadcrumbs(routes);
   const location = useLocation();
   const [detailCrumbLabel, setDetailCrumbLabel] = useState("");
+  const pathname = String(location.pathname || "").toLowerCase();
 
   const queryDerivedLabel = useMemo(
     () => getDetailLabelFromSearch(location.search),
@@ -278,10 +279,19 @@ export default function Breadcrumbs() {
     return `${prefix} ₹${formatted}`;
   };
 
-  // Do not render breadcrumbs on the root/home page
-  if (location && location.pathname === "/") return null;
+  // Specific pages handle their own breadcrumb treatment.
+  if (
+    location &&
+    (pathname === "/" ||
+      pathname === "/contact" ||
+      pathname === "/contact/" ||
+      pathname === "/privacy-policy" ||
+      pathname === "/privacy-policy/")
+  ) {
+    return null;
+  }
 
-  const isNewsRoute = NEWS_ROUTE_RE.test(String(location.pathname || ""));
+  const isNewsRoute = NEWS_ROUTE_RE.test(pathname);
   if (isNewsRoute) return null;
 
   if (!breadcrumbs || breadcrumbs.length <= 1) return null;

@@ -19,8 +19,8 @@ import Careers from "./components/Static/Careers";
 import Contact from "./components/Static/Contact";
 import NewsArticlesPage from "./components/Static/NewsArticlesPage";
 import NewsStoryPage from "./components/Static/NewsStoryArticlePage";
-import PrivacyPolicy from "./components/Static/PrivacyPolicy";
-import Terms from "./components/Static/Terms";
+import PrivacyPolicy from "./components/Static/PrivacyPolicy.jsx";
+import Terms from "./components/Static/Terms.jsx";
 import NotFound from "./components/Static/NotFound";
 import {
   Route,
@@ -424,11 +424,11 @@ const resolveSeoMeta = (pathname) => {
     },
     {
       test: (p) => p.startsWith("/about"),
-      title: "About Hooks - Product Discovery & Comparison Platform",
+      title: "About Hooks - Independent Tech Comparison Platform",
       description:
-        "Learn about Hooks, our mission, and how we help users compare technology products with structured and transparent information.",
+        "Learn how Hooks helps people compare smartphones, laptops, TVs, and networking products with structured, neutral, and variant-aware information.",
       keywords:
-        "about hooks, product comparison platform, technology discovery, gadget research platform",
+        "about hooks, tech comparison platform, compare devices, smartphone comparison platform, laptop comparison, tv comparison, networking comparison",
     },
     {
       test: (p) => p.startsWith("/contact"),

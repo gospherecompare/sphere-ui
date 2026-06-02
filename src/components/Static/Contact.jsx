@@ -1,11 +1,15 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   FaArrowRight,
-  FaBullhorn,
+  FaCheckCircle,
+  FaChevronDown,
+  FaClock,
   FaCommentDots,
   FaEnvelope,
-  FaShieldAlt,
+  FaHeadphones,
+  FaPaperPlane,
+  FaUserFriends,
 } from "react-icons/fa";
 import useTitle from "../../hooks/useTitle";
 import SEO from "../SEO";
@@ -13,53 +17,264 @@ import { createContactPageSchema } from "../../utils/schemaGenerators";
 
 const contactEmail = "gospherecompare@gmail.com";
 
-const contactHighlights = [
+const supportPillars = [
   {
-    icon: FaBullhorn,
-    title: "Partnerships",
-    text: "Brand collaborations, data partnerships, or media inquiries.",
+    icon: FaClock,
+    title: "Quick response",
+    text: "We typically reply within 24 hours for product and support questions.",
   },
   {
-    icon: FaCommentDots,
-    title: "Feedback",
-    text: "Questions about product pages, search, or the comparison experience.",
+    icon: FaEnvelope,
+    title: "Structured requests",
+    text: "Use the form to share collaboration ideas, corrections, suggestions, or support needs.",
   },
   {
-    icon: FaShieldAlt,
-    title: "Corrections",
-    text: "Report listing issues, outdated specs, or broken links.",
+    icon: FaUserFriends,
+    title: "Human review",
+    text: "Real people review collaboration, partnership, feedback, and platform questions.",
   },
 ];
 
-const contactNotes = [
-  "Include the page URL or product name when reporting an issue.",
-  "Mention whether the request is about partnerships, feedback, or corrections.",
-  "Keep the message short and clear so we can route it quickly.",
+const subjectOptions = [
+  {
+    value: "general-support",
+    label: "General support",
+    description: "Questions about the platform, listings, or general help.",
+  },
+  {
+    value: "product-correction",
+    label: "Product correction",
+    description: "Report incorrect specs, prices, or page details.",
+  },
+  {
+    value: "feature-request",
+    label: "Feature request",
+    description: "Suggest a new tool, flow, or product experience idea.",
+  },
+  {
+    value: "partnership-inquiry",
+    label: "Partnership inquiry",
+    description: "Brand, affiliate, sponsorship, or collaboration requests.",
+  },
+  {
+    value: "media-press",
+    label: "Media or press inquiry",
+    description: "Editorial requests, interviews, announcements, or press notes.",
+  },
 ];
 
-const quickLinks = [
-  { label: "About Hooks", href: "/about" },
-  { label: "Privacy Policy", href: "/privacy-policy" },
-  { label: "Terms & Conditions", href: "/terms" },
+const faqItems = [
+  {
+    question: "How do I report a product specification error?",
+    answer:
+      "Send the product page URL, the incorrect detail, and the corrected value if you have it. That gives us enough context to verify the change quickly.",
+  },
+  {
+    question: "Where does Hooks get product information from?",
+    answer:
+      "We compile structured product details from public product materials, launch coverage, and manufacturer-facing information, then review listings when issues are reported.",
+  },
+  {
+    question: "Can I request a product or category to be added?",
+    answer:
+      "Yes. Use the form to share the device name, brand, or category you want us to track. Requests with clear model names are much easier for us to review.",
+  },
+  {
+    question: "What should I include for partnership or press requests?",
+    answer:
+      "Include your company or publication name, the type of request, a timeline if there is one, and the best contact details for follow-up.",
+  },
 ];
+
+const initialFormState = {
+  fullName: "",
+  email: "",
+  subject: subjectOptions[0].value,
+  message: "",
+  agreed: false,
+};
+
+const fieldClassName =
+  "mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100";
+
+const buildMailtoUrl = (formState) => {
+  const selectedSubject =
+    subjectOptions.find((option) => option.value === formState.subject)?.label ||
+    "Contact request";
+  const body = [
+    `Name: ${formState.fullName}`,
+    `Email: ${formState.email}`,
+    `Topic: ${selectedSubject}`,
+    "",
+    "Message:",
+    formState.message,
+  ].join("\n");
+
+  const params = new URLSearchParams({
+    subject: `Hooks ${selectedSubject}`,
+    body,
+  });
+
+  return `mailto:${contactEmail}?${params.toString()}`;
+};
+
+const SupportIllustration = () => {
+  return (
+    <div className="relative mx-auto h-[280px] w-full max-w-[480px] overflow-hidden rounded-[28px] bg-slate-50 sm:h-[320px]">
+      <div className="absolute left-8 top-16 h-28 w-28 rounded-full bg-blue-100/80 blur-3xl" />
+      <div className="absolute right-8 top-10 h-32 w-32 rounded-full bg-sky-100/90 blur-3xl" />
+      <div className="absolute left-1/2 top-8 h-4 w-14 -translate-x-1/2 rounded-full bg-slate-200/70" />
+
+      <div className="absolute left-7 top-20 flex h-40 w-40 items-center justify-center rounded-full bg-white sm:left-10 sm:h-44 sm:w-44">
+        <FaHeadphones className="text-[86px] text-slate-900 sm:text-[96px]" />
+      </div>
+
+      <div className="absolute right-6 top-16 rounded-[24px] bg-blue-600 px-6 py-5 text-white sm:right-10">
+        <div className="flex items-center gap-3">
+          <FaCommentDots className="text-3xl" />
+          <div className="flex gap-1">
+            <span className="h-2.5 w-2.5 rounded-full bg-white/90" />
+            <span className="h-2.5 w-2.5 rounded-full bg-white/90" />
+            <span className="h-2.5 w-2.5 rounded-full bg-white/90" />
+          </div>
+        </div>
+      </div>
+
+      <div className="absolute bottom-10 right-8 flex h-24 w-[9.5rem] items-center justify-center rounded-[28px] bg-white sm:h-28 sm:w-40">
+        <FaEnvelope className="text-4xl text-blue-600" />
+      </div>
+
+      <div className="absolute bottom-12 left-8 h-12 w-16 rounded-[18px] bg-white" />
+      <div className="absolute bottom-10 left-[4.5rem] h-10 w-10 rounded-full border-2 border-slate-300/80 border-t-transparent border-r-transparent" />
+
+      <div className="absolute bottom-6 right-4">
+        <div className="relative h-16 w-14 rounded-t-[16px] rounded-b-[10px] bg-white">
+          <div className="absolute -left-3 top-3 h-8 w-4 rounded-full bg-emerald-200/90 rotate-[-25deg]" />
+          <div className="absolute -right-3 top-4 h-9 w-4 rounded-full bg-cyan-200/90 rotate-[28deg]" />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const FeedbackIllustration = () => {
+  return (
+    <div className="relative h-[180px] w-full overflow-hidden rounded-[28px] bg-transparent sm:h-[220px]">
+      <div className="absolute left-10 top-10 flex h-16 w-16 items-center justify-center rounded-2xl bg-white">
+        <FaCommentDots className="text-2xl text-blue-600" />
+      </div>
+      <div className="absolute left-28 top-6 rounded-[22px] bg-white px-5 py-4">
+        <div className="flex items-center gap-2 text-blue-600">
+          <span className="h-2 w-8 rounded-full bg-blue-200" />
+          <span className="h-2 w-10 rounded-full bg-slate-200" />
+          <span className="h-2 w-5 rounded-full bg-blue-200" />
+        </div>
+      </div>
+      <div className="absolute left-24 top-28 rounded-[22px] bg-white px-6 py-5">
+        <div className="flex items-center gap-2 text-amber-400">
+          <FaCheckCircle className="text-sm" />
+          <FaCheckCircle className="text-sm" />
+          <FaCheckCircle className="text-sm" />
+          <FaCheckCircle className="text-sm" />
+          <FaCheckCircle className="text-sm" />
+        </div>
+      </div>
+      <div className="absolute right-10 top-12 text-blue-600">
+        <FaPaperPlane className="text-[72px] rotate-[18deg]" />
+      </div>
+      <div className="absolute right-24 bottom-8 h-20 w-28 rounded-full border-2 border-dashed border-blue-300/80 border-l-transparent border-t-transparent" />
+    </div>
+  );
+};
 
 const Contact = () => {
   useTitle({ page: "Contact" });
+
+  const [formState, setFormState] = useState(initialFormState);
+  const [mailDraftReady, setMailDraftReady] = useState(false);
+  const [openFaqIndex, setOpenFaqIndex] = useState(null);
+  const [isSubjectMenuOpen, setIsSubjectMenuOpen] = useState(false);
+  const subjectMenuRef = useRef(null);
 
   const canonical = "https://tryhook.shop/contact";
   const contactSchema = createContactPageSchema({
     name: "Contact Hooks",
     description:
-      "Get in touch with Hooks for product inquiries, feedback, partnerships, or general support.",
+      "Get in touch with Hooks for collaborations, feedback, partnerships, or general support.",
     url: canonical,
     contactEmail,
   });
+  const selectedSubjectOption =
+    subjectOptions.find((option) => option.value === formState.subject) ||
+    subjectOptions[0];
+
+  useEffect(() => {
+    const handlePointerDown = (event) => {
+      if (
+        subjectMenuRef.current &&
+        !subjectMenuRef.current.contains(event.target)
+      ) {
+        setIsSubjectMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, []);
+
+  useEffect(() => {
+    if (!isSubjectMenuOpen) return undefined;
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setIsSubjectMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [isSubjectMenuOpen]);
+
+  const handleFieldChange = (event) => {
+    const { name, type, value, checked } = event.target;
+
+    setFormState((currentState) => ({
+      ...currentState,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+
+    if (mailDraftReady) {
+      setMailDraftReady(false);
+    }
+  };
+
+  const handleSubjectSelect = (value) => {
+    setFormState((currentState) => ({
+      ...currentState,
+      subject: value,
+    }));
+    setIsSubjectMenuOpen(false);
+
+    if (mailDraftReady) {
+      setMailDraftReady(false);
+    }
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+
+    if (typeof window !== "undefined") {
+      window.location.href = buildMailtoUrl(formState);
+    }
+
+    setMailDraftReady(true);
+  };
 
   return (
     <>
       <SEO
         title="Contact Hooks - Device Comparison Platform Support"
-        description="Get in touch with Hooks for product inquiries, feedback, partnerships, or general support on our device comparison platform."
+        description="Get in touch with Hooks for collaborations, feedback, partnerships, or general support on our device comparison platform."
         image={`${canonical}/og-image`}
         url={canonical}
         robots="index, follow"
@@ -67,157 +282,369 @@ const Contact = () => {
         schema={contactSchema}
       />
 
-      <main className="min-h-screen bg-slate-50 text-slate-900">
-        <section className="relative isolate overflow-hidden bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950 text-white">
-          <div className="absolute inset-0 opacity-35 [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:72px_72px]" />
-          <div className="absolute -left-20 top-0 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
-          <div className="absolute right-0 top-20 h-80 w-80 rounded-full bg-cyan-300/10 blur-3xl" />
-          <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/10 to-transparent" />
-
-          <div className="relative mx-auto max-w-7xl px-4 pb-14 pt-12 sm:px-6 sm:pb-16 sm:pt-16 lg:px-8 lg:pb-20 lg:pt-24">
-            <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
-              <div className="max-w-3xl">
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-100">
-                  <FaEnvelope className="h-3.5 w-3.5" />
-                  Contact Hooks
-                </span>
-
-                <h1 className="mt-6 text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">
-                  Let us know what you need.
-                </h1>
-
-                <p className="mt-4 max-w-3xl text-base leading-7 text-white/80 sm:text-lg sm:leading-8">
-                  For partnerships, feedback, corrections, or general support,
-                  email us directly and we'll route the message to the right
-                  place.
-                </p>
-
-                <div className="mt-8 flex flex-wrap gap-3">
-                  <a
-                    href={`mailto:${contactEmail}`}
-                    className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition-transform duration-200 hover:-translate-y-0.5 hover:bg-slate-100"
-                  >
-                    Email us
-                    <FaArrowRight className="h-3.5 w-3.5" />
-                  </a>
-                  <Link
-                    to="/about"
-                    className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:border-white/30 hover:bg-white/15"
-                  >
-                    About Hooks
-                    <FaArrowRight className="h-3.5 w-3.5" />
-                  </Link>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-100">
-                  Primary contact
-                </p>
-                <a
-                  href={`mailto:${contactEmail}`}
-                  className="mt-3 inline-flex items-center gap-2 text-lg font-bold text-white transition-colors duration-200 hover:text-cyan-100"
+      <main className="min-h-screen bg-white text-slate-900">
+        <section className="mx-auto max-w-7xl px-4 pb-8 pt-8 sm:px-6 lg:px-8 lg:pb-10 lg:pt-12">
+          <div className="relative isolate overflow-hidden rounded-[32px] bg-white px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
+            <div className="relative">
+              <nav
+                aria-label="Breadcrumb"
+                className="flex items-center gap-2 text-sm text-slate-500"
+              >
+                <Link
+                  to="/"
+                  className="transition-colors duration-200 hover:text-slate-900"
                 >
-                  {contactEmail}
-                </a>
-                <p className="mt-3 text-sm leading-7 text-white/75">
-                  This inbox handles partnerships, support questions, and
-                  corrections for the platform.
-                </p>
+                  Home
+                </Link>
+                <span className="text-slate-300">/</span>
+                <span className="font-medium text-slate-700">Contact Us</span>
+              </nav>
 
-                <div className="mt-6 grid gap-3">
-                  {contactHighlights.map((item) => {
-                    const Icon = item.icon;
+              <div className="mt-8 grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+                <div className="max-w-2xl">
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-600">
+                    Contact us
+                  </p>
+                  <h1 className="mt-4 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
+                    We&apos;re here to help.
+                  </h1>
+                  <p className="mt-5 max-w-xl text-base leading-8 text-slate-600 sm:text-lg">
+                    Planning a collaboration, partnership, correction, or
+                    product question? Share the details through the form and the
+                    right person will pick it up.
+                  </p>
 
-                    return (
-                      <div
-                        key={item.title}
-                        className="rounded-xl border border-white/10 bg-white/5 px-4 py-3"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-cyan-100">
-                            <Icon className="h-4 w-4" />
+                  <div className="mt-8 flex flex-wrap gap-3">
+                    <a
+                      href="#contact-form"
+                      className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition-transform duration-200 hover:-translate-y-0.5 hover:bg-blue-700"
+                    >
+                      Send us a message
+                      <FaArrowRight className="h-3.5 w-3.5" />
+                    </a>
+                  </div>
+
+                  <div className="mt-10 grid gap-4 sm:grid-cols-3">
+                    {supportPillars.map((item) => {
+                      const Icon = item.icon;
+
+                      return (
+                        <div
+                          key={item.title}
+                          className="rounded-[24px] bg-slate-50 p-4"
+                        >
+                          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+                            <Icon className="h-5 w-5" />
                           </div>
-                          <div>
-                            <h2 className="text-sm font-semibold text-white">
-                              {item.title}
-                            </h2>
-                            <p className="mt-1 text-sm leading-6 text-white/70">
-                              {item.text}
-                            </p>
-                          </div>
+                          <h2 className="mt-4 text-base font-bold text-slate-900">
+                            {item.title}
+                          </h2>
+                          <p className="mt-2 text-sm leading-7 text-slate-600">
+                            {item.text}
+                          </p>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
+
+                <SupportIllustration />
               </div>
             </div>
           </div>
         </section>
 
-        <section className="bg-white">
-          <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-16">
-            <div className="max-w-3xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-700">
-                Before you email
-              </p>
-              <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
-                A few things to include.
-              </h2>
-              <p className="mt-4 text-base leading-7 text-slate-600">
-                A short, specific message helps us respond faster and keeps the
-                conversation focused.
-              </p>
+        <section className="mx-auto max-w-7xl px-4 pb-6 sm:px-6 lg:px-8 lg:pb-8">
+          <div className="mx-auto max-w-4xl">
+            <div
+              id="contact-form"
+              className="scroll-mt-28 rounded-[32px] bg-white p-6 sm:p-8"
+            >
+              <div className="max-w-2xl">
+                <h2 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
+                  Send us a message
+                </h2>
+                <p className="mt-3 text-sm leading-7 text-slate-600 sm:text-base">
+                  Share the collaboration, request, or issue details here. The
+                  more specific the message, the faster we can route it to the
+                  right team.
+                </p>
+              </div>
+
+              <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <label className="block text-sm font-semibold text-slate-700 sm:col-span-1">
+                    Full name
+                    <input
+                      className={fieldClassName}
+                      type="text"
+                      name="fullName"
+                      value={formState.fullName}
+                      onChange={handleFieldChange}
+                      placeholder="Enter your full name"
+                      autoComplete="name"
+                      required
+                    />
+                  </label>
+
+                  <label className="block text-sm font-semibold text-slate-700 sm:col-span-1">
+                    Email address
+                    <input
+                      className={fieldClassName}
+                      type="email"
+                      name="email"
+                      value={formState.email}
+                      onChange={handleFieldChange}
+                      placeholder="Enter your email address"
+                      autoComplete="email"
+                      required
+                    />
+                  </label>
+                </div>
+
+                <div className="block text-sm font-semibold text-slate-700">
+                  <span>Subject</span>
+                  <div ref={subjectMenuRef} className="relative mt-2">
+                    <button
+                      type="button"
+                      aria-haspopup="listbox"
+                      aria-expanded={isSubjectMenuOpen}
+                      className={`flex w-full items-center justify-between gap-4 rounded-2xl border bg-white px-4 py-3 text-left shadow-sm transition focus:outline-none focus:ring-4 focus:ring-blue-100 ${
+                        isSubjectMenuOpen
+                          ? "border-blue-500"
+                          : "border-slate-200"
+                      }`}
+                      onClick={() =>
+                        setIsSubjectMenuOpen((currentOpen) => !currentOpen)
+                      }
+                    >
+                      <div className="min-w-0">
+                        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                          Request type
+                        </span>
+                        <span className="mt-1 block text-sm font-semibold text-slate-900">
+                          {selectedSubjectOption.label}
+                        </span>
+                        <span className="mt-1 block text-sm font-normal leading-6 text-slate-500">
+                          {selectedSubjectOption.description}
+                        </span>
+                      </div>
+                      <FaChevronDown
+                        className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${
+                          isSubjectMenuOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+
+                    {isSubjectMenuOpen ? (
+                      <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 overflow-hidden rounded-[24px] border border-blue-100 bg-white shadow-[0_18px_48px_rgba(15,23,42,0.12)]">
+                        <div className="border-b border-slate-100 px-4 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                            Choose a subject
+                          </p>
+                        </div>
+                        <div className="py-2">
+                          {subjectOptions.map((option) => {
+                            const isActive =
+                              option.value === formState.subject;
+
+                            return (
+                              <button
+                                key={option.value}
+                                type="button"
+                                role="option"
+                                aria-selected={isActive}
+                                onClick={() =>
+                                  handleSubjectSelect(option.value)
+                                }
+                                className={`flex w-full items-start justify-between gap-4 px-4 py-3 text-left transition-colors ${
+                                  isActive
+                                    ? "bg-blue-50 text-blue-700"
+                                    : "text-slate-700 hover:bg-slate-50"
+                                }`}
+                              >
+                                <div className="min-w-0">
+                                  <p className="text-sm font-semibold">
+                                    {option.label}
+                                  </p>
+                                  <p
+                                    className={`mt-1 text-sm leading-6 ${
+                                      isActive
+                                        ? "text-blue-600"
+                                        : "text-slate-500"
+                                    }`}
+                                  >
+                                    {option.description}
+                                  </p>
+                                </div>
+                                <span
+                                  className={`mt-1 inline-flex h-2.5 w-2.5 rounded-full ${
+                                    isActive
+                                      ? "bg-blue-600"
+                                      : "bg-transparent"
+                                  }`}
+                                />
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+
+                <label className="block text-sm font-semibold text-slate-700">
+                  Message
+                  <textarea
+                    className={`${fieldClassName} min-h-[160px] resize-y`}
+                    name="message"
+                    value={formState.message}
+                    onChange={handleFieldChange}
+                    placeholder="Tell us more about your question, issue, or suggestion..."
+                    required
+                  />
+                </label>
+
+                <label className="flex items-start gap-3 text-sm text-slate-600">
+                  <input
+                    type="checkbox"
+                    name="agreed"
+                    checked={formState.agreed}
+                    onChange={handleFieldChange}
+                    className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    required
+                  />
+                  <span className="leading-6">
+                    I agree to the{" "}
+                    <Link
+                      to="/privacy-policy"
+                      className="font-medium text-blue-600 hover:text-blue-700"
+                    >
+                      privacy policy
+                    </Link>{" "}
+                    and confirm these details are accurate.
+                  </span>
+                </label>
+
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <button
+                    type="submit"
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3.5 text-sm font-semibold text-white transition-transform duration-200 hover:-translate-y-0.5 hover:bg-blue-700"
+                  >
+                    Send message
+                    <FaArrowRight className="h-3.5 w-3.5" />
+                  </button>
+
+                  <p className="text-sm text-slate-500">
+                    Collaboration and support requests are reviewed as quickly
+                    as possible.
+                  </p>
+                </div>
+
+                {mailDraftReady ? (
+                  <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                    <FaCheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                    <span>
+                      Your request draft should open with the details you
+                      entered. If nothing opens, try submitting the form again.
+                    </span>
+                  </div>
+                ) : null}
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <section
+          id="contact-faqs"
+          className="mx-auto max-w-7xl scroll-mt-28 px-4 pb-6 sm:px-6 lg:px-8 lg:pb-8"
+        >
+          <div className="rounded-[32px] bg-white p-6 sm:p-8">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div className="max-w-2xl">
+                <h2 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
+                  Frequently asked questions
+                </h2>
+                <p className="mt-3 text-sm leading-7 text-slate-600 sm:text-base">
+                  A few common questions before you send a message.
+                </p>
+              </div>
+
+              <a
+                href="#contact-form"
+                className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 transition-colors duration-200 hover:text-blue-700"
+              >
+                Jump to form
+                <FaArrowRight className="h-3.5 w-3.5" />
+              </a>
             </div>
 
-            <div className="mt-8 grid gap-4 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
-                <ul className="space-y-3">
-                  {contactNotes.map((note) => (
-                    <li key={note} className="flex items-start gap-3">
-                      <span className="mt-1 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-700">
-                        <FaArrowRight className="h-3 w-3" />
+            <div className="mt-8 space-y-3 rounded-[24px] bg-white">
+              {faqItems.map((item, index) => {
+                const isOpen = openFaqIndex === index;
+
+                return (
+                  <div
+                    key={item.question}
+                    className="rounded-[24px] bg-slate-50 px-5 py-1 sm:px-6"
+                  >
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between gap-4 py-5 text-left"
+                      onClick={() =>
+                        setOpenFaqIndex((currentIndex) =>
+                          currentIndex === index ? null : index,
+                        )
+                      }
+                      aria-expanded={isOpen}
+                    >
+                      <span className="text-base font-semibold text-slate-900">
+                        {item.question}
                       </span>
-                      <span className="text-sm leading-7 text-slate-600 sm:text-base">
-                        {note}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                      <FaChevronDown
+                        className={`h-4 w-4 flex-shrink-0 text-slate-500 transition-transform duration-200 ${
+                          isOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+
+                    {isOpen ? (
+                      <div className="pb-5 pr-8 text-sm leading-7 text-slate-600">
+                        {item.answer}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8 lg:pb-16">
+          <div className="overflow-hidden rounded-[32px] bg-slate-50 p-6 sm:p-8 lg:p-10">
+            <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+              <div className="max-w-xl">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-600">
+                  Feedback
+                </p>
+                <h2 className="mt-4 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+                  We value your feedback.
+                </h2>
+                <p className="mt-4 text-base leading-8 text-slate-600">
+                  Your feedback helps us improve product pages, fix confusing
+                  details, and build better comparison tools for smarter buying
+                  decisions.
+                </p>
+                <a
+                  href="#contact-form"
+                  className="mt-8 inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-blue-600 transition-colors duration-200 hover:bg-blue-50"
+                >
+                  Share feedback in the form
+                  <FaArrowRight className="h-3.5 w-3.5" />
+                </a>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-6">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-950 text-cyan-100">
-                    <FaEnvelope className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                      Contact email
-                    </p>
-                    <a
-                      href={`mailto:${contactEmail}`}
-                      className="mt-1 block text-lg font-bold text-slate-900 transition-colors duration-200 hover:text-blue-700"
-                    >
-                      {contactEmail}
-                    </a>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex flex-wrap gap-3">
-                  {quickLinks.map((item) => (
-                    <Link
-                      key={item.href}
-                      to={item.href}
-                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors duration-200 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
-                    >
-                      <span>{item.label}</span>
-                      <FaArrowRight className="h-3.5 w-3.5" />
-                    </Link>
-                  ))}
-                </div>
-              </div>
+              <FeedbackIllustration />
             </div>
           </div>
         </section>
