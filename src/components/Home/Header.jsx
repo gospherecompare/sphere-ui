@@ -2951,6 +2951,18 @@ const Header = () => {
         kind: "link",
         href: toCanonicalPagePath("/compare"),
       },
+      {
+        id: "laptops",
+        title: "Laptops",
+        kind: "link",
+        href: toCanonicalPagePath("/laptops"),
+      },
+      {
+        id: "tvs",
+        title: "TVs",
+        kind: "link",
+        href: toCanonicalPagePath("/tvs"),
+      },
       { id: "finder", title: "Phone Finder", kind: "link", href: "/" },
       {
         id: "news",
