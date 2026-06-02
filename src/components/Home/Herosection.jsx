@@ -7,7 +7,6 @@ import {
   FaExchangeAlt,
   FaLaptop,
   FaMobileAlt,
-  FaNetworkWired,
   FaRegLightbulb,
   FaSearch,
   FaSignal,
@@ -42,13 +41,6 @@ const CATEGORY_META = [
     path: "/tvs",
     productPathType: "tvs",
     icon: FaTv,
-  },
-  {
-    id: "networking",
-    label: "Networking",
-    path: "/networking",
-    productPathType: "networking",
-    icon: FaNetworkWired,
   },
 ];
 
@@ -128,7 +120,7 @@ const resolveCategoryFromType = (value = "") => {
     text.includes("router") ||
     text.includes("wifi")
   ) {
-    return "networking";
+    return "";
   }
   return "smartphones";
 };
@@ -248,7 +240,8 @@ const normalizeCard = (item, fallbackCategory = "smartphones", source = "") => {
       firstText(item?.product_type, item?.productType, item?.deviceType),
     );
   const category =
-    CATEGORY_META.find((entry) => entry.id === categoryId) || CATEGORY_META[0];
+    CATEGORY_META.find((entry) => entry.id === categoryId);
+  if (!category) return null;
   const price = getLowestPrice(item);
   const image = getImages(item)[0] || "";
   const brand = firstText(item?.brand, item?.brand_name, item?.brandName);
@@ -344,7 +337,6 @@ const HeroSection = () => {
     smartphoneAll,
     laptops,
     homeAppliances,
-    networking,
     brands,
   } = useDevice();
   const [activeCategory, setActiveCategory] = useState("smartphones");
@@ -365,7 +357,6 @@ const HeroSection = () => {
       smartphones: phones,
       laptops: Array.isArray(laptops) ? laptops : [],
       tvs: Array.isArray(homeAppliances) ? homeAppliances : [],
-      networking: Array.isArray(networking) ? networking : [],
     };
 
     return CATEGORY_META.map((category) => ({
@@ -373,7 +364,7 @@ const HeroSection = () => {
       items: sourceMap[category.id] || [],
       count: (sourceMap[category.id] || []).length,
     }));
-  }, [homeAppliances, laptops, networking, smartphone, smartphoneAll]);
+  }, [homeAppliances, laptops, smartphone, smartphoneAll]);
 
   useEffect(() => {
     const firstAvailable = categoryRows.find((category) => category.count > 0);
@@ -701,7 +692,7 @@ const HeroSection = () => {
               onSubmit={submitSearch}
               className="mt-6 w-full max-w-2xl overflow-hidden rounded-lg border border-cyan-200/14 bg-white/[0.055] p-2 shadow-[0_16px_42px_rgba(2,6,23,0.14)] sm:mt-8 sm:shadow-[0_18px_48px_rgba(2,6,23,0.14)]"
             >
-              <div className="flex">
+              <div className="flex gap-2">
                 <div className="relative min-w-0 flex-1">
                   <FaSearch className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-100/55" />
                   <input
@@ -711,6 +702,13 @@ const HeroSection = () => {
                     className="h-12 w-full rounded-md border border-blue-200/12 bg-transparent py-3 pl-11 pr-4 text-sm font-medium text-white outline-none transition placeholder:text-cyan-100/42 focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-400/24 sm:h-[52px]"
                   />
                 </div>
+                <button
+                  type="submit"
+                  className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-md bg-gradient-to-r from-blue-500 to-fuchsia-500 px-4 text-xs font-black text-white transition hover:brightness-110 sm:h-[52px] sm:px-5 sm:text-sm"
+                >
+                  {searchQuery.trim() ? "Search" : "Browse"}
+                  <FaArrowRight className="h-3 w-3" />
+                </button>
               </div>
 
               {searchSuggestions.length > 0 ? (
@@ -749,6 +747,7 @@ const HeroSection = () => {
                     key={category.id}
                     type="button"
                     onClick={() => setActiveCategory(category.id)}
+                    aria-pressed={isActive}
                     className={`inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-2 text-sm font-semibold transition ${
                       isActive
                         ? "border-fuchsia-300/55 bg-gradient-to-r from-blue-500/24 to-fuchsia-500/20 text-white shadow-[0_12px_34px_rgba(168,85,247,0.18)]"

@@ -8,7 +8,6 @@ import {
   FaSearch,
   FaStore,
   FaMoneyBill,
-  FaSort,
   FaEye,
   FaCalendarAlt,
   FaInfoCircle,
@@ -72,8 +71,33 @@ import {
 } from "../../utils/tvPriceRanges";
 import { isPublishedProduct } from "../../utils/publishedProducts";
 import "../../styles/hideScrollbar.css";
+import MobileListingControls, {
+  MobileSortSheet,
+} from "../ui/MobileListingControls";
 
 const SITE_ORIGIN = "https://tryhook.shop";
+const TV_MOBILE_SORT_OPTIONS = [
+  {
+    value: "featured",
+    label: "Featured TVs",
+    description: "Recommended televisions first",
+  },
+  {
+    value: "price-low",
+    label: "Price: Low to High",
+    description: "Budget-friendly televisions first",
+  },
+  {
+    value: "price-high",
+    label: "Price: High to Low",
+    description: "Premium televisions first",
+  },
+  {
+    value: "newest",
+    label: "Newest First",
+    description: "Recent television entries first",
+  },
+];
 
 // Enhanced Image Carousel
 const ImageCarousel = ({ images = [] }) => {
@@ -2807,6 +2831,12 @@ const TVs = () => {
             })}
           </div>
         </div>
+        <MobileListingControls
+          activeFilterCount={getActiveFiltersCount()}
+          onOpenFilters={() => setShowFilters(true)}
+          onOpenSort={() => setShowSort(true)}
+        />
+
         <div className="mb-3 overflow-hidden">
           <div className="hidden items-center justify-end gap-4 lg:flex">
             {getActiveFiltersCount() > 0 && (
@@ -2821,21 +2851,6 @@ const TVs = () => {
           </div>
 
           <div className="space-y-3 sm:space-y-4 lg:hidden">
-            <div className="flex">
-              <button
-                onClick={() => setShowFilters(true)}
-                className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-sky-500 px-4 font-semibold text-white transition-colors duration-300 hover:from-blue-600 hover:to-sky-600"
-              >
-                <FaFilter />
-                Filters
-                {getActiveFiltersCount() > 0 && (
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white">
-                    {getActiveFiltersCount()}
-                  </span>
-                )}
-              </button>
-            </div>
-
             {getActiveFiltersCount() > 0 && (
               <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <div className="flex items-center gap-3">
@@ -3794,87 +3809,14 @@ const TVs = () => {
           className="mt-6"
         />
 
-        {/* Mobile Sort Modal */}
-        {showSort && (
-          <div className="lg:hidden fixed inset-0 z-50">
-            <div
-              className="absolute inset-0 bg-black bg-opacity-50 transition-opacity duration-300"
-              onClick={() => setShowSort(false)}
-            ></div>
-
-            <div className="absolute bottom-0 left-0 right-0 max-h-[70vh] overflow-hidden rounded-t-3xl border border-slate-100 bg-white shadow-2xl transform transition-transform duration-300">
-              <div className="flex items-center justify-between border-b border-slate-200 bg-white p-6">
-                <div className="flex items-center gap-3">
-                  <FaSort className="text-blue-600 text-xl" />
-                  <div>
-                    <h3 className="text-xl font-bold text-slate-900">
-                      Sort Options
-                    </h3>
-                    <p className="text-sm text-slate-500">
-                      Arrange TVs by preference
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowSort(false)}
-                  className="rounded-lg p-2 transition-colors duration-200 hover:bg-slate-100"
-                >
-                  <FaTimes className="text-slate-500 text-lg" />
-                </button>
-              </div>
-
-              <div className="p-6 space-y-3">
-                {[
-                  {
-                    value: "featured",
-                    label: "Featured Devices",
-                    desc: "Curated selection of popular TV models",
-                  },
-                  {
-                    value: "price-low",
-                    label: "Price: Low to High",
-                    desc: "Budget-friendly options first",
-                  },
-                  {
-                    value: "price-high",
-                    label: "Price: High to Low",
-                    desc: "Premium TVs first",
-                  },
-                  {
-                    value: "newest",
-                    label: "Newest First",
-                    desc: "Latest releases",
-                  },
-                  {
-                    value: "capacity",
-                    label: "Highest Capacity",
-                    desc: "Largest capacity first",
-                  },
-                  {
-                    value: "energy",
-                    label: "Best Energy Rating",
-                    desc: "Most efficient first",
-                  },
-                ].map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => handleSortChange(option.value)}
-                    className={`w-full rounded-xl border p-4 text-left transition-all duration-200 ${
-                      sortBy === option.value
-                        ? "border-blue-500 bg-blue-50 text-blue-700"
-                        : "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-white"
-                    }`}
-                  >
-                    <div className="font-semibold">{option.label}</div>
-                    <div className="text-sm text-slate-500 mt-1">
-                      {option.desc}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+        <MobileSortSheet
+          open={showSort}
+          onClose={() => setShowSort(false)}
+          onChange={handleSortChange}
+          options={TV_MOBILE_SORT_OPTIONS}
+          sortBy={sortBy}
+          subtitle="Arrange televisions by preference"
+        />
 
         {/* Mobile Filter Overlay */}
         {showFilters && (

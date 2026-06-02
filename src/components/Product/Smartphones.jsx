@@ -42,6 +42,9 @@ import SEO from "../SEO";
 import ProductDiscoverySections from "../ui/ProductDiscoverySections";
 import PopularMobileComparisonsStrip from "../ui/PopularMobileComparisonsStrip";
 import MobilePhoneHighlights from "../ui/MobilePhoneHighlights";
+import MobileListingControls, {
+  MobileSortSheet,
+} from "../ui/MobileListingControls";
 import { generateSlug } from "../../utils/slugGenerator";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
@@ -69,6 +72,33 @@ import "../../styles/hideScrollbar.css";
 
 const ROUTE_FEED_CACHE_KEY = "hooks_smartphone_route_feed_v1";
 const SMARTPHONES_PER_PAGE = 20;
+const SMARTPHONE_MOBILE_SORT_OPTIONS = [
+  {
+    value: "featured",
+    label: "Featured Phones",
+    description: "Recommended phones first",
+  },
+  {
+    value: "price-low",
+    label: "Price: Low to High",
+    description: "Budget-friendly phones first",
+  },
+  {
+    value: "price-high",
+    label: "Price: High to Low",
+    description: "Premium phones first",
+  },
+  {
+    value: "rating",
+    label: "Highest Rating",
+    description: "Top-rated phones first",
+  },
+  {
+    value: "newest",
+    label: "Newest First",
+    description: "Recent phone launches first",
+  },
+];
 
 const toFeatureSeoLabel = (value = "") => {
   const normalized = (() => {
@@ -2219,6 +2249,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [brandFilterQuery, setBrandFilterQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [showSort, setShowSort] = useState(false);
   const [showHeroDescription, setShowHeroDescription] = useState(false);
   const [compareItems, setCompareItems] = useState([]);
   const [likedItems, setLikedItems] = useState(() => {
@@ -4050,6 +4081,12 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
           </section>
 
           <div className="mt-4">
+            <MobileListingControls
+              activeFilterCount={getActiveFiltersCount()}
+              onOpenFilters={() => setShowFilters(true)}
+              onOpenSort={() => setShowSort(true)}
+            />
+
             {!shouldHideInteractiveFilters ? (
               <>
                 <div className="overflow-hidden pt-0 pb-2 sm:pb-3">
@@ -4116,21 +4153,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                   </div>
 
                   <div className="space-y-3 sm:space-y-4 lg:hidden">
-                    <div className="flex">
-                      <button
-                        onClick={() => setShowFilters(true)}
-                        className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-sky-500 px-4 font-semibold text-white transition-colors duration-300 hover:from-blue-600 hover:to-sky-600"
-                      >
-                        <FaFilter />
-                        Filters
-                        {getActiveFiltersCount() > 0 && (
-                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white">
-                            {getActiveFiltersCount()}
-                          </span>
-                        )}
-                      </button>
-                    </div>
-
                     {getActiveFiltersCount() > 0 && (
                       <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4">
                         <div className="flex items-center gap-3">
@@ -5279,8 +5301,17 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
             <LatestNewsRouteSection className="mt-6" />
 
+            <MobileSortSheet
+              open={showSort}
+              onClose={() => setShowSort(false)}
+              onChange={setSortBy}
+              options={SMARTPHONE_MOBILE_SORT_OPTIONS}
+              sortBy={sortBy}
+              subtitle="Arrange smartphones by preference"
+            />
+
             {/* Mobile Filter Overlay - Remains the same but with enhanced descriptions */}
-            {showFilters && !shouldHideInteractiveFilters && (
+            {showFilters && (
               <div className="lg:hidden fixed inset-0 z-50">
                 <div
                   className="absolute inset-0 bg-black bg-opacity-50 transition-opacity duration-300"

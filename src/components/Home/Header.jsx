@@ -54,6 +54,10 @@ import {
 } from "../../utils/smartphoneListingRoutes";
 import { toCanonicalPagePath } from "../../utils/publicUrl";
 import { isPublishedProduct } from "../../utils/publishedProducts";
+import {
+  MOBILE_OPEN_EXPLORE_EVENT,
+  MOBILE_OPEN_SEARCH_EVENT,
+} from "../../utils/mobileNavigation";
 
 // Icons - matching Vijay Sales style
 import {
@@ -1723,6 +1727,20 @@ const Header = () => {
     setSelectedSuggestionIndex(-1);
     setIsSearchOpen(true);
   };
+
+  useEffect(() => {
+    const handleOpenSearch = () => openSearchOverlay();
+    const handleOpenExplore = () => setIsMenuOpen(true);
+
+    window.addEventListener(MOBILE_OPEN_SEARCH_EVENT, handleOpenSearch);
+    window.addEventListener(MOBILE_OPEN_EXPLORE_EVENT, handleOpenExplore);
+
+    return () => {
+      window.removeEventListener(MOBILE_OPEN_SEARCH_EVENT, handleOpenSearch);
+      window.removeEventListener(MOBILE_OPEN_EXPLORE_EVENT, handleOpenExplore);
+    };
+  }, []);
+
   const isSearchActionCompact =
     isSearchFocused || Boolean(String(searchQuery || "").trim());
 
@@ -2554,8 +2572,8 @@ const Header = () => {
         ref={mobileHeaderRef}
         className="z-40 border-b border-slate-100 bg-white md:hidden"
       >
-        {/* Mobile Top Row: Menu | Logo | Actions */}
-        <div className="flex items-center justify-between gap-3 px-4 py-3">
+        {/* Mobile Top Row: Menu | Logo */}
+        <div className="flex items-center gap-3 px-4 py-3">
           <div className="flex min-w-0 items-center gap-2">
             <button
               className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 transition-all hover:bg-slate-100/60 hover:text-slate-900"
@@ -2570,16 +2588,6 @@ const Header = () => {
             </Link>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={openSearchOverlay}
-              className="inline-flex h-10 w-10 items-center justify-center text-slate-600 transition-all hover:bg-slate-100/60 hover:text-slate-900 hover:border-slate-300"
-              aria-label="Open search"
-            >
-              <FaSearch className="h-4 w-4" />
-            </button>
-          </div>
         </div>
       </div>
 
@@ -2735,7 +2743,6 @@ const Header = () => {
       ) ||
       categoriesWithBrands[0] ||
       null;
-    const phoneSource = Array.isArray(smartphones) ? smartphones : [];
     const fallbackBrands = [
       "Samsung",
       "OnePlus",
@@ -2749,64 +2756,6 @@ const Header = () => {
       String(value || "")
         .trim()
         .replace(/\s+/g, " ");
-
-    const getTitle = (device) =>
-      normalizeName(
-        device?.name || device?.model || device?.title || device?.slug || "",
-      );
-
-    const parseDate = (device) => {
-      const candidates = [
-        device?.updated_at,
-        device?.updatedAt,
-        device?.created_at,
-        device?.createdAt,
-        device?.launch_date,
-        device?.launchDate,
-        device?.release_date,
-        device?.releaseDate,
-      ];
-      for (const candidate of candidates) {
-        if (!candidate) continue;
-        const timestamp = Date.parse(candidate);
-        if (!Number.isNaN(timestamp)) return timestamp;
-      }
-      return 0;
-    };
-
-    const isUpcomingDevice = (device) => {
-      const text = [
-        device?.launch_status,
-        device?.status,
-        device?.availability,
-        device?.release_status,
-        device?.name,
-        device?.model,
-        device?.title,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      if (
-        /(upcoming|coming soon|expected|launching soon|preorder|pre-order|announced|rumored)/i.test(
-          text,
-        )
-      ) {
-        return true;
-      }
-
-      const futureDates = [
-        device?.launch_date,
-        device?.launchDate,
-        device?.release_date,
-        device?.releaseDate,
-      ].filter(Boolean);
-      return futureDates.some((value) => {
-        const ts = Date.parse(value);
-        return !Number.isNaN(ts) && ts > Date.now();
-      });
-    };
 
     const brandNames = [
       ...(Array.isArray(smartphoneCategory?.topBrands)
@@ -2877,35 +2826,30 @@ const Header = () => {
       { label: "Gaming", href: buildFeatureListingPath("gaming") },
     ];
 
-    const popularItems = phoneSource.slice(0, 6).map((device) => ({
-      label: getTitle(device),
-      href: createProductPath(
-        "smartphones",
-        device?.model || device?.name || device?.slug || device?.id || "",
-      ),
-    }));
+    const smartphoneItems = [
+      { label: "All Smartphones", href: "/smartphones" },
+      { label: "Latest Smartphones", href: "/smartphones/filter/new" },
+      { label: "Upcoming Smartphones", href: "/smartphones/upcoming" },
+      { label: "Trending Smartphones", href: "/trending/smartphones" },
+    ];
 
-    const latestItems = [...phoneSource]
-      .sort((a, b) => parseDate(b) - parseDate(a))
-      .slice(0, 6)
-      .map((device) => ({
-        label: getTitle(device),
-        href: createProductPath(
-          "smartphones",
-          device?.model || device?.name || device?.slug || device?.id || "",
-        ),
-      }));
+    const laptopItems = [
+      { label: "Best Laptops", href: "/laptops" },
+      { label: "Latest Laptops", href: "/laptops/latest" },
+      { label: "Trending Laptops", href: "/trending/laptops" },
+      { label: "Gaming Laptops", href: "/laptops/features/gaming" },
+      { label: "16GB+ RAM Laptops", href: "/laptops/features/high-ram" },
+      { label: "Laptops Under ₹50,000", href: "/laptops/under-50000" },
+    ];
 
-    const upcomingSource = phoneSource.filter(isUpcomingDevice).slice(0, 6);
-    const upcomingItems = upcomingSource.length
-      ? upcomingSource.map((device) => ({
-          label: getTitle(device),
-          href: createProductPath(
-            "smartphones",
-            device?.model || device?.name || device?.slug || device?.id || "",
-          ),
-        }))
-      : [{ label: "View upcoming phones", href: "/smartphones/upcoming" }];
+    const tvItems = [
+      { label: "Best TVs", href: "/tvs" },
+      { label: "Latest TVs", href: "/tvs/latest" },
+      { label: "Trending TVs", href: "/trending/tvs" },
+      { label: "4K Ultra HD TVs", href: "/tvs/features/ultra-hd-4k" },
+      { label: "OLED/QLED TVs", href: "/tvs/features/oled-qled" },
+      { label: "Gaming TVs", href: "/tvs/features/gaming" },
+    ];
 
     const drawerItems = [
       {
@@ -2928,40 +2872,28 @@ const Header = () => {
         items: featureItems,
       },
       {
-        id: "popular",
-        title: "Popular Mobiles",
+        id: "smartphones",
+        title: "Smartphones",
         kind: "accordion",
-        items: popularItems,
-      },
-      {
-        id: "latest",
-        title: "Latest Phones",
-        kind: "accordion",
-        items: latestItems,
-      },
-      {
-        id: "upcoming",
-        title: "Upcoming Mobiles",
-        kind: "accordion",
-        items: upcomingItems,
+        items: smartphoneItems,
       },
       {
         id: "compare",
-        title: "Compare Mobiles",
+        title: "Compare Devices",
         kind: "link",
         href: toCanonicalPagePath("/compare"),
       },
       {
         id: "laptops",
         title: "Laptops",
-        kind: "link",
-        href: toCanonicalPagePath("/laptops"),
+        kind: "accordion",
+        items: laptopItems,
       },
       {
         id: "tvs",
         title: "TVs",
-        kind: "link",
-        href: toCanonicalPagePath("/tvs"),
+        kind: "accordion",
+        items: tvItems,
       },
       { id: "finder", title: "Phone Finder", kind: "link", href: "/" },
       {

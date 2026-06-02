@@ -40,6 +40,7 @@ import LaptopDetailCard from "./components/Device detail/Laptop";
 import NetworkingDetailCard from "./components/Device detail/Network";
 import Wishlist from "./components/Wishlist";
 import AccountManagement from "./components/AccountManagement";
+import MobileBottomNavigation from "./components/ui/MobileBottomNavigation";
 import { useDevice } from "./hooks/useDevice";
 import {
   createOrganizationSchema,
@@ -669,7 +670,7 @@ function App() {
   return (
     <Router>
       <RouteSeoFallback />
-      <div className="min-h-screen w-full overflow-x-hidden ">
+      <div className="min-h-screen w-full overflow-x-hidden pb-[calc(58px+env(safe-area-inset-bottom))] lg:pb-0">
         <Header />
 
         <ScrollToTop />
@@ -867,6 +868,7 @@ function App() {
         <Breadcrumbs />
         {/* BannerSlot disabled (incomplete). */}
         <Footer />
+        <MobileBottomNavigation />
         {/* BannerSlot disabled (incomplete). */}
       </div>
     </Router>

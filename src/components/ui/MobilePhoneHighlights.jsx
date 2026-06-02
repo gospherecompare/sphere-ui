@@ -65,23 +65,6 @@ const getFreshnessScore = (device) =>
 const getBuyerIntentScore = (device) =>
   toNumber(device?.buyer_intent ?? device?.buyerIntent);
 
-const getPopularityScore = (device, index) => {
-  const hookScore = getHookScore(device) ?? 0;
-  const buyerIntent = getBuyerIntentScore(device) ?? 0;
-  const trendScore = getTrendScore(device) ?? 0;
-  const freshness = getFreshnessScore(device) ?? 0;
-  const rating = toNumber(device?.rating) ?? 0;
-
-  const score =
-    buyerIntent * 0.38 +
-    trendScore * 0.28 +
-    hookScore * 0.24 +
-    freshness * 0.08 +
-    rating * 2;
-
-  return score || Math.max(0, 1000 - index);
-};
-
 const getLaunchDate = (device) =>
   parseDate(
     device?.launchDate ||
@@ -124,6 +107,17 @@ const uniquePhones = (devices = []) => {
 
 const takeNames = (items = [], limit = 5) => items.slice(0, limit);
 
+const compareDescendingSignals =
+  (...getters) =>
+  (left, right) => {
+    for (const getter of getters) {
+      const difference = (getter(right) ?? 0) - (getter(left) ?? 0);
+      if (difference !== 0) return difference;
+    }
+
+    return getPhoneName(left).localeCompare(getPhoneName(right));
+  };
+
 const HighlightPhoneLinks = ({ phones = [] }) => {
   if (!phones.length) {
     return <span className="text-slate-500">Updates coming soon</span>;
@@ -157,19 +151,34 @@ const MobilePhoneHighlights = ({ devices = [], className = "" }) => {
     const phones = uniquePhones(devices);
     if (!phones.length) return [];
 
-    const byPopularity = [...phones].sort(
-      (a, b) =>
-        getPopularityScore(b, phones.indexOf(b)) -
-        getPopularityScore(a, phones.indexOf(a)),
-    );
+    const byPopularity = [...phones]
+      .filter((phone) => (getBuyerIntentScore(phone) ?? 0) > 0)
+      .sort(
+        compareDescendingSignals(
+          getBuyerIntentScore,
+          getTrendScore,
+          getHookScore,
+          getFreshnessScore,
+        ),
+      );
 
     const byTrending = [...phones]
-      .filter((phone) => getTrendScore(phone) != null)
-      .sort((a, b) => (getTrendScore(b) || 0) - (getTrendScore(a) || 0));
+      .filter((phone) => (getTrendScore(phone) ?? 0) > 0)
+      .sort(
+        compareDescendingSignals(
+          getTrendScore,
+          getBuyerIntentScore,
+          getHookScore,
+          getFreshnessScore,
+        ),
+      );
 
     const latestPhones = [...phones]
       .map((phone) => ({ phone, date: getLaunchDate(phone) }))
-      .filter((item) => item.date && item.date <= now)
+      .filter(
+        (item) =>
+          item.date && item.date <= now && !isUpcomingPhone(item.phone, now),
+      )
       .sort((a, b) => b.date - a.date)
       .map((item) => item.phone);
 
@@ -181,12 +190,24 @@ const MobilePhoneHighlights = ({ devices = [], className = "" }) => {
         if (left && right) return left - right;
         if (left) return -1;
         if (right) return 1;
-        return getPopularityScore(b, 0) - getPopularityScore(a, 0);
+        return compareDescendingSignals(
+          getBuyerIntentScore,
+          getHookScore,
+          getTrendScore,
+          getFreshnessScore,
+        )(a, b);
       });
 
     const hookScorePhones = [...phones]
-      .filter((phone) => getHookScore(phone) != null)
-      .sort((a, b) => (getHookScore(b) || 0) - (getHookScore(a) || 0));
+      .filter((phone) => (getHookScore(phone) ?? 0) > 0)
+      .sort(
+        compareDescendingSignals(
+          getHookScore,
+          getBuyerIntentScore,
+          getTrendScore,
+          getFreshnessScore,
+        ),
+      );
 
     return [
       {
@@ -195,7 +216,7 @@ const MobilePhoneHighlights = ({ devices = [], className = "" }) => {
       },
       {
         label: "Trending Phones",
-        phones: takeNames(byTrending.length ? byTrending : byPopularity),
+        phones: takeNames(byTrending),
       },
       {
         label: "Latest Phones",

@@ -63,6 +63,47 @@ import {
 import { isPublishedProduct } from "../../utils/publishedProducts";
 import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
 import ProductDiscoverySections from "../ui/ProductDiscoverySections";
+import MobileListingControls, {
+  MobileSortSheet,
+} from "../ui/MobileListingControls";
+
+const LAPTOP_MOBILE_SORT_OPTIONS = [
+  {
+    value: "featured",
+    label: "Featured Laptops",
+    description: "Recommended laptops first",
+  },
+  {
+    value: "price-low",
+    label: "Price: Low to High",
+    description: "Budget-friendly laptops first",
+  },
+  {
+    value: "price-high",
+    label: "Price: High to Low",
+    description: "Premium laptops first",
+  },
+  {
+    value: "rating",
+    label: "Highest Rating",
+    description: "Top-rated laptops first",
+  },
+  {
+    value: "newest",
+    label: "Latest Entries",
+    description: "Recently added laptops first",
+  },
+  {
+    value: "weight",
+    label: "Lightweight First",
+    description: "Portable laptops first",
+  },
+  {
+    value: "battery",
+    label: "Battery Capacity",
+    description: "Higher-capacity batteries first",
+  },
+];
 
 // Enhanced Image Carousel - Reusable from smartphone
 // Note: removed mock fallback — rely on `useDevice()` data from the store
@@ -1001,6 +1042,7 @@ const Laptops = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [brandFilterQuery, setBrandFilterQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [showSort, setShowSort] = useState(false);
 
   // Set page title
   useTitle({
@@ -1765,6 +1807,12 @@ const Laptops = () => {
               </div>
             </div>
 
+            <MobileListingControls
+              activeFilterCount={getActiveFiltersCount()}
+              onOpenFilters={() => setShowFilters(true)}
+              onOpenSort={() => setShowSort(true)}
+            />
+
             <div className="mb-3 overflow-hidden">
               <div className="hidden items-center justify-end gap-4 lg:flex">
                 {getActiveFiltersCount() > 0 && (
@@ -1779,21 +1827,6 @@ const Laptops = () => {
               </div>
 
               <div className="space-y-3 sm:space-y-4 lg:hidden">
-                <div className="flex">
-                  <button
-                    onClick={() => setShowFilters(true)}
-                    className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-sky-500 px-4 font-semibold text-white transition-colors duration-300 hover:from-blue-600 hover:to-sky-600"
-                  >
-                    <FaFilter />
-                    Filters
-                    {getActiveFiltersCount() > 0 && (
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white">
-                        {getActiveFiltersCount()}
-                      </span>
-                    )}
-                  </button>
-                </div>
-
                 {getActiveFiltersCount() > 0 && (
                   <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4">
                     <div className="flex items-center gap-3">
@@ -2618,6 +2651,15 @@ const Laptops = () => {
             brandCatalog={deviceContext?.brands || []}
             currentBrand={currentBrandObj?.name || filterBrand || ""}
             className="mt-6"
+          />
+
+          <MobileSortSheet
+            open={showSort}
+            onClose={() => setShowSort(false)}
+            onChange={setSortBy}
+            options={LAPTOP_MOBILE_SORT_OPTIONS}
+            sortBy={sortBy}
+            subtitle="Arrange laptops by preference"
           />
 
           {/* Mobile Filter Overlay */}
