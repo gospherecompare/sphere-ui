@@ -102,6 +102,29 @@ const normalizeScore100 = (value) => {
   return Math.max(0, Math.min(100, n));
 };
 
+const resolveTvSpecScore = (device, fallbackScore = null) => {
+  const directScore = normalizeScore100(
+    device?.spec_score ?? device?.specScore,
+  );
+  if (directScore != null) return directScore;
+
+  const derivedScore = normalizeScore100(fallbackScore);
+  if (derivedScore != null) return derivedScore;
+
+  return normalizeScore100(
+    device?.spec_score_display ??
+      device?.specScoreDisplay ??
+      device?.overall_score_display ??
+      device?.overallScoreDisplay ??
+      device?.overall_score ??
+      device?.overallScore ??
+      device?.spec_score_v2 ??
+      device?.specScoreV2 ??
+      device?.overall_score_v2 ??
+      device?.overallScoreV2,
+  );
+};
+
 const isPlainObject = (value) =>
   value && typeof value === "object" && !Array.isArray(value);
 
@@ -455,27 +478,9 @@ const TVDetailCard = () => {
     ]
       .filter(Boolean)
       .join(" x ");
-    const serverSpecScore = normalizeScore100(
-      a.spec_score_display ??
-        a.specScoreDisplay ??
-        a.overall_score_display ??
-        a.overallScoreDisplay ??
-        a.spec_score ??
-        a.specScore ??
-        a.overall_score ??
-        a.overallScore ??
-        a.spec_score_v2 ??
-        a.specScoreV2 ??
-        a.overall_score_v2 ??
-        a.overallScoreV2,
-    );
     const normalizedAppliance = {
       ...a,
       id: a.product_id || a.id || a.productId || null,
-      spec_score: serverSpecScore,
-      overall_score: serverSpecScore,
-      spec_score_display: serverSpecScore,
-      overall_score_display: serverSpecScore,
       product_name: firstNonEmpty(a.product_name, a.name, basicInfo.title),
       model_number: firstNonEmpty(
         a.model_number,
@@ -581,7 +586,13 @@ const TVDetailCard = () => {
       normalizedAppliance,
       deviceFieldProfiles,
     );
+    const resolvedSpecScore = resolveTvSpecScore(a, profileResult.score);
+
     normalizedAppliance.field_profile = profileResult;
+    normalizedAppliance.spec_score = resolvedSpecScore;
+    normalizedAppliance.overall_score = resolvedSpecScore;
+    normalizedAppliance.spec_score_display = resolvedSpecScore;
+    normalizedAppliance.overall_score_display = resolvedSpecScore;
 
     return normalizedAppliance;
   };

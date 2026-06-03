@@ -16,6 +16,27 @@ import SEO from "../SEO";
 import { createContactPageSchema } from "../../utils/schemaGenerators";
 
 const contactEmail = "gospherecompare@gmail.com";
+const getContactApiBase = () => {
+  const envBase = import.meta.env.VITE_API_BASE_URL;
+  if (envBase) return String(envBase).replace(/\/$/, "");
+
+  if (typeof window !== "undefined") {
+    const hostname = String(window.location.hostname || "").toLowerCase();
+    if (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "::1"
+    ) {
+      return "http://localhost:5000";
+    }
+  }
+
+  return "https://api.apisphere.in";
+};
+const CONTACT_API_BASE = (
+  getContactApiBase()
+).replace(/\/$/, "");
+const CONTACT_API_URL = `${CONTACT_API_BASE}/api/contact-submissions`;
 
 const supportPillars = [
   {
@@ -97,27 +118,6 @@ const initialFormState = {
 const fieldClassName =
   "mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100";
 
-const buildMailtoUrl = (formState) => {
-  const selectedSubject =
-    subjectOptions.find((option) => option.value === formState.subject)?.label ||
-    "Contact request";
-  const body = [
-    `Name: ${formState.fullName}`,
-    `Email: ${formState.email}`,
-    `Topic: ${selectedSubject}`,
-    "",
-    "Message:",
-    formState.message,
-  ].join("\n");
-
-  const params = new URLSearchParams({
-    subject: `Hooks ${selectedSubject}`,
-    body,
-  });
-
-  return `mailto:${contactEmail}?${params.toString()}`;
-};
-
 const SupportIllustration = () => {
   return (
     <div className="relative mx-auto h-[280px] w-full max-w-[480px] overflow-hidden rounded-[28px] bg-slate-50 sm:h-[320px]">
@@ -191,7 +191,9 @@ const Contact = () => {
   useTitle({ page: "Contact" });
 
   const [formState, setFormState] = useState(initialFormState);
-  const [mailDraftReady, setMailDraftReady] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [isSubjectMenuOpen, setIsSubjectMenuOpen] = useState(false);
   const subjectMenuRef = useRef(null);
@@ -243,9 +245,8 @@ const Contact = () => {
       [name]: type === "checkbox" ? checked : value,
     }));
 
-    if (mailDraftReady) {
-      setMailDraftReady(false);
-    }
+    if (submitSuccess) setSubmitSuccess(false);
+    if (submitError) setSubmitError("");
   };
 
   const handleSubjectSelect = (value) => {
@@ -255,19 +256,51 @@ const Contact = () => {
     }));
     setIsSubjectMenuOpen(false);
 
-    if (mailDraftReady) {
-      setMailDraftReady(false);
-    }
+    if (submitSuccess) setSubmitSuccess(false);
+    if (submitError) setSubmitError("");
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+    setIsSubmitting(true);
+    setSubmitSuccess(false);
+    setSubmitError("");
 
-    if (typeof window !== "undefined") {
-      window.location.href = buildMailtoUrl(formState);
+    try {
+      const response = await fetch(CONTACT_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          full_name: formState.fullName,
+          email: formState.email,
+          subject: formState.subject,
+          subject_label: selectedSubjectOption.label,
+          message: formState.message,
+          agree_terms: Boolean(formState.agreed),
+          source: "hooks-web-contact",
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message || "Unable to send your message right now.",
+        );
+      }
+
+      setFormState({ ...initialFormState });
+      setSubmitSuccess(true);
+    } catch (error) {
+      setSubmitError(
+        error?.message ||
+          "Unable to send your message right now. Please try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setMailDraftReady(true);
   };
 
   return (
@@ -529,9 +562,10 @@ const Contact = () => {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <button
                     type="submit"
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3.5 text-sm font-semibold text-white transition-transform duration-200 hover:-translate-y-0.5 hover:bg-blue-700"
+                    disabled={isSubmitting}
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3.5 text-sm font-semibold text-white transition-transform duration-200 hover:-translate-y-0.5 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                    Send message
+                    {isSubmitting ? "Sending..." : "Send message"}
                     <FaArrowRight className="h-3.5 w-3.5" />
                   </button>
 
@@ -541,13 +575,26 @@ const Contact = () => {
                   </p>
                 </div>
 
-                {mailDraftReady ? (
+                {submitSuccess ? (
                   <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
                     <FaCheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
                     <span>
-                      Your request draft should open with the details you
-                      entered. If nothing opens, try submitting the form again.
+                      Your message has been sent to the Hooks team. We&apos;ll
+                      review it and reply to your email when needed.
                     </span>
+                  </div>
+                ) : null}
+
+                {submitError ? (
+                  <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    {submitError} You can also reach us at{" "}
+                    <a
+                      href={`mailto:${contactEmail}`}
+                      className="font-semibold underline decoration-red-300 underline-offset-4"
+                    >
+                      {contactEmail}
+                    </a>
+                    .
                   </div>
                 ) : null}
               </form>

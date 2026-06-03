@@ -2844,8 +2844,6 @@ const Header = () => {
 
     const tvItems = [
       { label: "Best TVs", href: "/tvs" },
-      { label: "Latest TVs", href: "/tvs/latest" },
-      { label: "Trending TVs", href: "/trending/tvs" },
       { label: "4K Ultra HD TVs", href: "/tvs/features/ultra-hd-4k" },
       { label: "OLED/QLED TVs", href: "/tvs/features/oled-qled" },
       { label: "Gaming TVs", href: "/tvs/features/gaming" },

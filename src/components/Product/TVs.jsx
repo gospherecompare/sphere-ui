@@ -347,6 +347,37 @@ const TVs = () => {
     return match ? parseInt(match[1]) : 0;
   };
 
+  const normalizeScore100 = (value) => {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return null;
+    if (n <= 1) return Math.max(0, Math.min(100, n * 100));
+    if (n <= 10) return Math.max(0, Math.min(100, n * 10));
+    return Math.max(0, Math.min(100, n));
+  };
+
+  const resolveTvSpecScore = (device, fallbackScore = null) => {
+    const directScore = normalizeScore100(
+      device?.spec_score ?? device?.specScore,
+    );
+    if (directScore != null) return directScore;
+
+    const derivedScore = normalizeScore100(fallbackScore);
+    if (derivedScore != null) return derivedScore;
+
+    return normalizeScore100(
+      device?.spec_score_display ??
+        device?.specScoreDisplay ??
+        device?.overall_score_display ??
+        device?.overallScoreDisplay ??
+        device?.overall_score ??
+        device?.overallScore ??
+        device?.spec_score_v2 ??
+        device?.specScoreV2 ??
+        device?.overall_score_v2 ??
+        device?.overallScoreV2,
+    );
+  };
+
   // Map API response to device format
   const mapApiToDevice = (apiDevice, idx) => {
     const images = apiDevice.images || [];
@@ -910,24 +941,7 @@ const TVs = () => {
       deviceFieldProfiles,
     );
     const profileDisplay = profileResult.display_display || {};
-    const toFiniteNumber = (value) => {
-      const n = Number(value);
-      return Number.isFinite(n) ? n : null;
-    };
-    const overallScoreRaw = toFiniteNumber(
-      apiDevice.spec_score_display ??
-        apiDevice.specScoreDisplay ??
-        apiDevice.overall_score_display ??
-        apiDevice.overallScoreDisplay ??
-        apiDevice.spec_score ??
-        apiDevice.specScore ??
-        apiDevice.overall_score ??
-        apiDevice.overallScore ??
-        apiDevice.spec_score_v2 ??
-        apiDevice.specScoreV2 ??
-        apiDevice.overall_score_v2 ??
-        apiDevice.overallScoreV2,
-    );
+    const overallScoreRaw = resolveTvSpecScore(apiDevice, profileResult.score);
 
     const screenSize = firstNonEmpty(
       keySpecs.screen_size,
@@ -3276,10 +3290,7 @@ const TVs = () => {
                       <div className="mt-4 hidden flex-col gap-3 lg:flex lg:flex-row lg:items-center lg:justify-between">
                         <div className="flex flex-wrap items-center gap-4">
                           <CircularScoreBadge
-                            score={
-                              device.overall_score_display ??
-                              device.overall_score
-                            }
+                            score={device.spec_score}
                             size={42}
                           />
                         </div>
@@ -3326,10 +3337,7 @@ const TVs = () => {
                               {device.name || device.model || "TV"}
                             </h5>
                             <CircularScoreBadge
-                              score={
-                                device.overall_score_display ??
-                                device.overall_score
-                              }
+                              score={device.spec_score}
                               size={42}
                             />
                           </div>
