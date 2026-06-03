@@ -456,7 +456,15 @@ const TVDetailCard = () => {
       .filter(Boolean)
       .join(" x ");
     const serverSpecScore = normalizeScore100(
-      a.spec_score_v2 ??
+      a.spec_score_display ??
+        a.specScoreDisplay ??
+        a.overall_score_display ??
+        a.overallScoreDisplay ??
+        a.spec_score ??
+        a.specScore ??
+        a.overall_score ??
+        a.overallScore ??
+        a.spec_score_v2 ??
         a.specScoreV2 ??
         a.overall_score_v2 ??
         a.overallScoreV2,

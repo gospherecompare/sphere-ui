@@ -131,6 +131,56 @@ const parseObjectIfNeeded = (value) => {
   }
 };
 
+const parseArrayIfNeeded = (value) => {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  if (typeof value !== "string") return [];
+  const trimmed = value.trim();
+  if (!trimmed.startsWith("[") || !trimmed.endsWith("]")) return [];
+  try {
+    const parsed = JSON.parse(trimmed);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const normalizeImageList = (...values) => {
+  const images = [];
+  const add = (value) => {
+    if (!value) return;
+    if (Array.isArray(value)) {
+      value.forEach(add);
+      return;
+    }
+    if (typeof value === "string") {
+      const parsed = parseArrayIfNeeded(value);
+      if (parsed.length) {
+        parsed.forEach(add);
+        return;
+      }
+      const image = toText(value);
+      if (image) images.push(image);
+      return;
+    }
+    if (typeof value === "object") {
+      add(
+        value.image_url ||
+          value.imageUrl ||
+          value.product_image ||
+          value.productImage ||
+          value.thumbnail ||
+          value.src ||
+          value.url ||
+          value.image,
+      );
+    }
+  };
+
+  values.forEach(add);
+  return Array.from(new Set(images.filter(Boolean)));
+};
+
 const firstText = (...values) => {
   for (const value of values) {
     const normalized = toText(value);
@@ -339,6 +389,7 @@ const getTrendingRows = (json, activeCategory) => {
 const getRowVariants = (row) => {
   if (Array.isArray(row?.variants)) return row.variants;
   if (Array.isArray(row?.metadata?.variants)) return row.metadata.variants;
+  if (Array.isArray(row?.variants_json)) return row.variants_json;
   return [];
 };
 
@@ -388,17 +439,36 @@ const getRowBrand = (row) =>
   ) || "";
 
 const getRowImage = (row) => {
-  const topImage = firstText(row?.image, row?.image_url, row?.product_image);
+  const variants = getRowVariants(row);
+  const topImage = normalizeImageList(
+    row?.image,
+    row?.image_url,
+    row?.imageUrl,
+    row?.product_image,
+    row?.productImage,
+    row?.thumbnail,
+    row?.images,
+    row?.images_json,
+    row?.metadata?.images,
+    row?.metadata?.images_json,
+    row?.field_profile?.mandatory_values?.image,
+    row?.field_profile?.mandatory_display?.image,
+    row?.fieldProfile?.mandatoryValues?.image,
+    variants.flatMap((variant) =>
+      normalizeImageList(
+        variant?.image,
+        variant?.image_url,
+        variant?.imageUrl,
+        variant?.product_image,
+        variant?.productImage,
+        variant?.images,
+        variant?.images_json,
+        variant?.variant_images_json,
+      ),
+    ),
+  )[0];
   if (topImage) return topImage;
 
-  if (Array.isArray(row?.images) && row.images.length) {
-    return firstText(row.images[0]) || "";
-  }
-  if (Array.isArray(row?.metadata?.images) && row.metadata.images.length) {
-    return firstText(row.metadata.images[0]) || "";
-  }
-
-  const variants = getRowVariants(row);
   const variantImage = firstText(
     variants?.[0]?.image,
     variants?.[0]?.image_url,
@@ -433,6 +503,16 @@ const getDeviceMetaLabel = (device) => {
   return device?.badge || "Trending pick";
 };
 
+const uniqueBadges = (...values) =>
+  Array.from(
+    new Set(
+      values
+        .map((value) => firstText(value))
+        .filter(Boolean)
+        .map((value) => value.replace(/\s+/g, " ")),
+    ),
+  ).slice(0, 2);
+
 const BestPriceCard = ({
   device,
   index,
@@ -444,13 +524,16 @@ const BestPriceCard = ({
   const priceLabel =
     device.price && device.price !== "N/A" ? device.price : "Explore";
   const metaLabel = device.brand || device.badge || "Trending pick";
+  const specBadges = Array.isArray(device.specBadges)
+    ? device.specBadges.filter(Boolean)
+    : [device.ram, device.storage].filter(Boolean);
 
   return (
     <button
       type="button"
       aria-label={`Open ${device.name}`}
       onClick={onClick}
-      className={`group relative flex min-w-[15.5rem] shrink-0 snap-start flex-col overflow-hidden rounded-lg border border-cyan-200/14 bg-white/[0.055] p-3 text-left text-white shadow-[0_16px_42px_rgba(2,6,23,0.14)] transition-all duration-300 hover:-translate-y-1 hover:border-cyan-200/28 hover:bg-white/[0.075] sm:min-w-[16.75rem] sm:p-3.5 lg:min-w-[18rem] ${
+      className={`group relative flex w-[15.5rem] shrink-0 snap-start flex-col overflow-hidden rounded-lg border border-cyan-200/14 bg-white/[0.055] p-3 text-left text-white shadow-[0_16px_42px_rgba(2,6,23,0.14)] transition-all duration-300 hover:-translate-y-1 hover:border-cyan-200/28 hover:bg-white/[0.075] sm:w-[16.75rem] sm:p-3.5 lg:w-[18rem] ${
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
       style={{ transitionDelay: `${index * 60}ms` }}
@@ -487,23 +570,21 @@ const BestPriceCard = ({
         )}
       </div>
 
-      <div className="relative z-10 mt-3 flex-1">
+      <div className="relative z-10 mt-3 min-w-0 flex-1">
         <p className="line-clamp-2 text-base font-black leading-snug text-white">
           {device.name}
         </p>
         <p className="mt-1 text-xs font-bold text-cyan-100/65">{metaLabel}</p>
-        {(device.ram || device.storage) && (
+        {specBadges.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
-            {device.ram && (
-              <span className="rounded-md border border-white/10 bg-white/[0.07] px-2 py-1 text-[10px] font-bold text-white/70">
-                {device.ram}
+            {specBadges.map((badge) => (
+              <span
+                key={badge}
+                className="inline-flex max-w-full truncate rounded-md border border-white/10 bg-white/[0.07] px-2 py-1 text-[10px] font-bold text-white/70"
+              >
+                {badge}
               </span>
-            )}
-            {device.storage && (
-              <span className="rounded-md border border-white/10 bg-white/[0.07] px-2 py-1 text-[10px] font-bold text-white/70">
-                {device.storage}
-              </span>
-            )}
+            ))}
           </div>
         )}
       </div>
@@ -520,7 +601,7 @@ const BestPriceCard = ({
 
 const BestPriceSkeleton = ({ index, isLoaded }) => (
   <div
-    className={`relative flex min-w-[15.5rem] shrink-0 flex-col overflow-hidden rounded-lg border border-cyan-200/12 bg-white/[0.055] p-3 transition-all duration-300 sm:min-w-[16.75rem] sm:p-3.5 lg:min-w-[18rem] ${
+    className={`relative flex w-[15.5rem] shrink-0 flex-col overflow-hidden rounded-lg border border-cyan-200/12 bg-white/[0.055] p-3 transition-all duration-300 sm:w-[16.75rem] sm:p-3.5 lg:w-[18rem] ${
       isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
     } animate-pulse`}
     style={{ transitionDelay: `${index * 60}ms` }}
@@ -594,6 +675,28 @@ const BestPriceSection = () => {
         const mapped = rows.map((row, index) => {
           const basePrice = getRowPrice(row);
           const specs = getRamStorageFromTrendingRow(row);
+          const keySpecs =
+            parseObjectIfNeeded(row?.key_specs_json || row?.key_specs) || {};
+          const displaySpecs =
+            parseObjectIfNeeded(row?.display_json || row?.display) || {};
+          const smartSpecs =
+            parseObjectIfNeeded(row?.smart_tv_json || row?.smart_tv) || {};
+          const tvSpecBadges =
+            activeCategory === "appliance"
+              ? uniqueBadges(
+                  keySpecs.screen_size,
+                  row?.screen_size,
+                  getRowVariants(row)?.[0]?.screen_size,
+                  keySpecs.resolution,
+                  displaySpecs.resolution,
+                  keySpecs.panel_type,
+                  displaySpecs.panel_type,
+                  keySpecs.refresh_rate,
+                  displaySpecs.refresh_rate,
+                  keySpecs.operating_system,
+                  smartSpecs.operating_system,
+                )
+              : [];
           const priceStr =
             basePrice !== null && basePrice !== undefined && basePrice !== ""
               ? `₹${Number(basePrice).toLocaleString()}`
@@ -620,6 +723,13 @@ const BestPriceSection = () => {
             price: formattedPriceStr,
             ram: normalizeMemoryValue(specs.ram),
             storage: normalizeMemoryValue(specs.storage),
+            specBadges:
+              activeCategory === "appliance"
+                ? tvSpecBadges
+                : uniqueBadges(
+                    normalizeMemoryValue(specs.ram),
+                    normalizeMemoryValue(specs.storage),
+                  ),
             image: getRowImage(row),
             score: getRowDisplayScore(row),
             short: getShortLabel(getRowName(row), getRowBrand(row)),
@@ -641,6 +751,7 @@ const BestPriceSection = () => {
               variantId: null,
               _ramValues: new Set(row.ram ? [row.ram] : []),
               _storageValues: new Set(row.storage ? [row.storage] : []),
+              _specBadges: new Set(row.specBadges || []),
               _minPrice:
                 row._priceNumber !== null && row._priceNumber !== undefined
                   ? row._priceNumber
@@ -653,6 +764,9 @@ const BestPriceSection = () => {
 
           if (row.ram) existing._ramValues.add(row.ram);
           if (row.storage) existing._storageValues.add(row.storage);
+          (row.specBadges || []).forEach((badge) =>
+            existing._specBadges.add(badge),
+          );
 
           if (!existing.image && row.image) existing.image = row.image;
           if (!existing.brand && row.brand) existing.brand = row.brand;
@@ -695,6 +809,7 @@ const BestPriceSection = () => {
               price: minPrice !== null ? item._minPriceStr : item.price,
               ram: combinedRam,
               storage: combinedStorage,
+              specBadges: Array.from(item._specBadges || []).slice(0, 2),
               image: item.image,
               score: Number.isFinite(item._score) ? item._score : null,
               short: item.short,

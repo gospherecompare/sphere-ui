@@ -220,6 +220,55 @@ const formatStorePriceDisplay = (v) => {
 const arr = (v) => (Array.isArray(v) ? v : []);
 const obj = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : {});
 
+const parseArray = (value) => {
+  if (Array.isArray(value)) return value;
+  if (typeof value !== "string") return [];
+  const trimmed = value.trim();
+  if (!trimmed.startsWith("[") || !trimmed.endsWith("]")) return [];
+  try {
+    const parsed = JSON.parse(trimmed);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const normalizeImageList = (...values) => {
+  const images = [];
+  const add = (value) => {
+    if (!value) return;
+    if (Array.isArray(value)) {
+      value.forEach(add);
+      return;
+    }
+    if (typeof value === "string") {
+      const parsed = parseArray(value);
+      if (parsed.length) {
+        parsed.forEach(add);
+        return;
+      }
+      const image = text(value);
+      if (image) images.push(image);
+      return;
+    }
+    if (typeof value === "object") {
+      add(
+        value.image_url ||
+          value.imageUrl ||
+          value.product_image ||
+          value.productImage ||
+          value.thumbnail ||
+          value.src ||
+          value.url ||
+          value.image,
+      );
+    }
+  };
+
+  values.forEach(add);
+  return Array.from(new Set(images.filter(Boolean)));
+};
+
 const formatNameList = (items = []) => {
   const list = arr(items)
     .map((item) => text(item))
@@ -275,14 +324,63 @@ const getVariants = (row) => {
       storage: first(parsed.storage, parsed.rom, parsed.internal_storage),
       basePrice: num(parsed.base_price ?? parsed.price),
       stores: arr(parsed.store_prices).map(mapStorePrice),
+      images: normalizeImageList(
+        parsed.image,
+        parsed.image_url,
+        parsed.imageUrl,
+        parsed.product_image,
+        parsed.productImage,
+        parsed.images,
+        parsed.images_json,
+        parsed.variant_images_json,
+      ),
     };
   });
 };
 
 const getImages = (row, cat) => {
+  const meta = obj(row.metadata || row.metadata_json);
+  const sections = obj(meta.spec_sections);
+  const rawVariants = arr(row.variants).length
+    ? row.variants
+    : arr(row.variants_json).length
+      ? row.variants_json
+      : arr(meta.variants).length
+        ? meta.variants
+        : arr(meta.variants_json).length
+          ? meta.variants_json
+          : arr(sections.variants_json);
+  const images = normalizeImageList(
+    row.image,
+    row.image_url,
+    row.imageUrl,
+    row.product_image,
+    row.productImage,
+    row.thumbnail,
+    row.images,
+    row.images_json,
+    meta.images,
+    meta.images_json,
+    sections.images_json,
+    row.field_profile?.mandatory_values?.image,
+    row.field_profile?.mandatory_display?.image,
+    row.fieldProfile?.mandatoryValues?.image,
+    rawVariants.flatMap((variant) =>
+      normalizeImageList(
+        variant?.image,
+        variant?.image_url,
+        variant?.imageUrl,
+        variant?.product_image,
+        variant?.productImage,
+        variant?.images,
+        variant?.images_json,
+        variant?.variant_images_json,
+      ),
+    ),
+  );
+  if (images.length) return images;
+
   if (cat === "laptops") {
-    const meta = obj(row.metadata || row.metadata_json);
-    const sections = obj(meta.spec_sections);
     return arr(row.images || meta.images || sections.images_json)
       .map(text)
       .filter(Boolean);

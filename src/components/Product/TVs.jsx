@@ -915,7 +915,15 @@ const TVs = () => {
       return Number.isFinite(n) ? n : null;
     };
     const overallScoreRaw = toFiniteNumber(
-      apiDevice.spec_score_v2 ??
+      apiDevice.spec_score_display ??
+        apiDevice.specScoreDisplay ??
+        apiDevice.overall_score_display ??
+        apiDevice.overallScoreDisplay ??
+        apiDevice.spec_score ??
+        apiDevice.specScore ??
+        apiDevice.overall_score ??
+        apiDevice.overallScore ??
+        apiDevice.spec_score_v2 ??
         apiDevice.specScoreV2 ??
         apiDevice.overall_score_v2 ??
         apiDevice.overallScoreV2,
