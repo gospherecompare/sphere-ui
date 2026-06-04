@@ -167,6 +167,9 @@ const Header = () => {
     if (!path || path === "/") return "/";
     return path.replace(/\/+$/g, "");
   })();
+  const isLocalDevHost =
+    typeof window !== "undefined" &&
+    /^(localhost|127\.0\.0\.1|::1)$/.test(window.location.hostname || "");
   const megaMenuRef = useRef(null);
   const authDropdownRef = useRef(null);
   const searchRef = useRef(null);
@@ -409,7 +412,7 @@ const Header = () => {
       item?.href,
     );
 
-    if (directPath && directPath.startsWith("/")) {
+    if (directPath && isLikelyProductDetailPath(directPath)) {
       return toCanonicalPagePath(directPath);
     }
 
@@ -629,6 +632,26 @@ const Header = () => {
       if (text) return text;
     }
     return "";
+  };
+
+  const isLikelyProductDetailPath = (value) => {
+    const normalized = String(value || "")
+      .trim()
+      .replace(/\/+$/g, "")
+      .toLowerCase();
+
+    if (!normalized.startsWith("/")) return false;
+
+    return [
+      /^\/smartphones\/[^/]+$/i,
+      /^\/smartphone\/[^/]+$/i,
+      /^\/laptops\/[^/]+$/i,
+      /^\/laptop\/[^/]+$/i,
+      /^\/tvs\/[^/]+$/i,
+      /^\/appliances\/[^/]+$/i,
+      /^\/networking\/[^/]+$/i,
+      /^\/devices\/(?:smartphones|mobiles|laptops|laptop|tvs|appliances|networking)\/[^/]+$/i,
+    ].some((pattern) => pattern.test(normalized));
   };
 
   const parsePriceNumber = (value) => {
@@ -1206,6 +1229,7 @@ const Header = () => {
   };
 
   const trackSearchInterest = (payload) => {
+    if (isLocalDevHost) return;
     try {
       const body = JSON.stringify({
         ...payload,
@@ -1229,6 +1253,7 @@ const Header = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body,
+        credentials: "omit",
         keepalive: true,
       }).catch(() => {});
     } catch (err) {
@@ -1246,34 +1271,46 @@ const Header = () => {
       const path = resolveProductSuggestionPath(item);
       // Navigate directly to the canonical detail path so crawlers do not
       // discover duplicate query-string variants for the same product.
-      trackSearchInterest({
-        query: String(item.name || item.model || searchQuery || "").trim(),
-        product_id: item.id,
-        source: "suggestion",
-      });
       navigate(path);
+      if (!isLocalDevHost) {
+        Promise.resolve().then(() =>
+          trackSearchInterest({
+            query: String(item.name || item.model || searchQuery || "").trim(),
+            product_id: item.id,
+            source: "suggestion",
+          }),
+        );
+      }
     } else if (item.type === "brand") {
-      trackSearchInterest({
-        query: String(item.name || searchQuery || "").trim(),
-        source: "brand-suggestion",
-      });
       navigate(
         buildBrandListingPath(
           item.name,
           item.category || item.product_type || item.productType,
         ),
       );
+      if (!isLocalDevHost) {
+        Promise.resolve().then(() =>
+          trackSearchInterest({
+            query: String(item.name || searchQuery || "").trim(),
+            source: "brand-suggestion",
+          }),
+        );
+      }
     } else {
-      trackSearchInterest({
-        query: String(item.name || searchQuery || "").trim(),
-        source: "search-suggestion",
-      });
       navigate(
         buildKeywordSearchPath(
           item.name || item,
           item.product_type || item.productType,
         ),
       );
+      if (!isLocalDevHost) {
+        Promise.resolve().then(() =>
+          trackSearchInterest({
+            query: String(item.name || searchQuery || "").trim(),
+            source: "search-suggestion",
+          }),
+        );
+      }
     }
     // Cleanup state AFTER navigation is triggered (do not blur input before navigation)
     // Use microtask to let navigation begin; suppression flag prevents accidental restore
@@ -1296,10 +1333,8 @@ const Header = () => {
       e.preventDefault();
       setSelectedSuggestionIndex((i) => Math.max(i - 1, 0));
     } else if (e.key === "Enter") {
-      if (selectedSuggestionIndex >= 0) {
-        e.preventDefault();
-        handleSuggestionClick(searchSuggestions[selectedSuggestionIndex]);
-      }
+      e.preventDefault();
+      handleSearch(e);
     } else if (e.key === "Escape") {
       setShowSearchSuggestions(false);
     }
@@ -1713,12 +1748,28 @@ const Header = () => {
     e.preventDefault();
     const query = String(searchQuery || "").trim();
     if (query) {
-      trackSearchInterest({
-        query,
-        source: "header",
-      });
+      const suggestionIndex =
+        selectedSuggestionIndex >= 0 ? selectedSuggestionIndex : 0;
+      const activeSuggestion =
+        showSearchSuggestions && searchSuggestions.length > 0
+          ? searchSuggestions[suggestionIndex] || searchSuggestions[0]
+          : null;
+
+      if (activeSuggestion) {
+        handleSuggestionClick(activeSuggestion);
+        return;
+      }
+
       navigate(buildKeywordSearchPath(query));
+      if (!isLocalDevHost) {
+        trackSearchInterest({
+          query,
+          source: "header",
+        });
+      }
       setSearchQuery("");
+      setShowSearchSuggestions(false);
+      setSelectedSuggestionIndex(-1);
     }
   };
 
@@ -2363,13 +2414,10 @@ const Header = () => {
                         handleSearchKeyDown(e);
                         if (
                           e.key === "Enter" &&
-                          searchQuery.trim() &&
-                          selectedSuggestionIndex < 0
+                          searchQuery.trim()
                         ) {
-                          navigate(buildKeywordSearchPath(searchQuery));
-                          setSearchQuery("");
-                          setShowSearchSuggestions(false);
-                          setIsSearchOpen(false);
+                          e.preventDefault();
+                          handleSearch(e);
                         }
                       }}
                       className="w-full px-4 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base bg-gradient-to-r from-blue-50/80 via-white to-cyan-50/60 border border-blue-100 rounded-full focus:outline-none focus:border-[#345ce3] focus:ring-2 focus:ring-[#345ce3]/10 transition-all placeholder-slate-400 font-medium"

@@ -8,12 +8,6 @@ const SMARTPHONE_HIGHLIGHTS_ENDPOINT = `${API_BASE}/public/smartphones/highlight
 
 const normalizeText = (value) => String(value || "").trim();
 
-const toNumber = (value) => {
-  if (value == null || value === "") return null;
-  const numeric = Number(String(value).replace(/[^0-9.-]/g, ""));
-  return Number.isFinite(numeric) ? numeric : null;
-};
-
 const parseDate = (value) => {
   if (!value) return null;
   const date = new Date(value);
@@ -51,24 +45,6 @@ const getPhoneKey = (device) => {
   if (id != null && String(id).trim()) return `id:${id}`;
   return `name:${getPhoneName(device).toLowerCase()}`;
 };
-
-const getVisibleScore = (device) =>
-  toNumber(
-    device?.overall_score_display ??
-      device?.overallScoreDisplay ??
-      device?.overall_score_v2_display_80_98 ??
-      device?.overallScoreV2Display8098 ??
-      device?.spec_score_v2_display_80_98 ??
-      device?.specScoreV2Display8098 ??
-      device?.overall_score_v2 ??
-      device?.overallScoreV2 ??
-      device?.spec_score_v2 ??
-      device?.specScoreV2 ??
-      device?.overall_score ??
-      device?.overallScore ??
-      device?.spec_score ??
-      device?.specScore,
-  );
 
 const getLaunchDate = (device) =>
   parseDate(
@@ -194,18 +170,6 @@ const MobilePhoneHighlights = ({ devices = [], className = "" }) => {
 
     const rankedPhones = phones.filter((phone) => !isUpcomingPhone(phone, now));
 
-    const highScorePhones = [...phones]
-      .map((phone) => ({
-        phone,
-        score: getVisibleScore(phone),
-      }))
-      .filter((item) => item.score != null)
-      .sort((left, right) => {
-        if (right.score !== left.score) return right.score - left.score;
-        return getPhoneName(left.phone).localeCompare(getPhoneName(right.phone));
-      })
-      .map((item) => item.phone);
-
     const latestPhones = [...phones]
       .map((phone) => ({ phone, date: getLaunchDate(phone) }))
       .filter(
@@ -243,12 +207,6 @@ const MobilePhoneHighlights = ({ devices = [], className = "" }) => {
         label: "Upcoming Phones",
         phones: takeNames(upcomingPhones),
       },
-      {
-        label: "Highest Hook Scores",
-        phones: takeNames(
-          highScorePhones.length ? highScorePhones : rankedPhones,
-        ),
-      },
     ].filter((row) => row.phones.length);
   }, [devices]);
 
@@ -268,8 +226,7 @@ const MobilePhoneHighlights = ({ devices = [], className = "" }) => {
           Popular Mobile Phones in India
         </h2>
         <p className="mt-1 text-[13px] leading-relaxed text-slate-500 sm:text-sm">
-          Quick snapshot across popular, trending, latest, upcoming, and highest
-          Hook Score phones.
+          Quick snapshot across popular, trending, latest, and upcoming phones.
         </p>
       </div>
 

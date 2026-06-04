@@ -996,6 +996,34 @@ const MobileDetailCard = () => {
     );
   };
 
+  const isPrebookingStore = (storePrice) => {
+    if (!storePrice || typeof storePrice !== "object") return false;
+    if (storePrice.is_prebooking === true || storePrice.isPrebooking === true)
+      return true;
+
+    const storeStatusText = String(
+      storePrice.availability_status ??
+        storePrice.availabilityStatus ??
+        storePrice.sale_status ??
+        storePrice.saleStatus ??
+        "",
+    )
+      .trim()
+      .toLowerCase();
+    if (
+      /(pre(book|order)|upcoming|coming\s*soon|not[\s_-]*started|pre[\s-]*sale)/i.test(
+        storeStatusText,
+      )
+    ) {
+      return true;
+    }
+
+    const ctaText = String(storePrice.cta_label || "").trim();
+    if (/^(pre(book|order)|coming\s*soon)$/i.test(ctaText)) return true;
+
+    return false;
+  };
+
   const getDeviceStoreRows = (device) => {
     const rows = [];
 
@@ -1037,6 +1065,10 @@ const MobileDetailCard = () => {
 
     if (/pre(book|order)|coming\s*soon|not[\s_-]*started/.test(availabilityText))
       return false;
+
+    if (store?.is_live === true || store?.isLive === true) return true;
+    if (/(live|on sale|in stock|available|buy now|shop now)/i.test(availabilityText))
+      return true;
 
     return Boolean(
       parseMarketPriceValue(
@@ -1117,11 +1149,15 @@ const MobileDetailCard = () => {
   const getSaleStartDateFromDevice = (device) => {
     if (!device) return null;
     const direct = normalizeDateLikeValue(
+      device.availableDate ||
+        device.available_date ||
+        device.predictedAvailableDate ||
+        device.predicted_available_date ||
       device.sale_start_date ||
-        device.saleStartDate ||
-        device.sale_date ||
-        device.saleDate ||
-        null,
+      device.saleStartDate ||
+      device.sale_date ||
+      device.saleDate ||
+      null,
     );
     if (direct) return new Date(direct);
 
@@ -1162,68 +1198,66 @@ const MobileDetailCard = () => {
 
   const getDeviceLaunchStatus = (device) => {
     if (!device) return null;
-    return (
-      normalizeLaunchStatus(
-        device.launch_status_override ||
-          device.launchStatusOverride ||
-          device.launch_status ||
-          device.launchStatus ||
-          device.status ||
-          device.availability ||
-          device.badge,
-      ) || "released"
+    const explicitLaunchStage = normalizeLaunchStatus(
+      device.launch_status_override ||
+        device.launchStatusOverride ||
+        device.launch_status ||
+        device.launchStatus ||
+        device.launch_status_text ||
+        device.launchStatusText ||
+        device.status ||
+        device.availability ||
+        device.badge,
     );
-  };
-
-  const getDeviceSaleStatus = (device) => {
-    if (!device) return "sale_tbd";
-    return (
-      normalizeSaleStatus(device.sale_status || device.saleStatus) ||
-      normalizeSaleStatus(device.sale_status_text || device.saleStatusText) ||
-      normalizeSaleStatus(device.availability_status || device.availabilityStatus) ||
-      "sale_tbd"
+    const saleStage = normalizeSaleStatus(
+      device.saleStatus ||
+        device.sale_status ||
+        device.saleStatusText ||
+        device.sale_status_text ||
+        device.availabilityStatus ||
+        device.availability_status ||
+        "",
     );
-  };
-
-  const getDeviceStoreStatus = (device) => {
-    if (!device) return "none";
+    const saleStartDate = getSaleStartDateFromDevice(device);
     const storeRows = getDeviceStoreRows(device);
-    if (storeRows.some(hasLiveStoreSignal)) return "live";
+    const storeStage = String(device.storeStage || device.store_stage || "")
+      .trim()
+      .toLowerCase();
+    const hasLiveStore =
+      storeRows.some(hasLiveStoreSignal) || storeStage === "live";
+    const hasPrebookingStore =
+      storeRows.some(isPrebookingStore) || storeStage === "prebooking";
+    const now = Date.now();
+
     if (
-      storeRows.some(
-        (store) =>
-          store?.is_prebooking === true || store?.isPrebooking === true,
-      )
+      saleStage === "preorder" ||
+      saleStage === "sale_scheduled" ||
+      saleStage === "store_pending" ||
+      saleStage === "sale_tbd"
     ) {
-      return "prebooking";
+      return "upcoming";
     }
-    if (storeRows.some(hasStoreMarketSignal)) return "listed";
-    return "none";
-  };
 
-  const formatLaunchStageLabel = (value) => {
-    if (!value) return null;
-    if (value === "rumored") return "Rumored";
-    if (value === "announced") return "Announced";
-    if (value === "upcoming") return "Upcoming";
-    if (value === "available") return "Available";
-    return "Released";
-  };
+    if (saleStage === "sale_started" || saleStage === "on_sale") {
+      return "available";
+    }
 
-  const formatSaleStageLabel = (value) => {
-    if (value === "preorder") return "Pre-order";
-    if (value === "sale_scheduled") return "Sale Scheduled";
-    if (value === "on_sale") return "On Sale";
-    if (value === "sale_started") return "Sale Started";
-    if (value === "store_pending") return "Store Links Pending";
-    return "Sale Date TBA";
-  };
+    if (saleStartDate) {
+      if (saleStartDate.getTime() > now) return "upcoming";
+      return "available";
+    }
 
-  const formatStoreStageLabel = (value) => {
-    if (value === "live") return "Live Stores";
-    if (value === "prebooking") return "Pre-booking Stores";
-    if (value === "listed") return "Store Listing Pending";
-    return "No Store Listing";
+    if (hasPrebookingStore) return "upcoming";
+    if (hasLiveStore) return "available";
+
+    if (explicitLaunchStage) {
+      if (explicitLaunchStage === "released") {
+        return "upcoming";
+      }
+      return explicitLaunchStage;
+    }
+
+    return "upcoming";
   };
 
   const getBatteryCapacityRaw = (deviceData) => {
@@ -1714,61 +1748,6 @@ const MobileDetailCard = () => {
         : null,
     };
   }, [mobileData]);
-  const launchStatusLabel = useMemo(() => {
-    return formatLaunchStageLabel(launchStatus);
-  }, [launchStatus]);
-  const launchStatusBadgeClass = useMemo(() => {
-    if (launchStatus === "rumored") {
-      return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
-    }
-    if (launchStatus === "announced") {
-      return "bg-blue-50 text-blue-700 ring-1 ring-blue-200";
-    }
-    if (launchStatus === "upcoming") {
-      return "bg-sky-50 text-sky-700 ring-1 ring-sky-200";
-    }
-    if (launchStatus === "available") {
-      return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200";
-    }
-    if (launchStatus === "released") {
-      return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200";
-    }
-    return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
-  }, [launchStatus]);
-  const saleStatus = useMemo(() => getDeviceSaleStatus(mobileData), [mobileData]);
-  const saleStatusLabel = useMemo(
-    () => formatSaleStageLabel(saleStatus),
-    [saleStatus],
-  );
-  const saleStatusBadgeClass = useMemo(() => {
-    if (saleStatus === "on_sale") {
-      return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200";
-    }
-    if (saleStatus === "preorder") {
-      return "bg-sky-50 text-sky-700 ring-1 ring-sky-200";
-    }
-    if (saleStatus === "sale_scheduled") {
-      return "bg-amber-50 text-amber-700 ring-1 ring-amber-200";
-    }
-    return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
-  }, [saleStatus]);
-  const storeStatus = useMemo(
-    () => getDeviceStoreStatus(mobileData),
-    [mobileData],
-  );
-  const storeStatusLabel = useMemo(
-    () => formatStoreStageLabel(storeStatus),
-    [storeStatus],
-  );
-  const storeStatusBadgeClass = useMemo(() => {
-    if (storeStatus === "live") {
-      return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200";
-    }
-    if (storeStatus === "prebooking") {
-      return "bg-sky-50 text-sky-700 ring-1 ring-sky-200";
-    }
-    return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
-  }, [storeStatus]);
   const launchDateRaw =
     mobileData?.launch_date ?? mobileData?.launchDate ?? null;
   const launchDateParsed = launchDateRaw ? new Date(launchDateRaw) : null;
@@ -5087,27 +5066,6 @@ Price: ${price}
                       {currentVariantLabel}
                     </span>
                   ) : null}
-                  {launchStatusLabel ? (
-                    <span
-                      className={`inline-flex shrink-0 items-center rounded-full px-3 py-1 text-[11px] font-semibold leading-none ${launchStatusBadgeClass}`}
-                    >
-                      Market: {launchStatusLabel}
-                    </span>
-                  ) : null}
-                  {saleStatusLabel ? (
-                    <span
-                      className={`inline-flex shrink-0 items-center rounded-full px-3 py-1 text-[11px] font-semibold leading-none ${saleStatusBadgeClass}`}
-                    >
-                      Sale: {saleStatusLabel}
-                    </span>
-                  ) : null}
-                  {storeStatusLabel ? (
-                    <span
-                      className={`inline-flex shrink-0 items-center rounded-full px-3 py-1 text-[11px] font-semibold leading-none ${storeStatusBadgeClass}`}
-                    >
-                      Stores: {storeStatusLabel}
-                    </span>
-                  ) : null}
                   {mobileData?.isAiPhone ? (
                     <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold leading-none text-sky-700 ring-1 ring-sky-100">
                       <span
@@ -5595,27 +5553,6 @@ Price: ${price}
                   <h4 className="mb-3 flex items-center gap-2 text-sm font-medium text-slate-700">
                     {currentVariantLabel ? (
                       <span>{currentVariantLabel}</span>
-                    ) : null}
-                    {launchStatusLabel ? (
-                      <span
-                        className={`inline-flex shrink-0 items-center rounded-full px-3 py-1 text-[11px] font-semibold leading-none ${launchStatusBadgeClass}`}
-                      >
-                        Market: {launchStatusLabel}
-                      </span>
-                    ) : null}
-                    {saleStatusLabel ? (
-                      <span
-                        className={`inline-flex shrink-0 items-center rounded-full px-3 py-1 text-[11px] font-semibold leading-none ${saleStatusBadgeClass}`}
-                      >
-                        Sale: {saleStatusLabel}
-                      </span>
-                    ) : null}
-                    {storeStatusLabel ? (
-                      <span
-                        className={`inline-flex shrink-0 items-center rounded-full px-3 py-1 text-[11px] font-semibold leading-none ${storeStatusBadgeClass}`}
-                      >
-                        Stores: {storeStatusLabel}
-                      </span>
                     ) : null}
                     {mobileData?.isAiPhone ? (
                       <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-r from-blue-50 to-blue-50 px-2 py-0.5 text-[10px] font-semibold leading-none text-sky-700 ring-1 ring-sky-100">

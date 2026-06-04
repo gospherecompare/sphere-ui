@@ -543,6 +543,22 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     if (!store || typeof store !== "object") return false;
     if (isPrebookingStore(store)) return false;
 
+    const availabilityText = String(
+      store?.availability_status ??
+        store?.availabilityStatus ??
+        store?.sale_status ??
+        store?.saleStatus ??
+        store?.cta_label ??
+        store?.ctaLabel ??
+        "",
+    )
+      .trim()
+      .toLowerCase();
+
+    if (store?.is_live === true || store?.isLive === true) return true;
+    if (/(live|on sale|in stock|available|buy now|shop now)/i.test(availabilityText))
+      return true;
+
     return Boolean(
       parseMarketPriceValue(
         store.price ??
@@ -655,6 +671,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const resolveSaleStartDate = (device) => {
     if (!device) return null;
     const direct =
+      device.availableDate ||
+      device.available_date ||
+      device.predictedAvailableDate ||
+      device.predicted_available_date ||
       device.saleStartDate ||
       device.sale_start_date ||
       device.saleDate ||
@@ -714,19 +734,57 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
   const resolveLaunchStage = (device) => {
     if (!device) return null;
-    return (
-      normalizeLaunchStatus(
-        device.launchStatus ||
-          device.launch_status ||
-          device.launchStatusOverride ||
-          device.launch_status_override ||
-          device.launchStatusText ||
-          device.launch_status_text ||
-          device.status ||
-          device.availability ||
-          device.badge,
-      ) || "released"
+    const explicitLaunchStage = normalizeLaunchStatus(
+      device.launchStatus ||
+        device.launch_status ||
+        device.launchStatusOverride ||
+        device.launch_status_override ||
+        device.launchStatusText ||
+        device.launch_status_text ||
+        device.status ||
+        device.availability ||
+        device.badge,
     );
+    const saleStage = resolveSaleStage(device);
+    const saleStartDate = resolveSaleStartDate(device);
+    const storeRows = getDeviceStoreRows(device);
+    const storeStage = String(device.storeStage || device.store_stage || "")
+      .trim()
+      .toLowerCase();
+    const hasLiveStore = storeRows.some(hasLiveStoreSignal) || storeStage === "live";
+    const hasPrebookingStore =
+      storeRows.some(isPrebookingStore) || storeStage === "prebooking";
+    const now = Date.now();
+
+    if (
+      saleStage === "preorder" ||
+      saleStage === "sale_scheduled" ||
+      saleStage === "store_pending" ||
+      saleStage === "sale_tbd"
+    ) {
+      return "upcoming";
+    }
+
+    if (saleStage === "sale_started" || saleStage === "on_sale") {
+      return "available";
+    }
+
+    if (saleStartDate) {
+      if (saleStartDate.getTime() > now) return "upcoming";
+      return "available";
+    }
+
+    if (hasPrebookingStore) return "upcoming";
+    if (hasLiveStore) return "available";
+
+    if (explicitLaunchStage) {
+      if (explicitLaunchStage === "released") {
+        return "upcoming";
+      }
+      return explicitLaunchStage;
+    }
+
+    return "upcoming";
   };
 
   const resolveSaleStage = (device) => {
@@ -748,30 +806,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     }
     if (storeRows.some(hasStoreMarketSignal)) return "listed";
     return "none";
-  };
-
-  const formatLaunchStageLabel = (value) => {
-    if (value === "rumored") return "Rumored";
-    if (value === "announced") return "Announced";
-    if (value === "upcoming") return "Upcoming";
-    if (value === "available") return "Available";
-    return "Released";
-  };
-
-  const formatSaleStageLabel = (value) => {
-    if (value === "preorder") return "Pre-order";
-    if (value === "sale_scheduled") return "Sale Scheduled";
-    if (value === "on_sale") return "On Sale";
-    if (value === "sale_started") return "Sale Started";
-    if (value === "store_pending") return "Store Links Pending";
-    return "Sale Date TBA";
-  };
-
-  const formatStoreStageLabel = (value) => {
-    if (value === "live") return "Live Stores";
-    if (value === "prebooking") return "Pre-booking Stores";
-    if (value === "listed") return "Store Listing Pending";
-    return "No Store Listing";
   };
 
   const getCompareLimitForDevices = (devices = []) =>
@@ -901,6 +935,37 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     fallbackPrice = null,
   ) => {
     const forcePrebooking = deviceIsPrebooking === true;
+    const shouldShowPendingStore =
+      forcePrebooking ||
+      ["rumored", "announced", "upcoming", "released"].includes(deviceStage);
+    const buildBrandFallbackStore = (sourceStores = []) => {
+      const officialStoreUrl = getOfficialBrandStoreUrl(
+        sourceStores,
+        brandName,
+        brandWebsite,
+      );
+      const inferredPrices = (Array.isArray(sourceStores) ? sourceStores : [])
+        .map((store) => extractNumericPrice(store?.price))
+        .filter((price) => price > 0);
+      const fallbackStorePrice =
+        extractNumericPrice(fallbackPrice) > 0
+          ? fallbackPrice
+          : inferredPrices.length
+            ? Math.min(...inferredPrices)
+            : null;
+
+      return {
+        id: "brand-store-fallback",
+        store: brandName || "Brand Store",
+        store_name: brandName || "Brand Store",
+        display_store_name: brandName || "Brand Store",
+        logo: normalizeAssetUrl(brandLogo || null),
+        url: officialStoreUrl || "",
+        cta_label: "Coming Soon",
+        is_prebooking: true,
+        price: fallbackStorePrice,
+      };
+    };
 
     const normalizedStores = (Array.isArray(stores) ? stores : []).map(
       (store) => {
@@ -918,26 +983,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     );
 
     if (normalizedStores.length === 0) {
-      if (deviceStage === "released") {
-        const officialStoreUrl = getOfficialBrandStoreUrl(
-          [],
-          brandName,
-          brandWebsite,
-        );
+      if (shouldShowPendingStore) {
         return {
-          stores: [
-            {
-              id: "brand-store-fallback",
-              store: brandName || "Brand Store",
-              store_name: brandName || "Brand Store",
-              display_store_name: brandName || "Brand Store",
-              logo: normalizeAssetUrl(brandLogo || null),
-              url: officialStoreUrl || "",
-              cta_label: "Coming Soon",
-              is_prebooking: true,
-              price: fallbackPrice || null,
-            },
-          ],
+          stores: [buildBrandFallbackStore([])],
           hiddenCount: 0,
           mode: "prebooking",
         };
@@ -975,32 +1023,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
           .toLowerCase();
         return name && name !== "variant";
       });
-      if (deviceStage === "released" && !hasOnlineStore) {
-        const officialStoreUrl = getOfficialBrandStoreUrl(
-          normalizedStores,
-          brandName,
-          brandWebsite,
-        );
-        const inferredPrices = normalizedStores
-          .map((store) => extractNumericPrice(store?.price))
-          .filter((price) => price > 0);
-        const fallbackStorePrice =
-          fallbackPrice ||
-          (inferredPrices.length ? Math.min(...inferredPrices) : null);
+      if (shouldShowPendingStore && !hasOnlineStore) {
         return {
-          stores: [
-            {
-              id: "brand-store-fallback",
-              store: brandName || "Brand Store",
-              store_name: brandName || "Brand Store",
-              display_store_name: brandName || "Brand Store",
-              logo: normalizeAssetUrl(brandLogo || null),
-              url: officialStoreUrl || "",
-              cta_label: "Coming Soon",
-              is_prebooking: true,
-              price: fallbackStorePrice,
-            },
-          ],
+          stores: [buildBrandFallbackStore(normalizedStores)],
           hiddenCount: 0,
           mode: "prebooking",
         };
@@ -1031,12 +1056,66 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
   // Map API response to device format
   const mapApiToDevice = (apiDevice, idx) => {
-    const asText = (v) => {
+    function toString(v) {
       if (v == null) return "";
       if (typeof v === "string") return v.trim();
       if (typeof v === "number" || typeof v === "boolean") return String(v);
+      if (typeof v === "object") {
+        const common = [
+          "name",
+          "title",
+          "model",
+          "label",
+          "value",
+          "processor",
+          "chipset",
+          "cpu",
+          "gpu",
+          "display",
+          "brand",
+          "size",
+          "display_size",
+          "displaySize",
+          "type",
+          "display_type",
+          "displayType",
+          "resolution",
+          "display_resolution",
+          "refresh_rate",
+          "refreshRate",
+          "hz",
+          "rate",
+          "ram",
+          "storage",
+          "battery",
+          "capacity",
+        ];
+        for (const k of common) {
+          if (v[k] == null) continue;
+          if (k === "refresh_rate" || k === "refreshRate" || k === "hz") {
+            const raw = v[k];
+            const text =
+              typeof raw === "number" || typeof raw === "boolean"
+                ? String(raw)
+                : String(raw || "").trim();
+            return text ? (/hz/i.test(text) ? text : `${text} Hz`) : "";
+          }
+          return String(v[k]).trim();
+        }
+        const scalarValues = Object.values(v)
+          .filter(
+            (val) =>
+              typeof val === "string" ||
+              typeof val === "number" ||
+              typeof val === "boolean",
+          )
+          .map((val) => String(val).trim())
+          .filter(Boolean);
+        if (scalarValues.length) return scalarValues.join(" ");
+        return "";
+      }
       return "";
-    };
+    }
     const toNumber = (v) => {
       if (v == null || v === "") return null;
       const n = Number(v);
@@ -1180,6 +1259,17 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         .map((p) => extractNumericPrice(p.price))
         .filter((n) => n > 0);
       numericPrice = candidatePrices.length ? Math.min(...candidatePrices) : 0;
+    }
+    const serverBestPriceRaw = pick(
+      toString(apiDevice.best_price),
+      toString(apiDevice.bestPrice),
+      toString(apiDevice.lowest_price),
+      toString(apiDevice.lowestPrice),
+      "",
+    );
+    const serverBestPriceNumeric = extractNumericPrice(serverBestPriceRaw);
+    if (serverBestPriceNumeric > 0) {
+      numericPrice = serverBestPriceNumeric;
     }
 
     // Battery (support multiple shapes)
@@ -1447,62 +1537,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         ? apiDevice.display
         : `${apiDevice.display?.size || profileDisplay.display_size || ""} ${apiDevice.display?.type || ""}`.trim();
 
-    // toString: safely convert various shapes to a usable string
-    const toString = (v) => {
-      if (v == null) return "";
-      if (typeof v === "string") return v.trim();
-      if (typeof v === "number" || typeof v === "boolean") return String(v);
-      if (typeof v === "object") {
-        const common = [
-          "name",
-          "title",
-          "model",
-          "label",
-          "value",
-          "processor",
-          "chipset",
-          "cpu",
-          "gpu",
-          "display",
-          "brand",
-          "size",
-          "display_size",
-          "displaySize",
-          "type",
-          "display_type",
-          "displayType",
-          "resolution",
-          "display_resolution",
-          "refresh_rate",
-          "refreshRate",
-          "hz",
-          "rate",
-          "ram",
-          "storage",
-          "battery",
-          "capacity",
-        ];
-        for (const k of common) {
-          if (v[k] == null) continue;
-          if (k === "refresh_rate" || k === "refreshRate" || k === "hz")
-            return formatHz(v[k]);
-          return String(v[k]).trim();
-        }
-        const scalarValues = Object.values(v)
-          .filter(
-            (val) =>
-              typeof val === "string" ||
-              typeof val === "number" ||
-              typeof val === "boolean",
-          )
-          .map((val) => String(val).trim())
-          .filter(Boolean);
-        if (scalarValues.length) return scalarValues.join(" ");
-        return "";
-      }
-      return "";
-    };
-
     const processorCandidate = pick(
       toString(apiDevice.processor),
       toString(apiDevice.cpu),
@@ -1636,6 +1670,20 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
           "",
         ),
       ),
+      brandLogoUrl: normalizeAssetUrl(
+        pick(
+          toString(apiDevice.brand_logo_url),
+          toString(apiDevice.brandLogoUrl),
+          toString(apiDevice.brand_logo),
+          toString(apiDevice.brandLogo),
+          toString(apiDevice.brand_image),
+          toString(apiDevice.brandImage),
+          toString(apiDevice.logo_url),
+          toString(apiDevice.logo),
+          toString(apiDevice.brand?.logo),
+          "",
+        ),
+      ),
       brandWebsite: pick(
         toString(apiDevice.official_preorder_url),
         toString(apiDevice.officialPreorderUrl),
@@ -1665,6 +1713,21 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         toString(apiDevice.saleStatus),
         "",
       ),
+      saleStatusText: pick(
+        toString(apiDevice.sale_status_text),
+        toString(apiDevice.saleStatusText),
+        "",
+      ),
+      availabilityStatus: pick(
+        toString(apiDevice.availability_status),
+        toString(apiDevice.availabilityStatus),
+        "",
+      ),
+      storeStage: pick(
+        toString(apiDevice.store_stage),
+        toString(apiDevice.storeStage),
+        "",
+      ),
       allowCompare:
         typeof apiDevice.allow_compare === "boolean"
           ? apiDevice.allow_compare
@@ -1690,12 +1753,35 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
             ? apiDevice.allowSpecScore
             : null,
       saleStartDate: pick(
+        toString(apiDevice.available_date),
+        toString(apiDevice.availableDate),
+        toString(apiDevice.predicted_available_date),
+        toString(apiDevice.predictedAvailableDate),
         toString(apiDevice.sale_start_date),
         toString(apiDevice.saleStartDate),
         toString(apiDevice.sale_date),
         toString(apiDevice.saleDate),
         toString(apiDevice.first_sale_date),
         toString(apiDevice.firstSaleDate),
+        "",
+      ),
+      availableDate: pick(
+        toString(apiDevice.available_date),
+        toString(apiDevice.availableDate),
+        toString(apiDevice.sale_start_date),
+        toString(apiDevice.saleStartDate),
+        toString(apiDevice.predicted_available_date),
+        toString(apiDevice.predictedAvailableDate),
+        "",
+      ),
+      predictedAvailableDate: pick(
+        toString(apiDevice.predicted_available_date),
+        toString(apiDevice.predictedAvailableDate),
+        "",
+      ),
+      availableDateLabel: pick(
+        toString(apiDevice.available_date_label),
+        toString(apiDevice.availableDateLabel),
         "",
       ),
       is_prebooking:
@@ -1725,6 +1811,18 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
           : apiDevice.reviews || "",
       image: images[0] || "",
       images: images,
+      bestPrice:
+        serverBestPriceNumeric > 0
+          ? `₹ ${serverBestPriceNumeric.toLocaleString()}`
+          : numericPrice > 0
+            ? `₹ ${numericPrice.toLocaleString()}`
+            : "",
+      bestPriceValue:
+        serverBestPriceNumeric > 0
+          ? serverBestPriceNumeric
+          : numericPrice > 0
+            ? numericPrice
+            : null,
       specs: {
         display: pick(toString(displayStr), toString(apiDevice.display), ""),
         processor: pick(processorCandidate, toString(apiDevice.processor), ""),
@@ -4556,6 +4654,23 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                             row.storeName),
                       )
                       .slice(0, 2);
+                    const availableDateRaw =
+                      device.saleStartDate ||
+                      device.sale_start_date ||
+                      device.availableDate ||
+                      device.available_date ||
+                      device.predictedAvailableDate ||
+                      device.predicted_available_date ||
+                      null;
+                    const availableDateParsed = parseDateValue(availableDateRaw);
+                    const availableOnText =
+                      isUpcomingView && availableDateParsed
+                        ? availableDateParsed.toLocaleDateString("en-US", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })
+                        : null;
                     const displaySummary = (() => {
                       const rawDisplay =
                         device.display || device.specs?.display;
@@ -4620,86 +4735,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                       const raw = String(price).trim();
                       return raw.startsWith("₹") ? raw : `₹ ${raw}`;
                     };
-                    const launchStageLabel = formatLaunchStageLabel(
-                      device.launchStatus || devicePolicy.stage,
-                    );
-                    const saleStageLabel = formatSaleStageLabel(
-                      device.saleStatus || resolveSaleStage(device),
-                    );
-                    const storeStageLabel =
-                      availabilityState.mode === "live"
-                        ? "Live Stores"
-                        : availabilityState.mode === "prebooking"
-                          ? "Pre-booking Stores"
-                          : formatStoreStageLabel(
-                              device.storeStatus || resolveStoreStage(device),
-                            );
-                    const launchStageClass =
-                      devicePolicy.stage === "released"
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                        : devicePolicy.stage === "announced"
-                          ? "border-blue-200 bg-blue-50 text-blue-700"
-                          : devicePolicy.stage === "rumored"
-                            ? "border-slate-200 bg-slate-50 text-slate-700"
-                            : "border-amber-200 bg-amber-50 text-amber-700";
-                    const saleStageClass =
-                      device.saleStatus === "on_sale"
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                        : device.saleStatus === "preorder"
-                          ? "border-sky-200 bg-sky-50 text-sky-700"
-                          : device.saleStatus === "sale_scheduled"
-                            ? "border-amber-200 bg-amber-50 text-amber-700"
-                            : "border-slate-200 bg-slate-50 text-slate-700";
-                    const storeStageClass =
-                      availabilityState.mode === "live"
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                        : availabilityState.mode === "prebooking"
-                          ? "border-sky-200 bg-sky-50 text-sky-700"
-                          : "border-slate-200 bg-slate-50 text-slate-700";
-                    const saleStartDateParsed = device.saleStartDate
-                      ? new Date(device.saleStartDate)
-                      : null;
-                    const hasSaleStartDate =
-                      saleStartDateParsed &&
-                      !Number.isNaN(saleStartDateParsed.getTime());
-                    const showAvailabilityDate =
-                      hasSaleStartDate &&
-                      (isUpcomingView ||
-                        device.saleStatus === "preorder" ||
-                        device.saleStatus === "sale_scheduled" ||
-                        device.saleStatus === "store_pending");
-                    const availabilityDateLabel = showAvailabilityDate
-                      ? saleStartDateParsed.toLocaleDateString("en-US", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        })
-                      : null;
-                    const lifecyclePills = (
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span
-                          className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold ${launchStageClass}`}
-                        >
-                          Market: {launchStageLabel}
-                        </span>
-                        <span
-                          className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold ${saleStageClass}`}
-                        >
-                          Sale: {saleStageLabel}
-                        </span>
-                        <span
-                          className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold ${storeStageClass}`}
-                        >
-                          Stores: {storeStageLabel}
-                        </span>
-                        {availabilityDateLabel ? (
-                          <span className="inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-[11px] font-semibold text-indigo-700">
-                            Available: {availabilityDateLabel}
-                          </span>
-                        ) : null}
-                      </div>
-                    );
-
                     return (
                       <div
                         key={`${device.id ?? device.model ?? ""}-${_idx}`}
@@ -4764,8 +4799,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                             ) : null}
                           </div>
 
-                          <div className="mt-3 hidden lg:block">{lifecyclePills}</div>
-
                           <div className="mt-5 grid grid-cols-[128px_minmax(0,1fr)] gap-3 sm:grid-cols-[120px_minmax(0,1fr)] lg:grid-cols-[180px_minmax(0,1fr)] sm:gap-4 lg:gap-5">
                             {" "}
                             <div className="relative flex items-start justify-start sm:justify-center">
@@ -4807,7 +4840,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                                     </div>
                                   </div>
                                 ) : null}
-                                <div className="pt-2">{lifecyclePills}</div>
                               </div>
 
                               <div className="hidden lg:block text-[13px] leading-6 text-slate-700 sm:text-sm sm:leading-7 sm:text-base">
@@ -4817,6 +4849,18 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                               <div className="lg:hidden text-lg font-semibold tracking-tight text-[#14255e] sm:text-xl">
                                 {device.price}
                               </div>
+
+                              {availableOnText ? (
+                                <div className="hidden items-center gap-1.5 text-sm text-slate-700 lg:flex">
+                                  <FaCalendarAlt className="text-slate-400" />
+                                  <span>
+                                    Available on:{" "}
+                                    <span className="font-semibold text-slate-900">
+                                      {availableOnText}
+                                    </span>
+                                  </span>
+                                </div>
+                              ) : null}
 
                               {priceRowsForDisplay.length > 0 ? (
                                 <div className="hidden rounded-[24px] border border-blue-100 bg-[#f8fbff] p-2.5 sm:p-4 lg:block">
@@ -4978,6 +5022,18 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                             <div className="text-[13px] leading-6 text-slate-700 sm:text-sm sm:leading-7 sm:text-base">
                               {compactSpecLine}
                             </div>
+
+                            {availableOnText ? (
+                              <div className="flex items-center gap-1.5 text-sm text-slate-700">
+                                <FaCalendarAlt className="text-slate-400" />
+                                <span>
+                                  Available on:{" "}
+                                  <span className="font-semibold text-slate-900">
+                                    {availableOnText}
+                                  </span>
+                                </span>
+                              </div>
+                            ) : null}
 
                             {priceRowsForDisplay.length > 0 ? (
                               <div className="rounded-[20px] border border-blue-100 bg-[#f8fbff] p-3 sm:p-4">

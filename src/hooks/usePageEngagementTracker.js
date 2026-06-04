@@ -2,6 +2,9 @@ import { useEffect, useRef } from "react";
 
 const API_URL = "https://api.apisphere.in/api/public/page-engagement";
 const MAX_DURATION_MS = 30 * 60 * 1000;
+const isLocalDevHost =
+  typeof window !== "undefined" &&
+  /^(localhost|127\.0\.0\.1|::1)$/.test(window.location.hostname || "");
 
 const clampDuration = (value) => {
   const parsed = Number(value);
@@ -17,7 +20,7 @@ const buildPayload = ({ productId, pagePath, source, durationMs }) => ({
 });
 
 const sendEngagement = (payload) => {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || isLocalDevHost) return;
 
   try {
     const body = JSON.stringify(payload);
@@ -45,7 +48,13 @@ export default function usePageEngagementTracker({
   const sentRef = useRef(false);
 
   useEffect(() => {
-    if (!enabled || !productId || typeof window === "undefined") return undefined;
+    if (
+      !enabled ||
+      !productId ||
+      typeof window === "undefined" ||
+      isLocalDevHost
+    )
+      return undefined;
 
     startedAtRef.current = Date.now();
     sentRef.current = false;
