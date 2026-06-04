@@ -824,10 +824,9 @@ export const fetchTrendingHomeAppliances = createAsyncThunk(
   "device/fetchTrendingHomeAppliances",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch(
-        "https://api.apisphere.in/api/public/trending/tvs",
-        { cache: "no-store" },
-      );
+      const res = await fetch(`${API_BASE_URL}/public/trending/tvs`, {
+        cache: "no-store",
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
       const arr = Array.isArray(body)
@@ -851,7 +850,7 @@ export const fetchNewLaunchHomeAppliances = createAsyncThunk(
   "device/fetchNewLaunchHomeAppliances",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch("https://api.apisphere.in/api/public/new/tvs", {
+      const res = await fetch(`${API_BASE_URL}/public/new/tvs`, {
         cache: "no-store",
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
