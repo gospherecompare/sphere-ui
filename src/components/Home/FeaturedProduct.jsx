@@ -351,8 +351,6 @@ const getRowScore = (row) => {
     row?.overallScore,
     row?.spec_score,
     row?.specScore,
-    row?.hook_score,
-    row?.hookScore,
   );
 
   return rawScore !== null ? normalizeScore100(rawScore) : null;
@@ -707,11 +705,6 @@ const FeaturedProduct = () => {
               note: buildFeaturedNote(row),
               short: getShortLabel(name, brand),
               score: getRowScore(row),
-              trendVelocity: pickNumber(
-                row?.trend_velocity,
-                row?.trendVelocity,
-              ),
-              freshness: pickNumber(row?.freshness),
               launchTs,
               _rowIndex: index,
             };
@@ -729,26 +722,6 @@ const FeaturedProduct = () => {
           seen.add(key);
           deduped.push(item);
         }
-
-        deduped.sort((a, b) => {
-          const scoreA = a.score ?? -1;
-          const scoreB = b.score ?? -1;
-          if (scoreB !== scoreA) return scoreB - scoreA;
-
-          const trendA = a.trendVelocity ?? -1;
-          const trendB = b.trendVelocity ?? -1;
-          if (trendB !== trendA) return trendB - trendA;
-
-          const freshnessA = a.freshness ?? -1;
-          const freshnessB = b.freshness ?? -1;
-          if (freshnessB !== freshnessA) return freshnessB - freshnessA;
-
-          const launchA = a.launchTs ?? -1;
-          const launchB = b.launchTs ?? -1;
-          if (launchB !== launchA) return launchB - launchA;
-
-          return a._rowIndex - b._rowIndex;
-        });
 
         const next = deduped.slice(0, FEATURED_PHONES_LIMIT).map((item) => ({
           ...item,

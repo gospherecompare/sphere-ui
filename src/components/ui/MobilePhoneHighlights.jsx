@@ -1,6 +1,10 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { createProductPath } from "../../utils/slugGenerator";
+
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in/api";
+const SMARTPHONE_HIGHLIGHTS_ENDPOINT = `${API_BASE}/public/smartphones/highlights`;
 
 const normalizeText = (value) => String(value || "").trim();
 
@@ -48,22 +52,23 @@ const getPhoneKey = (device) => {
   return `name:${getPhoneName(device).toLowerCase()}`;
 };
 
-const getHookScore = (device) =>
+const getVisibleScore = (device) =>
   toNumber(
-    device?.Hookss_score ??
-      device?.HookssScore ??
-      device?.hook_score ??
-      device?.hookScore,
+    device?.overall_score_display ??
+      device?.overallScoreDisplay ??
+      device?.overall_score_v2_display_80_98 ??
+      device?.overallScoreV2Display8098 ??
+      device?.spec_score_v2_display_80_98 ??
+      device?.specScoreV2Display8098 ??
+      device?.overall_score_v2 ??
+      device?.overallScoreV2 ??
+      device?.spec_score_v2 ??
+      device?.specScoreV2 ??
+      device?.overall_score ??
+      device?.overallScore ??
+      device?.spec_score ??
+      device?.specScore,
   );
-
-const getTrendScore = (device) =>
-  toNumber(device?.trend_velocity ?? device?.trendVelocity);
-
-const getFreshnessScore = (device) =>
-  toNumber(device?.freshness ?? device?.freshness_score);
-
-const getBuyerIntentScore = (device) =>
-  toNumber(device?.buyer_intent ?? device?.buyerIntent);
 
 const getLaunchDate = (device) =>
   parseDate(
@@ -107,16 +112,23 @@ const uniquePhones = (devices = []) => {
 
 const takeNames = (items = [], limit = 5) => items.slice(0, limit);
 
-const compareDescendingSignals =
-  (...getters) =>
-  (left, right) => {
-    for (const getter of getters) {
-      const difference = (getter(right) ?? 0) - (getter(left) ?? 0);
-      if (difference !== 0) return difference;
-    }
-
-    return getPhoneName(left).localeCompare(getPhoneName(right));
-  };
+const normalizeServerHighlightRows = (body) => {
+  const rows = Array.isArray(body?.highlights) ? body.highlights : [];
+  return rows
+    .map((row) => ({
+      label: normalizeText(row?.label),
+      phones: (Array.isArray(row?.phones) ? row.phones : [])
+        .map((phone) => ({
+          ...phone,
+          id: phone?.product_id ?? phone?.id ?? null,
+          product_id: phone?.product_id ?? phone?.id ?? null,
+          name: phone?.name ?? phone?.model ?? "",
+          model: phone?.model ?? phone?.name ?? "",
+        }))
+        .filter((phone) => getPhoneName(phone)),
+    }))
+    .filter((row) => row.label && row.phones.length > 0);
+};
 
 const HighlightPhoneLinks = ({ phones = [] }) => {
   if (!phones.length) {
@@ -146,32 +158,53 @@ const HighlightPhoneLinks = ({ phones = [] }) => {
 };
 
 const MobilePhoneHighlights = ({ devices = [], className = "" }) => {
-  const rows = useMemo(() => {
+  const [serverRows, setServerRows] = useState([]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const response = await fetch(SMARTPHONE_HIGHLIGHTS_ENDPOINT, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const body = await response.json();
+        const normalized = normalizeServerHighlightRows(body);
+        if (!cancelled && normalized.length > 0) {
+          setServerRows(normalized);
+        }
+      } catch (error) {
+        if (error?.name === "AbortError") return;
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, []);
+
+  const fallbackRows = useMemo(() => {
     const now = new Date();
     const phones = uniquePhones(devices);
     if (!phones.length) return [];
 
-    const byPopularity = [...phones]
-      .filter((phone) => (getBuyerIntentScore(phone) ?? 0) > 0)
-      .sort(
-        compareDescendingSignals(
-          getBuyerIntentScore,
-          getTrendScore,
-          getHookScore,
-          getFreshnessScore,
-        ),
-      );
+    const rankedPhones = phones.filter((phone) => !isUpcomingPhone(phone, now));
 
-    const byTrending = [...phones]
-      .filter((phone) => (getTrendScore(phone) ?? 0) > 0)
-      .sort(
-        compareDescendingSignals(
-          getTrendScore,
-          getBuyerIntentScore,
-          getHookScore,
-          getFreshnessScore,
-        ),
-      );
+    const highScorePhones = [...phones]
+      .map((phone) => ({
+        phone,
+        score: getVisibleScore(phone),
+      }))
+      .filter((item) => item.score != null)
+      .sort((left, right) => {
+        if (right.score !== left.score) return right.score - left.score;
+        return getPhoneName(left.phone).localeCompare(getPhoneName(right.phone));
+      })
+      .map((item) => item.phone);
 
     const latestPhones = [...phones]
       .map((phone) => ({ phone, date: getLaunchDate(phone) }))
@@ -190,33 +223,17 @@ const MobilePhoneHighlights = ({ devices = [], className = "" }) => {
         if (left && right) return left - right;
         if (left) return -1;
         if (right) return 1;
-        return compareDescendingSignals(
-          getBuyerIntentScore,
-          getHookScore,
-          getTrendScore,
-          getFreshnessScore,
-        )(a, b);
+        return getPhoneName(a).localeCompare(getPhoneName(b));
       });
-
-    const hookScorePhones = [...phones]
-      .filter((phone) => (getHookScore(phone) ?? 0) > 0)
-      .sort(
-        compareDescendingSignals(
-          getHookScore,
-          getBuyerIntentScore,
-          getTrendScore,
-          getFreshnessScore,
-        ),
-      );
 
     return [
       {
         label: "Popular Phones",
-        phones: takeNames(byPopularity),
+        phones: takeNames(rankedPhones.length ? rankedPhones : phones),
       },
       {
         label: "Trending Phones",
-        phones: takeNames(byTrending),
+        phones: takeNames(rankedPhones.length ? rankedPhones : phones),
       },
       {
         label: "Latest Phones",
@@ -228,10 +245,14 @@ const MobilePhoneHighlights = ({ devices = [], className = "" }) => {
       },
       {
         label: "Highest Hook Scores",
-        phones: takeNames(hookScorePhones),
+        phones: takeNames(
+          highScorePhones.length ? highScorePhones : rankedPhones,
+        ),
       },
     ].filter((row) => row.phones.length);
   }, [devices]);
+
+  const rows = serverRows.length > 0 ? serverRows : fallbackRows;
 
   if (!rows.length) return null;
 

@@ -1772,29 +1772,12 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
               "",
           ).trim(),
         ),
-      Hookss_score: toNumber(
-        apiDevice.Hookss_score ??
-          apiDevice.HookssScore ??
-          apiDevice.hook_score ??
-          apiDevice.hookScore,
-      ),
       spec_score: overallScoreRaw,
       overall_score: overallScoreRaw,
       overall_score_display:
         overallScoreDisplay != null
           ? overallScoreDisplay
-          : mapScoreToDisplayBand(overallScoreRaw),
-      buyer_intent: toNumber(apiDevice.buyer_intent ?? apiDevice.buyerIntent),
-      trend_velocity: toNumber(
-        apiDevice.trend_velocity ?? apiDevice.trendVelocity,
-      ),
-      freshness: toNumber(apiDevice.freshness),
-      Hookss_calculated_at:
-        apiDevice.Hookss_calculated_at ??
-        apiDevice.HookssCalculatedAt ??
-        apiDevice.hook_calculated_at ??
-        apiDevice.hookCalculatedAt ??
-        null,
+          : overallScoreRaw,
       price: numericPrice > 0 ? `₹ ${numericPrice.toLocaleString()}` : "",
       numericPrice: numericPrice,
       rating: parseFloat(apiDevice.rating) || 0,
@@ -4589,8 +4572,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                     const cardBadgeLabel =
                       upcomingBadge ||
                       (isAiDevice ? "AI Phone" : null) ||
-                      (Number(device.trend_velocity || 0) > 0 ||
-                      listFilter === "trending"
+                      (listFilter === "trending"
                         ? "Trending"
                         : null);
                     const deviceCompareLimit = Number.isFinite(

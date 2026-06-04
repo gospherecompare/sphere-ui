@@ -1,8 +1,26 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import Cookies from "js-cookie";
 
-const API_BASE_URL = "https://api.apisphere.in/api";
+const REMOTE_API_BASE_URL = "https://api.apisphere.in/api";
 const WINDOW_PAYLOAD_KEY = "__HOOKS_PRERENDER_DATA__";
+
+const normalizeApiBase = (value) => {
+  const trimmed = String(value || "").trim();
+  if (!trimmed) return "";
+  return trimmed.replace(/\/+$/, "");
+};
+
+const resolveApiBaseUrl = () => {
+  const configured = normalizeApiBase(import.meta.env.VITE_API_BASE_URL);
+  if (configured) return configured;
+
+  return REMOTE_API_BASE_URL;
+};
+
+const API_BASE_URL = resolveApiBaseUrl();
+const API_BASE_URL_ALIASES = Array.from(
+  new Set([API_BASE_URL, REMOTE_API_BASE_URL]),
+);
 
 // Normalization helpers (copied from previous DeviceContext)
 const toNumber = (v) => {
@@ -233,8 +251,7 @@ const normalizeSmartphoneCollection = (body, preferredKeys = []) => {
     );
 
     const priceFromVariants = (variants || []).reduce((acc, v) => {
-      const p =
-        toNumber(v.base_price ?? v.price) ?? v.base_price ?? v.price;
+      const p = toNumber(v.base_price ?? v.price) ?? v.base_price ?? v.price;
       if (p == null) return acc;
       if (acc == null) return p;
       return Math.min(acc, p);
@@ -333,8 +350,7 @@ const normalizeLaptopsCollection = (body, preferredKeys = []) => {
     const name = item.name || basicInfo.product_name || basicInfo.title || null;
     const brandName =
       item.brand_name || basicInfo.brand_name || basicInfo.brand || null;
-    const productType =
-      item.product_type || basicInfo.product_type || "laptop";
+    const productType = item.product_type || basicInfo.product_type || "laptop";
     const model = item.model || basicInfo.model || null;
     const category = item.category || basicInfo.category || null;
     const launchDate = item.launch_date || basicInfo.launch_date || null;
@@ -401,12 +417,7 @@ const normalizeBrandItem = (c) => {
   const id = c?.id ?? c?.brand_id ?? c?._id ?? null;
   const name = (c?.name ?? c?.brand_name ?? c?.title ?? "") || null;
   const logo =
-    c?.logo ??
-    c?.image ??
-    c?.logo_url ??
-    c?.thumbnail ??
-    c?.logoUrl ??
-    null;
+    c?.logo ?? c?.image ?? c?.logo_url ?? c?.thumbnail ?? c?.logoUrl ?? null;
   const published_products =
     toNumber(
       c?.published_products ??
@@ -417,8 +428,7 @@ const normalizeBrandItem = (c) => {
     toNumber(c?.published) ??
     null;
   const slug =
-    c?.slug ??
-    (name ? String(name).toLowerCase().replace(/\s+/g, "-") : null);
+    c?.slug ?? (name ? String(name).toLowerCase().replace(/\s+/g, "-") : null);
   const category = c?.category ?? c?.cat ?? c?.type ?? null;
   const created_at = normalizeDate(c?.created_at ?? c?.createdAt ?? c?.created);
 
@@ -458,10 +468,7 @@ const normalizeCategoriesCollection = (body, preferredKeys = []) => {
   return (rows || []).map((c) => ({
     id: c.id ?? c.category_id ?? c.name ?? null,
     name:
-      c.name ??
-      c.title ??
-      c.product_type ??
-      String(c.id || "").toLowerCase(),
+      c.name ?? c.title ?? c.product_type ?? String(c.id || "").toLowerCase(),
     product_type: c.product_type ?? c.type ?? null,
     description: c.description ?? null,
     brands: Array.isArray(c.brands) ? c.brands : [],
@@ -480,11 +487,18 @@ const buildPreloadedDeviceState = () => {
   if (!byUrl || typeof byUrl !== "object") return {};
 
   const next = {};
-  const readBody = (url) =>
-    Object.prototype.hasOwnProperty.call(byUrl, url) ? byUrl[url] : undefined;
+  const readBodyForPath = (path) => {
+    for (const baseUrl of API_BASE_URL_ALIASES) {
+      const url = `${baseUrl}${path}`;
+      if (Object.prototype.hasOwnProperty.call(byUrl, url)) {
+        return byUrl[url];
+      }
+    }
+    return undefined;
+  };
 
   try {
-    const smartphoneBody = readBody(`${API_BASE_URL}/smartphones`);
+    const smartphoneBody = readBodyForPath("/smartphones");
     if (typeof smartphoneBody !== "undefined") {
       const smartphones = normalizeSmartphoneCollection(smartphoneBody, [
         "new",
@@ -499,7 +513,7 @@ const buildPreloadedDeviceState = () => {
   }
 
   try {
-    const networkingBody = readBody(`${API_BASE_URL}/networking`);
+    const networkingBody = readBodyForPath("/networking");
     if (typeof networkingBody !== "undefined") {
       next.networking = normalizeNetworkingCollection(networkingBody, [
         "networking",
@@ -511,7 +525,7 @@ const buildPreloadedDeviceState = () => {
   }
 
   try {
-    const laptopBody = readBody(`${API_BASE_URL}/laptops`);
+    const laptopBody = readBodyForPath("/laptops");
     if (typeof laptopBody !== "undefined") {
       next.laptops = normalizeLaptopsCollection(laptopBody, ["new", "laptops"]);
       next.laptopsLoaded = true;
@@ -521,7 +535,7 @@ const buildPreloadedDeviceState = () => {
   }
 
   try {
-    const tvBody = readBody(`${API_BASE_URL}/tvs`);
+    const tvBody = readBodyForPath("/tvs");
     if (typeof tvBody !== "undefined") {
       next.homeAppliances = normalizeHomeAppliancesCollection(tvBody, ["tvs"]);
       next.homeAppliancesLoaded = true;
@@ -531,7 +545,7 @@ const buildPreloadedDeviceState = () => {
   }
 
   try {
-    const brandBody = readBody(`${API_BASE_URL}/brand`);
+    const brandBody = readBodyForPath("/brand");
     if (typeof brandBody !== "undefined") {
       next.brands = normalizeBrandsCollection(brandBody, ["brands"]);
       next.brandsLoaded = true;
@@ -541,7 +555,7 @@ const buildPreloadedDeviceState = () => {
   }
 
   try {
-    const categoryBody = readBody(`${API_BASE_URL}/category`);
+    const categoryBody = readBodyForPath("/category");
     if (typeof categoryBody !== "undefined") {
       next.categories = normalizeCategoriesCollection(categoryBody, [
         "categories",

@@ -54,10 +54,8 @@ const getRowDisplayScore = (row) => {
     row?.overallScore,
     row?.spec_score,
     row?.specScore,
-    row?.hook_score,
-    row?.hookScore,
   );
-  return mapScoreToDisplayBand(rawScore);
+  return rawScore != null ? Number(rawScore.toFixed(1)) : null;
 };
 
 const TrendSpecScoreBadge = ({ score }) => {
