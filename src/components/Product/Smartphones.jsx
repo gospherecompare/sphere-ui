@@ -33,6 +33,7 @@ import {
   fetchSmartphones,
   fetchTrendingSmartphones,
   fetchNewLaunchSmartphones,
+  fetchUpcomingSmartphones,
 } from "../../store/deviceSlice";
 // BannerSlot disabled until completed.
 import useStoreLogos from "../../hooks/useStoreLogos";
@@ -355,17 +356,21 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   }, [phonesForFeatureList, normalizedFeature, popularFeatureOrder]);
 
   const isListFilter = listFilter === "trending" || listFilter === "new";
+  const usesDedicatedRouteFeed = isListFilter || isUpcomingView;
   const smartphonesForList = useMemo(() => {
+    if (isUpcomingView) {
+      return Array.isArray(smartphone) ? smartphone : [];
+    }
     if (isListFilter) {
       const list = Array.isArray(smartphone) ? smartphone : [];
       return list.length ? list : phonesForFeatureList;
     }
     return phonesForFeatureList;
-  }, [isListFilter, smartphone, phonesForFeatureList]);
+  }, [isUpcomingView, isListFilter, smartphone, phonesForFeatureList]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (!isListFilter) return;
+    if (!usesDedicatedRouteFeed) return;
     try {
       window.localStorage.setItem(
         ROUTE_FEED_CACHE_KEY,
@@ -374,16 +379,22 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     } catch {
       // ignore cache failures
     }
-  }, [isListFilter, smartphonesForList]);
+  }, [usesDedicatedRouteFeed, smartphonesForList]);
 
   const dispatch = useDispatch();
 
   useEffect(() => {
-    if (listFilter === "trending") dispatch(fetchTrendingSmartphones());
+    if (isUpcomingView) dispatch(fetchUpcomingSmartphones());
+    else if (listFilter === "trending") dispatch(fetchTrendingSmartphones());
     else if (listFilter === "new") dispatch(fetchNewLaunchSmartphones());
     else if (!smartphoneAll || smartphoneAll.length === 0)
       dispatch(fetchSmartphones());
-  }, [listFilter, dispatch, smartphoneAll ? smartphoneAll.length : 0]);
+  }, [
+    isUpcomingView,
+    listFilter,
+    dispatch,
+    smartphoneAll ? smartphoneAll.length : 0,
+  ]);
 
   // Normalize legacy query-based brand/feature routes into the canonical path shape.
   useEffect(() => {
@@ -1861,9 +1872,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const baseDevices = (smartphonesForList || []).map((device, i) =>
     mapApiToDevice(device, i),
   );
-  const devices = isUpcomingView
-    ? baseDevices.filter((device) => isUpcomingDevice(device))
-    : baseDevices;
+  const devices = baseDevices;
 
   // Aggregate all variants across smartphones (supports variants array or singular variant)
   const allVariants = devices.flatMap((device) =>

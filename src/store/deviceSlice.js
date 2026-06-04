@@ -627,6 +627,23 @@ export const fetchNewLaunchSmartphones = createAsyncThunk(
   },
 );
 
+// Upcoming smartphones - server-filtered launch feed
+export const fetchUpcomingSmartphones = createAsyncThunk(
+  "device/fetchUpcomingSmartphones",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/public/upcoming/smartphones`, {
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return normalizeSmartphoneCollection(data, ["upcoming", "smartphones"]);
+    } catch (err) {
+      return rejectWithValue(err.message || String(err));
+    }
+  },
+);
+
 export const fetchNetworking = createAsyncThunk(
   "device/fetchNetworking",
   async (opts = {}, { rejectWithValue }) => {
@@ -1166,6 +1183,20 @@ const deviceSlice = createSlice({
         state.loading = false;
       })
       .addCase(fetchNewLaunchSmartphones.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          action.payload || action.error?.message || String(action.error);
+      })
+      .addCase(fetchUpcomingSmartphones.pending, (state) => {
+        state.loading = true;
+        state.smartphone = [];
+        state.error = null;
+      })
+      .addCase(fetchUpcomingSmartphones.fulfilled, (state, action) => {
+        state.smartphone = action.payload || [];
+        state.loading = false;
+      })
+      .addCase(fetchUpcomingSmartphones.rejected, (state, action) => {
         state.loading = false;
         state.error =
           action.payload || action.error?.message || String(action.error);
