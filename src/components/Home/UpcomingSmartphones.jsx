@@ -55,71 +55,6 @@ const firstText = (...values) => {
   return null;
 };
 
-const parseDateValue = (value) => {
-  if (!value) return null;
-  if (value instanceof Date) {
-    return Number.isNaN(value.getTime()) ? null : value;
-  }
-  if (typeof value === "number") {
-    const dt = new Date(value);
-    return Number.isNaN(dt.getTime()) ? null : dt;
-  }
-  const text = String(value).trim();
-  if (!text) return null;
-  const dt = new Date(text);
-  return Number.isNaN(dt.getTime()) ? null : dt;
-};
-
-const getRowReleaseDate = (row) =>
-  firstText(
-    row?.release_date,
-    row?.releaseDate,
-    row?.launch_date,
-    row?.launchDate,
-    row?.expected_launch_date,
-    row?.expectedLaunchDate,
-    row?.available_from,
-    row?.availableFrom,
-    row?.basic_info?.release_date,
-    row?.basic_info?.launch_date,
-  );
-
-const isReleasedStatus = (status) => {
-  const text = String(status || "")
-    .trim()
-    .toLowerCase();
-  if (!text) return false;
-  if (
-    /(upcoming|coming soon|expected|rumou?r|announce|pre[-\s]?order|pre[-\s]?book|prebooking|presale)/i.test(
-      text,
-    )
-  )
-    return false;
-  if (/(available|released|launched|out now|in stock|on sale)/i.test(text))
-    return true;
-  return false;
-};
-
-const isReleasedRow = (row) => {
-  const releaseDate = parseDateValue(getRowReleaseDate(row));
-  if (releaseDate) {
-    const todayEnd = new Date();
-    todayEnd.setHours(23, 59, 59, 999);
-    if (releaseDate > todayEnd) return false;
-    return true;
-  }
-
-  return isReleasedStatus(
-    firstText(
-      row?.launch_status,
-      row?.launchStatus,
-      row?.status,
-      row?.availability,
-      row?.badge,
-    ),
-  );
-};
-
 const getLatestRows = (json) => {
   if (Array.isArray(json?.new)) return json.new;
   if (Array.isArray(json?.latest)) return json.latest;
@@ -259,8 +194,7 @@ const LatestSmartphones = () => {
         if (cancelled) return;
 
         const rows = getLatestRows(latestJson);
-        const releasedRows = rows.filter(isReleasedRow);
-        const mapped = releasedRows.slice(0, 12).map((row, index) => ({
+        const mapped = rows.slice(0, 12).map((row, index) => ({
           id:
             row.product_id ??
             row.productId ??
@@ -441,7 +375,7 @@ const LatestSmartphones = () => {
         {loadingLatest ? null : currentDevices.length === 0 ? (
           <div className="mt-8 rounded-lg border border-cyan-200/14 bg-white/[0.055] px-6 py-8 text-center text-sm font-semibold text-cyan-50/70">
             <p className="text-sm font-semibold text-cyan-50/70">
-              No released smartphones available right now.
+              No latest smartphones available right now.
             </p>
           </div>
         ) : null}

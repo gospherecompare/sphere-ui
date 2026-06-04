@@ -938,6 +938,22 @@ const MobileDetailCard = () => {
     return null;
   };
 
+  const normalizeSaleStatus = (value) => {
+    if (!value) return null;
+    const text = String(value).trim().toLowerCase();
+    if (!text) return null;
+    if (/(pre[-\s]?order|pre[-\s]?book|prebooking|presale)/i.test(text))
+      return "preorder";
+    if (/(sale[\s_-]?scheduled|scheduled)/i.test(text))
+      return "sale_scheduled";
+    if (/(sale[\s_-]?started|started)/i.test(text)) return "sale_started";
+    if (/(store[\s_-]?pending|store[\s_-]?listing[\s_-]?pending)/i.test(text))
+      return "store_pending";
+    if (/(on sale|in stock|sale live|live)/i.test(text)) return "on_sale";
+    if (/(sale[\s_-]?tbd|sale[\s_-]?ta|tbd)/i.test(text)) return "sale_tbd";
+    return null;
+  };
+
   const getCompareLimitForStage = (stage) => {
     if (stage === "rumored") return 0;
     if (stage === "announced") return 2;
@@ -1022,22 +1038,6 @@ const MobileDetailCard = () => {
     if (/pre(book|order)|coming\s*soon|not[\s_-]*started/.test(availabilityText))
       return false;
 
-    const saleStart = store?.sale_start_date ??
-      store?.saleStartDate ??
-      store?.sale_date ??
-      store?.saleDate ??
-      store?.available_from ??
-      store?.availableFrom ??
-      null;
-    const parsedSaleStart = saleStart ? new Date(saleStart) : null;
-    if (
-      parsedSaleStart instanceof Date &&
-      !Number.isNaN(parsedSaleStart.getTime()) &&
-      parsedSaleStart > new Date()
-    ) {
-      return false;
-    }
-
     return Boolean(
       parseMarketPriceValue(
         store.price ??
@@ -1111,10 +1111,8 @@ const MobileDetailCard = () => {
     });
   };
 
-  const isSpecScoreAllowed = (stage, device = null) =>
-    stage === "released" ||
-    ((stage === "upcoming" || stage === "announced") &&
-      hasSpecScoreMarketSignal(device));
+  const isSpecScoreAllowed = (device = null) =>
+    device?.allowSpecScore === true || device?.allow_spec_score === true;
 
   const getSaleStartDateFromDevice = (device) => {
     if (!device) return null;
@@ -1164,164 +1162,34 @@ const MobileDetailCard = () => {
 
   const getDeviceLaunchStatus = (device) => {
     if (!device) return null;
-    const explicitStatus = normalizeLaunchStatus(
-      device.launch_status_override ||
-        device.launchStatusOverride ||
-        device.launch_status ||
-        device.launchStatus,
+    return (
+      normalizeLaunchStatus(
+        device.launch_status_override ||
+          device.launchStatusOverride ||
+          device.launch_status ||
+          device.launchStatus ||
+          device.status ||
+          device.availability ||
+          device.badge,
+      ) || "released"
     );
-    const saleStart = getSaleStartDateFromDevice(device);
-    const dateValue = normalizeDateLikeValue(
-      device.launch_date || device.launchDate,
-    );
-    const launchDate =
-      dateValue && !Number.isNaN(new Date(dateValue).getTime())
-        ? new Date(dateValue)
-        : null;
-    const preorderSignal =
-      Boolean(device.official_preorder_url || device.officialPreorderUrl) ||
-      getDeviceStoreRows(device).some(
-        (store) =>
-          store?.is_prebooking === true ||
-          store?.isPrebooking === true ||
-          /pre(book|order)|coming\s*soon|not[\s_-]*started/i.test(
-            String(
-              store?.availability_status ??
-                store?.availabilityStatus ??
-                store?.sale_status ??
-                store?.saleStatus ??
-                store?.cta_label ??
-                store?.ctaLabel ??
-                "",
-            ),
-          ),
-      );
-
-    if (explicitStatus === "rumored" || explicitStatus === "announced") {
-      return explicitStatus;
-    }
-
-    if (explicitStatus === "released" || explicitStatus === "available") {
-      if (launchDate instanceof Date && !Number.isNaN(launchDate.getTime())) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (launchDate > today) return "upcoming";
-      }
-      return "released";
-    }
-
-    if (explicitStatus === "upcoming") {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      if (launchDate instanceof Date && !Number.isNaN(launchDate.getTime())) {
-        return launchDate > today ? "upcoming" : "released";
-      }
-      if (saleStart instanceof Date && !Number.isNaN(saleStart.getTime())) {
-        return saleStart > today ? "upcoming" : "released";
-      }
-      if (preorderSignal) return "upcoming";
-      return "released";
-    }
-
-    const statusHint = normalizeLaunchStatus(
-      device.status || device.availability || device.badge,
-    );
-    if (statusHint) {
-      if (statusHint === "released") return "released";
-      if (statusHint === "available") {
-        if (launchDate instanceof Date && !Number.isNaN(launchDate.getTime())) {
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          if (launchDate > today) return "upcoming";
-        }
-        return "released";
-      }
-      if (statusHint === "upcoming") {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (launchDate instanceof Date && !Number.isNaN(launchDate.getTime())) {
-          return launchDate > today ? "upcoming" : "released";
-        }
-        if (saleStart instanceof Date && !Number.isNaN(saleStart.getTime())) {
-          return saleStart > today ? "upcoming" : "released";
-        }
-        if (preorderSignal) return "upcoming";
-        return "released";
-      }
-      return statusHint;
-    }
-
-    if (launchDate instanceof Date && !Number.isNaN(launchDate.getTime())) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      if (launchDate > today) return "upcoming";
-      return "released";
-    }
-
-    if (saleStart instanceof Date && !Number.isNaN(saleStart.getTime())) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      return saleStart > today ? "upcoming" : "released";
-    }
-
-    if (preorderSignal) return "upcoming";
-
-    return "released";
   };
 
   const getDeviceSaleStatus = (device) => {
     if (!device) return "sale_tbd";
-
-    const saleStart = getSaleStartDateFromDevice(device);
-    const storeRows = getDeviceStoreRows(device);
-    const explicitStatus = normalizeLaunchStatus(
-      device.launch_status_override ||
-        device.launchStatusOverride ||
-        device.launch_status ||
-        device.launchStatus ||
-        device.status ||
-        "",
+    return (
+      normalizeSaleStatus(device.sale_status || device.saleStatus) ||
+      normalizeSaleStatus(device.sale_status_text || device.saleStatusText) ||
+      normalizeSaleStatus(device.availability_status || device.availabilityStatus) ||
+      "sale_tbd"
     );
-    const preorderSignal =
-      Boolean(device.official_preorder_url || device.officialPreorderUrl) ||
-      storeRows.some(
-        (store) =>
-          store?.is_prebooking === true || store?.isPrebooking === true,
-      );
-    const liveStores = storeRows.some(hasLiveStoreSignal);
-    const hasStoreSignals = storeRows.some(hasStoreMarketSignal);
-    const launchStage = getDeviceLaunchStatus(device);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    if (saleStart instanceof Date && !Number.isNaN(saleStart.getTime())) {
-      if (saleStart > today) {
-        return preorderSignal ? "preorder" : "sale_scheduled";
-      }
-      return liveStores ? "on_sale" : "sale_started";
-    }
-
-    if (explicitStatus === "available") return "on_sale";
-    if (preorderSignal) return "preorder";
-    if (liveStores) return "on_sale";
-    if (launchStage === "released" && hasStoreSignals) return "store_pending";
-    return "sale_tbd";
   };
 
   const getDeviceStoreStatus = (device) => {
     if (!device) return "none";
     const storeRows = getDeviceStoreRows(device);
     if (storeRows.some(hasLiveStoreSignal)) return "live";
-    const saleStart = getSaleStartDateFromDevice(device);
     if (
-      saleStart instanceof Date &&
-      !Number.isNaN(saleStart.getTime()) &&
-      saleStart > new Date()
-    ) {
-      return "prebooking";
-    }
-    if (
-      Boolean(device.official_preorder_url || device.officialPreorderUrl) ||
       storeRows.some(
         (store) =>
           store?.is_prebooking === true || store?.isPrebooking === true,
@@ -1338,6 +1206,7 @@ const MobileDetailCard = () => {
     if (value === "rumored") return "Rumored";
     if (value === "announced") return "Announced";
     if (value === "upcoming") return "Upcoming";
+    if (value === "available") return "Available";
     return "Released";
   };
 
@@ -1719,7 +1588,7 @@ const MobileDetailCard = () => {
       deviceFieldProfiles,
     );
     out.field_profile = profileResult;
-    const canShowSpecScore = isSpecScoreAllowed(getDeviceLaunchStatus(out), out);
+    const canShowSpecScore = isSpecScoreAllowed(out);
     if (!canShowSpecScore) {
       out.spec_score = null;
       out.specScore = null;
@@ -1919,9 +1788,7 @@ const MobileDetailCard = () => {
       return serverPolicy.competitorLimit;
     return getCompetitorLimitForStage(launchStatus);
   }, [launchStatus, serverPolicy]);
-  const allowSpecScore =
-    isSpecScoreAllowed(launchStatus, mobileData) ||
-    serverPolicy.allowSpecScore === true;
+  const allowSpecScore = serverPolicy.allowSpecScore === true;
   const SpecScoreBadge = allowSpecScore ? BaseSpecScoreBadge : HiddenScoreBadge;
   const headerSpecScoreValue = useMemo(() => {
     if (!allowSpecScore || !scoreSourceData) return null;

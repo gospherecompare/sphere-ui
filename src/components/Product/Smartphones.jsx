@@ -470,6 +470,22 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     return null;
   };
 
+  const normalizeSaleStatus = (value) => {
+    if (!value) return null;
+    const text = String(value).trim().toLowerCase();
+    if (!text) return null;
+    if (/(pre[-\s]?order|pre[-\s]?book|prebooking|presale)/i.test(text))
+      return "preorder";
+    if (/(sale[\s_-]?scheduled|scheduled)/i.test(text))
+      return "sale_scheduled";
+    if (/(sale[\s_-]?started|started)/i.test(text)) return "sale_started";
+    if (/(store[\s_-]?pending|store[\s_-]?listing[\s_-]?pending)/i.test(text))
+      return "store_pending";
+    if (/(on sale|in stock|sale live|live)/i.test(text)) return "on_sale";
+    if (/(sale[\s_-]?tbd|sale[\s_-]?ta|tbd)/i.test(text)) return "sale_tbd";
+    return null;
+  };
+
   const getCompareLimitForStage = (stage) => {
     if (stage === "rumored") return 0;
     if (stage === "announced") return 2;
@@ -603,10 +619,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     });
   };
 
-  const isSpecScoreAllowed = (stage, device = null) =>
-    stage === "released" ||
-    ((stage === "upcoming" || stage === "announced") &&
-      hasSpecScoreMarketSignal(device));
+  const isSpecScoreAllowed = (device = null) =>
+    device?.allowSpecScore === true || device?.allow_spec_score === true;
 
   const toNumberOrNull = (value) => {
     const num = Number(value);
@@ -617,23 +631,24 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     const stage = resolveLaunchStage(device);
     const allowCompareRaw =
       device?.allowCompare ?? device?.allow_compare ?? null;
-    const allowCompare =
-      typeof allowCompareRaw === "boolean"
-        ? allowCompareRaw
-        : stage !== "rumored";
-    const allowSpecScore = isSpecScoreAllowed(stage, device);
+    const allowCompare = typeof allowCompareRaw === "boolean" ? allowCompareRaw : false;
     const compareLimitRaw = toNumberOrNull(
       device?.compareLimit ?? device?.compare_limit,
     );
-    const compareLimit = allowCompare
-      ? (compareLimitRaw ?? getCompareLimitForStage(stage))
-      : 0;
+    const allowSpecScoreRaw =
+      device?.allowSpecScore ?? device?.allow_spec_score ?? null;
+    const competitorLimitRaw = toNumberOrNull(
+      device?.competitorLimit ?? device?.competitor_limit,
+    );
 
     return {
       stage,
       allowCompare,
-      compareLimit,
-      allowSpecScore,
+      compareLimit: Number.isFinite(compareLimitRaw) ? compareLimitRaw : 0,
+      competitorLimit: Number.isFinite(competitorLimitRaw)
+        ? competitorLimitRaw
+        : 0,
+      allowSpecScore: allowSpecScoreRaw === true,
     };
   };
 
@@ -699,110 +714,36 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
   const resolveLaunchStage = (device) => {
     if (!device) return null;
-    const explicitStatus = normalizeLaunchStatus(
-      device.launchStatus ||
-        device.launch_status ||
-        device.launchStatusOverride ||
-        device.launch_status_override ||
-        device.launchStatusText ||
-        device.launch_status_text,
+    return (
+      normalizeLaunchStatus(
+        device.launchStatus ||
+          device.launch_status ||
+          device.launchStatusOverride ||
+          device.launch_status_override ||
+          device.launchStatusText ||
+          device.launch_status_text ||
+          device.status ||
+          device.availability ||
+          device.badge,
+      ) || "released"
     );
-    const saleStart = resolveSaleStartDate(device);
-    const launch = parseDateValue(device.launchDate || device.launch_date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const preorderSignal =
-      Boolean(device.official_preorder_url || device.officialPreorderUrl) ||
-      getDeviceStoreRows(device).some(isPrebookingStore);
-
-    if (explicitStatus === "rumored" || explicitStatus === "announced") {
-      return explicitStatus;
-    }
-
-    if (explicitStatus === "released" || explicitStatus === "available") {
-      if (launch && launch > today) return "upcoming";
-      return "released";
-    }
-
-    if (explicitStatus === "upcoming") {
-      if (launch) return launch > today ? "upcoming" : "released";
-      if (saleStart) return saleStart > today ? "upcoming" : "released";
-      if (preorderSignal) return "upcoming";
-      return "released";
-    }
-
-    const statusHint = normalizeLaunchStatus(
-      device.status || device.availability || device.badge,
-    );
-    if (statusHint) {
-      if (statusHint === "released") return "released";
-      if (statusHint === "available") {
-        if (launch && launch > today) return "upcoming";
-        return "released";
-      }
-      if (statusHint === "upcoming") {
-        if (launch) return launch > today ? "upcoming" : "released";
-        if (saleStart) return saleStart > today ? "upcoming" : "released";
-        if (preorderSignal) return "upcoming";
-        return "released";
-      }
-      return statusHint;
-    }
-
-    if (launch) return launch > today ? "upcoming" : "released";
-
-    if (saleStart) return saleStart > today ? "upcoming" : "released";
-
-    if (preorderSignal) return "upcoming";
-
-    return "released";
   };
 
   const resolveSaleStage = (device) => {
     if (!device) return "sale_tbd";
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const saleStart = resolveSaleStartDate(device);
-    const storeRows = getDeviceStoreRows(device);
-    const explicitStatus = normalizeLaunchStatus(
-      device.launchStatusOverride ||
-        device.launch_status_override ||
-        device.launchStatus ||
-        device.launch_status ||
-        device.status ||
-        "",
+    return (
+      normalizeSaleStatus(device.saleStatus || device.sale_status) ||
+      normalizeSaleStatus(device.saleStatusText || device.sale_status_text) ||
+      normalizeSaleStatus(device.availabilityStatus || device.availability_status) ||
+      "sale_tbd"
     );
-    const preorderSignal =
-      Boolean(device.official_preorder_url || device.officialPreorderUrl) ||
-      storeRows.some(isPrebookingStore);
-    const liveStores = storeRows.some(hasLiveStoreSignal);
-    const hasStoreSignals = storeRows.some(hasStoreMarketSignal);
-    const launchStage = resolveLaunchStage(device);
-
-    if (saleStart) {
-      if (saleStart > today) {
-        return preorderSignal ? "preorder" : "sale_scheduled";
-      }
-      return liveStores ? "on_sale" : "sale_started";
-    }
-
-    if (explicitStatus === "available") return "on_sale";
-    if (preorderSignal) return "preorder";
-    if (liveStores) return "on_sale";
-    if (launchStage === "released" && hasStoreSignals) return "store_pending";
-    return "sale_tbd";
   };
 
   const resolveStoreStage = (device) => {
     if (!device) return "none";
     const storeRows = getDeviceStoreRows(device);
     if (storeRows.some(hasLiveStoreSignal)) return "live";
-    if (
-      Boolean(device.official_preorder_url || device.officialPreorderUrl) ||
-      storeRows.some(isPrebookingStore)
-    ) {
+    if (storeRows.some(isPrebookingStore)) {
       return "prebooking";
     }
     if (storeRows.some(hasStoreMarketSignal)) return "listed";
@@ -813,6 +754,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     if (value === "rumored") return "Rumored";
     if (value === "announced") return "Announced";
     if (value === "upcoming") return "Upcoming";
+    if (value === "available") return "Available";
     return "Released";
   };
 
@@ -858,7 +800,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     return raw;
   };
 
-  const isPrebookingStore = (storePrice, launchDate = null) => {
+  const isPrebookingStore = (storePrice) => {
     if (!storePrice) return false;
     if (storePrice.is_prebooking === true) return true;
     const storeStatusText = String(
@@ -880,17 +822,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
     const ctaText = String(storePrice.cta_label || "").trim();
     if (/^(pre(book|order)|coming\s*soon)$/i.test(ctaText)) return true;
-
-    const saleStart =
-      storePrice.sale_start_date ??
-      storePrice.sale_date ??
-      storePrice.saleStartDate ??
-      null;
-    const saleDate = parseDateValue(saleStart);
-    if (saleDate && saleDate > new Date()) return true;
-
-    const launch = parseDateValue(launchDate);
-    if (launch && launch > new Date()) return true;
 
     return false;
   };
@@ -917,9 +848,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     const storePrices = Array.isArray(device.storePrices)
       ? device.storePrices
       : [];
-    if (
-      storePrices.some((store) => isPrebookingStore(store, device.launchDate))
-    ) {
+    if (storePrices.some((store) => isPrebookingStore(store))) {
       return "Coming Soon";
     }
 
@@ -971,21 +900,11 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     deviceStage = null,
     fallbackPrice = null,
   ) => {
-    const now = new Date();
-    const launch = parseDateValue(launchDate);
-    const saleStart = parseDateValue(saleStartDate);
-    const forcePrebooking =
-      deviceIsPrebooking ||
-      Boolean(
-        (saleStart && saleStart > now) ||
-        (!saleStart && launch && launch > now),
-      );
+    const forcePrebooking = deviceIsPrebooking === true;
 
     const normalizedStores = (Array.isArray(stores) ? stores : []).map(
       (store) => {
-        const prebooking =
-          forcePrebooking ||
-          isPrebookingStore(store, saleStartDate || launchDate);
+        const prebooking = forcePrebooking || isPrebookingStore(store);
         return {
           ...store,
           is_prebooking: prebooking || store?.is_prebooking === true,
@@ -1731,11 +1650,19 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         toString(apiDevice.officialPreorderUrl),
         "",
       ),
+      launchStatus: pick(
+        toString(apiDevice.launch_status),
+        toString(apiDevice.launchStatus),
+        "",
+      ),
       launchStatusOverride: pick(
         toString(apiDevice.launch_status_override),
         toString(apiDevice.launchStatusOverride),
-        toString(apiDevice.launch_status),
-        toString(apiDevice.launchStatus),
+        "",
+      ),
+      saleStatus: pick(
+        toString(apiDevice.sale_status),
+        toString(apiDevice.saleStatus),
         "",
       ),
       allowCompare:
@@ -1859,7 +1786,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     baseDevice.launchStatus = resolveLaunchStage(baseDevice);
     baseDevice.saleStatus = resolveSaleStage(baseDevice);
     baseDevice.storeStatus = resolveStoreStage(baseDevice);
-    if (!isSpecScoreAllowed(baseDevice.launchStatus, baseDevice)) {
+    if (!isSpecScoreAllowed(baseDevice)) {
       baseDevice.allowSpecScore = false;
       baseDevice.spec_score = null;
       baseDevice.overall_score = null;
@@ -2962,34 +2889,31 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     // never renders empty on refresh.
     let baseCards = variantCards;
     if (listFilter === "new") {
-      const today = new Date();
       const parseDate = (s) => {
         if (!s) return null;
         const d = new Date(s);
         return Number.isNaN(d.getTime()) ? null : d;
       };
 
-      const datedCards = variantCards.map((d) => ({
-        device: d,
-        date: parseDate(d.launchDate || d.launch_date),
-      }));
-      const hasValidDate = datedCards.some((item) => item.date);
-      if (hasValidDate) {
-        const released = datedCards.filter(
-          (item) => item.date && item.date <= today,
-        );
-        const usable = released.length
-          ? released
-          : datedCards.filter((item) => item.date);
-        usable.sort((a, b) => b.date - a.date);
-        const noDate = datedCards.filter((item) => !item.date);
-        baseCards = [
-          ...usable.map((item) => item.device),
-          ...noDate.map((item) => item.device),
-        ];
-      }
-
-      baseCards = baseCards.filter((device) => !isUpcomingDevice(device));
+      baseCards = variantCards
+        .map((device) => ({
+          device,
+          date: parseDate(
+            device.saleStartDate ||
+              device.sale_start_date ||
+              device.launchDate ||
+              device.launch_date,
+          ),
+        }))
+        .sort((a, b) => {
+          if (a.date && b.date && a.date.getTime() !== b.date.getTime()) {
+            return b.date - a.date;
+          }
+          if (a.date) return -1;
+          if (b.date) return 1;
+          return 0;
+        })
+        .map((item) => item.device);
     }
 
     return baseCards.filter((device) => {
@@ -4732,6 +4656,25 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                         : availabilityState.mode === "prebooking"
                           ? "border-sky-200 bg-sky-50 text-sky-700"
                           : "border-slate-200 bg-slate-50 text-slate-700";
+                    const saleStartDateParsed = device.saleStartDate
+                      ? new Date(device.saleStartDate)
+                      : null;
+                    const hasSaleStartDate =
+                      saleStartDateParsed &&
+                      !Number.isNaN(saleStartDateParsed.getTime());
+                    const showAvailabilityDate =
+                      hasSaleStartDate &&
+                      (isUpcomingView ||
+                        device.saleStatus === "preorder" ||
+                        device.saleStatus === "sale_scheduled" ||
+                        device.saleStatus === "store_pending");
+                    const availabilityDateLabel = showAvailabilityDate
+                      ? saleStartDateParsed.toLocaleDateString("en-US", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : null;
                     const lifecyclePills = (
                       <div className="flex flex-wrap items-center gap-2">
                         <span
@@ -4749,6 +4692,11 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                         >
                           Stores: {storeStageLabel}
                         </span>
+                        {availabilityDateLabel ? (
+                          <span className="inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-[11px] font-semibold text-indigo-700">
+                            Available: {availabilityDateLabel}
+                          </span>
+                        ) : null}
                       </div>
                     );
 
