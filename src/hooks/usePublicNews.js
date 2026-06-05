@@ -70,6 +70,18 @@ const normalizeHtmlContent = (value) => {
   return text;
 };
 
+const decodeTextEntities = (value) => {
+  let text = String(value || "");
+
+  for (let pass = 0; pass < 3; pass += 1) {
+    const next = decodeHtmlEntitiesOnce(text);
+    if (next === text) break;
+    text = next;
+  }
+
+  return text;
+};
+
 const escapeHtml = (value) =>
   String(value || "")
     .replace(/&/g, "&amp;")
@@ -80,19 +92,26 @@ const escapeHtml = (value) =>
 
 const applyInlineBoldMarkers = (value) =>
   String(value || "")
-    .split(/(<[^>]+>)/g)
+    .split(/(<(?:pre|code)\b[^>]*>[\s\S]*?<\/(?:pre|code)>)/gi)
     .map((segment) => {
-      if (!segment || segment.startsWith("<")) return segment;
+      if (/^<(?:pre|code)\b/i.test(segment)) return segment;
 
       return segment
-        .replace(/\*\*([\s\S]*?)\*\*/g, (full, inner) => {
-          const text = String(inner || "").trim();
-          return text ? `<strong>${text}</strong>` : full;
+        .split(/(<[^>]+>)/g)
+        .map((part) => {
+          if (!part || part.startsWith("<")) return part;
+
+          return part
+            .replace(/\*\*([\s\S]*?)\*\*/g, (full, inner) => {
+              const text = String(inner || "").trim();
+              return text ? `<strong>${text}</strong>` : full;
+            })
+            .replace(/__([\s\S]*?)__/g, (full, inner) => {
+              const text = String(inner || "").trim();
+              return text ? `<strong>${text}</strong>` : full;
+            });
         })
-        .replace(/__([\s\S]*?)__/g, (full, inner) => {
-          const text = String(inner || "").trim();
-          return text ? `<strong>${text}</strong>` : full;
-        });
+        .join("");
     })
     .join("");
 
@@ -158,9 +177,11 @@ const FALLBACK_THEME_BY_CATEGORY = {
 const DEFAULT_THEME = FALLBACK_THEME_BY_CATEGORY.news;
 
 const stripMarkup = (value) =>
-  safeText(value)
-    .replace(/(\*\*|__)([\s\S]*?)\1/g, " $2 ")
-    .replace(/<[^>]+>/g, " ")
+  decodeTextEntities(
+    safeText(value)
+      .replace(/(\*\*|__)([\s\S]*?)\1/g, " $2 ")
+      .replace(/<[^>]+>/g, " "),
+  )
     .replace(/\s+/g, " ")
     .trim();
 

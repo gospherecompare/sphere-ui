@@ -50,17 +50,13 @@ const parseStoryDate = (story) => {
 };
 
 const stripMarkup = (value) =>
-  String(value || "")
-    .replace(/(\*\*|__)([\s\S]*?)\1/g, " $2 ")
-    .replace(/<[^>]+>/g, " ")
+  decodeTextEntities(
+    String(value || "")
+      .replace(/(\*\*|__)([\s\S]*?)\1/g, " $2 ")
+      .replace(/<[^>]+>/g, " "),
+  )
     .replace(/\s+/g, " ")
     .trim();
-
-const clipText = (value, maxWords = 18) => {
-  const words = stripMarkup(value).split(/\s+/).filter(Boolean);
-  if (words.length <= maxWords) return words.join(" ");
-  return `${words.slice(0, maxWords).join(" ")}...`;
-};
 
 const normalizeTagKey = (value) =>
   stripMarkup(value)
@@ -104,21 +100,40 @@ const normalizeArticleHtml = (value) => {
   return text;
 };
 
+const decodeTextEntities = (value) => {
+  let text = String(value || "");
+
+  for (let pass = 0; pass < 3; pass += 1) {
+    const next = decodeHtmlEntitiesOnce(text);
+    if (next === text) break;
+    text = next;
+  }
+
+  return text;
+};
+
 const applyInlineBoldMarkers = (value) =>
   String(value || "")
-    .split(/(<[^>]+>)/g)
+    .split(/(<(?:pre|code)\b[^>]*>[\s\S]*?<\/(?:pre|code)>)/gi)
     .map((segment) => {
-      if (!segment || segment.startsWith("<")) return segment;
+      if (/^<(?:pre|code)\b/i.test(segment)) return segment;
 
       return segment
-        .replace(/\*\*([\s\S]*?)\*\*/g, (full, inner) => {
-          const text = String(inner || "").trim();
-          return text ? `<strong>${text}</strong>` : full;
+        .split(/(<[^>]+>)/g)
+        .map((part) => {
+          if (!part || part.startsWith("<")) return part;
+
+          return part
+            .replace(/\*\*([\s\S]*?)\*\*/g, (full, inner) => {
+              const text = String(inner || "").trim();
+              return text ? `<strong>${text}</strong>` : full;
+            })
+            .replace(/__([\s\S]*?)__/g, (full, inner) => {
+              const text = String(inner || "").trim();
+              return text ? `<strong>${text}</strong>` : full;
+            });
         })
-        .replace(/__([\s\S]*?)__/g, (full, inner) => {
-          const text = String(inner || "").trim();
-          return text ? `<strong>${text}</strong>` : full;
-        });
+        .join("");
     })
     .join("");
 
@@ -136,9 +151,9 @@ const sanitizeArticleHtml = (value) => {
     )
     .replace(/<h1\b/gi, "<h2")
     .replace(/<\/h1>/gi, "</h2>")
-    .replace(/\son[a-z]+\s*=\s*(\"[^\"]*\"|'[^']*'|[^\s>]+)/gi, "")
+    .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "")
     .replace(
-      /\s(?:style|class|id|aria-[\w-]+|data-[\w-]+)\s*=\s*(\"[^\"]*\"|'[^']*')/gi,
+      /\s(?:style|class|id|aria-[\w-]+|data-[\w-]+)\s*=\s*("[^"]*"|'[^']*')/gi,
       "",
     )
     .replace(/\s(?:style|class|id)\s*=\s*[^\s>]+/gi, "")
@@ -157,22 +172,6 @@ const sanitizeArticleHtml = (value) => {
 
 const getStoryCategory = (story) =>
   stripMarkup(story?.label || story?.category || "Newsroom");
-
-const formatRelativeTime = (story) => {
-  const date = parseStoryDate(story);
-  if (!date) return story?.publishedAt || "Recently";
-
-  const diffHours = Math.round(
-    (Date.now() - date.getTime()) / (1000 * 60 * 60),
-  );
-
-  if (diffHours < 1) return "just now";
-  if (diffHours < 24) {
-    return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
-  }
-
-  return DATE_FORMATTER.format(date);
-};
 
 const formatAbsoluteDate = (story) => {
   const date = parseStoryDate(story);
@@ -374,14 +373,6 @@ const splitStructuredArticleHtml = (html, paragraphCount = 2) => {
     restHtml: serialize(nodes.slice(splitAfter + 1)),
   };
 };
-
-const getInitials = (value = "Hooks") =>
-  String(value || "Hooks")
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
-    .join("") || "H";
 
 const ARTICLE_PROSE_CLASS =
   "news-article-prose pt-3 text-[15px] leading-7 text-[#32363d] sm:pt-4 sm:text-[18px] sm:leading-9 [&_p]:mb-5 sm:[&_p]:mb-6 [&_p:last-child]:mb-0 [&_p]:text-[15px] [&_p]:leading-7 sm:[&_p]:text-[18px] sm:[&_p]:leading-9 [&_h2]:scroll-mt-28 [&_h2]:mt-9 [&_h2]:text-[22px] [&_h2]:font-black [&_h2]:leading-[1.16] [&_h2]:text-[#1f2937] sm:[&_h2]:mt-10 sm:[&_h2]:text-[30px] [&_h3]:scroll-mt-28 [&_h3]:mt-7 [&_h3]:text-[19px] [&_h3]:font-bold [&_h3]:leading-[1.24] [&_h3]:text-[#1f2937] sm:[&_h3]:mt-8 sm:[&_h3]:text-[24px] [&_h4]:mt-7 [&_h4]:text-[17px] [&_h4]:font-bold [&_h4]:text-[#1f2937] sm:[&_h4]:text-[18px] [&_ul]:my-5 [&_ul]:list-disc [&_ul]:space-y-2.5 [&_ul]:pl-5 sm:[&_ul]:my-6 sm:[&_ul]:space-y-3 [&_ol]:my-5 [&_ol]:list-decimal [&_ol]:space-y-2.5 [&_ol]:pl-5 sm:[&_ol]:my-6 sm:[&_ol]:space-y-3 [&_li]:pl-1 [&_blockquote]:my-7 [&_blockquote]:border-l-4 [&_blockquote]:border-[#2563eb] [&_blockquote]:bg-[#eff6ff] [&_blockquote]:px-4 [&_blockquote]:py-4 [&_blockquote]:text-[#30343a] sm:[&_blockquote]:my-8 sm:[&_blockquote]:px-5 [&_pre]:my-6 [&_pre]:overflow-x-auto [&_pre]:bg-[#111827] [&_pre]:px-4 [&_pre]:py-4 [&_pre]:text-[13px] [&_pre]:leading-6 [&_pre]:text-[#f8fafc] sm:[&_pre]:text-[14px] [&_code]:font-mono [&_a]:font-medium [&_a]:text-[#2563eb] [&_a]:underline [&_a]:decoration-[#c4b5fd] [&_a]:underline-offset-4 [&_strong]:font-semibold [&_strong]:text-[#171717] [&_figure]:my-6 [&_figure]:overflow-hidden [&_figure]:border [&_figure]:border-[#e5e7eb] [&_figure]:bg-[#fafafa] sm:[&_figure]:my-7 [&_figure_figcaption]:border-t [&_figure_figcaption]:border-[#e5e7eb] [&_figure_figcaption]:px-4 [&_figure_figcaption]:py-3 [&_figure_figcaption]:text-[11px] [&_figure_figcaption]:font-semibold [&_figure_figcaption]:uppercase [&_figure_figcaption]:tracking-[0.12em] [&_figure_figcaption]:text-[#6b7280] [&_figure_img]:w-full [&_img]:my-6 [&_img]:w-full sm:[&_img]:my-7 [&_div.article-table-wrap]:my-6 [&_div.article-table-wrap]:overflow-x-auto [&_div.article-table-wrap]:border [&_div.article-table-wrap]:border-[#e5e7eb] sm:[&_div.article-table-wrap]:my-7 [&_table]:min-w-[560px] [&_table]:w-full [&_table]:border-collapse [&_table]:text-left [&_table]:text-[14px] sm:[&_table]:text-[15px] [&_thead]:bg-[#f6f7fb] [&_th]:border-b [&_th]:border-[#dde3eb] [&_th]:px-4 [&_th]:py-3 [&_th]:font-semibold [&_th]:text-[#202938] [&_td]:border-b [&_td]:border-[#ebedf0] [&_td]:px-4 [&_td]:py-3 [&_td]:align-top [&_td]:text-[#424955] [&_tbody_tr:last-child_td]:border-b-0";
