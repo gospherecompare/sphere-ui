@@ -187,7 +187,16 @@ const TVDetailCard = () => {
   const params = useParams();
   const location = useLocation();
   const query = new URLSearchParams(location.search);
-  let idParam = query.get("id");
+  const idParam = query.get("id");
+  const routeProductId = useMemo(() => {
+    const rawId =
+      location.state?.productId ??
+      location.state?.product_id ??
+      location.state?.id ??
+      null;
+    const numericId = Number(rawId);
+    return Number.isInteger(numericId) && numericId > 0 ? numericId : null;
+  }, [location.state]);
 
   // Extract slug from route params (SEO-friendly slug-based URL)
   const routeSlug = params.slug || null;
@@ -203,14 +212,23 @@ const TVDetailCard = () => {
     brands,
   } = useDevice();
 
+  const doesApplianceMatchSlug = (appliance, slug) => {
+    if (!appliance || !slug) return false;
+    const searchSlug = generateSlug(slug);
+    return [
+      appliance.name,
+      appliance.product_name,
+      appliance.productName,
+      appliance.model,
+      appliance.model_number,
+    ].some((value) => generateSlug(value || "") === searchSlug);
+  };
+
   // Helper function to find appliance by slug locally
   const findApplianceBySlug = (slug) => {
     if (!slug || !Array.isArray(homeAppliances)) return null;
-    const searchSlug = generateSlug(slug);
-    return homeAppliances.find(
-      (a) =>
-        generateSlug(a.name || a.product_name || a.model || "") ===
-          searchSlug || generateSlug(a.model_number || "") === searchSlug,
+    return homeAppliances.find((appliance) =>
+      doesApplianceMatchSlug(appliance, slug),
     );
   };
 
@@ -599,12 +617,15 @@ const TVDetailCard = () => {
 
   useEffect(() => {
     setLoading(true);
+    setApplianceData(null);
+    let cancelled = false;
 
-    const timer = setTimeout(() => {
+    const timer = setTimeout(async () => {
       let selected = null;
       let variantIndex = 0;
 
       const source = Array.isArray(homeAppliances) ? homeAppliances : [];
+      const requestedProductId = routeProductId ?? idParam;
 
       // params we care about
       const brandParam = query.get("brand");
@@ -612,13 +633,56 @@ const TVDetailCard = () => {
       const variantIdParam = query.get("variantId") || query.get("variant_id");
       const storeNameParam = query.get("storeName") || query.get("store");
 
-      // 0) Try to find by slug first (for direct slug-based URL access)
-      if (!selected && routeSlug && Array.isArray(source)) {
+      // An exact product id from search/navigation must win over fuzzy matches.
+      if (requestedProductId) {
+        selected = source.find(
+          (device) =>
+            String(device.product_id) === String(requestedProductId) ||
+            String(device.productId) === String(requestedProductId) ||
+            String(device.id) === String(requestedProductId),
+        );
+      }
+
+      // Newly added TVs can appear in search before the cached TV list updates.
+      if (!selected && requestedProductId) {
+        try {
+          const response = await fetch(
+            `https://api.apisphere.in/api/public/product/${encodeURIComponent(
+              requestedProductId,
+            )}`,
+            { cache: "no-store" },
+          );
+          if (response.ok) {
+            const product = await response.json();
+            const productType = String(
+              product?.product_type || product?.productType || "",
+            ).toLowerCase();
+            if (
+              product &&
+              (productType.includes("tv") ||
+                productType.includes("television") ||
+                productType.includes("appliance"))
+            ) {
+              selected = product;
+            }
+          }
+        } catch {
+          // The normal not-found state is safer than showing an unrelated TV.
+        }
+      }
+
+      // 1) Try to find by slug first (for direct slug-based URL access).
+      if (!selected && !requestedProductId && routeSlug) {
         selected = findApplianceBySlug(routeSlug);
       }
 
-      // 1) variantId preferred
-      if (variantIdParam && Array.isArray(source) && source.length) {
+      // 2) Resolve legacy query-string routes by variant id.
+      if (
+        !selected &&
+        !requestedProductId &&
+        variantIdParam &&
+        source.length
+      ) {
         for (const dev of source) {
           const vars = Array.isArray(dev.variants) ? dev.variants : [];
           const idx = vars.findIndex(
@@ -634,8 +698,8 @@ const TVDetailCard = () => {
         }
       }
 
-      // 2) brand + model
-      if (!selected && brandParam && modelParam && Array.isArray(source)) {
+      // 3) Resolve legacy query-string routes by brand and model.
+      if (!selected && !requestedProductId && brandParam && modelParam) {
         const b = brandParam.toLowerCase();
         const m = modelParam.toLowerCase();
         for (const dev of source) {
@@ -657,8 +721,8 @@ const TVDetailCard = () => {
         }
       }
 
-      // 3) brand only
-      if (!selected && brandParam && Array.isArray(source)) {
+      // 4) Brand-only legacy links keep their historical first-brand behavior.
+      if (!selected && !requestedProductId && brandParam) {
         const b = brandParam.toLowerCase();
         for (const dev of source) {
           const brandVal = (dev.brand_name || dev.brand || "")
@@ -669,18 +733,6 @@ const TVDetailCard = () => {
             break;
           }
         }
-      }
-
-      // 4) id fallback or first
-      if (!selected && Array.isArray(source) && source.length) {
-        if (idParam) {
-          selected = source.find(
-            (d) =>
-              String(d.product_id) === String(idParam) ||
-              String(d.id) === String(idParam),
-          );
-        }
-        if (!selected) selected = source[0] || null;
       }
 
       // try to pick variant by store name
@@ -702,17 +754,22 @@ const TVDetailCard = () => {
         }
       }
 
+      if (cancelled) return;
       setApplianceData(normalizeAppliance(selected));
       setSelectedVariant(Math.max(0, variantIndex));
       setLoading(false);
     }, 200);
 
-    return () => clearTimeout(timer);
-  }, [location.search, homeAppliances, routeSlug]);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [location.search, homeAppliances, routeProductId, routeSlug]);
 
   // Redirect to canonical SEO-friendly appliance URL when data is available
   useEffect(() => {
     if (!applianceData) return;
+    if (routeSlug && !doesApplianceMatchSlug(applianceData, routeSlug)) return;
 
     const canonicalSlug = generateSlug(
       applianceData.product_name ||
@@ -724,9 +781,9 @@ const TVDetailCard = () => {
     const desiredPath = `/tvs/${canonicalSlug}`;
     const currentPath = window.location.pathname;
     if (currentPath !== desiredPath || location.search) {
-      navigate(desiredPath, { replace: true });
+      navigate(desiredPath, { replace: true, state: location.state });
     }
-  }, [applianceData, navigate, location.search]);
+  }, [applianceData, navigate, location.search, location.state, routeSlug]);
 
   // Record a single product view per browser session for home appliances.
   useEffect(() => {

@@ -69,10 +69,8 @@ const normalizeTagKey = (value) =>
     .replace(/\s+/g, " ")
     .trim();
 
-const decodeHtmlEntities = (value) => {
+const decodeHtmlEntitiesOnce = (value) => {
   let text = String(value || "");
-  if (!text) return "";
-
   const replacements = [
     ["&lt;", "<"],
     ["&gt;", ">"],
@@ -82,11 +80,23 @@ const decodeHtmlEntities = (value) => {
     ["&amp;", "&"],
   ];
 
-  for (let pass = 0; pass < 2; pass += 1) {
-    let next = text;
-    replacements.forEach(([encoded, decoded]) => {
-      next = next.split(encoded).join(decoded);
-    });
+  replacements.forEach(([encoded, decoded]) => {
+    text = text.split(encoded).join(decoded);
+  });
+
+  return text;
+};
+
+const containsArticleMarkup = (value) =>
+  /<\s*\/?(?:p|br|h[1-6]|ul|ol|li|table|thead|tbody|tr|th|td|blockquote|pre|code|figure|figcaption|img)\b/i.test(
+    String(value || ""),
+  );
+
+const normalizeArticleHtml = (value) => {
+  let text = String(value || "").replace(/\r\n?/g, "\n").trim();
+
+  for (let pass = 0; pass < 3 && text && !containsArticleMarkup(text); pass += 1) {
+    const next = decodeHtmlEntitiesOnce(text);
     if (next === text) break;
     text = next;
   }
@@ -113,13 +123,12 @@ const applyInlineBoldMarkers = (value) =>
     .join("");
 
 const hasStructuredArticleMarkup = (value) =>
-  /<\s*(?:p|h[1-6]|ul|ol|table|blockquote|figure|figcaption|img)\b/i.test(
-    decodeHtmlEntities(value),
+  /<\s*(?:p|h[1-6]|ul|ol|table|blockquote|pre|code|figure|figcaption|img)\b/i.test(
+    normalizeArticleHtml(value),
   );
 
 const sanitizeArticleHtml = (value) => {
-  const normalized = decodeHtmlEntities(value)
-    .replace(/\r\n?/g, "\n")
+  const normalized = normalizeArticleHtml(value)
     .replace(/<!--[\s\S]*?-->/g, "")
     .replace(
       /<(script|style|iframe|object|embed|form|input|button|textarea|select|svg|canvas)[^>]*>[\s\S]*?<\/\1>/gi,
@@ -138,7 +147,7 @@ const sanitizeArticleHtml = (value) => {
 
   return applyInlineBoldMarkers(normalized)
     .replace(
-      /<(?!\/?(?:p|br|strong|em|b|i|u|a|ul|ol|li|h2|h3|h4|h5|h6|blockquote|table|thead|tbody|tr|th|td|figure|figcaption|img)\b)[^>]+>/gi,
+      /<(?!\/?(?:p|br|strong|em|b|i|u|s|del|code|pre|a|ul|ol|li|h2|h3|h4|h5|h6|blockquote|table|thead|tbody|tr|th|td|figure|figcaption|img)\b)[^>]+>/gi,
       "",
     )
     .replace(/<table\b([^>]*)>/gi, '<div class="article-table-wrap"><table$1>')
@@ -175,13 +184,12 @@ const formatImageCredit = (story) => {
   const raw = String(
     story?.heroImageCaption || story?.heroImageSource || "",
   ).trim();
-  if (!raw) return "Hooks newsroom";
-  if (/^(asset|url)$/i.test(raw)) return "Hooks newsroom";
+  if (!raw || /^(asset|url|hooks newsroom)$/i.test(raw)) return "";
   if (/^https?:\/\//i.test(raw)) {
     try {
       return new URL(raw).hostname.replace(/^www\./i, "");
     } catch {
-      return "Hooks newsroom";
+      return "";
     }
   }
   return raw;
@@ -279,94 +287,6 @@ const createShortBreadcrumbLabel = (label, wordLimit = 3) => {
   return `${words.slice(0, wordLimit).join(" ")}...`;
 };
 
-const HEADLINE_WORD_TARGET = 12;
-const HEADLINE_MIN_LAST_LINE_WORDS = 3;
-const HEADLINE_END_AVOID = new Set([
-  "a",
-  "an",
-  "and",
-  "at",
-  "by",
-  "for",
-  "from",
-  "in",
-  "of",
-  "on",
-  "or",
-  "the",
-  "to",
-  "with",
-]);
-
-const normalizeHeadlineWord = (value) =>
-  String(value || "")
-    .replace(/^[^a-z0-9]+|[^a-z0-9]+$/gi, "")
-    .toLowerCase();
-
-const shouldKeepHeadlineWordsTogether = (word, nextWord) => {
-  if (!word || !nextWord) return false;
-
-  const current = String(word || "").replace(/[^\w%+.-]+$/g, "");
-  const next = String(nextWord || "").replace(/^[^\w%+.-]+/g, "");
-
-  return /\d/.test(current) && /^[a-z]/i.test(next);
-};
-
-const splitHeadlineLines = (value) => {
-  const words = String(value || "")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-
-  if (words.length <= HEADLINE_WORD_TARGET + HEADLINE_MIN_LAST_LINE_WORDS) {
-    return [words.join(" ")];
-  }
-
-  const lines = [];
-  let remaining = [...words];
-
-  while (
-    remaining.length >
-    HEADLINE_WORD_TARGET + HEADLINE_MIN_LAST_LINE_WORDS
-  ) {
-    let count = HEADLINE_WORD_TARGET;
-    const currentWord = normalizeHeadlineWord(remaining[count - 1]);
-
-    if (HEADLINE_END_AVOID.has(currentWord) && count > 6) {
-      count -= 1;
-    }
-
-    if (
-      shouldKeepHeadlineWordsTogether(remaining[count - 1], remaining[count]) &&
-      remaining.length - (count + 1) >= HEADLINE_MIN_LAST_LINE_WORDS
-    ) {
-      count += 1;
-    }
-
-    lines.push(remaining.slice(0, count).join(" "));
-    remaining = remaining.slice(count);
-  }
-
-  if (remaining.length) {
-    lines.push(remaining.join(" "));
-  }
-
-  return lines.filter(Boolean);
-};
-
-const HeadlineText = ({ lines = [], title = "", slug = "" }) => (
-  <>
-    <span className="sm:hidden">{title}</span>
-    <span className="hidden sm:block">
-      {lines.map((line, index) => (
-        <span key={`${slug}-headline-${index + 1}`} className="block">
-          {line}
-        </span>
-      ))}
-    </span>
-  </>
-);
-
 const createAnchorId = (value, fallback = "section") => {
   const normalized = stripMarkup(value)
     .toLowerCase()
@@ -417,24 +337,42 @@ const injectHeadingIds = (html, headings = []) => {
 
 const splitStructuredArticleHtml = (html, paragraphCount = 2) => {
   if (!html) return { leadHtml: "", restHtml: "" };
-
-  const matcher = /<\/p>/gi;
-  let count = 0;
-  let match = matcher.exec(html);
-
-  while (match) {
-    count += 1;
-    if (count === paragraphCount) {
-      const splitIndex = match.index + match[0].length;
-      return {
-        leadHtml: html.slice(0, splitIndex),
-        restHtml: html.slice(splitIndex),
-      };
-    }
-    match = matcher.exec(html);
+  if (typeof DOMParser === "undefined") {
+    return { leadHtml: html, restHtml: "" };
   }
 
-  return { leadHtml: html, restHtml: "" };
+  const parsed = new DOMParser().parseFromString(
+    `<article data-news-article-root>${html}</article>`,
+    "text/html",
+  );
+  const root = parsed.querySelector("[data-news-article-root]");
+  if (!root) return { leadHtml: html, restHtml: "" };
+
+  const nodes = Array.from(root.childNodes).filter(
+    (node) => node.nodeType !== 3 || String(node.textContent || "").trim(),
+  );
+  let topLevelParagraphs = 0;
+  let splitAfter = -1;
+
+  nodes.forEach((node, index) => {
+    if (splitAfter >= 0 || node.nodeType !== 1) return;
+    if (String(node.nodeName || "").toLowerCase() !== "p") return;
+
+    topLevelParagraphs += 1;
+    if (topLevelParagraphs >= paragraphCount) splitAfter = index;
+  });
+
+  if (splitAfter < 0) return { leadHtml: root.innerHTML, restHtml: "" };
+
+  const serialize = (items) =>
+    items
+      .map((node) => (node.nodeType === 1 ? node.outerHTML : node.textContent))
+      .join("");
+
+  return {
+    leadHtml: serialize(nodes.slice(0, splitAfter + 1)),
+    restHtml: serialize(nodes.slice(splitAfter + 1)),
+  };
 };
 
 const getInitials = (value = "Hooks") =>
@@ -446,12 +384,12 @@ const getInitials = (value = "Hooks") =>
     .join("") || "H";
 
 const ARTICLE_PROSE_CLASS =
-  "pt-5 text-[15px] leading-7 text-[#32363d] sm:pt-6 sm:text-[18px] sm:leading-9 [&_p]:mb-5 sm:[&_p]:mb-6 [&_p:last-child]:mb-0 [&_p]:text-[15px] [&_p]:leading-7 [&_p:first-of-type]:text-[16px] [&_p:first-of-type]:leading-8 [&_p:first-of-type]:text-[#1f2937] sm:[&_p]:text-[18px] sm:[&_p]:leading-9 sm:[&_p:first-of-type]:text-[20px] sm:[&_p:first-of-type]:leading-9 [&_h2]:scroll-mt-28 [&_h2]:mt-9 [&_h2]:text-[22px] [&_h2]:font-black [&_h2]:leading-[1.16] [&_h2]:text-[#1f2937] sm:[&_h2]:mt-10 sm:[&_h2]:text-[30px] [&_h3]:scroll-mt-28 [&_h3]:mt-7 [&_h3]:text-[19px] [&_h3]:font-bold [&_h3]:leading-[1.24] [&_h3]:text-[#1f2937] sm:[&_h3]:mt-8 sm:[&_h3]:text-[24px] [&_h4]:mt-7 [&_h4]:text-[17px] [&_h4]:font-bold [&_h4]:text-[#1f2937] sm:[&_h4]:text-[18px] [&_ul]:my-5 [&_ul]:list-disc [&_ul]:space-y-2.5 [&_ul]:pl-5 sm:[&_ul]:my-6 sm:[&_ul]:space-y-3 [&_ol]:my-5 [&_ol]:list-decimal [&_ol]:space-y-2.5 [&_ol]:pl-5 sm:[&_ol]:my-6 sm:[&_ol]:space-y-3 [&_li]:pl-1 [&_blockquote]:my-7 [&_blockquote]:border-l-4 [&_blockquote]:border-[#2563eb] [&_blockquote]:bg-[#eff6ff] [&_blockquote]:px-4 [&_blockquote]:py-4 [&_blockquote]:text-[#30343a] sm:[&_blockquote]:my-8 sm:[&_blockquote]:px-5 [&_a]:font-medium [&_a]:text-[#2563eb] [&_a]:underline [&_a]:decoration-[#c4b5fd] [&_a]:underline-offset-4 [&_strong]:font-semibold [&_strong]:text-[#171717] [&_figure]:my-6 [&_figure]:overflow-hidden [&_figure]:border [&_figure]:border-[#e5e7eb] [&_figure]:bg-[#fafafa] sm:[&_figure]:my-7 [&_figure_figcaption]:border-t [&_figure_figcaption]:border-[#e5e7eb] [&_figure_figcaption]:px-4 [&_figure_figcaption]:py-3 [&_figure_figcaption]:text-[11px] [&_figure_figcaption]:font-semibold [&_figure_figcaption]:uppercase [&_figure_figcaption]:tracking-[0.12em] [&_figure_figcaption]:text-[#6b7280] [&_figure_img]:w-full [&_img]:my-6 [&_img]:w-full sm:[&_img]:my-7 [&_div.article-table-wrap]:my-6 [&_div.article-table-wrap]:overflow-x-auto [&_div.article-table-wrap]:border [&_div.article-table-wrap]:border-[#e5e7eb] sm:[&_div.article-table-wrap]:my-7 [&_table]:min-w-[560px] [&_table]:w-full [&_table]:border-collapse [&_table]:text-left [&_table]:text-[14px] sm:[&_table]:text-[15px] [&_thead]:bg-[#f6f7fb] [&_th]:border-b [&_th]:border-[#dde3eb] [&_th]:px-4 [&_th]:py-3 [&_th]:font-semibold [&_th]:text-[#202938] [&_td]:border-b [&_td]:border-[#ebedf0] [&_td]:px-4 [&_td]:py-3 [&_td]:align-top [&_td]:text-[#424955] [&_tbody_tr:last-child_td]:border-b-0";
+  "news-article-prose pt-3 text-[15px] leading-7 text-[#32363d] sm:pt-4 sm:text-[18px] sm:leading-9 [&_p]:mb-5 sm:[&_p]:mb-6 [&_p:last-child]:mb-0 [&_p]:text-[15px] [&_p]:leading-7 sm:[&_p]:text-[18px] sm:[&_p]:leading-9 [&_h2]:scroll-mt-28 [&_h2]:mt-9 [&_h2]:text-[22px] [&_h2]:font-black [&_h2]:leading-[1.16] [&_h2]:text-[#1f2937] sm:[&_h2]:mt-10 sm:[&_h2]:text-[30px] [&_h3]:scroll-mt-28 [&_h3]:mt-7 [&_h3]:text-[19px] [&_h3]:font-bold [&_h3]:leading-[1.24] [&_h3]:text-[#1f2937] sm:[&_h3]:mt-8 sm:[&_h3]:text-[24px] [&_h4]:mt-7 [&_h4]:text-[17px] [&_h4]:font-bold [&_h4]:text-[#1f2937] sm:[&_h4]:text-[18px] [&_ul]:my-5 [&_ul]:list-disc [&_ul]:space-y-2.5 [&_ul]:pl-5 sm:[&_ul]:my-6 sm:[&_ul]:space-y-3 [&_ol]:my-5 [&_ol]:list-decimal [&_ol]:space-y-2.5 [&_ol]:pl-5 sm:[&_ol]:my-6 sm:[&_ol]:space-y-3 [&_li]:pl-1 [&_blockquote]:my-7 [&_blockquote]:border-l-4 [&_blockquote]:border-[#2563eb] [&_blockquote]:bg-[#eff6ff] [&_blockquote]:px-4 [&_blockquote]:py-4 [&_blockquote]:text-[#30343a] sm:[&_blockquote]:my-8 sm:[&_blockquote]:px-5 [&_pre]:my-6 [&_pre]:overflow-x-auto [&_pre]:bg-[#111827] [&_pre]:px-4 [&_pre]:py-4 [&_pre]:text-[13px] [&_pre]:leading-6 [&_pre]:text-[#f8fafc] sm:[&_pre]:text-[14px] [&_code]:font-mono [&_a]:font-medium [&_a]:text-[#2563eb] [&_a]:underline [&_a]:decoration-[#c4b5fd] [&_a]:underline-offset-4 [&_strong]:font-semibold [&_strong]:text-[#171717] [&_figure]:my-6 [&_figure]:overflow-hidden [&_figure]:border [&_figure]:border-[#e5e7eb] [&_figure]:bg-[#fafafa] sm:[&_figure]:my-7 [&_figure_figcaption]:border-t [&_figure_figcaption]:border-[#e5e7eb] [&_figure_figcaption]:px-4 [&_figure_figcaption]:py-3 [&_figure_figcaption]:text-[11px] [&_figure_figcaption]:font-semibold [&_figure_figcaption]:uppercase [&_figure_figcaption]:tracking-[0.12em] [&_figure_figcaption]:text-[#6b7280] [&_figure_img]:w-full [&_img]:my-6 [&_img]:w-full sm:[&_img]:my-7 [&_div.article-table-wrap]:my-6 [&_div.article-table-wrap]:overflow-x-auto [&_div.article-table-wrap]:border [&_div.article-table-wrap]:border-[#e5e7eb] sm:[&_div.article-table-wrap]:my-7 [&_table]:min-w-[560px] [&_table]:w-full [&_table]:border-collapse [&_table]:text-left [&_table]:text-[14px] sm:[&_table]:text-[15px] [&_thead]:bg-[#f6f7fb] [&_th]:border-b [&_th]:border-[#dde3eb] [&_th]:px-4 [&_th]:py-3 [&_th]:font-semibold [&_th]:text-[#202938] [&_td]:border-b [&_td]:border-[#ebedf0] [&_td]:px-4 [&_td]:py-3 [&_td]:align-top [&_td]:text-[#424955] [&_tbody_tr:last-child_td]:border-b-0";
 
 const ARTICLE_PROSE_CONTINUATION_CLASS = ARTICLE_PROSE_CLASS.replace(
-  /^pt-6\s*/,
+  /\b(?:sm:)?pt-\d+\s*/g,
   "",
-);
+).trim();
 
 const useStoryImageState = (story) => {
   const [imageError, setImageError] = useState(false);
@@ -1049,10 +987,7 @@ const NewsStoryArticlePage = () => {
 
   const storyAuthor =
     String(story?.author || "Hooks newsroom").trim() || "Hooks newsroom";
-  const headlineLines = useMemo(
-    () => splitHeadlineLines(story?.title),
-    [story?.title],
-  );
+  const imageCredit = formatImageCredit(story);
   const articleHeadings = useMemo(
     () => extractArticleHeadings(articleHtml),
     [articleHtml],
@@ -1281,14 +1216,10 @@ const NewsStoryArticlePage = () => {
         <section className="bg-white">
           <div className="mx-auto max-w-[1280px] px-4 pb-3 pt-1 sm:px-6 sm:pb-4 sm:pt-2 lg:px-8 lg:pb-3">
             <div className="max-w-[1120px]">
-              <h1 className="text-[19px] font-black leading-[1.18] tracking-[-0.02em] text-[#20242b] sm:text-[25px] sm:leading-[1.14] lg:text-[28px] xl:text-[30px]">
-                <HeadlineText
-                  lines={headlineLines}
-                  title={story.title}
-                  slug={story.slug}
-                />
+              <h1 className="news-article-headline text-[21px] leading-[1.18] text-[#20242b] sm:text-[28px] sm:leading-[1.14] lg:text-[32px] xl:text-[36px]">
+                {story.title}
               </h1>
-              <p className="mt-2 max-w-[72ch] text-[13.5px] leading-6 text-[#5f6670] sm:mt-3 sm:text-[17px] sm:leading-7">
+              <p className="news-article-deck mt-2 max-w-[72ch] text-[15px] leading-6 text-[#5f6670] sm:mt-3 sm:text-[19px] sm:leading-8">
                 {articleDescription}
               </p>
               <ArticleShareLinks
@@ -1315,15 +1246,24 @@ const NewsStoryArticlePage = () => {
               </aside>
 
               <div className="min-w-0">
-                <div className="border-b border-[#eceff3]">
+                <div>
                   <StoryImage
                     story={story}
                     eager
                     className="aspect-[16/10] w-full border border-[#e5e7eb] sm:aspect-[16/9]"
                   />
-                  <div className="mt-3 flex flex-col gap-1.5 text-[10px] font-medium uppercase tracking-[0.12em] text-[#7d8898] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:tracking-[0.14em]">
-                    <span>Image credit: {formatImageCredit(story)}</span>
-                    <span>{formatAbsoluteDate(story)}</span>
+                  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-[#e5eaf0] pb-4 text-[10px] font-semibold uppercase tracking-[0.13em] text-[#64748b] sm:gap-x-4 sm:text-[11px] sm:tracking-[0.14em]">
+                    <span className="inline-flex rounded-full bg-[#f1f5f9] px-3 py-1.5 text-[#334155]">
+                      {story.readTime}
+                    </span>
+                    <span className="inline-flex items-center">
+                      Published {formatAbsoluteDate(story)}
+                    </span>
+                    {imageCredit ? (
+                      <span className="basis-full text-[#7d8898] sm:ml-auto sm:basis-auto">
+                        Photo: {imageCredit}
+                      </span>
+                    ) : null}
                   </div>
                 </div>
 
@@ -1336,16 +1276,7 @@ const NewsStoryArticlePage = () => {
                   />
                 </div>
 
-                <article className="mt-5 sm:mt-8">
-                  <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.12em] sm:gap-2.5 sm:text-[11px] sm:tracking-[0.14em]">
-                    <span className="inline-flex items-center font-medium text-[#5f6670]">
-                      {story.readTime}
-                    </span>
-                    <span className="inline-flex items-center font-medium text-[#5f6670]">
-                      {formatAbsoluteDate(story)}
-                    </span>
-                  </div>
-
+                <article>
                   {hasStructuredArticle && articleHtmlWithAnchors ? (
                     <>
                       {structuredLeadHtml ? (
@@ -1370,16 +1301,9 @@ const NewsStoryArticlePage = () => {
                     </>
                   ) : (
                     <>
-                      <div className="space-y-5 pt-5 text-[15px] leading-7 text-[#32363d] sm:space-y-7 sm:pt-6 sm:text-[18px] sm:leading-9">
+                      <div className="news-article-prose space-y-5 pt-3 text-[15px] leading-7 text-[#32363d] sm:space-y-7 sm:pt-4 sm:text-[18px] sm:leading-9">
                         {introParagraphs.map((paragraph, index) => (
-                          <p
-                            key={`${story.slug}-intro-${index + 1}`}
-                            className={
-                              index === 0
-                                ? "text-[16px] leading-8 text-[#1f2937] sm:text-[20px] sm:leading-9"
-                                : "text-[15px] leading-7 sm:text-[18px] sm:leading-9"
-                            }
-                          >
+                          <p key={`${story.slug}-intro-${index + 1}`}>
                             {paragraph}
                           </p>
                         ))}
@@ -1388,7 +1312,7 @@ const NewsStoryArticlePage = () => {
                       <InlineStoryLinksPanel stories={inlineStories} />
 
                       {remainingParagraphs.length ? (
-                        <div className="space-y-5 text-[15px] leading-7 text-[#32363d] sm:space-y-7 sm:text-[18px] sm:leading-9">
+                        <div className="news-article-prose space-y-5 text-[15px] leading-7 text-[#32363d] sm:space-y-7 sm:text-[18px] sm:leading-9">
                           {remainingParagraphs.map((paragraph, index) => (
                             <p key={`${story.slug}-rest-${index + 1}`}>
                               {paragraph}

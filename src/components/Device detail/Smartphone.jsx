@@ -651,6 +651,15 @@ const MobileDetailCard = () => {
   const variantQuery = query.get("variantId") || query.get("variant_id");
   const ramParam = query.get("ram");
   const storageParam = query.get("storage");
+  const routeProductId = useMemo(() => {
+    const rawId =
+      location.state?.productId ??
+      location.state?.product_id ??
+      location.state?.id ??
+      null;
+    const numericId = Number(rawId);
+    return Number.isInteger(numericId) && numericId > 0 ? numericId : null;
+  }, [location.state]);
 
   // Extract slug from route params (SEO-friendly slug-based URL)
   const routeSlug = params.slug || null;
@@ -726,12 +735,16 @@ const MobileDetailCard = () => {
     const desiredPath = `/smartphones/${canonicalRouteSlug}`;
 
     if (normalizedCurrentPath !== desiredPath) {
-      navigate(`${desiredPath}${location.search || ""}`, { replace: true });
+      navigate(`${desiredPath}${location.search || ""}`, {
+        replace: true,
+        state: location.state,
+      });
     }
   }, [
     canonicalRouteSlug,
     location.pathname,
     location.search,
+    location.state,
     navigate,
     shouldRenderAliasNotFound,
   ]);
@@ -769,6 +782,22 @@ const MobileDetailCard = () => {
     const mobileDataLocal = selectedDevice?.smartphones?.[0] || selectedDevice;
     if (!mobileDataLocal || !routeSlug) return;
 
+    const requestedSlug = generateSlug(normalizeSeoSlug(routeSlug));
+    const selectedMatchesRoute = [
+      mobileDataLocal?.name,
+      mobileDataLocal?.model,
+      mobileDataLocal?.product_name,
+      mobileDataLocal?.productName,
+      mobileDataLocal?.model_number,
+      mobileDataLocal?.basic_info?.product_name,
+      mobileDataLocal?.basic_info?.model,
+      mobileDataLocal?.basic_info?.model_number,
+    ].some(
+      (value) =>
+        generateSlug(normalizeSeoSlug(value)) === requestedSlug,
+    );
+    if (!selectedMatchesRoute) return;
+
     const canonicalSeoSlug = getCanonicalSeoSlugForDevice(mobileDataLocal);
     if (!canonicalSeoSlug) return;
 
@@ -797,7 +826,7 @@ const MobileDetailCard = () => {
     if (normalizedCurrentPath !== desiredPath) {
       const nextSearch = nextSearchParams.toString();
       const desiredUrl = `${desiredPath}${nextSearch ? `?${nextSearch}` : ""}`;
-      navigate(desiredUrl, { replace: true });
+      navigate(desiredUrl, { replace: true, state: location.state });
     }
   }, [
     getCanonicalSeoSlugForDevice,
@@ -805,6 +834,8 @@ const MobileDetailCard = () => {
     routeSlug,
     navigate,
     location.search,
+    location.state,
+    normalizeSeoSlug,
     shouldRenderAliasNotFound,
   ]);
 
@@ -842,7 +873,8 @@ const MobileDetailCard = () => {
 
   useEffect(() => {
     if (shouldRenderAliasNotFound || !routeSlug) return;
-    const resolvedId = localResolved?.id ?? localResolved?.product_id ?? null;
+    const resolvedId =
+      localResolved?.id ?? localResolved?.product_id ?? routeProductId ?? null;
     if (resolvedId == null) return;
     const fetchKey = `${routeSlug}:${resolvedId}`;
     const selectedId =
@@ -859,6 +891,7 @@ const MobileDetailCard = () => {
   }, [
     fetchDevice,
     localResolved,
+    routeProductId,
     routeSlug,
     selectedResolvedForRoute,
     shouldRenderAliasNotFound,
@@ -1655,9 +1688,11 @@ const MobileDetailCard = () => {
   const mobileData = useMemo(
     () =>
       normalizeSmartphone(
-        selectedResolvedForRoute || localResolved || selectedResolved,
+        selectedResolvedForRoute ||
+          localResolved ||
+          (!routeSlug ? selectedResolved : null),
       ),
-    [localResolved, selectedResolved, selectedResolvedForRoute],
+    [localResolved, routeSlug, selectedResolved, selectedResolvedForRoute],
   );
   const scoreSourceData = selectedResolvedForRoute
     ? normalizeSmartphone(selectedResolvedForRoute)

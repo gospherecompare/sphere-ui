@@ -1,5 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700;6..72,800&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap");
 @import url("https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,600,700&display=swap");
 
@@ -71,6 +72,51 @@ body {
   font-weight: 700;
   font-style: normal;
   letter-spacing: -0.04em;
+}
+
+.news-article-headline,
+.news-article-deck,
+.news-article-prose {
+  font-family: "Newsreader", Georgia, "Times New Roman", serif;
+  font-optical-sizing: auto;
+}
+
+.news-article-headline {
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  overflow-wrap: normal;
+  text-wrap: pretty;
+  word-break: normal;
+}
+
+.news-article-deck {
+  font-weight: 400;
+}
+
+.news-article-prose h2,
+.news-article-prose h3,
+.news-article-prose h4 {
+  font-family: "Newsreader", Georgia, "Times New Roman", serif;
+  font-weight: 700;
+}
+
+.news-article-prose p {
+  color: inherit !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+}
+
+.news-article-prose li > p {
+  margin: 0 !important;
+}
+
+.news-article-prose blockquote {
+  font-style: italic;
+}
+
+.news-article-prose figcaption,
+.news-article-prose table {
+  font-family: var(--font-sans);
 }
 
 /* =========================

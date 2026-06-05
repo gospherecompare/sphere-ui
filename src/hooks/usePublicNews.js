@@ -35,10 +35,8 @@ const PRODUCT_TYPE_LABELS = {
 
 const safeText = (value) => String(value || "").trim();
 
-const decodeHtmlEntities = (value) => {
+const decodeHtmlEntitiesOnce = (value) => {
   let text = String(value || "");
-  if (!text) return "";
-
   const replacements = [
     ["&lt;", "<"],
     ["&gt;", ">"],
@@ -48,11 +46,23 @@ const decodeHtmlEntities = (value) => {
     ["&amp;", "&"],
   ];
 
-  for (let pass = 0; pass < 2; pass += 1) {
-    let next = text;
-    replacements.forEach(([encoded, decoded]) => {
-      next = next.split(encoded).join(decoded);
-    });
+  replacements.forEach(([encoded, decoded]) => {
+    text = text.split(encoded).join(decoded);
+  });
+
+  return text;
+};
+
+const containsArticleMarkup = (value) =>
+  /<\s*\/?(?:p|br|h[1-6]|ul|ol|li|table|thead|tbody|tr|th|td|blockquote|pre|code|figure|figcaption|img)\b/i.test(
+    String(value || ""),
+  );
+
+const normalizeHtmlContent = (value) => {
+  let text = String(value || "").replace(/\r\n?/g, "\n").trim();
+
+  for (let pass = 0; pass < 3 && text && !containsArticleMarkup(text); pass += 1) {
+    const next = decodeHtmlEntitiesOnce(text);
     if (next === text) break;
     text = next;
   }
@@ -60,8 +70,13 @@ const decodeHtmlEntities = (value) => {
   return text;
 };
 
-const normalizeHtmlContent = (value) =>
-  decodeHtmlEntities(String(value || "").replace(/\r\n?/g, "\n")).trim();
+const escapeHtml = (value) =>
+  String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 
 const applyInlineBoldMarkers = (value) =>
   String(value || "")
@@ -167,7 +182,7 @@ const renderTokenizedContent = (
         ? preserveUnknown
           ? full
           : ""
-        : String(value);
+        : escapeHtml(String(value));
     },
   );
 };

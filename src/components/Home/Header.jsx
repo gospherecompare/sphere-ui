@@ -916,6 +916,7 @@ const Header = () => {
     return {
       type: "product",
       id,
+      product_id: item.product_id ?? item.productId ?? id,
       name,
       model: model || name,
       product_type: productType || fallbackType,
@@ -1271,7 +1272,12 @@ const Header = () => {
       const path = resolveProductSuggestionPath(item);
       // Navigate directly to the canonical detail path so crawlers do not
       // discover duplicate query-string variants for the same product.
-      navigate(path);
+      navigate(path, {
+        state: {
+          productId: item.product_id ?? item.productId ?? item.id ?? null,
+          source: "header-search",
+        },
+      });
       if (!isLocalDevHost) {
         Promise.resolve().then(() =>
           trackSearchInterest({
@@ -2270,7 +2276,6 @@ const Header = () => {
         onMouseDown={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          onActivate?.(suggestion);
         }}
         onClick={(e) => {
           e.preventDefault();
@@ -2411,14 +2416,12 @@ const Header = () => {
                       value={searchQuery}
                       onChange={(e) => handleSearchInputChange(e.target.value)}
                       onKeyDown={(e) => {
-                        handleSearchKeyDown(e);
-                        if (
-                          e.key === "Enter" &&
-                          searchQuery.trim()
-                        ) {
+                        if (e.key === "Enter") {
                           e.preventDefault();
                           handleSearch(e);
+                          return;
                         }
+                        handleSearchKeyDown(e);
                       }}
                       className="w-full px-4 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base bg-gradient-to-r from-blue-50/80 via-white to-cyan-50/60 border border-blue-100 rounded-full focus:outline-none focus:border-[#345ce3] focus:ring-2 focus:ring-[#345ce3]/10 transition-all placeholder-slate-400 font-medium"
                     />
@@ -2507,9 +2510,7 @@ const Header = () => {
                               onMouseDown={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                handleSuggestionClick(sugg);
                               }}
-                              // Fallback for touch/mobile
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();

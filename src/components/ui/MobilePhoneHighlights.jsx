@@ -103,7 +103,12 @@ const normalizeServerHighlightRows = (body) => {
         }))
         .filter((phone) => getPhoneName(phone)),
     }))
-    .filter((row) => row.label && row.phones.length > 0);
+    .filter(
+      (row) =>
+        row.label &&
+        row.phones.length > 0 &&
+        row.label.toLowerCase() !== "popular phones",
+    );
 };
 
 const HighlightPhoneLinks = ({ phones = [] }) => {
@@ -192,10 +197,6 @@ const MobilePhoneHighlights = ({ devices = [], className = "" }) => {
 
     return [
       {
-        label: "Popular Phones",
-        phones: takeNames(rankedPhones.length ? rankedPhones : phones),
-      },
-      {
         label: "Trending Phones",
         phones: takeNames(rankedPhones.length ? rankedPhones : phones),
       },
@@ -223,10 +224,10 @@ const MobilePhoneHighlights = ({ devices = [], className = "" }) => {
           Key Highlights
         </p>
         <h2 className="mt-2 text-base font-semibold tracking-tight text-slate-900 sm:text-lg">
-          Popular Mobile Phones in India
+          Mobile Phone Highlights in India
         </h2>
         <p className="mt-1 text-[13px] leading-relaxed text-slate-500 sm:text-sm">
-          Quick snapshot across popular, trending, latest, and upcoming phones.
+          Quick snapshot across trending, latest, and upcoming phones.
         </p>
       </div>
 
