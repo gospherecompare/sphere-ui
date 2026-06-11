@@ -2636,13 +2636,12 @@ const Header = () => {
               <BrandIdentity variant="mobile" />
             </Link>
           </div>
-
         </div>
       </div>
 
       {/* DESKTOP HEADER (> 768px) */}
       <div className="hidden bg-white md:block">
-        <div className="border-b border-slate-200 bg-[#111827] text-white/75">
+        <div className="border-b border-slate-200 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white/75">
           <div className="mx-auto flex max-w-7xl items-center justify-center gap-4 overflow-x-auto px-4 py-2 text-[11px] font-medium uppercase tracking-[0.12em] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:px-6 lg:px-8">
             {desktopTopStripLinks.map((link) => (
               <Link

@@ -194,86 +194,11 @@ const formatImageCredit = (story) => {
   return raw;
 };
 
-const getStoryHeaderMeta = (story) => {
-  const productType = String(story?.productType || "")
-    .trim()
-    .toLowerCase();
-  const category = String(story?.category || "")
-    .trim()
-    .toLowerCase();
-
-  if (productType === "smartphone" || category === "mobiles") {
-    return {
-      parent: {
-        label: "Smartphones",
-        to: "/smartphones",
-        url: "https://tryhook.shop/smartphones",
-      },
-      section: {
-        label: "News & Articles",
-        to: "/news",
-        url: "https://tryhook.shop/news",
-      },
-    };
-  }
-
-  if (productType === "laptop") {
-    return {
-      parent: {
-        label: "Laptops",
-        to: "/laptops",
-        url: "https://tryhook.shop/laptops",
-      },
-      section: {
-        label: "News & Articles",
-        to: "/news",
-        url: "https://tryhook.shop/news",
-      },
-    };
-  }
-
-  if (productType === "tv") {
-    return {
-      parent: { label: "TVs", to: "/tvs", url: "https://tryhook.shop/tvs" },
-      section: {
-        label: "News & Articles",
-        to: "/news",
-        url: "https://tryhook.shop/news",
-      },
-    };
-  }
-
-  if (productType === "networking") {
-    return {
-      parent: {
-        label: "Networking",
-        to: "/networking",
-        url: "https://tryhook.shop/networking",
-      },
-      section: {
-        label: "News & Articles",
-        to: "/news",
-        url: "https://tryhook.shop/news",
-      },
-    };
-  }
-
-  return {
-    parent: null,
-    section: {
-      label: "News & Articles",
-      to: "/news",
-      url: "https://tryhook.shop/news",
-    },
-  };
-};
-
 const buildStoryBreadcrumbs = (story, canonicalUrl) => {
-  const headerMeta = getStoryHeaderMeta(story);
-  const items = [{ label: "Home", to: "/", url: "https://tryhook.shop/" }];
-
-  if (headerMeta.parent) items.push(headerMeta.parent);
-  if (headerMeta.section) items.push(headerMeta.section);
+  const items = [
+    { label: "Home", to: "/", url: "https://tryhook.shop/" },
+    { label: "News", to: "/news", url: "https://tryhook.shop/news" },
+  ];
   if (story?.title) items.push({ label: story.title, url: canonicalUrl });
 
   return items;
@@ -1164,7 +1089,10 @@ const NewsStoryArticlePage = () => {
       <main className="min-h-screen bg-white text-[#111111]">
         <section className="bg-white">
           <div className="mx-auto max-w-[1280px] px-4 pb-1 pt-2 sm:px-6 sm:pt-2 lg:px-8">
-            <div className="line-clamp-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] leading-5 text-[#7b8796] sm:text-[12px]">
+            <nav
+              aria-label="Breadcrumb"
+              className="line-clamp-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] leading-5 text-[#7b8796] sm:text-[12px]"
+            >
               {storyBreadcrumbs.map((item, index) => {
                 const isLast = index === storyBreadcrumbs.length - 1;
 
@@ -1200,7 +1128,7 @@ const NewsStoryArticlePage = () => {
                   </React.Fragment>
                 );
               })}
-            </div>
+            </nav>
           </div>
         </section>
 

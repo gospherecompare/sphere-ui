@@ -7,6 +7,7 @@ import {
 import SEO from "../SEO";
 import NewsPushOptInCard from "../News/NewsPushOptInCard";
 import {
+  createBreadcrumbSchema,
   createCollectionSchema,
   createItemListSchema,
 } from "../../utils/schemaGenerators";
@@ -835,6 +836,10 @@ const NewsArticlesPage = () => {
   );
 
   const pageSchema = [
+    createBreadcrumbSchema([
+      { label: "Home", url: "https://tryhook.shop/" },
+      { label: "News", url: canonical },
+    ]),
     createCollectionSchema({
       name: "Hooks News & Articles",
       description:
@@ -865,13 +870,16 @@ const NewsArticlesPage = () => {
       <main className="overflow-x-hidden bg-[#f7f8fb] text-[#111827]">
         <section>
           <div className="mx-auto max-w-[1280px] px-4 py-4 sm:px-6 lg:px-8">
-            <div className="flex flex-wrap items-center gap-2 text-[12px] text-[#7d8898]">
+            <nav
+              aria-label="Breadcrumb"
+              className="flex flex-wrap items-center gap-2 text-[12px] text-[#7d8898]"
+            >
               <Link to="/" className="hover:text-[#2563eb]">
                 Home
               </Link>
               <FaChevronRight className="h-2.5 w-2.5 text-[#b6c2cf]" />
-              <span className="font-semibold text-[#1f2937]">News & Articles</span>
-            </div>
+              <span className="font-semibold text-[#1f2937]">News</span>
+            </nav>
           </div>
         </section>
 

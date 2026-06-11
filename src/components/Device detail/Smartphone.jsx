@@ -2199,7 +2199,7 @@ const MobileDetailCard = () => {
       ? `₹ ${formatPrice(resolvedCurrentNumericPrice)}`
       : "";
   const currentProductId =
-    mobileData?.id ?? mobileData?.product_id ?? mobileData?.productId ?? null;
+    mobileData?.product_id ?? mobileData?.productId ?? mobileData?.id ?? null;
   const { stories: linkedNewsStories } = usePublicNewsFeed({
     limit: LINKED_NEWS_LIMIT,
     category: "",
