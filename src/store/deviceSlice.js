@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import Cookies from "js-cookie";
 
 const REMOTE_API_BASE_URL = "https://api.apisphere.in/api";
+const LOCAL_API_BASE_URL = "http://localhost:5000/api";
 const WINDOW_PAYLOAD_KEY = "__HOOKS_PRERENDER_DATA__";
 
 const normalizeApiBase = (value) => {
@@ -13,6 +14,13 @@ const normalizeApiBase = (value) => {
 const resolveApiBaseUrl = () => {
   const configured = normalizeApiBase(import.meta.env.VITE_API_BASE_URL);
   if (configured) return configured;
+
+  if (typeof window !== "undefined") {
+    const hostname = window.location?.hostname;
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      return LOCAL_API_BASE_URL;
+    }
+  }
 
   return REMOTE_API_BASE_URL;
 };

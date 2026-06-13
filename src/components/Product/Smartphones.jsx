@@ -1621,8 +1621,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         apiDevice.spec_score ??
         apiDevice.specScore ??
         apiDevice.overall_score ??
-        apiDevice.overallScore ??
-        profileResult.score,
+        apiDevice.overallScore,
     );
     const overallScoreDisplay = toNumber(
       apiDevice.spec_score_v2_display_80_98 ??
@@ -1797,6 +1796,22 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
           ).trim(),
         ),
       spec_score: overallScoreRaw,
+      spec_score_v2_raw: toNumber(
+        apiDevice.spec_score_v2_raw ?? apiDevice.specScoreV2Raw ?? null,
+      ),
+      spec_score_v2: toNumber(
+        apiDevice.spec_score_v2 ?? apiDevice.specScoreV2 ?? null,
+      ),
+      spec_score_source: pick(
+        toString(apiDevice.spec_score_source),
+        toString(apiDevice.specScoreSource),
+        "",
+      ),
+      spec_score_v2_source: pick(
+        toString(apiDevice.spec_score_v2_source),
+        toString(apiDevice.specScoreV2Source),
+        "",
+      ),
       overall_score: overallScoreRaw,
       overall_score_display:
         overallScoreDisplay != null

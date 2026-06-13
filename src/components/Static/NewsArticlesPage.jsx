@@ -10,6 +10,7 @@ import {
   createBreadcrumbSchema,
   createCollectionSchema,
   createItemListSchema,
+  createWebPageSchema,
 } from "../../utils/schemaGenerators";
 import { useDevice } from "../../hooks/useDevice";
 import {
@@ -846,6 +847,12 @@ const NewsArticlesPage = () => {
         "Browse the latest tech news, mobile updates, gadget guides, and launch coverage on Hooks.",
       url: canonical,
       image: "https://tryhook.shop/hook-logo.svg",
+    }),
+    createWebPageSchema({
+      name: "Hooks News & Articles",
+      description:
+        "Browse the latest tech news, mobile updates, gadget guides, and launch coverage on Hooks.",
+      url: canonical,
     }),
     createItemListSchema({
       name: "Latest News & Articles",
