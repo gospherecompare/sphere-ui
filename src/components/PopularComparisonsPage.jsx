@@ -141,7 +141,6 @@ const mapPreloadedProductsById = () => {
   Object.entries(byUrl).forEach(([rawUrl, value]) => {
     try {
       const parsed = new URL(rawUrl, window.location.origin);
-      if (parsed.origin !== "https://api.apisphere.in") return;
       if (parsed.search) return;
 
       const segments = parsed.pathname.split("/").filter(Boolean);

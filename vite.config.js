@@ -38,8 +38,34 @@ const Renderer = vitePrerender.PuppeteerRenderer;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const SITE_ORIGIN = "https://tryhook.shop";
-const API_BASE_URL = "https://api.apisphere.in/api";
-const API_ORIGIN = "https://api.apisphere.in";
+const DEFAULT_REMOTE_API_BASE_URL = "https://api.apisphere.in/api";
+const DEFAULT_LOCAL_API_BASE_URL = "http://localhost:5000/api";
+const trimTrailingSlash = (value = "") => String(value || "").replace(/\/+$/g, "");
+const resolvePrerenderApiBaseUrl = () => {
+  const configured =
+    process.env.HOOKS_PRERENDER_API_BASE_URL ||
+    process.env.VITE_API_BASE_URL ||
+    "";
+  if (String(configured || "").trim()) return trimTrailingSlash(configured);
+
+  const lifecycle = String(process.env.npm_lifecycle_event || "").toLowerCase();
+  const nodeEnv = String(process.env.NODE_ENV || "").toLowerCase();
+  const isDevServer =
+    nodeEnv === "development" ||
+    lifecycle === "dev" ||
+    lifecycle === "start" ||
+    lifecycle === "serve";
+
+  return isDevServer ? DEFAULT_LOCAL_API_BASE_URL : DEFAULT_REMOTE_API_BASE_URL;
+};
+const API_BASE_URL = resolvePrerenderApiBaseUrl();
+const API_ORIGIN = (() => {
+  try {
+    return new URL(API_BASE_URL).origin;
+  } catch {
+    return new URL(DEFAULT_REMOTE_API_BASE_URL).origin;
+  }
+})();
 const ENABLE_PUPPETEER_PRERENDER =
   String(process.env.HOOKS_ENABLE_PUPPETEER_PRERENDER || "")
     .trim()
@@ -136,17 +162,25 @@ const PRELOAD_API_ENDPOINTS = [
   `${API_BASE_URL}/category`,
   `${API_BASE_URL}/public/trending/smartphones`,
   `${API_BASE_URL}/public/new/smartphones`,
+  `${API_BASE_URL}/public/upcoming/smartphones`,
   `${API_BASE_URL}/public/trending/networking`,
   `${API_BASE_URL}/public/new/networking`,
   `${API_BASE_URL}/public/trending/laptops`,
   `${API_BASE_URL}/public/new/laptops`,
   `${API_BASE_URL}/public/trending/tvs`,
   `${API_BASE_URL}/public/new/tvs`,
+  `${API_BASE_URL}/public/smartphones/highlights`,
+  `${API_BASE_URL}/public/device-field-profiles`,
   // Home route payloads
   `${API_BASE_URL}/public/search-popularity?productType=smartphone&limit=5`,
   `${API_BASE_URL}/public/blogs?limit=4`,
+  `${API_BASE_URL}/public/blogs?limit=4&productType=smartphone`,
+  `${API_BASE_URL}/public/blogs?limit=4&productType=laptop`,
+  `${API_BASE_URL}/public/blogs?limit=4&productType=tv`,
+  `${API_BASE_URL}/public/blogs?limit=12`,
   `${API_BASE_URL}/public/blogs?limit=18`,
   `${API_BASE_URL}/public/blogs?limit=24`,
+  `${API_BASE_URL}/public/blogs?limit=36`,
   `${API_BASE_URL}/public/trending/smartphones?limit=15`,
   `${API_BASE_URL}/public/trending/smartphones?limit=25`,
   `${API_BASE_URL}/public/trending/smartphones?limit=120`,

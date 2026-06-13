@@ -542,6 +542,91 @@ const RouteSeoFallback = () => {
   );
 };
 
+const GlobalLoadingExperience = () => {
+  const location = useLocation();
+  const [routePulse, setRoutePulse] = React.useState(false);
+  const [activeFetches, setActiveFetches] = React.useState(() =>
+    typeof window !== "undefined" ? window.__HOOKS_FETCH_IN_FLIGHT__ || 0 : 0,
+  );
+  const [showPanel, setShowPanel] = React.useState(false);
+
+  React.useEffect(() => {
+    setRoutePulse(true);
+    const timeout = window.setTimeout(() => setRoutePulse(false), 520);
+    return () => window.clearTimeout(timeout);
+  }, [location.pathname, location.search]);
+
+  React.useEffect(() => {
+    const onActivity = (event) => {
+      const nextCount = Number(event?.detail?.count ?? 0);
+      setActiveFetches(Number.isFinite(nextCount) ? Math.max(0, nextCount) : 0);
+    };
+
+    window.addEventListener("hooks:fetch-activity", onActivity);
+    return () => window.removeEventListener("hooks:fetch-activity", onActivity);
+  }, []);
+
+  const hasNetworkWork = activeFetches > 0;
+
+  React.useEffect(() => {
+    if (hasNetworkWork) {
+      const timeout = window.setTimeout(() => setShowPanel(true), 260);
+      return () => window.clearTimeout(timeout);
+    }
+
+    const timeout = window.setTimeout(() => setShowPanel(false), 180);
+    return () => window.clearTimeout(timeout);
+  }, [hasNetworkWork]);
+
+  if (!routePulse && !hasNetworkWork && !showPanel) return null;
+
+  return (
+    <>
+      <div className="pointer-events-none fixed inset-x-0 top-0 z-[9998] h-1 overflow-hidden bg-blue-50/70">
+        <div className="hooks-route-progress h-full rounded-r-full bg-gradient-to-r from-blue-500 via-cyan-400 to-emerald-400" />
+      </div>
+
+      {showPanel ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className="hooks-loader-panel pointer-events-none fixed bottom-[calc(74px+env(safe-area-inset-bottom))] left-4 right-4 z-[9997] mx-auto max-w-sm rounded-2xl border border-blue-100/80 bg-white/95 p-4 shadow-[0_18px_55px_rgba(15,23,42,0.16)] backdrop-blur-md sm:bottom-6 sm:left-auto sm:right-6 sm:mx-0"
+        >
+          <div className="flex items-center gap-3">
+            <div className="hooks-loader-bot relative h-12 w-12 shrink-0" aria-hidden="true">
+              <span className="hooks-loader-bot-antenna" />
+              <span className="hooks-loader-bot-face">
+                <span className="hooks-loader-bot-eyes">
+                  <span />
+                  <span />
+                </span>
+                <span className="hooks-loader-bot-mouth" />
+              </span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-slate-950">
+                Syncing gadget intelligence
+              </p>
+              <p className="mt-0.5 text-xs leading-5 text-slate-500">
+                Pulling the freshest specs, prices, and launch signals.
+              </p>
+            </div>
+          </div>
+          <div className="mt-3 grid grid-cols-4 gap-1.5">
+            {[0, 1, 2, 3].map((index) => (
+              <span
+                key={index}
+                className="hooks-loader-pill h-1.5 rounded-full bg-blue-100"
+                style={{ animationDelay: `${index * 120}ms` }}
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </>
+  );
+};
+
 function App() {
   const NewsRedirect = () => <Navigate to="/news" replace />;
 
@@ -670,6 +755,7 @@ function App() {
   return (
     <Router>
       <RouteSeoFallback />
+      <GlobalLoadingExperience />
       <div className="min-h-screen w-full overflow-x-hidden pb-[calc(58px+env(safe-area-inset-bottom))] lg:pb-0">
         <Header />
 
