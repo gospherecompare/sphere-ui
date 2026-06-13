@@ -1,36 +1,65 @@
-import { useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { useLocation, useNavigationType } from "react-router-dom";
 
 // ScrollToTop ensures the window scrolls to top (or to an anchor) on navigation.
 // Place this inside a Router so it can observe location changes.
 export default function ScrollToTop({ behavior = "smooth" }) {
-  const { pathname, search, hash } = useLocation();
+  const { pathname, hash } = useLocation();
+  const navigationType = useNavigationType();
+  const previousPathRef = useRef(pathname);
 
   useEffect(() => {
+    const previousPathname = previousPathRef.current;
+    const pathChanged = pathname !== previousPathname;
+    previousPathRef.current = pathname;
+
     // If there's a hash (anchor), try to scroll to that element.
     if (hash) {
       const id = hash.replace("#", "");
-      // small timeout to allow the new route to paint
-      setTimeout(() => {
+      let cancelled = false;
+      let timerId = null;
+
+      const scrollToAnchor = (attempt = 0) => {
+        if (cancelled) return;
+
         const el = document.getElementById(id);
         if (el) {
-          el.scrollIntoView({ behavior });
+          el.scrollIntoView({ behavior, block: "start" });
           try {
             // move focus for accessibility (best-effort)
             el.focus && el.focus();
           } catch {
             /* ignore focus errors */
           }
-        } else {
-          window.scrollTo({ top: 0, left: 0, behavior });
+          return;
         }
-      }, 50);
+
+        if (attempt < 4) {
+          timerId = window.setTimeout(() => scrollToAnchor(attempt + 1), 50);
+          return;
+        }
+
+        window.scrollTo({ top: 0, left: 0, behavior });
+      };
+
+      // allow the new route to paint before trying to find the anchor
+      timerId = window.setTimeout(() => scrollToAnchor(), 50);
+      return () => {
+        cancelled = true;
+        if (timerId != null) {
+          window.clearTimeout(timerId);
+        }
+      };
+    }
+
+    // Keep scroll position for query-only updates and browser back/forward.
+    if (!pathChanged || navigationType === "POP") {
       return;
     }
 
-    // Default: scroll to top on route change
+    // Default: scroll to top on actual route change.
     window.scrollTo({ top: 0, left: 0, behavior });
-  }, [pathname, search, hash, behavior]);
+  }, [pathname, hash, behavior, navigationType]);
 
   return null;
 }

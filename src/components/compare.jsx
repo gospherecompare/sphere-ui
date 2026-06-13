@@ -5761,7 +5761,7 @@ const MobileCompare = () => {
             {isComparing && comparedDevices.length >= MIN_DEVICES && (
               <div
                 id="comparison-section"
-                className="space-y-6 animate-in fade-in duration-500"
+                className="scroll-mt-32 space-y-6 animate-in fade-in duration-500"
               >
                 {compareInsightsLoading ? (
                   <div className="rounded-sm border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-800">
@@ -5802,7 +5802,7 @@ const MobileCompare = () => {
                         <section
                           key={`section-${section.id}`}
                           id={`spec-${section.id}`}
-                          className="overflow-hidden rounded-sm border border-slate-200/70 bg-white"
+                          className="scroll-mt-32 overflow-hidden rounded-sm border border-slate-200/70 bg-white"
                         >
                           <button
                             type="button"
