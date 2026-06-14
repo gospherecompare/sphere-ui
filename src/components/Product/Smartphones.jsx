@@ -817,11 +817,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       return Math.min(limit, deviceLimit);
     }, 4);
 
-  const normalizeStoreKey = (value) =>
-    String(value || "")
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "");
-
   const normalizeAssetUrl = (value) => {
     const raw = String(value || "").trim();
     if (!raw) return null;
@@ -894,82 +889,13 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       (a, b) => extractNumericPrice(a?.price) - extractNumericPrice(b?.price),
     );
 
-  const getOfficialBrandStoreUrl = (stores, brandName, brandWebsite = null) => {
-    const brandKey = normalizeStoreKey(brandName);
-    const normalizedBrandWebsite = String(brandWebsite || "").trim();
-
-    if (brandKey) {
-      const matchingStore = (Array.isArray(stores) ? stores : []).find(
-        (store) => {
-          const storeName = normalizeStoreKey(
-            store?.display_store_name ||
-              store?.store ||
-              store?.store_name ||
-              store?.storeName,
-          );
-          if (!storeName || !String(store?.url || "").trim()) return false;
-
-          return (
-            storeName === brandKey ||
-            storeName.includes(`${brandKey}store`) ||
-            storeName.includes(`${brandKey}official`) ||
-            storeName.includes(`official${brandKey}`)
-          );
-        },
-      );
-      if (matchingStore?.url) return matchingStore.url;
-    }
-
-    return normalizedBrandWebsite || null;
-  };
-
   const getAvailabilityState = (
     stores,
     brandName,
-    brandWebsite = null,
-    launchDate = null,
-    brandLogo = null,
-    saleStartDate = null,
-    deviceIsPrebooking = false,
-    deviceStage = null,
-    fallbackPrice = null,
   ) => {
-    const forcePrebooking = deviceIsPrebooking === true;
-    const shouldShowPendingStore =
-      forcePrebooking ||
-      ["rumored", "announced", "upcoming", "released"].includes(deviceStage);
-    const buildBrandFallbackStore = (sourceStores = []) => {
-      const officialStoreUrl = getOfficialBrandStoreUrl(
-        sourceStores,
-        brandName,
-        brandWebsite,
-      );
-      const inferredPrices = (Array.isArray(sourceStores) ? sourceStores : [])
-        .map((store) => extractNumericPrice(store?.price))
-        .filter((price) => price > 0);
-      const fallbackStorePrice =
-        extractNumericPrice(fallbackPrice) > 0
-          ? fallbackPrice
-          : inferredPrices.length
-            ? Math.min(...inferredPrices)
-            : null;
-
-      return {
-        id: "brand-store-fallback",
-        store: brandName || "Brand Store",
-        store_name: brandName || "Brand Store",
-        display_store_name: brandName || "Brand Store",
-        logo: normalizeAssetUrl(brandLogo || null),
-        url: officialStoreUrl || "",
-        cta_label: "Coming Soon",
-        is_prebooking: true,
-        price: fallbackStorePrice,
-      };
-    };
-
     const normalizedStores = (Array.isArray(stores) ? stores : []).map(
       (store) => {
-        const prebooking = forcePrebooking || isPrebookingStore(store);
+        const prebooking = isPrebookingStore(store);
         return {
           ...store,
           is_prebooking: prebooking || store?.is_prebooking === true,
@@ -983,13 +909,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     );
 
     if (normalizedStores.length === 0) {
-      if (shouldShowPendingStore) {
-        return {
-          stores: [buildBrandFallbackStore([])],
-          hiddenCount: 0,
-          mode: "prebooking",
-        };
-      }
       return { stores: [], hiddenCount: 0, mode: "none" };
     }
 
@@ -1007,29 +926,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       };
     }
 
-    const prebookingSignals =
-      forcePrebooking || normalizedStores.some((store) => store.is_prebooking);
-    const inferredPrebookingStores = prebookingSignals
-      ? normalizedStores.filter((store) => store.is_prebooking)
-      : [];
-
-    const prebookingStores = sortStoreRows(inferredPrebookingStores);
+    const prebookingStores = sortStoreRows(
+      normalizedStores.filter((store) => store.is_prebooking),
+    );
     if (prebookingStores.length === 0) {
-      const hasOnlineStore = normalizedStores.some((store) => {
-        const name = String(
-          store?.store_name || store?.store || store?.storeName || "",
-        )
-          .trim()
-          .toLowerCase();
-        return name && name !== "variant";
-      });
-      if (shouldShowPendingStore && !hasOnlineStore) {
-        return {
-          stores: [buildBrandFallbackStore(normalizedStores)],
-          hiddenCount: 0,
-          mode: "prebooking",
-        };
-      }
       return {
         stores: sortStoreRows(normalizedStores),
         hiddenCount: Math.max(normalizedStores.length - 3, 0),
@@ -1715,6 +1615,13 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       saleStatusText: pick(
         toString(apiDevice.sale_status_text),
         toString(apiDevice.saleStatusText),
+        "",
+      ),
+      trendBadge: pick(
+        toString(apiDevice.trend_badge),
+        toString(apiDevice.trendBadge),
+        toString(apiDevice.trend_label),
+        toString(apiDevice.trendLabel),
         "",
       ),
       availabilityStatus: pick(
@@ -4617,10 +4524,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                     );
                     const cardBadgeLabel =
                       upcomingBadge ||
-                      (isAiDevice ? "AI Phone" : null) ||
                       (listFilter === "trending"
-                        ? "Trending"
-                        : null);
+                        ? device.trendBadge || "Trending"
+                        : null) ||
+                      (isAiDevice ? "AI Phone" : null);
                     const deviceCompareLimit = Number.isFinite(
                       devicePolicy.compareLimit,
                     )
@@ -4818,7 +4725,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                             {" "}
                             <div className="relative flex items-start justify-start sm:justify-center">
                               {cardBadgeLabel ? (
-                                <span className="absolute left-0 top-0 z-10 inline-flex items-center rounded-full bg-yellow-600 px-3 py-1 text-xs font-semibold text-white shadow-sm">
+                                <span
+                                  className="absolute left-0 top-0 z-10 inline-flex items-center rounded-full bg-[#0B66F6] px-3 py-1 text-xs font-semibold text-white shadow-[0_8px_18px_rgba(11,102,246,0.22)]"
+                                >
                                   {cardBadgeLabel}
                                 </span>
                               ) : null}

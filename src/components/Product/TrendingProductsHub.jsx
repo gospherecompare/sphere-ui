@@ -42,6 +42,7 @@ import {
   getTvFeatureSortValue,
   matchesTvFeature,
 } from "../../utils/tvPopularFeatures";
+import { resolveSmartphoneBadgeScore } from "../../utils/smartphoneBadgeScore";
 
 const ROUTE_FEED_CACHE_KEY = "hooks_smartphone_route_feed_v1";
 const TRENDING_PRODUCTS_PER_PAGE = 20;
@@ -288,6 +289,15 @@ const getRows = (payload, cat) => {
     return arr(payload?.laptops || payload?.data || payload?.rows);
   return arr(payload?.tvs || payload?.data || payload?.rows);
 };
+
+const getTrendBadge = (row) =>
+  first(
+    row?.trend_badge,
+    row?.trendBadge,
+    row?.badge,
+    row?.trend_label,
+    row?.trendLabel,
+  );
 
 const mapStorePrice = (sp) => {
   const s = obj(sp);
@@ -713,18 +723,18 @@ const SpecScoreBadge = ({ score }) => {
       className="inline-flex items-end gap-1 leading-none"
       aria-label={
         normalized != null
-          ? `Hooks score ${normalized.toFixed(1)} percent`
-          : "Hooks score unavailable"
+          ? `Spec score ${normalized.toFixed(1)} percent`
+          : "Spec score unavailable"
       }
     >
-      <span className="text-3xl font-semibold leading-none text-violet-600 sm:text-4xl">
+      <span className="text-3xl font-semibold leading-none text-blue-600 sm:text-4xl">
         {label != null ? label : "--"}
       </span>
       <div className="flex flex-col items-start leading-none">
-        <span className="text-[8px] font-semibold uppercase tracking-[0.32em] text-violet-400">
-          Hooks
+        <span className="text-[8px] font-semibold uppercase tracking-[0.32em] text-blue-400">
+          Spec
         </span>
-        <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-violet-500">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-blue-500">
           Score
         </span>
       </div>
@@ -737,7 +747,8 @@ const buildProduct = (row, cat, index) => {
   const stores = getStorePrices(row, variants);
   const lowest = stores[0]?.price ?? num(row.price ?? row.base_price);
   const images = getImages(row, cat);
-  const specScore = resolveSpecScore(row);
+  const specScore =
+    cat === "smartphones" ? resolveSmartphoneBadgeScore(row) : resolveSpecScore(row);
 
   if (cat === "laptops") {
     const basic = obj(row.basic_info || row.basic_info_json);
@@ -773,6 +784,7 @@ const buildProduct = (row, cat, index) => {
       stores,
       price: lowest,
       priceText: priceLabel(lowest),
+      trendBadge: getTrendBadge(row),
       release: first(basic.launch_date, row.launch_date, row.created_at),
       specLine: [normalizedRam, normalizedStorage, normalizedScreen, processor]
         .filter(Boolean)
@@ -825,6 +837,7 @@ const buildProduct = (row, cat, index) => {
       stores,
       price: lowest,
       priceText: priceLabel(lowest),
+      trendBadge: getTrendBadge(row),
       release: first(
         obj(row.basic_info_json).launch_year,
         row.launch_year,
@@ -876,6 +889,7 @@ const buildProduct = (row, cat, index) => {
     stores,
     price: lowest,
     priceText: priceLabel(lowest),
+    trendBadge: getTrendBadge(row),
     release: first(row.launch_date, row.created_at),
     launchDate: first(row.launch_date, row.launchDate, row.created_at),
     launchStatus: first(
@@ -2202,7 +2216,7 @@ const TrendingProductsHub = () => {
                           ? formatStorePriceDisplay(renderedStores[0].price)
                           : p.priceText;
                       const releasedOn = dateLabel(p.release);
-                      const cardBadgeLabel = "Trending";
+                      const cardBadgeLabel = p.trendBadge || "Trending";
                       const visibleStoreRows = renderedStores.slice(0, 2);
                       const renderStoreRow = (
                         store,
@@ -2353,7 +2367,9 @@ const TrendingProductsHub = () => {
                             <div className="mt-5 grid grid-cols-[128px_minmax(0,1fr)] gap-3 sm:grid-cols-[120px_minmax(0,1fr)] lg:grid-cols-[180px_minmax(0,1fr)] sm:gap-4 lg:gap-5">
                               <div className="relative flex items-start justify-start sm:justify-center">
                                 {cardBadgeLabel ? (
-                                  <span className="absolute left-0 top-0 z-10 inline-flex items-center rounded-full bg-amber-600 px-3 py-1 text-xs font-semibold text-white shadow-sm">
+                                  <span
+                                    className="absolute left-0 top-0 z-10 inline-flex items-center rounded-full bg-[#0B66F6] px-3 py-1 text-xs font-semibold text-white shadow-[0_8px_18px_rgba(11,102,246,0.22)]"
+                                  >
                                     {cardBadgeLabel}
                                   </span>
                                 ) : null}
