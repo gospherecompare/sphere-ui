@@ -18,7 +18,10 @@ import SEO from "./SEO";
 import ProductDiscoverySections from "./ui/ProductDiscoverySections";
 import { normalizeScore100Value } from "../utils/groupScoreStats";
 import resolveSmartphoneBadgeScore from "../utils/smartphoneBadgeScore";
-import { buildCanonicalComparePath } from "../utils/compareRoutes";
+import {
+  buildCanonicalComparePath,
+  buildCanonicalComparePathFromDevices,
+} from "../utils/compareRoutes";
 import {
   getPreloadedApiMap,
   readPreloadedApiResponse,
@@ -95,22 +98,62 @@ const FILTER_CHIPS = [
 ];
 
 const MOST_COMPARED_ENDPOINT =
-  "https://api.apisphere.in/api/public/trending/most-compared";
+  "https://api.apisphere.in/api/public/trending/most-compared?days=180&scope=groups&limit=300";
 const SMARTPHONES_ENDPOINT = "https://api.apisphere.in/api/smartphones";
 const PRODUCT_ENDPOINT_BASE = "https://api.apisphere.in/api/public/product";
 
+const normalizeComparedProduct = (product = {}) => ({
+  product_id: product.product_id ?? product.productId ?? product.id ?? null,
+  id: product.product_id ?? product.productId ?? product.id ?? null,
+  product_name:
+    product.product_name || product.productName || product.name || "Device",
+  name: product.product_name || product.productName || product.name || "Device",
+  product_type:
+    product.product_type || product.productType || product.deviceType || "unknown",
+  image_url: product.image_url || product.image || product.product_image || null,
+  image: product.image_url || product.image || product.product_image || null,
+  best_price: product.best_price ?? product.bestPrice ?? product.price ?? null,
+  detail_path: product.detail_path || product.detailPath || "",
+});
+
 const mapMostComparedRows = (json) =>
-  (json?.mostCompared || []).map((r) => ({
-    left_id: r.product_id,
-    left_name: r.product_name,
-    left_image: r.product_image || null,
-    left_type: r.product_type || "unknown",
-    right_id: r.compared_product_id,
-    right_name: r.compared_product_name,
-    right_image: r.compared_product_image || null,
-    right_type: r.compared_product_type || "unknown",
-    compare_count: Number(r.compare_count) || 0,
-  }));
+  (json?.mostCompared || []).map((r) => {
+    const products = Array.isArray(r.products) && r.products.length
+      ? r.products.map(normalizeComparedProduct)
+      : [
+          normalizeComparedProduct({
+            product_id: r.product_id,
+            product_name: r.product_name,
+            product_type: r.product_type,
+            image_url: r.product_image,
+          }),
+          normalizeComparedProduct({
+            product_id: r.compared_product_id,
+            product_name: r.compared_product_name,
+            product_type: r.compared_product_type,
+            image_url: r.compared_product_image,
+          }),
+        ].filter((product) => product.product_id != null);
+    const [left, right] = products;
+    return {
+      ...r,
+      products,
+      product_count: Number(r.product_count) || products.length,
+      left_id: left?.product_id ?? r.product_id,
+      left_name: left?.product_name ?? r.product_name,
+      left_image: left?.image_url ?? r.product_image ?? null,
+      left_type: left?.product_type ?? r.product_type ?? "unknown",
+      right_id: right?.product_id ?? r.compared_product_id,
+      right_name: right?.product_name ?? r.compared_product_name,
+      right_image: right?.image_url ?? r.compared_product_image ?? null,
+      right_type:
+        right?.product_type ?? r.compared_product_type ?? "unknown",
+      compare_count: Number(r.compare_count) || 0,
+      unique_users: Number(r.unique_users ?? r.unique_user_count) || 0,
+      last_compared_at: r.last_compared_at || null,
+      route_path: r.route_path || "",
+    };
+  });
 
 const mapSmartphonesById = (json) => {
   const rows = Array.isArray(json)
@@ -167,22 +210,21 @@ const mapPreloadedProductsById = () => {
 // Spec Score Badge Component
 const CircularScoreBadge = ({ score, size = 38 }) => {
   const normalized = normalizeScore100Value(score);
-  const percentage = normalized != null ? Number(normalized.toFixed(1)) : null;
-  const label = percentage != null ? `${percentage.toFixed(1)}%` : "--";
+  const value = normalized != null ? Math.round(normalized) : null;
+  const label = value != null ? String(value) : "--";
 
   return (
     <div
-      className="inline-flex flex-col items-center justify-center rounded-md border border-violet-200 bg-violet-50/95 px-1.5 py-1 leading-none"
+      className="inline-flex items-end gap-1 rounded-md border border-white/80 bg-white/90 px-1.5 py-1 leading-none shadow-sm"
       style={{ minWidth: `${Math.max(38, Math.round(size))}px` }}
       aria-label={
-        percentage != null
-          ? `Overall score ${percentage.toFixed(1)} percent`
-          : "Overall score unavailable"
+        value != null ? `Spec score ${value}` : "Spec score unavailable"
       }
     >
-      <span className="text-[11px] font-bold text-violet-700">{label}</span>
-      <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide text-violet-600">
-        Spec
+      <span className="text-xl font-semibold text-blue-600">{label}</span>
+      <span className="mb-0.5 flex flex-col text-[7px] font-semibold uppercase tracking-[0.28em] text-blue-500">
+        <span>Spec</span>
+        <span>Score</span>
       </span>
     </div>
   );
@@ -271,6 +313,11 @@ const PopularComparisonsPage = () => {
     if (deviceTypeFilter !== "all") {
       filtered = data.filter(
         (item) =>
+          (Array.isArray(item.products) ? item.products : []).some((product) =>
+            String(product?.product_type || "")
+              .toLowerCase()
+              .includes(deviceTypeFilter),
+          ) ||
           item.left_type?.toLowerCase().includes(deviceTypeFilter) ||
           item.right_type?.toLowerCase().includes(deviceTypeFilter),
       );
@@ -279,11 +326,17 @@ const PopularComparisonsPage = () => {
     if (normalizedSearchQuery) {
       filtered = filtered.filter((item) => {
         const haystacks = [
+          ...(Array.isArray(item.products)
+            ? item.products.map((product) => product?.product_name)
+            : []),
           item?.left_name,
           item?.right_name,
           item?.left_type,
           item?.right_type,
-          `${item?.left_name || ""} vs ${item?.right_name || ""}`,
+          (Array.isArray(item.products) ? item.products : [])
+            .map((product) => product?.product_name)
+            .filter(Boolean)
+            .join(" vs ") || `${item?.left_name || ""} vs ${item?.right_name || ""}`,
         ];
         return haystacks.some((value) =>
           String(value || "")
@@ -318,22 +371,29 @@ const PopularComparisonsPage = () => {
     }
 
     for (const item of processedData) {
-      const leftType = String(item?.left_type || "").toLowerCase();
-      const rightType = String(item?.right_type || "").toLowerCase();
-      const leftId = Number(item?.left_id);
-      const rightId = Number(item?.right_id);
+      const products = Array.isArray(item?.products) && item.products.length
+        ? item.products
+        : [
+            {
+              product_id: item?.left_id,
+              product_type: item?.left_type,
+              product_name: item?.left_name,
+            },
+            {
+              product_id: item?.right_id,
+              product_type: item?.right_type,
+              product_name: item?.right_name,
+            },
+          ];
 
-      if (leftType.includes("smartphone") && Number.isInteger(leftId)) {
+      const phone = products.find((product) =>
+        String(product?.product_type || "").toLowerCase().includes("smartphone"),
+      );
+      const phoneId = Number(phone?.product_id);
+      if (Number.isInteger(phoneId)) {
         return {
-          productId: leftId,
-          name: item?.left_name || "this phone",
-        };
-      }
-
-      if (rightType.includes("smartphone") && Number.isInteger(rightId)) {
-        return {
-          productId: rightId,
-          name: item?.right_name || "this phone",
+          productId: phoneId,
+          name: phone?.product_name || "this phone",
         };
       }
     }
@@ -345,24 +405,29 @@ const PopularComparisonsPage = () => {
     const ids = new Set();
     const rows = Array.isArray(paginatedData) ? paginatedData : [];
     for (const item of rows) {
-      const leftId = item?.left_id;
-      const rightId = item?.right_id;
-      const leftType = String(item?.left_type || "").toLowerCase();
-      const rightType = String(item?.right_type || "").toLowerCase();
+      const products = Array.isArray(item?.products) && item.products.length
+        ? item.products
+        : [
+            {
+              product_id: item?.left_id,
+              product_type: item?.left_type,
+            },
+            {
+              product_id: item?.right_id,
+              product_type: item?.right_type,
+            },
+          ];
 
-      if (
-        leftId != null &&
-        !leftType.includes("smartphone") &&
-        !Object.prototype.hasOwnProperty.call(productById, String(leftId))
-      ) {
-        ids.add(String(leftId));
-      }
-      if (
-        rightId != null &&
-        !rightType.includes("smartphone") &&
-        !Object.prototype.hasOwnProperty.call(productById, String(rightId))
-      ) {
-        ids.add(String(rightId));
+      for (const product of products) {
+        const id = product?.product_id;
+        const type = String(product?.product_type || "").toLowerCase();
+        if (
+          id != null &&
+          !type.includes("smartphone") &&
+          !Object.prototype.hasOwnProperty.call(productById, String(id))
+        ) {
+          ids.add(String(id));
+        }
       }
     }
     return Array.from(ids);
@@ -418,18 +483,42 @@ const PopularComparisonsPage = () => {
     url: "https://tryhook.shop/popular-comparisons",
     mainEntity: {
       "@type": "ItemList",
-      itemListElement: paginatedData.slice(0, 10).map((item, index) => ({
-        "@type": "ListItem",
-        position: index + 1,
-        name: `${item.left_name} vs ${item.right_name}`,
-        url: `https://tryhook.shop${buildCanonicalComparePath({
-          leftName: item.left_name,
-          rightName: item.right_name,
-          leftId: item.left_id,
-          rightId: item.right_id,
-          type: item.product_type,
-        })}`,
-      })),
+      itemListElement: paginatedData.slice(0, 10).map((item, index) => {
+        const products = Array.isArray(item.products) && item.products.length
+          ? item.products
+          : [
+              {
+                product_id: item.left_id,
+                product_name: item.left_name,
+              },
+              {
+                product_id: item.right_id,
+                product_name: item.right_name,
+              },
+            ];
+        const path =
+          item.route_path ||
+          buildCanonicalComparePathFromDevices({
+            devices: products,
+            getName: (product) => product?.product_name || product?.name || "",
+            getId: (product) => product?.product_id || product?.id || null,
+          }) ||
+          buildCanonicalComparePath({
+            leftName: item.left_name,
+            rightName: item.right_name,
+          });
+
+        return {
+          "@type": "ListItem",
+          position: index + 1,
+          name:
+            products
+              .map((product) => product?.product_name || product?.name)
+              .filter(Boolean)
+              .join(" vs ") || `${item.left_name} vs ${item.right_name}`,
+          url: `https://tryhook.shop${path}`,
+        };
+      }),
     },
   };
 
@@ -440,7 +529,7 @@ const PopularComparisonsPage = () => {
   const showingLabel = `Showing ${processedData.length.toLocaleString()} of ${data.length.toLocaleString()} options`;
 
   return (
-    <div className="px-2 lg:px-4 mx-auto bg-white max-w-4xl w-full m-0 overflow-hidden">
+    <div className="min-h-screen bg-white text-slate-900">
       <SEO
         title={pageTitle}
         description={pageDescription}
@@ -449,28 +538,25 @@ const PopularComparisonsPage = () => {
         schema={comparisonSchema}
       />
 
-      <div className="py-6 sm:py-8 md:py-10 lg:py-2">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
         {/* Header Section */}
         <div
-          className={`mb-2 sm:mb-5 transition-all duration-700 ${
+          className={`mb-6 sm:mb-8 transition-all duration-700 ${
             isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
           }`}
         >
-          <div className="inline-flex items-center gap-2 bg-indigo-50 backdrop-blur-sm px-3 py-1.5 rounded-full border border-indigo-200 mb-4 sm:mb-6">
-            <FaFire className="text-red-500 text-sm" />
-            <span className="text-xs sm:text-sm font-semibold text-indigo-900">
+          <div className="mb-3 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.32em] text-blue-600 sm:text-xs">
+            <FaFire className="text-sm" />
+            <span>
               COMPARISON COLLECTION
             </span>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl xl:text-5xl font-bold mb-2 sm:mb-3 md:mb-4 lg:mb-4 leading-tight">
-            Popular Device{" "}
-            <span className="bg-gradient-to-r from-indigo-600 via-blue-500 to-cyan-500 bg-clip-text text-transparent">
-              Comparisons
-            </span>
+          <h1 className="max-w-4xl text-2xl font-semibold tracking-tight text-[#14255e] sm:text-3xl md:text-4xl">
+            Popular Device Comparisons
           </h1>
 
-          <h4 className="text-base sm:text-lg md:text-lg lg:text-xl mb-0 text-gray-600 leading-relaxed max-w-3xl">
+          <h4 className="mt-3 max-w-4xl text-sm leading-7 text-slate-600 sm:text-base sm:leading-8">
             Explore the most compared devices trending right now. See what users
             are comparing and make informed buying decisions with accurate specs
             and features.
@@ -478,11 +564,11 @@ const PopularComparisonsPage = () => {
         </div>
 
         {/* Filters Section */}
-        <div className="mb-6 sm:mb-7 md:mb-8">
+        <div className="mb-6 sm:mb-8">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <FaFilter className="text-indigo-600" />
-              <h3 className="text-sm sm:text-base font-semibold text-gray-900">
+              <FaFilter className="text-blue-600" />
+              <h3 className="text-sm font-semibold text-slate-900 sm:text-base">
                 Popular Categories
               </h3>
             </div>
@@ -494,13 +580,13 @@ const PopularComparisonsPage = () => {
                   setDeviceTypeFilter("all");
                   setCurrentPage(1);
                 }}
-                className="text-xs sm:text-sm text-indigo-700 hover:text-indigo-900 font-semibold"
+                className="text-xs font-semibold text-blue-700 transition-colors hover:text-blue-900 sm:text-sm"
               >
                 Clear
               </button>
             )}
           </div>
-          <p className="text-xs text-gray-600 mb-3">
+          <p className="mb-3 text-xs text-slate-500">
             Popular comparison groups users explore most on Hooks
           </p>
           <div className="flex gap-2.5 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -516,13 +602,13 @@ const PopularComparisonsPage = () => {
                     setDeviceTypeFilter(chip.deviceType);
                     setCurrentPage(1);
                   }}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-full border text-xs sm:text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
+                  className={`flex items-center gap-2 whitespace-nowrap rounded-full px-3 py-2 text-xs font-semibold transition-colors duration-200 sm:text-sm ${
                     isActive
-                      ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-white border-indigo-600 shadow-lg"
-                      : "bg-white text-gray-700 border-gray-200 hover:border-indigo-300 hover:text-indigo-700 hover:shadow-md"
+                      ? "bg-blue-600 text-white"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                   }`}
                 >
-                  <span className={isActive ? "text-white" : "text-indigo-600"}>
+                  <span className={isActive ? "text-white" : "text-blue-600"}>
                     <Icon className="text-base" />
                   </span>
                   <span>{chip.label}</span>
@@ -531,12 +617,12 @@ const PopularComparisonsPage = () => {
             })}
           </div>
 
-          <div className="mb-6 sm:mb-7 md:mb-8">
-            <div className="hidden lg:flex items-center justify-between mb-4 md:mb-5 lg:mb-6 gap-4">
+          <div className="mb-6 sm:mb-8">
+            <div className="mb-4 hidden items-center justify-between gap-4 md:mb-5 lg:mb-6 lg:flex">
               <div className="flex-1 max-w-xl">
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <FaSearch className="text-purple-500 group-focus-within:text-purple-600 transition-colors duration-200" />
+                    <FaSearch className="text-slate-400 transition-colors duration-200 group-focus-within:text-blue-500" />
                   </div>
                   <input
                     type="text"
@@ -546,15 +632,15 @@ const PopularComparisonsPage = () => {
                       setSearchQuery(e.target.value);
                       setCurrentPage(1);
                     }}
-                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm sm:text-base"
+                    className="w-full rounded-lg border border-slate-200 bg-white py-3 pl-12 pr-4 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-400 sm:text-base"
                   />
                 </div>
               </div>
 
               <div className="flex items-center gap-3 shrink-0">
                 <div className="flex items-center gap-2">
-                  <FaFilter className="text-gray-500" />
-                  <span className="text-sm text-gray-600">Sort by:</span>
+                  <FaFilter className="text-slate-400" />
+                  <span className="text-sm text-slate-600">Sort by:</span>
                 </div>
                 <div className="relative min-w-[210px]">
                   <select
@@ -563,7 +649,7 @@ const PopularComparisonsPage = () => {
                       setSortBy(e.target.value);
                       setCurrentPage(1);
                     }}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 text-gray-700 appearance-none cursor-pointer bg-white pr-10 transition-all duration-200 hover:border-purple-400"
+                    className="w-full cursor-pointer appearance-none rounded-lg border border-slate-200 bg-white px-4 py-2.5 pr-10 text-slate-700 transition-all duration-200 hover:border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
                   >
                     {SORT_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -571,7 +657,7 @@ const PopularComparisonsPage = () => {
                       </option>
                     ))}
                   </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-700">
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
                     <svg
                       className="fill-current h-4 w-4"
                       xmlns="http://www.w3.org/2000/svg"
@@ -591,7 +677,7 @@ const PopularComparisonsPage = () => {
                       setSortBy("trending");
                       setCurrentPage(1);
                     }}
-                    className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-colors"
+                    className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-blue-600 transition-colors hover:bg-slate-100 hover:text-blue-700"
                   >
                     <FaTimes />
                     Clear Filters
@@ -600,9 +686,9 @@ const PopularComparisonsPage = () => {
               </div>
             </div>
 
-            <div className="lg:hidden space-y-3 sm:space-y-4 mb-4 sm:mb-5 md:mb-6">
+            <div className="mb-4 space-y-3 sm:mb-5 sm:space-y-4 md:mb-6 lg:hidden">
               <div className="relative group">
-                <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-purple-500 group-focus-within:text-purple-600 transition-colors duration-200" />
+                <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors duration-200 group-focus-within:text-blue-500" />
                 <input
                   type="text"
                   placeholder="Search comparisons..."
@@ -611,7 +697,7 @@ const PopularComparisonsPage = () => {
                     setSearchQuery(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-full h-12 pl-12 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 text-gray-700 transition-all duration-200 placeholder:text-gray-400"
+                  className="h-12 w-full rounded-lg border border-slate-200 py-2 pl-12 pr-4 text-slate-900 transition-all duration-200 placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
               </div>
 
@@ -622,7 +708,7 @@ const PopularComparisonsPage = () => {
                     setSortBy(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-full h-12 px-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 text-gray-700 appearance-none bg-white pr-10 transition-all duration-200"
+                  className="h-12 w-full appearance-none rounded-lg border border-slate-200 bg-white px-4 pr-10 text-slate-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 >
                   {SORT_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -630,7 +716,7 @@ const PopularComparisonsPage = () => {
                     </option>
                   ))}
                 </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-700">
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
                   <svg
                     className="fill-current h-4 w-4"
                     xmlns="http://www.w3.org/2000/svg"
@@ -642,14 +728,14 @@ const PopularComparisonsPage = () => {
               </div>
 
               {hasCustomFilter && (
-                <div className="flex items-center justify-between p-4 bg-purple-50 rounded-xl border border-purple-200">
+                <div className="flex items-center justify-between rounded-lg border border-blue-100 bg-[#f8fbff] p-4">
                   <div className="flex items-center gap-3">
-                    <FaFilter className="text-purple-600" />
+                    <FaFilter className="text-blue-600" />
                     <div>
-                      <span className="text-sm font-medium text-purple-800">
+                      <span className="text-sm font-semibold text-slate-900">
                         Filters are active
                       </span>
-                      <p className="text-xs text-purple-700">{showingLabel}</p>
+                      <p className="text-xs text-slate-600">{showingLabel}</p>
                     </div>
                   </div>
                   <button
@@ -660,7 +746,7 @@ const PopularComparisonsPage = () => {
                       setSortBy("trending");
                       setCurrentPage(1);
                     }}
-                    className="text-sm font-semibold text-purple-700 hover:text-purple-900"
+                    className="text-sm font-semibold text-blue-700 hover:text-blue-900"
                   >
                     Clear
                   </button>
@@ -668,17 +754,17 @@ const PopularComparisonsPage = () => {
               )}
             </div>
 
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex flex-col gap-2 border-t border-slate-200 pt-5 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <h3 className="text-xl sm:text-2xl font-bold text-gray-900">
+                <h3 className="text-xl font-semibold tracking-tight text-[#14255e] sm:text-2xl">
                   Available Comparisons
                 </h3>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="mt-1 text-sm leading-6 text-slate-500">
                   Browse the most compared device matchups with current filters
                   and sorting applied.
                 </p>
               </div>
-              <div className="text-sm text-gray-500">{showingLabel}</div>
+              <div className="text-sm font-medium text-slate-500">{showingLabel}</div>
             </div>
           </div>
         </div>
@@ -686,15 +772,15 @@ const PopularComparisonsPage = () => {
         {/* Loading State */}
         {loading ? (
           <div className="text-center py-12">
-            <FaSort className="mx-auto text-3xl text-indigo-600 animate-spin" />
-            <p className="mt-4 text-gray-600 font-medium">
+            <FaSort className="mx-auto animate-spin text-3xl text-blue-600" />
+            <p className="mt-4 font-medium text-slate-600">
               Loading popular comparisons...
             </p>
           </div>
         ) : paginatedData.length === 0 ? (
           <div className="text-center py-12">
-            <FaExchangeAlt className="mx-auto text-4xl text-gray-400 mb-4" />
-            <p className="text-gray-600 font-medium">
+            <FaExchangeAlt className="mx-auto mb-4 text-4xl text-slate-400" />
+            <p className="font-medium text-slate-600">
               No comparisons found for this filter
             </p>
             <button
@@ -702,7 +788,7 @@ const PopularComparisonsPage = () => {
                 setDeviceTypeFilter("all");
                 setCurrentPage(1);
               }}
-              className="mt-4 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-lg hover:shadow-lg hover:shadow-indigo-200 transition-all font-semibold text-sm"
+              className="mt-4 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
             >
               Reset Filters
             </button>
@@ -710,128 +796,169 @@ const PopularComparisonsPage = () => {
         ) : (
           <>
             {/* Comparisons Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 mb-8">
+            <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-3">
               {paginatedData.map((item, index) => {
-                const leftProduct =
-                  item.left_type === "smartphone"
-                    ? smartphoneById[String(item.left_id)] ||
-                      productById[String(item.left_id)] ||
-                      null
-                    : productById[String(item.left_id)] || null;
-                const rightProduct =
-                  item.right_type === "smartphone"
-                    ? smartphoneById[String(item.right_id)] ||
-                      productById[String(item.right_id)] ||
-                      null
-                    : productById[String(item.right_id)] || null;
-                const leftResolvedScore =
-                  resolveSmartphoneBadgeScore(leftProduct);
-                const rightResolvedScore =
-                  resolveSmartphoneBadgeScore(rightProduct);
-                const showLeftScore =
-                  item.left_type === "smartphone"
+                const products = (Array.isArray(item.products) && item.products.length
+                  ? item.products
+                  : [
+                      {
+                        product_id: item.left_id,
+                        product_name: item.left_name,
+                        product_type: item.left_type,
+                        image_url: item.left_image,
+                      },
+                      {
+                        product_id: item.right_id,
+                        product_name: item.right_name,
+                        product_type: item.right_type,
+                        image_url: item.right_image,
+                      },
+                    ]
+                )
+                  .filter((product) => product?.product_id != null)
+                  .slice(0, 4);
+                const enrichedProducts = products.map((product) => {
+                  const productId = String(product.product_id);
+                  const isPhone = String(product.product_type || "")
+                    .toLowerCase()
+                    .includes("smartphone");
+                  const resolvedProduct = isPhone
+                    ? smartphoneById[productId] || productById[productId] || null
+                    : productById[productId] || null;
+                  const score = resolveSmartphoneBadgeScore(
+                    resolvedProduct || product,
+                  );
+                  const showScore = isPhone
                     ? Boolean(
-                        leftProduct?.allowSpecScore ??
-                        leftProduct?.allow_spec_score ??
-                        false,
+                        resolvedProduct?.allowSpecScore ??
+                          resolvedProduct?.allow_spec_score ??
+                          false,
                       )
-                    : leftResolvedScore != null;
-                const showRightScore =
-                  item.right_type === "smartphone"
-                    ? Boolean(
-                        rightProduct?.allowSpecScore ??
-                        rightProduct?.allow_spec_score ??
-                        false,
-                      )
-                    : rightResolvedScore != null;
+                    : score != null;
+                  return {
+                    ...product,
+                    resolvedProduct,
+                    score,
+                    showScore,
+                    imageUrl:
+                      product.image_url ||
+                      product.image ||
+                      resolvedProduct?.image_url ||
+                      resolvedProduct?.image ||
+                      (Array.isArray(resolvedProduct?.images)
+                        ? resolvedProduct.images.find(Boolean)
+                        : null),
+                  };
+                });
+                const compareTitle =
+                  enrichedProducts
+                    .map((product) => product?.product_name || product?.name)
+                    .filter(Boolean)
+                    .join(" vs ") ||
+                  `${item.left_name || "Device"} vs ${item.right_name || "Device"}`;
+                const comparePath =
+                  item.route_path ||
+                  buildCanonicalComparePathFromDevices({
+                    devices: enrichedProducts,
+                    getName: (product) =>
+                      product?.product_name || product?.name || "",
+                    getId: (product) =>
+                      product?.product_id || product?.id || null,
+                  }) ||
+                  buildCanonicalComparePath({
+                    leftName: item.left_name,
+                    rightName: item.right_name,
+                  });
 
                 return (
                   <Link
-                    key={`${item.left_id}-${item.right_id}-${index}`}
-                    to={buildCanonicalComparePath({
-                      leftName: item.left_name,
-                      rightName: item.right_name,
-                      leftId: item.left_id,
-                      rightId: item.right_id,
-                      type: item.product_type,
-                    })}
+                    key={`${item.product_ids?.join("-") || `${item.left_id}-${item.right_id}`}-${index}`}
+                    to={comparePath}
+                    state={
+                      comparePath === "/compare"
+                        ? {
+                            initialProducts: enrichedProducts.map((product) => ({
+                              ...(product.resolvedProduct || product),
+                              id: product.product_id,
+                              productId: product.product_id,
+                              product_id: product.product_id,
+                              name: product.product_name,
+                              product_name: product.product_name,
+                              productType: product.product_type,
+                              product_type: product.product_type,
+                            })),
+                          }
+                        : undefined
+                    }
                     className={`group transition-all duration-700 ${
                       isLoaded ? "opacity-100" : "opacity-0"
                     }`}
                     style={{ transitionDelay: `${index * 50}ms` }}
                   >
-                    <div className="h-full p-4 sm:p-2 bg-white rounded-sm  transition-all duration-300 md:hover:scale-105">
-                      {/* Comparison Count Badge */}
-
-                      {/* Device Comparison */}
-                      <div className="flex items-center justify-between gap-2 overflow-hidden mb-3">
-                        {/* Left Device */}
-                        <div className="flex-1 text-center overflow-hidden">
-                          <div className="relative w-full h-24 sm:h-28 mb-2">
-                            {item.left_image ? (
-                              <img
-                                src={item.left_image}
-                                alt={item.left_name}
-                                className="shadow-md w-full h-full object-contain bg-gradient-to-br from-gray-50 to-gray-100 rounded-md p-1 transition-transform duration-300"
-                                loading="lazy"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg flex items-center justify-center">
-                                <FaMobileAlt className="text-gray-300 text-2xl" />
-                              </div>
-                            )}
-                            {showLeftScore && leftResolvedScore != null && (
-                              <div className="absolute left-1.5 top-1.5 z-10 pointer-events-none">
-                                <CircularScoreBadge
-                                  score={leftResolvedScore}
-                                  size={42}
-                                />
-                              </div>
-                            )}
-                          </div>
-                          <p className="text-xs sm:text-sm font-bold text-gray-900 whitespace-nowrap truncate">
-                            {item.left_name}
-                          </p>
-                        </div>
-
-                        {/* VS Badge */}
-                        <div className="flex-shrink-0 px-1">
-                          <div className="text-xs font-bold bg-gradient-to-r from-indigo-100 to-blue-100 text-indigo-700 px-2 py-1 rounded-full whitespace-nowrap">
-                            VS
-                          </div>
-                        </div>
-
-                        {/* Right Device */}
-                        <div className="flex-1 text-center overflow-hidden">
-                          <div className="relative w-full h-24 sm:h-28 mb-2">
-                            {item.right_image ? (
-                              <img
-                                src={item.right_image}
-                                alt={item.right_name}
-                                className="w-full h-full shadow-md object-contain bg-gradient-to-br from-gray-50 to-gray-100 rounded-md p-1 transition-transform duration-300"
-                                loading="lazy"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 rounded-md flex items-center justify-center">
-                                <FaMobileAlt className="text-gray-300 text-2xl" />
-                              </div>
-                            )}
-                            {showRightScore && rightResolvedScore != null && (
-                              <div className="absolute left-1.5 top-1.5 z-10 pointer-events-none">
-                                <CircularScoreBadge
-                                  score={rightResolvedScore}
-                                  size={42}
-                                />
-                              </div>
-                            )}
-                          </div>
-                          <p className="text-xs sm:text-sm font-bold text-gray-900 whitespace-nowrap truncate">
-                            {item.right_name}
-                          </p>
-                        </div>
+                    <div className="flex h-full flex-col overflow-hidden rounded-lg border border-slate-200 bg-white p-4 transition-all duration-300 hover:border-blue-200 hover:bg-slate-50">
+                      <div className="mb-4 flex items-center justify-between gap-2">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100">
+                          <FaFire className="text-[10px]" />
+                          {Number(item.compare_count || 0).toLocaleString("en-IN")} compares
+                        </span>
+                        {item.unique_users ? (
+                          <span className="text-[11px] font-semibold text-slate-500">
+                            {Number(item.unique_users || 0).toLocaleString("en-IN")} users
+                          </span>
+                        ) : null}
                       </div>
 
-                      {/* CTA Button */}
+                      <div
+                        className="grid gap-3 overflow-hidden"
+                        style={{
+                          gridTemplateColumns: `repeat(${Math.max(2, enrichedProducts.length)}, minmax(0, 1fr))`,
+                        }}
+                      >
+                        {enrichedProducts.map((product) => (
+                          <div
+                            key={`${item.compare_count}-${product.product_id}`}
+                            className="min-w-0 text-center"
+                          >
+                            <div className="relative mb-2 flex h-24 w-full items-center justify-center rounded-lg border border-slate-200 bg-slate-50 p-2 sm:h-28">
+                              {product.imageUrl ? (
+                                <img
+                                  src={product.imageUrl}
+                                  alt={product.product_name}
+                                  className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center rounded-md bg-white">
+                                  <FaMobileAlt className="text-2xl text-slate-300" />
+                                </div>
+                              )}
+                              {product.showScore && product.score != null && (
+                                <div className="pointer-events-none absolute left-1.5 top-1.5 z-10">
+                                  <CircularScoreBadge
+                                    score={product.score}
+                                    size={42}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                            <p className="truncate text-xs font-semibold text-[#14255e] sm:text-sm">
+                              {product.product_name}
+                            </p>
+                            <p className="mt-0.5 truncate text-[10px] font-medium capitalize text-slate-500">
+                              {product.product_type || "device"}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-blue-100 bg-[#f8fbff] px-3 py-2.5">
+                        <span className="min-w-0 truncate text-[12px] font-semibold leading-5 text-slate-700">
+                          {compareTitle}
+                        </span>
+                        <span className="shrink-0 text-[12px] font-semibold text-blue-700 transition-colors group-hover:text-blue-800">
+                          Compare
+                        </span>
+                      </div>
                     </div>
                   </Link>
                 );
@@ -840,11 +967,11 @@ const PopularComparisonsPage = () => {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-2 mb-8">
+              <div className="mb-8 flex items-center justify-center gap-2">
                 <button
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
-                  className="px-3 sm:px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm font-medium"
+                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4"
                 >
                   Previous
                 </button>
@@ -865,10 +992,10 @@ const PopularComparisonsPage = () => {
                       <button
                         key={page}
                         onClick={() => setCurrentPage(page)}
-                        className={`px-2 sm:px-3 py-2 rounded-lg font-semibold text-sm transition ${
+                        className={`rounded-lg px-2 py-2 text-sm font-semibold transition sm:px-3 ${
                           currentPage === page
-                            ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-lg shadow-indigo-200"
-                            : "border border-gray-200 hover:bg-gray-50 text-gray-900"
+                            ? "bg-blue-600 text-white"
+                            : "border border-slate-200 text-slate-900 hover:bg-slate-50"
                         }`}
                       >
                         {page}
@@ -882,7 +1009,7 @@ const PopularComparisonsPage = () => {
                     setCurrentPage(Math.min(totalPages, currentPage + 1))
                   }
                   disabled={currentPage === totalPages}
-                  className="px-3 sm:px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm font-medium"
+                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4"
                 >
                   Next
                 </button>

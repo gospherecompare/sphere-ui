@@ -244,12 +244,19 @@ const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
             Explore popular phone matchups and compare key choices side by side.
           </p>
         </div>
-        <div className="hidden items-center gap-2 sm:flex">
+        <div className="flex shrink-0 items-center gap-2">
+          <Link
+            to="/popular-comparisons"
+            className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white px-3.5 py-2 text-xs font-semibold text-blue-700 transition-colors hover:border-blue-200 hover:bg-blue-50 sm:text-sm"
+          >
+            View all
+            <FaChevronRight className="text-[10px]" />
+          </Link>
           <button
             type="button"
             onClick={() => scrollComparisons(-1)}
             aria-label="Scroll comparisons left"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-blue-100 bg-white text-blue-600 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+            className="hidden h-9 w-9 items-center justify-center rounded-full border border-blue-100 bg-white text-blue-600 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 sm:flex"
           >
             <FaChevronLeft className="text-sm" />
           </button>
@@ -257,7 +264,7 @@ const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
             type="button"
             onClick={() => scrollComparisons(1)}
             aria-label="Scroll comparisons right"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-blue-100 bg-white text-blue-600 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+            className="hidden h-9 w-9 items-center justify-center rounded-full border border-blue-100 bg-white text-blue-600 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 sm:flex"
           >
             <FaChevronRight className="text-sm" />
           </button>

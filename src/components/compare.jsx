@@ -1545,28 +1545,32 @@ const MobileCompare = () => {
         });
       }
 
-      if (ids.length < 2) return;
+      const normalizedIds = Array.from(
+        new Set(
+          ids
+            .map((id) => Number(id))
+            .filter((id) => Number.isInteger(id) && id > 0),
+        ),
+      ).slice(0, MAX_DEVICES);
+      if (normalizedIds.length < 2) return;
 
-      // Use only first two ids for recording a pairwise compare on page load
-      const [aRaw, bRaw] = [ids[0], ids[1]];
-      if (!aRaw || !bRaw) return;
-      const [l, r] = [Number(aRaw), Number(bRaw)].sort((x, y) => x - y);
-      const sessionKey = `compare_${l}_${r}`;
+      const sortedIds = [...normalizedIds].sort((x, y) => x - y);
+      const sessionKey = `compare_${sortedIds.join("_")}`;
       if (
         typeof sessionStorage !== "undefined" &&
         sessionStorage.getItem(sessionKey)
       )
         return;
 
-      // Post the normalized comparison to backend
+      // Post the full selected set; the backend records the session and all pair signals.
       (async () => {
         try {
           await fetch(`https://api.apisphere.in/api/public/compare`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              left_product_id: l,
-              right_product_id: r,
+              products: normalizedIds,
+              compare_session_id: sessionKey,
               product_type:
                 fallbackDevices[0]?.productType ||
                 fallbackDevices[0]?.deviceType ||

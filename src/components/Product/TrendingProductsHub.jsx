@@ -2368,7 +2368,7 @@ const TrendingProductsHub = () => {
                               <div className="relative flex items-start justify-start sm:justify-center">
                                 {cardBadgeLabel ? (
                                   <span
-                                    className="absolute left-0 top-0 z-10 inline-flex items-center rounded-full bg-[#0B66F6] px-3 py-1 text-xs font-semibold text-white shadow-[0_8px_18px_rgba(11,102,246,0.22)]"
+                                    className="absolute left-0 top-0 z-10 inline-flex items-center rounded-full bg-gradient-to-r from-[#0B66F6] via-[#2563EB] to-[#38BDF8] px-3 py-1 text-xs font-semibold text-white shadow-[0_8px_18px_rgba(11,102,246,0.24)]"
                                   >
                                     {cardBadgeLabel}
                                   </span>
