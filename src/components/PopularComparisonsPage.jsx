@@ -10,14 +10,11 @@ import {
   FaSort,
   FaTimes,
   FaTv,
-  FaWifi,
 } from "react-icons/fa";
 import useRevealAnimation from "../hooks/useRevealAnimation";
 import SEO from "./SEO";
 // import RecommendedSmartphones from "./Home/RecommendedSmartphones";
 import ProductDiscoverySections from "./ui/ProductDiscoverySections";
-import { normalizeScore100Value } from "../utils/groupScoreStats";
-import resolveSmartphoneBadgeScore from "../utils/smartphoneBadgeScore";
 import {
   buildCanonicalComparePath,
   buildCanonicalComparePathFromDevices,
@@ -26,8 +23,20 @@ import {
   getPreloadedApiMap,
   readPreloadedApiResponse,
 } from "../utils/preloadedApi";
+import {
+  createBreadcrumbSchema,
+  createCollectionSchema,
+  createItemListSchema,
+} from "../utils/schemaGenerators";
+import { toCanonicalPageUrl } from "../utils/publicUrl";
 
 const ITEMS_PER_PAGE = 12;
+const SITE_ORIGIN = "https://tryhook.shop";
+const POPULAR_COMPARISONS_PATH = "/popular-comparisons";
+const POPULAR_COMPARISONS_URL = toCanonicalPageUrl(
+  POPULAR_COMPARISONS_PATH,
+  SITE_ORIGIN,
+);
 
 const DEVICE_TYPE_OPTIONS = [
   { value: "all", label: "All Devices", hint: "Browse every category" },
@@ -45,11 +54,6 @@ const DEVICE_TYPE_OPTIONS = [
     value: "tv",
     label: "TVs & Televisions",
     hint: "Smart TV and big-screen matchups",
-  },
-  {
-    value: "network",
-    label: "Networking Devices",
-    hint: "Routers, Wi-Fi gear, and networking picks",
   },
 ];
 
@@ -89,12 +93,6 @@ const FILTER_CHIPS = [
     deviceType: "tv",
     icon: FaTv,
   },
-  {
-    id: "network",
-    label: "Networking",
-    deviceType: "network",
-    icon: FaWifi,
-  },
 ];
 
 const MOST_COMPARED_ENDPOINT =
@@ -109,8 +107,12 @@ const normalizeComparedProduct = (product = {}) => ({
     product.product_name || product.productName || product.name || "Device",
   name: product.product_name || product.productName || product.name || "Device",
   product_type:
-    product.product_type || product.productType || product.deviceType || "unknown",
-  image_url: product.image_url || product.image || product.product_image || null,
+    product.product_type ||
+    product.productType ||
+    product.deviceType ||
+    "unknown",
+  image_url:
+    product.image_url || product.image || product.product_image || null,
   image: product.image_url || product.image || product.product_image || null,
   best_price: product.best_price ?? product.bestPrice ?? product.price ?? null,
   detail_path: product.detail_path || product.detailPath || "",
@@ -118,22 +120,23 @@ const normalizeComparedProduct = (product = {}) => ({
 
 const mapMostComparedRows = (json) =>
   (json?.mostCompared || []).map((r) => {
-    const products = Array.isArray(r.products) && r.products.length
-      ? r.products.map(normalizeComparedProduct)
-      : [
-          normalizeComparedProduct({
-            product_id: r.product_id,
-            product_name: r.product_name,
-            product_type: r.product_type,
-            image_url: r.product_image,
-          }),
-          normalizeComparedProduct({
-            product_id: r.compared_product_id,
-            product_name: r.compared_product_name,
-            product_type: r.compared_product_type,
-            image_url: r.compared_product_image,
-          }),
-        ].filter((product) => product.product_id != null);
+    const products =
+      Array.isArray(r.products) && r.products.length
+        ? r.products.map(normalizeComparedProduct)
+        : [
+            normalizeComparedProduct({
+              product_id: r.product_id,
+              product_name: r.product_name,
+              product_type: r.product_type,
+              image_url: r.product_image,
+            }),
+            normalizeComparedProduct({
+              product_id: r.compared_product_id,
+              product_name: r.compared_product_name,
+              product_type: r.compared_product_type,
+              image_url: r.compared_product_image,
+            }),
+          ].filter((product) => product.product_id != null);
     const [left, right] = products;
     return {
       ...r,
@@ -146,8 +149,7 @@ const mapMostComparedRows = (json) =>
       right_id: right?.product_id ?? r.compared_product_id,
       right_name: right?.product_name ?? r.compared_product_name,
       right_image: right?.image_url ?? r.compared_product_image ?? null,
-      right_type:
-        right?.product_type ?? r.compared_product_type ?? "unknown",
+      right_type: right?.product_type ?? r.compared_product_type ?? "unknown",
       compare_count: Number(r.compare_count) || 0,
       unique_users: Number(r.unique_users ?? r.unique_user_count) || 0,
       last_compared_at: r.last_compared_at || null,
@@ -207,29 +209,6 @@ const mapPreloadedProductsById = () => {
   return next;
 };
 
-// Spec Score Badge Component
-const CircularScoreBadge = ({ score, size = 38 }) => {
-  const normalized = normalizeScore100Value(score);
-  const value = normalized != null ? Math.round(normalized) : null;
-  const label = value != null ? String(value) : "--";
-
-  return (
-    <div
-      className="inline-flex items-end gap-1 rounded-md border border-white/80 bg-white/90 px-1.5 py-1 leading-none shadow-sm"
-      style={{ minWidth: `${Math.max(38, Math.round(size))}px` }}
-      aria-label={
-        value != null ? `Spec score ${value}` : "Spec score unavailable"
-      }
-    >
-      <span className="text-xl font-semibold text-blue-600">{label}</span>
-      <span className="mb-0.5 flex flex-col text-[7px] font-semibold uppercase tracking-[0.28em] text-blue-500">
-        <span>Spec</span>
-        <span>Score</span>
-      </span>
-    </div>
-  );
-};
-
 const PopularComparisonsPage = () => {
   const [data, setData] = useState(() =>
     mapMostComparedRows(readPreloadedApiResponse(MOST_COMPARED_ENDPOINT) || {}),
@@ -241,7 +220,9 @@ const PopularComparisonsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [deviceTypeFilter, setDeviceTypeFilter] = useState("all");
   const [sortBy, setSortBy] = useState("trending");
-  const [productById, setProductById] = useState(() => mapPreloadedProductsById());
+  const [productById, setProductById] = useState(() =>
+    mapPreloadedProductsById(),
+  );
   const [smartphoneById, setSmartphoneById] = useState(() =>
     mapSmartphonesById(readPreloadedApiResponse(SMARTPHONES_ENDPOINT) || {}),
   );
@@ -336,7 +317,8 @@ const PopularComparisonsPage = () => {
           (Array.isArray(item.products) ? item.products : [])
             .map((product) => product?.product_name)
             .filter(Boolean)
-            .join(" vs ") || `${item?.left_name || ""} vs ${item?.right_name || ""}`,
+            .join(" vs ") ||
+            `${item?.left_name || ""} vs ${item?.right_name || ""}`,
         ];
         return haystacks.some((value) =>
           String(value || "")
@@ -371,23 +353,26 @@ const PopularComparisonsPage = () => {
     }
 
     for (const item of processedData) {
-      const products = Array.isArray(item?.products) && item.products.length
-        ? item.products
-        : [
-            {
-              product_id: item?.left_id,
-              product_type: item?.left_type,
-              product_name: item?.left_name,
-            },
-            {
-              product_id: item?.right_id,
-              product_type: item?.right_type,
-              product_name: item?.right_name,
-            },
-          ];
+      const products =
+        Array.isArray(item?.products) && item.products.length
+          ? item.products
+          : [
+              {
+                product_id: item?.left_id,
+                product_type: item?.left_type,
+                product_name: item?.left_name,
+              },
+              {
+                product_id: item?.right_id,
+                product_type: item?.right_type,
+                product_name: item?.right_name,
+              },
+            ];
 
       const phone = products.find((product) =>
-        String(product?.product_type || "").toLowerCase().includes("smartphone"),
+        String(product?.product_type || "")
+          .toLowerCase()
+          .includes("smartphone"),
       );
       const phoneId = Number(phone?.product_id);
       if (Number.isInteger(phoneId)) {
@@ -405,18 +390,19 @@ const PopularComparisonsPage = () => {
     const ids = new Set();
     const rows = Array.isArray(paginatedData) ? paginatedData : [];
     for (const item of rows) {
-      const products = Array.isArray(item?.products) && item.products.length
-        ? item.products
-        : [
-            {
-              product_id: item?.left_id,
-              product_type: item?.left_type,
-            },
-            {
-              product_id: item?.right_id,
-              product_type: item?.right_type,
-            },
-          ];
+      const products =
+        Array.isArray(item?.products) && item.products.length
+          ? item.products
+          : [
+              {
+                product_id: item?.left_id,
+                product_type: item?.left_type,
+              },
+              {
+                product_id: item?.right_id,
+                product_type: item?.right_type,
+              },
+            ];
 
       for (const product of products) {
         const id = product?.product_id;
@@ -471,56 +457,110 @@ const PopularComparisonsPage = () => {
   }, [missingProductIds]);
 
   const pageTitle =
-    "Popular Device Comparisons - Compare Trending Products - Hooks";
+    "Popular Mobile Phone & Device Comparisons in India - Hooks";
   const pageDescription =
-    "Explore the most popular device comparisons on Hooks. Compare trending smartphones, laptops, TVs, and networking devices. Find the best device for you by comparing top choices.";
+    "Explore popular mobile phone and device comparisons in India on Hooks. Compare trending smartphones, laptops, and TVs side by side before you buy.";
+  const pageKeywords =
+    "popular mobile comparisons, popular phone comparisons India, compare mobile phones, smartphone comparison India, compare laptops, compare TVs, device comparison, trending product comparisons";
 
-  const comparisonSchema = {
-    "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    name: "Popular Device Comparisons",
-    description: pageDescription,
-    url: "https://tryhook.shop/popular-comparisons",
-    mainEntity: {
-      "@type": "ItemList",
-      itemListElement: paginatedData.slice(0, 10).map((item, index) => {
-        const products = Array.isArray(item.products) && item.products.length
+  const listSchemaItems = useMemo(() => {
+    return processedData.slice(0, 20).map((item) => {
+      const products =
+        Array.isArray(item.products) && item.products.length
           ? item.products
           : [
               {
                 product_id: item.left_id,
                 product_name: item.left_name,
+                product_type: item.left_type,
+                image_url: item.left_image,
               },
               {
                 product_id: item.right_id,
                 product_name: item.right_name,
+                product_type: item.right_type,
+                image_url: item.right_image,
               },
-            ];
-        const path =
-          item.route_path ||
-          buildCanonicalComparePathFromDevices({
-            devices: products,
-            getName: (product) => product?.product_name || product?.name || "",
-            getId: (product) => product?.product_id || product?.id || null,
-          }) ||
-          buildCanonicalComparePath({
-            leftName: item.left_name,
-            rightName: item.right_name,
-          });
+            ].filter((product) => product.product_id != null);
 
-        return {
-          "@type": "ListItem",
-          position: index + 1,
-          name:
-            products
-              .map((product) => product?.product_name || product?.name)
-              .filter(Boolean)
-              .join(" vs ") || `${item.left_name} vs ${item.right_name}`,
-          url: `https://tryhook.shop${path}`,
-        };
+      const path =
+        item.route_path ||
+        buildCanonicalComparePathFromDevices({
+          devices: products,
+          getName: (product) => product?.product_name || product?.name || "",
+          getId: (product) => product?.product_id || product?.id || null,
+        }) ||
+        buildCanonicalComparePath({
+          leftName: item.left_name,
+          rightName: item.right_name,
+        });
+
+      const image = products
+        .map((product) => {
+          const productId = String(product?.product_id ?? "");
+          const isPhone = String(product?.product_type || "")
+            .toLowerCase()
+            .includes("smartphone");
+          const resolvedProduct = isPhone
+            ? smartphoneById[productId] || productById[productId] || null
+            : productById[productId] || null;
+          return (
+            product?.image_url ||
+            product?.image ||
+            resolvedProduct?.image_url ||
+            resolvedProduct?.image ||
+            (Array.isArray(resolvedProduct?.images)
+              ? resolvedProduct.images.find(Boolean)
+              : null)
+          );
+        })
+        .find(Boolean);
+
+      return {
+        name:
+          products
+            .map((product) => product?.product_name || product?.name)
+            .filter(Boolean)
+            .join(" vs ") || `${item.left_name} vs ${item.right_name}`,
+        url: toCanonicalPageUrl(path || "/compare", SITE_ORIGIN),
+        image: image || undefined,
+      };
+    });
+  }, [processedData, productById, smartphoneById]);
+
+  const pageOgImageMeta = useMemo(() => {
+    const firstComparisonImage = listSchemaItems.find(
+      (item) => item.image,
+    )?.image;
+    return {
+      url: firstComparisonImage || `${SITE_ORIGIN}/hook-logo.svg`,
+      width: 1200,
+      height: 630,
+      alt: "Popular mobile phone and device comparisons on Hooks",
+    };
+  }, [listSchemaItems]);
+
+  const comparisonSchema = useMemo(
+    () => [
+      createCollectionSchema({
+        name: "Popular Mobile Phone & Device Comparisons in India",
+        description: pageDescription,
+        url: POPULAR_COMPARISONS_URL,
+        image: pageOgImageMeta,
       }),
-    },
-  };
+      createItemListSchema({
+        name: "Popular Mobile Phone & Device Comparisons",
+        description: pageDescription,
+        url: POPULAR_COMPARISONS_URL,
+        items: listSchemaItems,
+      }),
+      createBreadcrumbSchema([
+        { label: "Home", url: SITE_ORIGIN },
+        { label: "Popular Comparisons", url: POPULAR_COMPARISONS_URL },
+      ]),
+    ],
+    [listSchemaItems, pageDescription, pageOgImageMeta],
+  );
 
   const hasCustomFilter =
     deviceTypeFilter !== "all" ||
@@ -533,8 +573,10 @@ const PopularComparisonsPage = () => {
       <SEO
         title={pageTitle}
         description={pageDescription}
-        keywords="popular comparisons, device comparison, trending devices, compare smartphones, compare laptops, product comparison"
-        url="https://tryhook.shop/popular-comparisons"
+        keywords={pageKeywords}
+        image={pageOgImageMeta}
+        url={POPULAR_COMPARISONS_URL}
+        robots="index, follow, max-image-preview:large"
         schema={comparisonSchema}
       />
 
@@ -547,9 +589,7 @@ const PopularComparisonsPage = () => {
         >
           <div className="mb-3 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.32em] text-blue-600 sm:text-xs">
             <FaFire className="text-sm" />
-            <span>
-              COMPARISON COLLECTION
-            </span>
+            <span>COMPARISON COLLECTION</span>
           </div>
 
           <h1 className="max-w-4xl text-2xl font-semibold tracking-tight text-[#14255e] sm:text-3xl md:text-4xl">
@@ -764,7 +804,9 @@ const PopularComparisonsPage = () => {
                   and sorting applied.
                 </p>
               </div>
-              <div className="text-sm font-medium text-slate-500">{showingLabel}</div>
+              <div className="text-sm font-medium text-slate-500">
+                {showingLabel}
+              </div>
             </div>
           </div>
         </div>
@@ -798,22 +840,23 @@ const PopularComparisonsPage = () => {
             {/* Comparisons Grid */}
             <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-3">
               {paginatedData.map((item, index) => {
-                const products = (Array.isArray(item.products) && item.products.length
-                  ? item.products
-                  : [
-                      {
-                        product_id: item.left_id,
-                        product_name: item.left_name,
-                        product_type: item.left_type,
-                        image_url: item.left_image,
-                      },
-                      {
-                        product_id: item.right_id,
-                        product_name: item.right_name,
-                        product_type: item.right_type,
-                        image_url: item.right_image,
-                      },
-                    ]
+                const products = (
+                  Array.isArray(item.products) && item.products.length
+                    ? item.products
+                    : [
+                        {
+                          product_id: item.left_id,
+                          product_name: item.left_name,
+                          product_type: item.left_type,
+                          image_url: item.left_image,
+                        },
+                        {
+                          product_id: item.right_id,
+                          product_name: item.right_name,
+                          product_type: item.right_type,
+                          image_url: item.right_image,
+                        },
+                      ]
                 )
                   .filter((product) => product?.product_id != null)
                   .slice(0, 4);
@@ -823,23 +866,13 @@ const PopularComparisonsPage = () => {
                     .toLowerCase()
                     .includes("smartphone");
                   const resolvedProduct = isPhone
-                    ? smartphoneById[productId] || productById[productId] || null
+                    ? smartphoneById[productId] ||
+                      productById[productId] ||
+                      null
                     : productById[productId] || null;
-                  const score = resolveSmartphoneBadgeScore(
-                    resolvedProduct || product,
-                  );
-                  const showScore = isPhone
-                    ? Boolean(
-                        resolvedProduct?.allowSpecScore ??
-                          resolvedProduct?.allow_spec_score ??
-                          false,
-                      )
-                    : score != null;
                   return {
                     ...product,
                     resolvedProduct,
-                    score,
-                    showScore,
                     imageUrl:
                       product.image_url ||
                       product.image ||
@@ -877,16 +910,18 @@ const PopularComparisonsPage = () => {
                     state={
                       comparePath === "/compare"
                         ? {
-                            initialProducts: enrichedProducts.map((product) => ({
-                              ...(product.resolvedProduct || product),
-                              id: product.product_id,
-                              productId: product.product_id,
-                              product_id: product.product_id,
-                              name: product.product_name,
-                              product_name: product.product_name,
-                              productType: product.product_type,
-                              product_type: product.product_type,
-                            })),
+                            initialProducts: enrichedProducts.map(
+                              (product) => ({
+                                ...(product.resolvedProduct || product),
+                                id: product.product_id,
+                                productId: product.product_id,
+                                product_id: product.product_id,
+                                name: product.product_name,
+                                product_name: product.product_name,
+                                productType: product.product_type,
+                                product_type: product.product_type,
+                              }),
+                            ),
                           }
                         : undefined
                     }
@@ -896,18 +931,6 @@ const PopularComparisonsPage = () => {
                     style={{ transitionDelay: `${index * 50}ms` }}
                   >
                     <div className="flex h-full flex-col overflow-hidden rounded-lg border border-slate-200 bg-white p-4 transition-all duration-300 hover:border-blue-200 hover:bg-slate-50">
-                      <div className="mb-4 flex items-center justify-between gap-2">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100">
-                          <FaFire className="text-[10px]" />
-                          {Number(item.compare_count || 0).toLocaleString("en-IN")} compares
-                        </span>
-                        {item.unique_users ? (
-                          <span className="text-[11px] font-semibold text-slate-500">
-                            {Number(item.unique_users || 0).toLocaleString("en-IN")} users
-                          </span>
-                        ) : null}
-                      </div>
-
                       <div
                         className="grid gap-3 overflow-hidden"
                         style={{
@@ -930,14 +953,6 @@ const PopularComparisonsPage = () => {
                               ) : (
                                 <div className="flex h-full w-full items-center justify-center rounded-md bg-white">
                                   <FaMobileAlt className="text-2xl text-slate-300" />
-                                </div>
-                              )}
-                              {product.showScore && product.score != null && (
-                                <div className="pointer-events-none absolute left-1.5 top-1.5 z-10">
-                                  <CircularScoreBadge
-                                    score={product.score}
-                                    size={42}
-                                  />
                                 </div>
                               )}
                             </div>
