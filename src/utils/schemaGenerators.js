@@ -390,27 +390,55 @@ export const createContactPageSchema = ({
   description,
   url,
   contactEmail = "support@tryhook.shop",
+  contactPoints = [],
   contactPhone = null,
   contactAddress = null,
 } = {}) => {
+  const normalizedContactPoints = Array.isArray(contactPoints)
+    ? contactPoints
+        .map((point) => {
+          if (!point?.email) return null;
+
+          const contactPoint = {
+            "@type": "ContactPoint",
+            contactType: point.contactType || "Customer Support",
+            email: point.email,
+          };
+
+          if (point.telephone) {
+            contactPoint.telephone = point.telephone;
+          }
+
+          if (point.areaServed) {
+            contactPoint.areaServed = point.areaServed;
+          }
+
+          return contactPoint;
+        })
+        .filter(Boolean)
+    : [];
+
   const schema = {
     "@context": "https://schema.org",
     "@type": "ContactPage",
     name: name || "Contact Us",
     description: description || "Get in touch with Hooks support team",
     url: toAbsolutePageUrl(url || "/contact"),
-    contactPoint: {
-      "@type": "ContactPoint",
-      contactType: "Customer Support",
-      email: contactEmail,
-    },
+    contactPoint:
+      normalizedContactPoints.length > 0
+        ? normalizedContactPoints
+        : {
+            "@type": "ContactPoint",
+            contactType: "Customer Support",
+            email: contactEmail,
+          },
   };
 
-  if (contactPhone) {
+  if (contactPhone && !normalizedContactPoints.length) {
     schema.contactPoint.telephone = contactPhone;
   }
 
-  if (contactAddress) {
+  if (contactAddress && !normalizedContactPoints.length) {
     schema.contactPoint.areaServed = contactAddress;
   }
 

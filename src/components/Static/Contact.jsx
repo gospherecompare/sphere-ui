@@ -14,8 +14,16 @@ import {
 import useTitle from "../../hooks/useTitle";
 import SEO from "../SEO";
 import { createContactPageSchema } from "../../utils/schemaGenerators";
+import {
+  hookContactChannels,
+  primaryContactEmail,
+  supportContactEmail,
+} from "../../utils/hookContactChannels";
 
-const contactEmail = "gospherecompare@gmail.com";
+const contactEmail = primaryContactEmail;
+const contactPageChannels = hookContactChannels.filter((channel) =>
+  ["contact", "support"].includes(channel.key),
+);
 const getContactApiBase = () => {
   const envBase = import.meta.env.VITE_API_BASE_URL;
   if (envBase) return String(envBase).replace(/\/$/, "");
@@ -59,36 +67,46 @@ const supportPillars = [
 const subjectOptions = [
   {
     value: "general-support",
-    label: "General support",
-    description: "Questions about the platform, listings, or general help.",
+    label: "General contact",
+    description: "Questions that should be routed to the right Hooks team.",
+    routingEmail: contactEmail,
   },
   {
     value: "product-correction",
     label: "Product correction",
     description: "Report incorrect specs, prices, or page details.",
+    routingEmail: supportContactEmail,
   },
   {
     value: "feature-request",
     label: "Feature request",
     description: "Suggest a new tool, flow, or product experience idea.",
+    routingEmail: contactEmail,
   },
   {
     value: "partnership-inquiry",
     label: "Partnership inquiry",
     description: "Brand, affiliate, sponsorship, or collaboration requests.",
+    routingEmail: contactEmail,
   },
   {
     value: "media-press",
     label: "Media or press inquiry",
     description: "Editorial requests, interviews, announcements, or press notes.",
+    routingEmail: contactEmail,
   },
 ];
+
+const contactChannelIcons = {
+  contact: FaEnvelope,
+  support: FaHeadphones,
+};
 
 const faqItems = [
   {
     question: "How do I report a product specification error?",
     answer:
-      "Send the product page URL, the incorrect detail, and the corrected value if you have it. That gives us enough context to verify the change quickly.",
+      `Send the product page URL, the incorrect detail, and the corrected value to ${supportContactEmail} or through the form. That gives us enough context to verify the change quickly.`,
   },
   {
     question: "Where does Hooks get product information from?",
@@ -103,7 +121,7 @@ const faqItems = [
   {
     question: "What should I include for partnership or press requests?",
     answer:
-      "Include your company or publication name, the type of request, a timeline if there is one, and the best contact details for follow-up.",
+      `Use ${contactEmail} for partnerships, launches, press notes, or editorial leads. Include your organization name, request type, timeline, and best follow-up details.`,
   },
 ];
 
@@ -202,9 +220,13 @@ const Contact = () => {
   const contactSchema = createContactPageSchema({
     name: "Contact Hooks",
     description:
-      "Get in touch with Hooks for collaborations, feedback, partnerships, or general support.",
+      "Get in touch with Hooks through verified inboxes for general contact and support.",
     url: canonical,
     contactEmail,
+    contactPoints: contactPageChannels.map((channel) => ({
+      contactType: channel.contactType,
+      email: channel.email,
+    })),
   });
   const selectedSubjectOption =
     subjectOptions.find((option) => option.value === formState.subject) ||
@@ -277,6 +299,7 @@ const Contact = () => {
           email: formState.email,
           subject: formState.subject,
           subject_label: selectedSubjectOption.label,
+          routing_email: selectedSubjectOption.routingEmail,
           message: formState.message,
           agree_terms: Boolean(formState.agreed),
           source: "hooks-web-contact",
@@ -307,7 +330,7 @@ const Contact = () => {
     <>
       <SEO
         title="Contact Hooks - Device Comparison Platform Support"
-        description="Get in touch with Hooks for collaborations, feedback, partnerships, or general support on our device comparison platform."
+        description="Get in touch with Hooks through verified inboxes for general contact and support."
         image={`${canonical}/og-image`}
         url={canonical}
         robots="index, follow"
@@ -388,6 +411,64 @@ const Contact = () => {
         </section>
 
         <section className="mx-auto max-w-7xl px-4 pb-6 sm:px-6 lg:px-8 lg:pb-8">
+          <div className="rounded-[32px] bg-slate-50 p-6 sm:p-8 lg:p-10">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div className="max-w-3xl">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-600">
+                  Official inboxes
+                </p>
+                <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
+                  Contact or support, routed clearly.
+                </h2>
+                <p className="mt-3 text-sm leading-7 text-slate-600 sm:text-base">
+                  Use the general contact inbox for broad requests and the
+                  support inbox for product issues, corrections, and help using
+                  Hooks.
+                </p>
+              </div>
+
+              <a
+                href={`mailto:${contactEmail}`}
+                className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-blue-600 transition-colors duration-200 hover:bg-blue-50"
+              >
+                Email general contact
+                <FaArrowRight className="h-3.5 w-3.5" />
+              </a>
+            </div>
+
+            <div className="mt-8 grid gap-4 md:grid-cols-2">
+              {contactPageChannels.map((channel) => {
+                const Icon = contactChannelIcons[channel.key] || FaEnvelope;
+
+                return (
+                  <a
+                    key={channel.key}
+                    href={`mailto:${channel.email}`}
+                    className="group flex h-full flex-col rounded-[24px] bg-white p-5 shadow-sm transition-transform duration-200 hover:-translate-y-0.5"
+                  >
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 transition-colors duration-200 group-hover:bg-blue-600 group-hover:text-white">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <p className="mt-4 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                      {channel.name}
+                    </p>
+                    <h3 className="mt-2 text-base font-bold leading-6 text-slate-950">
+                      {channel.headline}
+                    </h3>
+                    <p className="mt-3 flex-1 text-sm leading-7 text-slate-600">
+                      {channel.summary}
+                    </p>
+                    <span className="mt-4 break-all rounded-2xl bg-slate-50 px-3 py-2 text-sm font-semibold text-blue-600">
+                      {channel.email}
+                    </span>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-7xl px-4 pb-6 sm:px-6 lg:px-8 lg:pb-8">
           <div className="mx-auto max-w-4xl">
             <div
               id="contact-form"
@@ -461,6 +542,9 @@ const Contact = () => {
                         <span className="mt-1 block text-sm font-normal leading-6 text-slate-500">
                           {selectedSubjectOption.description}
                         </span>
+                        <span className="mt-2 block break-all text-xs font-semibold text-blue-600">
+                          {selectedSubjectOption.routingEmail}
+                        </span>
                       </div>
                       <FaChevronDown
                         className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${
@@ -508,6 +592,15 @@ const Contact = () => {
                                     }`}
                                   >
                                     {option.description}
+                                  </p>
+                                  <p
+                                    className={`mt-2 break-all text-xs font-semibold ${
+                                      isActive
+                                        ? "text-blue-700"
+                                        : "text-slate-400"
+                                    }`}
+                                  >
+                                    {option.routingEmail}
                                   </p>
                                 </div>
                                 <span

@@ -1,15 +1,17 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   FaArrowRight,
   FaBalanceScale,
   FaBookOpen,
+  FaBriefcase,
   FaChartLine,
   FaCheckCircle,
   FaChevronRight,
   FaClipboardList,
   FaLaptop,
   FaMobileAlt,
+  FaNewspaper,
   FaSearch,
   FaShieldAlt,
   FaTv,
@@ -18,8 +20,16 @@ import {
 import useTitle from "../../hooks/useTitle";
 import SEO from "../SEO";
 import { createAboutPageSchema } from "../../utils/schemaGenerators";
+import { hookContactChannels } from "../../utils/hookContactChannels";
+import { resolveSmartphoneBadgeScore } from "../../utils/smartphoneBadgeScore";
 
 const SITE_ORIGIN = "https://tryhook.shop";
+const API_ASSET_ORIGIN = "https://api.apisphere.in";
+const ABOUT_SMARTPHONE_ENDPOINTS = [
+  "https://api.apisphere.in/api/public/trending/smartphones?limit=12",
+  "https://api.apisphere.in/api/public/new/smartphones?limit=12",
+  "https://api.apisphere.in/api/smartphones",
+];
 
 const heroHighlights = [
   {
@@ -136,6 +146,20 @@ const team = [
   },
 ];
 
+const aboutMailChannels = hookContactChannels.filter((channel) =>
+  ["business", "news"].includes(channel.key),
+);
+
+const aboutMailIcons = {
+  business: FaBriefcase,
+  news: FaNewspaper,
+};
+
+const aboutMailNotes = {
+  business: "Partnerships, sponsorships, and commercial conversations.",
+  news: "Launch updates, press notes, and editorial leads.",
+};
+
 const trustPoints = [
   "We do not sell products or placements.",
   "We do not push one brand over another.",
@@ -143,70 +167,341 @@ const trustPoints = [
   "We keep the experience simple enough to act on quickly.",
 ];
 
-const HeroMockup = () => (
-  <div className="relative mx-auto w-full max-w-2xl">
+const heroToolbar = {
+  title: "Compare board",
+  subtitle: "Smartphone shortlist",
+  status: "Variant ready",
+};
+const heroToolbarDots = ["bg-blue-500", "bg-cyan-300", "bg-slate-300"];
+const fallbackHeroProducts = [
+  {
+    brand: "OnePlus",
+    model: "OnePlus 13",
+    accentClass: "bg-blue-600",
+    score: "92",
+    specs: [
+      { label: "Display", value: "120 Hz" },
+      { label: "Camera", value: "50 MP" },
+      { label: "Battery", value: "6000 mAh" },
+    ],
+    image: "",
+  },
+  {
+    brand: "OPPO",
+    model: "Find X9 Ultra",
+    accentClass: "bg-slate-900",
+    score: "90",
+    specs: [
+      { label: "Display", value: "144 Hz" },
+      { label: "Camera", value: "50 MP" },
+      { label: "Storage", value: "256 GB" },
+    ],
+    image: "",
+  },
+  {
+    brand: "Samsung",
+    model: "Galaxy S25 Ultra",
+    accentClass: "bg-cyan-500",
+    score: "94",
+    specs: [
+      { label: "Camera", value: "200 MP" },
+      { label: "Battery", value: "5000 mAh" },
+      { label: "Display", value: "120 Hz" },
+    ],
+    image: "",
+  },
+];
+const heroAccentClasses = ["bg-blue-600", "bg-slate-900", "bg-cyan-500"];
+const heroFloatingActions = [
+  {
+    key: "insights",
+    icon: FaChartLine,
+    className:
+      "right-0 top-24 h-14 w-14 rounded-2xl bg-blue-600 text-white sm:-right-4",
+  },
+  {
+    key: "search",
+    icon: FaSearch,
+    className:
+      "bottom-8 left-0 h-14 w-14 rounded-full border border-slate-200 bg-white text-blue-600 sm:-left-3 sm:h-16 sm:w-16",
+  },
+];
+
+const cleanText = (value) => String(value || "").trim();
+
+const normalizeAssetUrl = (value) => {
+  const raw = cleanText(value);
+  if (!raw) return "";
+  if (/^(https?:|data:|blob:)/i.test(raw)) return raw;
+  if (raw.startsWith("//")) return `https:${raw}`;
+  if (raw.startsWith("/")) return `${API_ASSET_ORIGIN}${raw}`;
+  if (/^(uploads|assets|images)\//i.test(raw)) {
+    return `${API_ASSET_ORIGIN}/${raw.replace(/^\/+/, "")}`;
+  }
+  return raw;
+};
+
+const getFirstProductImage = (device) => {
+  const imagePool = [
+    device?.image,
+    device?.image_url,
+    device?.imageUrl,
+    device?.product_image,
+    device?.productImage,
+    device?.primary_image,
+    device?.primaryImage,
+    device?.thumbnail,
+    device?.picture,
+    ...(Array.isArray(device?.images) ? device.images : []),
+    ...(Array.isArray(device?.pictures) ? device.pictures : []),
+    ...(Array.isArray(device?.photos) ? device.photos : []),
+  ];
+
+  return normalizeAssetUrl(imagePool.find((entry) => cleanText(entry)));
+};
+
+const formatHeroSpecValue = (value) => {
+  if (value == null) return "";
+  if (typeof value === "number") return String(value);
+  if (typeof value === "boolean") return "";
+  if (typeof value === "string") {
+    const text = value
+      .split("|")[0]
+      .replace(/\s+/g, " ")
+      .trim();
+    if (/^(yes|no|true|false|supported|not supported|n\/a|na)$/i.test(text)) {
+      return "";
+    }
+    return text;
+  }
+  if (Array.isArray(value)) {
+    return formatHeroSpecValue(value.find(Boolean));
+  }
+  if (typeof value === "object") {
+    return formatHeroSpecValue(Object.values(value).find(Boolean));
+  }
+  return "";
+};
+
+const pickHeroSpecValue = (...values) => {
+  for (const value of values) {
+    const text = formatHeroSpecValue(value);
+    if (text) return text.length > 16 ? `${text.slice(0, 15).trim()}...` : text;
+  }
+  return "";
+};
+
+const addHeroUnit = (value, unit) => {
+  if (!value) return "";
+  if (/[a-z]/i.test(value)) return value;
+  return `${value} ${unit}`;
+};
+
+const getHeroSpecHighlights = (device) => {
+  const display = device?.display || device?.specs?.display || {};
+  const camera = device?.camera || device?.specs?.camera || {};
+  const battery = device?.battery || device?.specs?.battery || {};
+  const performance = device?.performance || device?.specs || {};
+
+  const highlights = [
+    {
+      label: "Display",
+      value: addHeroUnit(
+        pickHeroSpecValue(
+          display?.refresh_rate,
+          display?.refreshRate,
+          display?.size,
+          display?.display_size,
+          display?.type,
+          device?.display,
+        ),
+        "Hz",
+      ),
+    },
+    {
+      label: "Camera",
+      value: addHeroUnit(
+        pickHeroSpecValue(
+          camera?.main_camera_megapixels,
+          camera?.main_camera,
+          camera?.primary,
+          camera?.rear_camera,
+          device?.main_camera,
+        ),
+        "MP",
+      ),
+    },
+    {
+      label: "Battery",
+      value: addHeroUnit(
+        pickHeroSpecValue(
+          battery?.capacity,
+          battery?.battery,
+          device?.battery_capacity,
+          device?.battery,
+        ),
+        "mAh",
+      ),
+    },
+    {
+      label: "Chip",
+      value: pickHeroSpecValue(
+        performance?.processor,
+        performance?.chipset,
+        device?.processor,
+        device?.chipset,
+      ),
+    },
+    {
+      label: "Memory",
+      value: pickHeroSpecValue(performance?.ram, device?.ram, performance?.storage),
+    },
+  ].filter((item) => item.value);
+
+  const seenValues = new Set();
+  return highlights
+    .filter((item) => {
+      const key = `${item.label}:${item.value}`.toLowerCase();
+      if (seenValues.has(key)) return false;
+      seenValues.add(key);
+      return true;
+    })
+    .slice(0, 3);
+};
+
+const extractHeroProductRows = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.results)) return payload.results;
+  if (Array.isArray(payload?.products)) return payload.products;
+  if (Array.isArray(payload?.smartphones)) return payload.smartphones;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload?.rows)) return payload.rows;
+  return [];
+};
+
+const normalizeHeroProduct = (device, index) => {
+  const source = device?.product || device?.smartphone || device?.device || {};
+  const product = { ...source, ...device };
+  const score = resolveSmartphoneBadgeScore(product);
+  const roundedScore = Number.isFinite(Number(score))
+    ? String(Math.round(Number(score)))
+    : "";
+  const brand = cleanText(product?.brand_name || product?.brand || "");
+  const model = cleanText(
+    product?.model || product?.name || product?.title || "",
+  );
+
+  return {
+    brand: brand || "Smartphone",
+    model: model || "Featured device",
+    accentClass: heroAccentClasses[index % heroAccentClasses.length],
+    score: roundedScore,
+    specs: getHeroSpecHighlights(product),
+    image: getFirstProductImage(product),
+  };
+};
+
+const buildHeroProducts = (devices) => {
+  const normalized = (Array.isArray(devices) ? devices : [])
+    .map(normalizeHeroProduct)
+    .filter((item) => item.model && item.score && item.image);
+
+  return normalized.length >= 3 ? normalized.slice(0, 3) : fallbackHeroProducts;
+};
+
+const HeroMockup = ({ products = fallbackHeroProducts }) => (
+  <div className="relative mx-auto w-full max-w-2xl overflow-visible">
     <div className="absolute -left-8 top-20 hidden h-24 w-24 rounded-full bg-blue-100/60 blur-3xl sm:block" />
     <div className="absolute -right-8 top-6 hidden h-20 w-20 rounded-full bg-slate-200/70 blur-3xl sm:block" />
 
-    <div className="relative rounded-[32px] border border-slate-200 bg-white p-4 shadow-[0_40px_120px_-60px_rgba(15,23,42,0.55)] sm:p-5">
-      <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-4">
-        <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-          <div className="space-y-2">
-            <div className="h-2.5 w-20 rounded-full bg-slate-200" />
-            <div className="h-2.5 w-32 rounded-full bg-slate-100" />
+    <div className="relative rounded-[32px] bg-white">
+      <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-4 sm:p-5">
+        <div className="flex items-center justify-between gap-4 border-b border-slate-200 pb-4">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+              {heroToolbar.title}
+            </p>
+            <p className="mt-1 text-sm font-semibold text-slate-900">
+              {heroToolbar.subtitle}
+            </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
-            <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
-            <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
+          <div className="flex shrink-0 items-center gap-3">
+            <span className="hidden rounded-full border border-blue-100 bg-white px-3 py-1 text-[11px] font-semibold text-blue-700 sm:inline-flex">
+              {heroToolbar.status}
+            </span>
+            <span className="flex items-center gap-2">
+              {heroToolbarDots.map((dotClass, index) => (
+                <span
+                  key={`${dotClass}-${index}`}
+                  className={`h-2.5 w-2.5 rounded-full ${dotClass}`}
+                />
+              ))}
+            </span>
           </div>
         </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
-          {[
-            {
-              brand: "OnePlus",
-              model: "OnePlus 13",
-              accent: "bg-blue-600",
-            },
-            {
-              brand: "OPPO",
-              model: "Find X9 Ultra",
-              accent: "bg-slate-900",
-            },
-            {
-              brand: "Samsung",
-              model: "Galaxy S25 Ultra",
-              accent: "bg-cyan-500",
-            },
-          ].map((item) => (
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          {products.map((item) => (
             <div
               key={item.model}
-              className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+              className="flex min-h-[8.5rem] flex-col rounded-2xl border border-slate-200 bg-white p-4"
             >
               <div className="flex items-start justify-between gap-3">
-                <div>
+                <div className="min-w-0">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
                     {item.brand}
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">
+                  <p className="mt-1 text-sm font-semibold leading-5 text-slate-900">
                     {item.model}
                   </p>
                 </div>
 
                 <span
-                  className={`h-9 w-9 rounded-2xl ${item.accent} opacity-90 shadow-sm`}
-                />
+                  className={`flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-100 bg-slate-50 ${item.image ? "" : item.accentClass}`}
+                >
+                  {item.image ? (
+                    <img
+                      src={item.image}
+                      alt={`${item.model} product`}
+                      className="h-full w-full object-contain p-1"
+                      loading="lazy"
+                    />
+                  ) : null}
+                </span>
               </div>
 
-              <div className="mt-4 space-y-2">
-                <div className="h-2.5 rounded-full bg-slate-100" />
-                <div className="grid grid-cols-3 gap-2">
-                  <span className="h-2.5 rounded-full bg-slate-100" />
-                  <span className="h-2.5 rounded-full bg-slate-100" />
-                  <span className="h-2.5 rounded-full bg-slate-100" />
+              <div className="mt-auto pt-5">
+                <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                    Spec score
+                  </span>
+                  <span className="rounded-full bg-blue-50 px-2.5 py-1 text-sm font-bold text-blue-700">
+                    {item.score || "--"}
+                  </span>
                 </div>
+                <dl className="mt-3 space-y-2">
+                  {(item.specs.length
+                    ? item.specs
+                    : [
+                        { label: "Specs", value: "Reviewed" },
+                        { label: "Price", value: "Tracked" },
+                      ]
+                  ).map((spec) => (
+                    <div
+                      key={`${item.model}-${spec.label}-${spec.value}`}
+                      className="flex items-center justify-between gap-3 text-xs"
+                    >
+                      <dt className="font-semibold text-slate-400">
+                        {spec.label}
+                      </dt>
+                      <dd className="max-w-[6.5rem] truncate text-right font-semibold text-slate-700">
+                        {spec.value}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
               </div>
             </div>
           ))}
@@ -216,16 +511,18 @@ const HeroMockup = () => (
           {workflow.map((item) => (
             <div
               key={item.step}
-              className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3"
+              className="grid grid-cols-[auto_1fr] gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-4"
             >
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-xs font-bold text-blue-700">
                 {item.step}
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm font-semibold text-slate-900">
                   {item.title}
                 </p>
-                <p className="mt-1 text-sm text-slate-600">{item.text}</p>
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  {item.text}
+                </p>
               </div>
             </div>
           ))}
@@ -233,18 +530,23 @@ const HeroMockup = () => (
       </div>
     </div>
 
-    <div className="absolute -right-4 top-24 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
-      <FaChartLine className="h-5 w-5" />
-    </div>
+    {heroFloatingActions.map((action) => {
+      const Icon = action.icon;
 
-    <div className="absolute -left-3 bottom-10 flex h-16 w-16 items-center justify-center rounded-full border border-slate-200 bg-white text-blue-600 shadow-sm">
-      <FaSearch className="h-7 w-7" />
-    </div>
+      return (
+        <div
+          key={action.key}
+          className={`absolute hidden items-center justify-center sm:flex ${action.className}`}
+        >
+          <Icon className="h-5 w-5" />
+        </div>
+      );
+    })}
   </div>
 );
 
 const StoryVisual = () => (
-  <div className="rounded-[30px] border border-slate-200 bg-white p-4 shadow-[0_35px_100px_-60px_rgba(15,23,42,0.45)] lg:p-5">
+  <div className="rounded-[30px] border border-slate-200 bg-white p-4 lg:p-5">
     <div className="rounded-[26px] border border-slate-200 bg-slate-50 p-4">
       <div className="flex items-center justify-between border-b border-slate-200 pb-3">
         <div className="h-2.5 w-24 rounded-full bg-slate-200" />
@@ -298,6 +600,11 @@ const StoryVisual = () => (
 const About = () => {
   useTitle({ page: "About" });
 
+  const [heroDevices, setHeroDevices] = useState([]);
+  const heroProducts = useMemo(
+    () => buildHeroProducts(heroDevices),
+    [heroDevices],
+  );
   const canonical = `${SITE_ORIGIN}/about`;
   const aboutSchema = createAboutPageSchema({
     name: "About Hooks",
@@ -306,6 +613,42 @@ const About = () => {
     url: canonical,
     organizationName: "Hooks",
   });
+
+  useEffect(() => {
+    let cancelled = false;
+    const controller =
+      typeof AbortController !== "undefined" ? new AbortController() : null;
+
+    const fetchHeroDevices = async () => {
+      for (const endpoint of ABOUT_SMARTPHONE_ENDPOINTS) {
+        try {
+          const response = await fetch(
+            endpoint,
+            controller ? { signal: controller.signal } : undefined,
+          );
+          if (!response.ok) continue;
+
+          const payload = await response.json();
+          const rows = extractHeroProductRows(payload);
+          if (!rows.length) continue;
+
+          if (!cancelled) {
+            setHeroDevices(rows);
+          }
+          break;
+        } catch (error) {
+          if (error?.name === "AbortError") return;
+        }
+      }
+    };
+
+    fetchHeroDevices();
+
+    return () => {
+      cancelled = true;
+      controller?.abort?.();
+    };
+  }, []);
 
   return (
     <>
@@ -354,7 +697,7 @@ const About = () => {
                 <div className="mt-8 flex flex-wrap gap-3">
                 <Link
                   to="/compare"
-                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(37,99,235,0.18)] transition-colors duration-200 hover:bg-blue-700"
+                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-blue-700"
                 >
                   Compare Devices
                   <FaArrowRight className="h-3.5 w-3.5" />
@@ -369,7 +712,7 @@ const About = () => {
                 </div>
               </div>
 
-              <HeroMockup />
+              <HeroMockup products={heroProducts} />
             </div>
 
             <div className="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -379,9 +722,9 @@ const About = () => {
                 return (
                   <div
                     key={item.label}
-                    className="rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-sm"
+                    className="rounded-2xl border border-slate-200 bg-slate-50 p-5"
                   >
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-blue-700 shadow-sm">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-blue-700">
                       <Icon className="h-5 w-5" />
                     </div>
                     <p className="mt-4 text-2xl font-bold text-slate-900">
@@ -420,7 +763,7 @@ const About = () => {
                 return (
                   <div
                     key={item.title}
-                    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+                    className="rounded-2xl border border-slate-200 bg-white p-6"
                   >
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
                       <Icon className="h-5 w-5" />
@@ -457,7 +800,7 @@ const About = () => {
                 <div className="mt-8 flex flex-wrap gap-3">
                 <Link
                   to="/compare"
-                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(37,99,235,0.16)] transition-colors duration-200 hover:bg-blue-700"
+                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-blue-700"
                 >
                   Compare Devices
                   <FaArrowRight className="h-3.5 w-3.5" />
@@ -479,9 +822,9 @@ const About = () => {
                   return (
                     <div
                       key={item.title}
-                      className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm transition-transform duration-200 hover:-translate-y-0.5"
+                      className="rounded-2xl border border-slate-200 bg-slate-50 p-6 transition-transform duration-200 hover:-translate-y-0.5"
                     >
-                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-900 shadow-sm">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-900">
                         <Icon className="h-5 w-5 text-blue-700" />
                       </div>
                       <h3 className="mt-5 text-lg font-semibold text-slate-900">
@@ -523,7 +866,7 @@ const About = () => {
                 <div className="mt-8 flex flex-wrap gap-3">
                 <Link
                   to="/careers"
-                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(37,99,235,0.18)] transition-colors duration-200 hover:bg-blue-700"
+                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-blue-700"
                 >
                   Join the team
                   <FaArrowRight className="h-3.5 w-3.5" />
@@ -563,9 +906,9 @@ const About = () => {
               {team.map((member) => (
                 <div
                   key={member.title}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-center shadow-sm"
+                  className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-center"
                 >
-                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-bold tracking-[0.22em] text-blue-700 shadow-sm">
+                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-bold tracking-[0.22em] text-blue-700">
                     {member.initials}
                   </div>
                   <h3 className="mt-4 text-sm font-semibold text-slate-900">
@@ -577,12 +920,58 @@ const About = () => {
                 </div>
               ))}
             </div>
+
+            <div className="mt-10 rounded-[28px] border border-slate-200 bg-slate-50 p-5 sm:p-6">
+              <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-700">
+                    Business and news
+                  </p>
+                  <h3 className="mt-2 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+                    Reach Hooks for partnerships and editorial updates.
+                  </h3>
+                  <p className="mt-3 text-sm leading-7 text-slate-600">
+                    These inboxes are for business conversations, launch
+                    material, press notes, and editorial leads.
+                  </p>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {aboutMailChannels.map((channel) => {
+                    const Icon = aboutMailIcons[channel.key] || FaBookOpen;
+
+                    return (
+                      <a
+                        key={channel.key}
+                        href={`mailto:${channel.email}`}
+                        className="group flex min-h-[112px] items-start gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-4 transition-colors duration-200 hover:border-blue-200 hover:bg-blue-50/40"
+                      >
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 transition-colors duration-200 group-hover:bg-blue-600 group-hover:text-white">
+                          <Icon className="h-4 w-4" />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-sm font-semibold text-slate-900">
+                            {channel.name}
+                          </span>
+                          <span className="mt-1 block break-all text-sm font-semibold text-blue-700">
+                            {channel.email}
+                          </span>
+                          <span className="mt-2 block text-xs leading-5 text-slate-500">
+                            {aboutMailNotes[channel.key]}
+                          </span>
+                        </span>
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
         <section className="bg-slate-50">
           <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-16">
-            <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
+            <div className="rounded-[32px] border border-slate-200 bg-white p-6 lg:p-8">
               <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-700">
@@ -607,14 +996,14 @@ const About = () => {
                 </div>
 
                 <div className="flex items-center justify-center">
-                  <div className="relative w-full max-w-md rounded-[30px] border border-slate-200 bg-slate-50 p-8 shadow-sm">
+                  <div className="relative w-full max-w-md rounded-[30px] border border-slate-200 bg-slate-50 p-8">
                     <div className="absolute left-6 top-6 h-3 w-3 rounded-full bg-blue-200/70" />
                     <div className="absolute right-8 top-10 h-2.5 w-2.5 rounded-full bg-slate-300/80" />
                     <div className="absolute bottom-8 left-12 h-2 w-2 rounded-full bg-blue-200/60" />
 
                     <div className="flex min-h-[18rem] items-center justify-center rounded-[26px] border border-dashed border-slate-300 bg-white p-6">
                       <div className="text-center">
-                        <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-blue-50 text-blue-700 shadow-sm">
+                        <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-blue-50 text-blue-700">
                           <FaShieldAlt className="h-11 w-11" />
                         </div>
                         <p className="mt-5 text-sm font-semibold uppercase tracking-[0.22em] text-blue-700">
@@ -627,44 +1016,6 @@ const About = () => {
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="bg-slate-50">
-          <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
-            <div className="rounded-[32px] bg-slate-950 px-6 py-8 text-white shadow-[0_30px_80px_-40px_rgba(15,23,42,0.55)] sm:px-8 sm:py-10">
-              <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-300">
-                    Next step
-                  </p>
-                  <h2 className="mt-2 text-2xl font-semibold sm:text-3xl">
-                    Ready to compare your next device?
-                  </h2>
-                  <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
-                    Explore smartphones, laptops, TVs, and networking products
-                    with a cleaner comparison flow and transparent information.
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap gap-3">
-                  <Link
-                    to="/compare"
-                    className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(37,99,235,0.18)] transition-colors duration-200 hover:bg-blue-700"
-                  >
-                    Compare Devices
-                    <FaArrowRight className="h-3.5 w-3.5" />
-                  </Link>
-                  <Link
-                    to="/smartphones"
-                    className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-blue-500/20"
-                  >
-                    Browse Smartphones
-                    <FaArrowRight className="h-3.5 w-3.5" />
-                  </Link>
                 </div>
               </div>
             </div>
