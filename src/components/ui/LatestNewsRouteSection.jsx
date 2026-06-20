@@ -180,8 +180,13 @@ const LatestNewsRouteSection = ({
                       <span className="truncate pr-2 font-medium">
                         {story.author || "By Hooks"}
                       </span>
-                      <span className="whitespace-nowrap opacity-90">
-                        {story.publishedAt}
+                      <span className="whitespace-nowrap text-right opacity-90">
+                        <span className="block">{story.publishedAt}</span>
+                        {story.updatedAt && story.updatedAt !== story.publishedAt ? (
+                          <span className="block opacity-75">
+                            Updated {story.updatedAt}
+                          </span>
+                        ) : null}
                       </span>
                     </div>
                   </div>
@@ -230,8 +235,13 @@ const LatestNewsRouteSection = ({
                     <span className="truncate pr-2 font-medium">
                       {story.author || "By Hooks"}
                     </span>
-                    <span className="whitespace-nowrap opacity-90">
-                      {story.publishedAt}
+                    <span className="whitespace-nowrap text-right opacity-90">
+                      <span className="block">{story.publishedAt}</span>
+                      {story.updatedAt && story.updatedAt !== story.publishedAt ? (
+                        <span className="block opacity-75">
+                          Updated {story.updatedAt}
+                        </span>
+                      ) : null}
                     </span>
                   </div>
                 </div>

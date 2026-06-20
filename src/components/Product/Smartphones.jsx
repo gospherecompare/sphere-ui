@@ -5216,9 +5216,19 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
               />
             ) : null}
 
-            <MobilePhoneHighlights devices={baseDevices} className="mt-6" />
-
             <LatestNewsRouteSection className="mt-6" />
+
+            <MobilePhoneHighlights
+              devices={baseDevices}
+              className="mt-6"
+              context={
+                isUpcomingView
+                  ? "upcoming"
+                  : isNewFilterPath
+                    ? "latest"
+                    : "default"
+              }
+            />
 
             <MobileSortSheet
               open={showSort}

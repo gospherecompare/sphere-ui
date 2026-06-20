@@ -16,10 +16,12 @@ const NewsArticleCard = ({
     image = "",
     author = "Hooks Editorial",
     publishedAt = "",
+    updatedAt = "",
     label = "News",
     slug = "",
   } = article;
   const storyPath = createNewsStoryPath(slug);
+  const showUpdatedAt = updatedAt && updatedAt !== publishedAt;
 
   if (featured) {
     return (
@@ -53,7 +55,7 @@ const NewsArticleCard = ({
           </h2>
 
           <div className="mt-6 flex items-center justify-between">
-            <div className="flex items-center gap-4 text-xs text-slate-300">
+            <div className="flex flex-wrap items-center gap-4 text-xs text-slate-300">
               {author && (
                 <span className="flex items-center gap-2">
                   <FaUser className="h-3 w-3" />
@@ -64,6 +66,12 @@ const NewsArticleCard = ({
                 <span className="flex items-center gap-2">
                   <FaClock className="h-3 w-3" />
                   {publishedAt}
+                </span>
+              )}
+              {showUpdatedAt && (
+                <span className="flex items-center gap-2">
+                  <FaClock className="h-3 w-3" />
+                  Updated {updatedAt}
                 </span>
               )}
             </div>
@@ -114,7 +122,7 @@ const NewsArticleCard = ({
 
         {/* Meta Info */}
         <div
-          className={`mt-3 flex items-center gap-3 border-t border-slate-100 pt-3 text-slate-500 ${
+          className={`mt-3 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-3 text-slate-500 ${
             compact ? "text-xs" : "text-xs"
           }`}
         >
@@ -128,6 +136,12 @@ const NewsArticleCard = ({
             <span className="flex items-center gap-1">
               <FaClock className="h-3 w-3" />
               {publishedAt}
+            </span>
+          )}
+          {showUpdatedAt && (
+            <span className="flex items-center gap-1">
+              <FaClock className="h-3 w-3" />
+              Updated {updatedAt}
             </span>
           )}
         </div>

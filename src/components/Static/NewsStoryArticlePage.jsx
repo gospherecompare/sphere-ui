@@ -49,6 +49,12 @@ const parseStoryDate = (story) => {
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
+const parseStoryUpdatedDate = (story) => {
+  const raw = story?.updatedIso || story?.updatedAt;
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
 const stripMarkup = (value) =>
   decodeTextEntities(
     String(value || "")
@@ -177,6 +183,21 @@ const formatAbsoluteDate = (story) => {
   const date = parseStoryDate(story);
   if (!date) return story?.publishedAt || "Recent update";
   return DATE_FORMATTER.format(date);
+};
+
+const formatUpdatedDate = (story) => {
+  const updatedDate = parseStoryUpdatedDate(story);
+  if (!updatedDate) return "";
+
+  const publishedDate = parseStoryDate(story);
+  if (
+    publishedDate &&
+    Math.abs(updatedDate.getTime() - publishedDate.getTime()) < 60 * 1000
+  ) {
+    return "";
+  }
+
+  return DATE_FORMATTER.format(updatedDate);
 };
 
 const formatImageCredit = (story) => {
@@ -904,6 +925,7 @@ const NewsStoryArticlePage = () => {
   const storyAuthor =
     String(story?.author || "Hooks newsroom").trim() || "Hooks newsroom";
   const imageCredit = formatImageCredit(story);
+  const updatedDateLabel = formatUpdatedDate(story);
   const articleHeadings = useMemo(
     () => extractArticleHeadings(articleHtml),
     [articleHtml],
@@ -1178,6 +1200,11 @@ const NewsStoryArticlePage = () => {
                     <span className="inline-flex items-center">
                       Published {formatAbsoluteDate(story)}
                     </span>
+                    {updatedDateLabel ? (
+                      <span className="inline-flex items-center">
+                        Updated {updatedDateLabel}
+                      </span>
+                    ) : null}
                     {imageCredit ? (
                       <span className="basis-full text-[#7d8898] sm:ml-auto sm:basis-auto">
                         Photo: {imageCredit}

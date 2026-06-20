@@ -402,6 +402,19 @@ const formatDateLabel = (value) => {
   }).format(date);
 };
 
+const formatImageCreditLabel = (caption, source) => {
+  const raw = safeText(caption) || safeText(source);
+  if (!raw || /^(asset|url|hooks newsroom)$/i.test(raw)) return "";
+  if (/^https?:\/\//i.test(raw)) {
+    try {
+      return new URL(raw).hostname.replace(/^www\./i, "");
+    } catch {
+      return "";
+    }
+  }
+  return raw;
+};
+
 const estimateReadTime = (value) => {
   const words = stripMarkup(value)
     .split(/\s+/)
@@ -619,6 +632,8 @@ const normalizeBlogStory = (blog) => {
   );
   const publishedIso = safeText(blog.published_at) || safeText(blog.updated_at);
   const updatedIso = safeText(blog.updated_at) || publishedIso;
+  const publishedDateLabel = formatDateLabel(publishedIso || updatedIso);
+  const updatedDateLabel = formatDateLabel(updatedIso || publishedIso);
   const fallbackAuthor = CATEGORY_AUTHORS[category] || CATEGORY_AUTHORS.news;
   const author = authorName
     ? {
@@ -635,6 +650,9 @@ const normalizeBlogStory = (blog) => {
         brandName: blog.brand_name,
         productType: blog.product_type,
       });
+  const heroImageSource = safeText(blog.hero_image_source);
+  const heroImageCaption = safeText(blog.hero_image_caption);
+  const imageCredit = formatImageCreditLabel(heroImageCaption, heroImageSource);
 
   return {
     id: Number(blog.id) || slug,
@@ -650,7 +668,10 @@ const normalizeBlogStory = (blog) => {
     label: CATEGORY_LABELS[category] || CATEGORY_LABELS.news,
     title,
     summary,
-    publishedAt: formatDateLabel(publishedIso || updatedIso),
+    publishedAt: publishedDateLabel,
+    updatedAt: updatedDateLabel,
+    publishedLabel: `Published ${publishedDateLabel}`,
+    updatedLabel: `Updated ${updatedDateLabel}`,
     publishedIso: publishedIso || new Date().toISOString(),
     updatedIso: updatedIso || publishedIso || new Date().toISOString(),
     readTime: estimateReadTime(articleHtml || summarySource),
@@ -665,9 +686,11 @@ const normalizeBlogStory = (blog) => {
     body: body.length ? body : [summary],
     contentHtml: articleHtml,
     image: image || DEFAULT_STORY_IMAGE,
-    heroImageSource: safeText(blog.hero_image_source),
+    heroImageSource,
     heroImageAlt: safeText(blog.hero_image_alt) || title,
-    heroImageCaption: safeText(blog.hero_image_caption),
+    heroImageCaption,
+    imageCredit,
+    credit: imageCredit,
     tags: parseBlogTags(blog.tags),
     featured: Boolean(blog.featured),
     trending: Boolean(blog.trending),

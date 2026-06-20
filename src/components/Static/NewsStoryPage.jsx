@@ -70,6 +70,27 @@ const formatRelativeTime = (story) => {
 const formatPublishedLabel = (story) =>
   `Published ${formatRelativeTime(story)}`;
 
+const parseStoryUpdatedDate = (story) => {
+  const raw = story?.updatedIso || story?.updatedAt;
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const formatUpdatedLabel = (story) => {
+  const updatedDate = parseStoryUpdatedDate(story);
+  if (!updatedDate) return "";
+
+  const publishedDate = parseStoryDate(story);
+  if (
+    publishedDate &&
+    Math.abs(updatedDate.getTime() - publishedDate.getTime()) < 60 * 1000
+  ) {
+    return "";
+  }
+
+  return `Updated ${DATE_FORMATTER.format(updatedDate)}`;
+};
+
 const getInitials = (name = "") => {
   const parts = String(name).trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return "HK";
@@ -89,7 +110,7 @@ const NewsStoryMedia = ({ story, className = "" }) => {
       {!imageError && story?.image ? (
         <img
           src={story.image}
-          alt={story.title}
+          alt={story.heroImageAlt || story.title}
           className="h-full w-full object-cover"
           loading="lazy"
           onError={() => setImageError(true)}
@@ -373,6 +394,8 @@ const NewsStoryPage = () => {
   }, [feedStoriesOrdered, relatedStories, story?.slug]);
 
   const heroTimeLabel = formatPublishedLabel(story);
+  const heroUpdatedLabel = formatUpdatedLabel(story);
+  const imageCredit = story?.imageCredit || story?.credit || "";
   const articleParagraphs =
     Array.isArray(story?.body) && story.body.length
       ? story.body
@@ -511,6 +534,9 @@ const NewsStoryPage = () => {
                       </span>
                     </p>
                     <p className="text-sm text-white/65">{heroTimeLabel}</p>
+                    {heroUpdatedLabel ? (
+                      <p className="text-sm text-white/55">{heroUpdatedLabel}</p>
+                    ) : null}
                   </div>
                 </div>
 
@@ -527,6 +553,11 @@ const NewsStoryPage = () => {
                 story={story}
                 className="aspect-[4/3] rounded-[30px]"
               />
+              {imageCredit ? (
+                <p className="mt-3 text-center text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  Photo: {imageCredit}
+                </p>
+              ) : null}
             </div>
           </div>
         </section>
