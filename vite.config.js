@@ -134,9 +134,28 @@ const LAPTOP_BUDGET_ROUTE_PATHS = new Set(
     buildLaptopListingPath({ budget }),
   ),
 );
+const NEWS_TAXONOMY_ROUTE_PATHS = [
+  "/news/technology",
+  "/news/technology/ai",
+  "/news/technology/smartphones",
+  "/news/technology/chips",
+  "/news/technology/laptops",
+  "/news/technology/software",
+  "/news/consumer-tech",
+  "/news/consumer-tech/apps",
+  "/news/consumer-tech/internet",
+  "/news/science",
+  "/news/science/space",
+  "/news/science/renewable-energy",
+  "/news/science/health-technology",
+  "/news/sports-technology",
+  "/news/sports-technology/wearables",
+  "/news/sports-technology/sports-science",
+];
 const PRELOAD_CANONICAL_PATHS = new Set([
   "/",
   "/news",
+  ...NEWS_TAXONOMY_ROUTE_PATHS,
   "/popular-comparisons",
   "/smartphones",
   "/smartphones/upcoming",
@@ -181,6 +200,7 @@ const PRELOAD_API_ENDPOINTS = [
   `${API_BASE_URL}/public/blogs?limit=18`,
   `${API_BASE_URL}/public/blogs?limit=24`,
   `${API_BASE_URL}/public/blogs?limit=36`,
+  `${API_BASE_URL}/public/blogs?limit=50`,
   `${API_BASE_URL}/public/trending/smartphones?limit=15`,
   `${API_BASE_URL}/public/trending/smartphones?limit=25`,
   `${API_BASE_URL}/public/trending/smartphones?limit=120`,
@@ -226,6 +246,7 @@ let publishedCompareRouteMeta = new Map();
 const STATIC_PRERENDER_ROUTES = [
   "/",
   "/news",
+  ...NEWS_TAXONOMY_ROUTE_PATHS,
   "/smartphones",
   "/smartphones/upcoming",
   ...SMARTPHONE_FILTER_ROUTE_PATHS,
@@ -944,6 +965,10 @@ const fetchRouteSpecificPreloadedPayload = async (
     return fetchPayloadForEndpoints(endpoints);
   }
 
+  if (NEWS_TAXONOMY_ROUTE_PATHS.includes(canonicalPath)) {
+    return fetchPayloadForEndpoints([`${API_BASE_URL}/public/blogs?limit=50`]);
+  }
+
   const newsSlug = getSingleSegmentRouteTail(canonicalPath, "/news");
   if (newsSlug) {
     return fetchPayloadForEndpoints([
@@ -1400,6 +1425,10 @@ const filterValidPrerenderRoutes = async (routes = []) => {
         return publishedCompareRouteMeta.has(routePath) ? routePath : null;
       }
 
+      if (NEWS_TAXONOMY_ROUTE_PATHS.includes(routePath)) {
+        return routePath;
+      }
+
       const newsSlug = getSingleSegmentRouteTail(routePath, "/news");
       if (!newsSlug) return routePath;
 
@@ -1756,12 +1785,44 @@ const resolveSeo = (routePath) => {
       keywords: `trending smartphones india, trending laptops india, trending tvs india, trending phone in india, most popular mobiles, top selling gadgets india, new launch and trending devices, latest smartphones in india ${CURRENT_YEAR}`,
     },
     {
+      test: (p) => p.startsWith("/news/technology"),
+      title: "Technology News - AI, Smartphones, Chips & Software | Hooks",
+      description:
+        "Read technology news on AI, smartphones, chips, laptops, software, cybersecurity, robotics, and product launches from Hooks.",
+      keywords:
+        "technology news, ai news, smartphone news, chip news, semiconductor news, laptop news, software updates, cybersecurity news",
+    },
+    {
+      test: (p) => p.startsWith("/news/consumer-tech"),
+      title: "Consumer Tech News - Apps, Internet & Cloud Services | Hooks",
+      description:
+        "Track consumer technology updates across WhatsApp, Google, YouTube, apps, internet services, broadband, and cloud platforms.",
+      keywords:
+        "consumer tech news, app updates, whatsapp features, google updates, youtube changes, internet news, cloud services",
+    },
+    {
+      test: (p) => p.startsWith("/news/science"),
+      title: "Science & Space News - Missions, Quantum & Energy | Hooks",
+      description:
+        "Follow science and space news with a technology lens, including NASA, ISRO, quantum computing, health technology, and renewable energy.",
+      keywords:
+        "science news, space news, nasa news, isro news, quantum computing, renewable energy news, health technology",
+    },
+    {
+      test: (p) => p.startsWith("/news/sports-technology"),
+      title: "Sports Technology News - AI, Wearables & Sports Science | Hooks",
+      description:
+        "Explore sports technology news covering AI officiating, VAR, smart wearables, athlete analytics, and sports science.",
+      keywords:
+        "sports technology news, ai in sports, var technology, sports wearables, sports science, performance analytics",
+    },
+    {
       test: (p) => p === "/news",
       title: "News & Articles | Hooks",
       description:
-        "Latest mobile news, gadget updates, launch stories, and practical guides from the Hooks newsroom.",
+        "Technology news, product launches, science updates, consumer tech, sports technology, and practical guides from the Hooks newsroom.",
       keywords:
-        "news and articles, latest mobile news, gadget updates, launch stories, practical guides, hooks newsroom",
+        "technology news, latest mobile news, science news, consumer tech news, sports technology, launch stories, practical guides, hooks newsroom",
     },
     {
       test: (p) => p.startsWith("/careers"),

@@ -3814,7 +3814,7 @@ const TVs = () => {
         <LatestNewsRouteSection
           className="mt-6"
           productType="tv"
-          subtitle="Fresh TV launches, display technology updates, and buying context from the Hooks newsroom."
+          subtitle="Fresh TV launches, display technology updates, and buying context from the Hooks news desk."
         />
 
         <ProductDiscoverySections

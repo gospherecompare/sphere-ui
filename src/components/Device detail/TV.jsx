@@ -3246,7 +3246,7 @@ const TVDetailCard = () => {
           <LatestNewsRouteSection
             className="mt-6"
             productType="tv"
-            subtitle="Fresh TV launches, display technology updates, and buying context from the Hooks newsroom."
+            subtitle="Fresh TV launches, display technology updates, and buying context from the Hooks news desk."
           />
 
           <div className="mt-6 p-0 sm:p-2">{renderTabContent()}</div>

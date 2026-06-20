@@ -1555,7 +1555,7 @@ const Header = () => {
       name: "Trending Mobiles",
       link: toCanonicalPagePath("/trending/smartphones"),
     },
-    { name: "News & Articles", link: toCanonicalPagePath("/news") },
+    { name: "News", link: toCanonicalPagePath("/news") },
     { name: "Phone Finder", link: "/" },
   ];
   const categoryShortcutLinks = [
@@ -1645,7 +1645,7 @@ const Header = () => {
       "Upcoming Mobiles",
       "Latest Mobiles",
       "Trending Mobiles",
-      "News & Articles",
+      "News",
     ].includes(link.name),
   );
 
@@ -1673,7 +1673,7 @@ const Header = () => {
   ].filter((item) => item.category);
 
   const primaryActionLinks = directLinks.filter((link) =>
-    ["Compare", "News & Articles"].includes(link.name),
+    ["Compare", "News"].includes(link.name),
   );
 
   const secondaryFeatureLinks = [
@@ -2944,7 +2944,7 @@ const Header = () => {
       { id: "finder", title: "Phone Finder", kind: "link", href: "/" },
       {
         id: "news",
-        title: "News & Articles",
+        title: "News",
         kind: "link",
         href: toCanonicalPagePath("/news"),
       },

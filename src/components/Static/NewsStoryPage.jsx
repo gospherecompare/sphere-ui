@@ -412,7 +412,7 @@ const NewsStoryPage = () => {
     .filter(Boolean)
     .filter((value, index, list) => list.indexOf(value) === index)
     .slice(0, 3);
-  const sourceLabel = story?.authorRole || story?.author || "Hooks newsroom";
+  const sourceLabel = story?.authorRole || story?.author || "Hooks editorial";
   const canonicalUrl = canonical;
 
   const schema = story
@@ -481,7 +481,7 @@ const NewsStoryPage = () => {
               Story could not be loaded.
             </p>
             <p className="mt-2 text-sm text-slate-600">
-              {error || "The newsroom story is unavailable right now."}
+              {error || "The editorial story is unavailable right now."}
             </p>
           </div>
         </section>
@@ -615,13 +615,13 @@ const NewsStoryPage = () => {
                         {story.author}
                       </p>
                       <p className="mt-1 text-sm text-white/65">
-                        {story.authorRole || "News Editor"}
+                        {story.authorRole || "Editor"}
                       </p>
                     </div>
                   </div>
                   <div className="h-px bg-gradient-to-r from-orange-400 via-fuchsia-500 to-cyan-400" />
                   <div className="p-5 text-sm leading-7 text-white/75">
-                    Hooks newsroom coverage focused on launch watch, mobile
+                    Hooks editorial coverage focused on launch watch, mobile
                     updates, and clearer reading flow.
                   </div>
                   <div className="px-5 pb-5">
@@ -663,7 +663,7 @@ const NewsStoryPage = () => {
               <section className="mt-14">
                 <SectionTitle
                   title="Recommended For You"
-                  subtitle="More related reading from the newsroom."
+                  subtitle="More related reading from the news desk."
                 />
 
                 <div className="mt-8 divide-y divide-slate-200">

@@ -29,7 +29,7 @@ const NewsImage = ({ story }) => {
     <div className="flex h-full w-full items-center justify-center bg-blue-50 px-4 text-center">
       <div>
         <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-blue-600">
-          {story?.label || "Newsroom"}
+          {story?.label || "News"}
         </p>
         <p className="mt-2 line-clamp-3 text-sm font-semibold leading-5 text-slate-900">
           {story?.title || "Latest update"}
@@ -42,8 +42,8 @@ const NewsImage = ({ story }) => {
 const LatestNewsRouteSection = ({
   className = "",
   limit = 4,
-  title = "Latest News & Articles",
-  subtitle = "Fresh mobile launches, product updates, and buying context from the Hooks newsroom.",
+  title = "Latest News",
+  subtitle = "Fresh mobile launches, product updates, and buying context from the Hooks news desk.",
   productType = "",
 }) => {
   const { stories, loading, error } = usePublicNewsFeed({ limit, productType });
@@ -108,7 +108,7 @@ const LatestNewsRouteSection = ({
       <div className="mb-4 flex flex-col items-start justify-between gap-3 sm:mb-6 sm:flex-row sm:items-center sm:gap-4">
         <div className="min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-[0.34em] text-purple-700 sm:text-[11px]">
-            Latest News
+            Latest Updates
           </p>
           <h2 className="mt-1 text-base font-semibold tracking-tight text-slate-900 sm:mt-2 sm:text-lg md:text-xl">
             {title}

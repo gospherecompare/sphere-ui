@@ -18,7 +18,6 @@ import About from "./components/Static/About";
 import Careers from "./components/Static/Careers";
 import Contact from "./components/Static/Contact";
 import NewsArticlesPage from "./components/Static/NewsArticlesPage";
-import NewsStoryPage from "./components/Static/NewsStoryArticlePage";
 import PrivacyPolicy from "./components/Static/PrivacyPolicy.jsx";
 import Terms from "./components/Static/Terms.jsx";
 import NotFound from "./components/Static/NotFound";
@@ -294,11 +293,11 @@ const resolveSeoMeta = (pathname) => {
     {
       test: (p) => p.startsWith("/news"),
       title:
-        "News & Articles - Latest Mobile News, Gadget Guides & Launch Updates - Hooks",
+        "News - Mobile Coverage, Gadget Guides & Launch Updates - Hooks",
       description:
-        "Browse the latest mobile news, gadget updates, launch coverage, and editorial guides on Hooks.",
+        "Browse the latest mobile coverage, gadget updates, launch coverage, and editorial guides on Hooks.",
       keywords:
-        "news and articles, mobile news, gadget news, launch updates, tech guides, latest gadgets india, smartphone news india",
+        "stories and updates, mobile coverage, gadget updates, launch updates, tech guides, latest gadgets india, smartphone coverage india",
     },
     {
       test: (p) => p === "/",
@@ -938,8 +937,8 @@ function App() {
           <Route path="/careers" element={<Careers />} />
           <Route path="/career" element={<Navigate to="/careers" replace />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="/news/:slug" element={<NewsStoryPage />} />
           <Route path="/news" element={<NewsArticlesPage />} />
+          <Route path="/news/:slug/*" element={<NewsArticlesPage />} />
           <Route path="/articles" element={<NewsRedirect />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<Terms />} />

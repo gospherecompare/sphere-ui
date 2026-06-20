@@ -2642,7 +2642,7 @@ const Laptops = () => {
           <LatestNewsRouteSection
             className="mt-6"
             productType="laptop"
-            subtitle="Fresh laptop launches, processor updates, and buying context from the Hooks newsroom."
+            subtitle="Fresh laptop launches, processor updates, and buying context from the Hooks news desk."
           />
 
           <ProductDiscoverySections

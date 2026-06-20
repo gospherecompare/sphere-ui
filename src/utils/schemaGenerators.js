@@ -258,7 +258,7 @@ export const createNewsArticleSchema = ({
   imageAlt = "",
   datePublished,
   dateModified = null,
-  authorName = "Hooks Editorial",
+  authorName = "Hooks News",
   publisherName = "Hooks",
   articleSection = "",
   keywords = [],

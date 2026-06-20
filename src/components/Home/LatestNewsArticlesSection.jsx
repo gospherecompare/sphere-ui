@@ -32,7 +32,7 @@ const NewsStoryMedia = ({
         <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_20%_18%,rgba(34,211,238,0.16),transparent_38%),radial-gradient(circle_at_82%_84%,rgba(217,70,239,0.16),transparent_42%),#071024] p-5 text-center">
           <div className="max-w-md">
             <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100/70">
-              {story?.label || "Newsroom"}
+              {story?.label || "News"}
             </p>
             <h3 className="mt-3 text-base font-black leading-tight tracking-tight text-white sm:text-lg">
               {story?.title}
@@ -55,7 +55,7 @@ const buildStoryExcerpt = (story) => {
     .replace(/\s+/g, " ")
     .trim();
 
-  if (!rawText) return "Tap into the full story from the Hooks newsroom.";
+  if (!rawText) return "Tap into the full story from the Hooks news desk.";
   if (rawText.length <= 150) return rawText;
   return `${rawText.slice(0, 147).trim()}...`;
 };
@@ -226,17 +226,17 @@ const LatestNewsArticlesSection = () => {
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
               <p className="inline-flex rounded-md border border-cyan-200/20 bg-cyan-300/10 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.24em] text-cyan-100">
-                Latest News
+                Latest Updates
               </p>
               <h2 className="mt-5 max-w-4xl text-[2.45rem] font-black leading-[0.98] tracking-[-0.05em] text-white sm:text-5xl sm:leading-[1.02] lg:text-6xl">
-                News cards that stay sharp,
+                Story cards that stay sharp,
                 <span className="block bg-gradient-to-r from-sky-200 via-white to-fuchsia-200 bg-clip-text text-transparent">
                   swipe cleanly, and feel made for mobile.
                 </span>
               </h2>
               <p className="mt-5 max-w-2xl text-sm font-semibold leading-6 text-cyan-50/72 sm:text-base sm:leading-7">
                 Fresh launches, quick context, and product updates from the
-                Hooks newsroom with a cleaner image-first layout.
+                Hooks news desk with a cleaner image-first layout.
               </p>
             </div>
 
@@ -265,7 +265,7 @@ const LatestNewsArticlesSection = () => {
 
           {!loading && error && !leadStory ? (
             <div className="mt-6 rounded-lg border border-red-300/20 bg-red-500/10 p-6 text-red-50 shadow-[0_18px_54px_rgba(2,6,23,0.18)] sm:p-8">
-              <p className="font-semibold text-white">Unable to load news</p>
+              <p className="font-semibold text-white">Unable to load stories</p>
               <p className="mt-2 text-sm text-red-100/75">{error}</p>
             </div>
           ) : null}
@@ -276,7 +276,7 @@ const LatestNewsArticlesSection = () => {
                 No stories published yet
               </p>
               <p className="mt-2 text-cyan-50/70">
-                Check back soon for the latest news and articles.
+                Check back soon for the latest stories and updates.
               </p>
             </div>
           ) : null}
@@ -310,7 +310,7 @@ const LatestNewsArticlesSection = () => {
                       <div className="absolute inset-x-0 bottom-0 p-4 text-white">
                         <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/75">
                           <span className="truncate">
-                            {story.label || "Newsroom"}
+                            {story.label || "News"}
                           </span>
                           <span className="h-1 w-1 rounded-full bg-white/60" />
                           <span className="truncate">{story.publishedAt}</span>
@@ -380,7 +380,7 @@ const LatestNewsArticlesSection = () => {
                       Story 01
                     </span>
                     <span className="text-cyan-100">
-                      {leadStory.label || "Newsroom"}
+                      {leadStory.label || "News"}
                     </span>
                     <span>{leadStory.publishedAt}</span>
                   </div>
@@ -429,7 +429,7 @@ const LatestNewsArticlesSection = () => {
                               Story {String(index + 2).padStart(2, "0")}
                             </span>
                             <span className="truncate text-cyan-100">
-                              {story.label || "Newsroom"}
+                              {story.label || "News"}
                             </span>
                             <span className="h-1 w-1 rounded-full bg-cyan-100/38" />
                             <span className="truncate">

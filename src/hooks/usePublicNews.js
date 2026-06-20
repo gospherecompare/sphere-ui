@@ -12,8 +12,29 @@ const API_BASE = (() => {
 const DEFAULT_STORY_IMAGE = "/hook-logo.png";
 
 const CATEGORY_LABELS = {
-  news: "Newsroom",
+  news: "News",
+  technology: "Technology",
+  ai: "AI",
+  smartphones: "Smartphones",
   mobiles: "Mobile update",
+  chips: "Chips",
+  laptops: "Laptops",
+  software: "Software",
+  cybersecurity: "Cybersecurity",
+  "ev-tech": "EV Tech",
+  robotics: "Robotics",
+  "consumer-tech": "Consumer Tech",
+  apps: "Apps",
+  internet: "Internet",
+  "cloud-services": "Cloud Services",
+  science: "Science",
+  space: "Space",
+  "health-tech": "Health Technology",
+  "renewable-energy": "Renewable Energy",
+  "quantum-computing": "Quantum Computing",
+  "sports-technology": "Sports Technology",
+  wearables: "Wearables",
+  "sports-science": "Sports Science",
   gadgets: "Gadget update",
   guides: "Guide deck",
   launches: "Launch tracker",
@@ -21,10 +42,51 @@ const CATEGORY_LABELS = {
 
 const CATEGORY_AUTHORS = {
   news: { name: "Hooks news", role: "News desk" },
+  technology: { name: "Hooks tech", role: "Technology desk" },
+  ai: { name: "Hooks AI", role: "AI desk" },
+  smartphones: { name: "Hooks mobile", role: "Mobile editor" },
   mobiles: { name: "Hooks mobile", role: "Mobile editor" },
+  chips: { name: "Hooks silicon", role: "Chip desk" },
+  laptops: { name: "Hooks computing", role: "Computing desk" },
+  software: { name: "Hooks software", role: "Software desk" },
+  cybersecurity: { name: "Hooks security", role: "Cybersecurity desk" },
+  "ev-tech": { name: "Hooks mobility", role: "EV technology desk" },
+  robotics: { name: "Hooks robotics", role: "Robotics desk" },
+  "consumer-tech": { name: "Hooks consumer tech", role: "Consumer tech desk" },
+  apps: { name: "Hooks apps", role: "Apps desk" },
+  internet: { name: "Hooks internet", role: "Internet desk" },
+  "cloud-services": { name: "Hooks cloud", role: "Cloud services desk" },
+  science: { name: "Hooks science", role: "Science desk" },
+  space: { name: "Hooks space", role: "Space desk" },
+  "health-tech": { name: "Hooks health tech", role: "Health technology desk" },
+  "renewable-energy": { name: "Hooks energy", role: "Renewable energy desk" },
+  "quantum-computing": { name: "Hooks quantum", role: "Quantum computing desk" },
+  "sports-technology": { name: "Hooks sports tech", role: "Sports technology desk" },
+  wearables: { name: "Hooks wearables", role: "Wearables desk" },
+  "sports-science": { name: "Hooks sports science", role: "Sports science desk" },
   gadgets: { name: "Hooks gadgets", role: "Gadgets desk" },
   guides: { name: "Hooks editorial", role: "Editorial guides" },
   launches: { name: "Hooks desk", role: "Launch desk" },
+};
+
+const CATEGORY_ALIASES = {
+  tech: "technology",
+  "tech-news": "technology",
+  "technology-news": "technology",
+  mobile: "smartphones",
+  mobiles: "mobiles",
+  phones: "smartphones",
+  smartphone: "smartphones",
+  "chip-news": "chips",
+  semiconductors: "chips",
+  semiconductor: "chips",
+  "consumer-tech-and-internet": "consumer-tech",
+  "consumer-technology": "consumer-tech",
+  "health-technology": "health-tech",
+  "medical-technology": "health-tech",
+  "ev-technology": "ev-tech",
+  "electric-vehicles": "ev-tech",
+  "sports-tech": "sports-technology",
 };
 
 const PRODUCT_TYPE_LABELS = {
@@ -34,6 +96,59 @@ const PRODUCT_TYPE_LABELS = {
 };
 
 const safeText = (value) => String(value || "").trim();
+
+const readAuthorText = (value) => {
+  if (!value) return "";
+  if (typeof value === "string" || typeof value === "number") {
+    return safeText(value);
+  }
+  if (typeof value !== "object") return "";
+
+  return (
+    safeText(value.author_name) ||
+    safeText(value.authorName) ||
+    safeText(value.display_name) ||
+    safeText(value.displayName) ||
+    safeText(value.full_name) ||
+    safeText(value.fullName) ||
+    safeText(value.name) ||
+    safeText(value.user_name) ||
+    safeText(value.username) ||
+    safeText(value.email)
+  );
+};
+
+const resolveBlogAuthorName = (blog = {}) =>
+  [
+    blog.author_name,
+    blog.authorName,
+    blog.byline,
+    blog.assigned_author_name,
+    blog.assignedAuthorName,
+    blog.author,
+    blog.assigned_author,
+    blog.assignedAuthor,
+    blog.user,
+  ]
+    .map(readAuthorText)
+    .find(Boolean) || "";
+
+const resolveBlogAuthorRole = (blog = {}) =>
+  [
+    blog.author_role,
+    blog.authorRole,
+    blog.role_title,
+    blog.roleTitle,
+    blog.author?.role_title,
+    blog.author?.roleTitle,
+    blog.author?.role,
+    blog.assigned_author?.role_title,
+    blog.assignedAuthor?.roleTitle,
+    blog.assigned_author?.role,
+    blog.assignedAuthor?.role,
+  ]
+    .map(safeText)
+    .find(Boolean) || "";
 
 const decodeHtmlEntitiesOnce = (value) => {
   let text = String(value || "");
@@ -166,9 +281,94 @@ const normalizeBrandLogoUrl = (value) => {
   return raw;
 };
 
+const KNOWN_STORY_BRANDS = [
+  "Qualcomm",
+  "Motorola",
+  "MediaTek",
+  "Microsoft",
+  "Instagram",
+  "WhatsApp",
+  "Nintendo",
+  "Samsung",
+  "YouTube",
+  "OnePlus",
+  "Nothing",
+  "Infinix",
+  "Google",
+  "Redmi",
+  "Xiaomi",
+  "Apple",
+  "Nvidia",
+  "Lenovo",
+  "realme",
+  "iQOO",
+  "OPPO",
+  "vivo",
+  "Sony",
+  "Honor",
+  "Huawei",
+  "Tecno",
+  "NASA",
+  "ISRO",
+  "Meta",
+  "Intel",
+  "AMD",
+  "Dell",
+  "Asus",
+  "Acer",
+  "MSI",
+  "HP",
+].sort((left, right) => right.length - left.length);
+
+const normalizeBrandMatchText = (value) =>
+  ` ${String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()} `;
+
+const inferBlogBrandName = (blog = {}, linkedProducts = []) => {
+  const directBrand = [
+    blog.brand_name,
+    blog.brandName,
+    ...linkedProducts.map((product) => product?.brandName),
+  ]
+    .map(safeText)
+    .find(Boolean);
+  if (directBrand) return directBrand;
+
+  const haystack = normalizeBrandMatchText(
+    [
+      blog.product_name,
+      blog.productName,
+      blog.title,
+      blog.excerpt,
+      blog.meta_description,
+      ...(Array.isArray(blog.tags) ? blog.tags : []),
+    ].join(" "),
+  );
+
+  return (
+    KNOWN_STORY_BRANDS.find((brand) =>
+      haystack.includes(normalizeBrandMatchText(brand)),
+    ) || ""
+  );
+};
+
 const FALLBACK_THEME_BY_CATEGORY = {
   news: { from: "#0f172a", via: "#1d4ed8", to: "#2563eb" },
+  technology: { from: "#0f172a", via: "#2563eb", to: "#06b6d4" },
+  ai: { from: "#111827", via: "#7c3aed", to: "#22d3ee" },
+  smartphones: { from: "#0f172a", via: "#0891b2", to: "#06b6d4" },
   mobiles: { from: "#0f172a", via: "#0891b2", to: "#06b6d4" },
+  chips: { from: "#111827", via: "#ea580c", to: "#facc15" },
+  laptops: { from: "#111827", via: "#334155", to: "#60a5fa" },
+  software: { from: "#0f172a", via: "#4f46e5", to: "#a78bfa" },
+  cybersecurity: { from: "#111827", via: "#be123c", to: "#fb7185" },
+  "consumer-tech": { from: "#0f172a", via: "#059669", to: "#34d399" },
+  science: { from: "#0f172a", via: "#0369a1", to: "#38bdf8" },
+  space: { from: "#020617", via: "#4338ca", to: "#818cf8" },
+  "sports-technology": { from: "#0f172a", via: "#16a34a", to: "#bef264" },
   gadgets: { from: "#0f172a", via: "#ea580c", to: "#f97316" },
   guides: { from: "#0f172a", via: "#6d28d9", to: "#8b5cf6" },
   launches: { from: "#0f172a", via: "#16a34a", to: "#22c55e" },
@@ -295,7 +495,7 @@ const escapeSvgText = (value) =>
 const createFallbackStoryArtwork = ({ category, title, brandName, productType }) => {
   const theme = FALLBACK_THEME_BY_CATEGORY[category] || DEFAULT_THEME;
   const titleLines = splitTitleLines(title);
-  const categoryLabel = escapeSvgText(CATEGORY_LABELS[category] || "Newsroom");
+  const categoryLabel = escapeSvgText(CATEGORY_LABELS[category] || "News");
   const brandLabel = escapeSvgText(
     brandName || PRODUCT_TYPE_LABELS[safeText(productType).toLowerCase()] || "Hooks",
   );
@@ -423,14 +623,30 @@ const estimateReadTime = (value) => {
 };
 
 const normalizeCategory = (value) => {
-  const normalized = safeText(value).toLowerCase();
-  return CATEGORY_LABELS[normalized] ? normalized : "news";
+  const normalized = safeText(value)
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  const aliased = CATEGORY_ALIASES[normalized] || normalized;
+  return CATEGORY_LABELS[aliased] ? aliased : "news";
 };
 
 const buildHighlights = (blog, category) => {
   const fallbackByCategory = {
     news: "Latest update",
+    technology: "Technology watch",
+    ai: "AI watch",
+    smartphones: "Smartphone coverage",
     mobiles: "Mobile coverage",
+    chips: "Silicon watch",
+    laptops: "Computing coverage",
+    software: "Software update",
+    cybersecurity: "Security watch",
+    "consumer-tech": "Consumer tech",
+    science: "Science briefing",
+    space: "Space watch",
+    "sports-technology": "Sports tech",
     gadgets: "Gadget watch",
     guides: "Editorial guide",
     launches: "Launch watch",
@@ -450,8 +666,19 @@ const buildHighlights = (blog, category) => {
 
 const buildTakeaways = ({ blog, body, category }) => {
   const categoryDetail = {
-    news: "Filed as a fast newsroom update.",
+    news: "Filed as a fast news update.",
+    technology: "Focused on the technology shift behind the headline.",
+    ai: "Built around practical AI context, not hype alone.",
+    smartphones: "Focused on what matters in real mobile buying decisions.",
     mobiles: "Focused on what matters in real mobile buying decisions.",
+    chips: "Tracks silicon changes that can affect future devices.",
+    laptops: "Connects computing updates to real-world buying and usage.",
+    software: "Explains the feature, rollout, or platform change clearly.",
+    cybersecurity: "Highlights the risk, impact, and user-facing context.",
+    "consumer-tech": "Keeps everyday apps, internet, and services in focus.",
+    science: "Connects the science update to technology and future impact.",
+    space: "Keeps mission and discovery context easy to scan.",
+    "sports-technology": "Covers the technology layer behind modern sport.",
     gadgets: "Written for quick scanning before the deeper read.",
     guides: "Structured to read more like an explainer than a breaking update.",
     launches: "Built to surface the most important launch signals first.",
@@ -460,7 +687,7 @@ const buildTakeaways = ({ blog, body, category }) => {
   return [
     safeText(blog.product_name)
       ? `${safeText(blog.product_name)} is the main story reference in this piece.`
-      : `${CATEGORY_LABELS[category]} coverage from the Hooks newsroom.`,
+      : `${CATEGORY_LABELS[category]} coverage from the Hooks news desk.`,
     categoryDetail[category] || null,
     body[1]
       ? clipWords(body[1], 18)
@@ -616,10 +843,22 @@ const normalizeBlogStory = (blog) => {
     safeText(blog.meta_description) ||
     body.find(isUsefulParagraph) ||
     null;
-  const authorName = safeText(blog.author_name);
+  const authorName = resolveBlogAuthorName(blog);
+  const authorRole = resolveBlogAuthorRole(blog);
   const fallbackSummaryByCategory = {
-    news: `${title} is the latest newsroom update from Hooks.`,
+    news: `${title} is the latest news update from Hooks.`,
+    technology: `${title} is part of the latest technology coverage from Hooks.`,
+    ai: `${title} tracks an AI update with practical technology context.`,
+    smartphones: `${title} keeps the smartphone section focused on useful device details.`,
     mobiles: `${title} keeps the mobile section focused on the most useful device details.`,
+    chips: `${title} follows the semiconductor changes shaping upcoming devices.`,
+    laptops: `${title} covers computing updates for laptop and PC readers.`,
+    software: `${title} explains a software or platform change worth tracking.`,
+    cybersecurity: `${title} highlights a security update with user-facing context.`,
+    "consumer-tech": `${title} covers the apps, internet, and services people use every day.`,
+    science: `${title} connects science news with technology and future impact.`,
+    space: `${title} follows space technology, missions, and discoveries.`,
+    "sports-technology": `${title} looks at the technology changing modern sport.`,
     gadgets: `${title} covers the gadget changes worth a quick scan.`,
     guides: `${title} is a calmer guide-led story for readers who want context first.`,
     launches: `${title} tracks the launches worth paying attention to.`,
@@ -638,16 +877,18 @@ const normalizeBlogStory = (blog) => {
   const author = authorName
     ? {
         name: authorName,
-        role: fallbackAuthor?.role || "Hooks newsroom",
+        role: authorRole || fallbackAuthor?.role || "Hooks news",
       }
     : fallbackAuthor;
-  const highlights = buildHighlights(blog, category);
+  const brandName = inferBlogBrandName(blog, linkedProducts);
+  const brandedBlog = brandName ? { ...blog, brand_name: brandName } : blog;
+  const highlights = buildHighlights(brandedBlog, category);
   const image = safeText(blog.hero_image)
     ? safeText(blog.hero_image)
     : createFallbackStoryArtwork({
         category,
         title,
-        brandName: blog.brand_name,
+        brandName,
         productType: blog.product_type,
       });
   const heroImageSource = safeText(blog.hero_image_source);
@@ -679,7 +920,7 @@ const normalizeBlogStory = (blog) => {
     authorRole: author.role,
     highlights,
     takeaways: buildTakeaways({
-      blog,
+      blog: brandedBlog,
       body: body.length ? body : [summary],
       category,
     }),
@@ -697,7 +938,7 @@ const normalizeBlogStory = (blog) => {
     pinned: Boolean(blog.pinned),
     productName: safeText(primaryLinkedProduct?.name || blog.product_name),
     productType: safeText(primaryLinkedProduct?.productType || blog.product_type).toLowerCase(),
-    brandName: safeText(primaryLinkedProduct?.brandName || blog.brand_name),
+    brandName,
     brandLogo: normalizeBrandLogoUrl(blog.brand_logo),
     tokenSnapshot,
     deviceSpecs: buildDeviceSpecs(tokenSnapshot),
@@ -727,7 +968,7 @@ const fetchJson = async (url, { signal } = {}) => {
   }
 
   if (!contentType.includes("application/json")) {
-    throw new Error("News API returned a non-JSON response");
+    throw new Error("Story API returned a non-JSON response");
   }
 
   return data;
@@ -826,7 +1067,7 @@ export const usePublicNewsFeed = ({
       } catch (err) {
         if (!active || err?.name === "AbortError") return;
         setStories([]);
-        setError(err?.message || "Failed to load newsroom stories");
+        setError(err?.message || "Failed to load news stories");
       } finally {
         if (active) setLoading(false);
       }

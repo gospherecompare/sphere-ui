@@ -14,10 +14,10 @@ const NewsArticleCard = ({
   const {
     title = "Untitled Article",
     image = "",
-    author = "Hooks Editorial",
+    author = "Hooks News",
     publishedAt = "",
     updatedAt = "",
-    label = "News",
+    label = "Update",
     slug = "",
   } = article;
   const storyPath = createNewsStoryPath(slug);

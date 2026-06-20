@@ -68,7 +68,7 @@ const StoryImage = ({ story, className = "" }) => {
         <div className="flex h-full items-center justify-center bg-slate-200 p-4 text-center">
           <div className="max-w-[12rem]">
             <p className={NEWS_BRAND_STYLES.eyebrow}>
-              {story?.label || "Newsroom"}
+              {story?.label || "News"}
             </p>
             <h3 className="mt-3 text-sm font-black leading-tight tracking-tight text-slate-900">
               {story?.title}
@@ -97,7 +97,7 @@ const TimelineStoryCard = ({ story }) => (
         <div className="flex min-w-0 flex-col justify-between">
           <div>
             <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-[11px] font-semibold capitalize tracking-[0.02em] text-blue-700">
-              {story.label || "News"}
+              {story.label || "Update"}
             </span>
 
             <h2
@@ -140,7 +140,7 @@ const SidebarStoryCard = ({ story, highlighted = false }) => (
 
       <div className="min-w-0">
         <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold capitalize tracking-[0.02em] text-slate-600">
-          {story.label || "News"}
+          {story.label || "Update"}
         </span>
 
         <h3 className="mt-2 line-clamp-2 text-base font-semibold leading-6 text-slate-950 transition-colors group-hover:text-blue-700">
@@ -281,14 +281,14 @@ const NewsEditorialDesk = ({ stories = [], loading = false, error = "" }) => {
                 className="max-w-2xl text-4xl font-black leading-tight tracking-tight text-slate-950 sm:text-5xl lg:text-6xl"
                 style={{ textWrap: "balance" }}
               >
-                Latest News
+                Latest Updates
               </h1>
               <span className="hidden h-px flex-1 bg-gradient-to-r from-blue-600 via-fuchsia-500 to-orange-400 lg:block" />
             </div>
 
             <p className={`mt-4 max-w-3xl ${NEWS_BRAND_STYLES.bodyLarge}`}>
               Explore the latest mobile stories, article updates, and launch
-              coverage from the Hooks newsroom.
+              coverage from the Hooks news desk.
             </p>
           </div>
 
@@ -328,7 +328,7 @@ const NewsEditorialDesk = ({ stories = [], loading = false, error = "" }) => {
         {!loading && error && !hasStories ? (
           <div className="rounded-xl border border-red-300 bg-red-50 p-6">
             <p className="text-base font-semibold text-red-700">
-              The newsroom could not load right now.
+              The news feed could not load right now.
             </p>
             <p className="mt-2 text-sm text-red-600">{error}</p>
           </div>
@@ -340,7 +340,7 @@ const NewsEditorialDesk = ({ stories = [], loading = false, error = "" }) => {
               No published stories yet.
             </p>
             <p className="mt-2 text-sm text-blue-600">
-              Publish a story from the admin newsroom and it will appear here
+              Publish a story from the admin news desk and it will appear here
               automatically.
             </p>
           </div>

@@ -1,11 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
-import {
-  FaChevronRight,
-  FaFire,
-} from "react-icons/fa";
+import { Link, Navigate, useParams } from "react-router-dom";
+import { FaChevronRight, FaFire } from "react-icons/fa";
 import SEO from "../SEO";
 import NewsPushOptInCard from "../News/NewsPushOptInCard";
+import NewsStoryArticlePage from "./NewsStoryArticlePage";
 import {
   createBreadcrumbSchema,
   createCollectionSchema,
@@ -19,29 +17,370 @@ import {
   useStoryListSchemaItems,
 } from "../../hooks/usePublicNews";
 
-const NEWS_GRID_LIMIT = 36;
+const NEWS_GRID_LIMIT = 50;
 const NEWS_MOBILE_QUERY = "(max-width: 639px)";
 const NEWS_HERO_ROTATE_MS = 5200;
 
 const NEWS_TOPICS = [
   { label: "Mobiles", matcher: (story) => isMobileStory(story) },
-  { label: "Launches", matcher: (story) => getStoryBucket(story) === "launches" },
+  {
+    label: "Launches",
+    matcher: (story) => getStoryBucket(story) === "launches",
+  },
   { label: "Reviews", matcher: (story) => getStoryBucket(story) === "reviews" },
   { label: "Guides", matcher: (story) => getStoryBucket(story) === "guides" },
-  { label: "Deals", matcher: (story) => /deal|sale|offer|discount/i.test(readStoryText(story)) },
+  {
+    label: "Deals",
+    matcher: (story) => /deal|sale|offer|discount/i.test(readStoryText(story)),
+  },
+];
+
+const NEWS_TAXONOMY = [
+  {
+    slug: "technology",
+    label: "Technology",
+    title: "Technology News",
+    eyebrow: "TryHook Technology Desk",
+    description:
+      "AI, smartphones, chips, laptops, cybersecurity, software, robotics, and the product shifts shaping what people buy next.",
+    accent: "from-[#0f172a] via-[#1d4ed8] to-[#06b6d4]",
+    keywords: [
+      "technology",
+      "tech",
+      "ai",
+      "artificial intelligence",
+      "smartphone",
+      "laptop",
+      "chip",
+      "semiconductor",
+      "software",
+      "cybersecurity",
+      "robotics",
+      "ev",
+    ],
+    categories: [
+      "technology",
+      "ai",
+      "smartphones",
+      "mobiles",
+      "chips",
+      "laptops",
+      "software",
+      "cybersecurity",
+      "ev-tech",
+      "robotics",
+      "launches",
+    ],
+    topics: [
+      {
+        slug: "ai",
+        label: "AI",
+        title: "AI News",
+        description:
+          "AI announcements, AI tools, Android AI features, search changes, and practical AI updates.",
+        categories: ["ai", "technology", "software"],
+        keywords: [
+          "ai",
+          "artificial intelligence",
+          "machine learning",
+          "openai",
+          "gemini",
+          "copilot",
+          "android ai",
+        ],
+      },
+      {
+        slug: "smartphones",
+        label: "Smartphones",
+        title: "Smartphone News",
+        description:
+          "Smartphone launches, software rollouts, pricing updates, leaks, and mobile feature coverage.",
+        categories: ["smartphones", "mobiles", "launches"],
+        keywords: [
+          "smartphone",
+          "mobile",
+          "phone",
+          "android",
+          "iphone",
+          "galaxy",
+          "pixel",
+          "oneplus",
+          "redmi",
+          "realme",
+        ],
+      },
+      {
+        slug: "chips",
+        label: "Chips",
+        title: "Chip & Semiconductor News",
+        description:
+          "Qualcomm, MediaTek, Apple silicon, GPUs, processors, and semiconductor updates that affect devices.",
+        categories: ["chips", "technology"],
+        keywords: [
+          "chip",
+          "processor",
+          "semiconductor",
+          "snapdragon",
+          "mediatek",
+          "dimensity",
+          "gpu",
+          "apple silicon",
+        ],
+      },
+      {
+        slug: "laptops",
+        label: "Laptops",
+        title: "Laptop News",
+        description:
+          "Laptop launches, CPUs, GPUs, AI PCs, operating system updates, and computing hardware coverage.",
+        categories: ["laptops", "technology"],
+        keywords: [
+          "laptop",
+          "pc",
+          "notebook",
+          "processor",
+          "gpu",
+          "intel",
+          "amd",
+          "windows",
+          "macbook",
+        ],
+      },
+      {
+        slug: "software",
+        label: "Software",
+        title: "Software News",
+        description:
+          "Operating systems, app platforms, productivity tools, security updates, and feature rollouts.",
+        categories: ["software", "technology", "apps"],
+        keywords: [
+          "software",
+          "android",
+          "ios",
+          "windows",
+          "app",
+          "feature",
+          "update",
+          "rollout",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "consumer-tech",
+    label: "Consumer Tech",
+    title: "Consumer Tech & Internet",
+    eyebrow: "Apps, Internet & Services",
+    description:
+      "WhatsApp, Google, YouTube, Instagram, broadband, cloud services, internet tools, and everyday technology updates.",
+    accent: "from-[#0f172a] via-[#047857] to-[#34d399]",
+    categories: [
+      "consumer-tech",
+      "apps",
+      "internet",
+      "software",
+      "cloud-services",
+      "gadgets",
+    ],
+    keywords: [
+      "consumer tech",
+      "whatsapp",
+      "google",
+      "youtube",
+      "instagram",
+      "internet",
+      "broadband",
+      "cloud",
+      "app",
+    ],
+    topics: [
+      {
+        slug: "apps",
+        label: "Apps",
+        title: "App Feature News",
+        description:
+          "WhatsApp, YouTube, Instagram, Google apps, and feature updates people use every day.",
+        categories: ["apps", "consumer-tech", "software"],
+        keywords: [
+          "app",
+          "whatsapp",
+          "youtube",
+          "instagram",
+          "google",
+          "feature",
+          "update",
+        ],
+      },
+      {
+        slug: "internet",
+        label: "Internet",
+        title: "Internet News",
+        description:
+          "Search, broadband, networking, online services, cloud tools, and internet platform changes.",
+        categories: ["internet", "consumer-tech", "cloud-services"],
+        keywords: [
+          "internet",
+          "search",
+          "broadband",
+          "networking",
+          "wifi",
+          "cloud",
+          "service",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "science",
+    label: "Science",
+    title: "Science & Space News",
+    eyebrow: "Science With A Tech Lens",
+    description:
+      "Space missions, ISRO, NASA, quantum computing, health technology, renewable energy, and discoveries with technology impact.",
+    accent: "from-[#020617] via-[#4338ca] to-[#38bdf8]",
+    categories: [
+      "science",
+      "space",
+      "health-tech",
+      "renewable-energy",
+      "quantum-computing",
+    ],
+    keywords: [
+      "science",
+      "space",
+      "nasa",
+      "isro",
+      "quantum",
+      "health technology",
+      "renewable energy",
+      "satellite",
+    ],
+    topics: [
+      {
+        slug: "space",
+        label: "Space",
+        title: "Space News",
+        description:
+          "NASA, ISRO, satellites, space missions, astronomy discoveries, and space technology.",
+        categories: ["space", "science"],
+        keywords: [
+          "space",
+          "nasa",
+          "isro",
+          "satellite",
+          "rocket",
+          "mission",
+          "exoplanet",
+          "moon",
+          "mars",
+        ],
+      },
+      {
+        slug: "renewable-energy",
+        label: "Renewable Energy",
+        title: "Renewable Energy News",
+        description:
+          "Solar, batteries, clean energy, grid technology, and renewable energy breakthroughs.",
+        categories: ["renewable-energy", "science"],
+        keywords: [
+          "renewable energy",
+          "solar",
+          "battery",
+          "clean energy",
+          "grid",
+          "wind",
+          "hydrogen",
+        ],
+      },
+      {
+        slug: "health-technology",
+        label: "Health Technology",
+        title: "Health Technology News",
+        description:
+          "Medical technology, AI in healthcare, lab-grown organs, diagnostics, and health innovation.",
+        categories: ["health-tech", "science"],
+        keywords: [
+          "health technology",
+          "medical technology",
+          "healthcare",
+          "diagnostics",
+          "lab-grown",
+          "medicine",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "sports-technology",
+    label: "Sports Technology",
+    title: "Sports Technology News",
+    eyebrow: "Tech Behind Modern Sport",
+    description:
+      "AI officiating, VAR, smart balls, athlete wearables, performance analytics, and sports science.",
+    accent: "from-[#0f172a] via-[#15803d] to-[#bef264]",
+    categories: ["sports-technology", "wearables", "sports-science"],
+    keywords: [
+      "sports technology",
+      "var",
+      "smart ball",
+      "wearable",
+      "sports science",
+      "performance analytics",
+      "athlete",
+    ],
+    topics: [
+      {
+        slug: "wearables",
+        label: "Wearables",
+        title: "Sports Wearables News",
+        description:
+          "Smart wearables, athlete sensors, recovery tech, and performance-tracking devices.",
+        categories: ["wearables", "sports-technology"],
+        keywords: [
+          "wearable",
+          "sensor",
+          "athlete",
+          "smartwatch",
+          "fitness tracker",
+          "performance",
+        ],
+      },
+      {
+        slug: "sports-science",
+        label: "Sports Science",
+        title: "Sports Science News",
+        description:
+          "Performance analytics, training technology, recovery science, and AI-assisted sports decisions.",
+        categories: ["sports-science", "sports-technology"],
+        keywords: [
+          "sports science",
+          "analytics",
+          "training",
+          "recovery",
+          "ai in sports",
+          "officiating",
+        ],
+      },
+    ],
+  },
 ];
 
 const parseStoryTime = (story) => {
-  const date = new Date(story?.publishedIso || story?.updatedIso || story?.publishedAt);
+  const date = new Date(
+    story?.publishedIso || story?.updatedIso || story?.publishedAt,
+  );
   const time = date.getTime();
   return Number.isNaN(time) ? 0 : time;
 };
 
 const formatStoryDate = (story) => story?.publishedAt || "Latest";
 
+const formatStoryBrandDate = (story) =>
+  [story?.brandName, formatStoryDate(story)].filter(Boolean).join(" | ");
+
 const formatStoryLabel = (story) => {
-  const label = story?.label || "News";
-  return label === "Launch Tracker" ? "Launch Coverage" : label;
+  if (!story) return "News";
+  return "News";
 };
 
 const readStoryText = (story) =>
@@ -73,6 +412,98 @@ const getStoryBucket = (story) => {
   return "features";
 };
 
+const normalizeNewsRouteSlug = (value = "") =>
+  String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+const NEWS_TAXONOMY_BY_SLUG = new Map(
+  NEWS_TAXONOMY.map((pillar) => [pillar.slug, pillar]),
+);
+
+const resolveNewsTaxonomyRoute = (pillarSlug = "", topicSlug = "") => {
+  const pillar = NEWS_TAXONOMY_BY_SLUG.get(normalizeNewsRouteSlug(pillarSlug));
+  if (!pillar) return null;
+
+  const normalizedTopic = normalizeNewsRouteSlug(topicSlug);
+  const topic = normalizedTopic
+    ? (pillar.topics || []).find((item) => item.slug === normalizedTopic)
+    : null;
+
+  if (normalizedTopic && !topic) return null;
+
+  return {
+    pillar,
+    topic,
+    slug: topic?.slug || pillar.slug,
+    label: topic?.label || pillar.label,
+    title: topic?.title || pillar.title,
+    eyebrow: topic ? pillar.label : pillar.eyebrow,
+    description: topic?.description || pillar.description,
+    categories: topic?.categories || pillar.categories || [],
+    keywords: topic?.keywords || pillar.keywords || [],
+    accent: pillar.accent,
+    path: topic ? `/news/${pillar.slug}/${topic.slug}` : `/news/${pillar.slug}`,
+  };
+};
+
+const readTaxonomyStoryText = (story) =>
+  [
+    readStoryText(story),
+    ...(Array.isArray(story?.tags) ? story.tags : []),
+    ...(Array.isArray(story?.highlights) ? story.highlights : []),
+    ...(Array.isArray(story?.takeaways) ? story.takeaways : []),
+  ]
+    .join(" ")
+    .toLowerCase();
+
+const readTaxonomyStoryKeys = (story) =>
+  new Set(
+    [
+      story?.category,
+      story?.label,
+      story?.productType,
+      ...(Array.isArray(story?.tags) ? story.tags : []),
+      ...(Array.isArray(story?.productTypes) ? story.productTypes : []),
+    ]
+      .map(normalizeNewsRouteSlug)
+      .filter(Boolean),
+  );
+
+const storyMatchesTaxonomyRoute = (story, route) => {
+  if (!route) return true;
+  const keys = readTaxonomyStoryKeys(story);
+  const categories = (route.categories || []).map(normalizeNewsRouteSlug);
+  if (categories.some((category) => keys.has(category))) return true;
+
+  const text = readTaxonomyStoryText(story);
+  return (route.keywords || []).some((keyword) => {
+    const normalizedKeyword = String(keyword || "")
+      .trim()
+      .toLowerCase();
+    if (!normalizedKeyword) return false;
+    return text.includes(normalizedKeyword);
+  });
+};
+
+const filterStoriesForTaxonomyRoute = (stories = [], route = null) =>
+  route
+    ? stories.filter((story) => storyMatchesTaxonomyRoute(story, route))
+    : stories;
+
+const getNewsPageTitle = (route = null) =>
+  route
+    ? `${route.title} - TryHook News`
+    : "News - Technology, Science & Product Updates - Hooks";
+
+const getNewsPageDescription = (route = null) =>
+  route
+    ? route.description
+    : "Browse technology news, product launches, science updates, consumer tech, sports technology, and editorial guides on Hooks.";
+
 const scoreStory = (story, index) => {
   const ageHours = Math.max(0, (Date.now() - parseStoryTime(story)) / 36e5);
   const recencyScore = Math.max(0, 90 - ageHours / 8);
@@ -86,7 +517,9 @@ const scoreStory = (story, index) => {
 };
 
 const buildNewsLayout = (stories = []) => {
-  const validStories = [...stories].filter((story) => story?.slug && story?.title);
+  const validStories = [...stories].filter(
+    (story) => story?.slug && story?.title,
+  );
   const ranked = [...validStories].sort(
     (left, right) => scoreStory(right, 0) - scoreStory(left, 0),
   );
@@ -115,11 +548,20 @@ const buildNewsLayout = (stories = []) => {
     .concat(ranked)
     .filter(
       (story, index, list) =>
-        story?.slug && list.findIndex((item) => item.slug === story.slug) === index,
+        story?.slug &&
+        list.findIndex((item) => item.slug === story.slug) === index,
     )
     .slice(0, 8);
-  const launches = take(ranked, 6, (story) => getStoryBucket(story) === "launches");
-  const reviews = take(ranked, 4, (story) => getStoryBucket(story) === "reviews");
+  const launches = take(
+    ranked,
+    6,
+    (story) => getStoryBucket(story) === "launches",
+  );
+  const reviews = take(
+    ranked,
+    4,
+    (story) => getStoryBucket(story) === "reviews",
+  );
   const guides = take(ranked, 6, (story) => getStoryBucket(story) === "guides");
   const latest = recent.slice(0, 12);
   const topNews = take(ranked, 9);
@@ -209,7 +651,7 @@ const StoryImage = ({ story, className = "" }) => (
   <div className={`overflow-hidden bg-[#eaf0f8] ${className}`}>
     <img
       src={story?.image}
-      alt={story?.heroImageAlt || story?.title || "News story"}
+      alt={story?.heroImageAlt || story?.title || "Story image"}
       loading="lazy"
       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
     />
@@ -245,7 +687,9 @@ const HeroStoryCarousel = ({ stories = [] }) => {
     if (carouselStories.length <= 1 || isPaused) return undefined;
 
     const timerId = window.setInterval(() => {
-      setActiveIndex((currentIndex) => (currentIndex + 1) % carouselStories.length);
+      setActiveIndex(
+        (currentIndex) => (currentIndex + 1) % carouselStories.length,
+      );
     }, NEWS_HERO_ROTATE_MS);
 
     return () => window.clearInterval(timerId);
@@ -321,16 +765,16 @@ const NewsGridCard = ({
 }) => (
   <Link
     to={createNewsStoryPath(story.slug)}
-    className={`group block overflow-hidden bg-white transition-all hover:border-[#bfdbfe] ${
+    className={`group block overflow-hidden rounded-2xl bg-white transition-all hover:border-[#bfdbfe] ${
       rowCard && compact
         ? desktopRow
           ? "min-w-[76%] snap-start border border-white/15 bg-[#1f2631] sm:min-w-[15.5rem] sm:border-[#e5e7eb] sm:bg-white lg:min-w-[17rem] xl:min-w-[18rem]"
           : "min-w-[76%] snap-start border border-white/15 bg-[#1f2631] sm:min-w-0 sm:border-[#e5e7eb] sm:bg-white"
         : rowCard
           ? desktopRow
-            ? "min-w-[84%] snap-start border border-[#dde7f3] sm:min-w-[15.5rem] lg:min-w-[17rem] xl:min-w-[18rem]"
-            : "min-w-[84%] snap-start border border-[#dde7f3] sm:min-w-0"
-          : "border border-[#e5e7eb]"
+            ? "min-w-[84%] snap-start sm:min-w-[15.5rem] lg:min-w-[17rem] xl:min-w-[18rem]"
+            : "min-w-[84%] snap-start sm:min-w-0"
+          : ""
     }`}
   >
     <div className="p-3 sm:p-4">
@@ -372,10 +816,8 @@ const NewsGridCard = ({
 const RecentStoryCard = ({ story, desktopRow = false }) => (
   <Link
     to={createNewsStoryPath(story.slug)}
-    className={`group grid grid-cols-[92px_minmax(0,1fr)] gap-3 border-b border-[#e5e7eb] bg-white py-3 first:pt-0 last:border-b-0 last:pb-0 sm:block sm:overflow-hidden sm:border sm:bg-white sm:p-3 sm:transition-colors sm:hover:border-[#bfdbfe] ${
-      desktopRow
-        ? "sm:min-w-[15.5rem] lg:min-w-[17rem] xl:min-w-[18rem]"
-        : ""
+    className={`group grid grid-cols-[92px_minmax(0,1fr)] gap-3 bg-white py-3 first:pt-0 last:pb-0 sm:block sm:overflow-hidden sm:rounded-xl sm:p-3 sm:transition-colors sm:hover:bg-[#f8fbff] ${
+      desktopRow ? "sm:min-w-[15.5rem] lg:min-w-[17rem] xl:min-w-[18rem]" : ""
     }`}
   >
     <StoryImage
@@ -400,21 +842,80 @@ const SpotlightList = ({ stories = [] }) => (
       <Link
         key={story.slug}
         to={createNewsStoryPath(story.slug)}
-        className="group grid grid-cols-[88px_minmax(0,1fr)] gap-3 border border-[#e5e7eb] bg-white p-2 transition-colors hover:border-[#bfdbfe] sm:grid-cols-[92px_minmax(0,1fr)]"
+        className="group grid grid-cols-[88px_minmax(0,1fr)] items-center gap-3 rounded-xl bg-white p-2 transition-colors hover:bg-[#f8fbff] sm:grid-cols-[92px_minmax(0,1fr)]"
       >
         <StoryImage story={story} className="aspect-square w-full rounded-xl" />
-        <div className="min-w-0 self-center">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#7c3aed]">
-            {formatStoryLabel(story)}
-          </p>
-          <h3 className="mt-1 line-clamp-3 text-[14px] font-semibold leading-5 text-[#20242b] group-hover:text-[#2563eb]">
+        <div className="min-w-0">
+          <h3 className="line-clamp-3 text-[14px] font-semibold leading-[1.28] text-[#20242b] group-hover:text-[#2563eb]">
             {story.title}
           </h3>
+          <p className="mt-1 text-[11px] leading-none text-[#7d8898]">
+            {formatStoryBrandDate(story)}
+          </p>
         </div>
       </Link>
     ))}
   </div>
 );
+
+const getLatestStoryPill = (story) =>
+  story?.brandName || story?.productName || story?.label || "News";
+
+const LatestNewsTimeline = ({ stories = [] }) => {
+  if (!stories.length) return null;
+
+  return (
+    <section className="min-w-0">
+      <div className="mb-8">
+        <h2 className="text-[28px] font-black leading-none tracking-[-0.04em] text-[#06133a] sm:text-[34px]">
+          Latest News
+        </h2>
+        <div className="mt-4 h-[2px] w-full border-t border-[#d9dee7]" />
+      </div>
+
+      <div className="relative space-y-10 pl-5 sm:pl-7">
+        <div className="absolute bottom-0 left-0 top-0 border-l border-dashed border-[#d7deeb]" />
+        {stories.map((story) => (
+          <article key={story.slug} className="relative">
+            <div className="mb-5 flex items-center gap-4">
+              <span className="absolute -left-5 h-6 border-l-2 border-[#0066ff] sm:-left-7" />
+              <time className="text-[15px] font-bold text-[#005bc8]">
+                {formatStoryDate(story)}
+              </time>
+            </div>
+
+            <Link
+              to={createNewsStoryPath(story.slug)}
+              className="group block rounded-[19px] transition-transform duration-300 hover:-translate-y-0.5"
+            >
+              <div className="grid min-h-[190px] gap-5 rounded-[18px] bg-white p-4 shadow-[0_18px_45px_rgba(15,23,42,0.05)] sm:grid-cols-[minmax(0,1fr)_220px] sm:items-center sm:gap-7 sm:p-5">
+                <div className="flex min-w-0 flex-col">
+                  <span className="mb-4 inline-flex w-fit rounded-md bg-[#eef3fb] px-3 py-1 text-[11px] font-bold text-[#06133a]">
+                    {getLatestStoryPill(story)}
+                  </span>
+                  <h3 className="line-clamp-2 text-[19px] font-black leading-[1.35] tracking-[-0.02em] text-[#06133a] transition-colors group-hover:text-[#005dff] sm:text-[20px]">
+                    {story.title}
+                  </h3>
+                  <p className="mt-3 line-clamp-2 max-w-2xl text-[13px] leading-6 text-[#6b7890]">
+                    {story.summary}
+                  </p>
+                  <p className="mt-5 text-[13px] font-semibold text-[#0050b8]">
+                    {story.author || "Hooks news"}
+                  </p>
+                </div>
+
+                <StoryImage
+                  story={story}
+                  className="h-[150px] w-full rounded-lg sm:h-[160px] sm:w-[220px]"
+                />
+              </div>
+            </Link>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+};
 
 const SectionHeader = ({
   title,
@@ -573,7 +1074,7 @@ const StorySection = ({
                 : "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
           }
         >
-          {stories.map((story) => (
+          {stories.map((story) =>
             compactMobile ? (
               <RecentStoryCard
                 key={story.slug}
@@ -588,8 +1089,8 @@ const StorySection = ({
                 rowCard={singleRow}
                 desktopRow={desktopSingleRow}
               />
-            )
-          ))}
+            ),
+          )}
         </div>
         {singleRow && !compactMobile ? (
           <div
@@ -690,12 +1191,13 @@ const BrandRailSection = ({ brands = [] }) => {
 
   return (
     <section>
-      <SectionHeader
-        title="Popular Brands"
-        eyebrow="Browse By Brand"
-        showAction={false}
-        singleRow
-      />
+      <div className="mb-8">
+        <h2 className="text-[24px] font-black leading-none tracking-[-0.04em] text-[#06133a] sm:text-[34px]">
+          Popular Brands
+        </h2>
+        <div className="mt-4 h-[2px] w-full border-t border-[#d9dee7]" />
+      </div>
+
       <div className="relative">
         <div
           ref={railRef}
@@ -729,7 +1231,7 @@ const SideList = ({ title, stories = [] }) => {
   if (!stories.length) return null;
 
   return (
-    <section className="overflow-hidden border border-[#e5e7eb] bg-white">
+    <section className="overflow-hidden bg-white">
       <div className="bg-gradient-to-r from-[#2563eb] to-[#7c3aed] px-4 py-2 text-[12px] font-black uppercase tracking-[0.12em] text-white">
         {title}
       </div>
@@ -740,12 +1242,17 @@ const SideList = ({ title, stories = [] }) => {
             to={createNewsStoryPath(story.slug)}
             className="group grid grid-cols-[72px_minmax(0,1fr)] gap-3 py-3 first:pt-0 last:pb-0"
           >
-            <StoryImage story={story} className="aspect-[4/3] w-full rounded-md" />
+            <StoryImage
+              story={story}
+              className="aspect-[4/3] w-full rounded-md"
+            />
             <div className="min-w-0">
               <h3 className="line-clamp-3 text-[13px] font-semibold leading-5 text-[#20242b] group-hover:text-[#2563eb]">
                 {story.title}
               </h3>
-              <p className="mt-1 text-[11px] text-[#7d8898]">{formatStoryDate(story)}</p>
+              <p className="mt-1 text-[11px] text-[#7d8898]">
+                {formatStoryDate(story)}
+              </p>
             </div>
           </Link>
         ))}
@@ -758,7 +1265,7 @@ const LatestLaunches = ({ stories = [] }) => {
   if (!stories.length) return null;
 
   return (
-    <section className="overflow-hidden border border-[#e5e7eb] bg-white">
+    <section className="overflow-hidden bg-white">
       <div className="bg-gradient-to-r from-[#2563eb] to-[#7c3aed] px-4 py-2 text-[12px] font-black uppercase tracking-[0.12em] text-white">
         Latest Launches
       </div>
@@ -769,13 +1276,17 @@ const LatestLaunches = ({ stories = [] }) => {
             to={createNewsStoryPath(story.slug)}
             className="group flex items-start gap-3 py-3 first:pt-0 last:pb-0"
           >
-            <StoryImage story={story} className="h-16 w-16 shrink-0 rounded-md" />
+            <StoryImage
+              story={story}
+              className="h-16 w-16 shrink-0 rounded-md"
+            />
             <div className="min-w-0">
               <h3 className="line-clamp-2 text-[13px] font-semibold leading-5 text-[#20242b] group-hover:text-[#2563eb]">
                 {story.productName || story.title}
               </h3>
               <p className="mt-1 text-[11px] text-[#7d8898]">
-                {story.brandName || story.label || "Launch"} | {formatStoryDate(story)}
+                {story.brandName || story.label || "Launch"} |{" "}
+                {formatStoryDate(story)}
               </p>
             </div>
           </Link>
@@ -788,7 +1299,10 @@ const LatestLaunches = ({ stories = [] }) => {
 const LoadingGrid = () => (
   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
     {Array.from({ length: 9 }).map((_, index) => (
-      <div key={index} className="animate-pulse overflow-hidden border border-[#e5e7eb] bg-white">
+      <div
+        key={index}
+        className="animate-pulse overflow-hidden border border-[#e5e7eb] bg-white"
+      >
         <div className="aspect-[4/3] rounded-2xl bg-[#e9eef5]" />
         <div className="space-y-3 p-4">
           <div className="h-3 w-20 bg-[#e9eef5]" />
@@ -801,11 +1315,43 @@ const LoadingGrid = () => (
 );
 
 const NewsArticlesPage = () => {
-  const canonical = "https://tryhook.shop/news";
-  const { stories, loading, error } = usePublicNewsFeed({ limit: NEWS_GRID_LIMIT });
+  const { slug = "", "*": newsRouteTail = "" } = useParams();
+  const newsRouteTailSegments = useMemo(
+    () =>
+      String(newsRouteTail || "")
+        .split("/")
+        .map(normalizeNewsRouteSlug)
+        .filter(Boolean),
+    [newsRouteTail],
+  );
+  const topicSlug = newsRouteTailSegments[0] || "";
+  const hasExtraNewsRouteSegments = newsRouteTailSegments.length > 1;
+  const routePillarSlug = slug;
+  const taxonomyRoute = useMemo(
+    () =>
+      routePillarSlug
+        ? resolveNewsTaxonomyRoute(routePillarSlug, topicSlug)
+        : null,
+    [routePillarSlug, topicSlug],
+  );
+  const hasNewsRouteTail = Boolean(routePillarSlug);
+  const shouldRenderArticle = hasNewsRouteTail && !taxonomyRoute && !topicSlug;
+  const shouldRedirectUnknownRoute =
+    hasNewsRouteTail &&
+    !shouldRenderArticle &&
+    (!taxonomyRoute || hasExtraNewsRouteSegments);
+  const canonicalPath = taxonomyRoute?.path || "/news";
+  const canonical = `https://tryhook.shop${canonicalPath}`;
+  const { stories, loading, error } = usePublicNewsFeed({
+    limit: NEWS_GRID_LIMIT,
+  });
+  const routedStories = useMemo(
+    () => filterStoriesForTaxonomyRoute(stories, taxonomyRoute),
+    [stories, taxonomyRoute],
+  );
   const deviceContext = useDevice();
-  const storySchemaItems = useStoryListSchemaItems(stories);
-  const layout = useMemo(() => buildNewsLayout(stories), [stories]);
+  const storySchemaItems = useStoryListSchemaItems(routedStories);
+  const layout = useMemo(() => buildNewsLayout(routedStories), [routedStories]);
   const featuredBrands = useMemo(
     () => buildNewsBrands(deviceContext?.brands || []),
     [deviceContext?.brands],
@@ -835,27 +1381,38 @@ const NewsArticlesPage = () => {
       ]).slice(0, 5),
     [layout],
   );
+  const pageTitle = getNewsPageTitle(taxonomyRoute);
+  const pageDescription = getNewsPageDescription(taxonomyRoute);
+
+  if (shouldRenderArticle) {
+    return <NewsStoryArticlePage />;
+  }
+
+  if (shouldRedirectUnknownRoute) {
+    return <Navigate to="/news" replace />;
+  }
 
   const pageSchema = [
     createBreadcrumbSchema([
       { label: "Home", url: "https://tryhook.shop/" },
       { label: "News", url: canonical },
+      ...(taxonomyRoute
+        ? [{ label: taxonomyRoute.title, url: canonical }]
+        : []),
     ]),
     createCollectionSchema({
-      name: "Hooks News & Articles",
-      description:
-        "Browse the latest tech news, mobile updates, gadget guides, and launch coverage on Hooks.",
+      name: taxonomyRoute?.title || "Hooks News",
+      description: pageDescription,
       url: canonical,
       image: "https://tryhook.shop/hook-logo.svg",
     }),
     createWebPageSchema({
-      name: "Hooks News & Articles",
-      description:
-        "Browse the latest tech news, mobile updates, gadget guides, and launch coverage on Hooks.",
+      name: taxonomyRoute?.title || "Hooks News",
+      description: pageDescription,
       url: canonical,
     }),
     createItemListSchema({
-      name: "Latest News & Articles",
+      name: taxonomyRoute ? `${taxonomyRoute.title} Stories` : "Latest News",
       url: canonical,
       items: storySchemaItems,
     }),
@@ -864,8 +1421,8 @@ const NewsArticlesPage = () => {
   return (
     <>
       <SEO
-        title="News & Articles - Latest Mobile News, Gadget Guides & Launch Updates - Hooks"
-        description="Browse the latest mobile news, gadget updates, launch coverage, and editorial guides on Hooks."
+        title={pageTitle}
+        description={pageDescription}
         url={canonical}
         robots="index, follow"
         ogType="website"
@@ -885,7 +1442,21 @@ const NewsArticlesPage = () => {
                 Home
               </Link>
               <FaChevronRight className="h-2.5 w-2.5 text-[#b6c2cf]" />
-              <span className="font-semibold text-[#1f2937]">News</span>
+              {taxonomyRoute ? (
+                <Link to="/news" className="hover:text-[#2563eb]">
+                  News
+                </Link>
+              ) : (
+                <span className="font-semibold text-[#1f2937]">News</span>
+              )}
+              {taxonomyRoute ? (
+                <>
+                  <FaChevronRight className="h-2.5 w-2.5 text-[#b6c2cf]" />
+                  <span className="font-semibold text-[#1f2937]">
+                    {taxonomyRoute.title}
+                  </span>
+                </>
+              ) : null}
             </nav>
           </div>
         </section>
@@ -899,6 +1470,25 @@ const NewsArticlesPage = () => {
 
           {loading && !stories.length ? (
             <LoadingGrid />
+          ) : taxonomyRoute && !routedStories.length ? (
+            <div className="rounded-[28px] border border-[#dbe5f2] bg-white p-8 text-center shadow-[0_18px_55px_rgba(15,23,42,0.06)]">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#7c3aed]">
+                Route is ready
+              </p>
+              <h2 className="mt-2 text-2xl font-black tracking-[-0.04em] text-[#111827]">
+                No published stories in {taxonomyRoute.title} yet
+              </h2>
+              <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-[#64748b]">
+                Publish a story with this category or matching tags, and it will
+                automatically appear on this route.
+              </p>
+              <Link
+                to="/news"
+                className="mt-5 inline-flex rounded-full bg-[#111827] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#2563eb]"
+              >
+                Browse all news
+              </Link>
+            </div>
           ) : (
             <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_300px] xl:items-start">
               <div className="min-w-0 space-y-7 sm:space-y-9">
@@ -906,14 +1496,6 @@ const NewsArticlesPage = () => {
                   <HeroStoryCarousel stories={heroCarouselStories} />
                   <SpotlightList stories={display.spotlight} />
                 </section>
-
-                <StorySection
-                  title="Top News"
-                  eyebrow="Trending Now"
-                  stories={display.topNews}
-                  singleRow
-                  desktopSingleRow
-                />
 
                 <StorySection
                   title="Reviews"
@@ -929,14 +1511,7 @@ const NewsArticlesPage = () => {
 
                 <BrandRailSection brands={featuredBrands} />
 
-                <StorySection
-                  title="Recent Updates"
-                  eyebrow="Latest"
-                  stories={display.latest}
-                  singleRow
-                  desktopSingleRow
-                  compactMobile
-                />
+                <LatestNewsTimeline stories={display.latest} />
               </div>
 
               <aside className="min-w-0 space-y-5 xl:sticky xl:top-6">

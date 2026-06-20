@@ -177,7 +177,7 @@ const sanitizeArticleHtml = (value) => {
 };
 
 const getStoryCategory = (story) =>
-  stripMarkup(story?.label || story?.category || "Newsroom");
+  stripMarkup(story?.label || story?.category || "News");
 
 const formatAbsoluteDate = (story) => {
   const date = parseStoryDate(story);
@@ -345,7 +345,7 @@ const StoryImageFallback = ({ story }) => (
         {getStoryCategory(story)}
       </p>
       <h3 className="mt-3 text-sm font-black leading-tight sm:text-base">
-        {story?.title || "Hooks newsroom"}
+        {story?.title || "Hooks editorial"}
       </h3>
     </div>
   </div>
@@ -645,7 +645,7 @@ const RecommendedStoryRow = ({ story }) => (
       </h3>
       <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-[#7d8898] sm:text-[12px]">
         <span className="hidden font-medium normal-case tracking-normal text-[#4d5968] sm:inline">
-          {story.author || "Hooks newsroom"}
+          {story.author || "Hooks editorial"}
         </span>
         <span className="hidden h-1 w-1 rounded-full bg-[#c6d1df] sm:inline-flex" />
         <span>{formatAbsoluteDate(story)}</span>
@@ -835,7 +835,7 @@ const ErrorState = ({ message = "" }) => (
     <section className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
       <div className="rounded-lg bg-[#fff5f5] p-8">
         <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-rose-700">
-          Hooks Newsroom
+          Hooks News
         </p>
         <h2 className="mt-3 text-3xl font-black tracking-[-0.04em] text-rose-900">
           We could not load the story
@@ -847,7 +847,7 @@ const ErrorState = ({ message = "" }) => (
           to="/news"
           className="mt-6 inline-flex items-center gap-2 rounded-lg bg-rose-700 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-rose-800"
         >
-          Back to news
+          Back to stories
           <FaArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
@@ -891,7 +891,7 @@ const NewsStoryArticlePage = () => {
   const articleDescription =
     stripMarkup(story?.summary) ||
     articleParagraphs[0] ||
-    "Hooks newsroom coverage.";
+    "Hooks editorial coverage.";
   const articleHtml = useMemo(
     () => sanitizeArticleHtml(story?.contentHtml || ""),
     [story?.contentHtml],
@@ -923,7 +923,7 @@ const NewsStoryArticlePage = () => {
   })();
 
   const storyAuthor =
-    String(story?.author || "Hooks newsroom").trim() || "Hooks newsroom";
+    String(story?.author || "Hooks editorial").trim() || "Hooks editorial";
   const imageCredit = formatImageCredit(story);
   const updatedDateLabel = formatUpdatedDate(story);
   const articleHeadings = useMemo(
@@ -1281,7 +1281,7 @@ const NewsStoryArticlePage = () => {
 
                 {relatedStories.length ? (
                   <section className="mt-8 sm:mt-12">
-                    <SectionTitle eyebrow="Related" title="Related Stories" />
+                    <SectionTitle eyebrow="Related" title="Related News" />
 
                     <div className="mt-4 grid grid-cols-2 gap-3 sm:mt-6 sm:grid-cols-4 sm:gap-4">
                       {paginatedRelatedStories.map((item) => (
@@ -1351,7 +1351,7 @@ const NewsStoryArticlePage = () => {
                   <section className="mt-8 sm:mt-12">
                     <SectionTitle
                       eyebrow="Recommended"
-                      title="More From The Newsroom"
+                      title="More News"
                     />
 
                     <div className="-mx-4 mt-4 flex gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:mt-6 sm:block sm:overflow-visible sm:px-0 sm:pb-0">
@@ -1367,7 +1367,7 @@ const NewsStoryArticlePage = () => {
                 <SidebarSection title="Trending News" mobileSoft>
                   <div className="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#7c3aed]">
                     <FaFire className="h-3.5 w-3.5" />
-                    Live from the newsroom
+                    Live from editorial
                   </div>
 
                   <div className="divide-y divide-[#eceff3]">

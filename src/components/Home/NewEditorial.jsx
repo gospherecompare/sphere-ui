@@ -38,7 +38,7 @@ const clipText = (value, maxWords = 26) => {
 };
 
 const getStoryCategory = (story) =>
-  stripMarkup(story?.label || story?.category || "News");
+  stripMarkup(story?.label || story?.category || "Update");
 
 const getStorySummary = (story, maxWords = 28) => {
   const summary =
@@ -151,7 +151,7 @@ const StoryMedia = ({ story, className = "", eager = false }) => {
               {getStoryCategory(story)}
             </p>
             <h3 className="mt-3 text-base font-black leading-tight">
-              {story?.title || "Hooks Newsroom"}
+              {story?.title || "Hooks News"}
             </h3>
           </div>
         </div>
@@ -198,13 +198,13 @@ const LoadingState = () => (
 const EmptyState = () => (
   <div className="mt-8 rounded-lg bg-[#f7faff] p-8">
     <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#1d4ed8]">
-      Hooks Newsroom
+      Hooks News
     </p>
     <h2 className="mt-3 text-3xl font-black tracking-[-0.04em] text-[#111111]">
       No stories published yet
     </h2>
     <p className="mt-4 max-w-2xl text-[15px] leading-7 text-[#575757]">
-      Publish a story from the admin newsroom and it will appear here
+      Publish a story from the admin news desk and it will appear here
       automatically.
     </p>
     <Link
@@ -220,10 +220,10 @@ const EmptyState = () => (
 const ErrorState = ({ error = "" }) => (
   <div className="mt-8 rounded-lg bg-[#f7faff] p-8">
     <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#1d4ed8]">
-      Hooks Newsroom
+      Hooks News
     </p>
     <h2 className="mt-3 text-3xl font-black tracking-[-0.04em] text-[#111111]">
-      We could not load the news feed
+      We could not load the story feed
     </h2>
     <p className="mt-4 max-w-2xl text-[15px] leading-7 text-[#4b5f82]">
       {error || "Please try again in a moment."}
@@ -504,10 +504,10 @@ const NewEditorial = ({ stories = [], loading = false, error = "" }) => {
           <div className="mt-5">
             <div className="max-w-4xl">
               <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-[#1d4ed8]">
-                Hooks Newsroom
+                Hooks News
               </p>
               <h2 className="mt-3 text-[28px] font-black leading-[1.02] tracking-[-0.05em] text-[#121212] sm:text-[44px] lg:text-[50px]">
-                Latest News & Articles
+                Latest News
               </h2>
               <p className="mt-4 max-w-3xl text-[14px] leading-7 text-[#575757] sm:text-base">
                 Fresh gadget launches, mobile updates, reviews, buying guides,
@@ -555,7 +555,7 @@ const NewEditorial = ({ stories = [], loading = false, error = "" }) => {
                   <div className="flex items-center gap-2 text-[#1d4ed8]">
                     <FaFire className="h-4 w-4" />
                     <p className="text-[11px] font-bold uppercase tracking-[0.24em]">
-                      Top Stories
+                      Top News
                     </p>
                   </div>
 
@@ -590,7 +590,7 @@ const NewEditorial = ({ stories = [], loading = false, error = "" }) => {
                 <div className="flex items-end justify-between gap-4 border-b border-[#dfdfdf] pb-4">
                   <div>
                     <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#1d4ed8]">
-                      Technology News
+                      Technology Updates
                     </p>
                     <h2 className="mt-2 text-[22px] font-black tracking-[-0.04em] text-[#151515] sm:text-[24px]">
                       Latest Updates
@@ -634,7 +634,7 @@ const NewEditorial = ({ stories = [], loading = false, error = "" }) => {
                   {sidebarPicks.length ? (
                     <div className="mt-6 border-t border-[#d9e4f1] pt-6">
                       <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#1d4ed8]">
-                        More Stories
+                        More News
                       </p>
 
                       <div className="mt-4">

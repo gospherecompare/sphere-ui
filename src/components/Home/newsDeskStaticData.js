@@ -1,6 +1,6 @@
 export const NEWS_HOME_TABS = [
   { id: "all", label: "All stories" },
-  { id: "news", label: "News" },
+  { id: "news", label: "Updates" },
   { id: "mobiles", label: "Mobiles" },
   { id: "gadgets", label: "Gadgets" },
   { id: "guides", label: "Guides" },

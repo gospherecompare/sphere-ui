@@ -486,7 +486,7 @@ const LinkedNewsStoryCard = ({ story, compact = false }) => {
   if (!story?.slug || !story?.title) return null;
 
   const storyPath = createNewsStoryPath(story.slug);
-  const authorLabel = story?.author || "Hooks newsroom";
+  const authorLabel = story?.author || "Hooks news";
   const linkedProductNames = Array.isArray(story?.linkedProductNames)
     ? story.linkedProductNames.filter(Boolean)
     : [];
@@ -5812,17 +5812,17 @@ Price: ${price}
                     Related News
                   </p>
                   <h2 className="mt-1 text-base font-semibold tracking-tight text-slate-900 sm:mt-2 sm:text-lg md:text-xl">
-                    {linkedNewsHeading} <span className="">News</span>
+                    {linkedNewsHeading} <span className="">Coverage</span>
                   </h2>
                   <p className="mt-2 max-w-2xl text-sm text-[#5f6d8f]">
-                    This block appears only when the newsroom has a
+                    This block appears only when the news desk has a
                     product-linked story saved for this smartphone, including
                     multi-product stories linked to more than one device.
                   </p>
                 </div>
                 {linkedNewsSecondaryStories.length > 0 ? (
                   <div className="inline-flex items-center rounded-full border border-white/80 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[#6373a0]">
-                    {exactLinkedNewsStories.length} Linked Stories
+                    {exactLinkedNewsStories.length} Linked News
                   </div>
                 ) : null}
               </div>

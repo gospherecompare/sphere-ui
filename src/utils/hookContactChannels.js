@@ -30,7 +30,7 @@ export const hookContactChannels = [
     summary:
       "For product launches, press material, editorial tips, and news corrections.",
     story:
-      "The news inbox supports the editorial side of Hooks, where launches, product updates, and useful buying context become clearer stories for readers.",
+      "The news inbox supports the content side of Hooks, where launches, product updates, and useful buying context become clearer stories for readers.",
   },
   {
     key: "support",

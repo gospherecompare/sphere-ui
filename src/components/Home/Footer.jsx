@@ -56,7 +56,7 @@ const footerSections = [
       { label: "Home", href: "/" },
       { label: "About Us", href: "/about" },
       { label: "Compare Devices", href: "/compare" },
-      { label: "News & Articles", href: "/news" },
+      { label: "News", href: "/news" },
     ],
   },
 ];

@@ -268,7 +268,7 @@ const getPushServerStatus = async ({ force = false } = {}) => {
 
     const status = {
       configured: false,
-      reason: "News alerts are temporarily unavailable. Please try again later.",
+      reason: "Update alerts are temporarily unavailable. Please try again later.",
     };
     writeStoredServerStatus(status);
     return status;
@@ -424,9 +424,9 @@ export const registerForNewsPush = async () => {
     if ([502, 503, 504].includes(Number(error?.status))) {
       writeStoredServerStatus({
         configured: false,
-        reason: "News alerts are temporarily unavailable. Please try again later.",
+        reason: "Update alerts are temporarily unavailable. Please try again later.",
       });
-      throw new Error("News alerts are temporarily unavailable. Please try again later.");
+      throw new Error("Update alerts are temporarily unavailable. Please try again later.");
     }
 
     throw error;
