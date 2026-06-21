@@ -2372,7 +2372,7 @@ const Header = () => {
       {/* DESKTOP HEADER (> 768px) */}
       <div className="hidden bg-white md:block">
         <div className="border-b border-white/10 bg-[#071120] text-white/70 shadow-[0_1px_0_rgba(255,255,255,0.04)_inset]">
-          <div className="mx-auto flex max-w-7xl items-center justify-center gap-5 overflow-x-auto px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:px-6 lg:gap-7 lg:px-8">
+          <div className="mx-auto flex max-w-7xl items-center justify-center gap-4 overflow-x-auto px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:px-6 lg:gap-7 lg:px-8 lg:text-[11px]">
             {desktopTopStripLinks.map((link) => (
               <Link
                 key={`${link.link}-${link.name}`}
@@ -2390,8 +2390,8 @@ const Header = () => {
         </div>
 
         <div className="border-b border-[#dfe8f6] bg-gradient-to-r from-white via-[#fbfdff] to-[#eef6ff]">
-          <div className="mx-auto w-full max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-            <div className="grid items-center gap-6 lg:grid-cols-[minmax(260px,0.8fr)_minmax(380px,536px)_minmax(190px,0.7fr)]">
+          <div className="mx-auto w-full max-w-7xl px-4 py-3 sm:px-6 lg:px-8 lg:py-3.5">
+            <div className="grid items-center gap-4 md:grid-cols-[minmax(220px,0.75fr)_minmax(320px,1.25fr)] xl:grid-cols-[minmax(260px,0.8fr)_minmax(380px,536px)_minmax(190px,0.7fr)]">
               <Link to="/" className="flex min-w-0 shrink-0 items-center">
                 <BrandIdentity variant="desktop" />
               </Link>
@@ -2411,13 +2411,13 @@ const Header = () => {
                     onFocus={() => setIsSearchFocused(true)}
                     onBlur={() => setIsSearchFocused(false)}
                     onKeyDown={handleSearchKeyDown}
-                    className={`w-full rounded-full bg-transparent py-3.5 pl-5 text-[15px] font-semibold text-slate-800 placeholder:text-slate-400 transition-[padding] duration-300 ease-out focus:outline-none ${
+                    className={`w-full rounded-full bg-transparent py-3 pl-5 text-[14px] font-semibold text-slate-800 placeholder:text-slate-400 transition-[padding] duration-300 ease-out focus:outline-none lg:py-3.5 lg:text-[15px] ${
                       isSearchActionCompact ? "pr-16" : "pr-28"
                     }`}
                   />
                   <button
                     type="submit"
-                    className={`absolute right-2 top-1/2 inline-flex h-10 -translate-y-1/2 items-center justify-center overflow-hidden rounded-full bg-gradient-to-r from-[#3158e0] via-[#4f46e5] to-[#7c3aed] py-2 text-sm font-bold text-white shadow-[0_10px_22px_rgba(79,70,229,0.24)] transition-all duration-300 ease-out hover:scale-[1.01] ${
+                    className={`absolute right-2 top-1/2 inline-flex h-9 -translate-y-1/2 items-center justify-center overflow-hidden rounded-full bg-gradient-to-r from-[#3158e0] via-[#4f46e5] to-[#7c3aed] py-2 text-sm font-bold text-white shadow-[0_10px_22px_rgba(79,70,229,0.24)] transition-all duration-300 ease-out hover:scale-[1.01] lg:h-10 ${
                       isSearchActionCompact
                         ? "w-10 gap-0 px-0"
                         : "w-[104px] gap-2 px-4"
@@ -2493,12 +2493,12 @@ const Header = () => {
       <div className="hidden bg-white md:block">
         <div className="border-b border-[#dbe7f6] bg-[#eef6ff] text-slate-600">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-center gap-2 overflow-x-auto py-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex items-center justify-center gap-1.5 overflow-x-auto py-1.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden lg:gap-2">
               {secondaryFeatureLinks.map((link) => (
                 <Link
                   key={`${link.id}-${link.name}`}
                   to={link.link}
-                  className={`inline-flex shrink-0 items-center rounded-full px-3.5 py-2 text-[11px] font-black uppercase tracking-[0.12em] transition-all duration-200 ${
+                  className={`inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.12em] transition-all duration-200 lg:px-3.5 lg:py-2 lg:text-[11px] ${
                     isActiveNavLink(link.link)
                       ? "bg-white text-[#2454d6] shadow-sm"
                       : "text-[#243b5a] hover:bg-white/75 hover:text-[#2454d6]"
@@ -2633,12 +2633,14 @@ const Header = () => {
       {
         id: "price",
         title: "Best Phones by Price",
+        icon: FaTag,
         kind: "accordion",
         items: priceItems,
       },
       {
         id: "brands",
         title: "Popular Brands",
+        icon: FaStore,
         kind: "accordion",
         items: brandItems,
         footer: { label: "All Brands", href: "/smartphones" },
@@ -2646,43 +2648,56 @@ const Header = () => {
       {
         id: "features",
         title: "Browse by Feature",
+        icon: FaBolt,
         kind: "accordion",
         items: featureItems,
       },
       {
         id: "smartphones",
         title: "Smartphones",
+        icon: FaMobileAlt,
         kind: "accordion",
         items: smartphoneItems,
       },
       {
         id: "compare",
         title: "Compare Devices",
+        icon: FaAlignJustify,
         kind: "link",
         href: toCanonicalPagePath("/compare"),
       },
       {
         id: "laptops",
         title: "Laptops",
+        icon: FaLaptop,
         kind: "accordion",
         items: laptopItems,
       },
       {
         id: "tvs",
         title: "TVs",
+        icon: FaTv,
         kind: "accordion",
         items: tvItems,
       },
-      { id: "finder", title: "Phone Finder", kind: "link", href: "/" },
+      {
+        id: "finder",
+        title: "Phone Finder",
+        icon: FaSearch,
+        kind: "link",
+        href: "/",
+      },
       {
         id: "news",
         title: "News",
+        icon: FaInfoCircle,
         kind: "link",
         href: toCanonicalPagePath("/news"),
       },
       {
         id: "trending",
         title: "Trending Mobiles",
+        icon: FaBolt,
         kind: "link",
         href: toCanonicalPagePath("/trending/smartphones"),
       },
@@ -2691,6 +2706,7 @@ const Header = () => {
             {
               id: "wishlist",
               title: "Wishlist",
+              icon: FaHeart,
               kind: "link",
               href: "/wishlist",
             },
@@ -2708,69 +2724,93 @@ const Header = () => {
             />
 
             <div
-              className={`fixed inset-y-0 left-0 z-[80] w-[296px] max-w-[84vw] transform overflow-hidden border-r border-slate-100 bg-white shadow-[18px_0_60px_rgba(15,23,42,0.16)] transition-transform duration-300 lg:hidden ${
+              className={`fixed inset-y-0 left-0 z-[80] w-[min(90vw,22.5rem)] transform overflow-hidden bg-[#f6f8fc] shadow-[18px_0_55px_rgba(15,23,42,0.2)] transition-transform duration-300 lg:hidden ${
                 isMenuOpen ? "translate-x-0" : "-translate-x-full"
               }`}
             >
               <div className="flex h-full flex-col">
-                <div className="flex min-h-[74px] items-center justify-between border-b border-slate-100 px-4 py-4">
-                  <Link
-                    to="/"
-                    className="flex items-center min-w-0"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <BrandIdentity variant="drawer" />
-                  </Link>
+                <div className="bg-white px-4 pb-4 pt-[calc(env(safe-area-inset-top)+14px)] shadow-[0_8px_26px_rgba(15,23,42,0.06)]">
+                  <div className="flex min-h-[42px] items-center justify-between gap-3">
+                    <Link
+                      to="/"
+                      className="flex min-w-0 items-center"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <BrandIdentity variant="drawer" />
+                    </Link>
+                    <button
+                      type="button"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-700 transition active:scale-95 active:bg-slate-200"
+                      onClick={() => setIsMenuOpen(false)}
+                      aria-label="Close menu"
+                    >
+                      <FaTimes className="h-4 w-4" />
+                    </button>
+                  </div>
+
                   <button
                     type="button"
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950"
-                    onClick={() => setIsMenuOpen(false)}
-                    aria-label="Close menu"
+                    className="mt-3 flex h-11 w-full items-center gap-3 rounded-2xl bg-slate-100 px-3 text-left text-[13px] font-semibold text-slate-500 transition active:bg-slate-200"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      setIsSearchOpen(true);
+                    }}
                   >
-                    <FaTimes className="h-5 w-5" />
+                    <FaSearch className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+                    <span className="min-w-0 flex-1 truncate">
+                      Search phones, brands, specs...
+                    </span>
                   </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto px-4 py-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                  <nav>
+                <div className="flex-1 overflow-y-auto px-3 pb-4 pt-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  <div className="px-1 pb-2 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">
+                    Explore
+                  </div>
+
+                  <nav className="overflow-hidden rounded-[1.35rem] bg-white shadow-[0_10px_30px_rgba(15,23,42,0.07)]">
                     {drawerItems.map((item) => {
                       const isOpen = openSection === item.id;
+                      const ItemIcon = item.icon || FaChevronRight;
 
                       if (item.kind === "accordion") {
                         return (
                           <section
                             key={item.id}
-                            className="border-b border-slate-100/90"
+                            className="bg-white"
                           >
                             <button
                               type="button"
                               onClick={() =>
                                 setOpenSection(isOpen ? "" : item.id)
                               }
-                              className="flex w-full items-center justify-between py-[15px] text-left"
+                              className="flex min-h-[54px] w-full items-center gap-3 border-b border-slate-100 px-3.5 text-left transition active:bg-slate-50"
                             >
-                              <span className="text-[15px] font-bold text-[#073377]">
+                              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#eef5ff] text-[#0b4aa2]">
+                                <ItemIcon className="h-3.5 w-3.5" />
+                              </span>
+                              <span className="min-w-0 flex-1 text-[14px] font-bold text-slate-900">
                                 {item.title}
                               </span>
                               {isOpen ? (
-                                <FaChevronDown className="h-3 w-3 text-slate-500" />
+                                <FaChevronDown className="h-3 w-3 shrink-0 text-slate-500" />
                               ) : (
-                                <FaArrowRight className="h-3 w-3 text-slate-500" />
+                                <FaArrowRight className="h-3 w-3 shrink-0 text-slate-500" />
                               )}
                             </button>
 
                             {isOpen ? (
-                              <div className="pb-3 pl-1">
-                                <ul className="space-y-0.5 pl-1">
+                              <div className="bg-slate-50">
+                                <ul className="py-1">
                                   {item.items.map((subItem) => (
                                     <li key={`${item.id}-${subItem.label}`}>
                                       <Link
                                         to={subItem.href}
                                         onClick={() => setIsMenuOpen(false)}
-                                        className="flex items-center justify-between py-2.5 text-[13px] font-medium text-slate-700 transition-colors hover:text-[#073377]"
+                                        className="flex min-h-[43px] items-center justify-between gap-3 px-4 pl-[62px] text-[13px] font-semibold text-slate-600 transition active:bg-white"
                                       >
                                         <span>{subItem.label}</span>
-                                        <FaArrowRight className="h-3 w-3 text-slate-400" />
+                                        <FaArrowRight className="h-3 w-3 shrink-0 text-slate-400" />
                                       </Link>
                                     </li>
                                   ))}
@@ -2779,7 +2819,7 @@ const Header = () => {
                                   <Link
                                     to={item.footer.href}
                                     onClick={() => setIsMenuOpen(false)}
-                                    className="mt-2 inline-flex items-center gap-2 text-[13px] font-medium text-blue-700"
+                                    className="ml-[62px] inline-flex min-h-[40px] items-center gap-2 text-[13px] font-bold text-blue-700"
                                   >
                                     <span>{item.footer.label}</span>
                                     <FaArrowRight className="h-3 w-3" />
@@ -2796,14 +2836,67 @@ const Header = () => {
                           key={item.id}
                           to={item.href}
                           onClick={() => setIsMenuOpen(false)}
-                          className="flex items-center justify-between border-b border-slate-100/90 py-[15px] text-[15px] font-bold text-[#073377]"
+                          className="flex min-h-[54px] items-center gap-3 border-b border-slate-100 bg-white px-3.5 text-[14px] font-bold text-slate-900 transition last:border-b-0 active:bg-slate-50"
                         >
-                          <span>{item.title}</span>
-                          <FaArrowRight className="h-3 w-3 text-slate-500" />
+                          <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#eef5ff] text-[#0b4aa2]">
+                            <ItemIcon className="h-3.5 w-3.5" />
+                          </span>
+                          <span className="min-w-0 flex-1">{item.title}</span>
+                          <FaArrowRight className="h-3 w-3 shrink-0 text-slate-500" />
                         </Link>
                       );
                     })}
                   </nav>
+                </div>
+
+                <div className="bg-white px-4 pb-[calc(env(safe-area-inset-bottom)+14px)] pt-3 shadow-[0_-8px_26px_rgba(15,23,42,0.06)]">
+                  {isLoggedIn ? (
+                    <div className="flex items-center gap-3">
+                      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-700">
+                        <FaUser className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[13px] font-bold text-slate-900">
+                          {userName || "My Account"}
+                        </p>
+                        <p className="truncate text-[11px] font-semibold text-slate-500">
+                          {userEmail || "Wishlist and saved devices"}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        className="rounded-full bg-slate-100 px-3 py-2 text-[12px] font-bold text-slate-700 active:bg-slate-200"
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          handleLogout();
+                        }}
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-2xl bg-blue-600 px-3 text-[13px] font-bold text-white active:bg-blue-700"
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          handleLogin();
+                        }}
+                      >
+                        <FaSignInAlt className="h-3.5 w-3.5" />
+                        Login
+                      </button>
+                      <Link
+                        to="/signup"
+                        className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-2xl bg-slate-100 px-3 text-[13px] font-bold text-slate-800 active:bg-slate-200"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <FaUserPlus className="h-3.5 w-3.5" />
+                        Sign up
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

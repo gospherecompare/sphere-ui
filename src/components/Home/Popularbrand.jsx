@@ -36,7 +36,7 @@ const BrandCard = ({ brand, index, isActive, isLoaded, onClick }) => {
         transitionDelay: `${index * 40}ms`,
       }}
     >
-      <span className="pointer-events-none absolute left-1/2 top-1/2 h-11 w-20 -translate-x-1/2 -translate-y-1/2 rounded-md bg-white/[0.1] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_16px_34px_rgba(2,6,23,0.12)] transition-all duration-300 group-hover:bg-white/[0.14] sm:h-14 sm:w-24" />
+      <span className="pointer-events-none absolute left-1/2 top-1/2 h-11 w-20 -translate-x-1/2 -translate-y-1/2 rounded-md bg-white/[0.08] shadow-[0_14px_30px_rgba(2,6,23,0.1)] transition-all duration-300 group-hover:bg-white/[0.12] sm:h-14 sm:w-24" />
       <span className="pointer-events-none absolute inset-x-5 bottom-2 h-6 rounded-full bg-cyan-100/[0.12] opacity-0 blur-xl transition-opacity duration-300 group-hover:opacity-100" />
       <span className="pointer-events-none absolute inset-x-8 bottom-0 h-px bg-gradient-to-r from-transparent via-cyan-100/50 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
       {brand.logo && !imageFailed ? (

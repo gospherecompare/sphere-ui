@@ -1,25 +1,46 @@
 import React from "react";
 import useTitle from "../../hooks/useTitle";
-import BestPriceSection from "./BestPrice";
-import LatestSmartphones from "./UpcomingSmartphones";
-import FeaturedProduct from "./FeaturedProduct";
 import HeroSection from "./Herosection";
-import PopularBrands from "./Popularbrand";
-import RecommendedSmartphones from "./RecommendedSmartphones";
-import LatestNewsArticlesSection from "./LatestNewsArticlesSection";
 // BannerSlot disabled until completed.
+
+const FeaturedProduct = React.lazy(() => import("./FeaturedProduct"));
+const PopularBrands = React.lazy(() => import("./Popularbrand"));
+const LatestSmartphones = React.lazy(() => import("./UpcomingSmartphones"));
+const BestPriceSection = React.lazy(() => import("./BestPrice"));
+const RecommendedSmartphones = React.lazy(() => import("./RecommendedSmartphones"));
+const LatestNewsArticlesSection = React.lazy(() =>
+  import("./LatestNewsArticlesSection"),
+);
+
+const BelowFoldSection = ({ children }) => (
+  <div className="[content-visibility:auto] [contain-intrinsic-size:1px_720px]">
+    <React.Suspense fallback={null}>{children}</React.Suspense>
+  </div>
+);
 
 const Home = () => {
   useTitle({ page: "home" });
   return (
     <div className="min-h-screen overflow-x-hidden ">
       <HeroSection />
-      <FeaturedProduct />
-      <PopularBrands />
-      <LatestSmartphones />
-      <BestPriceSection />
-      <RecommendedSmartphones />
-      <LatestNewsArticlesSection />
+      <BelowFoldSection>
+        <FeaturedProduct />
+      </BelowFoldSection>
+      <BelowFoldSection>
+        <PopularBrands />
+      </BelowFoldSection>
+      <BelowFoldSection>
+        <LatestSmartphones />
+      </BelowFoldSection>
+      <BelowFoldSection>
+        <BestPriceSection />
+      </BelowFoldSection>
+      <BelowFoldSection>
+        <RecommendedSmartphones />
+      </BelowFoldSection>
+      <BelowFoldSection>
+        <LatestNewsArticlesSection />
+      </BelowFoldSection>
     </div>
   );
 };

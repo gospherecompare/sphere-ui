@@ -3,24 +3,8 @@ import React from "react";
 import Header from "./components/Home/Header";
 import ScrollToTop from "./components/ScrollToTop";
 import Footer from "./components/Home/Footer";
-import Home from "./components/Home/Home";
-import Smartphones from "./components/Product/Smartphones";
-import UpcomingSmartphonesList from "./components/Product/UpcomingSmartphonesList";
-import Laptops from "./components/Product/Laptops";
-import Networking from "./components/Product/Networking";
-import TVs from "./components/Product/TVs";
-import TrendingProductsHub from "./components/Product/TrendingProductsHub";
-import PopularComparisonsPage from "./components/PopularComparisonsPage";
-import DeviceComparison from "./components/compare";
 import Breadcrumbs from "./components/Breadcrumbs";
 // BannerSlot disabled until completed.
-import About from "./components/Static/About";
-import Careers from "./components/Static/Careers";
-import Contact from "./components/Static/Contact";
-import NewsArticlesPage from "./components/Static/NewsArticlesPage";
-import PrivacyPolicy from "./components/Static/PrivacyPolicy.jsx";
-import Terms from "./components/Static/Terms.jsx";
-import NotFound from "./components/Static/NotFound";
 import {
   Route,
   Routes,
@@ -30,15 +14,6 @@ import {
   useParams,
 } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import MobileDetailCard from "./components/Device detail/Smartphone";
-import MobileCompare from "./components/compare";
-import Login from "./components/Auths/Login";
-import Signup from "./components/Auths/Signup";
-import TVDetailCard from "./components/Device detail/TV";
-import LaptopDetailCard from "./components/Device detail/Laptop";
-import NetworkingDetailCard from "./components/Device detail/Network";
-import Wishlist from "./components/Wishlist";
-import AccountManagement from "./components/AccountManagement";
 import MobileBottomNavigation from "./components/ui/MobileBottomNavigation";
 import { useDevice } from "./hooks/useDevice";
 import {
@@ -91,6 +66,49 @@ const DEFAULT_SEO_DESCRIPTION =
 const BUDGET_PHONE_KEYWORDS =
   "budget phones under 10000, budget phones under 15000, budget phones under 20000, budget phones under 30000, budget phones under 50000";
 const DEFAULT_SEO_KEYWORDS = `hooks, best gadget comparison site, mobile price comparison india, moblie price comparison india, compare laptops smartphones tvs, compare smartphone tv laptops, compare specs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch phones, trending phone in india, most popular mobiles, top selling gadgets india, 5g phones in india, ai phones in india, ${BUDGET_PHONE_KEYWORDS}, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, gaming laptops india, student laptops india, laptop comparison india, vacuum cooler laptop and phone, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000, smart tv comparison india`;
+
+const Home = React.lazy(() => import("./components/Home/Home"));
+const Smartphones = React.lazy(() => import("./components/Product/Smartphones"));
+const UpcomingSmartphonesList = React.lazy(() =>
+  import("./components/Product/UpcomingSmartphonesList"),
+);
+const Laptops = React.lazy(() => import("./components/Product/Laptops"));
+const Networking = React.lazy(() => import("./components/Product/Networking"));
+const TVs = React.lazy(() => import("./components/Product/TVs"));
+const TrendingProductsHub = React.lazy(() =>
+  import("./components/Product/TrendingProductsHub"),
+);
+const PopularComparisonsPage = React.lazy(() =>
+  import("./components/PopularComparisonsPage"),
+);
+const DeviceComparison = React.lazy(() => import("./components/compare"));
+const About = React.lazy(() => import("./components/Static/About"));
+const Careers = React.lazy(() => import("./components/Static/Careers"));
+const Contact = React.lazy(() => import("./components/Static/Contact"));
+const NewsArticlesPage = React.lazy(() =>
+  import("./components/Static/NewsArticlesPage"),
+);
+const PrivacyPolicy = React.lazy(() =>
+  import("./components/Static/PrivacyPolicy.jsx"),
+);
+const Terms = React.lazy(() => import("./components/Static/Terms.jsx"));
+const NotFound = React.lazy(() => import("./components/Static/NotFound"));
+const MobileDetailCard = React.lazy(() =>
+  import("./components/Device detail/Smartphone"),
+);
+const TVDetailCard = React.lazy(() => import("./components/Device detail/TV"));
+const LaptopDetailCard = React.lazy(() =>
+  import("./components/Device detail/Laptop"),
+);
+const NetworkingDetailCard = React.lazy(() =>
+  import("./components/Device detail/Network"),
+);
+const Login = React.lazy(() => import("./components/Auths/Login"));
+const Signup = React.lazy(() => import("./components/Auths/Signup"));
+const Wishlist = React.lazy(() => import("./components/Wishlist"));
+const AccountManagement = React.lazy(() =>
+  import("./components/AccountManagement"),
+);
 
 const normalizeSeoPath = (pathname) => {
   if (!pathname) return "/";
@@ -626,6 +644,18 @@ const GlobalLoadingExperience = () => {
   );
 };
 
+const RouteChunkFallback = () => (
+  <main
+    aria-busy="true"
+    className="min-h-[45vh] bg-white px-4 py-10 md:min-h-[50vh]"
+  >
+    <div className="mx-auto flex max-w-6xl items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4 text-sm font-semibold text-slate-500 shadow-sm md:max-w-sm">
+      <span className="h-3 w-3 animate-pulse rounded-full bg-blue-600" />
+      Loading page...
+    </div>
+  </main>
+);
+
 function App() {
   const NewsRedirect = () => <Navigate to="/news" replace />;
 
@@ -762,9 +792,10 @@ function App() {
         <aside className="hidden xl:block absolute right-45 top-20 h-40 z-30 w-[170px]">
           {/* BannerSlot disabled (incomplete). */}
         </aside>
-        <Routes>
-          {/* Home */}
-          <Route path="/" element={<Home />} />
+        <React.Suspense fallback={<RouteChunkFallback />}>
+          <Routes>
+            {/* Home */}
+            <Route path="/" element={<Home />} />
 
           {/* Authentication */}
           <Route path="/login" element={<Login asPage />} />
@@ -948,8 +979,9 @@ function App() {
           <Route path="/blog/:slug" element={<NewsRedirect />} />
 
           {/* 404 Fallback */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </React.Suspense>
         <Breadcrumbs />
         {/* BannerSlot disabled (incomplete). */}
         <Footer />

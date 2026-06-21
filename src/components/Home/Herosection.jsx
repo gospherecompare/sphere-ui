@@ -7,9 +7,7 @@ import {
   FaExchangeAlt,
   FaLaptop,
   FaMobileAlt,
-  FaRegLightbulb,
   FaSearch,
-  FaSignal,
   FaTv,
 } from "react-icons/fa";
 import useDevice from "../../hooks/useDevice";
@@ -509,29 +507,6 @@ const HeroSection = () => {
     () => dedupeCards([...featuredDevices, ...discoveryCards]),
     [discoveryCards, featuredDevices],
   );
-  const visibleStats = [
-    {
-      label: "Indexed devices",
-      value: allStoreCards.length,
-      icon: FaSignal,
-    },
-    {
-      label: `${activeCategoryMeta.label} available`,
-      value: activeCategoryMeta.count,
-      icon: activeCategoryMeta.icon,
-    },
-    {
-      label: "Active brands",
-      value: Array.isArray(brands) ? brands.length : 0,
-      icon: FaRegLightbulb,
-    },
-    {
-      label: "Live signals",
-      value: liveCards.length,
-      icon: FaChartLine,
-    },
-  ];
-
   const dynamicChips = useMemo(() => {
     const brandChips = (Array.isArray(brands) ? brands : [])
       .map((brand) => firstText(brand?.name, brand))
@@ -756,9 +731,6 @@ const HeroSection = () => {
                   >
                     <Icon className="h-3.5 w-3.5" />
                     {category.label}
-                    <span className="text-xs text-blue-100/55">
-                      {formatCount(category.count)}
-                    </span>
                   </button>
                 );
               })}
@@ -924,27 +896,6 @@ const HeroSection = () => {
           </div>
         </div>
 
-        <div className="mt-10 hidden gap-3 lg:grid lg:grid-cols-4">
-          {visibleStats.map((stat) => {
-            const Icon = stat.icon;
-            return (
-              <div
-                key={stat.label}
-                className="rounded-md border border-cyan-200/14 bg-white/[0.055] px-4 py-4 shadow-[0_14px_36px_rgba(2,6,23,0.14)]"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-xs font-bold uppercase text-blue-100/58">
-                    {stat.label}
-                  </span>
-                  <Icon className="h-4 w-4 text-sky-300" />
-                </div>
-                <p className="mt-3 text-3xl font-black text-white">
-                  {formatCount(stat.value)}
-                </p>
-              </div>
-            );
-          })}
-        </div>
       </div>
     </section>
   );
