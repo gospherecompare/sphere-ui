@@ -1,637 +1,294 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import {
+  FaAd,
   FaArrowRight,
-  FaCheckCircle,
-  FaChevronDown,
-  FaChevronRight,
+  FaCookieBite,
   FaEnvelope,
-  FaLeaf,
+  FaExternalLinkAlt,
   FaLock,
+  FaServer,
   FaShieldAlt,
-  FaUserShield,
+  FaUserCheck,
 } from "react-icons/fa";
 import useTitle from "../../hooks/useTitle";
 import SEO from "../SEO";
 import { createWebPageSchema } from "../../utils/schemaGenerators";
 
-const updatedOn = "June 2, 2026";
-
-const policyChips = [
-  {
-    icon: FaShieldAlt,
-    label: "Transparent practices",
-  },
-  {
-    icon: FaLock,
-    label: "Protected access",
-  },
-  {
-    icon: FaLeaf,
-    label: "Minimal collection",
-  },
-];
+const SITE_ORIGIN = "https://tryhook.shop";
+const CONTACT_EMAIL = "contact@tryhook.shop";
+const updatedOn = "June 2026";
 
 const policySections = [
   {
-    id: "information-we-collect",
+    id: "overview",
     number: "1",
-    title: "Information We Collect",
-    summary:
-      "We collect information you provide directly to us and a limited amount of technical data that helps the platform operate reliably.",
+    title: "Overview",
+    icon: FaShieldAlt,
     paragraphs: [
-      "Hooks is a product research and comparison platform. The information we collect is focused on operating your account, improving comparison experiences, and responding to support or partnership requests.",
-    ],
-    bullets: [
-      "Information you provide: name, email address, login credentials, and any details you share when contacting us or subscribing for updates.",
-      "Automatically collected information: browser type, device information, visited pages, time spent, referring URLs, and basic performance diagnostics.",
-      "Communications data: messages sent to support, partnership, or privacy inboxes so we can respond and keep a record of the request.",
+      "At TryHook, we respect the privacy of our visitors and are committed to protecting the information that is shared with us. This Privacy Policy explains how information is collected, used, stored, and protected when you access and use the TryHook website. By visiting or using our platform, you agree to the practices described in this policy.",
+      "TryHook is a technology discovery, comparison, and news platform that provides information related to consumer electronics, technology, artificial intelligence, science, internet services, and digital innovation. As part of operating and improving our services, certain information may be collected when users interact with the website.",
     ],
   },
   {
-    id: "how-we-use-your-information",
+    id: "information-collected-automatically",
     number: "2",
-    title: "How We Use Your Information",
-    summary:
-      "We use the information we collect to deliver the service, keep it secure, and improve the quality of our product intelligence.",
+    title: "Information Collected Automatically",
+    icon: FaServer,
     paragraphs: [
-      "Hooks does not operate direct checkout for product purchases on this website. The information we process is used for platform administration, user support, analytics, and product experience improvements.",
-    ],
-    bullets: [
-      "Provide, maintain, and improve the website and comparison tools.",
-      "Personalize your experience, including search, saved preferences, and content relevance.",
-      "Respond to your inquiries, account requests, and support needs.",
-      "Send important updates, service notices, and optional news or marketing messages.",
-      "Detect fraud, abuse, and technical issues that could affect platform security.",
+      "When you visit TryHook, some information is collected automatically through standard web technologies. This may include details such as your device type, browser information, operating system, IP address, pages visited, time spent on the website, referral sources, and general usage patterns.",
+      "This information helps us understand how visitors use the platform, identify technical issues, improve performance, and enhance the overall user experience. Information collected for analytics purposes is generally used in an aggregated form and is not intended to personally identify individual users.",
     ],
   },
   {
-    id: "information-sharing",
+    id: "information-you-provide",
     number: "3",
-    title: "Information Sharing",
-    summary:
-      "We do not sell your personal information. We share information only when it is necessary to operate the service or meet legal obligations.",
+    title: "Information You Provide",
+    icon: FaUserCheck,
     paragraphs: [
-      "When trusted vendors support the Hooks platform, they receive only the information needed to perform their work and remain subject to confidentiality and data-protection obligations.",
-    ],
-    bullets: [
-      "With service providers that help us host the site, secure accounts, measure performance, or manage communications.",
-      "When required by law, regulation, court order, or to protect rights, safety, and platform integrity.",
-      "In connection with a merger, financing, acquisition, or business transfer, subject to appropriate safeguards.",
+      "In certain situations, you may voluntarily provide information to us. For example, you may contact us by email, submit feedback, report an issue, request support, or communicate with us regarding partnerships and business inquiries.",
+      "In such cases, the information you provide may include your name, email address, and any details included in your communication. We use this information solely for responding to inquiries, improving our services, and maintaining communication where necessary.",
     ],
   },
   {
-    id: "cookies-and-tracking-technologies",
+    id: "cookies",
     number: "4",
-    title: "Cookies and Tracking Technologies",
-    summary:
-      "We use cookies and similar tools to remember settings, improve usability, and understand how people use the site.",
+    title: "Cookies and Similar Technologies",
+    icon: FaCookieBite,
     paragraphs: [
-      "Cookies help us keep sessions active, understand which pages are useful, and improve loading performance across devices.",
+      "Like most modern websites, TryHook may use cookies and similar technologies to improve functionality and provide a better browsing experience. Cookies help us understand user preferences, analyze website traffic, remember certain settings, and measure the effectiveness of content and services.",
+      "Cookies do not generally provide us with sensitive personal information, but they may help us improve how the website functions and how content is delivered to visitors. Users can choose to disable cookies through their browser settings, although certain features of the website may not function as intended if cookies are disabled.",
     ],
-    bullets: [
-      "Essential cookies support authentication, preferences, and security controls.",
-      "Analytics cookies help us understand traffic patterns and product interest trends.",
-      "Some browser or device-level tools may also store identifiers that help measure performance and diagnose issues.",
-    ],
-    cta: {
-      label: "Contact us about cookie or tracking questions",
-      href: "/contact",
-    },
   },
   {
-    id: "your-choices-and-rights",
+    id: "third-party-providers",
     number: "5",
-    title: "Your Choices and Rights",
-    summary:
-      "You may have rights to access, correct, delete, or object to certain uses of your personal information, depending on applicable law.",
+    title: "Third-Party Providers",
+    icon: FaExternalLinkAlt,
     paragraphs: [
-      "You can also opt out of optional promotional communications at any time. We will review verified requests in line with legal and operational requirements.",
+      "To improve our services and maintain the website, TryHook may use trusted third-party providers for analytics, security, hosting, content delivery, communication, and advertising. These providers may process information according to their own privacy policies and legal obligations.",
+      "Services such as website analytics platforms, hosting providers, content delivery networks, and advertising partners may collect limited technical information necessary for their services to function properly.",
     ],
-    bullets: [
-      "Request access to the personal information associated with your account.",
-      "Ask us to correct inaccurate or incomplete details.",
-      "Request deletion of eligible data when retention is no longer required.",
-      "Manage marketing communication preferences through unsubscribe options or direct contact.",
-    ],
-    cta: {
-      label: "Email privacy@hook.com",
-      href: "mailto:privacy@hook.com",
-    },
   },
   {
-    id: "data-security",
+    id: "advertising",
     number: "6",
-    title: "Data Security",
-    summary:
-      "We use technical and organizational safeguards designed to protect personal information from unauthorized access, misuse, or loss.",
+    title: "Advertising Partners",
+    icon: FaAd,
     paragraphs: [
-      "Our controls include role-based access, credential safeguards, encrypted transport, and monitoring that helps reduce operational risk. No internet-based system can guarantee absolute security, but we work to keep protections appropriate to the data we handle.",
+      "As TryHook continues to grow, advertisements may be displayed through advertising partners such as Google AdSense and other advertising networks. These partners may use cookies, device identifiers, and similar technologies to deliver relevant advertisements and measure advertising performance.",
+      "Advertising providers operate under their own privacy policies, and users are encouraged to review those policies for additional information regarding data collection and advertising preferences.",
     ],
   },
   {
-    id: "data-retention",
+    id: "security",
     number: "7",
-    title: "Data Retention",
-    summary:
-      "We keep information only for as long as needed to provide the service, comply with legal obligations, resolve disputes, and protect platform operations.",
+    title: "Data Security",
+    icon: FaLock,
     paragraphs: [
-      "Retention periods vary depending on the type of information, the purpose for which it was collected, and whether the data is needed for security, compliance, or business continuity.",
+      "Protecting user information is important to us. We implement reasonable technical and organizational measures designed to safeguard information from unauthorized access, misuse, alteration, disclosure, or destruction.",
+      "While we strive to maintain a secure environment, no method of electronic transmission or storage can guarantee absolute security. As a result, we cannot guarantee complete protection against every potential security risk.",
     ],
   },
   {
-    id: "childrens-privacy",
+    id: "external-links",
     number: "8",
-    title: "Children's Privacy",
-    summary:
-      "Hooks is not directed to children under 13, and we do not knowingly collect personal information from children under 13.",
+    title: "External Links",
+    icon: FaExternalLinkAlt,
     paragraphs: [
-      "If you believe a child has provided personal information to us, please contact us so we can review and take appropriate action.",
+      "TryHook may contain links to third-party websites, products, services, or resources that are not controlled or operated by us. Once you leave our website, the privacy practices of those external websites are governed by their own policies.",
+      "We encourage users to review the privacy policies of any third-party websites they visit, as we are not responsible for their content, security practices, or data handling procedures.",
     ],
   },
   {
-    id: "third-party-links",
+    id: "children",
     number: "9",
-    title: "Third-Party Links",
-    summary:
-      "Our website may link to brand sites, marketplaces, or other third-party services that operate under their own privacy and commercial terms.",
+    title: "Children's Privacy",
+    icon: FaUserCheck,
     paragraphs: [
-      "Hooks is not the merchant of record for purchases completed outside this website. We encourage you to read the privacy policies of any third-party property you visit from our platform.",
+      "Our website is intended for a general audience and is not specifically directed toward children under the age of 13. We do not knowingly collect personal information from children.",
+      "If we become aware that information from a child has been collected without appropriate consent, we will take reasonable steps to remove that information.",
     ],
   },
   {
-    id: "changes-to-this-policy",
+    id: "updates-and-contact",
     number: "10",
-    title: "Changes to This Policy",
-    summary:
-      "We may update this Privacy Policy from time to time to reflect legal, operational, or product changes.",
+    title: "Policy Updates and Contact",
+    icon: FaEnvelope,
     paragraphs: [
-      "When we make material updates, we will revise the Last updated date on this page and may provide additional notice when appropriate.",
+      "We may update this Privacy Policy from time to time to reflect changes in our services, legal requirements, technologies, or business practices. Any updates will be published on this page along with the revised effective date.",
+      "Continued use of the website after changes have been posted constitutes acceptance of the updated policy. If you have any questions regarding this Privacy Policy, your privacy rights, or the way information is handled on TryHook, please contact us at contact@tryhook.shop. We will make reasonable efforts to respond to inquiries and address concerns in a timely manner.",
+      "Thank you for trusting TryHook as your destination for technology discovery, comparisons, and technology news.",
     ],
   },
 ];
-
-const sectionIds = policySections.map((section) => section.id);
-
-const scrollToPolicySection = (id) => {
-  if (typeof window === "undefined") return;
-
-  const target = document.getElementById(id);
-  if (!target) return;
-
-  window.history.replaceState(null, "", `#${id}`);
-  target.scrollIntoView({ behavior: "smooth", block: "start" });
-};
-
-const HeroIllustration = () => (
-  <div className="relative mx-auto w-full max-w-[22rem]">
-    <div className="relative rounded-[28px] bg-white p-6">
-      <div className="rounded-[22px] bg-white p-4">
-        <div className="flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-slate-200" />
-          <span className="h-2.5 w-2.5 rounded-full bg-slate-200" />
-          <span className="h-2.5 w-14 rounded-full bg-blue-100" />
-        </div>
-        <div className="mt-4 space-y-3">
-          <div className="h-3 rounded-full bg-slate-100" />
-          <div className="h-3 w-10/12 rounded-full bg-slate-100" />
-          <div className="h-16 rounded-2xl bg-gradient-to-r from-blue-50 to-slate-50" />
-          <div className="flex gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-blue-50" />
-            <div className="flex-1 space-y-2">
-              <div className="h-3 w-24 rounded-full bg-slate-100" />
-              <div className="h-3 w-16 rounded-full bg-slate-100" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="absolute -bottom-6 left-4 rounded-[28px] bg-gradient-to-br from-[#2550ff] to-[#1532a7] p-5 text-white shadow-[0_18px_42px_rgba(37,80,255,0.34)]">
-        <FaLock className="h-10 w-10" />
-      </div>
-
-      <div className="absolute -right-1 bottom-4 flex h-24 w-20 items-end justify-center">
-        <div className="relative h-20 w-10 rounded-t-full bg-[#82d0cf]/45">
-          <span className="absolute -left-3 top-5 h-7 w-6 rounded-full bg-[#68c1c5]" />
-          <span className="absolute left-6 top-0 h-8 w-6 rounded-full bg-[#7dd2ce]" />
-          <span className="absolute -left-2 bottom-7 h-6 w-5 rounded-full bg-[#9adfd7]" />
-          <span className="absolute -bottom-2 left-1/2 h-5 w-10 -translate-x-1/2 rounded-full bg-slate-200" />
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
-const PrivacyNoteCard = () => (
-  <div className="rounded-[24px] bg-white p-5">
-    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
-      <FaUserShield className="h-5 w-5" />
-    </div>
-    <h3 className="mt-4 text-lg font-bold text-slate-900">Your privacy matters</h3>
-    <p className="mt-2 text-sm leading-6 text-slate-600">
-      We are committed to being transparent about how Hooks collects,
-      safeguards, and uses information across the platform.
-    </p>
-    <a
-      href="#your-choices-and-rights"
-      onClick={(event) => {
-        event.preventDefault();
-        scrollToPolicySection("your-choices-and-rights");
-      }}
-      className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-blue-700 transition-colors hover:text-blue-800"
-    >
-      Learn more about your rights
-      <FaArrowRight className="h-3.5 w-3.5" />
-    </a>
-  </div>
-);
-
-const SectionLink = ({ href, label }) => {
-  if (!href || !label) return null;
-
-  if (href.startsWith("/")) {
-    return (
-      <Link
-        to={href}
-        className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 transition-colors hover:text-blue-800"
-      >
-        {label}
-        <FaArrowRight className="h-3.5 w-3.5" />
-      </Link>
-    );
-  }
-
-  return (
-    <a
-      href={href}
-      className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 transition-colors hover:text-blue-800"
-    >
-      {label}
-      <FaArrowRight className="h-3.5 w-3.5" />
-    </a>
-  );
-};
-
-const PolicyNavigation = ({
-  activeSection,
-  isMobile,
-  onJump,
-  open,
-  onToggle,
-}) => (
-  <div className="rounded-[24px] bg-white">
-    <button
-      type="button"
-      onClick={isMobile ? onToggle : undefined}
-      className={`flex w-full items-center justify-between px-5 py-4 text-left ${
-        isMobile ? "cursor-pointer" : "cursor-default"
-      }`}
-    >
-      <div>
-        <p className="text-sm font-semibold text-slate-900">On this page</p>
-        <p className="mt-1 text-xs text-slate-500">
-          Jump through the policy faster.
-        </p>
-      </div>
-      {isMobile ? (
-        <FaChevronDown
-          className={`h-4 w-4 text-slate-400 transition-transform ${
-            open ? "rotate-180" : ""
-          }`}
-        />
-      ) : null}
-    </button>
-
-    <div className={`${isMobile && !open ? "hidden" : "block"} px-3 pb-3`}>
-      <div className="space-y-1">
-        {policySections.map((section) => {
-          const isActive = activeSection === section.id;
-
-          return (
-            <button
-              key={section.id}
-              type="button"
-              onClick={() => onJump(section.id)}
-              className={`flex w-full items-start gap-3 rounded-2xl px-3 py-3 text-left transition-all ${
-                isActive
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-              }`}
-            >
-              <span
-                className={`mt-0.5 inline-flex min-h-6 min-w-6 items-center justify-center rounded-full text-[11px] font-bold ${
-                  isActive
-                    ? "bg-white text-blue-700"
-                    : "bg-slate-100 text-slate-500"
-                }`}
-              >
-                {section.number}
-              </span>
-              <span className="min-w-0 flex-1 text-sm font-medium leading-5">
-                {section.title}
-              </span>
-              <FaChevronRight
-                className={`mt-1 h-3 w-3 shrink-0 ${
-                  isActive ? "text-blue-600" : "text-slate-300"
-                }`}
-              />
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  </div>
-);
 
 const PrivacyPolicy = () => {
   useTitle({ page: "Privacy Policy" });
 
-  const [activeSection, setActiveSection] = useState(sectionIds[0]);
-  const [openSection, setOpenSection] = useState(sectionIds[0]);
-  const [mobileNavOpen, setMobileNavOpen] = useState(true);
-
-  const canonical = "https://tryhook.shop/privacy-policy";
+  const canonical = `${SITE_ORIGIN}/privacy-policy`;
   const privacySchema = createWebPageSchema({
     name: "Privacy Policy",
     description:
-      "Privacy policy for Hooks device comparison platform and data practices.",
+      "Privacy Policy for TryHook, explaining how information is collected, used, stored, protected, and handled across the technology discovery and comparison platform.",
     url: canonical,
   });
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const currentHash = window.location.hash.replace("#", "");
-    if (!sectionIds.includes(currentHash)) return;
-
-    setActiveSection(currentHash);
-    setOpenSection(currentHash);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const targets = sectionIds
-      .map((id) => document.getElementById(id))
-      .filter(Boolean);
-
-    if (!targets.length) return;
-
-    if (typeof IntersectionObserver === "undefined") {
-      setActiveSection(sectionIds[0]);
-      return undefined;
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visibleEntries = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-
-        if (visibleEntries.length > 0) {
-          setActiveSection(visibleEntries[0].target.id);
-        }
-      },
-      {
-        rootMargin: "-20% 0px -55% 0px",
-        threshold: [0.2, 0.35, 0.55],
-      },
-    );
-
-    targets.forEach((target) => observer.observe(target));
-    return () => observer.disconnect();
-  }, []);
-
-  const handleSectionJump = (id) => {
-    setActiveSection(id);
-    setOpenSection(id);
-    setMobileNavOpen(false);
-    scrollToPolicySection(id);
-  };
-
-  const toggleMobileSection = (id) => {
-    setOpenSection((current) => (current === id ? "" : id));
-  };
 
   return (
     <>
       <SEO
-        title="Privacy Policy - Data Protection - Hooks Device Comparison"
-        description="Read our privacy policy to understand how Hooks collects, uses, and protects your information across the platform."
-        image={`${canonical}/og-image`}
+        title="Privacy Policy - TryHook"
+        description="Read the TryHook Privacy Policy to understand how information is collected, used, stored, protected, and handled when you use the website."
+        image={`${SITE_ORIGIN}/hook-logo.svg`}
         url={canonical}
         robots="index, follow"
         ogType="website"
         schema={privacySchema}
       />
 
-      <main className="relative overflow-hidden bg-white text-slate-900">
-        <div className="relative mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
-          <div className="overflow-hidden rounded-[32px] bg-white">
-            <section className="border-b border-slate-200/80 px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
-              <div className="grid gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,360px)] lg:items-center">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
-                    <Link
-                      to="/"
-                      className="font-medium transition-colors hover:text-slate-900"
-                    >
-                      Home
-                    </Link>
-                    <FaChevronRight className="h-3 w-3 text-slate-300" />
-                    <span className="font-medium text-slate-700">
-                      Privacy Policy
-                    </span>
-                  </div>
-
-                  <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-blue-700">
-                    <FaShieldAlt className="h-3 w-3" />
-                    Privacy Policy
-                  </div>
-
-                  <h1 className="mt-5 max-w-3xl font-heading text-4xl font-black tracking-[-0.04em] text-slate-950 sm:text-5xl">
-                    Privacy Policy
-                  </h1>
-
-                  <p className="mt-4 text-sm font-medium text-slate-500 sm:text-base">
-                    Last updated: {updatedOn}
-                  </p>
-
-                  <p className="mt-6 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
-                    At Hooks, your privacy matters. This policy explains what
-                    information we collect, how we use it, when we share it, and
-                    the choices available to you while using our comparison
-                    platform.
-                  </p>
-
-                  <div className="mt-8 flex flex-wrap gap-3">
-                    {policyChips.map((item) => {
-                      const Icon = item.icon;
-
-                      return (
-                        <div
-                          key={item.label}
-                          className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600"
-                        >
-                          <Icon className="h-4 w-4 text-blue-600" />
-                          <span>{item.label}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <HeroIllustration />
-              </div>
-            </section>
-
-            <section className="px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
-              <div className="space-y-4 lg:hidden">
-                <PolicyNavigation
-                  activeSection={activeSection}
-                  isMobile
-                  onJump={handleSectionJump}
-                  open={mobileNavOpen}
-                  onToggle={() => setMobileNavOpen((current) => !current)}
-                />
-                <PrivacyNoteCard />
+      <main className="min-h-screen bg-white text-slate-950">
+        <section className="bg-white">
+          <div className="mx-auto grid max-w-6xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-[1fr_0.4fr] lg:px-8 lg:py-16">
+            <div>
+              <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                <Link
+                  to="/"
+                  className="font-medium transition-colors hover:text-slate-900"
+                >
+                  Home
+                </Link>
+                <span className="text-slate-300">/</span>
+                <span className="font-medium text-slate-700">
+                  Privacy Policy
+                </span>
               </div>
 
-              <div className="mt-4 grid gap-8 lg:mt-0 lg:grid-cols-[280px_minmax(0,1fr)]">
-                <aside className="hidden lg:block">
-                  <div className="sticky top-[7.75rem] space-y-4">
-                    <PolicyNavigation
-                      activeSection={activeSection}
-                      isMobile={false}
-                      onJump={handleSectionJump}
-                      open
-                    />
-                    <PrivacyNoteCard />
-                  </div>
-                </aside>
+              <p className="mt-8 text-xs font-semibold uppercase tracking-[0.24em] text-blue-700">
+                Privacy Policy
+              </p>
+              <h1 className="mt-4 text-4xl font-black leading-tight tracking-tight text-slate-950 sm:text-5xl">
+                Privacy Policy
+              </h1>
+              <p className="mt-4 text-sm font-semibold text-slate-500">
+                Last Updated: {updatedOn}
+              </p>
+              <p className="mt-6 max-w-3xl text-base leading-8 text-slate-600 sm:text-lg">
+                This policy explains how TryHook collects, uses, stores, and
+                protects information when visitors use our technology discovery,
+                comparison, and news platform.
+              </p>
+            </div>
 
-                <div className="min-w-0">
-                  <div className="space-y-5">
-                    {policySections.map((section) => {
-                      const isOpen = openSection === section.id;
-
-                      return (
-                        <article
-                          key={section.id}
-                          id={section.id}
-                          className="scroll-mt-36 rounded-[26px] bg-white"
-                        >
-                          <button
-                            type="button"
-                            onClick={() => toggleMobileSection(section.id)}
-                            className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left lg:hidden"
-                          >
-                            <div className="flex min-w-0 items-start gap-3">
-                              <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-50 text-sm font-bold text-blue-700">
-                                {section.number}
-                              </span>
-                              <div className="min-w-0">
-                                <h2 className="text-lg font-bold text-slate-900">
-                                  {section.title}
-                                </h2>
-                                <p className="mt-1 text-sm leading-6 text-slate-500">
-                                  {section.summary}
-                                </p>
-                              </div>
-                            </div>
-                            <FaChevronDown
-                              className={`mt-1 h-4 w-4 shrink-0 text-slate-400 transition-transform ${
-                                isOpen ? "rotate-180" : ""
-                              }`}
-                            />
-                          </button>
-
-                          <div className="hidden border-b border-slate-100 px-7 py-6 lg:block">
-                            <div className="flex items-start gap-4">
-                              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-base font-bold text-blue-700">
-                                {section.number}
-                              </span>
-                              <div>
-                                <h2 className="text-[1.75rem] font-black tracking-[-0.04em] text-slate-950">
-                                  {section.title}
-                                </h2>
-                                <p className="mt-2 max-w-3xl text-base leading-7 text-slate-600">
-                                  {section.summary}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div
-                            className={`px-5 pb-5 lg:block lg:px-7 lg:pb-7 lg:pt-6 ${
-                              isOpen ? "block" : "hidden"
-                            }`}
-                          >
-                            <div className="space-y-4">
-                              {section.paragraphs?.map((paragraph) => (
-                                <p
-                                  key={paragraph}
-                                  className="text-sm leading-7 text-slate-600 sm:text-base"
-                                >
-                                  {paragraph}
-                                </p>
-                              ))}
-
-                              {section.bullets?.length ? (
-                                <ul className="space-y-3">
-                                  {section.bullets.map((bullet) => (
-                                    <li
-                                      key={bullet}
-                                      className="flex items-start gap-3 text-sm leading-7 text-slate-600 sm:text-base"
-                                    >
-                                      <FaCheckCircle className="mt-1 h-4 w-4 shrink-0 text-blue-600" />
-                                      <span>{bullet}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              ) : null}
-
-                              {section.cta ? (
-                                <SectionLink
-                                  href={section.cta.href}
-                                  label={section.cta.label}
-                                />
-                              ) : null}
-
-                              {section.contactLinks?.length ? (
-                                <div className="rounded-[22px] bg-slate-50 p-4 sm:p-5">
-                                  <p className="text-sm font-semibold text-slate-900">
-                                    Contact points
-                                  </p>
-                                  <div className="mt-4 space-y-3">
-                                    {section.contactLinks.map((item) => (
-                                      <div
-                                        key={item.label}
-                                        className="flex items-center gap-3"
-                                      >
-                                        <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-blue-700">
-                                          <FaEnvelope className="h-4 w-4" />
-                                        </span>
-                                        <SectionLink
-                                          href={item.href}
-                                          label={item.label}
-                                        />
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              ) : null}
-                            </div>
-                          </div>
-                        </article>
-                      );
-                    })}
-                  </div>
-                </div>
+            <div className="rounded-lg border border-blue-100 bg-white p-6">
+              <div className="flex h-12 w-12 items-center justify-center rounded-md border border-blue-100 bg-white text-blue-700">
+                <FaShieldAlt className="h-5 w-5" />
               </div>
-            </section>
+              <h2 className="mt-5 text-xl font-black text-slate-950">
+                Your privacy matters.
+              </h2>
+              <p className="mt-3 text-sm leading-7 text-slate-600">
+                TryHook uses information to improve reliability, answer
+                inquiries, support analytics, and maintain a better browsing
+                experience.
+              </p>
+              <a
+                href={`mailto:${CONTACT_EMAIL}`}
+                className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-blue-700 hover:text-blue-800"
+              >
+                {CONTACT_EMAIL}
+                <FaArrowRight className="h-3.5 w-3.5" />
+              </a>
+            </div>
           </div>
-        </div>
+        </section>
+
+        <section className="bg-white">
+          <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[16rem_1fr] lg:px-8 lg:py-14">
+            <aside className="hidden lg:block">
+              <div className="sticky top-24 rounded-lg border border-slate-200 bg-white p-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-700">
+                  Contents
+                </p>
+                <nav className="mt-4 space-y-1">
+                  {policySections.map((section) => (
+                    <a
+                      key={section.id}
+                      href={`#${section.id}`}
+                      className="flex items-start gap-3 rounded-md px-3 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700"
+                    >
+                      <span className="text-blue-700">{section.number}</span>
+                      <span>{section.title}</span>
+                    </a>
+                  ))}
+                </nav>
+              </div>
+            </aside>
+
+            <div className="space-y-4">
+              {policySections.map((section) => {
+                const Icon = section.icon;
+
+                return (
+                  <article
+                    key={section.id}
+                    id={section.id}
+                    className="scroll-mt-28 rounded-lg border border-slate-200 bg-white p-6 sm:p-8"
+                  >
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-blue-100 bg-white text-blue-700">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-700">
+                          Section {section.number}
+                        </p>
+                        <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
+                          {section.title}
+                        </h2>
+                        <div className="mt-5 space-y-4 text-base leading-8 text-slate-700">
+                          {section.paragraphs.map((paragraph) => (
+                            <p key={paragraph}>{paragraph}</p>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-white">
+          <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+            <div className="rounded-lg border border-blue-100 bg-white p-6 sm:p-8">
+              <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-700">
+                    Contact
+                  </p>
+                  <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-950">
+                    Questions about this policy?
+                  </h2>
+                  <a
+                    href={`mailto:${CONTACT_EMAIL}`}
+                    className="mt-3 inline-flex break-all text-lg font-black text-blue-700 hover:text-blue-800"
+                  >
+                    {CONTACT_EMAIL}
+                  </a>
+                </div>
+
+                <a
+                  href={`mailto:${CONTACT_EMAIL}`}
+                  className="inline-flex items-center justify-center gap-2 rounded-md bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+                >
+                  <FaEnvelope className="h-4 w-4" />
+                  Contact TryHook
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
     </>
   );

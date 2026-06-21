@@ -19,7 +19,7 @@ export const hookContactChannels = [
     summary:
       "For messages that need a first review before being sent to support, editorial, or business.",
     story:
-      "The contact inbox is the front door for Hooks. It helps broad questions, suggestions, and account-neutral requests get routed cleanly.",
+      "The contact inbox is the front door for TryHook. It helps broad questions, suggestions, and account-neutral requests get routed cleanly.",
   },
   {
     key: "news",
@@ -30,7 +30,7 @@ export const hookContactChannels = [
     summary:
       "For product launches, press material, editorial tips, and news corrections.",
     story:
-      "The news inbox supports the content side of Hooks, where launches, product updates, and useful buying context become clearer stories for readers.",
+      "The news inbox supports the content side of TryHook, where launches, product updates, and useful buying context become clearer stories for readers.",
   },
   {
     key: "support",
@@ -39,9 +39,9 @@ export const hookContactChannels = [
     contactType: "Customer support",
     headline: "Help, corrections, and product data",
     summary:
-      "For incorrect specs, broken pages, comparison issues, and help using Hooks.",
+      "For incorrect specs, broken pages, comparison issues, and help using TryHook.",
     story:
-      "The support inbox is where user questions, product-page corrections, and comparison issues are reviewed so Hooks keeps improving.",
+      "The support inbox is where user questions, product-page corrections, and comparison issues are reviewed so TryHook keeps improving.",
   },
 ];
 

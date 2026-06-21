@@ -50,17 +50,17 @@ const supportPillars = [
   {
     icon: FaClock,
     title: "Quick response",
-    text: "We typically reply within 24 hours for product and support questions.",
+    text: "We review product questions, corrections, and support messages as quickly as possible.",
   },
   {
     icon: FaEnvelope,
     title: "Structured requests",
-    text: "Use the form to share collaboration ideas, corrections, suggestions, or support needs.",
+    text: "Share links, context, screenshots, or exact details so we can route your message clearly.",
   },
   {
     icon: FaUserFriends,
     title: "Human review",
-    text: "Real people review collaboration, partnership, feedback, and platform questions.",
+    text: "Feedback, partnership notes, editorial leads, and platform questions are reviewed with care.",
   },
 ];
 
@@ -68,7 +68,7 @@ const subjectOptions = [
   {
     value: "general-support",
     label: "General contact",
-    description: "Questions that should be routed to the right Hooks team.",
+    description: "Questions that should be routed to the right TryHook inbox.",
     routingEmail: contactEmail,
   },
   {
@@ -109,7 +109,7 @@ const faqItems = [
       `Send the product page URL, the incorrect detail, and the corrected value to ${supportContactEmail} or through the form. That gives us enough context to verify the change quickly.`,
   },
   {
-    question: "Where does Hooks get product information from?",
+    question: "Where does TryHook get product information from?",
     answer:
       "We compile structured product details from public product materials, launch coverage, and manufacturer-facing information, then review listings when issues are reported.",
   },
@@ -134,42 +134,64 @@ const initialFormState = {
 };
 
 const fieldClassName =
-  "mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100";
+  "mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3.5 text-sm text-slate-900 transition placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100";
 
 const SupportIllustration = () => {
   return (
-    <div className="relative mx-auto h-[280px] w-full max-w-[480px] overflow-hidden rounded-[28px] bg-slate-50 sm:h-[320px]">
-      <div className="absolute left-8 top-16 h-28 w-28 rounded-full bg-blue-100/80 blur-3xl" />
-      <div className="absolute right-8 top-10 h-32 w-32 rounded-full bg-sky-100/90 blur-3xl" />
-      <div className="absolute left-1/2 top-8 h-4 w-14 -translate-x-1/2 rounded-full bg-slate-200/70" />
-
-      <div className="absolute left-7 top-20 flex h-40 w-40 items-center justify-center rounded-full bg-white sm:left-10 sm:h-44 sm:w-44">
-        <FaHeadphones className="text-[86px] text-slate-900 sm:text-[96px]" />
-      </div>
-
-      <div className="absolute right-6 top-16 rounded-[24px] bg-blue-600 px-6 py-5 text-white sm:right-10">
-        <div className="flex items-center gap-3">
-          <FaCommentDots className="text-3xl" />
-          <div className="flex gap-1">
-            <span className="h-2.5 w-2.5 rounded-full bg-white/90" />
-            <span className="h-2.5 w-2.5 rounded-full bg-white/90" />
-            <span className="h-2.5 w-2.5 rounded-full bg-white/90" />
-          </div>
+    <div className="relative mx-auto w-full max-w-[500px] bg-white">
+      <div className="flex items-center justify-between pb-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-700">
+            TryHook inbox
+          </p>
+          <p className="mt-1 text-lg font-black text-slate-950">
+            Message routing
+          </p>
         </div>
+        <span className="rounded-md border border-blue-100 bg-white px-3 py-2 text-xs font-bold text-blue-700">
+          Online
+        </span>
       </div>
 
-      <div className="absolute bottom-10 right-8 flex h-24 w-[9.5rem] items-center justify-center rounded-[28px] bg-white sm:h-28 sm:w-40">
-        <FaEnvelope className="text-4xl text-blue-600" />
-      </div>
+      <div className="mt-5 grid gap-3">
+        {[
+          {
+            icon: FaEnvelope,
+            title: "Contact",
+            text: "General questions, editorial leads, and partnership notes.",
+          },
+          {
+            icon: FaHeadphones,
+            title: "Support",
+            text: "Product corrections, page issues, and help using TryHook.",
+          },
+          {
+            icon: FaCommentDots,
+            title: "Feedback",
+            text: "Suggestions that help us improve discovery and comparison.",
+          },
+        ].map((item) => {
+          const Icon = item.icon;
 
-      <div className="absolute bottom-12 left-8 h-12 w-16 rounded-[18px] bg-white" />
-      <div className="absolute bottom-10 left-[4.5rem] h-10 w-10 rounded-full border-2 border-slate-300/80 border-t-transparent border-r-transparent" />
-
-      <div className="absolute bottom-6 right-4">
-        <div className="relative h-16 w-14 rounded-t-[16px] rounded-b-[10px] bg-white">
-          <div className="absolute -left-3 top-3 h-8 w-4 rounded-full bg-emerald-200/90 rotate-[-25deg]" />
-          <div className="absolute -right-3 top-4 h-9 w-4 rounded-full bg-cyan-200/90 rotate-[28deg]" />
-        </div>
+          return (
+            <div
+              key={item.title}
+              className="grid grid-cols-[auto_1fr] gap-4 rounded-lg border border-slate-200 bg-white p-4"
+            >
+              <div className="flex h-11 w-11 items-center justify-center rounded-md border border-blue-100 bg-white text-blue-700">
+                <Icon className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm font-black text-slate-950">
+                  {item.title}
+                </p>
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  {item.text}
+                </p>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -177,30 +199,31 @@ const SupportIllustration = () => {
 
 const FeedbackIllustration = () => {
   return (
-    <div className="relative h-[180px] w-full overflow-hidden rounded-[28px] bg-transparent sm:h-[220px]">
-      <div className="absolute left-10 top-10 flex h-16 w-16 items-center justify-center rounded-2xl bg-white">
-        <FaCommentDots className="text-2xl text-blue-600" />
-      </div>
-      <div className="absolute left-28 top-6 rounded-[22px] bg-white px-5 py-4">
-        <div className="flex items-center gap-2 text-blue-600">
-          <span className="h-2 w-8 rounded-full bg-blue-200" />
-          <span className="h-2 w-10 rounded-full bg-slate-200" />
-          <span className="h-2 w-5 rounded-full bg-blue-200" />
+    <div className="bg-white">
+      <div className="flex items-center gap-4">
+        <div className="flex h-12 w-12 items-center justify-center rounded-md border border-blue-100 bg-white text-blue-700">
+          <FaPaperPlane className="h-5 w-5" />
+        </div>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-700">
+            Feedback loop
+          </p>
+          <p className="mt-1 text-lg font-black text-slate-950">
+            Helpful details make replies faster.
+          </p>
         </div>
       </div>
-      <div className="absolute left-24 top-28 rounded-[22px] bg-white px-6 py-5">
-        <div className="flex items-center gap-2 text-amber-400">
-          <FaCheckCircle className="text-sm" />
-          <FaCheckCircle className="text-sm" />
-          <FaCheckCircle className="text-sm" />
-          <FaCheckCircle className="text-sm" />
-          <FaCheckCircle className="text-sm" />
-        </div>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        {["Page URL", "Exact issue", "Best email"].map((item) => (
+          <div
+            key={item}
+            className="rounded-md border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700"
+          >
+            {item}
+          </div>
+        ))}
       </div>
-      <div className="absolute right-10 top-12 text-blue-600">
-        <FaPaperPlane className="text-[72px] rotate-[18deg]" />
-      </div>
-      <div className="absolute right-24 bottom-8 h-20 w-28 rounded-full border-2 border-dashed border-blue-300/80 border-l-transparent border-t-transparent" />
     </div>
   );
 };
@@ -218,9 +241,9 @@ const Contact = () => {
 
   const canonical = "https://tryhook.shop/contact";
   const contactSchema = createContactPageSchema({
-    name: "Contact Hooks",
+    name: "Contact TryHook",
     description:
-      "Get in touch with Hooks through verified inboxes for general contact and support.",
+      "Get in touch with TryHook through verified inboxes for general contact and support.",
     url: canonical,
     contactEmail,
     contactPoints: contactPageChannels.map((channel) => ({
@@ -302,7 +325,7 @@ const Contact = () => {
           routing_email: selectedSubjectOption.routingEmail,
           message: formState.message,
           agree_terms: Boolean(formState.agreed),
-          source: "hooks-web-contact",
+          source: "tryhook-web-contact",
         }),
       });
 
@@ -329,9 +352,9 @@ const Contact = () => {
   return (
     <>
       <SEO
-        title="Contact Hooks - Device Comparison Platform Support"
-        description="Get in touch with Hooks through verified inboxes for general contact and support."
-        image={`${canonical}/og-image`}
+        title="Contact TryHook - Support, Feedback, and Inquiries"
+        description="Contact TryHook for general questions, product corrections, platform support, feedback, partnerships, and editorial inquiries."
+        image="https://tryhook.shop/hook-logo.svg"
         url={canonical}
         robots="index, follow"
         ogType="website"
@@ -340,7 +363,7 @@ const Contact = () => {
 
       <main className="min-h-screen bg-white text-slate-900">
         <section className="mx-auto max-w-7xl px-4 pb-8 pt-8 sm:px-6 lg:px-8 lg:pb-10 lg:pt-12">
-          <div className="relative isolate overflow-hidden rounded-[32px] bg-white px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
+          <div className="relative isolate bg-white py-2 sm:py-4">
             <div className="relative">
               <nav
                 aria-label="Breadcrumb"
@@ -362,18 +385,18 @@ const Contact = () => {
                     Contact us
                   </p>
                   <h1 className="mt-4 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
-                    We&apos;re here to help.
+                    Contact TryHook
                   </h1>
                   <p className="mt-5 max-w-xl text-base leading-8 text-slate-600 sm:text-lg">
-                    Planning a collaboration, partnership, correction, or
-                    product question? Share the details through the form and the
-                    right person will pick it up.
+                    Have a product correction, platform question, feedback,
+                    partnership idea, or editorial note? Share the details and
+                    we will route your message to the right inbox.
                   </p>
 
                   <div className="mt-8 flex flex-wrap gap-3">
                     <a
                       href="#contact-form"
-                      className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition-transform duration-200 hover:-translate-y-0.5 hover:bg-blue-700"
+                      className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-blue-700"
                     >
                       Send us a message
                       <FaArrowRight className="h-3.5 w-3.5" />
@@ -387,9 +410,9 @@ const Contact = () => {
                       return (
                         <div
                           key={item.title}
-                          className="rounded-[24px] bg-slate-50 p-4"
+                          className="rounded-lg border border-slate-200 bg-white p-4"
                         >
-                          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+                          <div className="flex h-11 w-11 items-center justify-center rounded-md border border-blue-100 bg-white text-blue-700">
                             <Icon className="h-5 w-5" />
                           </div>
                           <h2 className="mt-4 text-base font-bold text-slate-900">
@@ -411,7 +434,7 @@ const Contact = () => {
         </section>
 
         <section className="mx-auto max-w-7xl px-4 pb-6 sm:px-6 lg:px-8 lg:pb-8">
-          <div className="rounded-[32px] bg-slate-50 p-6 sm:p-8 lg:p-10">
+          <div className="bg-white py-4 sm:py-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div className="max-w-3xl">
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-600">
@@ -423,13 +446,13 @@ const Contact = () => {
                 <p className="mt-3 text-sm leading-7 text-slate-600 sm:text-base">
                   Use the general contact inbox for broad requests and the
                   support inbox for product issues, corrections, and help using
-                  Hooks.
+                  TryHook.
                 </p>
               </div>
 
               <a
                 href={`mailto:${contactEmail}`}
-                className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-blue-600 transition-colors duration-200 hover:bg-blue-50"
+                className="inline-flex items-center gap-2 rounded-md border border-blue-100 bg-white px-5 py-3 text-sm font-semibold text-blue-700 transition-colors duration-200 hover:border-blue-300"
               >
                 Email general contact
                 <FaArrowRight className="h-3.5 w-3.5" />
@@ -444,9 +467,9 @@ const Contact = () => {
                   <a
                     key={channel.key}
                     href={`mailto:${channel.email}`}
-                    className="group flex h-full flex-col rounded-[24px] bg-white p-5 shadow-sm transition-transform duration-200 hover:-translate-y-0.5"
+                    className="group flex h-full flex-col rounded-lg border border-slate-200 bg-white p-5 transition-colors duration-200 hover:border-blue-200"
                   >
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 transition-colors duration-200 group-hover:bg-blue-600 group-hover:text-white">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-md border border-blue-100 bg-white text-blue-700 transition-colors duration-200 group-hover:border-blue-600 group-hover:bg-blue-600 group-hover:text-white">
                       <Icon className="h-5 w-5" />
                     </div>
                     <p className="mt-4 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
@@ -458,7 +481,7 @@ const Contact = () => {
                     <p className="mt-3 flex-1 text-sm leading-7 text-slate-600">
                       {channel.summary}
                     </p>
-                    <span className="mt-4 break-all rounded-2xl bg-slate-50 px-3 py-2 text-sm font-semibold text-blue-600">
+                    <span className="mt-4 break-all text-sm font-semibold text-blue-700">
                       {channel.email}
                     </span>
                   </a>
@@ -469,229 +492,238 @@ const Contact = () => {
         </section>
 
         <section className="mx-auto max-w-7xl px-4 pb-6 sm:px-6 lg:px-8 lg:pb-8">
-          <div className="mx-auto max-w-4xl">
-            <div
-              id="contact-form"
-              className="scroll-mt-28 rounded-[32px] bg-white p-6 sm:p-8"
-            >
-              <div className="max-w-2xl">
+          <div
+            id="contact-form"
+            className="mx-auto grid max-w-6xl scroll-mt-28 gap-10 bg-white py-6 lg:grid-cols-[0.72fr_1.28fr] lg:gap-16 lg:py-10"
+          >
+            <div className="lg:pt-1">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-600">
+                Message form
+              </p>
+              <div className="mt-3 max-w-xl">
                 <h2 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
                   Send us a message
                 </h2>
                 <p className="mt-3 text-sm leading-7 text-slate-600 sm:text-base">
-                  Share the collaboration, request, or issue details here. The
-                  more specific the message, the faster we can route it to the
-                  right team.
+                  Tell us what you need and include any useful links or product
+                  details. Your subject choice routes the message to the right
+                  TryHook inbox.
                 </p>
               </div>
 
-              <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <label className="block text-sm font-semibold text-slate-700 sm:col-span-1">
-                    Full name
-                    <input
-                      className={fieldClassName}
-                      type="text"
-                      name="fullName"
-                      value={formState.fullName}
-                      onChange={handleFieldChange}
-                      placeholder="Enter your full name"
-                      autoComplete="name"
-                      required
-                    />
-                  </label>
-
-                  <label className="block text-sm font-semibold text-slate-700 sm:col-span-1">
-                    Email address
-                    <input
-                      className={fieldClassName}
-                      type="email"
-                      name="email"
-                      value={formState.email}
-                      onChange={handleFieldChange}
-                      placeholder="Enter your email address"
-                      autoComplete="email"
-                      required
-                    />
-                  </label>
-                </div>
-
-                <div className="block text-sm font-semibold text-slate-700">
-                  <span>Subject</span>
-                  <div ref={subjectMenuRef} className="relative mt-2">
-                    <button
-                      type="button"
-                      aria-haspopup="listbox"
-                      aria-expanded={isSubjectMenuOpen}
-                      className={`flex w-full items-center justify-between gap-4 rounded-2xl border bg-white px-4 py-3 text-left shadow-sm transition focus:outline-none focus:ring-4 focus:ring-blue-100 ${
-                        isSubjectMenuOpen
-                          ? "border-blue-500"
-                          : "border-slate-200"
-                      }`}
-                      onClick={() =>
-                        setIsSubjectMenuOpen((currentOpen) => !currentOpen)
-                      }
-                    >
-                      <div className="min-w-0">
-                        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                          Request type
-                        </span>
-                        <span className="mt-1 block text-sm font-semibold text-slate-900">
-                          {selectedSubjectOption.label}
-                        </span>
-                        <span className="mt-1 block text-sm font-normal leading-6 text-slate-500">
-                          {selectedSubjectOption.description}
-                        </span>
-                        <span className="mt-2 block break-all text-xs font-semibold text-blue-600">
-                          {selectedSubjectOption.routingEmail}
-                        </span>
-                      </div>
-                      <FaChevronDown
-                        className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${
-                          isSubjectMenuOpen ? "rotate-180" : ""
-                        }`}
-                      />
-                    </button>
-
-                    {isSubjectMenuOpen ? (
-                      <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 overflow-hidden rounded-[24px] border border-blue-100 bg-white shadow-[0_18px_48px_rgba(15,23,42,0.12)]">
-                        <div className="border-b border-slate-100 px-4 py-3">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-                            Choose a subject
-                          </p>
-                        </div>
-                        <div className="py-2">
-                          {subjectOptions.map((option) => {
-                            const isActive =
-                              option.value === formState.subject;
-
-                            return (
-                              <button
-                                key={option.value}
-                                type="button"
-                                role="option"
-                                aria-selected={isActive}
-                                onClick={() =>
-                                  handleSubjectSelect(option.value)
-                                }
-                                className={`flex w-full items-start justify-between gap-4 px-4 py-3 text-left transition-colors ${
-                                  isActive
-                                    ? "bg-blue-50 text-blue-700"
-                                    : "text-slate-700 hover:bg-slate-50"
-                                }`}
-                              >
-                                <div className="min-w-0">
-                                  <p className="text-sm font-semibold">
-                                    {option.label}
-                                  </p>
-                                  <p
-                                    className={`mt-1 text-sm leading-6 ${
-                                      isActive
-                                        ? "text-blue-600"
-                                        : "text-slate-500"
-                                    }`}
-                                  >
-                                    {option.description}
-                                  </p>
-                                  <p
-                                    className={`mt-2 break-all text-xs font-semibold ${
-                                      isActive
-                                        ? "text-blue-700"
-                                        : "text-slate-400"
-                                    }`}
-                                  >
-                                    {option.routingEmail}
-                                  </p>
-                                </div>
-                                <span
-                                  className={`mt-1 inline-flex h-2.5 w-2.5 rounded-full ${
-                                    isActive
-                                      ? "bg-blue-600"
-                                      : "bg-transparent"
-                                  }`}
-                                />
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ) : null}
+              <div className="mt-8 space-y-6">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-blue-100 bg-white text-blue-700">
+                    <FaEnvelope className="h-4 w-4" />
                   </div>
-                </div>
-
-                <label className="block text-sm font-semibold text-slate-700">
-                  Message
-                  <textarea
-                    className={`${fieldClassName} min-h-[160px] resize-y`}
-                    name="message"
-                    value={formState.message}
-                    onChange={handleFieldChange}
-                    placeholder="Tell us more about your question, issue, or suggestion..."
-                    required
-                  />
-                </label>
-
-                <label className="flex items-start gap-3 text-sm text-slate-600">
-                  <input
-                    type="checkbox"
-                    name="agreed"
-                    checked={formState.agreed}
-                    onChange={handleFieldChange}
-                    className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                    required
-                  />
-                  <span className="leading-6">
-                    I agree to the{" "}
-                    <Link
-                      to="/privacy-policy"
-                      className="font-medium text-blue-600 hover:text-blue-700"
-                    >
-                      privacy policy
-                    </Link>{" "}
-                    and confirm these details are accurate.
-                  </span>
-                </label>
-
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3.5 text-sm font-semibold text-white transition-transform duration-200 hover:-translate-y-0.5 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    {isSubmitting ? "Sending..." : "Send message"}
-                    <FaArrowRight className="h-3.5 w-3.5" />
-                  </button>
-
-                  <p className="text-sm text-slate-500">
-                    Collaboration and support requests are reviewed as quickly
-                    as possible.
-                  </p>
-                </div>
-
-                {submitSuccess ? (
-                  <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                    <FaCheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                    <span>
-                      Your message has been sent to the Hooks team. We&apos;ll
-                      review it and reply to your email when needed.
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">
+                      Automatic routing
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-slate-600">
+                      The selected subject currently routes to:
+                    </p>
+                    <span className="mt-1 block break-all text-sm font-semibold text-blue-700">
+                      {selectedSubjectOption.routingEmail}
                     </span>
                   </div>
-                ) : null}
+                </div>
 
-                {submitError ? (
-                  <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    {submitError} You can also reach us at{" "}
-                    <a
-                      href={`mailto:${contactEmail}`}
-                      className="font-semibold underline decoration-red-300 underline-offset-4"
-                    >
-                      {contactEmail}
-                    </a>
-                    .
+                <div className="flex items-start gap-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-blue-100 bg-white text-blue-700">
+                    <FaClock className="h-4 w-4" />
                   </div>
-                ) : null}
-              </form>
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">
+                      Add useful context
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-slate-600">
+                      For corrections, include the page URL, incorrect detail,
+                      and the information you believe is accurate.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
+
+            <form className="space-y-5" onSubmit={handleSubmit}>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <label className="block text-sm font-semibold text-slate-700">
+                  Full name
+                  <input
+                    className={fieldClassName}
+                    type="text"
+                    name="fullName"
+                    value={formState.fullName}
+                    onChange={handleFieldChange}
+                    placeholder="Enter your full name"
+                    autoComplete="name"
+                    required
+                  />
+                </label>
+
+                <label className="block text-sm font-semibold text-slate-700">
+                  Email address
+                  <input
+                    className={fieldClassName}
+                    type="email"
+                    name="email"
+                    value={formState.email}
+                    onChange={handleFieldChange}
+                    placeholder="Enter your email address"
+                    autoComplete="email"
+                    required
+                  />
+                </label>
+              </div>
+
+              <div className="block text-sm font-semibold text-slate-700">
+                <span>Subject</span>
+                <div ref={subjectMenuRef} className="relative mt-2">
+                  <button
+                    type="button"
+                    aria-haspopup="listbox"
+                    aria-expanded={isSubjectMenuOpen}
+                    className={`flex w-full items-center justify-between gap-4 rounded-lg border bg-white px-4 py-3.5 text-left transition focus:outline-none focus:ring-4 focus:ring-blue-100 ${
+                      isSubjectMenuOpen
+                        ? "border-blue-500"
+                        : "border-slate-300"
+                    }`}
+                    onClick={() =>
+                      setIsSubjectMenuOpen((currentOpen) => !currentOpen)
+                    }
+                  >
+                    <div className="min-w-0">
+                      <span className="block text-sm font-semibold text-slate-900">
+                        {selectedSubjectOption.label}
+                      </span>
+                      <span className="mt-1 block text-sm font-normal leading-6 text-slate-500">
+                        {selectedSubjectOption.description}
+                      </span>
+                    </div>
+                    <FaChevronDown
+                      className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${
+                        isSubjectMenuOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+
+                  {isSubjectMenuOpen ? (
+                    <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 overflow-hidden rounded-lg border border-blue-100 bg-white py-2">
+                      {subjectOptions.map((option) => {
+                        const isActive = option.value === formState.subject;
+
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            role="option"
+                            aria-selected={isActive}
+                            onClick={() => handleSubjectSelect(option.value)}
+                            className={`flex w-full items-start justify-between gap-4 px-4 py-3 text-left transition-colors ${
+                              isActive
+                                ? "bg-blue-50 text-blue-700"
+                                : "text-slate-700 hover:bg-slate-50"
+                            }`}
+                          >
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold">
+                                {option.label}
+                              </p>
+                              <p
+                                className={`mt-1 text-sm leading-6 ${
+                                  isActive
+                                    ? "text-blue-600"
+                                    : "text-slate-500"
+                                }`}
+                              >
+                                {option.description}
+                              </p>
+                            </div>
+                            <span
+                              className={`mt-1.5 inline-flex h-2.5 w-2.5 rounded-full ${
+                                isActive ? "bg-blue-600" : "bg-transparent"
+                              }`}
+                            />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+
+              <label className="block text-sm font-semibold text-slate-700">
+                Message
+                <textarea
+                  className={`${fieldClassName} min-h-[180px] resize-y`}
+                  name="message"
+                  value={formState.message}
+                  onChange={handleFieldChange}
+                  placeholder="Tell us more about your question, issue, or suggestion..."
+                  required
+                />
+              </label>
+
+              <label className="flex items-start gap-3 text-sm text-slate-600">
+                <input
+                  type="checkbox"
+                  name="agreed"
+                  checked={formState.agreed}
+                  onChange={handleFieldChange}
+                  className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  required
+                />
+                <span className="leading-6">
+                  I agree to the{" "}
+                  <Link
+                    to="/privacy-policy"
+                    className="font-medium text-blue-600 hover:text-blue-700"
+                  >
+                    privacy policy
+                  </Link>{" "}
+                  and confirm these details are accurate.
+                </span>
+              </label>
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="inline-flex items-center justify-center gap-2 rounded-md bg-blue-600 px-5 py-3.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  <FaPaperPlane className="h-3.5 w-3.5" />
+                  {isSubmitting ? "Sending..." : "Send message"}
+                </button>
+
+                <p className="text-sm text-slate-500">
+                  We review every relevant message.
+                </p>
+              </div>
+
+              {submitSuccess ? (
+                <div className="flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                  <FaCheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                  <span>
+                    Your message has been sent to the TryHook team. We&apos;ll
+                    review it and reply to your email when needed.
+                  </span>
+                </div>
+              ) : null}
+
+              {submitError ? (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {submitError} You can also reach us at{" "}
+                  <a
+                    href={`mailto:${contactEmail}`}
+                    className="font-semibold underline decoration-red-300 underline-offset-4"
+                  >
+                    {contactEmail}
+                  </a>
+                  .
+                </div>
+              ) : null}
+            </form>
           </div>
         </section>
 
@@ -699,7 +731,7 @@ const Contact = () => {
           id="contact-faqs"
           className="mx-auto max-w-7xl scroll-mt-28 px-4 pb-6 sm:px-6 lg:px-8 lg:pb-8"
         >
-          <div className="rounded-[32px] bg-white p-6 sm:p-8">
+          <div className="bg-white py-6 sm:py-8">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div className="max-w-2xl">
                 <h2 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
@@ -719,14 +751,14 @@ const Contact = () => {
               </a>
             </div>
 
-            <div className="mt-8 space-y-3 rounded-[24px] bg-white">
+            <div className="mt-8 space-y-3 bg-white">
               {faqItems.map((item, index) => {
                 const isOpen = openFaqIndex === index;
 
                 return (
                   <div
                     key={item.question}
-                    className="rounded-[24px] bg-slate-50 px-5 py-1 sm:px-6"
+                    className="rounded-lg border border-slate-200 bg-white px-5 py-1 sm:px-6"
                   >
                     <button
                       type="button"
@@ -761,7 +793,7 @@ const Contact = () => {
         </section>
 
         <section className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8 lg:pb-16">
-          <div className="overflow-hidden rounded-[32px] bg-slate-50 p-6 sm:p-8 lg:p-10">
+          <div className="bg-white py-6 sm:py-8 lg:py-10">
             <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
               <div className="max-w-xl">
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-600">
@@ -777,7 +809,7 @@ const Contact = () => {
                 </p>
                 <a
                   href="#contact-form"
-                  className="mt-8 inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-blue-600 transition-colors duration-200 hover:bg-blue-50"
+                  className="mt-8 inline-flex items-center gap-2 rounded-md border border-blue-100 bg-white px-5 py-3 text-sm font-semibold text-blue-700 transition-colors duration-200 hover:border-blue-300"
                 >
                   Share feedback in the form
                   <FaArrowRight className="h-3.5 w-3.5" />
