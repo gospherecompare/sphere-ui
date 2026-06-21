@@ -145,12 +145,8 @@ const SEARCH_SUGGESTION_LIMIT = 5;
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [activeCategory, setActiveCategory] = useState(null);
-  const [pinnedCategory, setPinnedCategory] = useState(null);
-  const [isScrolled, setIsScrolled] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [showAuthDropdown, setShowAuthDropdown] = useState(false);
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const [searchSuggestions, setSearchSuggestions] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -159,7 +155,6 @@ const Header = () => {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
-  const [mobileHeaderHeight, setMobileHeaderHeight] = useState(112);
   const navigate = useNavigate();
   const location = useLocation();
   const currentPath = (() => {
@@ -170,7 +165,6 @@ const Header = () => {
   const isLocalDevHost =
     typeof window !== "undefined" &&
     /^(localhost|127\.0\.0\.1|::1)$/.test(window.location.hostname || "");
-  const megaMenuRef = useRef(null);
   const authDropdownRef = useRef(null);
   const searchRef = useRef(null);
   const searchInputRef = useRef(null);
@@ -227,15 +221,6 @@ const Header = () => {
     readAuthFromCookies();
   }, [location.pathname]);
 
-  // Check scroll for header effects
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
   // Keep the mobile header height in sync for sticky offsets.
   useEffect(() => {
     const updateMobileHeaderHeight = () => {
@@ -252,7 +237,6 @@ const Header = () => {
 
       if (isMobile) {
         if (measuredMobile > 0) {
-          setMobileHeaderHeight(measuredMobile);
           document.documentElement.style.setProperty(
             "--mobile-header-height",
             `${measuredMobile}px`,
@@ -265,7 +249,6 @@ const Header = () => {
         return;
       }
 
-      setMobileHeaderHeight(0);
       document.documentElement.style.setProperty(
         "--mobile-header-height",
         "0px",
@@ -296,29 +279,6 @@ const Header = () => {
   // Close mega menu on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (megaMenuRef.current) {
-        const clickedInsideMega =
-          megaMenuRef.current.contains(event.target) ||
-          Boolean(event.target.closest(".advanced-mega-menu"));
-        if (!clickedInsideMega) {
-          const isCategoryButton = event.target.closest(".category-button");
-          if (!isCategoryButton) {
-            setActiveCategory(null);
-            setPinnedCategory(null);
-          }
-        }
-      }
-
-      if (
-        authDropdownRef.current &&
-        !authDropdownRef.current.contains(event.target)
-      ) {
-        const isAuthButton = event.target.closest(".auth-button");
-        if (!isAuthButton) {
-          setShowAuthDropdown(false);
-        }
-      }
-
       // Close search suggestions on outside click
       if (searchRef.current && !searchRef.current.contains(event.target)) {
         setShowSearchSuggestions(false);
@@ -438,13 +398,10 @@ const Header = () => {
       return `₹${new Intl.NumberFormat("en-IN", {
         maximumFractionDigits: 0,
       }).format(n)}`;
-    } catch (e) {
+    } catch {
       return `₹${Math.round(n)}`;
     }
   };
-
-  const escapeRegExp = (value) =>
-    String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
   const getSuggestionTypeLabel = (sugg) => {
     const suggestionType = String(sugg?.type || "").toLowerCase();
@@ -1151,7 +1108,7 @@ const Header = () => {
         searchInputRef.current &&
         document.activeElement === searchInputRef.current
       );
-    } catch (e) {
+    } catch {
       inputWasFocusedRef.current = false;
     }
     setSearchQuery(value);
@@ -1160,7 +1117,9 @@ const Header = () => {
     if (abortRef.current) {
       try {
         abortRef.current.abort();
-      } catch {}
+      } catch {
+        // Ignore abort races between quick keystrokes.
+      }
     }
 
     if (!value || !value.trim()) {
@@ -1257,7 +1216,7 @@ const Header = () => {
         credentials: "omit",
         keepalive: true,
       }).catch(() => {});
-    } catch (err) {
+    } catch {
       // analytics should never block navigation
     }
   };
@@ -1362,7 +1321,7 @@ const Header = () => {
         if (typeof searchInputRef.current.setSelectionRange === "function") {
           searchInputRef.current.setSelectionRange(len, len);
         }
-      } catch (e) {
+      } catch {
         // defensive - don't crash if focus fails
       }
     }
@@ -1462,9 +1421,9 @@ const Header = () => {
       ],
       // Column 3 – By Price (mapped into featured column)
       featured: [
-        { name: "Under â‚¹30,000", discount: "", icon: <FaTag /> },
-        { name: "Under â‚¹50,000", discount: "", icon: <FaTag /> },
-        { name: "Under â‚¹80,000", discount: "", icon: <FaTag /> },
+        { name: "Under ₹30,000", discount: "", icon: <FaTag /> },
+        { name: "Under ₹50,000", discount: "", icon: <FaTag /> },
+        { name: "Under ₹80,000", discount: "", icon: <FaTag /> },
         { name: "Premium TVs", discount: "", icon: <FaStar /> },
       ],
       // Column 4 – Popular Brands
@@ -1518,7 +1477,7 @@ const Header = () => {
             ? cat.topBrands.map((n, i) => ({ id: `fallback-${i}`, name: n }))
             : [];
       return { ...cat, topBrands };
-    } catch (e) {
+    } catch {
       return cat;
     }
   });
@@ -1558,29 +1517,6 @@ const Header = () => {
     { name: "News", link: toCanonicalPagePath("/news") },
     { name: "Phone Finder", link: "/" },
   ];
-  const categoryShortcutLinks = [
-    {
-      name: "Smartphones",
-      link: toCanonicalPagePath("/smartphones"),
-      icon: FaMobileAlt,
-    },
-    {
-      name: "Laptops",
-      link: toCanonicalPagePath("/laptops"),
-      icon: FaLaptop,
-    },
-    {
-      name: "TVs",
-      link: toCanonicalPagePath("/tvs"),
-      icon: FaTv,
-    },
-    {
-      name: "Networking",
-      link: toCanonicalPagePath("/networking"),
-      icon: FaPlug,
-    },
-  ];
-
   const isActiveNavLink = (href) => {
     const target =
       String(href || "")
@@ -1603,39 +1539,6 @@ const Header = () => {
     return currentPath === target || currentPath.startsWith(`${target}/`);
   };
 
-  const utilityItems = [
-    {
-      name: "Wishlist",
-      icon: <FaHeart />,
-      count: 1,
-      link: toCanonicalPagePath("/wishlist"),
-    },
-  ];
-  const wishlistLink =
-    utilityItems[0]?.link || toCanonicalPagePath("/wishlist");
-
-  const findNavCategory = (...keys) => {
-    const normalizedKeys = keys.map((key) => String(key || "").toLowerCase());
-    return (
-      categoriesWithBrands.find((category) => {
-        const id = String(category?.id || "").toLowerCase();
-        const name = String(category?.name || "").toLowerCase();
-        return normalizedKeys.some(
-          (key) =>
-            id === key ||
-            name === key ||
-            id.includes(key) ||
-            name.includes(key),
-        );
-      }) || null
-    );
-  };
-
-  const smartphoneCategoryNav = findNavCategory("smartphones", "mobiles");
-  const laptopCategoryNav = findNavCategory("laptops", "laptop");
-  const tvCategoryNav = findNavCategory("tvs", "tv", "television");
-  const networkingCategoryNav = findNavCategory("networking", "network");
-
   const desktopTopStripLinks = directLinks.filter((link) =>
     [
       browseNavLabel,
@@ -1647,33 +1550,6 @@ const Header = () => {
       "Trending Mobiles",
       "News",
     ].includes(link.name),
-  );
-
-  const primaryCategoryItems = [
-    {
-      label: "Smartphones",
-      link: toCanonicalPagePath("/smartphones"),
-      category: smartphoneCategoryNav,
-    },
-    {
-      label: "Laptops",
-      link: toCanonicalPagePath("/laptops"),
-      category: laptopCategoryNav,
-    },
-    {
-      label: "TVs",
-      link: toCanonicalPagePath("/tvs"),
-      category: tvCategoryNav,
-    },
-    {
-      label: "Networking",
-      link: toCanonicalPagePath("/networking"),
-      category: networkingCategoryNav,
-    },
-  ].filter((item) => item.category);
-
-  const primaryActionLinks = directLinks.filter((link) =>
-    ["Compare", "News"].includes(link.name),
   );
 
   const secondaryFeatureLinks = [
@@ -1739,16 +1615,6 @@ const Header = () => {
     },
   ];
 
-  const openCategoryKey = String(
-    pinnedCategory || activeCategory || "",
-  ).toLowerCase();
-  const openCategoryData =
-    primaryCategoryItems.find(
-      (item) =>
-        String(item.category?.id || item.label || "").toLowerCase() ===
-        openCategoryKey,
-    )?.category || null;
-
   // Handle search
   const handleSearch = (e) => {
     e.preventDefault();
@@ -1804,7 +1670,6 @@ const Header = () => {
   // Handle auth
   const handleLogin = () => {
     setIsLoggedIn(true);
-    setShowAuthDropdown(false);
     navigate("/login");
   };
 
@@ -1825,7 +1690,6 @@ const Header = () => {
     setIsLoggedIn(false);
     setUserName("");
     setUserEmail("");
-    setShowAuthDropdown(false);
     navigate("/");
   };
 
@@ -1902,7 +1766,6 @@ const Header = () => {
                   <Link
                     key={idx}
                     to={href}
-                    onClick={() => setPinnedCategory(null)}
                     className="flex items-center justify-between p-3 rounded-lg hover:bg-purple-50 group transition-all duration-150 hover:pl-4"
                   >
                     <div className="flex items-center">
@@ -2000,7 +1863,6 @@ const Header = () => {
                     <Link
                       key={id}
                       to={getCatalogBasePath(category.id || category.name)}
-                      onClick={() => setPinnedCategory(null)}
                       className="flex items-center justify-center p-3 border border-gray-200 rounded-lg hover:border-red-400 hover:bg-red-50 group transition-all duration-200"
                     >
                       <span className="font-medium text-gray-700 group-hover:text-red-700 text-sm">
@@ -2017,7 +1879,6 @@ const Header = () => {
                       name,
                       category.id || category.name,
                     )}
-                    onClick={() => setPinnedCategory(null)}
                     className="flex items-center justify-center p-3 border border-gray-200 rounded-lg hover:border-red-400 hover:bg-red-50 group transition-all duration-200"
                   >
                     <div className="flex items-center space-x-2">
@@ -2050,7 +1911,6 @@ const Header = () => {
           <div className="flex items-center justify-between">
             <Link
               to={`/${category.id}`}
-              onClick={() => setPinnedCategory(null)}
               className="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg hover:from-blue-700 hover:to-cyan-600 transition-all duration-200 font-semibold text-sm shadow-md hover:shadow-lg"
             >
               View All in {category.name}
@@ -2154,41 +2014,6 @@ const Header = () => {
     );
   };
 
-  const SuggestionPanelHeader = ({
-    query,
-    count,
-    isSearching: panelSearching = false,
-  }) => (
-    <div className="border-b border-blue-100/70 bg-gradient-to-r from-blue-50 via-white to-cyan-50 px-4 py-3 sm:px-5">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-[#345ce3] via-blue-500 to-cyan-400 text-white shadow-[0_12px_24px_rgba(52,92,227,0.24)]">
-            <FaSearch className="h-4 w-4" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#345ce3]">
-              Hooks search
-            </p>
-            <p className="truncate text-sm font-semibold text-slate-900">
-              Suggestions for "{query}"
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {panelSearching ? (
-            <span className="rounded-full bg-[#345ce3]/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#345ce3]">
-              Live
-            </span>
-          ) : null}
-          <span className="rounded-full bg-white/80 px-3 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-blue-100">
-            {count} matches
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-
   const SuggestionEmptyState = ({ query, variant = "desktop" }) => (
     <div
       className={`flex flex-col items-center justify-center text-center ${
@@ -2212,29 +2037,7 @@ const Header = () => {
     </div>
   );
 
-  // Text Highlight Component
-  const HighlightText = ({ text, query }) => {
-    if (!query || !text) return text;
-    const safeQuery = escapeRegExp(query);
-    if (!safeQuery) return text;
-    const parts = String(text).split(new RegExp(`(${safeQuery})`, "gi"));
-    return (
-      <>
-        {parts.map((part, idx) =>
-          part.toLowerCase() === query.toLowerCase() ? (
-            <span
-              key={idx}
-              className="rounded-md bg-[#345ce3]/10 px-1.5 py-0.5 font-semibold text-[#345ce3]"
-            >
-              {part}
-            </span>
-          ) : (
-            <span key={idx}>{part}</span>
-          ),
-        )}
-      </>
-    );
-  };
+  const HighlightText = ({ text }) => text || "";
 
   const SuggestionRow = ({
     suggestion,
@@ -2255,10 +2058,10 @@ const Header = () => {
     const isBrand = String(suggestion?.type || "").toLowerCase() === "brand";
 
     const buttonClasses = isMobileVariant
-      ? `group w-full overflow-hidden rounded-2xl border px-4 py-4 text-left shadow-[0_12px_30px_rgba(59,130,246,0.08)] transition-all duration-200 ${
+      ? `group flex w-full items-center gap-2.5 overflow-hidden rounded-2xl border px-3 py-3 text-left shadow-[0_10px_24px_rgba(59,130,246,0.08)] transition-all duration-200 ${
           selected
-            ? "border-blue-200 bg-blue-50/90 shadow-[0_16px_36px_rgba(59,130,246,0.14)]"
-            : "border-blue-100 bg-white/95 hover:border-blue-200 hover:shadow-[0_16px_36px_rgba(59,130,246,0.12)] active:bg-blue-50"
+            ? "border-blue-200 bg-blue-50/90 shadow-[0_14px_30px_rgba(59,130,246,0.12)]"
+            : "border-blue-100 bg-white/95 hover:border-blue-200 hover:shadow-[0_14px_30px_rgba(59,130,246,0.1)] active:bg-blue-50"
         }`
       : `group relative flex w-full items-center gap-3 px-4 py-3.5 text-left transition-all duration-200 border-b border-blue-100/70 last:border-b-0 ${
           selected
@@ -2295,7 +2098,9 @@ const Header = () => {
         ) : null}
 
         <div
-          className={`relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md ring-1 ring-blue-100 transition group-hover:ring-blue-200 ${
+          className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-md ring-1 ring-blue-100 transition group-hover:ring-blue-200 ${
+            isMobileVariant ? "h-11 w-11" : "h-12 w-12"
+          } ${
             imageUrl
               ? "bg-white"
               : "bg-gradient-to-br from-blue-50 via-white to-cyan-50"
@@ -2305,7 +2110,9 @@ const Header = () => {
             <img
               src={imageUrl}
               alt={suggestion.name}
-              className="h-full w-full object-contain p-1.5"
+              className={`h-full w-full object-contain ${
+                isMobileVariant ? "p-1" : "p-1.5"
+              }`}
               loading="lazy"
               onError={(e) => {
                 e.currentTarget.style.display = "none";
@@ -2318,31 +2125,31 @@ const Header = () => {
 
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold leading-snug text-slate-900 transition group-hover:text-[#345ce3] sm:text-[15px]">
+            <div className="min-w-0 flex-1">
+              <p className="line-clamp-2 text-[13px] font-semibold leading-snug text-slate-900 transition group-hover:text-[#345ce3] sm:text-[15px]">
                 <HighlightText
                   text={readFirstText(suggestion?.name, suggestion?.model)}
                   query={query}
                 />
               </p>
-              <p className="mt-0.5 truncate text-xs text-slate-500 sm:text-[13px]">
+              <p className="mt-0.5 truncate text-[11px] text-slate-500 sm:text-[13px]">
                 {subtitle}
               </p>
             </div>
 
             <span
-              className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] ring-1 ${badgeClasses}`}
+              className={`shrink-0 rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.16em] ring-1 sm:px-2.5 sm:py-1 sm:text-[10px] ${badgeClasses}`}
             >
               {typeLabel}
             </span>
           </div>
 
           {chips.length > 0 ? (
-            <div className="mt-2 flex flex-wrap gap-2">
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
               {chips.map((chip) => (
                 <span
                   key={`${chip.label}-${chip.tone}`}
-                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ${chip.tone}`}
+                  className={`rounded-full px-2 py-0.5 text-[9px] font-semibold ring-1 sm:px-2.5 sm:py-1 sm:text-[11px] ${chip.tone}`}
                 >
                   {chip.label}
                 </span>
@@ -2354,7 +2161,7 @@ const Header = () => {
         <FaChevronRight
           className={`relative shrink-0 transition group-hover:translate-x-0.5 group-hover:text-[#345ce3] ${
             isMobileVariant
-              ? "h-4 w-4 text-slate-400"
+              ? "h-3.5 w-3.5 text-slate-400"
               : "h-3.5 w-3.5 text-slate-300"
           }`}
         />
@@ -2368,9 +2175,9 @@ const Header = () => {
       <>
         {isSearchOpen && (
           <>
-            {/* Backdrop - Lower z-index */}
+            {/* Backdrop */}
             <div
-              className="fixed inset-0 bg-black bg-opacity-50 z-40"
+              className="fixed inset-0 z-[70] bg-black bg-opacity-50"
               onClick={(e) => {
                 if (e.target === e.currentTarget) {
                   setIsSearchOpen(false);
@@ -2382,7 +2189,7 @@ const Header = () => {
 
             {/* Search Modal - Full screen on mobile using 100dvh */}
             <div
-              className="fixed inset-0 lg:inset-auto lg:top-16 lg:left-0 lg:right-0 z-50 bg-white lg:shadow-lg overflow-hidden flex flex-col"
+              className="fixed inset-0 z-[80] flex flex-col overflow-hidden bg-white lg:inset-auto lg:left-0 lg:right-0 lg:top-16 lg:shadow-lg"
               style={{
                 height: "100dvh",
                 maxHeight: "100dvh",
@@ -2437,7 +2244,9 @@ const Header = () => {
                               {/* Show skeleton loaders while fetching */}
                               {isSearching &&
                                 [...Array(3)].map((_, i) => (
-                                  <SkeletonSuggestion key={`skeleton-${i}`} />
+                                  <SkeletonSuggestion
+                                    key={`desktop-skeleton-${i}`}
+                                  />
                                 ))}
                               {/* No Results - only show after loaded */}
                               {!isSearching &&
@@ -2480,14 +2289,17 @@ const Header = () => {
               <div className="flex-1 overflow-y-auto">
                 {/* Mobile Search Suggestions - Display in Scrollable Area */}
                 {searchQuery.trim() && (
-                  <div className="px-4 sm:px-6 py-4 sm:py-6">
+                  <div className="px-2.5 py-3 sm:px-6 sm:py-6">
                     {/* Loading State */}
                     {!searchSuggestions || searchSuggestions.length === 0 ? (
                       <>
                         {/* Show skeleton loaders while fetching */}
                         {isSearching &&
                           [...Array(3)].map((_, i) => (
-                            <SkeletonSuggestion key={`skeleton-${i}`} />
+                            <SkeletonSuggestion
+                              key={`mobile-skeleton-${i}`}
+                              variant="mobile"
+                            />
                           ))}
                         {/* No Results - only show after loaded */}
                         {!isSearching &&
@@ -2501,106 +2313,24 @@ const Header = () => {
                       </>
                     ) : (
                       /* Suggestions List for Mobile */
-                      <div className="space-y-3">
-                        {searchSuggestions
-                          .slice(0, SEARCH_SUGGESTION_LIMIT)
-                          .map((sugg, index) => (
-                            <button
-                              key={index}
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                              }}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleSuggestionClick(sugg);
-                              }}
-                              className="group relative flex w-full items-center gap-3 overflow-hidden rounded-2xl border border-blue-100 bg-white/95 p-4 text-left shadow-[0_12px_30px_rgba(59,130,246,0.08)] transition-all duration-200 hover:border-blue-200 hover:shadow-[0_16px_36px_rgba(59,130,246,0.12)] active:bg-blue-50 min-h-[64px]"
-                            >
-                              {/* Product Thumbnail */}
-                              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-blue-50 via-white to-cyan-50 ring-1 ring-blue-100">
-                                {getSuggestionImage(sugg) ? (
-                                  <img
-                                    src={getSuggestionImage(sugg)}
-                                    alt={sugg.name}
-                                    className="w-full h-full object-contain"
-                                    loading="lazy"
-                                    onError={(e) => {
-                                      e.currentTarget.style.display = "none";
-                                    }}
-                                  />
-                                ) : (
-                                  <span className="font-bold text-sm text-[#345ce3]">
-                                    {(
-                                      sugg.brand_name ||
-                                      sugg.model ||
-                                      sugg.name ||
-                                      ""
-                                    )
-                                      .charAt(0)
-                                      .toUpperCase()}
-                                  </span>
-                                )}
-                              </div>
-
-                              {/* Text Content */}
-                              <div className="flex-1 min-w-0">
-                                <div className="truncate text-[13px] font-semibold leading-snug text-slate-900 group-hover:text-[#345ce3]">
-                                  <HighlightText
-                                    text={sugg.name}
-                                    query={searchQuery}
-                                  />
-                                </div>
-                                <div className="mt-1 text-xs text-slate-500">
-                                  {sugg.type === "product" ? (
-                                    <div className="min-w-0">
-                                      <div className="truncate">
-                                        {sugg.brand_name ||
-                                          sugg.model ||
-                                          sugg.product_type ||
-                                          "Product"}
-                                      </div>
-                                      <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                        {getSuggestionVariantTypes(sugg).map(
-                                          (v) => (
-                                            <span
-                                              key={v}
-                                              className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-[#345ce3] ring-1 ring-blue-100"
-                                            >
-                                              {v}
-                                            </span>
-                                          ),
-                                        )}
-                                        {formatINR(
-                                          sugg.min_price ?? sugg.minPrice,
-                                        ) && (
-                                          <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-100">
-                                            From{" "}
-                                            {formatINR(
-                                              sugg.min_price ?? sugg.minPrice,
-                                            )}
-                                          </span>
-                                        )}
-                                      </div>
-                                      {getSuggestionFeatures(sugg).length >
-                                        0 && (
-                                        <div className="mt-1 truncate text-[11px] text-slate-500">
-                                          {getSuggestionFeatures(sugg).join(
-                                            " • ",
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    sugg.type || ""
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* Chevron Icon */}
-                            </button>
-                          ))}
+                      <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-white via-white to-blue-50/60 p-2 shadow-[0_18px_44px_rgba(15,23,42,0.1)] sm:rounded-[1.35rem] sm:p-3">
+                        <div className="space-y-2.5 sm:space-y-3">
+                          {searchSuggestions
+                            .slice(0, SEARCH_SUGGESTION_LIMIT)
+                            .map((sugg, index) => (
+                              <SuggestionRow
+                                key={`${sugg.id || sugg.name || index}-mobile`}
+                                suggestion={sugg}
+                                query={searchQuery}
+                                selected={selectedSuggestionIndex === index}
+                                variant="mobile"
+                                onActivate={handleSuggestionClick}
+                                onMouseEnter={() =>
+                                  setSelectedSuggestionIndex(index)
+                                }
+                              />
+                            ))}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -2619,17 +2349,17 @@ const Header = () => {
       {/* MOBILE HEADER (≤ 768px) */}
       <div
         ref={mobileHeaderRef}
-        className="z-40 border-b border-slate-100 bg-white md:hidden"
+        className="border-b border-slate-100 bg-white/95 shadow-[0_1px_0_rgba(15,23,42,0.04)] backdrop-blur md:hidden"
       >
         {/* Mobile Top Row: Menu | Logo */}
-        <div className="flex items-center gap-3 px-4 py-3">
+        <div className="flex min-h-[52px] items-center gap-3 px-3 py-2">
           <div className="flex min-w-0 items-center gap-2">
             <button
-              className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 transition-all hover:bg-slate-100/60 hover:text-slate-900"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition-all hover:bg-slate-100/60 hover:text-slate-900"
               onClick={() => setIsMenuOpen(true)}
               aria-label="Open menu"
             >
-              <FaBars className="h-5 w-5" />
+              <FaBars className="h-4 w-4" />
             </button>
 
             <Link to="/" className="flex min-w-0 items-center">
@@ -2641,14 +2371,16 @@ const Header = () => {
 
       {/* DESKTOP HEADER (> 768px) */}
       <div className="hidden bg-white md:block">
-        <div className="border-b border-slate-200 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white/75">
-          <div className="mx-auto flex max-w-7xl items-center justify-center gap-4 overflow-x-auto px-4 py-2 text-[11px] font-medium uppercase tracking-[0.12em] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:px-6 lg:px-8">
+        <div className="border-b border-white/10 bg-[#071120] text-white/70 shadow-[0_1px_0_rgba(255,255,255,0.04)_inset]">
+          <div className="mx-auto flex max-w-7xl items-center justify-center gap-5 overflow-x-auto px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:px-6 lg:gap-7 lg:px-8">
             {desktopTopStripLinks.map((link) => (
               <Link
                 key={`${link.link}-${link.name}`}
                 to={link.link}
-                className={`whitespace-nowrap transition-colors ${
-                  isActiveNavLink(link.link) ? "text-white" : "hover:text-white"
+                className={`whitespace-nowrap rounded-full px-1.5 py-0.5 transition-colors ${
+                  isActiveNavLink(link.link)
+                    ? "text-white"
+                    : "hover:text-white"
                 }`}
               >
                 {link.name}
@@ -2657,19 +2389,19 @@ const Header = () => {
           </div>
         </div>
 
-        <div className="border-b border-slate-100 bg-white">
-          <div className="mx-auto w-full max-w-7xl px-4 py-4 sm:px-6 lg:px-8 lg:py-5">
-            <div className="flex items-center gap-5 xl:gap-8">
-              <Link to="/" className="flex shrink-0 items-center">
+        <div className="border-b border-[#dfe8f6] bg-gradient-to-r from-white via-[#fbfdff] to-[#eef6ff]">
+          <div className="mx-auto w-full max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+            <div className="grid items-center gap-6 lg:grid-cols-[minmax(260px,0.8fr)_minmax(380px,536px)_minmax(190px,0.7fr)]">
+              <Link to="/" className="flex min-w-0 shrink-0 items-center">
                 <BrandIdentity variant="desktop" />
               </Link>
 
               <form
                 ref={searchRef}
                 onSubmit={handleSearch}
-                className="relative min-w-0 flex-1 max-w-[32rem]"
+                className="relative min-w-0"
               >
-                <div className="group/search relative rounded-[24px] border border-[#dbe4ff] bg-white">
+                <div className="group/search relative rounded-full border border-[#cfdbff] bg-white shadow-[0_14px_38px_rgba(37,99,235,0.08)] transition-all duration-300 focus-within:border-[#87a2ff] focus-within:shadow-[0_18px_48px_rgba(37,99,235,0.14)]">
                   <input
                     ref={searchInputRef}
                     type="text"
@@ -2679,13 +2411,13 @@ const Header = () => {
                     onFocus={() => setIsSearchFocused(true)}
                     onBlur={() => setIsSearchFocused(false)}
                     onKeyDown={handleSearchKeyDown}
-                    className={`w-full rounded-[24px] bg-transparent py-3.5 pl-5 text-[15px] font-medium text-slate-800 placeholder:text-slate-400 transition-[padding] duration-300 ease-out focus:outline-none ${
+                    className={`w-full rounded-full bg-transparent py-3.5 pl-5 text-[15px] font-semibold text-slate-800 placeholder:text-slate-400 transition-[padding] duration-300 ease-out focus:outline-none ${
                       isSearchActionCompact ? "pr-16" : "pr-28"
                     }`}
                   />
                   <button
                     type="submit"
-                    className={`absolute right-2 top-1/2 inline-flex h-10 -translate-y-1/2 items-center justify-center overflow-hidden rounded-[18px] bg-gradient-to-r from-[#3158e0] via-[#4f46e5] to-[#7c3aed] py-2 text-sm font-semibold text-white transition-all duration-300 ease-out hover:scale-[1.01] ${
+                    className={`absolute right-2 top-1/2 inline-flex h-10 -translate-y-1/2 items-center justify-center overflow-hidden rounded-full bg-gradient-to-r from-[#3158e0] via-[#4f46e5] to-[#7c3aed] py-2 text-sm font-bold text-white shadow-[0_10px_22px_rgba(79,70,229,0.24)] transition-all duration-300 ease-out hover:scale-[1.01] ${
                       isSearchActionCompact
                         ? "w-10 gap-0 px-0"
                         : "w-[104px] gap-2 px-4"
@@ -2706,12 +2438,6 @@ const Header = () => {
 
                 {showSearchSuggestions && searchQuery.trim() && (
                   <div className="absolute left-0 right-0 top-full z-50 mt-3 overflow-hidden rounded-md border border-[#dfe7ff] bg-gradient-to-br from-white via-white to-blue-50/60 shadow-[0_28px_72px_rgba(15,23,42,0.16)] backdrop-blur-xl">
-                    <SuggestionPanelHeader
-                      query={searchQuery}
-                      count={searchSuggestions.length}
-                      isSearching={isSearching}
-                    />
-
                     <div className="max-h-[26rem] overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                       {!searchSuggestions || searchSuggestions.length === 0 ? (
                         searchQuery.trim() ? (
@@ -2749,6 +2475,12 @@ const Header = () => {
                   </div>
                 )}
               </form>
+
+              <div className="hidden min-w-0 justify-end xl:flex">
+                <div className="rounded-full border border-[#dbe4ff] bg-white/80 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-[#3158e0] shadow-sm">
+                  Smarter Device Discovery
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -2759,17 +2491,17 @@ const Header = () => {
   const CategoryNavBar = () => {
     return (
       <div className="hidden bg-white md:block">
-        <div className="bg-blue-50 text-slate-600">
-          <div className="mx-auto max-w-7xl px-4 sm:px-2 lg:px-2">
-            <div className="flex items-center gap-1 overflow-x-auto py-1.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <div className="border-b border-[#dbe7f6] bg-[#eef6ff] text-slate-600">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-center gap-2 overflow-x-auto py-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {secondaryFeatureLinks.map((link) => (
                 <Link
                   key={`${link.id}-${link.name}`}
                   to={link.link}
-                  className={`inline-flex shrink-0 items-center px-3 py-2 text-[12px] font-semibold uppercase tracking-[0.08em] transition-colors ${
+                  className={`inline-flex shrink-0 items-center rounded-full px-3.5 py-2 text-[11px] font-black uppercase tracking-[0.12em] transition-all duration-200 ${
                     isActiveNavLink(link.link)
-                      ? "bg-white text-[#345ce3]"
-                      : "text-slate-600 hover:bg-white/40 hover:text-[#345ce3]"
+                      ? "bg-white text-[#2454d6] shadow-sm"
+                      : "text-[#243b5a] hover:bg-white/75 hover:text-[#2454d6]"
                   }`}
                 >
                   {link.name}
@@ -2971,12 +2703,12 @@ const Header = () => {
         {isMenuOpen && (
           <>
             <div
-              className="fixed inset-0 z-40 bg-slate-950/55 backdrop-blur-sm lg:hidden"
+              className="fixed inset-0 z-[70] bg-slate-950/55 backdrop-blur-sm lg:hidden"
               onClick={() => setIsMenuOpen(false)}
             />
 
             <div
-              className={`fixed inset-y-0 left-0 z-50 w-[296px] max-w-[84vw] transform overflow-hidden border-r border-slate-100 bg-white shadow-[18px_0_60px_rgba(15,23,42,0.16)] transition-transform duration-300 lg:hidden ${
+              className={`fixed inset-y-0 left-0 z-[80] w-[296px] max-w-[84vw] transform overflow-hidden border-r border-slate-100 bg-white shadow-[18px_0_60px_rgba(15,23,42,0.16)] transition-transform duration-300 lg:hidden ${
                 isMenuOpen ? "translate-x-0" : "-translate-x-full"
               }`}
             >
@@ -3087,7 +2819,7 @@ const Header = () => {
 
       <header
         ref={headerRef}
-        className="sticky top-0 left-0 right-0 z-40 bg-white"
+        className="sticky left-0 right-0 top-0 z-50 bg-white"
       >
         <MainHeader />
         <CategoryNavBar />

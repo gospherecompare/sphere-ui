@@ -5,7 +5,6 @@ import {
   FaChevronLeft,
   FaChevronRight,
   FaFacebookF,
-  FaFire,
   FaLink,
   FaWhatsapp,
 } from "react-icons/fa";
@@ -567,18 +566,19 @@ const SectionTitle = ({
 const TrendingStoryCard = ({ story }) => (
   <Link
     to={createNewsStoryPath(story.slug)}
-    className="group grid grid-cols-[78px_minmax(0,1fr)] items-start gap-3 py-4 first:pt-0 last:pb-0 sm:grid-cols-[92px_minmax(0,1fr)]"
+    className="group flex items-start gap-3 py-3 first:pt-0 last:pb-0"
   >
     <StoryImage
       story={story}
-      className="aspect-[4/3] w-full border border-[#e5e7eb]"
+      className="h-16 w-16 shrink-0 rounded-md"
     />
 
-    <div className="min-w-0 flex-1">
-      <h3 className="line-clamp-4 text-[14px] font-semibold leading-5 text-[#2a2a2a] transition-colors group-hover:text-[#2563eb]">
+    <div className="min-w-0">
+      <h3 className="line-clamp-2 text-[13px] font-semibold leading-5 text-[#20242b] transition-colors group-hover:text-[#2563eb]">
         {story.title}
       </h3>
-      <p className="mt-2 text-[11px] text-[#7c828d]">
+      <p className="mt-1 text-[11px] text-[#7d8898]">
+        {story.brandName || getStoryCategory(story)} |{" "}
         {formatAbsoluteDate(story)}
       </p>
     </div>
@@ -588,21 +588,19 @@ const TrendingStoryCard = ({ story }) => (
 const SidebarStoryCard = ({ story }) => (
   <Link
     to={createNewsStoryPath(story.slug)}
-    className="group grid grid-cols-[78px_minmax(0,1fr)] items-start gap-3 border-b border-[#eceff3] pb-4 last:border-b-0 last:pb-0 sm:grid-cols-[92px_minmax(0,1fr)]"
+    className="group flex items-start gap-3 py-3 first:pt-0 last:pb-0"
   >
     <StoryImage
       story={story}
-      className="aspect-[4/3] w-full border border-[#e5e7eb]"
+      className="h-16 w-16 shrink-0 rounded-md"
     />
 
     <div className="min-w-0">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7c3aed]">
-        {getStoryCategory(story)}
-      </div>
-      <h3 className="mt-2 text-[14px] font-semibold leading-[1.35] text-[#2a2a2a] transition-colors group-hover:text-[#2563eb]">
+      <h3 className="line-clamp-2 text-[13px] font-semibold leading-5 text-[#20242b] transition-colors group-hover:text-[#2563eb]">
         {story.title}
       </h3>
-      <p className="mt-2 text-[11px] text-[#7c828d]">
+      <p className="mt-1 text-[11px] text-[#7d8898]">
+        {story.brandName || getStoryCategory(story)} |{" "}
         {formatAbsoluteDate(story)}
       </p>
     </div>
@@ -624,34 +622,6 @@ const RelatedStoryRow = ({ story, index }) => (
       </p>
     </Link>
   </li>
-);
-
-const RecommendedStoryRow = ({ story }) => (
-  <Link
-    to={createNewsStoryPath(story.slug)}
-    className="group min-w-[82%] overflow-hidden border border-[#e8ebef] bg-white sm:grid sm:min-w-0 sm:grid-cols-[7rem_minmax(0,1fr)] sm:items-center sm:gap-4 sm:border-x-0 sm:border-t-0 sm:py-5 sm:first:pt-0 sm:last:border-b-0 sm:last:pb-0"
-  >
-    <StoryImage
-      story={story}
-      className="aspect-[4/3] w-full border-b border-[#e5e7eb] sm:h-[7rem] sm:w-[7rem] sm:border"
-    />
-
-    <div className="min-w-0 p-3 sm:p-0">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7c3aed] sm:text-[11px] sm:tracking-[0.18em]">
-        {getStoryCategory(story)}
-      </p>
-      <h3 className="mt-2 line-clamp-3 text-[14px] font-semibold leading-[1.4] text-[#262626] transition-colors group-hover:text-[#2563eb] sm:text-[20px]">
-        {story.title}
-      </h3>
-      <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-[#7d8898] sm:text-[12px]">
-        <span className="hidden font-medium normal-case tracking-normal text-[#4d5968] sm:inline">
-          {story.author || "Hooks editorial"}
-        </span>
-        <span className="hidden h-1 w-1 rounded-full bg-[#c6d1df] sm:inline-flex" />
-        <span>{formatAbsoluteDate(story)}</span>
-      </div>
-    </div>
-  </Link>
 );
 
 const RailPanel = ({ title, items = [], linkable = false }) => {
@@ -710,56 +680,14 @@ const RailPanel = ({ title, items = [], linkable = false }) => {
   );
 };
 
-const SidebarSection = ({ title, children, mobileSoft = false }) => (
-  <section
-    className={`bg-white ${
-      mobileSoft
-        ? "border-t border-[#e5e7eb] pt-5 sm:border sm:pt-0"
-        : "border border-[#e5e7eb]"
-    }`}
-  >
-    <div
-      className={`px-4 py-2 text-[12px] font-bold uppercase tracking-[0.12em] text-white ${
-        mobileSoft
-          ? "bg-none px-0 pb-3 pt-0 text-[#18212f] sm:bg-gradient-to-r sm:from-[#2563eb] sm:to-[#7c3aed] sm:px-4 sm:py-2 sm:text-white"
-          : "bg-gradient-to-r from-[#2563eb] to-[#7c3aed]"
-      }`}
-    >
+const SidebarSection = ({ title, children }) => (
+  <section className="overflow-hidden bg-white">
+    <div className="bg-gradient-to-r from-[#2563eb] to-[#7c3aed] px-4 py-2 text-[12px] font-black uppercase tracking-[0.12em] text-white">
       {title}
     </div>
-    <div className={`${mobileSoft ? "p-0 sm:p-4" : "p-3 sm:p-4"}`}>
-      {children}
-    </div>
+    <div className="p-3">{children}</div>
   </section>
 );
-
-const InlineStoryLinksPanel = ({ stories = [] }) => {
-  if (!stories.length) return null;
-
-  return (
-    <section className="my-7 border border-[#d8dbe1] bg-[#fafafa] sm:my-8">
-      <div className="flex items-center gap-3 border-b border-[#e5e7eb] px-4 py-3">
-        <span className="inline-flex h-7 w-7 items-center justify-center bg-[#ede9fe] text-[#7c3aed]">
-          <FaArrowRight className="h-3 w-3" />
-        </span>
-        <p className="text-[15px] font-semibold text-[#262626]">Also See</p>
-      </div>
-
-      <div className="divide-y divide-[#eceff3]">
-        {stories.slice(0, 3).map((story) => (
-          <Link
-            key={story.slug}
-            to={createNewsStoryPath(story.slug)}
-            className="flex items-start gap-3 px-4 py-3 text-[14px] leading-6 text-[#2563eb] transition-colors hover:text-[#7c3aed] sm:text-[15px]"
-          >
-            <span className="mt-[10px] h-[5px] w-[5px] rounded-full bg-[#7c3aed]" />
-            <span className="min-w-0 flex-1">{story.title}</span>
-          </Link>
-        ))}
-      </div>
-    </section>
-  );
-};
 
 const RelatedStoryTile = ({ story }) => (
   <Link
@@ -782,7 +710,7 @@ const RelatedStoryTile = ({ story }) => (
 const LinkListPanel = ({ title, subtitle, items }) => (
   <SidebarSection title={title}>
     {subtitle ? (
-      <p className="pb-3 text-[13px] leading-6 text-[#5f6670]">{subtitle}</p>
+      <p className="pb-3 text-[12px] leading-5 text-[#667689]">{subtitle}</p>
     ) : null}
 
     <div className="divide-y divide-[#eceff3]">
@@ -790,7 +718,7 @@ const LinkListPanel = ({ title, subtitle, items }) => (
         <Link
           key={item}
           to="/smartphones"
-          className="flex items-center justify-between gap-3 py-3 text-[14px] font-medium text-[#29303a] transition-colors hover:text-[#2563eb]"
+          className="flex items-center justify-between gap-3 py-3 text-[13px] font-semibold leading-5 text-[#20242b] transition-colors first:pt-0 last:pb-0 hover:text-[#2563eb]"
         >
           <span>{item}</span>
           <FaArrowRight className="h-3 w-3 shrink-0 text-[#9aa0a6]" />
@@ -1006,14 +934,6 @@ const NewsStoryArticlePage = () => {
     };
   }, []);
 
-  const recommendedStories = useMemo(() => {
-    const relatedSet = new Set(relatedStories.map((item) => item.slug));
-
-    return feedStoriesOrdered
-      .filter((item) => item.slug !== story?.slug && !relatedSet.has(item.slug))
-      .slice(0, 4);
-  }, [feedStoriesOrdered, relatedStories, story?.slug]);
-
   const moreStories = useMemo(() => {
     const excluded = new Set(trendingStories.map((item) => item.slug));
     excluded.add(story?.slug);
@@ -1022,14 +942,6 @@ const NewsStoryArticlePage = () => {
       .filter((item) => !excluded.has(item.slug))
       .slice(0, 3);
   }, [feedStoriesOrdered, story?.slug, trendingStories]);
-  const inlineStories = useMemo(
-    () =>
-      (recommendedStories.length ? recommendedStories : relatedStories).slice(
-        0,
-        3,
-      ),
-    [recommendedStories, relatedStories],
-  );
   const relatedStoriesPerPage = isRelatedMobileLayout
     ? MOBILE_RELATED_STORIES_PER_PAGE
     : DESKTOP_RELATED_STORIES_PER_PAGE;
@@ -1191,11 +1103,14 @@ const NewsStoryArticlePage = () => {
                   <StoryImage
                     story={story}
                     eager
-                    className="aspect-[16/10] w-full border border-[#e5e7eb] sm:aspect-[16/9]"
+                    className="aspect-[16/10] w-full rounded-sm border border-[#e5e7eb] sm:aspect-[16/9]"
                   />
                   <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-[#e5eaf0] pb-4 text-[10px] font-semibold uppercase tracking-[0.13em] text-[#64748b] sm:gap-x-4 sm:text-[11px] sm:tracking-[0.14em]">
                     <span className="inline-flex rounded-full bg-[#f1f5f9] px-3 py-1.5 text-[#334155]">
                       {story.readTime}
+                    </span>
+                    <span className="inline-flex items-center normal-case tracking-normal text-[#334155]">
+                      By {storyAuthor}
                     </span>
                     <span className="inline-flex items-center">
                       Published {formatAbsoluteDate(story)}
@@ -1234,8 +1149,6 @@ const NewsStoryArticlePage = () => {
                         />
                       ) : null}
 
-                      <InlineStoryLinksPanel stories={inlineStories} />
-
                       {structuredRestHtml ? (
                         <div
                           className={ARTICLE_PROSE_CONTINUATION_CLASS}
@@ -1254,8 +1167,6 @@ const NewsStoryArticlePage = () => {
                           </p>
                         ))}
                       </div>
-
-                      <InlineStoryLinksPanel stories={inlineStories} />
 
                       {remainingParagraphs.length ? (
                         <div className="news-article-prose space-y-5 text-[15px] leading-7 text-[#32363d] sm:space-y-7 sm:text-[18px] sm:leading-9">
@@ -1347,29 +1258,10 @@ const NewsStoryArticlePage = () => {
                   </section>
                 ) : null}
 
-                {recommendedStories.length ? (
-                  <section className="mt-8 sm:mt-12">
-                    <SectionTitle
-                      eyebrow="Recommended"
-                      title="More News"
-                    />
-
-                    <div className="-mx-4 mt-4 flex gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:mt-6 sm:block sm:overflow-visible sm:px-0 sm:pb-0">
-                      {recommendedStories.map((item) => (
-                        <RecommendedStoryRow key={item.slug} story={item} />
-                      ))}
-                    </div>
-                  </section>
-                ) : null}
               </div>
 
               <aside className="space-y-5 xl:sticky xl:top-6 xl:max-h-[calc(100vh-3rem)] xl:self-start xl:overflow-y-auto xl:pr-1 xl:[scrollbar-width:none] xl:[&::-webkit-scrollbar]:hidden">
-                <SidebarSection title="Trending News" mobileSoft>
-                  <div className="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#7c3aed]">
-                    <FaFire className="h-3.5 w-3.5" />
-                    Live from editorial
-                  </div>
-
+                <SidebarSection title="Trending News">
                   <div className="divide-y divide-[#eceff3]">
                     {trendingStories.map((item) => (
                       <TrendingStoryCard key={item.slug} story={item} />
@@ -1379,7 +1271,7 @@ const NewsStoryArticlePage = () => {
 
                 {moreStories.length ? (
                   <SidebarSection title="Latest Reads">
-                    <div className="space-y-4">
+                    <div className="divide-y divide-[#eceff3]">
                       {moreStories.map((item) => (
                         <SidebarStoryCard key={item.slug} story={item} />
                       ))}

@@ -375,8 +375,8 @@ const parseStoryTime = (story) => {
 
 const formatStoryDate = (story) => story?.publishedAt || "Latest";
 
-const formatStoryBrandDate = (story) =>
-  [story?.brandName, formatStoryDate(story)].filter(Boolean).join(" | ");
+const formatStoryAuthorDate = (story) =>
+  [story?.author, formatStoryDate(story)].filter(Boolean).join(" | ");
 
 const formatStoryLabel = (story) => {
   if (!story) return "News";
@@ -444,49 +444,23 @@ const resolveNewsTaxonomyRoute = (pillarSlug = "", topicSlug = "") => {
     eyebrow: topic ? pillar.label : pillar.eyebrow,
     description: topic?.description || pillar.description,
     categories: topic?.categories || pillar.categories || [],
+    matchCategories: [
+      topic?.categories?.[0] || topic?.slug || pillar.slug,
+    ].map(normalizeNewsRouteSlug),
     keywords: topic?.keywords || pillar.keywords || [],
     accent: pillar.accent,
     path: topic ? `/news/${pillar.slug}/${topic.slug}` : `/news/${pillar.slug}`,
   };
 };
 
-const readTaxonomyStoryText = (story) =>
-  [
-    readStoryText(story),
-    ...(Array.isArray(story?.tags) ? story.tags : []),
-    ...(Array.isArray(story?.highlights) ? story.highlights : []),
-    ...(Array.isArray(story?.takeaways) ? story.takeaways : []),
-  ]
-    .join(" ")
-    .toLowerCase();
-
-const readTaxonomyStoryKeys = (story) =>
-  new Set(
-    [
-      story?.category,
-      story?.label,
-      story?.productType,
-      ...(Array.isArray(story?.tags) ? story.tags : []),
-      ...(Array.isArray(story?.productTypes) ? story.productTypes : []),
-    ]
-      .map(normalizeNewsRouteSlug)
-      .filter(Boolean),
-  );
-
 const storyMatchesTaxonomyRoute = (story, route) => {
   if (!route) return true;
-  const keys = readTaxonomyStoryKeys(story);
-  const categories = (route.categories || []).map(normalizeNewsRouteSlug);
-  if (categories.some((category) => keys.has(category))) return true;
-
-  const text = readTaxonomyStoryText(story);
-  return (route.keywords || []).some((keyword) => {
-    const normalizedKeyword = String(keyword || "")
-      .trim()
-      .toLowerCase();
-    if (!normalizedKeyword) return false;
-    return text.includes(normalizedKeyword);
-  });
+  const storyCategory = normalizeNewsRouteSlug(story?.category);
+  const routeCategories = (route.matchCategories || []).map(normalizeNewsRouteSlug);
+  return Boolean(
+    storyCategory &&
+      routeCategories.some((category) => category === storyCategory),
+  );
 };
 
 const filterStoriesForTaxonomyRoute = (stories = [], route = null) =>
@@ -552,11 +526,9 @@ const buildNewsLayout = (stories = []) => {
         list.findIndex((item) => item.slug === story.slug) === index,
     )
     .slice(0, 8);
-  const launches = take(
-    ranked,
-    6,
-    (story) => getStoryBucket(story) === "launches",
-  );
+  const launches = recent
+    .filter((story) => getStoryBucket(story) === "launches")
+    .slice(0, 12);
   const reviews = take(
     ranked,
     4,
@@ -846,11 +818,14 @@ const SpotlightList = ({ stories = [] }) => (
       >
         <StoryImage story={story} className="aspect-square w-full rounded-xl" />
         <div className="min-w-0">
+          <p className="mb-1 text-[11px] font-semibold leading-none text-[#7d8898]">
+            {story.brandName || story.label || "News"}
+          </p>
           <h3 className="line-clamp-3 text-[14px] font-semibold leading-[1.28] text-[#20242b] group-hover:text-[#2563eb]">
             {story.title}
           </h3>
           <p className="mt-1 text-[11px] leading-none text-[#7d8898]">
-            {formatStoryBrandDate(story)}
+            {formatStoryAuthorDate(story)}
           </p>
         </div>
       </Link>
@@ -1395,7 +1370,7 @@ const NewsArticlesPage = () => {
   const pageSchema = [
     createBreadcrumbSchema([
       { label: "Home", url: "https://tryhook.shop/" },
-      { label: "News", url: canonical },
+      { label: "News", url: "https://tryhook.shop/news" },
       ...(taxonomyRoute
         ? [{ label: taxonomyRoute.title, url: canonical }]
         : []),

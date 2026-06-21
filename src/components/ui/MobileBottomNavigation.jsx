@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   FaCompass,
@@ -16,9 +16,85 @@ const dispatchMobileNavigationEvent = (eventName) => {
   window.dispatchEvent(new CustomEvent(eventName));
 };
 
+const SHOW_TOP_OFFSET = 80;
+const SHOW_BOTTOM_OFFSET = 160;
+const HIDE_SCROLL_DELTA = 12;
+const SHOW_SCROLL_DELTA = 6;
+
 const MobileBottomNavigation = () => {
   const location = useLocation();
   const pathname = String(location.pathname || "").toLowerCase();
+  const [isVisible, setIsVisible] = useState(true);
+  const lastScrollYRef = useRef(0);
+  const tickingRef = useRef(false);
+
+  useEffect(() => {
+    setIsVisible(true);
+    if (typeof window !== "undefined") {
+      lastScrollYRef.current = Math.max(0, window.scrollY || 0);
+    }
+  }, [pathname]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const updateVisibility = () => {
+      tickingRef.current = false;
+
+      const currentY = Math.max(0, window.scrollY || window.pageYOffset || 0);
+      const doc = document.documentElement;
+      const maxScroll = Math.max(0, doc.scrollHeight - window.innerHeight);
+      const nearTop = currentY <= SHOW_TOP_OFFSET;
+      const nearBottom = maxScroll - currentY <= SHOW_BOTTOM_OFFSET;
+      const delta = currentY - lastScrollYRef.current;
+
+      if (nearTop || nearBottom) {
+        setIsVisible(true);
+        lastScrollYRef.current = currentY;
+        return;
+      }
+
+      if (delta > HIDE_SCROLL_DELTA) {
+        setIsVisible(false);
+        lastScrollYRef.current = currentY;
+        return;
+      }
+
+      if (delta < -SHOW_SCROLL_DELTA) {
+        setIsVisible(true);
+        lastScrollYRef.current = currentY;
+      }
+    };
+
+    const onScroll = () => {
+      if (tickingRef.current) return;
+      tickingRef.current = true;
+      window.requestAnimationFrame(updateVisibility);
+    };
+
+    const onResize = () => {
+      setIsVisible(true);
+      lastScrollYRef.current = Math.max(0, window.scrollY || 0);
+    };
+
+    lastScrollYRef.current = Math.max(0, window.scrollY || 0);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+      if (tickingRef.current) {
+        tickingRef.current = false;
+      }
+    };
+  }, []);
+
+  const handleMobileAction = (eventName) => {
+    setIsVisible(true);
+    dispatchMobileNavigationEvent(eventName);
+  };
+
   const isExplorePath = [
     "/smartphones",
     "/mobiles",
@@ -39,12 +115,12 @@ const MobileBottomNavigation = () => {
     {
       label: "Search",
       icon: FaSearch,
-      onClick: () => dispatchMobileNavigationEvent(MOBILE_OPEN_SEARCH_EVENT),
+      onClick: () => handleMobileAction(MOBILE_OPEN_SEARCH_EVENT),
     },
     {
       label: "Explore",
       icon: FaCompass,
-      onClick: () => dispatchMobileNavigationEvent(MOBILE_OPEN_EXPLORE_EVENT),
+      onClick: () => handleMobileAction(MOBILE_OPEN_EXPLORE_EVENT),
       active: isExplorePath,
     },
     {
@@ -64,7 +140,11 @@ const MobileBottomNavigation = () => {
   return (
     <nav
       aria-label="Mobile navigation"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/98 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_16px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden"
+      className={`fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/98 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_16px_rgba(15,23,42,0.08)] backdrop-blur transition-[transform,opacity] duration-300 ease-out lg:hidden ${
+        isVisible
+          ? "translate-y-0 opacity-100"
+          : "pointer-events-none translate-y-full opacity-0"
+      }`}
     >
       <div className="mx-auto grid min-h-[58px] max-w-md grid-cols-5">
         {items.map((item) => {
