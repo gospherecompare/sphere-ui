@@ -26,10 +26,6 @@ import {
   buildPublicSmartphoneListingPath as buildSmartphoneListingPath,
 } from "./utils/smartphoneListingRoutes";
 import { getTvRouteFeatureMeta } from "./utils/tvPopularFeatures";
-import {
-  buildLaptopListingSeoMeta,
-  parseLaptopListingPath,
-} from "./utils/laptopListingRoutes";
 import { toCanonicalPagePath, toCanonicalPageUrl } from "./utils/publicUrl";
 
 const SITE_ORIGIN = "https://tryhook.shop";
@@ -37,10 +33,6 @@ const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/hook-logo.svg`;
 const CURRENT_YEAR = new Date().getFullYear();
 const CURRENT_MONTH_YEAR = new Intl.DateTimeFormat("en-US", {
   month: "short",
-  year: "numeric",
-}).format(new Date());
-const CURRENT_MONTH_LONG_YEAR = new Intl.DateTimeFormat("en-US", {
-  month: "long",
   year: "numeric",
 }).format(new Date());
 const CURRENT_FULL_DATE = new Intl.DateTimeFormat("en-GB", {
@@ -72,7 +64,6 @@ const Smartphones = React.lazy(() => import("./components/Product/Smartphones"))
 const UpcomingSmartphonesList = React.lazy(() =>
   import("./components/Product/UpcomingSmartphonesList"),
 );
-const Laptops = React.lazy(() => import("./components/Product/Laptops"));
 const Networking = React.lazy(() => import("./components/Product/Networking"));
 const TVs = React.lazy(() => import("./components/Product/TVs"));
 const TrendingProductsHub = React.lazy(() =>
@@ -97,9 +88,6 @@ const MobileDetailCard = React.lazy(() =>
   import("./components/Device detail/Smartphone"),
 );
 const TVDetailCard = React.lazy(() => import("./components/Device detail/TV"));
-const LaptopDetailCard = React.lazy(() =>
-  import("./components/Device detail/Laptop"),
-);
 const NetworkingDetailCard = React.lazy(() =>
   import("./components/Device detail/Network"),
 );
@@ -149,7 +137,6 @@ const getCatalogBasePath = (value = "") => {
   const text = String(value || "")
     .toLowerCase()
     .trim();
-  if (text.includes("laptop") || text.includes("computer")) return "/laptops";
   if (
     text.includes("television") ||
     text === "tv" ||
@@ -187,13 +174,8 @@ const toCanonicalPath = (path) => {
   if (path.startsWith("/blog/") || path.startsWith("/blogs/")) return "/news";
   if (path === "/trending") return "/trending/smartphones";
   if (path === "/trending/smartphone") return "/trending/smartphones";
-  if (path === "/trending/laptop") return "/trending/laptops";
   if (path === "/trending/tv") return "/trending/tvs";
   if (path === "/devices") return "/smartphones";
-  if (path === "/laptop") return "/laptops";
-  if (path.startsWith("/laptop/")) {
-    return path.replace("/laptop/", "/laptops/");
-  }
 
   if (path === "/mobiles") return "/smartphones";
   if (path.startsWith("/devices/mobiles")) {
@@ -205,13 +187,6 @@ const toCanonicalPath = (path) => {
     return ensureSmartphoneSeoDetailPath(
       path.replace("/devices/smartphones", "/smartphones"),
     );
-  }
-
-  if (path.startsWith("/devices/laptops")) {
-    return path.replace("/devices/laptops", "/laptops");
-  }
-  if (path.startsWith("/devices/laptop")) {
-    return path.replace("/devices/laptop", "/laptops");
   }
 
   if (path === "/appliances") return "/tvs";
@@ -282,14 +257,6 @@ const resolveSeoMeta = (pathname) => {
     if (SMARTPHONE_LIST_SLUGS.has(tail.toLowerCase())) return "";
     return name;
   })();
-  const laptopListingRoute = parseLaptopListingPath(canonicalPath);
-  const laptopListingSeo = buildLaptopListingSeoMeta(laptopListingRoute || {}, {
-    monthYear: CURRENT_MONTH_LONG_YEAR,
-    fullDate: CURRENT_FULL_DATE,
-  });
-  const laptopDetailName = laptopListingRoute
-    ? ""
-    : extractDetailSlugName(canonicalPath, "/laptops/");
   const tvListingRoute = getTvListingRouteMeta(canonicalPath);
   const tvDetailName = tvListingRoute
     ? ""
@@ -332,12 +299,6 @@ const resolveSeoMeta = (pathname) => {
       keywords: `${smartphoneDetailName.toLowerCase()}, ${smartphoneDetailName.toLowerCase()} price in india, ${smartphoneDetailName.toLowerCase()} specifications, ${smartphoneDetailName.toLowerCase()} launch date, compare smartphones, mobile price comparison india`,
     },
     {
-      test: () => Boolean(laptopDetailName),
-      title: `${laptopDetailName} Price, Specs & Comparison in India (${CURRENT_MONTH_YEAR}) - Hooks`,
-      description: `Compare ${laptopDetailName} laptop price in India, full specifications, variants, and best store offers on Hooks.`,
-      keywords: `${laptopDetailName.toLowerCase()}, ${laptopDetailName.toLowerCase()} price in india, ${laptopDetailName.toLowerCase()} specs, compare laptops india, laptop prices list ${CURRENT_YEAR}`,
-    },
-    {
       test: () => Boolean(tvDetailName),
       title: `${tvDetailName} Price, Specs & TV Comparison in India (${CURRENT_MONTH_YEAR}) - Hooks`,
       description: `Compare ${tvDetailName} TV price in India, size variants, display specs, smart features, and store offers on Hooks.`,
@@ -377,12 +338,6 @@ const resolveSeoMeta = (pathname) => {
       description:
         "Compare smartphones by price, RAM/ROM variants, camera, battery, and performance. Find trending and latest mobile launches on Hooks.",
       keywords: `smartphones, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch mobiles, trending phone in india, most popular mobiles, mobile price comparison india, moblie price comparison india, compare smartphone specs, compare smartphone prices, 5g phones in india, ai phone, ai budget phone, ${BUDGET_PHONE_KEYWORDS}`,
-    },
-    {
-      test: () => Boolean(laptopListingRoute),
-      title: laptopListingSeo.title,
-      description: laptopListingSeo.description,
-      keywords: `laptops, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, compare laptops india, laptop comparison site, laptop compare specs, gaming laptops india, student laptops india, productivity laptops, vacuum cooler laptop and phone`,
     },
     {
       test: () => tvListingRoute?.type === "latest",
@@ -518,7 +473,6 @@ const RouteSeoFallback = () => {
   if (pathname.startsWith("/popular-comparisons")) return null;
   if (pathname.startsWith("/news")) return null;
   if (pathname.startsWith("/smartphones")) return null;
-  if (pathname.startsWith("/laptops")) return null;
   if (pathname.startsWith("/tvs")) return null;
   if (pathname.startsWith("/networking")) return null;
   if (pathname.startsWith("/trending")) return null;
@@ -657,8 +611,6 @@ const RouteChunkFallback = () => (
 );
 
 function App() {
-  const NewsRedirect = () => <Navigate to="/news" replace />;
-
   const AppliancesListRedirect = () => {
     const location = useLocation();
     return <Navigate to={`/tvs${location.search || ""}`} replace />;
@@ -772,15 +724,6 @@ function App() {
     );
   };
 
-  const LaptopRootSlugRoute = () => {
-    const location = useLocation();
-    return parseLaptopListingPath(location.pathname) ? (
-      <Laptops />
-    ) : (
-      <LaptopDetailCard />
-    );
-  };
-
   return (
     <Router>
       <RouteSeoFallback />
@@ -842,23 +785,6 @@ function App() {
             path="/smartphones/top"
             element={<Navigate to="/trending/smartphones" replace />}
           />
-          <Route path="/laptops" element={<Laptops />} />
-          <Route path="/laptops/latest" element={<Laptops />} />
-          <Route path="/laptops/brands/:brandSlug" element={<Laptops />} />
-          <Route
-            path="/laptops/brands/:brandSlug/:budgetSlug"
-            element={<Laptops />}
-          />
-          <Route
-            path="/laptops/brands/:brandSlug/features/:featureSlug"
-            element={<Laptops />}
-          />
-          <Route path="/laptops/features/:featureSlug" element={<Laptops />} />
-          <Route
-            path="/laptops/features/:featureSlug/:secondaryFeatureSlug"
-            element={<Laptops />}
-          />
-          <Route path="/laptop" element={<Navigate to="/laptops" replace />} />
           <Route path="/tvs" element={<TVs />} />
           <Route path="/tvs/latest" element={<TVs />} />
           <Route path="/tvs/features/:featureSlug" element={<TVs />} />
@@ -875,11 +801,6 @@ function App() {
           {/* Category shortcuts */}
           <Route path="/mobiles" element={<Smartphones />} />
           <Route path="/devices/smartphones" element={<Smartphones />} />
-          <Route path="/devices/laptops" element={<Laptops />} />
-          <Route
-            path="/devices/laptop"
-            element={<Navigate to="/laptops" replace />}
-          />
           <Route path="/devices/tvs" element={<TVs />} />
           <Route
             path="/devices/appliances"
@@ -892,16 +813,6 @@ function App() {
           <Route
             path="/smartphone/:slug"
             element={<ProductDetailRedirect toBasePath="/smartphones" />}
-          />
-          <Route path="/laptops/:slug" element={<LaptopRootSlugRoute />} />
-          <Route
-            path="/laptop/:slug"
-            element={
-              <ProductDetailRedirect
-                toBasePath="/laptops"
-                preserveSearch={false}
-              />
-            }
           />
           <Route path="/tvs/:slug" element={<TVDetailCard />} />
           <Route
@@ -917,24 +828,6 @@ function App() {
           <Route
             path="/devices/mobiles/:slug"
             element={<ProductDetailRedirect toBasePath="/smartphones" />}
-          />
-          <Route
-            path="/devices/laptops/:slug"
-            element={
-              <ProductDetailRedirect
-                toBasePath="/laptops"
-                preserveSearch={false}
-              />
-            }
-          />
-          <Route
-            path="/devices/laptop/:slug"
-            element={
-              <ProductDetailRedirect
-                toBasePath="/laptops"
-                preserveSearch={false}
-              />
-            }
           />
           <Route
             path="/devices/tvs/:slug"
@@ -969,14 +862,8 @@ function App() {
           <Route path="/career" element={<Navigate to="/careers" replace />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/news" element={<NewsArticlesPage />} />
-          <Route path="/news/:slug/*" element={<NewsArticlesPage />} />
-          <Route path="/articles" element={<NewsRedirect />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<Terms />} />
-          <Route path="/blogs" element={<NewsRedirect />} />
-          <Route path="/blogs/:slug" element={<NewsRedirect />} />
-          <Route path="/blog" element={<NewsRedirect />} />
-          <Route path="/blog/:slug" element={<NewsRedirect />} />
 
           {/* 404 Fallback */}
             <Route path="*" element={<NotFound />} />

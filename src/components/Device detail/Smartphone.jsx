@@ -792,10 +792,7 @@ const MobileDetailCard = () => {
       mobileDataLocal?.basic_info?.product_name,
       mobileDataLocal?.basic_info?.model,
       mobileDataLocal?.basic_info?.model_number,
-    ].some(
-      (value) =>
-        generateSlug(normalizeSeoSlug(value)) === requestedSlug,
-    );
+    ].some((value) => generateSlug(normalizeSeoSlug(value)) === requestedSlug);
     if (!selectedMatchesRoute) return;
 
     const canonicalSeoSlug = getCanonicalSeoSlugForDevice(mobileDataLocal);
@@ -977,8 +974,7 @@ const MobileDetailCard = () => {
     if (!text) return null;
     if (/(pre[-\s]?order|pre[-\s]?book|prebooking|presale)/i.test(text))
       return "preorder";
-    if (/(sale[\s_-]?scheduled|scheduled)/i.test(text))
-      return "sale_scheduled";
+    if (/(sale[\s_-]?scheduled|scheduled)/i.test(text)) return "sale_scheduled";
     if (/(sale[\s_-]?started|started)/i.test(text)) return "sale_started";
     if (/(store[\s_-]?pending|store[\s_-]?listing[\s_-]?pending)/i.test(text))
       return "store_pending";
@@ -1015,17 +1011,17 @@ const MobileDetailCard = () => {
           store.offer_price ??
           store.mrp,
       ) ||
-        store.url ||
-        store.store ||
-        store.store_name ||
-        store.storeName ||
-        store.display_store_name ||
-        store.sale_start_date ||
-        store.saleStartDate ||
-        store.sale_date ||
-        store.saleDate ||
-        store.available_from ||
-        store.availableFrom,
+      store.url ||
+      store.store ||
+      store.store_name ||
+      store.storeName ||
+      store.display_store_name ||
+      store.sale_start_date ||
+      store.saleStartDate ||
+      store.sale_date ||
+      store.saleDate ||
+      store.available_from ||
+      store.availableFrom,
     );
   };
 
@@ -1071,7 +1067,8 @@ const MobileDetailCard = () => {
         : [];
 
     variants.forEach((variant) => {
-      if (Array.isArray(variant?.storePrices)) rows.push(...variant.storePrices);
+      if (Array.isArray(variant?.storePrices))
+        rows.push(...variant.storePrices);
       else if (Array.isArray(variant?.store_prices))
         rows.push(...variant.store_prices);
     });
@@ -1096,11 +1093,17 @@ const MobileDetailCard = () => {
       .trim()
       .toLowerCase();
 
-    if (/pre(book|order)|coming\s*soon|not[\s_-]*started/.test(availabilityText))
+    if (
+      /pre(book|order)|coming\s*soon|not[\s_-]*started/.test(availabilityText)
+    )
       return false;
 
     if (store?.is_live === true || store?.isLive === true) return true;
-    if (/(live|on sale|in stock|available|buy now|shop now)/i.test(availabilityText))
+    if (
+      /(live|on sale|in stock|available|buy now|shop now)/i.test(
+        availabilityText,
+      )
+    )
       return true;
 
     return Boolean(
@@ -1186,11 +1189,11 @@ const MobileDetailCard = () => {
         device.available_date ||
         device.predictedAvailableDate ||
         device.predicted_available_date ||
-      device.sale_start_date ||
-      device.saleStartDate ||
-      device.sale_date ||
-      device.saleDate ||
-      null,
+        device.sale_start_date ||
+        device.saleStartDate ||
+        device.sale_date ||
+        device.saleDate ||
+        null,
     );
     if (direct) return new Date(direct);
 
@@ -1702,7 +1705,10 @@ const MobileDetailCard = () => {
   const resolvedCanonicalRouteSlug = useMemo(
     () =>
       getCanonicalSeoSlugForDevice(
-        mobileData || selectedResolvedForRoute || localResolved || selectedResolved,
+        mobileData ||
+          selectedResolvedForRoute ||
+          localResolved ||
+          selectedResolved,
       ),
     [
       getCanonicalSeoSlugForDevice,
@@ -2220,7 +2226,8 @@ const MobileDetailCard = () => {
         : [];
 
       return (
-        storyProductIds.includes(resolvedProductId) && Boolean(story?.productLinked)
+        storyProductIds.includes(resolvedProductId) &&
+        Boolean(story?.productLinked)
       );
     });
   }, [currentProductId, linkedNewsStories]);
@@ -2388,7 +2395,7 @@ const MobileDetailCard = () => {
           type: "smartphone",
         }),
         {
-        state: { initialProduct: mobileData },
+          state: { initialProduct: mobileData },
         },
       );
     },
@@ -2898,7 +2905,7 @@ Price: ${price}
   const canonicalPathname =
     resolvedCanonicalRouteSlug || canonicalRouteSlug
       ? `/smartphones/${resolvedCanonicalRouteSlug || canonicalRouteSlug}`
-    : normalizedPathname;
+      : normalizedPathname;
   const hasDuplicateQueryParams = [
     "id",
     "model",
@@ -3845,9 +3852,7 @@ Price: ${price}
           <section
             key={group.key}
             className={
-              idx !== groups.length - 1
-                ? "border-b border-[#d9e6ff] pb-5"
-                : ""
+              idx !== groups.length - 1 ? "border-b border-[#d9e6ff] pb-5" : ""
             }
           >
             <div className="flex items-center justify-between gap-4">
@@ -4298,7 +4303,7 @@ Price: ${price}
         const sensorsData = toSectionTableData(mobileData.sensors, "sensors");
 
         return (
-          <div className="bg-white rounded-lg p-4">
+          <div className="bg-yellow-500 rounded-lg p-4">
             <div className="mb-4 flex items-center justify-between gap-2">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <FaFilm className="text-indigo-500" />
@@ -4879,8 +4884,8 @@ Price: ${price}
   }, {});
   const shouldUseTallMobileCameraCard = Boolean(
     detailInfoSectionByKey.camera &&
-      detailInfoSectionByKey.display &&
-      detailInfoSectionByKey.memory,
+    detailInfoSectionByKey.display &&
+    detailInfoSectionByKey.memory,
   );
 
   const detailInfoCardToneMap = {
@@ -4911,7 +4916,7 @@ Price: ${price}
     return (
       <div
         key={section.key}
-        className={`flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-[#d9e4f2] bg-gradient-to-br ${toneClass} px-3.5 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all duration-200 sm:px-4 md:px-5 md:py-5 ${layoutClass}`}
+        className={`flex h-full min-w-0 flex-col overflow-hidden rounded-2xl  bg-white px-3.5 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all duration-200 sm:px-4 md:px-5 md:py-5 ${layoutClass}`}
       >
         <div className="flex items-center gap-2.5">
           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[#dce6f3] bg-[#f8fbff] md:h-8 md:w-8">
@@ -5273,7 +5278,7 @@ Price: ${price}
                     key={String(otherId || otherName)}
                     type="button"
                     onClick={() => handlePopularCompare(d)}
-                    className="min-w-[84vw] max-w-[280px] flex-shrink-0 rounded-lg border border-slate-200 bg-white p-3 text-left transition-all hover:border-blue-200 hover:shadow-sm sm:min-w-[240px]"
+                    className="min-w-[84vw] max-w-[280px] flex-shrink-0 rounded-lg bg-white p-3 text-left transition-all hover:border-blue-200 hover:shadow-sm sm:min-w-[240px]"
                   >
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-md bg-slate-100">
@@ -5665,7 +5670,7 @@ Price: ${price}
                     battery details that matter most.
                   </p>
                 </div>
-                <div className="rounded-2xl border border-[#dce4f3] bg-gradient-to-br from-[#eef3ff] via-[#f7f8ff] to-[#f2eeff] p-3 sm:p-4 md:p-5">
+                <div className="rounded-2xl border border-[#dce4f3]  p-3 sm:p-4 md:p-5">
                   <div className="grid grid-cols-1 items-stretch gap-3 min-[420px]:grid-cols-2 md:hidden">
                     {[
                       {

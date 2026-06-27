@@ -5,7 +5,6 @@ import {
   FaBolt,
   FaChartLine,
   FaExchangeAlt,
-  FaLaptop,
   FaMobileAlt,
   FaSearch,
   FaTv,
@@ -25,13 +24,6 @@ const CATEGORY_META = [
     path: "/smartphones",
     productPathType: "smartphones",
     icon: FaMobileAlt,
-  },
-  {
-    id: "laptops",
-    label: "Laptops",
-    path: "/laptops",
-    productPathType: "laptops",
-    icon: FaLaptop,
   },
   {
     id: "tvs",

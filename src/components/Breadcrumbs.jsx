@@ -124,9 +124,6 @@ const routes = [
       if (raw.includes("smartphone") || raw.includes("mobile")) {
         return "Smartphones";
       }
-      if (raw.includes("laptop") || raw.includes("notebook")) {
-        return "Laptops";
-      }
       if (raw.includes("tv") || raw.includes("television")) {
         return "TVs";
       }
@@ -138,7 +135,6 @@ const routes = [
   { path: "/smartphones/upcoming", breadcrumb: "Upcoming Mobiles" },
   { path: "/smartphones/latest", breadcrumb: "Latest Mobiles" },
   { path: "/smartphones/top", breadcrumb: "Top Mobiles" },
-  { path: "/laptops", breadcrumb: "Laptops" },
   { path: "/networking", breadcrumb: "Networking" },
   { path: "/tvs", breadcrumb: "TVs" },
   { path: "/tvs/latest", breadcrumb: "Latest TVs" },
@@ -167,10 +163,6 @@ const routes = [
   },
   {
     path: "/smartphones/:slug",
-    breadcrumb: renderSlugBreadcrumb,
-  },
-  {
-    path: "/laptops/:slug",
     breadcrumb: renderSlugBreadcrumb,
   },
   {

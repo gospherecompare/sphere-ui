@@ -98,8 +98,6 @@ const MobileBottomNavigation = () => {
   const isExplorePath = [
     "/smartphones",
     "/mobiles",
-    "/laptops",
-    "/laptop",
     "/tvs",
     "/networking",
     "/devices",
@@ -133,7 +131,7 @@ const MobileBottomNavigation = () => {
       label: "News",
       icon: FaRegNewspaper,
       href: "/news",
-      active: pathname.startsWith("/news"),
+      active: pathname === "/news",
     },
   ];
 

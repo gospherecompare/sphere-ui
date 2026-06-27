@@ -449,7 +449,7 @@ const resolveNewsTaxonomyRoute = (pillarSlug = "", topicSlug = "") => {
     ].map(normalizeNewsRouteSlug),
     keywords: topic?.keywords || pillar.keywords || [],
     accent: pillar.accent,
-    path: topic ? `/news/${pillar.slug}/${topic.slug}` : `/news/${pillar.slug}`,
+    path: "/news",
   };
 };
 

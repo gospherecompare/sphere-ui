@@ -2,7 +2,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import "../../styles/hideScrollbar.css";
-import { FaMobileAlt, FaLaptop, FaTv, FaStream } from "react-icons/fa";
+import { FaMobileAlt, FaTv, FaStream } from "react-icons/fa";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
 
 const TOP_CATEGORIES = [
@@ -12,14 +12,6 @@ const TOP_CATEGORIES = [
     icon: <FaMobileAlt />,
     to: "/smartphones",
     activeGradient: "from-blue-600 via-purple-500 to-blue-600",
-    inactiveColor: "text-gray-400",
-  },
-  {
-    id: "laptops",
-    name: "Laptops",
-    icon: <FaLaptop />,
-    to: "/laptops",
-    activeGradient: "from-purple-600 to-red-600",
     inactiveColor: "text-gray-400",
   },
   {
@@ -49,7 +41,6 @@ const getActiveCategoryFromLocation = (pathname) => {
   const aliasMap = {
     mobiles: "smartphones",
     smartphone: "smartphones",
-    laptop: "laptops",
     appliance: "tv",
     appliances: "tv",
     tv: "tv",
@@ -61,7 +52,7 @@ const getActiveCategoryFromLocation = (pathname) => {
   const resolved = aliasMap[normalized] || normalized;
   if (resolved === "products") return "smartphones";
 
-  const validIds = new Set(["smartphones", "laptops", "tv"]);
+  const validIds = new Set(["smartphones", "tv"]);
   return validIds.has(resolved) ? resolved : null;
 };
 
@@ -90,14 +81,14 @@ const ProductsNav = () => {
           </h2>
         </div>
         <p className="text-sm text-gray-600">
-          Explore smartphones, laptops, and TVs
+          Explore smartphones and TVs
         </p>
       </div>
 
       <nav
         aria-label="Browse by category"
         className="
-          grid grid-cols-3 gap-2 py-2
+          grid grid-cols-2 gap-2 py-2
           sm:flex sm:overflow-x-auto sm:gap-3 sm:py-2
           hide-scrollbar no-scrollbar scroll-smooth
         "

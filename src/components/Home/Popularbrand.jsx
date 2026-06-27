@@ -109,7 +109,7 @@ const PopularBrands = () => {
         category.includes("laptop") ||
         category.includes("computer")
       ) {
-        navigate(`/laptops?brand=${encodeURIComponent(brandSlug)}`);
+        navigate("/brands");
       } else if (
         category.includes("appliance") ||
         category.includes("home") ||

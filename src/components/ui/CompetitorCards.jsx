@@ -399,7 +399,7 @@ const CompetitorCard = ({
     competitor?.best_store_name || competitor?.brand_name || "Hooks";
 
   return (
-    <article className="group relative w-[84vw] max-w-[320px] shrink-0 overflow-hidden rounded-2xl shadow-sm  bg-white  transition-colors duration-200 hover:border-blue-200 sm:w-[280px]">
+    <article className="group relative w-[84vw] max-w-[320px] shrink-0 overflow-hidden rounded-2xl  bg-white  transition-colors duration-200 hover:border-blue-200 sm:w-[280px]">
       <div className="flex h-full flex-col">
         <div className="p-3 pb-3 sm:p-4">
           <div className="mx-auto mt-3 h-24 w-24 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-b from-blue-50/70 to-white p-1.5">
@@ -430,7 +430,7 @@ const CompetitorCard = ({
           </p>
         </div>
 
-        <div className="border-t border-slate-100 bg-slate-50/60 p-3 sm:p-4">
+        <div className="border-t border-slate-100  p-3 sm:p-4">
           <div className="mb-2 flex items-center justify-between gap-2">
             <p className="text-[10px] font-semibold uppercase tracking-[0.34em] text-blue-600">
               Quick Comparison
@@ -472,7 +472,7 @@ const CompetitorCard = ({
         </div>
 
         <div className="mt-auto border-t border-slate-100 bg-white">
-          <div className="border-b border-slate-100 bg-slate-50/80 px-4 py-3">
+          <div className="border-b border-slate-100 bg-blue-50/80 px-4 py-3">
             <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
               <div className="min-w-0">
                 <p className="text-[9px] font-semibold uppercase tracking-[0.26em] text-slate-400">
@@ -482,10 +482,10 @@ const CompetitorCard = ({
                   {baseProductName || `This ${productLabel}`}
                 </p>
               </div>
-              <div className="relative flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 sm:h-10 sm:w-10 animate-pulse reduced-motion:animate-none">
-                <span className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-500 via-cyan-500 to-blue-600 opacity-10" />
-                <span className="absolute inset-[5px] rounded-full border border-blue-200 bg-white" />
-                <span className="relative space-grotesk-title text-[9px] font-semibold tracking-[0.3em] text-blue-700">
+              <div className="relative flex h-9 w-9 items-center justify-center sm:h-10 sm:w-10 ">
+                <span className="absolute inset-0 opacity-10" />
+                <span className="absolute inset-[5px] " />
+                <span className="relative space-grotesk-title text-[12px] font-semibold tracking-[0.3em] text-purple-700 animate-pulse reduced-motion:animate-none">
                   VS
                 </span>
               </div>
@@ -586,9 +586,10 @@ const CompetitorCards = ({
   const [payload, setPayload] = useState(() =>
     competitorsEndpoint ? readPreloadedApiResponse(competitorsEndpoint) : null,
   );
-  const [loading, setLoading] = useState(() =>
-    Boolean(competitorsEndpoint) &&
-    !readPreloadedApiResponse(competitorsEndpoint),
+  const [loading, setLoading] = useState(
+    () =>
+      Boolean(competitorsEndpoint) &&
+      !readPreloadedApiResponse(competitorsEndpoint),
   );
   const [error, setError] = useState("");
   const [expandAll, setExpandAll] = useState(false);

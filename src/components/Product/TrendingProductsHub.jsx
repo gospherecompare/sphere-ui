@@ -121,8 +121,6 @@ const ALIASES = {
   smartphones: "smartphones",
   mobile: "smartphones",
   mobiles: "smartphones",
-  laptop: "laptops",
-  laptops: "laptops",
   tv: "tvs",
   tvs: "tvs",
   television: "tvs",
@@ -1099,9 +1097,14 @@ const TrendingProductsHub = () => {
   const { category } = useParams();
   const deviceStore = useDevice();
   const { getStoreLogo, getLogo, getStore } = useStoreLogos();
+  const requestedCategory = String(category || "").toLowerCase();
+  const isRemovedLaptopCategory =
+    requestedCategory === "laptop" || requestedCategory === "laptops";
 
   const activeCategory =
-    ALIASES[String(category || "").toLowerCase()] || "smartphones";
+    !isRemovedLaptopCategory && ALIASES[requestedCategory]
+      ? ALIASES[requestedCategory]
+      : "smartphones";
   const config = CATEGORIES[activeCategory];
   const HeroIcon = config.icon;
   const heroTitleText =
@@ -1126,6 +1129,12 @@ const TrendingProductsHub = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    if (isRemovedLaptopCategory) {
+      navigate("/trending/smartphones", { replace: true });
+    }
+  }, [isRemovedLaptopCategory, navigate]);
 
   const smartphoneCatalog = useMemo(() => {
     if (arr(deviceStore?.smartphoneAll).length)

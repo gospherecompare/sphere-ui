@@ -7,7 +7,6 @@ import {
   FaLinkedin,
   FaYoutube,
   FaMobileAlt,
-  FaLaptop,
   FaTv,
   FaInfoCircle,
 } from "react-icons/fa";
@@ -25,18 +24,6 @@ const footerSections = [
       { label: "Trending Smartphones", href: "/trending/smartphones" },
       { label: "5G Smartphones", href: "/smartphones/feature/5g" },
       { label: "Phones Under ₹20,000", href: "/smartphones/filter/under-20000" },
-    ],
-  },
-  {
-    title: "Laptops",
-    icon: FaLaptop,
-    links: [
-      { label: "Best Laptops", href: "/laptops" },
-      { label: "Latest Laptops", href: "/laptops/latest" },
-      { label: "Trending Laptops", href: "/trending/laptops" },
-      { label: "Gaming Laptops", href: "/laptops/features/gaming" },
-      { label: "16GB+ RAM Laptops", href: "/laptops/features/high-ram" },
-      { label: "Laptops Under ₹50,000", href: "/laptops/under-50000" },
     ],
   },
   {

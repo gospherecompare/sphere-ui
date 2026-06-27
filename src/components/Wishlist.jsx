@@ -361,10 +361,10 @@ const Wishlist = () => {
     );
     const routes = {
       smartphone: "/smartphones",
-      laptop: "/laptops",
       homeAppliance: "/tvs",
       networking: "/networking",
     };
+    if (!routes[item.type]) return;
     navigate(`${routes[item.type]}/${slug}`);
   };
 

@@ -134,48 +134,24 @@ const LAPTOP_BUDGET_ROUTE_PATHS = new Set(
     buildLaptopListingPath({ budget }),
   ),
 );
-const NEWS_TAXONOMY_ROUTE_PATHS = [
-  "/news/technology",
-  "/news/technology/ai",
-  "/news/technology/smartphones",
-  "/news/technology/chips",
-  "/news/technology/laptops",
-  "/news/technology/software",
-  "/news/consumer-tech",
-  "/news/consumer-tech/apps",
-  "/news/consumer-tech/internet",
-  "/news/science",
-  "/news/science/space",
-  "/news/science/renewable-energy",
-  "/news/science/health-technology",
-  "/news/sports-technology",
-  "/news/sports-technology/wearables",
-  "/news/sports-technology/sports-science",
-];
 const PRELOAD_CANONICAL_PATHS = new Set([
   "/",
   "/news",
-  ...NEWS_TAXONOMY_ROUTE_PATHS,
   "/popular-comparisons",
   "/smartphones",
   "/smartphones/upcoming",
   ...SMARTPHONE_FILTER_ROUTE_PATHS,
-  "/laptops",
-  "/laptops/latest",
-  ...LAPTOP_BUDGET_ROUTE_PATHS,
   "/tvs",
   "/tvs/latest",
   "/networking",
   "/compare",
   "/trending/smartphones",
-  "/trending/laptops",
   "/trending/tvs",
   "/trending/networking",
 ]);
 const PRELOAD_API_ENDPOINTS = [
   `${API_BASE_URL}/smartphones`,
   `${API_BASE_URL}/networking`,
-  `${API_BASE_URL}/laptops`,
   `${API_BASE_URL}/tvs`,
   `${API_BASE_URL}/brand`,
   `${API_BASE_URL}/category`,
@@ -184,8 +160,6 @@ const PRELOAD_API_ENDPOINTS = [
   `${API_BASE_URL}/public/upcoming/smartphones`,
   `${API_BASE_URL}/public/trending/networking`,
   `${API_BASE_URL}/public/new/networking`,
-  `${API_BASE_URL}/public/trending/laptops`,
-  `${API_BASE_URL}/public/new/laptops`,
   `${API_BASE_URL}/public/trending/tvs`,
   `${API_BASE_URL}/public/new/tvs`,
   `${API_BASE_URL}/public/smartphones/highlights`,
@@ -194,7 +168,6 @@ const PRELOAD_API_ENDPOINTS = [
   `${API_BASE_URL}/public/search-popularity?productType=smartphone&limit=5`,
   `${API_BASE_URL}/public/blogs?limit=4`,
   `${API_BASE_URL}/public/blogs?limit=4&productType=smartphone`,
-  `${API_BASE_URL}/public/blogs?limit=4&productType=laptop`,
   `${API_BASE_URL}/public/blogs?limit=4&productType=tv`,
   `${API_BASE_URL}/public/blogs?limit=12`,
   `${API_BASE_URL}/public/blogs?limit=18`,
@@ -204,8 +177,6 @@ const PRELOAD_API_ENDPOINTS = [
   `${API_BASE_URL}/public/trending/smartphones?limit=15`,
   `${API_BASE_URL}/public/trending/smartphones?limit=25`,
   `${API_BASE_URL}/public/trending/smartphones?limit=120`,
-  `${API_BASE_URL}/public/trending/laptops?limit=15`,
-  `${API_BASE_URL}/public/trending/laptops?limit=120`,
   `${API_BASE_URL}/public/trending/tvs?limit=15`,
   `${API_BASE_URL}/public/trending/tvs?limit=120`,
   `${API_BASE_URL}/public/trending/networking?limit=15`,
@@ -213,8 +184,6 @@ const PRELOAD_API_ENDPOINTS = [
   `${API_BASE_URL}/public/trending/all`,
   `${API_BASE_URL}/public/trending/most-compared`,
   `${API_BASE_URL}/public/popular-features?deviceType=smartphone&days=7&limit=16`,
-  `${API_BASE_URL}/public/popular-features?deviceType=laptop&days=7&limit=16`,
-  `${API_BASE_URL}/public/popular-features?deviceType=notebook&days=7&limit=16`,
   `${API_BASE_URL}/public/popular-features?deviceType=tv&days=7&limit=16`,
   `${API_BASE_URL}/public/popular-features?deviceType=television&days=7&limit=16`,
   `${API_BASE_URL}/public/popular-features?deviceType=home-appliance&days=7&limit=16`,
@@ -246,20 +215,15 @@ let publishedCompareRouteMeta = new Map();
 const STATIC_PRERENDER_ROUTES = [
   "/",
   "/news",
-  ...NEWS_TAXONOMY_ROUTE_PATHS,
   "/smartphones",
   "/smartphones/upcoming",
   ...SMARTPHONE_FILTER_ROUTE_PATHS,
-  "/laptops",
-  "/laptops/latest",
-  ...LAPTOP_BUDGET_ROUTE_PATHS,
   "/tvs",
   "/tvs/latest",
   "/networking",
   "/compare",
   "/popular-comparisons",
   "/trending/smartphones",
-  "/trending/laptops",
   "/trending/tvs",
   "/trending/networking",
   "/about",
@@ -295,6 +259,22 @@ const normalizePath = (routePath = "/") => {
   }
 
   return pathName || "/";
+};
+
+const isRemovedLaptopRoute = (routePath = "") => {
+  const normalized = normalizePath(routePath).toLowerCase();
+  return (
+    normalized === "/laptop" ||
+    normalized === "/laptops" ||
+    normalized === "/trending/laptop" ||
+    normalized === "/trending/laptops" ||
+    normalized.startsWith("/laptop/") ||
+    normalized.startsWith("/laptops/") ||
+    normalized.startsWith("/devices/laptop") ||
+    normalized.startsWith("/devices/laptops") ||
+    normalized.startsWith("/products/laptop") ||
+    normalized.startsWith("/products/laptops")
+  );
 };
 
 const stripSmartphoneSeoSuffix = (slug = "") => {
@@ -479,15 +459,10 @@ const toCanonicalPath = (rawPath) => {
   }
   if (pathName === "/trending") return "/trending/smartphones";
   if (pathName === "/trending/smartphone") return "/trending/smartphones";
-  if (pathName === "/trending/laptop") return "/trending/laptops";
   if (pathName === "/trending/tv") return "/trending/tvs";
   if (pathName === "/products" || pathName === "/products/mobiles")
     return "/smartphones";
   if (pathName === "/devices") return "/smartphones";
-  if (pathName === "/laptop") return "/laptops";
-  if (pathName.startsWith("/laptop/")) {
-    return pathName.replace("/laptop/", "/laptops/");
-  }
   if (pathName === "/mobiles") return "/smartphones";
   const directSmartphoneListing = parseSmartphoneListingPath(pathName);
   if (directSmartphoneListing) {
@@ -512,18 +487,6 @@ const toCanonicalPath = (rawPath) => {
     return canonicalizeSmartphonePath(
       pathName.replace("/devices/smartphones", "/smartphones"),
     );
-  }
-  if (pathName.startsWith("/products/laptops")) {
-    return pathName.replace("/products/laptops", "/laptops");
-  }
-  if (pathName.startsWith("/products/laptop")) {
-    return pathName.replace("/products/laptop", "/laptops");
-  }
-  if (pathName.startsWith("/devices/laptops")) {
-    return pathName.replace("/devices/laptops", "/laptops");
-  }
-  if (pathName.startsWith("/devices/laptop")) {
-    return pathName.replace("/devices/laptop", "/laptops");
   }
   if (pathName === "/appliances") return "/tvs";
   if (pathName.startsWith("/appliances/")) {
@@ -907,18 +870,6 @@ const fetchRouteSpecificPreloadedPayload = async (
     ]);
   }
 
-  const laptopListingRoute = parseLaptopListingPath(canonicalPath);
-  if (laptopListingRoute?.latest) {
-    return fetchPayloadForEndpoints([`${API_BASE_URL}/public/new/laptops`]);
-  }
-  if (laptopListingRoute) {
-    return fetchPayloadForEndpoints([`${API_BASE_URL}/laptops`]);
-  }
-
-  if (getSingleSegmentRouteTail(canonicalPath, "/laptops")) {
-    return fetchPayloadForEndpoints([`${API_BASE_URL}/laptops`]);
-  }
-
   const tvListingRoute = getTvListingRouteMeta(canonicalPath);
   if (tvListingRoute?.type === "latest") {
     return fetchPayloadForEndpoints([`${API_BASE_URL}/public/new/tvs`]);
@@ -965,16 +916,8 @@ const fetchRouteSpecificPreloadedPayload = async (
     return fetchPayloadForEndpoints(endpoints);
   }
 
-  if (NEWS_TAXONOMY_ROUTE_PATHS.includes(canonicalPath)) {
-    return fetchPayloadForEndpoints([`${API_BASE_URL}/public/blogs?limit=50`]);
-  }
-
-  const newsSlug = getSingleSegmentRouteTail(canonicalPath, "/news");
-  if (newsSlug) {
-    return fetchPayloadForEndpoints([
-      `${API_BASE_URL}/public/blogs/${encodeURIComponent(newsSlug)}`,
-      `${API_BASE_URL}/public/blogs?limit=18`,
-    ]);
+  if (canonicalPath.startsWith("/news/")) {
+    return null;
   }
 
   if (canonicalPath === "/popular-comparisons") {
@@ -1016,20 +959,6 @@ const fetchDetailRoutesFromApi = async () => {
       },
       getName: (item) => item?.name || item?.model || item?.product_name,
       toDetailSlug: (slug) => toSmartphoneSeoSlug(slug),
-    },
-    {
-      endpoint: `${API_BASE_URL}/laptops`,
-      preferredKeys: ["laptops"],
-      basePath: "/laptops",
-      getName: (item) =>
-        item?.product_name ||
-        item?.name ||
-        item?.model_number ||
-        item?.model ||
-        item?.basic_info?.product_name ||
-        item?.basic_info?.title ||
-        item?.basic_info?.model_number ||
-        item?.basic_info?.model,
     },
     {
       endpoint: `${API_BASE_URL}/tvs`,
@@ -1120,30 +1049,6 @@ const fetchCompareRoutesFromApi = async () => {
   return [...new Set(routes)];
 };
 
-const fetchNewsRoutesFromApi = async () => {
-  const rows = await fetchApiRows(`${API_BASE_URL}/public/blogs?limit=1000`, [
-    "blogs",
-  ]);
-  const seen = new Set();
-  const routes = await Promise.all(
-    rows.map(async (row) => {
-      const slug = String(row?.slug || "").trim().replace(/^\/+|\/+$/g, "");
-      if (!slug) return null;
-      const routePath = `/news/${slug}`;
-      if (seen.has(routePath)) return null;
-
-      const hasDetailEndpoint = await doesApiEndpointExist(
-        `${API_BASE_URL}/public/blogs/${encodeURIComponent(slug)}`,
-      );
-      if (!hasDetailEndpoint) return null;
-
-      seen.add(routePath);
-      return routePath;
-    }),
-  );
-
-  return routes.filter(Boolean);
-};
 
 const fetchSmartphoneListingRoutesFromApi = async () => {
   const routes = Object.keys(SMARTPHONE_FEATURE_ROUTE_META).map((featureId) =>
@@ -1416,7 +1321,9 @@ const fetchTvListingRoutesFromApi = async () => {
 const filterValidPrerenderRoutes = async (routes = []) => {
   const uniqueRoutes = [
     ...new Set(
-      routes.map((route) => toCanonicalPath(normalizePath(route))).filter(Boolean),
+      routes
+        .map((route) => toCanonicalPath(normalizePath(route)))
+        .filter((route) => route && !isRemovedLaptopRoute(route)),
     ),
   ];
   const filteredRoutes = await Promise.all(
@@ -1425,17 +1332,11 @@ const filterValidPrerenderRoutes = async (routes = []) => {
         return publishedCompareRouteMeta.has(routePath) ? routePath : null;
       }
 
-      if (NEWS_TAXONOMY_ROUTE_PATHS.includes(routePath)) {
-        return routePath;
+      if (routePath.startsWith("/news/")) {
+        return null;
       }
 
-      const newsSlug = getSingleSegmentRouteTail(routePath, "/news");
-      if (!newsSlug) return routePath;
-
-      const hasDetailEndpoint = await doesApiEndpointExist(
-        `${API_BASE_URL}/public/blogs/${encodeURIComponent(newsSlug)}`,
-      );
-      return hasDetailEndpoint ? routePath : null;
+      return routePath;
     }),
   );
 
@@ -1446,9 +1347,7 @@ const getPrerenderRoutes = async () => {
   const sitemapRoutes = routesFromSitemap();
   const detailRoutes = await fetchDetailRoutesFromApi();
   const compareRoutes = await fetchCompareRoutesFromApi();
-  const newsRoutes = await fetchNewsRoutesFromApi();
   const smartphoneListingRoutes = await fetchSmartphoneListingRoutesFromApi();
-  const laptopListingRoutes = await fetchLaptopListingRoutesFromApi();
   const tvListingRoutes = await fetchTvListingRoutesFromApi();
   return filterValidPrerenderRoutes([
     ...new Set([
@@ -1457,9 +1356,7 @@ const getPrerenderRoutes = async () => {
       ...sitemapRoutes,
       ...detailRoutes,
       ...compareRoutes,
-      ...newsRoutes,
       ...smartphoneListingRoutes,
-      ...laptopListingRoutes,
       ...tvListingRoutes,
     ]),
   ]);
@@ -1785,38 +1682,6 @@ const resolveSeo = (routePath) => {
       keywords: `trending smartphones india, trending laptops india, trending tvs india, trending phone in india, most popular mobiles, top selling gadgets india, new launch and trending devices, latest smartphones in india ${CURRENT_YEAR}`,
     },
     {
-      test: (p) => p.startsWith("/news/technology"),
-      title: "Technology News - AI, Smartphones, Chips & Software | Hooks",
-      description:
-        "Read technology news on AI, smartphones, chips, laptops, software, cybersecurity, robotics, and product launches from Hooks.",
-      keywords:
-        "technology news, ai news, smartphone news, chip news, semiconductor news, laptop news, software updates, cybersecurity news",
-    },
-    {
-      test: (p) => p.startsWith("/news/consumer-tech"),
-      title: "Consumer Tech News - Apps, Internet & Cloud Services | Hooks",
-      description:
-        "Track consumer technology updates across WhatsApp, Google, YouTube, apps, internet services, broadband, and cloud platforms.",
-      keywords:
-        "consumer tech news, app updates, whatsapp features, google updates, youtube changes, internet news, cloud services",
-    },
-    {
-      test: (p) => p.startsWith("/news/science"),
-      title: "Science & Space News - Missions, Quantum & Energy | Hooks",
-      description:
-        "Follow science and space news with a technology lens, including NASA, ISRO, quantum computing, health technology, and renewable energy.",
-      keywords:
-        "science news, space news, nasa news, isro news, quantum computing, renewable energy news, health technology",
-    },
-    {
-      test: (p) => p.startsWith("/news/sports-technology"),
-      title: "Sports Technology News - AI, Wearables & Sports Science | Hooks",
-      description:
-        "Explore sports technology news covering AI officiating, VAR, smart wearables, athlete analytics, and sports science.",
-      keywords:
-        "sports technology news, ai in sports, var technology, sports wearables, sports science, performance analytics",
-    },
-    {
       test: (p) => p === "/news",
       title: "News & Articles | Hooks",
       description:
@@ -2124,7 +1989,6 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
     const category = canonicalPath.split("/")[2] || "smartphones";
     const endpointByCategory = {
       smartphones: `${API_BASE_URL}/public/trending/smartphones?limit=120`,
-      laptops: `${API_BASE_URL}/public/trending/laptops?limit=120`,
       tvs: `${API_BASE_URL}/public/trending/tvs?limit=120`,
       networking: `${API_BASE_URL}/public/trending/networking?limit=120`,
     };

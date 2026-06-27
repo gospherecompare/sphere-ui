@@ -39,7 +39,7 @@ export {
  *    - Usage:
  *      <SocialShareButtons
  *        title={article.title}
- *        url="https://tryhook.shop/news/article-slug"
+ *        url="https://tryhook.shop/news"
  *        description={article.summary}
  *      />
  *
@@ -145,3 +145,4 @@ export {
  *   </aside>
  * </main>
  */
+

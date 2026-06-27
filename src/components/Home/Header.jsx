@@ -80,7 +80,6 @@ import {
   FaMobileAlt,
   FaApple,
   FaTv,
-  FaLaptop,
   FaPlug,
   FaCamera,
   FaGamepad,
@@ -180,7 +179,6 @@ const Header = () => {
         ? deviceCtx.smartphoneAll
         : deviceCtx.smartphone)) ||
     [];
-  const laptops = (deviceCtx && deviceCtx.laptops) || [];
   const tvs = (deviceCtx && deviceCtx.homeAppliances) || [];
 
   const readAuthFromCookies = () => {
@@ -317,7 +315,6 @@ const Header = () => {
   const mapProductTypeToRoute = (ptype) => {
     if (!ptype) return "smartphones"; // default
     const t = String(ptype).toLowerCase().trim();
-    if (t.includes("laptop") || t === "laptop") return "laptops";
     if (
       t.includes("television") ||
       t === "tv" ||
@@ -411,7 +408,6 @@ const Header = () => {
       sugg?.product_type || sugg?.productType || "",
     ).toLowerCase();
 
-    if (productType.includes("laptop")) return "Laptop";
     if (productType.includes("tv") || productType.includes("appliance"))
       return "TV";
     if (productType.includes("network")) return "Networking";
@@ -429,7 +425,6 @@ const Header = () => {
       sugg?.product_type || sugg?.productType || "",
     ).toLowerCase();
 
-    if (productType.includes("laptop")) return FaLaptop;
     if (productType.includes("tv") || productType.includes("appliance"))
       return FaTv;
     if (productType.includes("network")) return FaPlug;
@@ -602,12 +597,10 @@ const Header = () => {
     return [
       /^\/smartphones\/[^/]+$/i,
       /^\/smartphone\/[^/]+$/i,
-      /^\/laptops\/[^/]+$/i,
-      /^\/laptop\/[^/]+$/i,
       /^\/tvs\/[^/]+$/i,
       /^\/appliances\/[^/]+$/i,
       /^\/networking\/[^/]+$/i,
-      /^\/devices\/(?:smartphones|mobiles|laptops|laptop|tvs|appliances|networking)\/[^/]+$/i,
+      /^\/devices\/(?:smartphones|mobiles|tvs|appliances|networking)\/[^/]+$/i,
     ].some((pattern) => pattern.test(normalized));
   };
 
@@ -740,32 +733,7 @@ const Header = () => {
 
     const productType = normalizeText(type || item?.product_type);
 
-    if (productType.includes("laptop")) {
-      pushFeature(
-        item?.cpu?.processor_name ||
-          item?.cpu?.processor ||
-          item?.performance?.processor_name ||
-          item?.performance?.processor ||
-          item?.performance?.chipset,
-      );
-      pushFeature(
-        item?.display?.display_size ||
-          item?.display?.size ||
-          item?.display?.screen_size,
-      );
-      pushFeature(
-        item?.memory?.ram ||
-          item?.memory?.capacity ||
-          item?.memory?.size ||
-          item?.ram,
-      );
-      pushFeature(
-        item?.storage?.capacity ||
-          item?.storage?.storage ||
-          item?.storage?.size ||
-          item?.storage_capacity,
-      );
-    } else if (
+    if (
       productType.includes("tv") ||
       productType.includes("appliance")
     ) {
@@ -895,9 +863,6 @@ const Header = () => {
       ...smartphones
         .filter((item) => isPublishedProduct(item))
         .map((item) => toSearchSuggestion(item, "smartphone")),
-      ...laptops
-        .filter((item) => isPublishedProduct(item))
-        .map((item) => toSearchSuggestion(item, "laptop")),
       ...tvs
         .filter((item) => isPublishedProduct(item))
         .map((item) => toSearchSuggestion(item, "tv")),
@@ -918,7 +883,7 @@ const Header = () => {
     });
 
     return deduped;
-  }, [smartphones, laptops, tvs]);
+  }, [smartphones, tvs]);
 
   const localProductSuggestionsById = React.useMemo(() => {
     const byId = new Map();
@@ -1375,33 +1340,6 @@ const Header = () => {
       // Column 4 – By Brand
     },
     {
-      id: "laptops",
-      name: "Laptops",
-      icon: <FaLaptop />,
-      // Column 1 – Browse
-      subcategories: [
-        { name: "All Laptops" },
-        { name: "Latest Releases" },
-        { name: "Top Laptops" },
-        { name: "Compare Laptops" },
-      ],
-      // Column 2 – By Use Case (mapped into popularProducts column)
-      popularProducts: [
-        { name: "Gaming Laptops", price: "", discount: "" },
-        { name: "Student Laptops", price: "", discount: "" },
-        { name: "Business Laptops", price: "", discount: "" },
-        { name: "Creator Laptops", price: "", discount: "" },
-      ],
-      // Column 3 – By Price (mapped into featured column)
-      featured: [
-        { name: "Under ₹40,000", discount: "", icon: <FaTag /> },
-        { name: "Under ₹60,000", discount: "", icon: <FaTag /> },
-        { name: "Under ₹80,000", discount: "", icon: <FaTag /> },
-        { name: "Premium Laptops", discount: "", icon: <FaStar /> },
-      ],
-      // Column 4 – By Brand
-    },
-    {
       id: "tvs",
       name: "TVs",
       icon: <FaTv />,
@@ -1485,7 +1423,6 @@ const Header = () => {
   // Top navigation links
   const exploreDropdownLinks = [
     { name: "Smartphones", link: toCanonicalPagePath("/smartphones") },
-    { name: "Laptops", link: toCanonicalPagePath("/laptops") },
     { name: "TVs", link: toCanonicalPagePath("/tvs") },
   ];
   const isCompareRoute = currentPath.startsWith("/compare");
@@ -1500,7 +1437,6 @@ const Header = () => {
       dropdownItems: isCompareRoute ? undefined : exploreDropdownLinks,
     },
     { name: "Compare", link: toCanonicalPagePath("/compare") },
-    { name: "Laptops", link: toCanonicalPagePath("/laptops") },
     { name: "TVs", link: toCanonicalPagePath("/tvs") },
     {
       name: "Upcoming Mobiles",
@@ -1532,9 +1468,7 @@ const Header = () => {
       return currentPath === "/smartphones/filter/new";
     if (target === "/trending/smartphones")
       return currentPath === "/trending/smartphones";
-    if (target === "/news")
-      return currentPath === "/news" || currentPath.startsWith("/news/");
-    if (target === "/laptops") return currentPath === "/laptops";
+    if (target === "/news") return currentPath === "/news";
     if (target === "/tvs") return currentPath === "/tvs";
     return currentPath === target || currentPath.startsWith(`${target}/`);
   };
@@ -1543,7 +1477,6 @@ const Header = () => {
     [
       browseNavLabel,
       "Compare",
-      "Laptops",
       "TVs",
       "Upcoming Mobiles",
       "Latest Mobiles",
@@ -2613,15 +2546,6 @@ const Header = () => {
       { label: "Trending Smartphones", href: "/trending/smartphones" },
     ];
 
-    const laptopItems = [
-      { label: "Best Laptops", href: "/laptops" },
-      { label: "Latest Laptops", href: "/laptops/latest" },
-      { label: "Trending Laptops", href: "/trending/laptops" },
-      { label: "Gaming Laptops", href: "/laptops/features/gaming" },
-      { label: "16GB+ RAM Laptops", href: "/laptops/features/high-ram" },
-      { label: "Laptops Under ₹50,000", href: "/laptops/under-50000" },
-    ];
-
     const tvItems = [
       { label: "Best TVs", href: "/tvs" },
       { label: "4K Ultra HD TVs", href: "/tvs/features/ultra-hd-4k" },
@@ -2665,13 +2589,6 @@ const Header = () => {
         icon: FaAlignJustify,
         kind: "link",
         href: toCanonicalPagePath("/compare"),
-      },
-      {
-        id: "laptops",
-        title: "Laptops",
-        icon: FaLaptop,
-        kind: "accordion",
-        items: laptopItems,
       },
       {
         id: "tvs",
