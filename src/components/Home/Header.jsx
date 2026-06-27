@@ -14,7 +14,6 @@
  * DESKTOP (> 768px):
  *   - Full-width horizontal layout
  *   - Logo | Inline Search Bar | Spacer | Utility Icons + Auth
- *   - Full mega menu support for categories (CategoryNavBar)
  *   - All wishlist, auth, and other features visible
  *
  * ARCHITECTURE:
@@ -24,7 +23,6 @@
  *   └─ Desktop section: hidden md:block (visible on desktop+)
  * - SearchModal: Full-screen overlay search with discover section
  * - MobileMenuDrawer: Vertical sidebar for categories (hamburger)
- * - CategoryNavBar: Desktop mega menus (hidden on mobile)
  *
  * WHY PREVIOUS INPUT RENDERING BROKE:
  * ────────────────────────────────────
@@ -104,6 +102,7 @@ import {
   FaAlignJustify,
   FaBriefcase,
   FaTimes,
+  FaCompass,
 } from "react-icons/fa";
 
 const BrandIdentity = ({ variant = "desktop" }) => {
@@ -128,14 +127,6 @@ const BrandIdentity = ({ variant = "desktop" }) => {
       >
         Hooks
       </span>
-      {isDesktop ? (
-        <>
-          <span aria-hidden="true" className="h-6 w-px bg-slate-300" />
-          <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 lg:text-[11px]">
-            Gadget Intelligence
-          </span>
-        </>
-      ) : null}
     </span>
   );
 };
@@ -151,7 +142,9 @@ const Header = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isDesktopSearchOpen, setIsDesktopSearchOpen] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [activeDesktopMenu, setActiveDesktopMenu] = useState("");
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const navigate = useNavigate();
@@ -217,6 +210,11 @@ const Header = () => {
   // Re-read auth after navigation (e.g., after login redirect)
   useEffect(() => {
     readAuthFromCookies();
+  }, [location.pathname]);
+
+  useEffect(() => {
+    setActiveDesktopMenu("");
+    setIsDesktopSearchOpen(false);
   }, [location.pathname]);
 
   // Keep the mobile header height in sync for sticky offsets.
@@ -295,6 +293,14 @@ const Header = () => {
       }, 50);
     }
   }, [isSearchOpen]);
+
+  useEffect(() => {
+    if (isDesktopSearchOpen && searchInputRef.current) {
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 50);
+    }
+  }, [isDesktopSearchOpen]);
 
   // Lock body scroll when search modal is open
   useEffect(() => {
@@ -388,35 +394,6 @@ const Header = () => {
     return createProductPath(category, productKey);
   };
 
-  const formatINR = (value) => {
-    const n = Number(value);
-    if (!Number.isFinite(n)) return null;
-    try {
-      return `₹${new Intl.NumberFormat("en-IN", {
-        maximumFractionDigits: 0,
-      }).format(n)}`;
-    } catch {
-      return `₹${Math.round(n)}`;
-    }
-  };
-
-  const getSuggestionTypeLabel = (sugg) => {
-    const suggestionType = String(sugg?.type || "").toLowerCase();
-    if (suggestionType === "brand") return "Brand";
-
-    const productType = String(
-      sugg?.product_type || sugg?.productType || "",
-    ).toLowerCase();
-
-    if (productType.includes("tv") || productType.includes("appliance"))
-      return "TV";
-    if (productType.includes("network")) return "Networking";
-    if (productType.includes("phone") || productType.includes("smart"))
-      return "Smartphone";
-
-    return suggestionType === "product" ? "Product" : "Search";
-  };
-
   const getSuggestionTypeIcon = (sugg) => {
     const suggestionType = String(sugg?.type || "").toLowerCase();
     if (suggestionType === "brand") return FaStore;
@@ -432,76 +409,6 @@ const Header = () => {
       return FaMobileAlt;
 
     return FaSearch;
-  };
-
-  const getSuggestionSubtitle = (sugg) => {
-    if (!sugg || typeof sugg !== "object") return "";
-    const suggestionType = String(sugg?.type || "").toLowerCase();
-    const brandName = readFirstText(sugg?.brand_name, sugg?.brand);
-    const modelName = readFirstText(sugg?.model, sugg?.model_number);
-    const typeLabel = getSuggestionTypeLabel(sugg);
-
-    if (suggestionType === "brand") {
-      return `Explore the full ${readFirstText(sugg?.name) || "brand"} lineup`;
-    }
-
-    const summaryParts = [brandName, modelName || typeLabel].filter(Boolean);
-    if (summaryParts.length) return summaryParts.join(" • ");
-    return typeLabel;
-  };
-
-  const buildSuggestionChips = (sugg, variant = "desktop") => {
-    const chips = [];
-    const suggestionType = String(sugg?.type || "").toLowerCase();
-    const isMobileVariant = variant === "mobile";
-    const brandName = readFirstText(sugg?.brand_name, sugg?.brand);
-    const priceLabel = formatINR(sugg?.min_price ?? sugg?.minPrice);
-
-    if (suggestionType === "brand") {
-      chips.push({
-        label: "Brand",
-        tone: "bg-amber-50 text-amber-700 ring-amber-100",
-      });
-      chips.push({
-        label: `Explore ${readFirstText(sugg?.name) || "products"}`,
-        tone: "bg-blue-50 text-[#345ce3] ring-blue-100",
-      });
-      return chips;
-    }
-
-    if (brandName && normalizeText(brandName) !== normalizeText(sugg?.name)) {
-      chips.push({
-        label: brandName,
-        tone: "bg-slate-100 text-slate-700 ring-slate-200",
-      });
-    }
-
-    getSuggestionVariantTypes(sugg)
-      .slice(0, isMobileVariant ? 1 : 2)
-      .forEach((variantType) => {
-        chips.push({
-          label: variantType,
-          tone: "bg-blue-50 text-[#345ce3] ring-blue-100",
-        });
-      });
-
-    if (priceLabel) {
-      chips.push({
-        label: `From ${priceLabel}`,
-        tone: "bg-emerald-50 text-emerald-700 ring-emerald-100",
-      });
-    }
-
-    getSuggestionFeatures(sugg)
-      .slice(0, isMobileVariant ? 1 : 2)
-      .forEach((feature) => {
-        chips.push({
-          label: feature,
-          tone: "bg-cyan-50 text-cyan-700 ring-cyan-100",
-        });
-      });
-
-    return chips.slice(0, isMobileVariant ? 3 : 4);
   };
 
   const getSuggestionImage = (sugg) =>
@@ -1247,6 +1154,7 @@ const Header = () => {
     Promise.resolve().then(() => {
       setShowSearchSuggestions(false);
       setIsSearchOpen(false);
+      setIsDesktopSearchOpen(false);
       setSearchQuery("");
       suppressRestoreRef.current = false;
     });
@@ -1420,22 +1328,8 @@ const Header = () => {
     }
   });
 
-  // Top navigation links
-  const exploreDropdownLinks = [
-    { name: "Smartphones", link: toCanonicalPagePath("/smartphones") },
-    { name: "TVs", link: toCanonicalPagePath("/tvs") },
-  ];
-  const isCompareRoute = currentPath.startsWith("/compare");
-  const browseNavLabel = isCompareRoute ? "Home" : "Explore";
-  const browseNavLink = isCompareRoute ? "/" : "explore";
-
-  const directLinks = [
-    {
-      name: browseNavLabel,
-      link: browseNavLink,
-      caret: !isCompareRoute,
-      dropdownItems: isCompareRoute ? undefined : exploreDropdownLinks,
-    },
+  // Desktop navigation follows a white editorial mega-header pattern.
+  const desktopNavLinks = [
     { name: "Compare", link: toCanonicalPagePath("/compare") },
     { name: "TVs", link: toCanonicalPagePath("/tvs") },
     {
@@ -1451,8 +1345,38 @@ const Header = () => {
       link: toCanonicalPagePath("/trending/smartphones"),
     },
     { name: "News", link: toCanonicalPagePath("/news") },
-    { name: "Phone Finder", link: "/" },
   ];
+
+  const moreMenuSections = [
+    {
+      title: "Company",
+      icon: FaStore,
+      items: [
+        { label: "About", href: "/about" },
+        { label: "Contact", href: "/contact" },
+        { label: "Careers", href: "/careers" },
+      ],
+    },
+    {
+      title: "Support",
+      icon: FaHandsHelping,
+      items: [
+        { label: "Privacy Policy", href: "/privacy-policy" },
+        { label: "Terms", href: "/terms" },
+        { label: "Wishlist", href: "/wishlist" },
+      ],
+    },
+    {
+      title: "Explore More",
+      icon: FaCompass,
+      items: [
+        { label: "Popular Comparisons", href: "/popular-comparisons" },
+        { label: "Networking", href: "/networking" },
+        { label: "Smartphones", href: "/smartphones" },
+      ],
+    },
+  ];
+
   const isActiveNavLink = (href) => {
     const target =
       String(href || "")
@@ -1472,82 +1396,180 @@ const Header = () => {
     if (target === "/tvs") return currentPath === "/tvs";
     return currentPath === target || currentPath.startsWith(`${target}/`);
   };
+  const desktopBrandMenuItems = Array.from(
+    new Set(
+      [
+        ...(categoriesWithBrands
+          .find((category) => String(category.id || "") === "smartphones")
+          ?.topBrands || []),
+        "Samsung",
+        "OnePlus",
+        "Vivo",
+        "Realme",
+        "Oppo",
+        "Apple",
+      ]
+        .map((brand) => String(brand?.name || brand || "").trim())
+        .filter(Boolean),
+    ),
+  )
+    .slice(0, 8)
+    .map((name) => ({
+      label: name,
+      href: buildBrandListingPath(name, "smartphones"),
+    }));
 
-  const desktopTopStripLinks = directLinks.filter((link) =>
-    [
-      browseNavLabel,
-      "Compare",
-      "TVs",
-      "Upcoming Mobiles",
-      "Latest Mobiles",
-      "Trending Mobiles",
-      "News",
-    ].includes(link.name),
-  );
+  const exploreMenuSections = [
+    {
+      title: "Devices",
+      accent: "blue",
+      items: [
+        { label: "All Smartphones", href: "/smartphones" },
+        { label: "Upcoming Mobiles", href: "/smartphones/upcoming" },
+        { label: "Latest Mobiles", href: "/smartphones/filter/new" },
+        { label: "Trending Mobiles", href: "/trending/smartphones" },
+        { label: "TVs", href: "/tvs" },
+      ],
+    },
 
-  const secondaryFeatureLinks = [
     {
-      id: "feature-5g",
-      name: "5G",
-      link: buildFeatureListingPath("5g"),
+      title: "Popular Brands",
+      accent: "indigo",
+      items: desktopBrandMenuItems,
     },
     {
-      id: "feature-ai",
-      name: "AI",
-      link: buildFeatureListingPath("ai-features"),
-    },
-    {
-      id: "feature-amoled",
-      name: "AMOLED",
-      link: buildFeatureListingPath("amoled"),
-    },
-    {
-      id: "feature-refresh",
-      name: "120Hz+",
-      link: buildFeatureListingPath("high-refresh-rate"),
-    },
-    {
-      id: "feature-fast-charge",
-      name: "Fast Charge",
-      link: buildFeatureListingPath("fast-charging"),
-    },
-    {
-      id: "feature-battery",
-      name: "Long Battery",
-      link: buildFeatureListingPath("long-battery"),
-    },
-    {
-      id: "feature-camera",
-      name: "Camera",
-      link: buildFeatureListingPath("high-camera"),
-    },
-    {
-      id: "feature-ois",
-      name: "OIS",
-      link: buildFeatureListingPath("ois"),
-    },
-    {
-      id: "feature-wifi",
-      name: "Wi-Fi 7",
-      link: buildFeatureListingPath("wifi-7"),
-    },
-    {
-      id: "feature-nfc",
-      name: "NFC",
-      link: buildFeatureListingPath("nfc"),
-    },
-    {
-      id: "feature-esim",
-      name: "eSIM",
-      link: buildFeatureListingPath("esim"),
-    },
-    {
-      id: "brand-iphone",
-      name: "iPhone",
-      link: buildBrandListingPath("Apple", "smartphones"),
+      title: "By Price",
+      accent: "emerald",
+      items: [
+        { label: "Under 10000", href: buildSmartphoneFilterPath("under-10000") },
+        { label: "10000 to 15000", href: buildSmartphoneFilterPath("under-15000") },
+        { label: "15000 to 25000", href: buildSmartphoneFilterPath("under-25000") },
+        { label: "25000 to 40000", href: buildSmartphoneFilterPath("under-40000") },
+        { label: "Above 40000", href: buildSmartphoneFilterPath("above-40000") },
+      ],
     },
   ];
 
+  const desktopNavBaseClass =
+    "inline-flex h-12 items-center gap-1.5 border-b-2 px-1 text-[12px] font-black uppercase tracking-[0.13em] transition-colors";
+
+  const desktopNavLinkClass = (active = false) =>
+    `${desktopNavBaseClass} ${
+      active
+        ? "border-[#0057ff] text-[#06122f]"
+        : "border-transparent text-slate-600 hover:border-[#0057ff]/45 hover:text-[#06122f]"
+    }`;
+
+  const MegaPanel = ({
+    children,
+    widthClass = "w-[min(980px,calc(100vw-48px))]",
+    caretClass = "left-1/2 -translate-x-1/2",
+  }) => (
+    <div
+      className={`absolute left-1/2 top-full z-[70] -translate-x-1/2 pt-3 ${widthClass}`}
+    >
+      <span
+        className={`pointer-events-none absolute top-1 z-[71] h-5 w-5 rotate-45 border-l border-t border-slate-200 bg-white shadow-[-6px_-6px_18px_rgba(15,23,42,0.04)] ${caretClass}`}
+      />
+      <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_28px_70px_rgba(15,23,42,0.16)] ring-1 ring-slate-950/5">
+        {children}
+      </div>
+    </div>
+  );
+
+  const ExploreMegaMenu = () => (
+    <MegaPanel>
+      <div className="grid gap-0 md:grid-cols-3">
+        {exploreMenuSections.map((section) => (
+          <section key={section.title} className="min-w-0 border-r border-slate-100 p-6 last:border-r-0">
+            <div className="mb-4 h-0.5 w-full rounded-full bg-[#0057ff]" />
+            <h3 className="text-[13px] font-black text-[#071120]">
+              {section.title}
+            </h3>
+            <div className="mt-4 space-y-1.5">
+              {section.items.map((item) => (
+                <Link
+                  key={`${section.title}-${item.label}`}
+                  to={toCanonicalPagePath(item.href)}
+                  className="flex min-h-[34px] items-center justify-between rounded-lg px-2.5 text-[13px] font-semibold text-slate-600 transition hover:bg-blue-50 hover:text-[#0057ff]"
+                >
+                  <span className="truncate">{item.label}</span>
+                  <FaChevronRight className="h-2.5 w-2.5 shrink-0 opacity-45" />
+                </Link>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </MegaPanel>
+  );
+
+  const MoreMegaMenu = () => (
+    <MegaPanel
+      widthClass="w-[min(1010px,calc(100vw-64px))]"
+      caretClass="right-16"
+    >
+      <div className="grid gap-0 md:grid-cols-3">
+        {moreMenuSections.map((section) => {
+          const SectionIcon = section.icon || FaInfoCircle;
+          return (
+            <section
+              key={section.title}
+              className="min-w-0 border-r border-slate-100 px-8 py-8 last:border-r-0"
+            >
+              <div className="mb-5 flex items-center gap-4">
+                <span className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[#0057ff] ring-1 ring-blue-100">
+                  <SectionIcon className="h-5 w-5" />
+                </span>
+                <div className="min-w-0">
+                  <h3 className="text-[16px] font-black uppercase tracking-[0.02em] text-[#071120]">
+                    {section.title}
+                  </h3>
+                  <span className="mt-3 block h-0.5 w-12 rounded-full bg-[#0057ff]" />
+                </div>
+              </div>
+              <div className="mt-5 divide-y divide-slate-100">
+                {section.items.map((item) => (
+                  <Link
+                    key={`${section.title}-${item.label}`}
+                    to={toCanonicalPagePath(item.href)}
+                    className="group flex min-h-[52px] items-center justify-between gap-4 text-[15px] font-bold text-[#071120] transition hover:text-[#0057ff]"
+                  >
+                    <span className="truncate">{item.label}</span>
+                    <FaChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-400 transition group-hover:text-[#0057ff]" />
+                  </Link>
+                ))}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+      <div className="px-7 pb-7">
+        <div className="flex items-center justify-between gap-6 rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50 via-white to-blue-50 px-6 py-5 shadow-inner">
+          <div className="flex min-w-0 items-center gap-4">
+            <span className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#0057ff] text-white shadow-[0_14px_30px_rgba(0,87,255,0.24)]">
+              <FaBolt className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[17px] font-black text-[#071120]">
+                Start device discovery
+              </p>
+              <p className="mt-1 text-[14px] font-medium text-slate-600">
+                Explore smartphones, comparisons, rankings and more.
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/smartphones"
+            className="inline-flex h-12 shrink-0 items-center gap-3 rounded-xl bg-[#0057ff] px-7 text-[15px] font-black text-white shadow-[0_14px_28px_rgba(0,87,255,0.22)] transition hover:bg-[#0046d5]"
+          >
+            Explore now
+            <FaArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </div>
+    </MegaPanel>
+  );
   // Handle search
   const handleSearch = (e) => {
     e.preventDefault();
@@ -1575,13 +1597,29 @@ const Header = () => {
       setSearchQuery("");
       setShowSearchSuggestions(false);
       setSelectedSuggestionIndex(-1);
+      setIsDesktopSearchOpen(false);
     }
   };
 
   const openSearchOverlay = () => {
+    setIsDesktopSearchOpen(false);
     setShowSearchSuggestions(false);
     setSelectedSuggestionIndex(-1);
     setIsSearchOpen(true);
+  };
+
+  const openDesktopSearch = () => {
+    setActiveDesktopMenu("");
+    setIsDesktopSearchOpen(true);
+    setShowSearchSuggestions(Boolean(String(searchQuery || "").trim()));
+  };
+
+  const closeDesktopSearch = () => {
+    setIsDesktopSearchOpen(false);
+    setSearchQuery("");
+    setSearchSuggestions([]);
+    setShowSearchSuggestions(false);
+    setSelectedSuggestionIndex(-1);
   };
 
   useEffect(() => {
@@ -1932,13 +1970,8 @@ const Header = () => {
         }`}
       >
         <div className="h-12 w-12 shrink-0 rounded-md bg-gradient-to-br from-blue-100 via-indigo-100 to-cyan-100 ring-1 ring-blue-100" />
-        <div className="min-w-0 flex-1 space-y-2">
+        <div className="min-w-0 flex-1">
           <div className="h-4 w-3/5 rounded-full bg-slate-200/90" />
-          <div className="h-3 w-4/5 rounded-full bg-slate-100" />
-          <div className="flex flex-wrap gap-2 pt-1">
-            <div className="h-5 w-16 rounded-full bg-blue-100/80" />
-            <div className="h-5 w-20 rounded-full bg-slate-100" />
-          </div>
         </div>
         {!isMobileVariant ? (
           <div className="h-4 w-4 shrink-0 rounded-full bg-slate-200/80" />
@@ -1983,12 +2016,8 @@ const Header = () => {
     if (!suggestion) return null;
 
     const isMobileVariant = variant === "mobile";
-    const typeLabel = getSuggestionTypeLabel(suggestion);
-    const subtitle = getSuggestionSubtitle(suggestion);
-    const chips = buildSuggestionChips(suggestion, variant);
     const TypeIcon = getSuggestionTypeIcon(suggestion);
     const imageUrl = getSuggestionImage(suggestion);
-    const isBrand = String(suggestion?.type || "").toLowerCase() === "brand";
 
     const buttonClasses = isMobileVariant
       ? `group flex w-full items-center gap-2.5 overflow-hidden rounded-2xl border px-3 py-3 text-left shadow-[0_10px_24px_rgba(59,130,246,0.08)] transition-all duration-200 ${
@@ -2001,10 +2030,6 @@ const Header = () => {
             ? "bg-blue-50/90"
             : "bg-white/90 hover:bg-blue-50/60 active:bg-blue-100/70"
         }`;
-
-    const badgeClasses = isBrand
-      ? "bg-amber-50 text-amber-700 ring-amber-100"
-      : "bg-blue-50 text-[#345ce3] ring-blue-100";
 
     return (
       <button
@@ -2057,38 +2082,12 @@ const Header = () => {
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <p className="line-clamp-2 text-[13px] font-semibold leading-snug text-slate-900 transition group-hover:text-[#345ce3] sm:text-[15px]">
-                <HighlightText
-                  text={readFirstText(suggestion?.name, suggestion?.model)}
-                  query={query}
-                />
-              </p>
-              <p className="mt-0.5 truncate text-[11px] text-slate-500 sm:text-[13px]">
-                {subtitle}
-              </p>
-            </div>
-
-            <span
-              className={`shrink-0 rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.16em] ring-1 sm:px-2.5 sm:py-1 sm:text-[10px] ${badgeClasses}`}
-            >
-              {typeLabel}
-            </span>
-          </div>
-
-          {chips.length > 0 ? (
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              {chips.map((chip) => (
-                <span
-                  key={`${chip.label}-${chip.tone}`}
-                  className={`rounded-full px-2 py-0.5 text-[9px] font-semibold ring-1 sm:px-2.5 sm:py-1 sm:text-[11px] ${chip.tone}`}
-                >
-                  {chip.label}
-                </span>
-              ))}
-            </div>
-          ) : null}
+          <p className="line-clamp-2 text-[13px] font-semibold leading-snug text-slate-900 transition group-hover:text-[#345ce3] sm:text-[15px]">
+            <HighlightText
+              text={readFirstText(suggestion?.name, suggestion?.model)}
+              query={query}
+            />
+          </p>
         </div>
 
         <FaChevronRight
@@ -2099,6 +2098,51 @@ const Header = () => {
           }`}
         />
       </button>
+    );
+  };
+
+  const DesktopSearchSuggestionPanel = () => {
+    if (!isDesktopSearchOpen || !(showSearchSuggestions || searchQuery.trim())) {
+      return null;
+    }
+
+    return (
+      <div className="absolute right-0 top-full z-[80] mt-2 w-[min(440px,calc(100vw-48px))] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_22px_50px_rgba(15,23,42,0.18)] ring-1 ring-slate-950/5">
+        <div className="max-h-[420px] overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {!searchSuggestions || searchSuggestions.length === 0 ? (
+            searchQuery.trim() ? (
+              <>
+                {isSearching &&
+                  [...Array(3)].map((_, index) => (
+                    <SkeletonSuggestion key={`desktop-inline-skeleton-${index}`} />
+                  ))}
+                {!isSearching &&
+                  searchSuggestions &&
+                  searchSuggestions.length === 0 && (
+                    <SuggestionEmptyState
+                      query={searchQuery}
+                      variant="desktop"
+                    />
+                  )}
+              </>
+            ) : null
+          ) : (
+            searchSuggestions
+              .slice(0, SEARCH_SUGGESTION_LIMIT)
+              .map((sugg, index) => (
+                <SuggestionRow
+                  key={`${sugg.id || sugg.name || index}-desktop-inline`}
+                  suggestion={sugg}
+                  query={searchQuery}
+                  selected={selectedSuggestionIndex === index}
+                  variant="desktop"
+                  onActivate={handleSuggestionClick}
+                  onMouseEnter={() => setSelectedSuggestionIndex(index)}
+                />
+              ))
+          )}
+        </div>
+      </div>
     );
   };
 
@@ -2303,149 +2347,131 @@ const Header = () => {
       </div>
 
       {/* DESKTOP HEADER (> 768px) */}
-      <div className="hidden bg-white md:block">
-        <div className="border-b border-white/10 bg-[#071120] text-white/70 shadow-[0_1px_0_rgba(255,255,255,0.04)_inset]">
-          <div className="mx-auto flex max-w-7xl items-center justify-center gap-4 overflow-x-auto px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:px-6 lg:gap-7 lg:px-8 lg:text-[11px]">
-            {desktopTopStripLinks.map((link) => (
-              <Link
-                key={`${link.link}-${link.name}`}
-                to={link.link}
-                className={`whitespace-nowrap rounded-full px-1.5 py-0.5 transition-colors ${
-                  isActiveNavLink(link.link)
-                    ? "text-white"
-                    : "hover:text-white"
+      <div
+        className="relative hidden border-b border-slate-200 bg-white/95 shadow-[0_8px_28px_rgba(15,23,42,0.06)] backdrop-blur md:block"
+        onMouseLeave={() => setActiveDesktopMenu("")}
+      >
+        <div className="mx-auto flex min-h-[64px] w-full max-w-[1440px] items-center gap-5 px-5 lg:px-8">
+          <Link to="/" className="flex min-w-0 shrink-0 items-center">
+            <BrandIdentity variant="desktop" />
+          </Link>
+
+          <nav
+            aria-label="Primary navigation"
+            className="hidden min-w-0 flex-1 items-center justify-center gap-4 overflow-x-auto whitespace-nowrap pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden lg:flex xl:gap-6"
+          >
+            <button
+              type="button"
+              className={desktopNavLinkClass(
+                activeDesktopMenu === "explore" || currentPath.startsWith("/smartphones"),
+              )}
+              onMouseEnter={() => setActiveDesktopMenu("explore")}
+              onFocus={() => setActiveDesktopMenu("explore")}
+              onClick={() =>
+                setActiveDesktopMenu((menu) => (menu === "explore" ? "" : "explore"))
+              }
+            >
+              Explore
+              <FaChevronDown
+                className={`h-2.5 w-2.5 transition-transform ${
+                  activeDesktopMenu === "explore" ? "rotate-180 text-[#0057ff]" : ""
                 }`}
+              />
+            </button>
+
+            {desktopNavLinks.map((link) => (
+              <Link
+                key={`${link.name}-${link.link}`}
+                to={link.link}
+                className={desktopNavLinkClass(isActiveNavLink(link.link))}
+                onMouseEnter={() => setActiveDesktopMenu("")}
+                onFocus={() => setActiveDesktopMenu("")}
               >
                 {link.name}
               </Link>
             ))}
-          </div>
-        </div>
 
-        <div className="border-b border-[#dfe8f6] bg-gradient-to-r from-white via-[#fbfdff] to-[#eef6ff]">
-          <div className="mx-auto w-full max-w-7xl px-4 py-3 sm:px-6 lg:px-8 lg:py-3.5">
-            <div className="grid items-center gap-4 md:grid-cols-[minmax(220px,0.75fr)_minmax(320px,1.25fr)] xl:grid-cols-[minmax(260px,0.8fr)_minmax(380px,536px)_minmax(190px,0.7fr)]">
-              <Link to="/" className="flex min-w-0 shrink-0 items-center">
-                <BrandIdentity variant="desktop" />
-              </Link>
+            <button
+              type="button"
+              className={desktopNavLinkClass(activeDesktopMenu === "more")}
+              onMouseEnter={() => setActiveDesktopMenu("more")}
+              onFocus={() => setActiveDesktopMenu("more")}
+              onClick={() =>
+                setActiveDesktopMenu((menu) => (menu === "more" ? "" : "more"))
+              }
+            >
+              More
+              <FaChevronDown
+                className={`h-2.5 w-2.5 transition-transform ${
+                  activeDesktopMenu === "more" ? "rotate-180 text-[#0057ff]" : ""
+                }`}
+              />
+            </button>
+          </nav>
 
+          <div
+            className="ml-auto flex shrink-0 items-center"
+            onMouseEnter={() => setActiveDesktopMenu("")}
+          >
+            {isDesktopSearchOpen ? (
               <form
                 ref={searchRef}
                 onSubmit={handleSearch}
-                className="relative min-w-0"
+                className="relative flex items-center"
               >
-                <div className="group/search relative rounded-full border border-[#cfdbff] bg-white shadow-[0_14px_38px_rgba(37,99,235,0.08)] transition-all duration-300 focus-within:border-[#87a2ff] focus-within:shadow-[0_18px_48px_rgba(37,99,235,0.14)]">
+                <button
+                  type="button"
+                  onClick={closeDesktopSearch}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-l-md border border-slate-300 bg-slate-100 text-slate-800 transition hover:bg-slate-200 hover:text-[#0057ff]"
+                  aria-label="Close search"
+                >
+                  <FaTimes className="h-4 w-4" />
+                </button>
+                <div className="relative h-10 w-[min(34vw,380px)] min-w-[270px]">
                   <input
                     ref={searchInputRef}
-                    type="text"
-                    placeholder="Search devices, brands, specs, or comparisons..."
+                    type="search"
                     value={searchQuery}
                     onChange={(e) => handleSearchInputChange(e.target.value)}
-                    onFocus={() => setIsSearchFocused(true)}
+                    onFocus={() => {
+                      setIsSearchFocused(true);
+                      if (searchQuery.trim()) {
+                        setShowSearchSuggestions(true);
+                      }
+                    }}
                     onBlur={() => setIsSearchFocused(false)}
                     onKeyDown={handleSearchKeyDown}
-                    className={`w-full rounded-full bg-transparent py-3 pl-5 text-[14px] font-semibold text-slate-800 placeholder:text-slate-400 transition-[padding] duration-300 ease-out focus:outline-none lg:py-3.5 lg:text-[15px] ${
-                      isSearchActionCompact ? "pr-16" : "pr-28"
-                    }`}
+                    placeholder="Search phones, brands, specs..."
+                    className="h-full w-full rounded-r-md border-y border-r border-slate-300 bg-slate-100 pl-4 pr-11 text-[14px] font-semibold text-[#071120] outline-none transition placeholder:text-slate-500 focus:border-[#0057ff] focus:bg-white focus:ring-2 focus:ring-[#0057ff]/10"
                   />
                   <button
                     type="submit"
-                    className={`absolute right-2 top-1/2 inline-flex h-9 -translate-y-1/2 items-center justify-center overflow-hidden rounded-full bg-gradient-to-r from-[#3158e0] via-[#4f46e5] to-[#7c3aed] py-2 text-sm font-bold text-white shadow-[0_10px_22px_rgba(79,70,229,0.24)] transition-all duration-300 ease-out hover:scale-[1.01] lg:h-10 ${
-                      isSearchActionCompact
-                        ? "w-10 gap-0 px-0"
-                        : "w-[104px] gap-2 px-4"
-                    }`}
+                    className="absolute right-0 top-0 inline-flex h-10 w-10 items-center justify-center rounded-r-md text-slate-800 transition hover:text-[#0057ff]"
+                    aria-label="Search"
                   >
-                    <FaSearch className="h-3.5 w-3.5 shrink-0" />
-                    <span
-                      className={`whitespace-nowrap transition-all duration-200 ease-out ${
-                        isSearchActionCompact
-                          ? "max-w-0 opacity-0"
-                          : "max-w-[48px] opacity-100"
-                      }`}
-                    >
-                      Search
-                    </span>
+                    <FaSearch className="h-4 w-4" />
                   </button>
                 </div>
-
-                {showSearchSuggestions && searchQuery.trim() && (
-                  <div className="absolute left-0 right-0 top-full z-50 mt-3 overflow-hidden rounded-md border border-[#dfe7ff] bg-gradient-to-br from-white via-white to-blue-50/60 shadow-[0_28px_72px_rgba(15,23,42,0.16)] backdrop-blur-xl">
-                    <div className="max-h-[26rem] overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                      {!searchSuggestions || searchSuggestions.length === 0 ? (
-                        searchQuery.trim() ? (
-                          <>
-                            {isSearching &&
-                              [...Array(3)].map((_, i) => (
-                                <SkeletonSuggestion key={`skel-${i}`} />
-                              ))}
-                            {!isSearching && (
-                              <SuggestionEmptyState
-                                query={searchQuery}
-                                variant="desktop"
-                              />
-                            )}
-                          </>
-                        ) : null
-                      ) : (
-                        searchSuggestions
-                          .slice(0, SEARCH_SUGGESTION_LIMIT)
-                          .map((sugg, index) => (
-                            <SuggestionRow
-                              key={`${sugg.id || sugg.name || index}-desktop-header`}
-                              suggestion={sugg}
-                              query={searchQuery}
-                              selected={selectedSuggestionIndex === index}
-                              variant="desktop"
-                              onActivate={handleSuggestionClick}
-                              onMouseEnter={() =>
-                                setSelectedSuggestionIndex(index)
-                              }
-                            />
-                          ))
-                      )}
-                    </div>
-                  </div>
-                )}
+                <DesktopSearchSuggestionPanel />
               </form>
-
-              <div className="hidden min-w-0 justify-end xl:flex">
-                <div className="rounded-full border border-[#dbe4ff] bg-white/80 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-[#3158e0] shadow-sm">
-                  Smarter Device Discovery
-                </div>
-              </div>
-            </div>
+            ) : (
+              <button
+                type="button"
+                onClick={openDesktopSearch}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:border-[#0057ff] hover:text-[#0057ff]"
+                aria-label="Open search"
+              >
+                <FaSearch className="h-4 w-4" />
+              </button>
+            )}
           </div>
         </div>
+
+        {activeDesktopMenu === "explore" ? <ExploreMegaMenu /> : null}
+        {activeDesktopMenu === "more" ? <MoreMegaMenu /> : null}
       </div>
     </>
   );
-
-  const CategoryNavBar = () => {
-    return (
-      <div className="hidden bg-white md:block">
-        <div className="border-b border-[#dbe7f6] bg-[#eef6ff] text-slate-600">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-center gap-1.5 overflow-x-auto py-1.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden lg:gap-2">
-              {secondaryFeatureLinks.map((link) => (
-                <Link
-                  key={`${link.id}-${link.name}`}
-                  to={link.link}
-                  className={`inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.12em] transition-all duration-200 lg:px-3.5 lg:py-2 lg:text-[11px] ${
-                    isActiveNavLink(link.link)
-                      ? "bg-white text-[#2454d6] shadow-sm"
-                      : "text-[#243b5a] hover:bg-white/75 hover:text-[#2454d6]"
-                  }`}
-                >
-                  {link.name}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   // Mobile Menu Drawer
   const MobileMenuDrawer = () => {
@@ -2832,7 +2858,7 @@ const Header = () => {
         className="sticky left-0 right-0 top-0 z-50 bg-white"
       >
         <MainHeader />
-        <CategoryNavBar />
+
       </header>
 
       <MobileMenuDrawer

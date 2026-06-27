@@ -998,7 +998,12 @@ const normalizeStoriesFromPayload = (payload) =>
     ? payload.blogs.map(normalizeBlogStory).filter(Boolean)
     : [];
 
-export const createNewsStoryPath = () => toCanonicalPagePath("/news");
+export const createNewsStoryPath = (slug = "") => {
+  const normalizedSlug = safeText(slug);
+  return normalizedSlug
+    ? toCanonicalPagePath(`/news/${encodeURIComponent(normalizedSlug)}`)
+    : toCanonicalPagePath("/news");
+};
 
 export const buildRelatedNewsStories = (stories = [], currentStory = null, limit = 3) => {
   const currentSlug = safeText(currentStory?.slug);

@@ -94,9 +94,15 @@ const containsArticleMarkup = (value) =>
   );
 
 const normalizeArticleHtml = (value) => {
-  let text = String(value || "").replace(/\r\n?/g, "\n").trim();
+  let text = String(value || "")
+    .replace(/\r\n?/g, "\n")
+    .trim();
 
-  for (let pass = 0; pass < 3 && text && !containsArticleMarkup(text); pass += 1) {
+  for (
+    let pass = 0;
+    pass < 3 && text && !containsArticleMarkup(text);
+    pass += 1
+  ) {
     const next = decodeHtmlEntitiesOnce(text);
     if (next === text) break;
     text = next;
@@ -454,7 +460,11 @@ const ArticleShareLinks = ({ title, description, url }) => {
 
     await copyLink();
     if (typeof window !== "undefined") {
-      window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
+      window.open(
+        "https://www.instagram.com/",
+        "_blank",
+        "noopener,noreferrer",
+      );
     }
   };
 
@@ -568,10 +578,7 @@ const TrendingStoryCard = ({ story }) => (
     to={createNewsStoryPath(story.slug)}
     className="group flex items-start gap-3 py-3 first:pt-0 last:pb-0"
   >
-    <StoryImage
-      story={story}
-      className="h-16 w-16 shrink-0 rounded-md"
-    />
+    <StoryImage story={story} className="h-16 w-16 shrink-0 rounded-md" />
 
     <div className="min-w-0">
       <h3 className="line-clamp-2 text-[13px] font-semibold leading-5 text-[#20242b] transition-colors group-hover:text-[#2563eb]">
@@ -590,10 +597,7 @@ const SidebarStoryCard = ({ story }) => (
     to={createNewsStoryPath(story.slug)}
     className="group flex items-start gap-3 py-3 first:pt-0 last:pb-0"
   >
-    <StoryImage
-      story={story}
-      className="h-16 w-16 shrink-0 rounded-md"
-    />
+    <StoryImage story={story} className="h-16 w-16 shrink-0 rounded-md" />
 
     <div className="min-w-0">
       <h3 className="line-clamp-2 text-[13px] font-semibold leading-5 text-[#20242b] transition-colors group-hover:text-[#2563eb]">
@@ -1069,7 +1073,7 @@ const NewsStoryArticlePage = () => {
         <section className="bg-white">
           <div className="mx-auto max-w-[1280px] px-4 pb-3 pt-1 sm:px-6 sm:pb-4 sm:pt-2 lg:px-8 lg:pb-3">
             <div className="max-w-[1120px]">
-              <h1 className="news-article-headline text-[21px] leading-[1.18] text-[#20242b] sm:text-[28px] sm:leading-[1.14] lg:text-[32px] xl:text-[36px]">
+              <h1 className="news-article-headline font-[Newsreader] text-[24px] md:text-[28px] lg:text-[26px] leading-[1.05] tracking-[-0.035em] font-extrabold text-slate-950">
                 {story.title}
               </h1>
               <p className="news-article-deck mt-2 max-w-[72ch] text-[15px] leading-6 text-[#5f6670] sm:mt-3 sm:text-[19px] sm:leading-8">
@@ -1257,7 +1261,6 @@ const NewsStoryArticlePage = () => {
                     ) : null}
                   </section>
                 ) : null}
-
               </div>
 
               <aside className="space-y-5 xl:sticky xl:top-6 xl:max-h-[calc(100vh-3rem)] xl:self-start xl:overflow-y-auto xl:pr-1 xl:[scrollbar-width:none] xl:[&::-webkit-scrollbar]:hidden">
