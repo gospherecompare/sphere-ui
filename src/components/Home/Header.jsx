@@ -262,6 +262,9 @@ const Header = () => {
     if (typeof ResizeObserver !== "undefined" && mobileHeaderRef.current) {
       resizeObserver = new ResizeObserver(updateMobileHeaderHeight);
       resizeObserver.observe(mobileHeaderRef.current);
+      if (headerRef.current) {
+        resizeObserver.observe(headerRef.current);
+      }
     }
 
     return () => {
@@ -2326,7 +2329,7 @@ const Header = () => {
       {/* MOBILE HEADER (≤ 768px) */}
       <div
         ref={mobileHeaderRef}
-        className="border-b border-slate-100 bg-white/95 shadow-[0_1px_0_rgba(15,23,42,0.04)] backdrop-blur md:hidden"
+        className="border-b border-slate-200 bg-white shadow-[0_4px_18px_rgba(15,23,42,0.06)] md:hidden"
       >
         {/* Mobile Top Row: Menu | Logo */}
         <div className="flex min-h-[52px] items-center gap-3 px-3 py-2">
@@ -2348,7 +2351,7 @@ const Header = () => {
 
       {/* DESKTOP HEADER (> 768px) */}
       <div
-        className="relative hidden border-b border-slate-200 bg-white/95 shadow-[0_8px_28px_rgba(15,23,42,0.06)] backdrop-blur md:block"
+        className="relative hidden border-b border-slate-200 bg-white shadow-[0_8px_28px_rgba(15,23,42,0.06)] md:block"
         onMouseLeave={() => setActiveDesktopMenu("")}
       >
         <div className="mx-auto flex min-h-[64px] w-full max-w-[1440px] items-center gap-5 px-5 lg:px-8">
@@ -2792,55 +2795,6 @@ const Header = () => {
                   </nav>
                 </div>
 
-                <div className="bg-white px-4 pb-[calc(env(safe-area-inset-bottom)+14px)] pt-3 shadow-[0_-8px_26px_rgba(15,23,42,0.06)]">
-                  {isLoggedIn ? (
-                    <div className="flex items-center gap-3">
-                      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-700">
-                        <FaUser className="h-4 w-4" />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[13px] font-bold text-slate-900">
-                          {userName || "My Account"}
-                        </p>
-                        <p className="truncate text-[11px] font-semibold text-slate-500">
-                          {userEmail || "Wishlist and saved devices"}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        className="rounded-full bg-slate-100 px-3 py-2 text-[12px] font-bold text-slate-700 active:bg-slate-200"
-                        onClick={() => {
-                          setIsMenuOpen(false);
-                          handleLogout();
-                        }}
-                      >
-                        Logout
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-2xl bg-blue-600 px-3 text-[13px] font-bold text-white active:bg-blue-700"
-                        onClick={() => {
-                          setIsMenuOpen(false);
-                          handleLogin();
-                        }}
-                      >
-                        <FaSignInAlt className="h-3.5 w-3.5" />
-                        Login
-                      </button>
-                      <Link
-                        to="/signup"
-                        className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-2xl bg-slate-100 px-3 text-[13px] font-bold text-slate-800 active:bg-slate-200"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <FaUserPlus className="h-3.5 w-3.5" />
-                        Sign up
-                      </Link>
-                    </div>
-                  )}
-                </div>
               </div>
             </div>
           </>
@@ -2855,11 +2809,15 @@ const Header = () => {
 
       <header
         ref={headerRef}
-        className="sticky left-0 right-0 top-0 z-50 bg-white"
+        className="fixed left-0 right-0 top-0 z-[60] w-full isolate bg-white"
       >
         <MainHeader />
 
       </header>
+      <div
+        aria-hidden="true"
+        className="h-[var(--mobile-header-height,52px)] md:h-[var(--desktop-header-height,64px)]"
+      />
 
       <MobileMenuDrawer
         key={isMenuOpen ? "mobile-menu-open" : "mobile-menu-closed"}

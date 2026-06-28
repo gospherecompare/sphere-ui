@@ -4925,7 +4925,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                                 className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white transition-all duration-200 checked:border-emerald-600 checked:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-1 disabled:cursor-not-allowed"
                               />
                               <span className="text-sm font-semibold text-slate-700">
-                                Add to Compare
+                                Compare
                               </span>
                             </label>
                             {hasLaunchDate ? (

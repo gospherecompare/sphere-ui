@@ -5711,7 +5711,7 @@ const MobileCompare = () => {
                                           >
                                             {isAlreadySelected
                                               ? "Update Variant"
-                                              : "Add to Compare"}
+                                              : "Compare"}
                                           </span>
                                         </div>
                                       </div>

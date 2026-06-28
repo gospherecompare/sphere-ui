@@ -21,6 +21,7 @@ import PopularMobileComparisonsStrip from "../ui/PopularMobileComparisonsStrip";
 import MobilePhoneHighlights from "../ui/MobilePhoneHighlights";
 import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
 import { createProductPath, generateSlug } from "../../utils/slugGenerator";
+import { buildCanonicalComparePathFromDevices } from "../../utils/compareRoutes";
 import {
   createCollectionSchema,
   createItemListSchema,
@@ -46,6 +47,7 @@ import { resolveSmartphoneBadgeScore } from "../../utils/smartphoneBadgeScore";
 
 const ROUTE_FEED_CACHE_KEY = "hooks_smartphone_route_feed_v1";
 const TRENDING_PRODUCTS_PER_PAGE = 20;
+const MAX_COMPARE_ITEMS = 4;
 const RUPEE = "\u20B9";
 const API_BASE = "https://api.apisphere.in";
 const SITE_ORIGIN = "https://tryhook.shop";
@@ -1129,6 +1131,7 @@ const TrendingProductsHub = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [compareItems, setCompareItems] = useState([]);
 
   useEffect(() => {
     if (isRemovedLaptopCategory) {
@@ -1196,6 +1199,7 @@ const TrendingProductsHub = () => {
     setSelectedResolution([]);
     setBrandFilterQuery("");
     setShowFilters(false);
+    setCompareItems([]);
   }, [activeCategory]);
 
   useEffect(() => {
@@ -1573,6 +1577,86 @@ const TrendingProductsHub = () => {
     ogImageMeta,
     listSchemaItems,
   ]);
+
+  const getCompareProductId = (product) =>
+    product?.productId ?? product?.product_id ?? product?.id ?? product?.key ?? null;
+
+  const getCompareVariantIndex = (product) => {
+    const direct = Number(
+      product?.selectedVariantIndex ?? product?.variantIndex ?? product?.variant_id,
+    );
+    return Number.isInteger(direct) && direct >= 0 ? direct : 0;
+  };
+
+  const getCompareDeviceKey = (product) => {
+    const productId = getCompareProductId(product);
+    if (productId != null) {
+      return `${activeCategory}:${productId}:${getCompareVariantIndex(product)}`;
+    }
+    return product?.key ? `${activeCategory}:key:${product.key}` : null;
+  };
+
+  const getCompareProductType = () => {
+    if (activeCategory === "tvs") return "tv";
+    if (activeCategory === "laptops") return "laptop";
+    return "smartphone";
+  };
+
+  const toCompareItem = (product) => {
+    const productId = getCompareProductId(product);
+    const productType = getCompareProductType();
+    return {
+      ...product,
+      id: productId ?? product?.id,
+      productId,
+      product_id: productId,
+      baseId: productId,
+      productType,
+      deviceType: productType,
+      selectedVariantIndex: getCompareVariantIndex(product),
+    };
+  };
+
+  const isCompareSelected = (product) => {
+    const compareKey = getCompareDeviceKey(product);
+    if (!compareKey) return false;
+    return compareItems.some((item) => getCompareDeviceKey(item) === compareKey);
+  };
+
+  const handleCompareToggle = (product, event) => {
+    event?.stopPropagation();
+    const compareKey = getCompareDeviceKey(product);
+    if (!compareKey) return;
+
+    setCompareItems((prev) => {
+      const isSelected = prev.some(
+        (item) => getCompareDeviceKey(item) === compareKey,
+      );
+
+      if (isSelected) {
+        return prev.filter((item) => getCompareDeviceKey(item) !== compareKey);
+      }
+
+      if (prev.length >= MAX_COMPARE_ITEMS) return prev;
+      return [...prev, toCompareItem(product)];
+    });
+  };
+
+  const handleCompareNavigate = (event) => {
+    event?.stopPropagation();
+    if (compareItems.length < 2) return;
+
+    const comparePath = buildCanonicalComparePathFromDevices({
+      devices: compareItems,
+      getName: (device) => device?.name || device?.model || device?.title || "",
+      getId: getCompareProductId,
+      getVariantIndex: getCompareVariantIndex,
+    });
+
+    navigate(comparePath, {
+      state: { initialProducts: compareItems },
+    });
+  };
 
   return (
     <div className="min-h-screen text-slate-900" data-page-label={config.badge}>
@@ -2124,6 +2208,7 @@ const TrendingProductsHub = () => {
                 <>
                   <div className="grid grid-cols-1 gap-4 sm:gap-5 md:gap-6 auto-rows-max">
                     {paginatedVisible.map((p) => {
+                      const compareSelected = isCompareSelected(p);
                       const dedupedStoreMap = new Map();
                       arr(p.stores).forEach((s) => {
                         const storeName =
@@ -2336,7 +2421,11 @@ const TrendingProductsHub = () => {
                         <article
                           key={p.key}
                           onClick={() => openDetail(p)}
-                          className="group relative h-full overflow-hidden  border border-slate-200 bg-white cursor-pointer transition-all duration-300"
+                          className={`group relative h-full overflow-hidden border bg-white cursor-pointer transition-all duration-300 ${
+                            compareSelected
+                              ? "border-blue-500 bg-blue-50/30 shadow-[0_14px_36px_rgba(37,99,235,0.12)]"
+                              : "border-slate-200"
+                          }`}
                         >
                           <div className="p-5 sm:p-6 transition-all duration-300">
                             <div className="hidden flex-col gap-4 lg:flex lg:flex-row lg:items-start lg:justify-between">
@@ -2452,12 +2541,28 @@ const TrendingProductsHub = () => {
                               >
                                 <input
                                   type="checkbox"
+                                  checked={compareSelected}
+                                  onChange={(e) => handleCompareToggle(p, e)}
                                   onClick={(e) => e.stopPropagation()}
-                                  className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white transition-all duration-200 checked:border-emerald-600 checked:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-1"
+                                  className="sr-only"
                                   aria-label="Select for compare"
                                 />
-                                <span className="text-sm font-semibold">
-                                  Add to Compare
+                                <span
+                                  aria-hidden="true"
+                                  className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border text-[12px] font-black leading-none transition-all duration-200 ${
+                                    compareSelected
+                                      ? "border-blue-600 bg-blue-600 text-white shadow-[0_6px_14px_rgba(37,99,235,0.24)]"
+                                      : "border-slate-300 bg-white text-transparent"
+                                  }`}
+                                >
+                                  &#10003;
+                                </span>
+                                <span
+                                  className={`text-sm font-semibold ${
+                                    compareSelected ? "text-blue-700" : ""
+                                  }`}
+                                >
+                                  Compare
                                 </span>
                               </label>
 
@@ -2507,6 +2612,29 @@ const TrendingProductsHub = () => {
                       );
                     })}
                   </div>
+
+                  {compareItems.length > 0 ? (
+                    <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-blue-100 bg-white p-4 shadow-[0_14px_40px_rgba(37,99,235,0.08)] sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-950">
+                          {compareItems.length} selected for compare
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {compareItems.length < 2
+                            ? "Select one more product to compare side by side."
+                            : "Ready to compare selected products side by side."}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCompareNavigate}
+                        disabled={compareItems.length < 2}
+                        className="inline-flex min-h-[42px] items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-bold text-white shadow-[0_12px_28px_rgba(37,99,235,0.22)] transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none"
+                      >
+                        Compare selected
+                      </button>
+                    </div>
+                  ) : null}
 
                   <div className="mt-8 border-t border-slate-200 pt-6">
                     <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
