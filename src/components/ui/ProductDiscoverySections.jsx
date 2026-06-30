@@ -493,7 +493,7 @@ const BrandLogo = ({ src = "", label = "" }) => {
   const initial = normalizeText(label).charAt(0).toUpperCase() || "?";
 
   return (
-    <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white sm:h-14 sm:w-14">
+    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-md sm:h-14 sm:w-14">
       {imageSrc && !failed ? (
         <img
           src={imageSrc}
@@ -618,7 +618,7 @@ const LinkListBlock = ({
     <div
       className={
         isPlainSurface
-          ? "overflow-hidden rounded-2xl"
+          ? "overflow-hidden rounded-2xl border border-[#e5eaf5] bg-white shadow-[0_18px_44px_rgba(15,23,42,0.06)]"
           : "overflow-hidden rounded-lg bg-white"
       }
     >
@@ -626,7 +626,7 @@ const LinkListBlock = ({
         <div
           className={
             isPlainSurface
-              ? "px-1 py-3 sm:px-5 sm:py-4"
+              ? "border-b border-blue-500 px-4 py-4 sm:px-6"
               : "bg-white px-1 py-3 sm:px-5 sm:py-4"
           }
         >
@@ -657,7 +657,7 @@ const LinkListBlock = ({
             : "border-t border-slate-100 bg-white p-3 sm:p-4"
         }
       >
-        <div className="space-y-2">
+        <div className={isPlainSurface ? "divide-y divide-[#e5eaf5]" : "space-y-2"}>
           {items.map((item, index) => {
             const subtitle = normalizeText(item?.subtitle);
             const meta = normalizeText(item?.meta);
@@ -670,7 +670,7 @@ const LinkListBlock = ({
                 aria-label={item.label || "Explore"}
                 className={
                   isPlainSurface
-                    ? "group flex items-center gap-3 px-3 py-3 text-sm text-slate-700 no-underline transition-all duration-200 ease-out hover:-translate-y-px hover:bg-white hover:no-underline focus-visible:bg-white sm:py-3.5"
+                    ? "group flex items-center gap-3 px-4 py-3.5 text-sm text-slate-700 no-underline transition-colors duration-200 ease-out hover:bg-blue-50/60 hover:no-underline focus-visible:bg-blue-50/60 sm:px-6 sm:py-4"
                     : "group flex items-center gap-3 px-3 py-3 text-sm text-slate-700 no-underline transition-all duration-200 ease-out hover:-translate-y-px hover:border-blue-200 hover:bg-white hover:no-underline focus-visible:border-blue-200 focus-visible:bg-white sm:py-3.5"
                 }
               >
@@ -731,6 +731,90 @@ const LinkListBlock = ({
   );
 };
 
+const DiscoveryCardHeader = ({
+  title = "",
+  viewAllPath = "/smartphones",
+  entityType = "smartphones",
+}) => (
+  <div className="flex items-start justify-between gap-3 border-b border-blue-100 px-4 py-4 sm:px-5">
+    <h4 className="text-[15px] font-semibold tracking-tight text-slate-900 sm:text-base">
+      {title}
+    </h4>
+    <Link
+      to={normalizeDiscoveryPath(viewAllPath, entityType)}
+      className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-blue-700 transition-colors hover:text-blue-800"
+    >
+      View all <span aria-hidden="true">&gt;</span>
+    </Link>
+  </div>
+);
+
+const toCompactPriceLabel = (label = "") => {
+  const cleaned = fixCurrencyText(label)
+    .replace(/^Best\s+\S+\s+/i, "")
+    .replace(/^in\s+/i, "")
+    .trim();
+  return cleaned || fixCurrencyText(label) || "Explore";
+};
+
+const PriceDiscoveryBlock = ({
+  items = [],
+  viewAllPath = "/smartphones",
+  entityType = "smartphones",
+}) => {
+  if (!Array.isArray(items) || items.length === 0) return null;
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-[#e5eaf5] bg-white shadow-[0_18px_44px_rgba(15,23,42,0.06)]">
+      <DiscoveryCardHeader
+        title="Discover by Price"
+        viewAllPath={viewAllPath}
+        entityType={entityType}
+      />
+      <div className="flex flex-wrap gap-2 px-4 py-4 sm:px-5">
+        {items.slice(0, 8).map((item, index) => (
+          <Link
+            key={`${item.path || item.label || "price"}-${index}`}
+            to={normalizeDiscoveryPath(item.path || "", entityType)}
+            className="inline-flex rounded-full bg-blue-50 px-3.5 py-2 text-xs font-semibold text-blue-700 no-underline transition-colors hover:bg-blue-100 hover:text-blue-800 hover:no-underline"
+          >
+            {toCompactPriceLabel(item.label)}
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const PopularSearchesBlock = ({
+  items = [],
+  viewAllPath = "/smartphones",
+  entityType = "smartphones",
+}) => {
+  if (!Array.isArray(items) || items.length === 0) return null;
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-[#e5eaf5] bg-white shadow-[0_18px_44px_rgba(15,23,42,0.06)]">
+      <DiscoveryCardHeader
+        title="Popular Searches"
+        viewAllPath={viewAllPath}
+        entityType={entityType}
+      />
+      <div className="flex flex-wrap gap-2 px-4 py-4 sm:px-5">
+        {items.slice(0, 10).map((item, index) => (
+          <Link
+            key={`${item.path || item.label || "popular"}-${index}`}
+            to={normalizeDiscoveryPath(item.path || "", entityType)}
+            className="inline-flex rounded-full bg-blue-50 px-3.5 py-2 text-xs font-semibold text-blue-700 no-underline transition-colors hover:bg-blue-100 hover:text-blue-800 hover:no-underline"
+          >
+            {item.label || "Explore"}
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const TopBrandsBlock = ({
   items = [],
   viewAllPath = "/smartphones",
@@ -739,6 +823,7 @@ const TopBrandsBlock = ({
   subtitleText = "Explore products by key features",
   trimMobilesSuffix = true,
   surface = "card",
+  headingPrefix = "Explore by",
 }) => {
   if (!Array.isArray(items) || items.length === 0) return null;
   const sectionMeta = getSectionMeta("brand");
@@ -748,21 +833,21 @@ const TopBrandsBlock = ({
     <div
       className={
         isPlainSurface
-          ? "overflow-hidden rounded-2xl"
+          ? "overflow-hidden rounded-2xl border border-[#e5eaf5] bg-white shadow-[0_18px_44px_rgba(15,23,42,0.06)]"
           : "overflow-hidden rounded-lg bg-white "
       }
     >
       <div
         className={
           isPlainSurface
-            ? "flex items-start justify-between gap-3 px-1 py-3.5 sm:px-5 sm:py-4"
+            ? "flex items-start justify-between gap-3 border-b border-blue-500 px-4 py-4 sm:px-6"
             : "flex items-start justify-between gap-3 border-b border-slate-200/80  px-1 py-3.5 sm:px-5 sm:py-4"
         }
       >
         <div className="flex items-start gap-3">
           <div className="min-w-0">
             <h4 className="text-[15px] font-semibold tracking-tight text-slate-900 sm:text-base">
-              Explore by{" "}
+              {headingPrefix}{" "}
               <span className={sectionMeta.accentClass}>{titleText}</span>
             </h4>
             <p className="mt-1 text-[13px] leading-relaxed text-slate-500 sm:text-sm">
@@ -779,8 +864,8 @@ const TopBrandsBlock = ({
       </div>
 
       <div>
-        <div className="no-scrollbar overflow-x-auto px-1 py-4 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-5">
-          <div className="flex min-w-max items-start gap-4 pr-2">
+        <div className="no-scrollbar overflow-x-auto px-4 py-4 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-6 sm:py-5">
+          <div className="flex min-w-max items-start gap-3 pr-2 sm:gap-4">
             {items.map((item, index) => {
               const rawBrandName = normalizeText(item?.name || item?.label);
               const brandName = trimMobilesSuffix
@@ -791,7 +876,7 @@ const TopBrandsBlock = ({
                 <Link
                   key={`${item.path || brandName || "brand"}-${index}`}
                   to={normalizeDiscoveryPath(item.path || "", entityType)}
-                  className="group flex w-[88px] shrink-0 flex-col items-center gap-2 rounded-2xl px-2.5 py-3 text-center transition-all duration-200 ease-out"
+                  className="group flex w-[88px] shrink-0 flex-col items-center gap-2 rounded-2xl bg-transparent px-2.5 py-3 text-center transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-blue-50/40 sm:w-[96px]"
                 >
                   <BrandLogo
                     src={item.logo_url || item.image_url || ""}
@@ -877,6 +962,7 @@ const ProductDiscoverySections = ({
   catalogItems = [],
   brandCatalog = [],
   layout = "full",
+  variant = "default",
   className = "",
 }) => {
   const discoveryEndpoint = useMemo(
@@ -961,6 +1047,7 @@ const ProductDiscoverySections = ({
     layout === "latestPhones" && entityConfig.type === "smartphones";
   const isBudgetSidebarLayout =
     layout === "budgetSidebar" && entityConfig.type === "smartphones";
+  const isSidebarVariant = variant === "sidebar";
 
   const { latestReleases, budgetSegments, brandHub, smartDiscoveries } =
     useMemo(() => {
@@ -1163,7 +1250,9 @@ const ProductDiscoverySections = ({
   const hasContent = isBudgetSidebarLayout
     ? budgetSidebarLinks.length > 0
     : isLatestPhonesLayout
-      ? byPriceLinks.length > 0 || topBrandLinks.length > 0
+      ? byPriceLinks.length > 0 ||
+        topBrandLinks.length > 0 ||
+        popularLinks.length > 0
       : popularLinks.length > 0 ||
         byPriceLinks.length > 0 ||
         latestLaunchLinks.length > 0 ||
@@ -1189,7 +1278,11 @@ const ProductDiscoverySections = ({
 
   return (
     <section
-      className={`w-full overflow-hidden  ${className} mx-auto w-full max-w-7xl  rounded-2xl border border-white shadow-[0_2px_4px_rgba(0,0,0,0.1)] `}
+      className={`mx-auto w-full max-w-7xl ${
+        isLatestPhonesLayout
+          ? "overflow-visible"
+          : "overflow-hidden rounded-2xl border border-[#e5eaf5] bg-white shadow-[0_18px_44px_rgba(15,23,42,0.06)]"
+      } ${className}`}
     >
       <div className="mx-auto max-w-7xl ">
         {!isLatestPhonesLayout ? (
@@ -1228,23 +1321,47 @@ const ProductDiscoverySections = ({
             />
           </div>
         ) : isLatestPhonesLayout ? (
-          <div className="space-y-3 p-3 sm:space-y-4 sm:p-5">
-            <LinkListBlock
-              title="By Price"
-              items={byPriceLinks}
-              entityType={entityConfig.type}
-              itemNounLower={entityConfig.itemNounLower}
-              surface="plain"
-            />
-            <TopBrandsBlock
-              items={topBrandLinks}
-              viewAllPath={entityConfig.basePath}
-              entityType={entityConfig.type}
-              titleText="Brand"
-              subtitleText={`Explore ${entityConfig.pluralTitle} by key features`}
-              trimMobilesSuffix={entityConfig.type === "smartphones"}
-              surface="plain"
-            />
+          <div
+            className={
+              isSidebarVariant
+                ? "grid grid-cols-1 gap-4 sm:gap-5"
+                : "grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2 xl:grid-cols-3"
+            }
+          >
+            <div className="min-w-0">
+              <PriceDiscoveryBlock
+                items={byPriceLinks}
+                viewAllPath={entityConfig.basePath}
+                entityType={entityConfig.type}
+              />
+            </div>
+            <div className="min-w-0">
+              <TopBrandsBlock
+                items={topBrandLinks}
+                viewAllPath={entityConfig.basePath}
+                entityType={entityConfig.type}
+                titleText="Brand"
+                subtitleText={`Explore ${entityConfig.pluralTitle} by key features`}
+                trimMobilesSuffix={entityConfig.type === "smartphones"}
+                surface="plain"
+                headingPrefix="Discover by"
+              />
+            </div>
+            {popularLinks.length > 0 ? (
+              <div
+                className={
+                  isSidebarVariant
+                    ? "min-w-0"
+                    : "min-w-0 lg:col-span-2 xl:col-span-1"
+                }
+              >
+                <PopularSearchesBlock
+                  items={popularLinks}
+                  viewAllPath={entityConfig.basePath}
+                  entityType={entityConfig.type}
+                />
+              </div>
+            ) : null}
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-3 p-3 sm:gap-4 sm:p-5 md:grid-cols-2 md:gap-4">

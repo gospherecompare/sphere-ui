@@ -15,6 +15,7 @@ import {
 } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import MobileBottomNavigation from "./components/ui/MobileBottomNavigation";
+import AppPushOptInPrompt from "./components/ui/AppPushOptInPrompt";
 import { useDevice } from "./hooks/useDevice";
 import {
   createOrganizationSchema,
@@ -728,6 +729,7 @@ function App() {
     <Router>
       <RouteSeoFallback />
       <GlobalLoadingExperience />
+      <AppPushOptInPrompt />
       <div className="min-h-screen w-full overflow-x-hidden pb-[calc(58px+env(safe-area-inset-bottom))] lg:pb-0">
         <Header />
 

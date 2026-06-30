@@ -8,10 +8,12 @@ import React, {
 } from "react";
 import CompetitorCards from "../ui/CompetitorCards";
 import ProductDiscoverySections from "../ui/ProductDiscoverySections";
+import SmartphoneFaqSection from "../ui/SmartphoneFaqSection";
 // import RecommendedSmartphones from "../Home/RecommendedSmartphones";
 import { useDevice } from "../../hooks/useDevice";
 import Cookies from "js-cookie";
 import latestNewsRouteSection from "../ui/LatestNewsRouteSection";
+import { buildClientSmartphoneFaqs } from "../../utils/smartphoneFaqs";
 
 import useTitle from "../../hooks/useTitle";
 import usePageEngagementTracker from "../../hooks/usePageEngagementTracker";
@@ -2206,6 +2208,24 @@ const MobileDetailCard = () => {
       : "";
   const currentProductId =
     mobileData?.product_id ?? mobileData?.productId ?? mobileData?.id ?? null;
+  const smartphoneFaqItems = useMemo(() => {
+    const apiFaqs = Array.isArray(mobileData?.faqs)
+      ? mobileData.faqs.filter(
+          (item) =>
+            item &&
+            String(item.question || "").trim() &&
+            String(item.answer || "").trim(),
+        )
+      : [];
+
+    if (apiFaqs.length > 0) return apiFaqs;
+
+    return buildClientSmartphoneFaqs({
+      smartphone: mobileData,
+      selectedVariant: currentVariant,
+      limit: 15,
+    });
+  }, [currentVariant, mobileData]);
   const { stories: linkedNewsStories } = usePublicNewsFeed({
     limit: LINKED_NEWS_LIMIT,
     category: "",
@@ -5870,14 +5890,17 @@ Price: ${price}
       {activeTab === "specifications" ? (
         <div className="w-full">
           <div className="mx-auto max-w-7xl px-0 py-0 sm:px-6 sm:py-8 lg:px-8">
-            <div className="min-w-0">{renderTabContent()}</div>
-            <div className="mt-6 px-1 sm:px-0">
-              <ProductDiscoverySections
-                productId={currentProductId}
-                currentBrand={mobileData?.brand || ""}
-                className="w-full"
-                layout="latestPhones"
-              />
+            <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px]">
+              <div className="min-w-0">{renderTabContent()}</div>
+              <aside className="min-w-0 px-4 sm:px-0 lg:sticky lg:top-24">
+                <ProductDiscoverySections
+                  productId={currentProductId}
+                  currentBrand={mobileData?.brand || ""}
+                  className="w-full"
+                  layout="latestPhones"
+                  variant="sidebar"
+                />
+              </aside>
             </div>
           </div>
         </div>
@@ -5903,6 +5926,19 @@ Price: ${price}
           </div>
         </>
       )}
+
+      {smartphoneFaqItems.length > 0 ? (
+        <div className="w-full">
+          <div className="mx-auto max-w-7xl px-0 py-0 sm:px-6 sm:py-8 lg:px-8">
+            <div className="px-4 sm:px-0">
+              <SmartphoneFaqSection
+                items={smartphoneFaqItems}
+                initialLimit={6}
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 };

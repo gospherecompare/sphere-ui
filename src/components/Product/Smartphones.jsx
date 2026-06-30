@@ -482,7 +482,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     if (/(sale[\s_-]?started|started)/i.test(text)) return "sale_started";
     if (/(store[\s_-]?pending|store[\s_-]?listing[\s_-]?pending)/i.test(text))
       return "store_pending";
+    if (/(out[\s_-]?of[\s_-]?stock|sold[\s_-]?out)/i.test(text))
+      return "out_of_stock";
     if (/(on sale|in stock|sale live|live)/i.test(text)) return "on_sale";
+    if (/sale[\s_-]?live/i.test(text)) return "sale_live";
     if (/(sale[\s_-]?tbd|sale[\s_-]?ta|tbd)/i.test(text)) return "sale_tbd";
     return null;
   };
@@ -798,6 +801,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const resolveSaleStage = (device) => {
     if (!device) return "sale_tbd";
     return (
+      normalizeSaleStatus(
+        device.saleStatusOverride || device.sale_status_override,
+      ) ||
       normalizeSaleStatus(device.saleStatus || device.sale_status) ||
       normalizeSaleStatus(device.saleStatusText || device.sale_status_text) ||
       normalizeSaleStatus(
@@ -810,12 +816,51 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const resolveStoreStage = (device) => {
     if (!device) return "none";
     const storeRows = getDeviceStoreRows(device);
+    const explicitStage = String(
+      device.storeStage ||
+        device.store_stage ||
+        device.storeStageOverride ||
+        "",
+    )
+      .trim()
+      .toLowerCase();
+    if (explicitStage === "live") return "live";
+    if (explicitStage === "prebooking") return "prebooking";
+    if (explicitStage === "listed" || explicitStage === "store_pending") {
+      return "listed";
+    }
+    if (explicitStage === "none") return "none";
     if (storeRows.some(hasLiveStoreSignal)) return "live";
     if (storeRows.some(isPrebookingStore)) {
       return "prebooking";
     }
     if (storeRows.some(hasStoreMarketSignal)) return "listed";
     return "none";
+  };
+
+  const getRenderType = (device) => {
+    const backendRenderType = String(
+      device?.render_type || device?.renderType || "",
+    )
+      .trim()
+      .toLowerCase();
+    if (backendRenderType === "available" || backendRenderType === "upcoming") {
+      return backendRenderType;
+    }
+
+    const saleStage = resolveSaleStage(device);
+    const storeStage = resolveStoreStage(device);
+
+    if (
+      storeStage === "live" ||
+      saleStage === "on_sale" ||
+      saleStage === "sale_live" ||
+      saleStage === "out_of_stock"
+    ) {
+      return "available";
+    }
+
+    return "upcoming";
   };
 
   const getCompareLimitForDevices = (devices = []) =>
@@ -867,6 +912,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
   const isUpcomingDevice = (device) => {
     if (!device) return false;
+    if (device.render_type || device.renderType) {
+      return getRenderType(device) === "upcoming";
+    }
     const stage = resolveLaunchStage(device);
     if (stage === "rumored" || stage === "announced" || stage === "upcoming")
       return true;
@@ -875,20 +923,24 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
   const getUpcomingBadge = (device) => {
     if (!device) return null;
+    if (device.display_status || device.displayStatus) {
+      return device.display_status || device.displayStatus;
+    }
     if (!isUpcomingDevice(device)) return null;
 
     const stage = resolveLaunchStage(device);
     if (stage === "rumored") return "Rumored";
     if (stage === "announced") return "Announced";
-    if (stage === "available" || stage === "released") return null;
+    if (stage === "released" || stage === "upcoming") return "Upcoming";
+    if (stage === "available") return null;
 
-    if (device.is_prebooking) return "Coming Soon";
+    if (device.is_prebooking) return "Upcoming";
 
     const storePrices = Array.isArray(device.storePrices)
       ? device.storePrices
       : [];
     if (storePrices.some((store) => isPrebookingStore(store))) {
-      return "Coming Soon";
+      return "Upcoming";
     }
 
     return "Upcoming";
@@ -1614,6 +1666,11 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         toString(apiDevice.launchStatusOverride),
         "",
       ),
+      saleStatusOverride: pick(
+        toString(apiDevice.sale_status_override),
+        toString(apiDevice.saleStatusOverride),
+        "",
+      ),
       saleStatus: pick(
         toString(apiDevice.sale_status),
         toString(apiDevice.saleStatus),
@@ -1639,6 +1696,46 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       storeStage: pick(
         toString(apiDevice.store_stage),
         toString(apiDevice.storeStage),
+        "",
+      ),
+      storeStageOverride: pick(
+        toString(apiDevice.store_stage_override),
+        toString(apiDevice.storeStageOverride),
+        "",
+      ),
+      render_type: pick(
+        toString(apiDevice.render_type),
+        toString(apiDevice.renderType),
+        "",
+      ),
+      renderType: pick(
+        toString(apiDevice.renderType),
+        toString(apiDevice.render_type),
+        "",
+      ),
+      display_status: pick(
+        toString(apiDevice.display_status),
+        toString(apiDevice.displayStatus),
+        "",
+      ),
+      displayStatus: pick(
+        toString(apiDevice.displayStatus),
+        toString(apiDevice.display_status),
+        "",
+      ),
+      launchDateType: pick(
+        toString(apiDevice.launch_date_type),
+        toString(apiDevice.launchDateType),
+        "",
+      ),
+      priceConfidence: pick(
+        toString(apiDevice.price_confidence),
+        toString(apiDevice.priceConfidence),
+        "",
+      ),
+      specConfidence: pick(
+        toString(apiDevice.spec_confidence),
+        toString(apiDevice.specConfidence),
         "",
       ),
       allowCompare:
@@ -1830,135 +1927,184 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const allVariants = devices.flatMap((device) =>
     Array.isArray(device?.variants) ? device.variants : [],
   );
+  const [selectedVariantByProduct, setSelectedVariantByProduct] = useState({});
 
-  // Build variant-level cards so each variant (ram/storage) gets its own card
+  const getSmartphoneProductKey = (device) =>
+    String(
+      device?.productId ??
+        device?.product_id ??
+        device?.baseId ??
+        device?.variantProductKey ??
+        device?.id ??
+        device?.model ??
+        "",
+    );
+
+  const getVariantIdentity = (variant, variantIndex = 0) =>
+    String(
+      variant?.variant_id ??
+        variant?.id ??
+        variant?.variantId ??
+        `variant-${variantIndex}`,
+    );
+
+  const resolveVariantCardData = (device, variant, variantIndex = 0) => {
+    const rawVariantStorePrices = Array.isArray(variant?.store_prices)
+      ? variant.store_prices
+      : Array.isArray(variant?.storePrices)
+        ? variant.storePrices
+        : [];
+    const mappedVariantStores = rawVariantStorePrices.map((sp) => {
+      const storeName = sp.store_name || sp.store || sp.storeName || "Store";
+      return {
+        ...sp,
+        id: sp.id,
+        store: storeName,
+        store_name: storeName,
+        storeName: storeName,
+        display_store_name:
+          sp.display_store_name || sp.displayStoreName || storeName,
+        storeObj: getStore ? getStore(storeName) : null,
+        price: sp.price,
+        url: sp.url || sp.url_link || sp.link,
+        cta_label: sp.cta_label || sp.ctaLabel || null,
+        availability_status:
+          sp.availability_status || sp.availabilityStatus || null,
+        sale_start_date:
+          sp.sale_start_date || sp.saleStartDate || sp.sale_date || null,
+        sale_date: sp.sale_date || sp.saleDate || null,
+        is_prebooking: sp.is_prebooking === true || sp.isPrebooking === true,
+        logo: normalizeAssetUrl(
+          sp.logo || sp.store_logo || sp.storeLogo || null,
+        ),
+      };
+    });
+
+    const variantBaseNumeric = extractNumericPrice(
+      variant?.base_price || variant?.basePrice || variant?.base,
+    );
+    const variantStoreNumericPrices = mappedVariantStores
+      .map((p) => extractNumericPrice(p.price))
+      .filter((n) => n > 0);
+    const lowestVariantStorePrice =
+      variantStoreNumericPrices.length > 0
+        ? Math.min(...variantStoreNumericPrices)
+        : 0;
+    let resolvedNumericPrice = 0;
+    if (lowestVariantStorePrice > 0)
+      resolvedNumericPrice = lowestVariantStorePrice;
+    else if (variantBaseNumeric > 0) resolvedNumericPrice = variantBaseNumeric;
+    else if (device.numericPrice > 0)
+      resolvedNumericPrice = device.numericPrice;
+
+    const priceDisplay =
+      resolvedNumericPrice > 0
+        ? `₹ ${resolvedNumericPrice.toLocaleString()}`
+        : "";
+    const variantRam = variant?.ram || variant?.RAM || "";
+    const variantStorage =
+      variant?.storage ||
+      variant?.storage_capacity ||
+      variant?.ROM ||
+      variant?.rom ||
+      "";
+    const variantId = getVariantIdentity(variant, variantIndex);
+    const variantLabel =
+      [variantRam, variantStorage].filter(Boolean).join(" / ") ||
+      `Variant ${variantIndex + 1}`;
+    const variantSaleStartDate =
+      variant?.sale_start_date ||
+      variant?.saleStartDate ||
+      variant?.sale_date ||
+      variant?.saleDate ||
+      variant?.first_sale_date ||
+      variant?.firstSaleDate ||
+      device.saleStartDate ||
+      null;
+    const variantIsPrebooking =
+      variant?.is_prebooking === true ||
+      variant?.isPrebooking === true ||
+      String(
+        variant?.availability_status || variant?.availabilityStatus || "",
+      ).toLowerCase() === "prebooking" ||
+      device.is_prebooking === true;
+
+    return {
+      variant,
+      variantId,
+      variantIndex,
+      label: variantLabel,
+      ram: variantRam,
+      storage: variantStorage,
+      storePrices: mappedVariantStores,
+      price: priceDisplay,
+      numericPrice: resolvedNumericPrice,
+      saleStartDate: variantSaleStartDate,
+      is_prebooking: variantIsPrebooking,
+    };
+  };
+
+  const getDefaultVariantOption = (options) => {
+    if (!options.length) return null;
+    const pricedOptions = options.filter((option) => option.numericPrice > 0);
+    if (!pricedOptions.length) return options[0];
+    return pricedOptions.reduce((best, option) =>
+      option.numericPrice < best.numericPrice ? option : best,
+    );
+  };
+
+  // Build one product card and let the card switch RAM/storage dynamically.
   const variantCards = useMemo(() => {
-    return devices.flatMap((device) => {
+    return devices.map((device) => {
       const vars =
         Array.isArray(device.variants) && device.variants.length
           ? device.variants
           : [];
 
       if (vars.length === 0) {
-        // fallback: create a single card representing the device
-        return [{ ...device, id: `${device.id}-default` }];
+        const productKey = getSmartphoneProductKey(device);
+        return {
+          ...device,
+          id: `${device.id}-product`,
+          variantProductKey: productKey,
+          variantOptions: [],
+          selectedVariantIndex: 0,
+        };
       }
 
-      return vars.map((v, variantIndex) => {
-        // map store prices for this variant (if any)
-        const rawVariantStorePrices = Array.isArray(v.store_prices)
-          ? v.store_prices
-          : [];
-        // Map variant-level store prices (keep original price strings)
-        const mappedVariantStores = rawVariantStorePrices.map((sp) => {
-          const storeName =
-            sp.store_name || sp.store || sp.storeName || "Store";
-          return {
-            ...sp,
-            id: sp.id,
-            store: storeName,
-            store_name: storeName,
-            storeName: storeName,
-            display_store_name:
-              sp.display_store_name || sp.displayStoreName || storeName,
-            storeObj: getStore ? getStore(storeName) : null,
-            // leave logo resolution to render-time via getLogo(store)
-            price: sp.price,
-            url: sp.url || sp.url_link || sp.link,
-            cta_label: sp.cta_label || sp.ctaLabel || null,
-            availability_status:
-              sp.availability_status || sp.availabilityStatus || null,
-            sale_start_date:
-              sp.sale_start_date || sp.saleStartDate || sp.sale_date || null,
-            sale_date: sp.sale_date || sp.saleDate || null,
-            is_prebooking:
-              sp.is_prebooking === true || sp.isPrebooking === true,
-            logo: normalizeAssetUrl(
-              sp.logo || sp.store_logo || sp.storeLogo || null,
-            ),
-          };
-        });
+      const variantOptions = vars.map((variant, variantIndex) =>
+        resolveVariantCardData(device, variant, variantIndex),
+      );
+      const productKey = getSmartphoneProductKey(device);
+      const selectedVariantId = selectedVariantByProduct[productKey];
+      const selectedOption =
+        variantOptions.find(
+          (option) => String(option.variantId) === String(selectedVariantId),
+        ) || getDefaultVariantOption(variantOptions);
 
-        // Variant base numeric price (if provided)
-        const variantBaseNumeric = extractNumericPrice(
-          v.base_price || v.basePrice || v.base,
-        );
-
-        // 1) Preferred: lowest numeric price among this variant's store_prices
-        const variantStoreNumericPrices = mappedVariantStores
-          .map((p) => extractNumericPrice(p.price))
-          .filter((n) => n > 0);
-        const lowestVariantStorePrice =
-          variantStoreNumericPrices.length > 0
-            ? Math.min(...variantStoreNumericPrices)
-            : 0;
-
-        // 2) Price resolution per requirements:
-        // First -> lowestVariantStorePrice, Second -> variantBaseNumeric, Third -> device.numericPrice
-        let resolvedNumericPrice = 0;
-        if (lowestVariantStorePrice > 0)
-          resolvedNumericPrice = lowestVariantStorePrice;
-        else if (variantBaseNumeric > 0)
-          resolvedNumericPrice = variantBaseNumeric;
-        else if (device.numericPrice > 0)
-          resolvedNumericPrice = device.numericPrice;
-
-        const priceDisplay =
-          resolvedNumericPrice > 0
-            ? `₹ ${resolvedNumericPrice.toLocaleString()}`
-            : "";
-
-        // Store prices to expose on card: prefer mappedVariantStores when available, else an empty list
-        const storePricesToExpose =
-          mappedVariantStores.length > 0 ? mappedVariantStores : [];
-
-        // RAM and Storage must come from variant (per requirement)
-        const variantRam = v.ram || v.RAM || "";
-        const variantStorage =
-          v.storage || v.storage_capacity || v.ROM || v.rom || "";
-
-        // Card title in strict format: {device name} - {variant RAM} / {variant Storage} - {price or N/A}
-        const cardTitle = `${device.name || device.model || "Unnamed"} - ${variantRam || ""} / ${variantStorage || ""} - ${priceDisplay}`;
-        const variantSaleStartDate =
-          v.sale_start_date ||
-          v.saleStartDate ||
-          v.sale_date ||
-          v.saleDate ||
-          v.first_sale_date ||
-          v.firstSaleDate ||
-          device.saleStartDate ||
-          null;
-        const variantIsPrebooking =
-          v.is_prebooking === true ||
-          v.isPrebooking === true ||
-          String(
-            v.availability_status || v.availabilityStatus || "",
-          ).toLowerCase() === "prebooking" ||
-          device.is_prebooking === true;
-
-        return {
-          // keep device-level info but override ram/storage/price and add cardTitle
-          ...device,
-          id: `${device.id}-${
-            v.variant_id ?? v.id ?? v.variantId ?? `v${variantIndex}`
-          }`,
-          variantIndex,
-          variant: v,
-          specs: {
-            ...device.specs,
-            ram: variantRam || device.specs.ram,
-            storage: variantStorage || device.specs.storage,
-          },
-          storePrices: storePricesToExpose,
-          price: priceDisplay,
-          numericPrice: resolvedNumericPrice,
-          saleStartDate: variantSaleStartDate,
-          is_prebooking: variantIsPrebooking,
-          cardTitle,
-        };
-      });
+      return {
+        ...device,
+        id: `${device.id}-product`,
+        variantProductKey: productKey,
+        variantIndex: selectedOption?.variantIndex ?? 0,
+        selectedVariantIndex: selectedOption?.variantIndex ?? 0,
+        selectedVariantId: selectedOption?.variantId ?? null,
+        variant: selectedOption?.variant ?? null,
+        variantOptions,
+        specs: {
+          ...device.specs,
+          ram: selectedOption?.ram || device.specs.ram,
+          storage: selectedOption?.storage || device.specs.storage,
+        },
+        storePrices: selectedOption?.storePrices || [],
+        price: selectedOption?.price || device.price,
+        numericPrice: selectedOption?.numericPrice || device.numericPrice,
+        saleStartDate: selectedOption?.saleStartDate || device.saleStartDate,
+        is_prebooking: selectedOption?.is_prebooking ?? device.is_prebooking,
+        cardTitle: device.name || device.model || "Unnamed",
+      };
     });
-  }, [devices, getStore]);
+  }, [devices, getStore, selectedVariantByProduct]);
 
   // Unique filter lists derived from all variants
   const uniqueRams = [
@@ -2943,6 +3089,13 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         .map((item) => item.device);
     }
 
+    baseCards = baseCards.filter((device) => {
+      const renderType = getRenderType(device);
+      return isUpcomingView
+        ? renderType === "upcoming"
+        : renderType === "available";
+    });
+
     return baseCards.filter((device) => {
       // Search filter
       if (searchQuery) {
@@ -2972,9 +3125,14 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
       // RAM filter - check individual values
       if (filters.ram.length > 0) {
-        const deviceRams = device.specs.ram
-          ? device.specs.ram.split("/").map((r) => r.trim())
+        const variantRams = Array.isArray(device.variantOptions)
+          ? device.variantOptions.map((option) => option.ram).filter(Boolean)
           : [];
+        const deviceRams = variantRams.length
+          ? variantRams
+          : device.specs.ram
+            ? device.specs.ram.split("/").map((r) => r.trim())
+            : [];
         const hasMatchingRam = filters.ram.some((selectedRam) =>
           deviceRams.includes(selectedRam),
         );
@@ -2983,9 +3141,16 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
       // Storage filter - check individual values
       if (filters.storage.length > 0) {
-        const deviceStorages = device.specs.storage
-          ? device.specs.storage.split("/").map((s) => s.trim())
+        const variantStorages = Array.isArray(device.variantOptions)
+          ? device.variantOptions
+              .map((option) => option.storage)
+              .filter(Boolean)
           : [];
+        const deviceStorages = variantStorages.length
+          ? variantStorages
+          : device.specs.storage
+            ? device.specs.storage.split("/").map((s) => s.trim())
+            : [];
         const hasMatchingStorage = filters.storage.some((selectedStorage) =>
           deviceStorages.includes(selectedStorage),
         );
@@ -4529,8 +4694,15 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                     const isAiDevice = Boolean(
                       device.specs?.isAiPhone || getAiFeatureCount(device) > 0,
                     );
-                    const cardBadgeLabel =
+                    const statusLabel =
+                      device.display_status ||
+                      device.displayStatus ||
                       upcomingBadge ||
+                      (getRenderType(device) === "available"
+                        ? "Available now"
+                        : null);
+                    const cardBadgeLabel =
+                      statusLabel ||
                       (listFilter === "trending"
                         ? device.trendBadge || "Trending"
                         : null) ||
@@ -4540,6 +4712,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                     )
                       ? devicePolicy.compareLimit
                       : compareLimit;
+                    const compareSelected = isCompareSelected(device);
                     const compareDisabled =
                       deviceCompareLimit === 0 ||
                       devicePolicy.allowCompare === false;
@@ -4665,14 +4838,60 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                       const raw = String(price).trim();
                       return raw.startsWith("₹") ? raw : `₹ ${raw}`;
                     };
+                    const variantOptions = Array.isArray(device.variantOptions)
+                      ? device.variantOptions
+                      : [];
+                    const selectedVariantId = String(
+                      device.selectedVariantId ?? "",
+                    );
+                    const renderVariantSelector = (className = "") =>
+                      variantOptions.length > 1 ? (
+                        <div
+                          className={`flex flex-wrap items-center gap-2 ${className}`}
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                            Variants
+                          </span>
+                          {variantOptions.map((option) => {
+                            const isSelected =
+                              String(option.variantId) === selectedVariantId ||
+                              option.variantIndex ===
+                                device.selectedVariantIndex;
+                            return (
+                              <button
+                                key={`${device.id}-variant-${option.variantId}`}
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  const productKey =
+                                    getSmartphoneProductKey(device);
+                                  if (!productKey) return;
+                                  setSelectedVariantByProduct((prev) => ({
+                                    ...prev,
+                                    [productKey]: option.variantId,
+                                  }));
+                                }}
+                                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                                  isSelected
+                                    ? "border-blue-600 bg-blue-600 text-white shadow-sm"
+                                    : "border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:text-blue-700"
+                                }`}
+                              >
+                                {option.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : null;
                     return (
                       <div
                         key={`${device.id ?? device.model ?? ""}-${_idx}`}
                         onClick={(e) => handleView(device, e)}
-                        className={`h-full w-full mx-auto smooth-transition fade-in-up overflow-hidden rounded-lg bg-white cursor-pointer transition-all duration-300 ${
+                        className={`h-full w-full mx-auto smooth-transition fade-in-up overflow-hidden rounded-lg bg-white shadow-md cursor-pointer transition-all duration-300 ${
                           isCompareSelected(device)
                             ? "ring-2 ring-blue-400 bg-blue-50"
-                            : "hover:bg-slate-50"
+                            : "hover:"
                         }`}
                       >
                         <div className="p-5 sm:p-6 transition-all duration-300">
@@ -4775,6 +4994,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                               <div className="hidden lg:block text-[13px] leading-6 text-slate-700 sm:text-sm sm:leading-7 sm:text-base">
                                 {compactSpecLine}
                               </div>
+
+                              {renderVariantSelector("hidden lg:flex")}
 
                               <div className="lg:hidden text-lg font-semibold tracking-tight text-[#14255e] sm:text-xl">
                                 {device.price}
@@ -4913,10 +5134,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                             >
                               <input
                                 type="checkbox"
-                                checked={compareItems.includes(device._id)}
+                                checked={compareSelected}
                                 disabled={
                                   compareDisabled ||
-                                  (!compareItems.includes(device._id) &&
+                                  (!compareSelected &&
                                     compareItems.length >=
                                       effectiveCompareLimit)
                                 }
@@ -4951,6 +5172,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                             <div className="text-[13px] leading-6 text-slate-700 sm:text-sm sm:leading-7 sm:text-base">
                               {compactSpecLine}
                             </div>
+
+                            {renderVariantSelector("lg:hidden")}
 
                             {availableOnText ? (
                               <div className="flex items-center gap-1.5 text-sm text-slate-700">

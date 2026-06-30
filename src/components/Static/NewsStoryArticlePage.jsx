@@ -11,7 +11,6 @@ import {
 import { FaXTwitter } from "react-icons/fa6";
 import SEO from "../SEO";
 import NotFound from "./NotFound";
-import NewsPushOptInCard from "../News/NewsPushOptInCard";
 import {
   createBreadcrumbSchema,
   createNewsArticleSchema,
@@ -1022,7 +1021,6 @@ const NewsStoryArticlePage = () => {
         image={story.image}
         schema={schema}
       />
-      <NewsPushOptInCard />
 
       <main className="min-h-screen bg-white text-[#111111]">
         <section className="bg-white">

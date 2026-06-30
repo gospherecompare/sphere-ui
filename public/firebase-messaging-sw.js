@@ -1,5 +1,3 @@
-const NEWS_PATH_PREFIX = "/news";
-
 const isRecord = (value) => value && typeof value === "object";
 
 const toAbsoluteUrl = (value) => {
@@ -15,11 +13,53 @@ const toAbsoluteUrl = (value) => {
   }
 };
 
-const buildNewsUrlFromSlug = (value) => {
-  const slug = String(value || "").trim();
-  if (!slug) return "";
+const normalizeSlugPath = (value = "") =>
+  String(value || "")
+    .trim()
+    .replace(/^\/+/, "")
+    .replace(/\/+$/, "");
 
-  return toAbsoluteUrl(`${NEWS_PATH_PREFIX}/${encodeURIComponent(slug)}`);
+const encodeSlugPath = (value = "") =>
+  normalizeSlugPath(value)
+    .split("/")
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+
+const resolveRoutePrefix = (value = "") => {
+  const hint = String(value || "").trim().toLowerCase();
+
+  if (!hint) return "";
+  if (
+    /^(?:news|article|story|blog|journal)$/.test(hint) ||
+    hint.includes("news")
+  ) {
+    return "/news";
+  }
+  if (
+    /(?:smartphone|mobile|phone|handset|android|iphone)/.test(hint)
+  ) {
+    return "/smartphones";
+  }
+  if (/(?:tv|television|vision|appliance)/.test(hint)) {
+    return "/tvs";
+  }
+  if (/(?:network|router|wifi)/.test(hint)) {
+    return "/networking";
+  }
+  if (/(?:compare|comparison)/.test(hint)) {
+    return "/compare";
+  }
+
+  return "";
+};
+
+const buildUrlFromSlug = (value, routeHint = "") => {
+  const slugPath = encodeSlugPath(value);
+  if (!slugPath) return "";
+
+  const routePrefix = resolveRoutePrefix(routeHint) || "/news";
+  return toAbsoluteUrl(`${routePrefix}/${slugPath}`);
 };
 
 const resolveNotificationTargetUrl = (notification) => {
@@ -33,11 +73,27 @@ const resolveNotificationTargetUrl = (notification) => {
 
     const candidateUrl =
       toAbsoluteUrl(current.url) ||
+      toAbsoluteUrl(current.targetUrl) ||
+      toAbsoluteUrl(current.canonicalUrl) ||
       toAbsoluteUrl(current.link) ||
+      toAbsoluteUrl(current.href) ||
+      toAbsoluteUrl(current.route) ||
       toAbsoluteUrl(current.path) ||
+      toAbsoluteUrl(current.targetPath) ||
+      toAbsoluteUrl(current.canonicalPath) ||
       toAbsoluteUrl(current.pathname) ||
+      toAbsoluteUrl(current.deepLink) ||
       toAbsoluteUrl(current.click_action) ||
-      buildNewsUrlFromSlug(current.slug);
+      buildUrlFromSlug(
+        current.slug,
+        current.routeBase ||
+          current.basePath ||
+          current.section ||
+          current.category ||
+          current.type ||
+          current.productType ||
+          current.entityType,
+      );
 
     if (candidateUrl) return candidateUrl;
 

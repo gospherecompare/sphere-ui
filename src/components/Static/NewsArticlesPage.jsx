@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { FaChevronRight, FaFire } from "react-icons/fa";
 import SEO from "../SEO";
-import NewsPushOptInCard from "../News/NewsPushOptInCard";
 import NewsStoryArticlePage from "./NewsStoryArticlePage";
 import {
   createBreadcrumbSchema,
@@ -1404,11 +1403,10 @@ const NewsArticlesPage = () => {
         image="https://tryhook.shop/hook-logo.svg"
         schema={pageSchema}
       />
-      <NewsPushOptInCard />
 
       <main className="overflow-x-hidden bg-[#f7f8fb] text-[#111827]">
         <section>
-          <div className="mx-auto max-w-[1280px] px-4 py-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-[1280px] px-4 pb-1 pt-3 sm:px-6 sm:pt-3 lg:px-8">
             <nav
               aria-label="Breadcrumb"
               className="flex flex-wrap items-center gap-2 text-[12px] text-[#7d8898]"
@@ -1436,7 +1434,7 @@ const NewsArticlesPage = () => {
           </div>
         </section>
 
-        <div className="mx-auto max-w-[1280px] px-4 py-5 sm:px-6 sm:py-8 lg:px-8">
+        <div className="mx-auto max-w-[1280px] px-4 pb-5 pt-2 sm:px-6 sm:pb-8 sm:pt-3 lg:px-8">
           {error ? (
             <div className="mb-6 rounded-2xl border border-[#bfdbfe] bg-[#eff6ff] p-4 text-sm text-[#1d4ed8]">
               {error}

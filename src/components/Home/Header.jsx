@@ -132,6 +132,10 @@ const BrandIdentity = ({ variant = "desktop" }) => {
 };
 
 const SEARCH_SUGGESTION_LIMIT = 5;
+const MOBILE_HEADER_SHOW_TOP_OFFSET = 80;
+const MOBILE_HEADER_SHOW_BOTTOM_OFFSET = 160;
+const MOBILE_HEADER_HIDE_SCROLL_DELTA = 12;
+const MOBILE_HEADER_SHOW_SCROLL_DELTA = 6;
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -143,8 +147,8 @@ const Header = () => {
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isDesktopSearchOpen, setIsDesktopSearchOpen] = useState(false);
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [activeDesktopMenu, setActiveDesktopMenu] = useState("");
+  const [isMobileHeaderVisible, setIsMobileHeaderVisible] = useState(true);
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const navigate = useNavigate();
@@ -162,6 +166,8 @@ const Header = () => {
   const searchInputRef = useRef(null);
   const mobileHeaderRef = useRef(null);
   const headerRef = useRef(null);
+  const mobileHeaderLastScrollYRef = useRef(0);
+  const mobileHeaderTickingRef = useRef(false);
   const inputWasFocusedRef = useRef(false);
   const suppressRestoreRef = useRef(false);
   const deviceCtx = useDevice();
@@ -215,7 +221,78 @@ const Header = () => {
   useEffect(() => {
     setActiveDesktopMenu("");
     setIsDesktopSearchOpen(false);
+    setIsMobileHeaderVisible(true);
+    if (typeof window !== "undefined") {
+      mobileHeaderLastScrollYRef.current = Math.max(0, window.scrollY || 0);
+    }
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (isMenuOpen || isSearchOpen) {
+      setIsMobileHeaderVisible(true);
+    }
+  }, [isMenuOpen, isSearchOpen]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const updateMobileHeaderVisibility = () => {
+      mobileHeaderTickingRef.current = false;
+
+      const width = window.innerWidth || 0;
+      const currentY = Math.max(0, window.scrollY || window.pageYOffset || 0);
+
+      if (width >= 768 || isMenuOpen || isSearchOpen) {
+        setIsMobileHeaderVisible(true);
+        mobileHeaderLastScrollYRef.current = currentY;
+        return;
+      }
+
+      const doc = document.documentElement;
+      const maxScroll = Math.max(0, doc.scrollHeight - window.innerHeight);
+      const nearTop = currentY <= MOBILE_HEADER_SHOW_TOP_OFFSET;
+      const nearBottom = maxScroll - currentY <= MOBILE_HEADER_SHOW_BOTTOM_OFFSET;
+      const delta = currentY - mobileHeaderLastScrollYRef.current;
+
+      if (nearTop || nearBottom) {
+        setIsMobileHeaderVisible(true);
+        mobileHeaderLastScrollYRef.current = currentY;
+        return;
+      }
+
+      if (delta > MOBILE_HEADER_HIDE_SCROLL_DELTA) {
+        setIsMobileHeaderVisible(false);
+        mobileHeaderLastScrollYRef.current = currentY;
+        return;
+      }
+
+      if (delta < -MOBILE_HEADER_SHOW_SCROLL_DELTA) {
+        setIsMobileHeaderVisible(true);
+        mobileHeaderLastScrollYRef.current = currentY;
+      }
+    };
+
+    const onScroll = () => {
+      if (mobileHeaderTickingRef.current) return;
+      mobileHeaderTickingRef.current = true;
+      window.requestAnimationFrame(updateMobileHeaderVisibility);
+    };
+
+    const onResize = () => {
+      setIsMobileHeaderVisible(true);
+      mobileHeaderLastScrollYRef.current = Math.max(0, window.scrollY || 0);
+    };
+
+    mobileHeaderLastScrollYRef.current = Math.max(0, window.scrollY || 0);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+      mobileHeaderTickingRef.current = false;
+    };
+  }, [isMenuOpen, isSearchOpen]);
 
   // Keep the mobile header height in sync for sticky offsets.
   useEffect(() => {
@@ -1638,9 +1715,6 @@ const Header = () => {
     };
   }, []);
 
-  const isSearchActionCompact =
-    isSearchFocused || Boolean(String(searchQuery || "").trim());
-
   // Handle auth
   const handleLogin = () => {
     setIsLoggedIn(true);
@@ -2437,12 +2511,10 @@ const Header = () => {
                     value={searchQuery}
                     onChange={(e) => handleSearchInputChange(e.target.value)}
                     onFocus={() => {
-                      setIsSearchFocused(true);
                       if (searchQuery.trim()) {
                         setShowSearchSuggestions(true);
                       }
                     }}
-                    onBlur={() => setIsSearchFocused(false)}
                     onKeyDown={handleSearchKeyDown}
                     placeholder="Search phones, brands, specs..."
                     className="h-full w-full rounded-r-md border-y border-r border-slate-300 bg-slate-100 pl-4 pr-11 text-[14px] font-semibold text-[#071120] outline-none transition placeholder:text-slate-500 focus:border-[#0057ff] focus:bg-white focus:ring-2 focus:ring-[#0057ff]/10"
@@ -2809,7 +2881,11 @@ const Header = () => {
 
       <header
         ref={headerRef}
-        className="fixed left-0 right-0 top-0 z-[60] w-full isolate bg-white"
+        className={`fixed left-0 right-0 top-0 isolate z-[60] w-full bg-white transition-transform duration-300 ease-out will-change-transform md:translate-y-0 ${
+          isMobileHeaderVisible
+            ? "translate-y-0"
+            : "pointer-events-none -translate-y-full md:pointer-events-auto"
+        }`}
       >
         <MainHeader />
 

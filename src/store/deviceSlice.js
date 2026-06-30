@@ -292,6 +292,22 @@ const normalizeSmartphoneCollection = (body, preferredKeys = []) => {
       trend_velocity: toNumber(d.trend_velocity) ?? null,
       freshness: toNumber(d.freshness) ?? null,
       hook_calculated_at: normalizeDate(d.hook_calculated_at),
+      render_type: d.render_type ?? d.renderType ?? null,
+      renderType: d.renderType ?? d.render_type ?? null,
+      display_status: d.display_status ?? d.displayStatus ?? null,
+      displayStatus: d.displayStatus ?? d.display_status ?? null,
+      launch_status: d.launch_status ?? d.launchStatus ?? null,
+      launchStatus: d.launchStatus ?? d.launch_status ?? null,
+      sale_status: d.sale_status ?? d.saleStatus ?? null,
+      saleStatus: d.saleStatus ?? d.sale_status ?? null,
+      store_stage: d.store_stage ?? d.storeStage ?? null,
+      storeStage: d.storeStage ?? d.store_stage ?? null,
+      available_date: normalizeDate(d.available_date ?? d.availableDate ?? null),
+      availableDate: normalizeDate(d.availableDate ?? d.available_date ?? null),
+      available_date_label:
+        d.available_date_label ?? d.availableDateLabel ?? null,
+      availableDateLabel:
+        d.availableDateLabel ?? d.available_date_label ?? null,
       variants,
     };
   });
