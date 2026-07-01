@@ -535,7 +535,9 @@ const NewsStoryPage = () => {
                     </p>
                     <p className="text-sm text-white/65">{heroTimeLabel}</p>
                     {heroUpdatedLabel ? (
-                      <p className="text-sm text-white/55">{heroUpdatedLabel}</p>
+                      <p className="text-sm text-white/55">
+                        {heroUpdatedLabel}
+                      </p>
                     ) : null}
                   </div>
                 </div>

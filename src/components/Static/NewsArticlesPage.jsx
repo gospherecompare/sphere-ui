@@ -443,9 +443,9 @@ const resolveNewsTaxonomyRoute = (pillarSlug = "", topicSlug = "") => {
     eyebrow: topic ? pillar.label : pillar.eyebrow,
     description: topic?.description || pillar.description,
     categories: topic?.categories || pillar.categories || [],
-    matchCategories: [
-      topic?.categories?.[0] || topic?.slug || pillar.slug,
-    ].map(normalizeNewsRouteSlug),
+    matchCategories: [topic?.categories?.[0] || topic?.slug || pillar.slug].map(
+      normalizeNewsRouteSlug,
+    ),
     keywords: topic?.keywords || pillar.keywords || [],
     accent: pillar.accent,
     path: "/news",
@@ -455,10 +455,12 @@ const resolveNewsTaxonomyRoute = (pillarSlug = "", topicSlug = "") => {
 const storyMatchesTaxonomyRoute = (story, route) => {
   if (!route) return true;
   const storyCategory = normalizeNewsRouteSlug(story?.category);
-  const routeCategories = (route.matchCategories || []).map(normalizeNewsRouteSlug);
+  const routeCategories = (route.matchCategories || []).map(
+    normalizeNewsRouteSlug,
+  );
   return Boolean(
     storyCategory &&
-      routeCategories.some((category) => category === storyCategory),
+    routeCategories.some((category) => category === storyCategory),
   );
 };
 
@@ -1404,7 +1406,7 @@ const NewsArticlesPage = () => {
         schema={pageSchema}
       />
 
-      <main className="overflow-x-hidden bg-[#f7f8fb] text-[#111827]">
+      <main className="overflow-x-hidden bg-white text-[#111827]">
         <section>
           <div className="mx-auto max-w-[1280px] px-4 pb-1 pt-3 sm:px-6 sm:pt-3 lg:px-8">
             <nav

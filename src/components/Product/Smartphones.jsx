@@ -5691,8 +5691,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                               ) : null}
 
                               {priceRowsForDisplay.length > 0 ? (
-                                <div className="hidden rounded-[24px] border border-slate-100 bg-white p-2.5 shadow-[0_2px_2px_rgba(0,0,0,0.1)] sm:p-4 lg:block">
-                                  <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
+                                <div className="hidden rounded-[14px] border border-slate-200 bg-white p-2.5 sm:p-4 lg:block">
+                                  <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900 border-b-1 border-slate-200 pb-2">
                                     <FaStore className="text-emerald-500" />
                                     {isBrandPriceOnly
                                       ? "Brand Price"
@@ -5740,7 +5740,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                                             key={`${
                                               device.id ?? device.model ?? ""
                                             }-price-${i}`}
-                                            className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 px-2.5 py-2.5 sm:px-3 sm:py-3"
+                                            className="flex items-center justify-between gap-3 rounded-lg px-2.5 py-2.5 sm:px-3 sm:py-3"
                                           >
                                             <div className="flex min-w-0 items-center gap-3">
                                               {logoSrc ? (
