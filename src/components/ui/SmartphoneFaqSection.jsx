@@ -1,10 +1,14 @@
 import React, { useMemo, useState } from "react";
-import { FaChevronDown } from "react-icons/fa";
+import { FaMinus, FaPlus } from "react-icons/fa";
 
 const cleanFaqText = (value) =>
   String(value || "")
     .replace(/\s+/g, " ")
     .trim();
+
+const FaqHeaderDivider = () => (
+  <div className="mt-4 h-px w-full bg-blue-500" />
+);
 
 const SmartphoneFaqSection = ({
   items = [],
@@ -36,24 +40,27 @@ const SmartphoneFaqSection = ({
 
   return (
     <section
-      className={`overflow-hidden rounded-2xl border border-[#e5eaf5] bg-white shadow-[0_18px_44px_rgba(15,23,42,0.06)] ${className}`}
+      className={`overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)] ${className}`}
     >
-      <div className="flex items-center justify-between gap-3 border-b border-blue-500 px-4 py-4 sm:px-6">
-        <h2 className="text-lg font-bold tracking-tight text-[#07122f] sm:text-xl">
-          {title}
-        </h2>
-        {hasMore ? (
-          <button
-            type="button"
-            onClick={() => setShowAll((current) => !current)}
-            className="shrink-0 text-sm font-bold text-blue-600 transition hover:text-blue-700"
-          >
-            {showAll ? "Show less" : "View all"}
-          </button>
-        ) : null}
+      <div className="px-4 pt-4 sm:px-6">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-bold tracking-tight text-[#07122f] sm:text-xl">
+            {title}
+          </h2>
+          {hasMore ? (
+            <button
+              type="button"
+              onClick={() => setShowAll((current) => !current)}
+              className="shrink-0 text-sm font-bold text-blue-600 transition hover:text-blue-700"
+            >
+              {showAll ? "Show less" : "View all"}
+            </button>
+          ) : null}
+        </div>
+        <FaqHeaderDivider />
       </div>
 
-      <div className="divide-y divide-[#e5eaf5] bg-white">
+      <div className="bg-white">
         {visibleFaqs.map((faq) => {
           const isOpen = openId === faq.id;
           return (
@@ -63,19 +70,21 @@ const SmartphoneFaqSection = ({
                 onClick={() =>
                   setOpenId((current) => (current === faq.id ? null : faq.id))
                 }
-                className="flex w-full items-center justify-between gap-4 px-4 py-4 text-left sm:px-6"
+                className="flex w-full items-center justify-between gap-4 px-4 py-4 text-left focus:outline-none sm:px-6"
                 aria-expanded={isOpen}
               >
                 <span className="text-sm font-bold leading-6 text-[#07122f] sm:text-base">
                   {faq.question}
                 </span>
                 <span
-                  className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-blue-200 text-blue-600 transition ${
-                    isOpen ? "rotate-180 bg-blue-50" : "bg-white"
-                  }`}
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center text-blue-600 transition"
                   aria-hidden="true"
                 >
-                  <FaChevronDown className="text-xs" />
+                  {isOpen ? (
+                    <FaMinus className="text-[10px]" />
+                  ) : (
+                    <FaPlus className="text-[10px]" />
+                  )}
                 </span>
               </button>
 

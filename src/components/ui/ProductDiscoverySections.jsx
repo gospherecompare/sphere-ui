@@ -259,12 +259,9 @@ const toCatalogPrice = (item = {}) => {
     }
   };
 
-  [
-    item?.numericPrice,
-    item?.price,
-    item?.base_price,
-    item?.basePrice,
-  ].forEach(appendPrice);
+  [item?.numericPrice, item?.price, item?.base_price, item?.basePrice].forEach(
+    appendPrice,
+  );
 
   toArray(item?.variants || item?.variants_json).forEach((variant) => {
     [
@@ -320,18 +317,17 @@ const buildTvCatalogSections = (catalogItems = [], brandCatalog = []) => {
     brandCounts.set(brand, existing);
   });
 
-  const budgetSegments = TV_DISCOVERY_PRICE_BUCKETS
-    .map((maxPrice) => {
-      const productCount = uniqueItems.filter((item) => {
-        const price = toCatalogPrice(item);
-        return price > 0 && price <= maxPrice;
-      }).length;
-      return {
-        label: `Under \u20B9${new Intl.NumberFormat("en-IN").format(maxPrice)}`,
-        path: `/tvs?maxPrice=${maxPrice}`,
-        product_count: productCount,
-      };
-    });
+  const budgetSegments = TV_DISCOVERY_PRICE_BUCKETS.map((maxPrice) => {
+    const productCount = uniqueItems.filter((item) => {
+      const price = toCatalogPrice(item);
+      return price > 0 && price <= maxPrice;
+    }).length;
+    return {
+      label: `Under \u20B9${new Intl.NumberFormat("en-IN").format(maxPrice)}`,
+      path: `/tvs?maxPrice=${maxPrice}`,
+      product_count: productCount,
+    };
+  });
 
   const smartDiscoveries = [
     {
@@ -438,10 +434,7 @@ const buildLaptopCatalogSections = (catalogItems = [], brandCatalog = []) => {
   ];
 
   const latestReleases = [...uniqueItems]
-    .sort(
-      (a, b) =>
-        new Date(b?.created_at || 0) - new Date(a?.created_at || 0),
-    )
+    .sort((a, b) => new Date(b?.created_at || 0) - new Date(a?.created_at || 0))
     .slice(0, 5)
     .map((item) => ({
       ...item,
@@ -618,7 +611,7 @@ const LinkListBlock = ({
     <div
       className={
         isPlainSurface
-          ? "overflow-hidden rounded-2xl border border-[#e5eaf5] bg-white shadow-[0_18px_44px_rgba(15,23,42,0.06)]"
+          ? "overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)]"
           : "overflow-hidden rounded-lg bg-white"
       }
     >
@@ -626,7 +619,7 @@ const LinkListBlock = ({
         <div
           className={
             isPlainSurface
-              ? "border-b border-blue-500 px-4 py-4 sm:px-6"
+              ? "px-4 pt-4 sm:px-6"
               : "bg-white px-1 py-3 sm:px-5 sm:py-4"
           }
         >
@@ -647,6 +640,7 @@ const LinkListBlock = ({
               </p>
             </div>
           </div>
+          {isPlainSurface ? <DiscoveryHeaderDivider /> : null}
         </div>
       ) : null}
 
@@ -657,7 +651,9 @@ const LinkListBlock = ({
             : "border-t border-slate-100 bg-white p-3 sm:p-4"
         }
       >
-        <div className={isPlainSurface ? "divide-y divide-[#e5eaf5]" : "space-y-2"}>
+        <div
+          className={isPlainSurface ? "divide-y divide-[#e5eaf5]" : "space-y-2"}
+        >
           {items.map((item, index) => {
             const subtitle = normalizeText(item?.subtitle);
             const meta = normalizeText(item?.meta);
@@ -731,21 +727,28 @@ const LinkListBlock = ({
   );
 };
 
+const DiscoveryHeaderDivider = () => (
+  <div className="mt-4 h-px w-full bg-gradient-to-r from-[#6fa8ff] via-[#8e87ff] to-[#d2b6ff]" />
+);
+
 const DiscoveryCardHeader = ({
   title = "",
   viewAllPath = "/smartphones",
   entityType = "smartphones",
 }) => (
-  <div className="flex items-start justify-between gap-3 border-b border-blue-100 px-4 py-4 sm:px-5">
-    <h4 className="text-[15px] font-semibold tracking-tight text-slate-900 sm:text-base">
-      {title}
-    </h4>
-    <Link
-      to={normalizeDiscoveryPath(viewAllPath, entityType)}
-      className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-blue-700 transition-colors hover:text-blue-800"
-    >
-      View all <span aria-hidden="true">&gt;</span>
-    </Link>
+  <div className="px-4 pt-4 sm:px-5">
+    <div className="flex items-start justify-between gap-3">
+      <h4 className="text-[15px] font-semibold tracking-tight text-slate-900 sm:text-base">
+        {title}
+      </h4>
+      <Link
+        to={normalizeDiscoveryPath(viewAllPath, entityType)}
+        className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-blue-700 transition-colors hover:text-blue-800"
+      >
+        View all <span aria-hidden="true">&gt;</span>
+      </Link>
+    </div>
+    <DiscoveryHeaderDivider />
   </div>
 );
 
@@ -765,7 +768,7 @@ const PriceDiscoveryBlock = ({
   if (!Array.isArray(items) || items.length === 0) return null;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-[#e5eaf5] bg-white shadow-[0_18px_44px_rgba(15,23,42,0.06)]">
+    <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)]">
       <DiscoveryCardHeader
         title="Discover by Price"
         viewAllPath={viewAllPath}
@@ -794,7 +797,7 @@ const PopularSearchesBlock = ({
   if (!Array.isArray(items) || items.length === 0) return null;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-[#e5eaf5] bg-white shadow-[0_18px_44px_rgba(15,23,42,0.06)]">
+    <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)]">
       <DiscoveryCardHeader
         title="Popular Searches"
         viewAllPath={viewAllPath}
@@ -833,34 +836,37 @@ const TopBrandsBlock = ({
     <div
       className={
         isPlainSurface
-          ? "overflow-hidden rounded-2xl border border-[#e5eaf5] bg-white shadow-[0_18px_44px_rgba(15,23,42,0.06)]"
+          ? "overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)]"
           : "overflow-hidden rounded-lg bg-white "
       }
     >
       <div
         className={
           isPlainSurface
-            ? "flex items-start justify-between gap-3 border-b border-blue-500 px-4 py-4 sm:px-6"
-            : "flex items-start justify-between gap-3 border-b border-slate-200/80  px-1 py-3.5 sm:px-5 sm:py-4"
+            ? "px-4 pt-4 sm:px-6"
+            : "px-1 pt-3.5 sm:px-5 sm:pt-4"
         }
       >
-        <div className="flex items-start gap-3">
-          <div className="min-w-0">
-            <h4 className="text-[15px] font-semibold tracking-tight text-slate-900 sm:text-base">
-              {headingPrefix}{" "}
-              <span className={sectionMeta.accentClass}>{titleText}</span>
-            </h4>
-            <p className="mt-1 text-[13px] leading-relaxed text-slate-500 sm:text-sm">
-              {subtitleText}
-            </p>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div className="min-w-0">
+              <h4 className="text-[15px] font-semibold tracking-tight text-slate-900 sm:text-base">
+                {headingPrefix}{" "}
+                <span className={sectionMeta.accentClass}>{titleText}</span>
+              </h4>
+              <p className="mt-1 text-[13px] leading-relaxed text-slate-500 sm:text-sm">
+                {subtitleText}
+              </p>
+            </div>
           </div>
+          <Link
+            to={normalizeDiscoveryPath(viewAllPath, entityType)}
+            className="inline-flex shrink-0 items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-[11px] font-semibold text-blue-700 transition-colors duration-200 ease-out hover:border-blue-200 hover:bg-blue-100 hover:text-blue-800"
+          >
+            View all
+          </Link>
         </div>
-        <Link
-          to={normalizeDiscoveryPath(viewAllPath, entityType)}
-          className="inline-flex shrink-0 items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-[11px] font-semibold text-blue-700 transition-colors duration-200 ease-out hover:border-blue-200 hover:bg-blue-100 hover:text-blue-800"
-        >
-          View all
-        </Link>
+        <DiscoveryHeaderDivider />
       </div>
 
       <div>
@@ -972,8 +978,10 @@ const ProductDiscoverySections = ({
   const [payload, setPayload] = useState(() =>
     discoveryEndpoint ? readPreloadedApiResponse(discoveryEndpoint) : null,
   );
-  const [loading, setLoading] = useState(() =>
-    Boolean(discoveryEndpoint) && !readPreloadedApiResponse(discoveryEndpoint),
+  const [loading, setLoading] = useState(
+    () =>
+      Boolean(discoveryEndpoint) &&
+      !readPreloadedApiResponse(discoveryEndpoint),
   );
   const [error, setError] = useState("");
 
@@ -1031,18 +1039,15 @@ const ProductDiscoverySections = ({
   }, [discoveryEndpoint, entityType]);
 
   const entityConfig = useMemo(() => getEntityConfig(entityType), [entityType]);
-  const catalogSections = useMemo(
-    () => {
-      if (entityConfig.type === "tvs") {
-        return buildTvCatalogSections(catalogItems, brandCatalog);
-      }
-      if (entityConfig.type === "laptops") {
-        return buildLaptopCatalogSections(catalogItems, brandCatalog);
-      }
-      return {};
-    },
-    [brandCatalog, catalogItems, entityConfig.type],
-  );
+  const catalogSections = useMemo(() => {
+    if (entityConfig.type === "tvs") {
+      return buildTvCatalogSections(catalogItems, brandCatalog);
+    }
+    if (entityConfig.type === "laptops") {
+      return buildLaptopCatalogSections(catalogItems, brandCatalog);
+    }
+    return {};
+  }, [brandCatalog, catalogItems, entityConfig.type]);
   const isLatestPhonesLayout =
     layout === "latestPhones" && entityConfig.type === "smartphones";
   const isBudgetSidebarLayout =
@@ -1281,29 +1286,32 @@ const ProductDiscoverySections = ({
       className={`mx-auto w-full max-w-7xl ${
         isLatestPhonesLayout
           ? "overflow-visible"
-          : "overflow-hidden rounded-2xl border border-[#e5eaf5] bg-white shadow-[0_18px_44px_rgba(15,23,42,0.06)]"
+          : "overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)]"
       } ${className}`}
     >
       <div className="mx-auto max-w-7xl ">
         {!isLatestPhonesLayout ? (
-          <div className="flex items-start justify-between gap-3 border-b border-blue-200/60 px-1 py-4 sm:px-5 sm:py-5">
-            <div className="flex items-start gap-3">
-              <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-blue-600">
-                  Discovery Hub
-                </p>
-                <h3 className="mt-2 text-base font-semibold tracking-tight text-slate-900 sm:text-lg">
-                  Popular Links
-                </h3>
-                <p className="mt-1 text-[13px] leading-relaxed text-slate-500 sm:text-sm">
-                  Continue exploring with curated shortcuts,{" "}
-                  {entityConfig.type === "laptops"
-                    ? "recently added models"
-                    : "fresh launches"}
-                  , and brand-led discovery paths.
-                </p>
+          <div className="px-1 pt-4 sm:px-5 sm:pt-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-blue-600">
+                    Discovery Hub
+                  </p>
+                  <h3 className="mt-2 text-base font-semibold tracking-tight text-slate-900 sm:text-lg">
+                    Popular Links
+                  </h3>
+                  <p className="mt-1 text-[13px] leading-relaxed text-slate-500 sm:text-sm">
+                    Continue exploring with curated shortcuts,{" "}
+                    {entityConfig.type === "laptops"
+                      ? "recently added models"
+                      : "fresh launches"}
+                    , and brand-led discovery paths.
+                  </p>
+                </div>
               </div>
             </div>
+            <DiscoveryHeaderDivider />
           </div>
         ) : null}
 

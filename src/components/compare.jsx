@@ -287,9 +287,7 @@ const normalizeLaunchStage = (value) => {
   if (!text) return null;
   if (/rumou?r/.test(text)) return "rumored";
   if (/announce/.test(text)) return "announced";
-  if (/(pre[-\s]?order|pre[-\s]?book|prebooking|presale)/i.test(text))
-    return "upcoming";
-  if (/(upcoming|coming soon|expected|launching soon)/i.test(text))
+  if (/(upcoming|coming soon|expected|scheduled)/i.test(text))
     return "upcoming";
   if (/(available|on sale|in stock)/i.test(text)) return "available";
   if (/(released|launched|out now)/i.test(text)) return "released";
@@ -321,6 +319,24 @@ const resolveSaleStartDate = (device) => {
       null,
   );
   if (direct) return direct;
+
+  const storePrices = Array.isArray(device.storePrices)
+    ? device.storePrices
+    : Array.isArray(device.store_prices)
+      ? device.store_prices
+      : [];
+  for (const store of storePrices) {
+    const storeDate = parseDateOnly(
+      store?.sale_start_date ||
+        store?.saleStartDate ||
+        store?.sale_date ||
+        store?.saleDate ||
+        store?.available_from ||
+        store?.availableFrom ||
+        null,
+    );
+    if (storeDate) return storeDate;
+  }
 
   const variants = Array.isArray(device.variants)
     ? device.variants
@@ -357,23 +373,36 @@ const resolveSaleStartDate = (device) => {
   return null;
 };
 
+const collectStoreRows = (device) => {
+  const rows = [];
+  if (Array.isArray(device?.store_prices)) rows.push(...device.store_prices);
+  if (Array.isArray(device?.storePrices)) rows.push(...device.storePrices);
+  const variants = Array.isArray(device?.variants)
+    ? device.variants
+    : Array.isArray(device?.variants_json)
+      ? device.variants_json
+      : [];
+  for (const variant of variants) {
+    if (Array.isArray(variant?.store_prices)) rows.push(...variant.store_prices);
+    if (Array.isArray(variant?.storePrices)) rows.push(...variant.storePrices);
+  }
+  return rows.filter(Boolean);
+};
+
+const hasStoreEntrySignal = (store) =>
+  Boolean(
+    store?.price ||
+      store?.url ||
+      store?.store ||
+      store?.store_name ||
+      store?.storeName ||
+      store?.display_store_name ||
+      store?.sale_start_date ||
+      store?.saleStartDate,
+  );
+
 const resolveLaunchStage = (device) => {
   if (!device) return null;
-  const override = normalizeLaunchStage(
-    device.launchStatus ||
-      device.launch_status ||
-      device.launchStatusOverride ||
-      device.launch_status_override ||
-      device.launchStatusText ||
-      device.launch_status_text,
-  );
-  if (override) return override;
-
-  const statusHint = normalizeLaunchStage(
-    device.status || device.availability || device.badge,
-  );
-  if (statusHint) return statusHint;
-
   const saleStart = resolveSaleStartDate(device);
   if (saleStart) {
     const today = new Date();
@@ -381,22 +410,13 @@ const resolveLaunchStage = (device) => {
     return saleStart > today ? "upcoming" : "available";
   }
 
-  if (device.official_preorder_url || device.officialPreorderUrl)
-    return "upcoming";
+  if (!collectStoreRows(device).some(hasStoreEntrySignal)) return "upcoming";
 
-  const launchDate = parseDateOnly(
-    device.launch_date || device.launchDate || null,
-  );
-  if (launchDate) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return launchDate > today ? "upcoming" : "released";
-  }
-
-  return "released";
+  return "available";
 };
 
 const getCompareLimitForStage = (stage) => {
+  if (stage === "upcoming") return 0;
   if (stage === "rumored") return 0;
   if (stage === "announced") return 2;
   return MAX_DEVICES;
@@ -411,7 +431,7 @@ const resolveComparePolicy = (device) => {
   const allowCompare =
     typeof allowCompareRaw === "boolean"
       ? allowCompareRaw
-      : stage !== "rumored";
+      : stage !== "rumored" && stage !== "upcoming";
   const fallbackLimit = getCompareLimitForStage(stage);
   const compareLimit = Number.isFinite(compareLimitRaw)
     ? compareLimitRaw
@@ -3651,9 +3671,6 @@ const MobileCompare = () => {
       if (/(out of stock|sold out|unavailable)/i.test(rawStatus)) {
         return "Out of stock";
       }
-      if (/(pre[-\s]?order|coming soon|upcoming|expected)/i.test(rawStatus)) {
-        return "Coming soon";
-      }
       if (/(available|in stock|on sale|ready)/i.test(rawStatus)) {
         return "In stock";
       }
@@ -3666,9 +3683,7 @@ const MobileCompare = () => {
         : [];
     if (stores.length > 0) return "In stock";
 
-    return resolveLaunchStage(device) === "upcoming"
-      ? "Coming soon"
-      : "Available";
+    return "Available";
   };
 
   const getVariantAvailabilityTone = (availabilityLabel) => {
@@ -3677,8 +3692,6 @@ const MobileCompare = () => {
       .toLowerCase();
     if (!value) return "text-slate-500";
     if (/out of stock|unavailable|sold out/.test(value)) return "text-rose-600";
-    if (/coming soon|pre-order|preorder|upcoming/.test(value))
-      return "text-amber-600";
     if (/in stock|available|ready/.test(value)) return "text-emerald-600";
     return "text-slate-500";
   };

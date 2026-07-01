@@ -167,7 +167,9 @@ const ComparisonPhoneVisual = ({ src = "", label = "" }) => {
 const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
   const scrollerRef = useRef(null);
   const [remoteComparisons, setRemoteComparisons] = useState(() =>
-    mapRemoteComparisonsPayload(readPreloadedApiResponse(MOST_COMPARED_ENDPOINT)),
+    mapRemoteComparisonsPayload(
+      readPreloadedApiResponse(MOST_COMPARED_ENDPOINT),
+    ),
   );
 
   useEffect(() => {
@@ -183,7 +185,10 @@ const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
 
     const loadComparisons = async () => {
       try {
-        const response = await fetch(MOST_COMPARED_ENDPOINT, controller ? { signal: controller.signal } : undefined);
+        const response = await fetch(
+          MOST_COMPARED_ENDPOINT,
+          controller ? { signal: controller.signal } : undefined,
+        );
         if (!response.ok) return;
         const json = await response.json();
         if (cancelled) return;
@@ -230,9 +235,9 @@ const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
 
   return (
     <section
-      className={`mx-auto w-full max-w-7xl overflow-hidden rounded-2xl bg-purple-100 border border-white shadow-[0_2px_4px_rgba(0,0,0,0.1)]  px-4 py-5 sm:px-5 sm:py-6 ${className}`}
+      className={`mx-auto w-full max-w-7xl overflow-hidden rounded-2xl bg-purple-100  shadow-[0_2px_4px_rgba(0,0,0,0.1)]  px-4 py-5 sm:px-5 sm:py-6 ${className}`}
     >
-      <div className="mb-5 flex items-start justify-between gap-4 border-b border-blue-100 pb-4">
+      <div className="mb-5 flex items-start justify-between gap-4 border-b border-blue-100 pb-4 border-b-1 border-blue-500">
         <div className="min-w-0">
           <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-blue-600">
             Popular Matchups

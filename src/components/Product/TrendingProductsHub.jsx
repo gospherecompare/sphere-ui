@@ -306,7 +306,6 @@ const mapStorePrice = (sp) => {
     price: num(s.price),
     url: first(s.url, s.link),
     saleStartDate: first(s.sale_start_date, s.sale_date, s.saleStartDate),
-    isPrebooking: s.is_prebooking === true,
     isLive: s.is_live === true,
     availabilityStatus: first(s.availability_status),
     ctaLabel: first(s.cta_label),
@@ -455,40 +454,6 @@ const normalizeDateOnly = (value) => {
   return date.toISOString().slice(0, 10);
 };
 
-const formatSaleStartLabel = (value) => {
-  const normalized = normalizeDateOnly(value);
-  if (!normalized) return "";
-  const date = new Date(`${normalized}T00:00:00+05:30`);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-};
-
-const isPrebookingStore = (store, launchDate = null) => {
-  if (store?.isPrebooking === true) return true;
-  if (store?.availabilityStatus === "prebooking") return true;
-  if (
-    /^(pre(book|order)|coming\s*soon)$/i.test(
-      String(store?.ctaLabel || "").trim(),
-    )
-  )
-    return true;
-  const saleStartDate = normalizeDateOnly(store?.saleStartDate);
-  if (saleStartDate) {
-    return saleStartDate > getIndiaDateOnly();
-  }
-  if (!saleStartDate) {
-    const normalizedLaunchDate = normalizeDateOnly(launchDate);
-    return Boolean(
-      normalizedLaunchDate && normalizedLaunchDate >= getIndiaDateOnly(),
-    );
-  }
-  return false;
-};
-
 const normalizeStoreKey = (value) =>
   String(value || "")
     .toLowerCase()
@@ -506,92 +471,29 @@ const normalizeAssetUrl = (value) => {
   return raw;
 };
 
-const getOfficialBrandStoreUrl = (stores, brandName, brandWebsite = null) => {
-  if (typeof brandWebsite === "string" && brandWebsite.trim()) {
-    return brandWebsite.trim();
-  }
-  const brandKey = normalizeStoreKey(brandName);
-  if (!brandKey) return null;
-
-  return (
-    arr(stores).find((store) => {
-      const storeName = normalizeStoreKey(
-        store?.storeName || store?.store || store?.store_name,
-      );
-      if (!store?.url || !storeName) return false;
-      return (
-        storeName === brandKey ||
-        storeName.includes(`${brandKey}store`) ||
-        storeName.includes(`${brandKey}official`) ||
-        storeName.includes(`official${brandKey}`)
-      );
-    })?.url || null
-  );
-};
-
 const getAvailabilityRows = (
   stores,
-  brandName,
-  brandLogo,
-  brandWebsite = null,
-  launchDate = null,
+  _brandName,
+  _brandLogo,
+  _brandWebsite = null,
+  _launchDate = null,
 ) => {
   const normalizedStores = arr(stores).map((store) => {
     const saleStartDate = normalizeDateOnly(store?.saleStartDate);
-    const prebooking = isPrebookingStore(store, launchDate);
     return {
       ...store,
       saleStartDate,
-      isPrebooking: prebooking,
-      isLive: !prebooking,
-      ctaLabel: prebooking ? "Coming Soon" : store?.ctaLabel || "Buy Now",
+      isLive: true,
+      ctaLabel: store?.ctaLabel || "Buy Now",
     };
   });
 
-  const liveStores = normalizedStores.filter((store) => !store.isPrebooking);
-  liveStores.sort(
+  normalizedStores.sort(
     (a, b) =>
       (a.price ?? Number.MAX_SAFE_INTEGER) -
       (b.price ?? Number.MAX_SAFE_INTEGER),
   );
-  if (liveStores.length > 0) {
-    return { mode: "live", stores: liveStores, hiddenCount: 0 };
-  }
-
-  const prebookingStores = normalizedStores.filter(
-    (store) => store.isPrebooking,
-  );
-  prebookingStores.sort(
-    (a, b) =>
-      (a.price ?? Number.MAX_SAFE_INTEGER) -
-      (b.price ?? Number.MAX_SAFE_INTEGER),
-  );
-  if (prebookingStores.length === 0) {
-    return { mode: "live", stores: normalizedStores, hiddenCount: 0 };
-  }
-
-  const primaryPrebooking = prebookingStores[0];
-  const officialBrandUrl = getOfficialBrandStoreUrl(
-    normalizedStores,
-    brandName,
-    brandWebsite,
-  );
-  return {
-    mode: "prebooking",
-    stores: [
-      {
-        ...primaryPrebooking,
-        storeName: brandName || primaryPrebooking.storeName || "Brand Store",
-        logo: brandLogo || primaryPrebooking.logo || null,
-        url: officialBrandUrl || null,
-        ctaLabel: "Coming Soon",
-        availabilityNote: primaryPrebooking.saleStartDate
-          ? `Sale starts ${formatSaleStartLabel(primaryPrebooking.saleStartDate)}`
-          : "",
-      },
-    ],
-    hiddenCount: 0,
-  };
+  return { mode: "live", stores: normalizedStores, hiddenCount: 0 };
 };
 
 const cameraLabel = (row) => {
@@ -900,7 +802,6 @@ const buildProduct = (row, cat, index) => {
       row.status,
       row.availability,
     ),
-    is_prebooking: row.is_prebooking === true || row.isPrebooking === true,
     Hookss_score: num(
       row.Hookss_score ?? row.HookssScore ?? row.hook_score ?? row.hookScore,
     ),
@@ -2242,9 +2143,6 @@ const TrendingProductsHub = () => {
                               s?.sale_start_date ||
                               s?.sale_date,
                           ),
-                          isPrebooking:
-                            s?.isPrebooking === true ||
-                            s?.is_prebooking === true,
                           isLive: s?.isLive === true || s?.is_live === true,
                           availabilityStatus: text(
                             s?.availabilityStatus || s?.availability_status,
@@ -2335,18 +2233,11 @@ const TrendingProductsHub = () => {
                           storeObj?.name ||
                           "Online Store";
                         const ctaText = store.ctaLabel || "Buy Now";
-                        const isPreorderCta =
-                          store.isPrebooking === true ||
-                          /^(pre(book|order)|coming\s*soon)$/i.test(
-                            String(ctaText).trim(),
-                          );
                         const logoSrc = normalizeAssetUrl(
                           store.logo ||
-                            (store.isPrebooking
-                              ? p.brand_logo || p.brandLogo || null
-                              : getStoreLogo
-                                ? getStoreLogo(storeNameCandidate)
-                                : getLogo(storeNameCandidate)),
+                            (getStoreLogo
+                              ? getStoreLogo(storeNameCandidate)
+                              : getLogo(storeNameCandidate)),
                         );
                         return (
                           <div
@@ -2398,11 +2289,7 @@ const TrendingProductsHub = () => {
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   onClick={(e) => e.stopPropagation()}
-                                  className={`inline-flex items-center gap-1 whitespace-nowrap text-sm font-semibold transition-colors ${
-                                    isPreorderCta
-                                      ? "text-blue-600 hover:text-blue-700"
-                                      : "text-violet-600 hover:text-violet-700"
-                                  }`}
+                                  className="inline-flex items-center gap-1 whitespace-nowrap text-sm font-semibold text-violet-600 transition-colors hover:text-violet-700"
                                 >
                                   {ctaText || "Buy Now"}
                                   <FaExternalLinkAlt className="text-xs" />

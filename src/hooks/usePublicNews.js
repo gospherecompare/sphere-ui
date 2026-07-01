@@ -97,6 +97,18 @@ const PRODUCT_TYPE_LABELS = {
 
 const safeText = (value) => String(value || "").trim();
 
+const titleCaseCategory = (value) =>
+  safeText(value)
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .join(" ");
+
+const getCategoryLabel = (category) =>
+  CATEGORY_LABELS[safeText(category)] ||
+  titleCaseCategory(category) ||
+  CATEGORY_LABELS.news;
+
 const readAuthorText = (value) => {
   if (!value) return "";
   if (typeof value === "string" || typeof value === "number") {
@@ -495,7 +507,7 @@ const escapeSvgText = (value) =>
 const createFallbackStoryArtwork = ({ category, title, brandName, productType }) => {
   const theme = FALLBACK_THEME_BY_CATEGORY[category] || DEFAULT_THEME;
   const titleLines = splitTitleLines(title);
-  const categoryLabel = escapeSvgText(CATEGORY_LABELS[category] || "News");
+  const categoryLabel = escapeSvgText(getCategoryLabel(category));
   const brandLabel = escapeSvgText(
     brandName || PRODUCT_TYPE_LABELS[safeText(productType).toLowerCase()] || "Hooks",
   );
@@ -629,7 +641,7 @@ const normalizeCategory = (value) => {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
   const aliased = CATEGORY_ALIASES[normalized] || normalized;
-  return CATEGORY_LABELS[aliased] ? aliased : "news";
+  return aliased || "news";
 };
 
 const buildHighlights = (blog, category) => {
@@ -653,7 +665,7 @@ const buildHighlights = (blog, category) => {
   };
 
   return [
-    CATEGORY_LABELS[category],
+    getCategoryLabel(category),
     safeText(blog.brand_name),
     safeText(blog.product_name),
     PRODUCT_TYPE_LABELS[safeText(blog.product_type).toLowerCase()],
@@ -687,7 +699,7 @@ const buildTakeaways = ({ blog, body, category }) => {
   return [
     safeText(blog.product_name)
       ? `${safeText(blog.product_name)} is the main story reference in this piece.`
-      : `${CATEGORY_LABELS[category]} coverage from the Hooks news desk.`,
+      : `${getCategoryLabel(category)} coverage from the Hooks news desk.`,
     categoryDetail[category] || null,
     body[1]
       ? clipWords(body[1], 18)
@@ -866,7 +878,10 @@ const normalizeBlogStory = (blog) => {
   const summary = clipWords(
     summarySource && isUsefulParagraph(summarySource)
       ? summarySource
-      : fallbackSummaryByCategory[category],
+      : fallbackSummaryByCategory[category] ||
+          `${title} is the latest ${getCategoryLabel(
+            category,
+          ).toLowerCase()} update from Hooks.`,
     24,
   );
   const publishedIso = safeText(blog.published_at) || safeText(blog.updated_at);
@@ -906,7 +921,7 @@ const normalizeBlogStory = (blog) => {
     productLinked: linkedProductIds.length > 0,
     slug,
     category,
-    label: CATEGORY_LABELS[category] || CATEGORY_LABELS.news,
+    label: getCategoryLabel(category),
     title,
     summary,
     publishedAt: publishedDateLabel,
@@ -1053,14 +1068,13 @@ export const usePublicNewsFeed = ({
       setStories(normalizeStoriesFromPayload(preloadedPayload));
       setLoading(false);
       setError("");
-      return undefined;
     }
 
     const controller = new AbortController();
     let active = true;
 
     const loadStories = async () => {
-      setLoading(true);
+      if (!preloadedPayload) setLoading(true);
       setError("");
 
       try {

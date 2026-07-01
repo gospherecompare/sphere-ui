@@ -399,7 +399,7 @@ const CompetitorCard = ({
     competitor?.best_store_name || competitor?.brand_name || "Hooks";
 
   return (
-    <article className="group relative w-[84vw] max-w-[320px] shrink-0 overflow-hidden rounded-2xl  bg-white  transition-colors duration-200 hover:border-blue-200 sm:w-[280px]">
+    <article className="group relative w-[84vw] max-w-[320px] shrink-0 overflow-hidden rounded-2xl shadow-[0_2px_2px_rgba(0,0,0,0.1)] border-slate-100 border bg-white  transition-colors duration-200 hover:border-blue-200 sm:w-[280px]">
       <div className="flex h-full flex-col">
         <div className="p-3 pb-3 sm:p-4">
           <div className="mx-auto mt-3 h-24 w-24 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-b from-blue-50/70 to-white p-1.5">

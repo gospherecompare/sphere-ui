@@ -131,6 +131,43 @@ const areFilterStatesEqual = (left, right) => {
 const toSeoTextWithoutCommas = (value = "") =>
   String(value || "").replace(/,/g, "");
 
+const normalizeMemoryFilterLabel = (value = "", fallbackUnit = "GB") => {
+  const raw = String(value || "").trim();
+  if (!raw || raw.toLowerCase() === "nan") return "";
+
+  const match = raw.toUpperCase().match(/(\d+(?:\.\d+)?)\s*(TB|GB|MB)?/);
+  if (!match) return raw.replace(/\s+/g, " ");
+
+  const amount = Number(match[1]);
+  const amountLabel = Number.isInteger(amount)
+    ? String(amount)
+    : String(amount).replace(/\.0$/, "");
+  const unit = (match[2] || fallbackUnit || "GB").toUpperCase();
+
+  return `${amountLabel} ${unit}`;
+};
+
+const extractMemoryFilterLabels = (value = "", fallbackUnit = "GB") =>
+  String(value || "")
+    .split(/[\/,|]+/)
+    .map((item) => normalizeMemoryFilterLabel(item, fallbackUnit))
+    .filter(Boolean);
+
+const compareMemoryFilterLabels = (a, b) => {
+  const parse = (value) => {
+    const label = normalizeMemoryFilterLabel(value);
+    const match = label.match(/(\d+(?:\.\d+)?)\s*(TB|GB|MB)/i);
+    if (!match) return 0;
+    const amount = Number(match[1]);
+    const unit = match[2].toUpperCase();
+    if (unit === "TB") return amount * 1024;
+    if (unit === "MB") return amount / 1024;
+    return amount;
+  };
+
+  return parse(a) - parse(b);
+};
+
 // Enhanced Image Carousel - Simplified without counts/indicators
 const ImageCarousel = ({ images = [] }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -267,11 +304,15 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const normalizedFilterSlug = String(filterSlug || "")
     .trim()
     .toLowerCase();
-  const listFilter = normalizedFilterSlug;
-  const isUpcomingView =
-    Boolean(onlyUpcoming) ||
-    normalizedFilterSlug === "upcoming" ||
-    listFilter === "upcoming";
+  const normalizedRoutePathname = String(location?.pathname || "")
+    .replace(/\/+$/, "")
+    .toLowerCase();
+  const listFilter =
+    onlyUpcoming || normalizedRoutePathname === "/smartphones/upcoming"
+      ? "upcoming"
+      : normalizedRoutePathname === "/trending/smartphones"
+        ? "trending"
+        : normalizedFilterSlug;
   const normalizedBrandSlug = normalizeSmartphoneListingSlug(
     routeBrandSlug || legacyBrandParam || "",
   );
@@ -355,18 +396,18 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     return base.slice(0, 16);
   }, [phonesForFeatureList, normalizedFeature, popularFeatureOrder]);
 
-  const isListFilter = listFilter === "trending" || listFilter === "new";
-  const usesDedicatedRouteFeed = isListFilter || isUpcomingView;
+  const isListFilter =
+    listFilter === "trending" ||
+    listFilter === "new" ||
+    listFilter === "upcoming";
+  const usesDedicatedRouteFeed = isListFilter;
   const smartphonesForList = useMemo(() => {
-    if (isUpcomingView) {
-      return Array.isArray(smartphone) ? smartphone : [];
-    }
     if (isListFilter) {
       const list = Array.isArray(smartphone) ? smartphone : [];
       return list.length ? list : phonesForFeatureList;
     }
     return phonesForFeatureList;
-  }, [isUpcomingView, isListFilter, smartphone, phonesForFeatureList]);
+  }, [isListFilter, smartphone, phonesForFeatureList]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -384,17 +425,12 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    if (isUpcomingView) dispatch(fetchUpcomingSmartphones());
-    else if (listFilter === "trending") dispatch(fetchTrendingSmartphones());
+    if (listFilter === "trending") dispatch(fetchTrendingSmartphones());
     else if (listFilter === "new") dispatch(fetchNewLaunchSmartphones());
+    else if (listFilter === "upcoming") dispatch(fetchUpcomingSmartphones());
     else if (!smartphoneAll || smartphoneAll.length === 0)
       dispatch(fetchSmartphones());
-  }, [
-    isUpcomingView,
-    listFilter,
-    dispatch,
-    smartphoneAll ? smartphoneAll.length : 0,
-  ]);
+  }, [listFilter, dispatch, smartphoneAll ? smartphoneAll.length : 0]);
 
   // Normalize legacy query-based brand/feature routes into the canonical path shape.
   useEffect(() => {
@@ -451,10 +487,43 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     return isNaN(numeric) ? 0 : numeric;
   };
 
-  const parseDateValue = (value) => {
+  const getLocalDateOnlyString = (value = new Date()) => {
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const normalizeDateOnlyString = (value) => {
     if (!value) return null;
-    const parsed = new Date(value);
+    if (value instanceof Date) return getLocalDateOnlyString(value);
+    const raw = String(value).trim();
+    if (!raw) return null;
+    const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+    const dmyMatch = raw.match(/^(\d{1,2})[\s/-](\d{1,2})[\s/-](\d{4})$/);
+    if (dmyMatch) {
+      const day = String(Number(dmyMatch[1])).padStart(2, "0");
+      const month = String(Number(dmyMatch[2])).padStart(2, "0");
+      return `${dmyMatch[3]}-${month}-${day}`;
+    }
+    return getLocalDateOnlyString(raw);
+  };
+
+  const parseDateValue = (value) => {
+    const dateOnly = normalizeDateOnlyString(value);
+    if (!dateOnly) return null;
+    const [year, month, day] = dateOnly.split("-").map(Number);
+    const parsed = new Date(year, month - 1, day);
     return Number.isNaN(parsed.getTime()) ? null : parsed;
+  };
+
+  const isFutureDateValue = (value) => {
+    const dateOnly = normalizeDateOnlyString(value);
+    const today = getLocalDateOnlyString();
+    return Boolean(dateOnly && today && dateOnly > today);
   };
 
   const normalizeLaunchStatus = (value) => {
@@ -463,9 +532,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     if (!text) return null;
     if (/rumou?r/.test(text)) return "rumored";
     if (/announce/.test(text)) return "announced";
-    if (/(pre[-\s]?order|pre[-\s]?book|prebooking|presale)/i.test(text))
-      return "upcoming";
-    if (/(upcoming|coming soon|expected|launching soon)/i.test(text))
+    if (/(upcoming|coming soon|expected|scheduled)/i.test(text))
       return "upcoming";
     if (/(available|on sale|in stock)/i.test(text)) return "available";
     if (/(released|launched|out now)/i.test(text)) return "released";
@@ -476,9 +543,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     if (!value) return null;
     const text = String(value).trim().toLowerCase();
     if (!text) return null;
-    if (/(pre[-\s]?order|pre[-\s]?book|prebooking|presale)/i.test(text))
-      return "preorder";
-    if (/(sale[\s_-]?scheduled|scheduled)/i.test(text)) return "sale_scheduled";
+    if (/(sale[\s_-]?scheduled|upcoming|coming soon|expected)/i.test(text))
+      return "sale_scheduled";
     if (/(sale[\s_-]?started|started)/i.test(text)) return "sale_started";
     if (/(store[\s_-]?pending|store[\s_-]?listing[\s_-]?pending)/i.test(text))
       return "store_pending";
@@ -546,7 +612,18 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
   const hasLiveStoreSignal = (store) => {
     if (!store || typeof store !== "object") return false;
-    if (isPrebookingStore(store)) return false;
+    if (
+      isFutureDateValue(
+        store.sale_start_date ||
+          store.saleStartDate ||
+          store.sale_date ||
+          store.saleDate ||
+          store.available_from ||
+          store.availableFrom,
+      )
+    ) {
+      return false;
+    }
 
     const availabilityText = String(
       store?.availability_status ??
@@ -725,7 +802,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       if (variantDate) return variantDate;
       const stores = Array.isArray(variant?.store_prices)
         ? variant.store_prices
-        : [];
+        : Array.isArray(variant?.storePrices)
+          ? variant.storePrices
+          : [];
       for (const store of stores) {
         const storeDate = parseDateValue(
           store?.sale_start_date ||
@@ -744,58 +823,12 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
   const resolveLaunchStage = (device) => {
     if (!device) return null;
-    const explicitLaunchStage = normalizeLaunchStatus(
-      device.launchStatus ||
-        device.launch_status ||
-        device.launchStatusOverride ||
-        device.launch_status_override ||
-        device.launchStatusText ||
-        device.launch_status_text ||
-        device.status ||
-        device.availability ||
-        device.badge,
-    );
-    const saleStage = resolveSaleStage(device);
     const saleStartDate = resolveSaleStartDate(device);
-    const storeRows = getDeviceStoreRows(device);
-    const storeStage = String(device.storeStage || device.store_stage || "")
-      .trim()
-      .toLowerCase();
-    const hasLiveStore =
-      storeRows.some(hasLiveStoreSignal) || storeStage === "live";
-    const hasPrebookingStore =
-      storeRows.some(isPrebookingStore) || storeStage === "prebooking";
-    const now = Date.now();
-
-    if (
-      saleStage === "preorder" ||
-      saleStage === "sale_scheduled" ||
-      saleStage === "store_pending" ||
-      saleStage === "sale_tbd"
-    ) {
-      return "upcoming";
-    }
-
-    if (saleStage === "sale_started" || saleStage === "on_sale") {
-      return "available";
-    }
-
-    if (saleStartDate) {
-      if (saleStartDate.getTime() > now) return "upcoming";
-      return "available";
-    }
-
-    if (hasPrebookingStore) return "upcoming";
-    if (hasLiveStore) return "available";
-
-    if (explicitLaunchStage) {
-      if (explicitLaunchStage === "released") {
-        return "upcoming";
-      }
-      return explicitLaunchStage;
-    }
-
-    return "upcoming";
+    if (isFutureDateValue(saleStartDate)) return "upcoming";
+    const hasStoreEntries =
+      getDeviceStoreRows(device).some(hasStoreMarketSignal);
+    if (!hasStoreEntries) return "upcoming";
+    return "available";
   };
 
   const resolveSaleStage = (device) => {
@@ -816,6 +849,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const resolveStoreStage = (device) => {
     if (!device) return "none";
     const storeRows = getDeviceStoreRows(device);
+    if (isFutureDateValue(resolveSaleStartDate(device))) {
+      return storeRows.some(hasStoreMarketSignal) ? "scheduled" : "none";
+    }
     const explicitStage = String(
       device.storeStage ||
         device.store_stage ||
@@ -825,15 +861,11 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       .trim()
       .toLowerCase();
     if (explicitStage === "live") return "live";
-    if (explicitStage === "prebooking") return "prebooking";
     if (explicitStage === "listed" || explicitStage === "store_pending") {
       return "listed";
     }
     if (explicitStage === "none") return "none";
     if (storeRows.some(hasLiveStoreSignal)) return "live";
-    if (storeRows.some(isPrebookingStore)) {
-      return "prebooking";
-    }
     if (storeRows.some(hasStoreMarketSignal)) return "listed";
     return "none";
   };
@@ -844,10 +876,23 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     )
       .trim()
       .toLowerCase();
-    if (backendRenderType === "available" || backendRenderType === "upcoming") {
-      return backendRenderType;
-    }
 
+    const saleStartDate = resolveSaleStartDate(device);
+    if (isFutureDateValue(saleStartDate)) return "upcoming";
+    const storeRows = getDeviceStoreRows(device);
+    const hasStoreEntries = storeRows.some(hasStoreMarketSignal);
+    if (!hasStoreEntries) return "upcoming";
+    if (saleStartDate) return "available";
+    if (backendRenderType === "available") return "available";
+
+    const launchStage = resolveLaunchStage(device);
+    if (
+      launchStage === "upcoming" ||
+      launchStage === "rumored" ||
+      launchStage === "announced"
+    ) {
+      return "upcoming";
+    }
     const saleStage = resolveSaleStage(device);
     const storeStage = resolveStoreStage(device);
 
@@ -855,12 +900,13 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       storeStage === "live" ||
       saleStage === "on_sale" ||
       saleStage === "sale_live" ||
-      saleStage === "out_of_stock"
+      saleStage === "out_of_stock" ||
+      storeStage === "listed"
     ) {
       return "available";
     }
 
-    return "upcoming";
+    return "available";
   };
 
   const getCompareLimitForDevices = (devices = []) =>
@@ -884,68 +930,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     return raw;
   };
 
-  const isPrebookingStore = (storePrice) => {
-    if (!storePrice) return false;
-    if (storePrice.is_prebooking === true) return true;
-    const storeStatusText = String(
-      storePrice.availability_status ??
-        storePrice.availabilityStatus ??
-        storePrice.sale_status ??
-        storePrice.saleStatus ??
-        "",
-    )
-      .trim()
-      .toLowerCase();
-    if (
-      /(pre(book|order)|upcoming|coming\s*soon|not[\s_-]*started|pre[\s-]*sale)/i.test(
-        storeStatusText,
-      )
-    ) {
-      return true;
-    }
-
-    const ctaText = String(storePrice.cta_label || "").trim();
-    if (/^(pre(book|order)|coming\s*soon)$/i.test(ctaText)) return true;
-
-    return false;
-  };
-
-  const isUpcomingDevice = (device) => {
-    if (!device) return false;
-    if (device.render_type || device.renderType) {
-      return getRenderType(device) === "upcoming";
-    }
-    const stage = resolveLaunchStage(device);
-    if (stage === "rumored" || stage === "announced" || stage === "upcoming")
-      return true;
-    return false;
-  };
-
-  const getUpcomingBadge = (device) => {
-    if (!device) return null;
-    if (device.display_status || device.displayStatus) {
-      return device.display_status || device.displayStatus;
-    }
-    if (!isUpcomingDevice(device)) return null;
-
-    const stage = resolveLaunchStage(device);
-    if (stage === "rumored") return "Rumored";
-    if (stage === "announced") return "Announced";
-    if (stage === "released" || stage === "upcoming") return "Upcoming";
-    if (stage === "available") return null;
-
-    if (device.is_prebooking) return "Upcoming";
-
-    const storePrices = Array.isArray(device.storePrices)
-      ? device.storePrices
-      : [];
-    if (storePrices.some((store) => isPrebookingStore(store))) {
-      return "Upcoming";
-    }
-
-    return "Upcoming";
-  };
-
   const sortStoreRows = (stores = []) =>
     [...stores].sort(
       (a, b) => extractNumericPrice(a?.price) - extractNumericPrice(b?.price),
@@ -954,15 +938,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const getAvailabilityState = (stores, brandName) => {
     const normalizedStores = (Array.isArray(stores) ? stores : []).map(
       (store) => {
-        const prebooking = isPrebookingStore(store);
         return {
           ...store,
-          is_prebooking: prebooking || store?.is_prebooking === true,
-          cta_label:
-            store?.cta_label ||
-            (prebooking || store?.is_prebooking === true
-              ? "Coming Soon"
-              : "Buy Now"),
+          cta_label: store?.cta_label || "Buy Now",
         };
       },
     );
@@ -973,9 +951,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
     const hasStoreUrl = (value) => Boolean(String(value || "").trim());
     const liveStores = sortStoreRows(
-      normalizedStores.filter(
-        (store) => !store.is_prebooking && hasStoreUrl(store?.url),
-      ),
+      normalizedStores.filter((store) => hasStoreUrl(store?.url)),
     );
     if (liveStores.length > 0) {
       return {
@@ -985,31 +961,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       };
     }
 
-    const prebookingStores = sortStoreRows(
-      normalizedStores.filter((store) => store.is_prebooking),
-    );
-    if (prebookingStores.length === 0) {
-      return {
-        stores: sortStoreRows(normalizedStores),
-        hiddenCount: Math.max(normalizedStores.length - 3, 0),
-        mode: "fallback",
-      };
-    }
-
     return {
-      stores: prebookingStores.map((store) => ({
-        ...store,
-        display_store_name:
-          store.display_store_name || store.store_name || brandName || "Store",
-        store: store.store || store.store_name || brandName || "Store",
-        store_name: store.store_name || store.store || brandName || "Store",
-        storeName: store.storeName || store.store_name || store.store || "",
-        logo: normalizeAssetUrl(store.logo || null),
-        cta_label: "Coming Soon",
-        is_prebooking: true,
-      })),
-      hiddenCount: Math.max(prebookingStores.length - 3, 0),
-      mode: "prebooking",
+      stores: sortStoreRows(normalizedStores),
+      hiddenCount: Math.max(normalizedStores.length - 3, 0),
+      mode: "fallback",
     };
   };
 
@@ -1143,8 +1098,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                   sp.sale_date ||
                   null,
                 sale_date: sp.sale_date || sp.saleDate || null,
-                is_prebooking:
-                  sp.is_prebooking === true || sp.isPrebooking === true,
                 logo: normalizeAssetUrl(
                   sp.logo || sp.store_logo || sp.storeLogo || null,
                 ),
@@ -1190,8 +1143,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
             sale_start_date:
               sp.sale_start_date || sp.saleStartDate || sp.sale_date || null,
             sale_date: sp.sale_date || sp.saleDate || null,
-            is_prebooking:
-              sp.is_prebooking === true || sp.isPrebooking === true,
             logo: normalizeAssetUrl(
               sp.logo || sp.store_logo || sp.storeLogo || null,
             ),
@@ -1643,17 +1594,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         ),
       ),
       brandWebsite: pick(
-        toString(apiDevice.official_preorder_url),
-        toString(apiDevice.officialPreorderUrl),
         toString(apiDevice.brand_website),
         toString(apiDevice.brandWebsite),
         toString(apiDevice.brand_url),
         toString(apiDevice.brandUrl),
-        "",
-      ),
-      officialPreorderUrl: pick(
-        toString(apiDevice.official_preorder_url),
-        toString(apiDevice.officialPreorderUrl),
         "",
       ),
       launchStatus: pick(
@@ -1794,18 +1738,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         toString(apiDevice.availableDateLabel),
         "",
       ),
-      is_prebooking:
-        apiDevice.is_prebooking === true ||
-        apiDevice.isPrebooking === true ||
-        /(pre(book|order)|upcoming|coming\s*soon|not[\s_-]*started|pre[\s-]*sale)/i.test(
-          String(
-            apiDevice.availability_status ??
-              apiDevice.availabilityStatus ??
-              apiDevice.sale_status ??
-              apiDevice.saleStatus ??
-              "",
-          ).trim(),
-        ),
       spec_score: overallScoreRaw,
       spec_score_v2_raw: toNumber(
         apiDevice.spec_score_v2_raw ?? apiDevice.specScoreV2Raw ?? null,
@@ -1973,7 +1905,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         sale_start_date:
           sp.sale_start_date || sp.saleStartDate || sp.sale_date || null,
         sale_date: sp.sale_date || sp.saleDate || null,
-        is_prebooking: sp.is_prebooking === true || sp.isPrebooking === true,
         logo: normalizeAssetUrl(
           sp.logo || sp.store_logo || sp.storeLogo || null,
         ),
@@ -2021,14 +1952,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       variant?.firstSaleDate ||
       device.saleStartDate ||
       null;
-    const variantIsPrebooking =
-      variant?.is_prebooking === true ||
-      variant?.isPrebooking === true ||
-      String(
-        variant?.availability_status || variant?.availabilityStatus || "",
-      ).toLowerCase() === "prebooking" ||
-      device.is_prebooking === true;
-
     return {
       variant,
       variantId,
@@ -2040,7 +1963,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       price: priceDisplay,
       numericPrice: resolvedNumericPrice,
       saleStartDate: variantSaleStartDate,
-      is_prebooking: variantIsPrebooking,
     };
   };
 
@@ -2100,7 +2022,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         price: selectedOption?.price || device.price,
         numericPrice: selectedOption?.numericPrice || device.numericPrice,
         saleStartDate: selectedOption?.saleStartDate || device.saleStartDate,
-        is_prebooking: selectedOption?.is_prebooking ?? device.is_prebooking,
         cardTitle: device.name || device.model || "Unnamed",
       };
     });
@@ -2108,10 +2029,14 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
   // Unique filter lists derived from all variants
   const uniqueRams = [
-    ...new Set(allVariants.map((v) => v?.ram).filter(Boolean)),
+    ...new Set(
+      allVariants.flatMap((v) => extractMemoryFilterLabels(v?.ram, "GB")),
+    ),
   ];
   const uniqueStorage = [
-    ...new Set(allVariants.map((v) => v?.storage).filter(Boolean)),
+    ...new Set(
+      allVariants.flatMap((v) => extractMemoryFilterLabels(v?.storage, "GB")),
+    ),
   ];
   const uniqueColors = [
     ...new Set(
@@ -2122,14 +2047,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   ];
 
   // Sort ram and storage options (numeric-aware)
-  uniqueRams.sort(
-    (a, b) =>
-      parseInt(String(a).replace(/[^0-9]/g, "")) -
-      parseInt(String(b).replace(/[^0-9]/g, "")),
-  );
+  uniqueRams.sort(compareMemoryFilterLabels);
   const parseStorageValue = (s) => {
     if (!s) return 0;
-    const str = String(s).toUpperCase();
+    const str = normalizeMemoryFilterLabel(s, "GB").toUpperCase();
     if (str.includes("TB")) return parseFloat(str) * 1024;
     return parseInt(str.replace(/[^0-9]/g, "")) || 0;
   };
@@ -2144,39 +2065,79 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const MIN_PRICE = 0;
   const MAX_PRICE = 300000;
 
+  const createDefaultFilters = () => ({
+    brand: [],
+    priceRange: { min: MIN_PRICE, max: MAX_PRICE },
+    ram: [],
+    storage: [],
+    color: [],
+    battery: [],
+    processor: [],
+    network: [],
+    refreshRate: [],
+    rearCamera: [],
+    frontCamera: [],
+  });
+
+  const normalizeFilters = (value = {}) => {
+    const incoming =
+      value && typeof value === "object" && !Array.isArray(value) ? value : {};
+    const defaults = createDefaultFilters();
+    const priceRange =
+      incoming.priceRange &&
+      typeof incoming.priceRange === "object" &&
+      !Array.isArray(incoming.priceRange)
+        ? incoming.priceRange
+        : {};
+    const asArray = (items) => (Array.isArray(items) ? items : []);
+    const asNumber = (number, fallback) => {
+      const parsed = Number(number);
+      return Number.isFinite(parsed) ? parsed : fallback;
+    };
+
+    return {
+      ...defaults,
+      ...incoming,
+      brand: asArray(incoming.brand),
+      ram: asArray(incoming.ram),
+      storage: asArray(incoming.storage),
+      color: asArray(incoming.color),
+      battery: asArray(incoming.battery),
+      processor: asArray(incoming.processor),
+      network: asArray(incoming.network),
+      refreshRate: asArray(incoming.refreshRate),
+      rearCamera: asArray(incoming.rearCamera),
+      frontCamera: asArray(incoming.frontCamera),
+      priceRange: {
+        min: asNumber(priceRange.min, defaults.priceRange.min),
+        max: asNumber(priceRange.max, defaults.priceRange.max),
+      },
+    };
+  };
+
   // Helper functions for individual options
   const extractIndividualRamOptions = (devices) => {
     const allRamValues = devices.flatMap((device) => {
       const ram = device.specs.ram;
       if (!ram) return [];
-
-      // Split values like "8GB/12GB" into ["8GB", "12GB"]
-      const individualRams = ram.split("/").map((r) => r.trim());
-      return individualRams.filter((ram) => ram && ram !== "NaN");
+      return extractMemoryFilterLabels(ram, "GB");
     });
 
     // Remove duplicates and sort by numeric value
-    const uniqueRams = [...new Set(allRamValues)].sort((a, b) => {
-      const numA = parseInt(a.replace(/[^0-9]/g, ""));
-      const numB = parseInt(b.replace(/[^0-9]/g, ""));
-      return numA - numB;
-    });
+    const uniqueRams = [...new Set(allRamValues)].sort(
+      compareMemoryFilterLabels,
+    );
 
     return uniqueRams.length > 0
       ? uniqueRams
-      : ["4GB", "6GB", "8GB", "12GB", "16GB"];
+      : ["4 GB", "6 GB", "8 GB", "12 GB", "16 GB"];
   };
 
   const extractIndividualStorageOptions = (devices) => {
     const allStorageValues = devices.flatMap((device) => {
       const storage = device.specs.storage;
       if (!storage) return [];
-
-      // Split values like "128GB/256GB" into ["128GB", "256GB"]
-      const individualStorages = storage.split("/").map((s) => s.trim());
-      return individualStorages.filter(
-        (storage) => storage && storage !== "NaN",
-      );
+      return extractMemoryFilterLabels(storage, "GB");
     });
 
     // Remove duplicates and sort by numeric value
@@ -2193,7 +2154,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
     return uniqueStorages.length > 0
       ? uniqueStorages
-      : ["64GB", "128GB", "256GB", "512GB", "1TB"];
+      : ["64 GB", "128 GB", "256 GB", "512 GB", "1 TB"];
   };
 
   // Get individual options (use variant-derived unique lists)
@@ -2205,37 +2166,133 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       : extractIndividualStorageOptions(devices);
   const colorOptions = uniqueColors;
 
-  // Battery ranges (fixed)
-  const BATTERY_RANGES = [
+  const BATTERY_FEATURES = [
     {
-      id: "3000-4000",
-      label: "3000 - 4000 mAh",
-      min: 3000,
-      max: 4000,
-      icon: FaBatteryFull,
-    },
-    {
-      id: "4000-5000",
-      label: "4000 - 5000 mAh",
-      min: 4000,
-      max: 5000,
-      icon: FaBatteryFull,
-    },
-    {
-      id: "5000-6000",
-      label: "5000 - 6000 mAh",
+      id: "5000mah-plus",
+      label: "5000 mAh+ Battery",
+      type: "capacity",
       min: 5000,
-      max: 6000,
       icon: FaBatteryFull,
     },
     {
-      id: "more",
-      label: "More than 6000 mAh",
+      id: "6000mah-plus",
+      label: "6000 mAh+ Battery",
+      type: "capacity",
       min: 6000,
-      max: Infinity,
+      icon: FaBatteryFull,
+    },
+    {
+      id: "7000mah-plus",
+      label: "7000 mAh+ Battery",
+      type: "capacity",
+      min: 7000,
+      icon: FaBatteryFull,
+    },
+    {
+      id: "fast-charge-33w-plus",
+      label: "33W+ Fast Charging",
+      type: "fastCharge",
+      min: 33,
+      icon: FaBatteryFull,
+    },
+    {
+      id: "fast-charge-65w-plus",
+      label: "65W+ Fast Charging",
+      type: "fastCharge",
+      min: 65,
+      icon: FaBatteryFull,
+    },
+    {
+      id: "wireless-charging",
+      label: "Wireless Charging",
+      type: "wireless",
       icon: FaBatteryFull,
     },
   ];
+
+  const parseBatteryNumberForFilter = (value) => {
+    if (value === null || value === undefined) return null;
+    if (typeof value === "number") return Number.isFinite(value) ? value : null;
+    const match = String(value).match(/(\d+(?:\.\d+)?)/);
+    if (!match) return null;
+    const parsed = Number(match[1]);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+
+  const resolveBatteryCapacityForFilter = (device) => {
+    const b = device?.battery;
+    if (Number(device?.numericBattery || 0) > 0)
+      return Number(device.numericBattery);
+    if (!b) return parseBatteryNumberForFilter(device?.specs?.battery);
+    if (typeof b !== "object") return parseBatteryNumberForFilter(b);
+    return (
+      parseBatteryNumberForFilter(b.battery_capacity_mah) ??
+      parseBatteryNumberForFilter(b.capacity_mAh) ??
+      parseBatteryNumberForFilter(b.capacity_mah) ??
+      parseBatteryNumberForFilter(b.battery_capacity) ??
+      parseBatteryNumberForFilter(b.capacity) ??
+      parseBatteryNumberForFilter(b.battery) ??
+      parseBatteryNumberForFilter(device?.specs?.battery) ??
+      null
+    );
+  };
+
+  const resolveFastChargeWattForFilter = (device) => {
+    const b = device?.battery;
+    const values = [];
+    if (b && typeof b === "object") {
+      values.push(
+        b.fast_charging,
+        b.fastCharging,
+        b.fast_charge,
+        b.fastCharge,
+        b.charging_speed,
+        b.chargingSpeed,
+        b.wired_charging,
+        b.wiredCharging,
+        b.charging,
+      );
+    } else if (b) {
+      values.push(b);
+    }
+    values.push(device?.specs?.battery);
+
+    const watts = values
+      .filter(Boolean)
+      .map((value) => parseBatteryNumberForFilter(value))
+      .filter((value) => Number.isFinite(value) && value > 0);
+    return watts.length ? Math.max(...watts) : null;
+  };
+
+  const hasWirelessChargingForFilter = (device) => {
+    const b = device?.battery;
+    const raw =
+      b && typeof b === "object"
+        ? (b.wireless_charging ??
+          b.wirelessCharging ??
+          b.wireless_charge ??
+          b.wirelessCharge)
+        : null;
+    if (typeof raw === "boolean") return raw;
+    const text = String(raw ?? device?.specs?.battery ?? b ?? "").toLowerCase();
+    return /wireless/.test(text) && !/(no|not|without)\s+wireless/.test(text);
+  };
+
+  const matchesBatteryFeature = (device, feature) => {
+    if (!feature) return false;
+    if (feature.type === "capacity") {
+      const capacity = resolveBatteryCapacityForFilter(device) || 0;
+      return capacity >= feature.min;
+    }
+    if (feature.type === "fastCharge") {
+      const watts = resolveFastChargeWattForFilter(device) || 0;
+      return watts >= feature.min;
+    }
+    if (feature.type === "wireless") {
+      return hasWirelessChargingForFilter(device);
+    }
+    return false;
+  };
 
   const getProcessorBrand = (processorStr = "") => {
     const p = String(processorStr).toLowerCase();
@@ -2277,32 +2334,99 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     return unique;
   };
 
-  const getCameraOptions = (devices) => {
-    // collect numeric camera counts (ignore unknown/0)
-    const counts = devices
-      .map((d) => {
-        const c = d.specs.cameraCount;
-        const n = Number(c);
-        return Number.isFinite(n) && n > 0 ? Math.max(0, Math.floor(n)) : null;
-      })
-      .filter((v) => v !== null);
+  const parseCameraMpForFilter = (value) => {
+    if (value === null || value === undefined) return null;
+    if (typeof value === "number") return Number.isFinite(value) ? value : null;
+    const text = String(value || "").trim();
+    if (!text) return null;
+    const mpMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:mp|megapixel)/i);
+    const plainMatch = text.match(/^(\d+(?:\.\d+)?)$/);
+    const match = mpMatch || plainMatch;
+    if (!match) return null;
+    const parsed = Number(match[1]);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  };
 
-    // map to labels and dedupe
-    const labels = counts.map((n) => (n >= 4 ? "4+" : String(n)));
+  const maxCameraMp = (...values) => {
+    const numbers = values
+      .flat()
+      .map((value) => parseCameraMpForFilter(value))
+      .filter((value) => Number.isFinite(value) && value > 0);
+    return numbers.length ? Math.max(...numbers) : null;
+  };
+
+  const lensCameraMp = (lens) => {
+    if (!lens) return null;
+    if (typeof lens !== "object") return parseCameraMpForFilter(lens);
+    return maxCameraMp(
+      lens.resolution,
+      lens.resolution_mp,
+      lens.megapixels,
+      lens.mp,
+      lens.res,
+    );
+  };
+
+  const resolveRearCameraMpForFilter = (device) => {
+    const cam = device?.camera || {};
+    const rear = cam?.rear_camera || cam?.rearCamera || {};
+    return maxCameraMp(
+      device?.specs?.rearCameraResolution,
+      lensCameraMp(rear.main),
+      lensCameraMp(rear.primary),
+      lensCameraMp(rear.wide),
+      lensCameraMp(rear.ultra_wide),
+      lensCameraMp(rear.ultrawide),
+      lensCameraMp(rear.telephoto),
+      lensCameraMp(rear.periscope_telephoto),
+      lensCameraMp(cam.main),
+      lensCameraMp(cam.primary),
+      lensCameraMp(cam.wide),
+      lensCameraMp(cam.rear),
+      cam.main_camera_megapixels,
+      cam.rear_camera_megapixels,
+      cam.main_camera,
+      cam.primary_camera,
+    );
+  };
+
+  const resolveFrontCameraMpForFilter = (device) => {
+    const cam = device?.camera || {};
+    const front = cam?.front_camera || cam?.frontCamera || cam?.front || null;
+    return maxCameraMp(
+      device?.specs?.frontCameraResolution,
+      lensCameraMp(front),
+      lensCameraMp(cam.selfie),
+      lensCameraMp(cam.selfie_camera),
+      cam.front_camera_megapixels,
+      cam.selfie_camera_megapixels,
+      cam.front_camera,
+      cam.front,
+    );
+  };
+
+  const getCameraMpOptions = (devices, resolver) => {
+    const labels = devices
+      .map((device) => resolver(device))
+      .filter((mp) => Number.isFinite(mp) && mp > 0)
+      .map((mp) => `${Math.round(mp)} MP+`);
     const unique = [...new Set(labels)];
-
-    // sort numeric labels ascending, with "4+" at the end
-    unique.sort((a, b) => {
-      if (a === "4+") return 1;
-      if (b === "4+") return -1;
-      return parseInt(a, 10) - parseInt(b, 10);
-    });
+    unique.sort(
+      (a, b) => parseCameraMpForFilter(b) - parseCameraMpForFilter(a),
+    );
     return unique;
   };
 
   const processorOptions = getProcessorOptions(devices);
   const refreshRateOptions = getRefreshRateOptions(devices);
-  const cameraOptions = getCameraOptions(devices);
+  const rearCameraOptions = getCameraMpOptions(
+    devices,
+    resolveRearCameraMpForFilter,
+  );
+  const frontCameraOptions = getCameraMpOptions(
+    devices,
+    resolveFrontCameraMpForFilter,
+  );
   const networkOptions = (() => {
     const raw = devices
       .map((d) => String(d?.specs?.network || "").trim())
@@ -2322,22 +2446,19 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     return out.length > 0 ? out : ["5G", "4G"];
   })();
 
-  const [filters, setFilters] = useState({
-    brand: [],
-    priceRange: { min: MIN_PRICE, max: MAX_PRICE },
-    ram: [],
-    storage: [],
-    color: [],
-    battery: [],
-    processor: [],
-    network: [],
-    refreshRate: [],
-    camera: [],
-  });
+  const [filters, setFilters] = useState(() => createDefaultFilters());
 
   const [sortBy, setSortBy] = useState("featured");
   const [searchQuery, setSearchQuery] = useState("");
   const [brandFilterQuery, setBrandFilterQuery] = useState("");
+  const [ramFilterQuery, setRamFilterQuery] = useState("");
+  const [storageFilterQuery, setStorageFilterQuery] = useState("");
+  const [batteryFilterQuery, setBatteryFilterQuery] = useState("");
+  const [processorFilterQuery, setProcessorFilterQuery] = useState("");
+  const [networkFilterQuery, setNetworkFilterQuery] = useState("");
+  const [refreshRateFilterQuery, setRefreshRateFilterQuery] = useState("");
+  const [rearCameraFilterQuery, setRearCameraFilterQuery] = useState("");
+  const [frontCameraFilterQuery, setFrontCameraFilterQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
   const [showHeroDescription, setShowHeroDescription] = useState(false);
@@ -2427,6 +2548,76 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         .includes(q),
     );
   }, [brands, brandFilterQuery]);
+  const filteredRamOptions = useMemo(() => {
+    const q = String(ramFilterQuery || "")
+      .trim()
+      .toLowerCase();
+    if (!q) return ramOptions;
+    return ramOptions.filter((ram) => String(ram).toLowerCase().includes(q));
+  }, [ramOptions, ramFilterQuery]);
+  const filteredStorageOptions = useMemo(() => {
+    const q = String(storageFilterQuery || "")
+      .trim()
+      .toLowerCase();
+    if (!q) return storageOptions;
+    return storageOptions.filter((storage) =>
+      String(storage).toLowerCase().includes(q),
+    );
+  }, [storageOptions, storageFilterQuery]);
+  const filteredBatteryFeatures = useMemo(() => {
+    const q = String(batteryFilterQuery || "")
+      .trim()
+      .toLowerCase();
+    if (!q) return BATTERY_FEATURES;
+    return BATTERY_FEATURES.filter((feature) =>
+      `${feature.label} ${feature.id}`.toLowerCase().includes(q),
+    );
+  }, [batteryFilterQuery]);
+  const filteredProcessorOptions = useMemo(() => {
+    const q = String(processorFilterQuery || "")
+      .trim()
+      .toLowerCase();
+    if (!q) return processorOptions;
+    return processorOptions.filter((processor) =>
+      String(processor).toLowerCase().includes(q),
+    );
+  }, [processorOptions, processorFilterQuery]);
+  const filteredNetworkOptions = useMemo(() => {
+    const q = String(networkFilterQuery || "")
+      .trim()
+      .toLowerCase();
+    if (!q) return networkOptions;
+    return networkOptions.filter((network) =>
+      String(network).toLowerCase().includes(q),
+    );
+  }, [networkOptions, networkFilterQuery]);
+  const filteredRefreshRateOptions = useMemo(() => {
+    const q = String(refreshRateFilterQuery || "")
+      .trim()
+      .toLowerCase();
+    if (!q) return refreshRateOptions;
+    return refreshRateOptions.filter((rate) =>
+      String(rate).toLowerCase().includes(q),
+    );
+  }, [refreshRateOptions, refreshRateFilterQuery]);
+  const filteredRearCameraOptions = useMemo(() => {
+    const q = String(rearCameraFilterQuery || "")
+      .trim()
+      .toLowerCase();
+    if (!q) return rearCameraOptions;
+    return rearCameraOptions.filter((camera) =>
+      String(camera).toLowerCase().includes(q),
+    );
+  }, [rearCameraOptions, rearCameraFilterQuery]);
+  const filteredFrontCameraOptions = useMemo(() => {
+    const q = String(frontCameraFilterQuery || "")
+      .trim()
+      .toLowerCase();
+    if (!q) return frontCameraOptions;
+    return frontCameraOptions.filter((camera) =>
+      String(camera).toLowerCase().includes(q),
+    );
+  }, [frontCameraOptions, frontCameraFilterQuery]);
 
   const {
     selectDeviceById,
@@ -2444,6 +2635,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   );
   const isSingleSmartphonePath = pathname === "/smartphone";
   const isNewFilterPath = listFilter === "new";
+  const isTrendingFilterPath = listFilter === "trending";
+  const isUpcomingFilterPath = listFilter === "upcoming";
   const currentYear = new Date().getFullYear();
   const currentMonthYear = new Intl.DateTimeFormat("en-US", {
     month: "short",
@@ -2512,11 +2705,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     ? `Browse smartphones focused on ${currentFeatureMeta.name.toLowerCase()} and compare how different brands approach this feature across budget, mid-range, and flagship models. This page helps you review battery life, charging behavior, display quality, chipset efficiency, camera tradeoffs, RAM, storage, and software support so you can shortlist phones that suit your needs without opening multiple product pages. Use the feature cards to spot the models that stand out, then open the listings that match your priority.`
     : "";
 
-  if (isUpcomingView) {
-    seoTitle = `Upcoming Smartphones (${currentDayMonthYear}) - Expected Launches, Features and Prices - Hooks`;
-    seoDescription =
-      "Browse upcoming smartphones in India, track expected launch timelines, compare preview specifications, and watch preorder-ready devices before they arrive on Hooks.";
-  } else if (isSingleSmartphonePath) {
+  if (isSingleSmartphonePath) {
     seoTitle = `Smartphones (${currentYear}) - Price, Specifications and Features in India - Hooks`;
     seoDescription =
       "Browse the latest smartphones on Hooks. Explore detailed specifications, prices, reviews, and featured launches before you buy.";
@@ -2524,6 +2713,14 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     seoTitle = `Latest Smartphones (${currentDayMonthYear}) - Full Specifications, Features and Price - Hooks`;
     seoDescription =
       "Browse the latest smartphones across camera, battery, display, and performance with updated prices, full specifications, and launch details on Hooks.";
+  } else if (isTrendingFilterPath) {
+    seoTitle = `Trending Smartphones (${currentDayMonthYear}) - Full Specifications, Features and Price - Hooks`;
+    seoDescription =
+      "Browse trending smartphones in India with updated prices, full specifications, and key features across camera, battery, display, performance, RAM, storage, and network support on Hooks.";
+  } else if (isUpcomingFilterPath) {
+    seoTitle = `Upcoming Smartphones (${currentDayMonthYear}) - Expected Launches, Features and Prices - Hooks`;
+    seoDescription =
+      "Browse upcoming smartphones in India, track expected launch timelines, compare preview specifications, and watch preorder-ready devices before they arrive on Hooks.";
   } else if (currentFeatureMeta) {
     const featureContextParts = [
       currentBrandObj?.name ? `${currentBrandObj.name}` : "",
@@ -2558,41 +2755,46 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         .toLowerCase()
         .includes("newlaunch")) ||
     listFilter === "new";
-  const headerLabel = isUpcomingView
-    ? "UPCOMING SMARTPHONES"
-    : isNewLaunchHeading
-      ? "LATEST SMARTPHONES"
-      : currentFeatureMeta
-        ? `${currentFeatureMeta.name.toUpperCase()} SMARTPHONES`
-        : priceFilter
-          ? `BEST SMARTPHONE ${priceFilter.label.toUpperCase()}`
-          : "SMARTPHONE COLLECTION";
-  const heroTitleText = isUpcomingView
-    ? "Upcoming Smartphones"
-    : isNewFilterPath
-      ? "Latest Smartphones"
-      : currentFeatureMeta
-        ? `${currentFeatureMeta.name} Smartphones`
-        : priceFilter
-          ? `${priceFilter.label} Smartphones in India`
-          : "Popular Mobile Phone";
+  const headerLabel = isNewLaunchHeading
+    ? "LATEST SMARTPHONES"
+    : isTrendingFilterPath
+      ? "TRENDING SMARTPHONES"
+      : isUpcomingFilterPath
+        ? "UPCOMING SMARTPHONES"
+        : currentFeatureMeta
+          ? `${currentFeatureMeta.name.toUpperCase()} SMARTPHONES`
+          : priceFilter
+            ? `BEST SMARTPHONE ${priceFilter.label.toUpperCase()}`
+            : "SMARTPHONE COLLECTION";
+  const heroTitleText = isNewFilterPath
+    ? "Latest Smartphones"
+    : isTrendingFilterPath
+      ? "Trending Smartphones"
+      : isUpcomingFilterPath
+        ? "Upcoming Smartphones"
+        : currentFeatureMeta
+          ? `${currentFeatureMeta.name} Smartphones`
+          : priceFilter
+            ? `${priceFilter.label} Smartphones in India`
+            : "Popular Mobile Phone";
   const isExpandedHeroDescriptionPath =
-    isUpcomingView ||
     isNewFilterPath ||
     isListFilter ||
     Boolean(currentFeatureMeta) ||
     Boolean(priceFilter) ||
     pathname === "/smartphones" ||
     pathname === "/mobiles";
-  const heroSubtitleText = isUpcomingView
-    ? "Browse upcoming smartphones in India and keep track of devices that are expected to launch soon, all in one place. This page helps you follow new phone announcements, rumored launch windows, preorder-ready models, and early specification leaks without jumping between multiple news posts. Use it to scan expected camera setups, battery sizes, charging speeds, display details, chipset hints, storage variants, and brand lineups so you can plan your next upgrade with a clearer view of what is coming. Whether you are waiting for a flagship launch, a battery-focused phone, a gaming-ready model, or a balanced everyday device, the upcoming collection gives you an easy way to watch the next wave of releases as they build up. You can also use the filters and product cards to follow the brands and categories that matter most, then return later when launch details and prices are confirmed."
-    : isNewFilterPath
-      ? "Browse the latest smartphones in India and keep up with new launches as they arrive, all in one place. This page brings together updated prices, fresh variants, and the key specifications people care about most, including camera quality, low-light results, portrait shots, video stability, battery life, charging speed, display brightness, refresh rate, chipset performance, RAM, storage, software experience, and long-term update support. Use it to scan the newest phones from leading brands, spot which models are getting attention, and quickly narrow your shortlist without opening dozens of tabs. If you are looking for a flagship camera phone, a balanced all-rounder, a battery-first option, or a gaming-ready device, the latest collection helps you focus on the right candidates at a glance. The filters and product cards make it easy to sort by brand, price, and feature, while the latest-launch focus keeps the page current as new phones arrive. You can also check live prices, offers, and variants so you can judge value before you buy."
-      : currentFeatureMeta
-        ? featureHeroText
-        : priceFilter || currentBrandObj
-          ? seoDescription
-          : "Browse popular mobile phones in India with updated prices, detailed specifications, launch timelines, and key highlights from leading brands. Use the filters to narrow phones by budget, features, network support, battery, RAM, storage, and refresh rate, then compare your shortlisted options faster and focus on the models that best match your daily needs and buying priorities.";
+  const heroSubtitleText = isNewFilterPath
+    ? "Browse the latest smartphones in India and keep up with new launches as they arrive, all in one place. This page brings together updated prices, fresh variants, and the key specifications people care about most, including camera quality, low-light results, portrait shots, video stability, battery life, charging speed, display brightness, refresh rate, chipset performance, RAM, storage, software experience, and long-term update support. Use it to scan the newest phones from leading brands, spot which models are getting attention, and quickly narrow your shortlist without opening dozens of tabs. If you are looking for a flagship camera phone, a balanced all-rounder, a battery-first option, or a gaming-ready device, the latest collection helps you focus on the right candidates at a glance. The filters and product cards make it easy to sort by brand, price, and feature, while the latest-launch focus keeps the page current as new phones arrive. You can also check live prices, offers, and variants so you can judge value before you buy."
+    : isTrendingFilterPath
+      ? "Browse trending smartphones in India with updated prices, specifications, and buying signals from models people are actively comparing. Use the filters to narrow popular phones by brand, budget, RAM, storage, processor, network support, battery features, refresh rate, and camera resolution so the trending list stays useful instead of becoming a mixed feed."
+      : isUpcomingFilterPath
+        ? "Browse upcoming smartphones in India and keep track of devices that are expected to launch soon, all in one place. This page helps you follow new phone announcements, rumored launch windows, preorder-ready models, and early specification leaks without jumping between multiple news posts. Use it to scan expected camera setups, battery sizes, charging speeds, display details, chipset hints, storage variants, and brand lineups so you can plan your next upgrade with a clearer view of what is coming. Whether you are waiting for a flagship launch, a battery-focused phone, a gaming-ready model, or a balanced everyday device, the upcoming collection gives you an easy way to watch the next wave of releases as they build up. You can also use the filters and product cards to follow the brands and categories that matter most, then return later when launch details and prices are confirmed."
+        : currentFeatureMeta
+          ? featureHeroText
+          : priceFilter || currentBrandObj
+            ? seoDescription
+            : "Browse popular mobile phones in India with updated prices, detailed specifications, launch timelines, and key highlights from leading brands. Use the filters to narrow phones by budget, features, network support, battery, RAM, storage, and refresh rate, then compare your shortlisted options faster and focus on the models that best match your daily needs and buying priorities.";
   const heroSubtitleStyle =
     isExpandedHeroDescriptionPath && !showHeroDescription
       ? {
@@ -2699,7 +2901,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
             .filter(Boolean)
         : [];
 
-    const ramArr = toArray(ramParam);
+    const ramArr = toArray(ramParam)
+      .map((value) => normalizeMemoryFilterLabel(value, "GB"))
+      .filter(Boolean);
     const networkArr = toArray(networkParam);
     const processorArr = toArray(processorParam);
     const refreshArr = toArray(refreshParam);
@@ -2745,17 +2949,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
     // Build next filters state using provided params; fall back to current state
     setFilters((prev) => {
+      const normalizedPrev = normalizeFilters(prev);
       const base = hasExplicitUrlFilters
-        ? {
-            ...prev,
-            brand: [],
-            priceRange: { min: MIN_PRICE, max: MAX_PRICE },
-            ram: [],
-            network: [],
-            processor: [],
-            refreshRate: [],
-          }
-        : prev;
+        ? createDefaultFilters()
+        : normalizedPrev;
 
       const resolvedBrand = brandParam ? resolveBrandName(brandParam) : null;
       const next = {
@@ -2778,7 +2975,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         processor: processorArr.length ? processorArr : base.processor,
         refreshRate: refreshArr.length ? refreshArr : base.refreshRate,
       };
-      return areFilterStatesEqual(prev, next) ? prev : next;
+      const normalizedNext = normalizeFilters(next);
+      return areFilterStatesEqual(normalizedPrev, normalizedNext)
+        ? prev
+        : normalizedNext;
     });
 
     if (brandParam) {
@@ -2803,10 +3003,12 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     if (hasUrlDrivenFilters) return;
     if (!contextFilters) return;
     try {
-      const ctx = contextFilters;
+      const ctx = normalizeFilters(contextFilters);
       setFilters((prev) => {
+        const normalizedPrev = normalizeFilters(prev);
         try {
-          if (JSON.stringify(prev) === JSON.stringify(ctx)) return prev;
+          if (JSON.stringify(normalizedPrev) === JSON.stringify(ctx))
+            return prev;
         } catch {
           return ctx;
         }
@@ -2838,25 +3040,27 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     }
 
     setFilters((prev) => {
+      const normalizedPrev = normalizeFilters(prev);
       try {
         const hasCustomRange =
-          prev &&
-          prev.priceRange &&
-          (Number(prev.priceRange.min) !== MIN_PRICE ||
-            Number(prev.priceRange.max) !== MAX_PRICE);
+          normalizedPrev.priceRange &&
+          (Number(normalizedPrev.priceRange.min) !== MIN_PRICE ||
+            Number(normalizedPrev.priceRange.max) !== MAX_PRICE);
         const hasDefaultRange =
-          prev &&
-          prev.priceRange &&
-          Number(prev.priceRange.min) === MIN_PRICE &&
-          Number(prev.priceRange.max) === MAX_PRICE;
+          normalizedPrev.priceRange &&
+          Number(normalizedPrev.priceRange.min) === MIN_PRICE &&
+          Number(normalizedPrev.priceRange.max) === MAX_PRICE;
         if (hasCustomRange) {
-          return prev;
+          return normalizedPrev;
         }
-        if (hasDefaultRange) return prev;
+        if (hasDefaultRange) return normalizedPrev;
       } catch {
         // ignore and initialize
       }
-      return { ...prev, priceRange: { min: MIN_PRICE, max: MAX_PRICE } };
+      return normalizeFilters({
+        ...normalizedPrev,
+        priceRange: { min: MIN_PRICE, max: MAX_PRICE },
+      });
     });
   }, [devices.length, contextFilters]);
 
@@ -2995,13 +3199,15 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   };
 
   const handleFilterChange = (filterType, value) => {
+    const currentFilters = normalizeFilters(filters);
+
     if (filterType === "brand") {
-      const current = Array.isArray(filters.brand) ? filters.brand : [];
+      const current = currentFilters.brand;
       const next = current.includes(value)
         ? current.filter((item) => item !== value)
         : [...current, value];
 
-      setFilters((prev) => ({ ...prev, brand: next }));
+      setFilters((prev) => normalizeFilters({ ...prev, brand: next }));
 
       try {
         const params = stripSmartphoneSeoQueryParams(search);
@@ -3020,19 +3226,34 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       // also sync to global device context
       try {
         deviceContext?.setFilters?.({
-          ...(deviceContext.filters || {}),
+          ...normalizeFilters(deviceContext.filters || {}),
           brand: next,
         });
       } catch {}
       return;
     }
-    const currentArr = Array.isArray(filters[filterType])
-      ? filters[filterType]
+    const currentArr = Array.isArray(currentFilters[filterType])
+      ? currentFilters[filterType]
       : [];
-    const nextArr = currentArr.includes(value)
-      ? currentArr.filter((item) => item !== value)
-      : [...currentArr, value];
-    const next = { ...filters, [filterType]: nextArr };
+    const memoryUnit =
+      filterType === "ram" || filterType === "storage" ? "GB" : null;
+    const normalizedValue = memoryUnit
+      ? normalizeMemoryFilterLabel(value, memoryUnit)
+      : value;
+    const isSelected = memoryUnit
+      ? currentArr.some(
+          (item) =>
+            normalizeMemoryFilterLabel(item, memoryUnit) === normalizedValue,
+        )
+      : currentArr.includes(normalizedValue);
+    const nextArr = isSelected
+      ? currentArr.filter((item) =>
+          memoryUnit
+            ? normalizeMemoryFilterLabel(item, memoryUnit) !== normalizedValue
+            : item !== normalizedValue,
+        )
+      : [...currentArr, normalizedValue];
+    const next = normalizeFilters({ ...currentFilters, [filterType]: nextArr });
     setFilters(next);
     try {
       deviceContext?.setFilters?.(next);
@@ -3046,7 +3267,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     let max = Number(newMax ?? filters.priceRange.max);
     if (min > max) max = min;
     if (max < min) min = max;
-    setFilters((prev) => ({ ...prev, priceRange: { min, max } }));
+    setFilters((prev) =>
+      normalizeFilters({ ...prev, priceRange: { min, max } }),
+    );
   };
 
   // Filter logic (operates on variant-level cards) - memoized so it updates
@@ -3089,12 +3312,11 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         .map((item) => item.device);
     }
 
-    baseCards = baseCards.filter((device) => {
-      const renderType = getRenderType(device);
-      return isUpcomingView
-        ? renderType === "upcoming"
-        : renderType === "available";
-    });
+    baseCards = baseCards.filter((device) =>
+      listFilter === "upcoming"
+        ? getRenderType(device) === "upcoming"
+        : getRenderType(device) === "available",
+    );
 
     return baseCards.filter((device) => {
       // Search filter
@@ -3129,12 +3351,12 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
           ? device.variantOptions.map((option) => option.ram).filter(Boolean)
           : [];
         const deviceRams = variantRams.length
-          ? variantRams
+          ? variantRams.flatMap((ram) => extractMemoryFilterLabels(ram, "GB"))
           : device.specs.ram
-            ? device.specs.ram.split("/").map((r) => r.trim())
+            ? extractMemoryFilterLabels(device.specs.ram, "GB")
             : [];
         const hasMatchingRam = filters.ram.some((selectedRam) =>
-          deviceRams.includes(selectedRam),
+          deviceRams.includes(normalizeMemoryFilterLabel(selectedRam, "GB")),
         );
         if (!hasMatchingRam) return false;
       }
@@ -3147,23 +3369,27 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
               .filter(Boolean)
           : [];
         const deviceStorages = variantStorages.length
-          ? variantStorages
+          ? variantStorages.flatMap((storage) =>
+              extractMemoryFilterLabels(storage, "GB"),
+            )
           : device.specs.storage
-            ? device.specs.storage.split("/").map((s) => s.trim())
+            ? extractMemoryFilterLabels(device.specs.storage, "GB")
             : [];
         const hasMatchingStorage = filters.storage.some((selectedStorage) =>
-          deviceStorages.includes(selectedStorage),
+          deviceStorages.includes(
+            normalizeMemoryFilterLabel(selectedStorage, "GB"),
+          ),
         );
         if (!hasMatchingStorage) return false;
       }
 
-      // Battery filter (ranges)
+      // Battery feature filters
       if (filters.battery && filters.battery.length > 0) {
-        const b = Number(device.numericBattery || 0);
-        const matchesBattery = filters.battery.some((rangeId) => {
-          const range = BATTERY_RANGES.find((r) => r.id === rangeId);
-          if (!range) return false;
-          return b >= range.min && b <= range.max;
+        const matchesBattery = filters.battery.some((featureId) => {
+          const feature = BATTERY_FEATURES.find(
+            (item) => item.id === featureId,
+          );
+          return matchesBatteryFeature(device, feature);
         });
         if (!matchesBattery) return false;
       }
@@ -3606,14 +3832,24 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         if (!hasRR) return false;
       }
 
-      // Camera filter (by count)
-      if (filters.camera && filters.camera.length > 0) {
-        const count = Number(device.specs.cameraCount || 0);
-        const hasCam = filters.camera.some((c) => {
-          if (c === "4+") return count >= 4;
-          return Number(c) === count;
+      // Rear camera filter (by main/highest MP capability)
+      if (filters.rearCamera && filters.rearCamera.length > 0) {
+        const rearMp = resolveRearCameraMpForFilter(device) || 0;
+        const hasRearCameraMatch = filters.rearCamera.some((selected) => {
+          const threshold = parseCameraMpForFilter(selected) || 0;
+          return threshold > 0 && rearMp >= threshold;
         });
-        if (!hasCam) return false;
+        if (!hasRearCameraMatch) return false;
+      }
+
+      // Front/selfie camera filter (by MP capability)
+      if (filters.frontCamera && filters.frontCamera.length > 0) {
+        const frontMp = resolveFrontCameraMpForFilter(device) || 0;
+        const hasFrontCameraMatch = filters.frontCamera.some((selected) => {
+          const threshold = parseCameraMpForFilter(selected) || 0;
+          return threshold > 0 && frontMp >= threshold;
+        });
+        if (!hasFrontCameraMatch) return false;
       }
 
       return true;
@@ -3900,7 +4136,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
           "compare smartphone specs",
         ],
         contextTerms: [
-          isUpcomingView ? "upcoming smartphones" : "",
           isNewFilterPath ? "latest smartphones" : "",
           priceFilter ? `best smartphones ${priceFilter.label}` : "",
           currentBrandObj?.name ? `${currentBrandObj.name} smartphones` : "",
@@ -3914,7 +4149,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       }),
     [
       currentYear,
-      isUpcomingView,
       isNewFilterPath,
       priceFilter,
       currentBrandObj,
@@ -3934,7 +4168,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       processor: [],
       network: [],
       refreshRate: [],
-      camera: [],
+      rearCamera: [],
+      frontCamera: [],
     };
     setFilters(empty);
     try {
@@ -3944,6 +4179,14 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     }
     setSearchQuery("");
     setBrandFilterQuery("");
+    setRamFilterQuery("");
+    setStorageFilterQuery("");
+    setBatteryFilterQuery("");
+    setProcessorFilterQuery("");
+    setNetworkFilterQuery("");
+    setRefreshRateFilterQuery("");
+    setRearCameraFilterQuery("");
+    setFrontCameraFilterQuery("");
     try {
       const params = stripSmartphoneSeoQueryParams(search);
       [
@@ -3986,7 +4229,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       count += filters.network.length;
     if (filters.refreshRate && filters.refreshRate.length)
       count += filters.refreshRate.length;
-    if (filters.camera && filters.camera.length) count += filters.camera.length;
+    if (filters.rearCamera && filters.rearCamera.length)
+      count += filters.rearCamera.length;
+    if (filters.frontCamera && filters.frontCamera.length)
+      count += filters.frontCamera.length;
     if (
       filters.priceRange &&
       (filters.priceRange.min > 0 || filters.priceRange.max < MAX_PRICE)
@@ -4144,7 +4390,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   if (noDataAndNotLoading) return null;
 
   return (
-    <div className="min-h-screen  text-slate-900" data-page-label={headerLabel}>
+    <div
+      className="min-h-screen  text-slate-900 bg-white"
+      data-page-label={headerLabel}
+    >
       <style>{animationStyles}</style>
       <SEO
         title={seoTitle}
@@ -4262,7 +4511,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
                   <div className="space-y-3 sm:space-y-4 lg:hidden">
                     {getActiveFiltersCount() > 0 && (
-                      <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4">
+                      <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-4 shadow-[0_2px_2px_rgba(0,0,0,0.1)]">
                         <div className="flex items-center gap-3">
                           <FaInfoCircle className="text-blue-500" />
                           <div>
@@ -4295,7 +4544,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
               {/* Desktop Filter Sidebar */}
               {!shouldHideInteractiveFilters ? (
                 <div className="hidden lg:block lg:w-72 flex-shrink-0">
-                  <div className="sticky top-6 rounded-2xl bg-white shadow-[0_2px_4px_rgba(0,0,0,0.1)] p-5 lg:p-6">
+                  <div className="sticky top-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-[0_2px_2px_rgba(0,0,0,0.1)] lg:p-6">
                     {/* Filters Header */}
                     <div className="mb-6 flex items-center justify-between border-b border-slate-200 px-2 pb-4 sm:mb-8 sm:px-3 md:px-4">
                       <div>
@@ -4319,7 +4568,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
                     {/* Active Filters Badge */}
                     {getActiveFiltersCount() > 0 && (
-                      <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 shadow-sm sm:mb-8">
+                      <div className="mb-6 rounded-xl border border-slate-100 bg-white p-4 shadow-[0_2px_2px_rgba(0,0,0,0.1)] sm:mb-8">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-sm font-semibold text-slate-900">
                             Active Filters
@@ -4333,6 +4582,38 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                         </p>
                       </div>
                     )}
+
+                    {/* Search Filter */}
+                    <div className="mb-8">
+                      <div className="mb-4">
+                        <h4 className="text-base font-bold text-slate-900">
+                          Search Phones
+                        </h4>
+                        <p className="mt-1 text-xs text-slate-500">
+                          Match model, name, or brand
+                        </p>
+                      </div>
+                      <div className="relative">
+                        <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" />
+                        <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder="Search smartphones..."
+                          className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-8 pr-9 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        />
+                        {searchQuery ? (
+                          <button
+                            type="button"
+                            onClick={() => setSearchQuery("")}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                            aria-label="Clear smartphone search"
+                          >
+                            <FaTimes className="text-xs" />
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
 
                     {/* Brand Filter */}
                     <div className="mb-8">
@@ -4407,7 +4688,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                         </span>
                       </div>
 
-                      <div className="rounded-xl border border-slate-200 bg-[#f8fbff] p-4">
+                      <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-[0_2px_2px_rgba(0,0,0,0.1)]">
                         <div className="mb-4 flex justify-between text-sm font-medium text-slate-900">
                           <div className="text-center">
                             <div className="text-xs text-slate-500">
@@ -4520,25 +4801,46 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                           {filters.ram.length}
                         </span>
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        {ramOptions.map((ram) => (
-                          <label
-                            key={ram}
-                            className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium border ${
-                              filters.ram.includes(ram)
-                                ? "bg-gradient-to-b from-blue-500 to-sky-500 text-white border-blue-400"
-                                : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-slate-50"
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={filters.ram.includes(ram)}
-                              onChange={() => handleFilterChange("ram", ram)}
-                              className="sr-only"
-                            />
-                            <span>{ram}</span>
-                          </label>
-                        ))}
+                      <div className="relative mb-3">
+                        <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" />
+                        <input
+                          type="text"
+                          value={ramFilterQuery}
+                          onChange={(e) => setRamFilterQuery(e.target.value)}
+                          placeholder="Search RAM..."
+                          className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        />
+                      </div>
+                      <div className="no-scrollbar max-h-44 space-y-1 overflow-y-auto rounded-xl bg-white p-1">
+                        {filteredRamOptions.map((ram) => {
+                          const isSelected = filters.ram.some(
+                            (value) =>
+                              normalizeMemoryFilterLabel(value, "GB") === ram,
+                          );
+                          return (
+                            <label
+                              key={ram}
+                              className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                                isSelected
+                                  ? "bg-blue-50 text-blue-700"
+                                  : "text-slate-700 hover:bg-slate-50"
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => handleFilterChange("ram", ram)}
+                                className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white checked:border-blue-600 checked:bg-blue-600"
+                              />
+                              <span>{ram}</span>
+                            </label>
+                          );
+                        })}
+                        {filteredRamOptions.length === 0 && (
+                          <div className="px-3 py-2 text-sm text-slate-400">
+                            No RAM options found
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -4557,27 +4859,51 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                           {filters.storage.length}
                         </span>
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        {storageOptions.map((storage) => (
-                          <label
-                            key={storage}
-                            className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium border ${
-                              filters.storage.includes(storage)
-                                ? "bg-gradient-to-b from-blue-500 to-sky-500 text-white border-blue-400"
-                                : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-slate-50"
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={filters.storage.includes(storage)}
-                              onChange={() =>
-                                handleFilterChange("storage", storage)
-                              }
-                              className="sr-only"
-                            />
-                            <span>{storage}</span>
-                          </label>
-                        ))}
+                      <div className="relative mb-3">
+                        <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" />
+                        <input
+                          type="text"
+                          value={storageFilterQuery}
+                          onChange={(e) =>
+                            setStorageFilterQuery(e.target.value)
+                          }
+                          placeholder="Search storage..."
+                          className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        />
+                      </div>
+                      <div className="no-scrollbar max-h-44 space-y-1 overflow-y-auto rounded-xl bg-white p-1">
+                        {filteredStorageOptions.map((storage) => {
+                          const isSelected = filters.storage.some(
+                            (value) =>
+                              normalizeMemoryFilterLabel(value, "GB") ===
+                              storage,
+                          );
+                          return (
+                            <label
+                              key={storage}
+                              className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                                isSelected
+                                  ? "bg-blue-50 text-blue-700"
+                                  : "text-slate-700 hover:bg-slate-50"
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() =>
+                                  handleFilterChange("storage", storage)
+                                }
+                                className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white checked:border-blue-600 checked:bg-blue-600"
+                              />
+                              <span>{storage}</span>
+                            </label>
+                          );
+                        })}
+                        {filteredStorageOptions.length === 0 && (
+                          <div className="px-3 py-2 text-sm text-slate-400">
+                            No storage options found
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -4586,48 +4912,369 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                       <div className="flex items-center justify-between mb-4">
                         <div>
                           <h4 className="text-base font-bold text-slate-900">
-                            Battery Capacity
+                            Battery Features
                           </h4>
                           <p className="mt-1 text-xs text-slate-500">
-                            Usage time and endurance
+                            Capacity and charging
                           </p>
                         </div>
                         <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
                           {filters.battery.length}
                         </span>
                       </div>
-                      <div className="grid grid-cols-1 gap-2">
-                        {BATTERY_RANGES.map((r) => {
+                      <div className="relative mb-3">
+                        <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" />
+                        <input
+                          type="text"
+                          value={batteryFilterQuery}
+                          onChange={(e) =>
+                            setBatteryFilterQuery(e.target.value)
+                          }
+                          placeholder="Search battery..."
+                          className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        />
+                      </div>
+                      <div className="no-scrollbar max-h-44 space-y-1 overflow-y-auto rounded-xl bg-white p-1">
+                        {filteredBatteryFeatures.map((r) => {
+                          const isSelected = filters.battery.includes(r.id);
                           return (
                             <label
                               key={r.id}
-                              className={`flex items-center justify-between gap-2 cursor-pointer px-4 py-3 rounded-xl transition-all duration-300 font-medium border ${
-                                filters.battery.includes(r.id)
-                                  ? "bg-gradient-to-r from-blue-500 to-sky-500 text-white border-blue-400"
-                                  : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-slate-50"
+                              className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                                isSelected
+                                  ? "bg-blue-50 text-blue-700"
+                                  : "text-slate-700 hover:bg-slate-50"
                               }`}
                             >
                               <input
                                 type="checkbox"
-                                checked={filters.battery.includes(r.id)}
+                                checked={isSelected}
                                 onChange={() =>
                                   handleFilterChange("battery", r.id)
                                 }
-                                className="sr-only"
+                                className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white checked:border-blue-600 checked:bg-blue-600"
                               />
                               <span>{r.label}</span>
-                              <div
-                                className={`w-2 h-2 rounded-full ${
-                                  filters.battery.includes(r.id)
-                                    ? "bg-white/80"
-                                    : "bg-slate-300"
-                                }`}
-                              ></div>
                             </label>
                           );
                         })}
+                        {filteredBatteryFeatures.length === 0 && (
+                          <div className="px-3 py-2 text-sm text-slate-400">
+                            No battery options found
+                          </div>
+                        )}
                       </div>
                     </div>
+
+                    {/* Processor Filter */}
+                    {processorOptions.length > 0 && (
+                      <div className="mb-8">
+                        <div className="mb-4 flex items-center justify-between">
+                          <div>
+                            <h4 className="text-base font-bold text-slate-900">
+                              Processor
+                            </h4>
+                            <p className="mt-1 text-xs text-slate-500">
+                              Chipset family
+                            </p>
+                          </div>
+                          <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
+                            {filters.processor.length}
+                          </span>
+                        </div>
+                        <div className="relative mb-3">
+                          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" />
+                          <input
+                            type="text"
+                            value={processorFilterQuery}
+                            onChange={(e) =>
+                              setProcessorFilterQuery(e.target.value)
+                            }
+                            placeholder="Search processor..."
+                            className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          />
+                        </div>
+                        <div className="no-scrollbar max-h-44 space-y-1 overflow-y-auto rounded-xl bg-white p-1">
+                          {filteredProcessorOptions.map((processor) => {
+                            const isSelected =
+                              filters.processor.includes(processor);
+                            return (
+                              <label
+                                key={processor}
+                                className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                                  isSelected
+                                    ? "bg-blue-50 text-blue-700"
+                                    : "text-slate-700 hover:bg-slate-50"
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() =>
+                                    handleFilterChange("processor", processor)
+                                  }
+                                  className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white checked:border-blue-600 checked:bg-blue-600"
+                                />
+                                <span>{processor}</span>
+                              </label>
+                            );
+                          })}
+                          {filteredProcessorOptions.length === 0 && (
+                            <div className="px-3 py-2 text-sm text-slate-400">
+                              No processor options found
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Network Filter */}
+                    {networkOptions.length > 0 && (
+                      <div className="mb-8">
+                        <div className="mb-4 flex items-center justify-between">
+                          <div>
+                            <h4 className="text-base font-bold text-slate-900">
+                              Network
+                            </h4>
+                            <p className="mt-1 text-xs text-slate-500">
+                              Cellular support
+                            </p>
+                          </div>
+                          <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
+                            {filters.network.length}
+                          </span>
+                        </div>
+                        <div className="relative mb-3">
+                          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" />
+                          <input
+                            type="text"
+                            value={networkFilterQuery}
+                            onChange={(e) =>
+                              setNetworkFilterQuery(e.target.value)
+                            }
+                            placeholder="Search network..."
+                            className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          />
+                        </div>
+                        <div className="no-scrollbar max-h-44 space-y-1 overflow-y-auto rounded-xl bg-white p-1">
+                          {filteredNetworkOptions.map((network) => {
+                            const isSelected =
+                              filters.network.includes(network);
+                            return (
+                              <label
+                                key={network}
+                                className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                                  isSelected
+                                    ? "bg-blue-50 text-blue-700"
+                                    : "text-slate-700 hover:bg-slate-50"
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() =>
+                                    handleFilterChange("network", network)
+                                  }
+                                  className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white checked:border-blue-600 checked:bg-blue-600"
+                                />
+                                <span>{network}</span>
+                              </label>
+                            );
+                          })}
+                          {filteredNetworkOptions.length === 0 && (
+                            <div className="px-3 py-2 text-sm text-slate-400">
+                              No network options found
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Refresh Rate Filter */}
+                    {refreshRateOptions.length > 0 && (
+                      <div className="mb-8">
+                        <div className="mb-4 flex items-center justify-between">
+                          <div>
+                            <h4 className="text-base font-bold text-slate-900">
+                              Refresh Rate
+                            </h4>
+                            <p className="mt-1 text-xs text-slate-500">
+                              Display smoothness
+                            </p>
+                          </div>
+                          <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
+                            {filters.refreshRate.length}
+                          </span>
+                        </div>
+                        <div className="relative mb-3">
+                          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" />
+                          <input
+                            type="text"
+                            value={refreshRateFilterQuery}
+                            onChange={(e) =>
+                              setRefreshRateFilterQuery(e.target.value)
+                            }
+                            placeholder="Search refresh rate..."
+                            className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          />
+                        </div>
+                        <div className="no-scrollbar max-h-44 space-y-1 overflow-y-auto rounded-xl bg-white p-1">
+                          {filteredRefreshRateOptions.map((rate) => {
+                            const isSelected =
+                              filters.refreshRate.includes(rate);
+                            return (
+                              <label
+                                key={rate}
+                                className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                                  isSelected
+                                    ? "bg-blue-50 text-blue-700"
+                                    : "text-slate-700 hover:bg-slate-50"
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() =>
+                                    handleFilterChange("refreshRate", rate)
+                                  }
+                                  className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white checked:border-blue-600 checked:bg-blue-600"
+                                />
+                                <span>{rate}</span>
+                              </label>
+                            );
+                          })}
+                          {filteredRefreshRateOptions.length === 0 && (
+                            <div className="px-3 py-2 text-sm text-slate-400">
+                              No refresh rate options found
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Rear Camera Filter */}
+                    {rearCameraOptions.length > 0 && (
+                      <div className="mb-8">
+                        <div className="mb-4 flex items-center justify-between">
+                          <div>
+                            <h4 className="text-base font-bold text-slate-900">
+                              Rear Camera
+                            </h4>
+                            <p className="mt-1 text-xs text-slate-500">
+                              Main camera resolution
+                            </p>
+                          </div>
+                          <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
+                            {filters.rearCamera.length}
+                          </span>
+                        </div>
+                        <div className="relative mb-3">
+                          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" />
+                          <input
+                            type="text"
+                            value={rearCameraFilterQuery}
+                            onChange={(e) =>
+                              setRearCameraFilterQuery(e.target.value)
+                            }
+                            placeholder="Search rear camera..."
+                            className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          />
+                        </div>
+                        <div className="no-scrollbar max-h-44 space-y-1 overflow-y-auto rounded-xl bg-white p-1">
+                          {filteredRearCameraOptions.map((camera) => {
+                            const isSelected =
+                              filters.rearCamera.includes(camera);
+                            return (
+                              <label
+                                key={camera}
+                                className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                                  isSelected
+                                    ? "bg-blue-50 text-blue-700"
+                                    : "text-slate-700 hover:bg-slate-50"
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() =>
+                                    handleFilterChange("rearCamera", camera)
+                                  }
+                                  className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white checked:border-blue-600 checked:bg-blue-600"
+                                />
+                                <span>{camera}</span>
+                              </label>
+                            );
+                          })}
+                          {filteredRearCameraOptions.length === 0 && (
+                            <div className="px-3 py-2 text-sm text-slate-400">
+                              No rear camera options found
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Front Camera Filter */}
+                    {frontCameraOptions.length > 0 && (
+                      <div className="mb-8">
+                        <div className="mb-4 flex items-center justify-between">
+                          <div>
+                            <h4 className="text-base font-bold text-slate-900">
+                              Front Camera
+                            </h4>
+                            <p className="mt-1 text-xs text-slate-500">
+                              Selfie camera resolution
+                            </p>
+                          </div>
+                          <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
+                            {filters.frontCamera.length}
+                          </span>
+                        </div>
+                        <div className="relative mb-3">
+                          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" />
+                          <input
+                            type="text"
+                            value={frontCameraFilterQuery}
+                            onChange={(e) =>
+                              setFrontCameraFilterQuery(e.target.value)
+                            }
+                            placeholder="Search front camera..."
+                            className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          />
+                        </div>
+                        <div className="no-scrollbar max-h-44 space-y-1 overflow-y-auto rounded-xl bg-white p-1">
+                          {filteredFrontCameraOptions.map((camera) => {
+                            const isSelected =
+                              filters.frontCamera.includes(camera);
+                            return (
+                              <label
+                                key={camera}
+                                className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                                  isSelected
+                                    ? "bg-blue-50 text-blue-700"
+                                    : "text-slate-700 hover:bg-slate-50"
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() =>
+                                    handleFilterChange("frontCamera", camera)
+                                  }
+                                  className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white checked:border-blue-600 checked:bg-blue-600"
+                                />
+                                <span>{camera}</span>
+                              </label>
+                            );
+                          })}
+                          {filteredFrontCameraOptions.length === 0 && (
+                            <div className="px-3 py-2 text-sm text-slate-400">
+                              No front camera options found
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Additional filters button */}
                     <button
@@ -4649,13 +5296,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                     const availabilityState = getAvailabilityState(
                       device.storePrices || [],
                       device.brand,
-                      device.brandWebsite || null,
-                      device.launchDate || null,
-                      device.brandLogo || null,
-                      device.saleStartDate || null,
-                      isUpcomingDevice(device) || device.is_prebooking === true,
-                      devicePolicy.stage,
-                      device.price,
                     );
                     const availableStoreRows = availabilityState.stores || [];
                     const shouldFilterEmptyStores = listFilter === "new";
@@ -4667,12 +5307,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                           );
                           const hasPrice =
                             extractNumericPrice(storePrice.price) > 0;
-                          const isPrebookingRow =
-                            storePrice.is_prebooking === true ||
-                            /^(pre(book|order)|coming\s*soon)$/i.test(
-                              String(storePrice.cta_label || "").trim(),
-                            );
-                          return hasUrl || hasPrice || isPrebookingRow;
+                          return hasUrl || hasPrice;
                         })
                       : availableStoreRows;
                     const launchDateParsed = device.launchDate
@@ -4681,9 +5316,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                     const hasLaunchDate =
                       launchDateParsed &&
                       !Number.isNaN(launchDateParsed.getTime());
-                    const upcomingBadge = isUpcomingView
-                      ? getUpcomingBadge(device)
-                      : null;
                     const allowSpecScore = devicePolicy.allowSpecScore;
                     const scoreValueRaw = allowSpecScore
                       ? Number(resolveSmartphoneBadgeScore(device))
@@ -4697,7 +5329,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                     const statusLabel =
                       device.display_status ||
                       device.displayStatus ||
-                      upcomingBadge ||
                       (getRenderType(device) === "available"
                         ? "Available now"
                         : null);
@@ -4726,6 +5357,30 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                           typeof sp?.url === "string" &&
                           sp.url.trim().length > 0,
                       )?.url || null;
+                    const brandLogoSrc = normalizeAssetUrl(
+                      device.brandLogo || device.brandLogoUrl || null,
+                    );
+                    const brandPriceNumeric = extractNumericPrice(
+                      device.numericPrice || device.price,
+                    );
+                    const shouldUseBrandPriceFallback =
+                      storeRowsForDisplay.length === 0 && brandPriceNumeric > 0;
+                    const brandPriceFallbackRow = shouldUseBrandPriceFallback
+                      ? {
+                          id: `${device.id ?? device.model ?? "phone"}-brand-price`,
+                          store: device.brand || "Brand",
+                          store_name: device.brand || "Brand",
+                          storeName: device.brand || "Brand",
+                          display_store_name: device.brand || "Brand",
+                          logo: brandLogoSrc,
+                          price: device.price || brandPriceNumeric,
+                          cta_label:
+                            getRenderType(device) === "upcoming"
+                              ? "Upcoming"
+                              : "Brand price",
+                          is_brand_price: true,
+                        }
+                      : null;
                     const primaryStoreRow = storeRowsForDisplay[0] || null;
                     const primaryStoreName =
                       primaryStoreRow?.display_store_name ||
@@ -4740,12 +5395,12 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                             ? getStoreLogo(primaryStoreName)
                             : getLogo(primaryStoreName)
                           : null) ||
-                        device.brandLogo ||
+                        brandLogoSrc ||
                         null,
                     );
                     const primaryStoreUrl =
                       primaryStoreRow?.url || brandStoreUrl || null;
-                    const priceRowsForDisplay = storeRowsForDisplay
+                    const storePriceRowsForDisplay = storeRowsForDisplay
                       .filter(
                         (row) =>
                           row &&
@@ -4756,6 +5411,15 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                             row.storeName),
                       )
                       .slice(0, 2);
+                    const priceRowsForDisplay =
+                      storePriceRowsForDisplay.length > 0
+                        ? storePriceRowsForDisplay
+                        : brandPriceFallbackRow
+                          ? [brandPriceFallbackRow]
+                          : [];
+                    const isBrandPriceOnly =
+                      priceRowsForDisplay.length > 0 &&
+                      priceRowsForDisplay.every((row) => row?.is_brand_price);
                     const availableDateRaw =
                       device.saleStartDate ||
                       device.sale_start_date ||
@@ -4766,14 +5430,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                       null;
                     const availableDateParsed =
                       parseDateValue(availableDateRaw);
-                    const availableOnText =
-                      isUpcomingView && availableDateParsed
-                        ? availableDateParsed.toLocaleDateString("en-US", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          })
-                        : null;
+                    const availableOnText = null;
                     const displaySummary = (() => {
                       const rawDisplay =
                         device.display || device.specs?.display;
@@ -4888,7 +5545,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                       <div
                         key={`${device.id ?? device.model ?? ""}-${_idx}`}
                         onClick={(e) => handleView(device, e)}
-                        className={`h-full w-full mx-auto smooth-transition fade-in-up overflow-hidden rounded-lg bg-white shadow-md cursor-pointer transition-all duration-300 ${
+                        className={`h-full w-full mx-auto smooth-transition fade-in-up overflow-hidden rounded-lg border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)] cursor-pointer transition-all duration-300 ${
                           isCompareSelected(device)
                             ? "ring-2 ring-blue-400 bg-blue-50"
                             : "hover:"
@@ -4903,6 +5560,15 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                             </div>
 
                             <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+                              {shouldUseBrandPriceFallback && brandLogoSrc ? (
+                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white ring-1 ring-slate-200">
+                                  <img
+                                    src={brandLogoSrc}
+                                    alt={`${device.brand || device.name || "Brand"} logo`}
+                                    className="h-6 w-6 object-contain"
+                                  />
+                                </div>
+                              ) : null}
                               <div className="text-xl font-semibold tracking-tight text-[#14255e] sm:text-2xl">
                                 {device.price}
                               </div>
@@ -4997,8 +5663,19 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
                               {renderVariantSelector("hidden lg:flex")}
 
-                              <div className="lg:hidden text-lg font-semibold tracking-tight text-[#14255e] sm:text-xl">
-                                {device.price}
+                              <div className="flex items-center gap-2 lg:hidden">
+                                {shouldUseBrandPriceFallback && brandLogoSrc ? (
+                                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white ring-1 ring-slate-200">
+                                    <img
+                                      src={brandLogoSrc}
+                                      alt={`${device.brand || device.name || "Brand"} logo`}
+                                      className="h-5 w-5 object-contain"
+                                    />
+                                  </div>
+                                ) : null}
+                                <div className="text-lg font-semibold tracking-tight text-[#14255e] sm:text-xl">
+                                  {device.price}
+                                </div>
                               </div>
 
                               {availableOnText ? (
@@ -5014,10 +5691,12 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                               ) : null}
 
                               {priceRowsForDisplay.length > 0 ? (
-                                <div className="hidden rounded-[24px] border border-blue-100 bg-[#f8fbff] p-2.5 sm:p-4 lg:block">
+                                <div className="hidden rounded-[24px] border border-slate-100 bg-white p-2.5 shadow-[0_2px_2px_rgba(0,0,0,0.1)] sm:p-4 lg:block">
                                   <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
                                     <FaStore className="text-emerald-500" />
-                                    Check Price On
+                                    {isBrandPriceOnly
+                                      ? "Brand Price"
+                                      : "Check Price On"}
                                   </div>
                                   <div className="space-y-2">
                                     {priceRowsForDisplay.map(
@@ -5041,11 +5720,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                                           "";
                                         const ctaText =
                                           storePrice.cta_label || "Buy Now";
-                                        const isPreorderCta =
-                                          storePrice.is_prebooking === true ||
-                                          /^(pre(book|order)|coming\s*soon)$/i.test(
-                                            String(ctaText).trim(),
-                                          );
                                         const rawLogoSrc =
                                           storePrice.logo ||
                                           (storeNameCandidate
@@ -5102,11 +5776,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                                                   onClick={(e) =>
                                                     e.stopPropagation()
                                                   }
-                                                  className={`inline-flex items-center gap-1 whitespace-nowrap text-sm font-semibold transition-colors ${
-                                                    isPreorderCta
-                                                      ? "text-blue-600 hover:text-blue-700"
-                                                      : "text-blue-600 hover:text-blue-700"
-                                                  }`}
+                                                  className="inline-flex items-center gap-1 whitespace-nowrap text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700"
                                                 >
                                                   {ctaText || "Buy Now"}
                                                   <FaExternalLinkAlt className="text-xs" />
@@ -5188,10 +5858,12 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                             ) : null}
 
                             {priceRowsForDisplay.length > 0 ? (
-                              <div className="rounded-[20px] border border-blue-100 bg-[#f8fbff] p-3 sm:p-4">
+                              <div className="rounded-[20px] border border-slate-100 bg-white p-3 shadow-[0_2px_2px_rgba(0,0,0,0.1)] sm:p-4">
                                 <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
                                   <FaStore className="text-emerald-500" />
-                                  Check Price On
+                                  {isBrandPriceOnly
+                                    ? "Brand Price"
+                                    : "Check Price On"}
                                 </div>
                                 <div className="space-y-2">
                                   {priceRowsForDisplay.map((storePrice, i) => {
@@ -5214,11 +5886,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                                       "";
                                     const ctaText =
                                       storePrice.cta_label || "Buy Now";
-                                    const isPreorderCta =
-                                      storePrice.is_prebooking === true ||
-                                      /^(pre(book|order)|coming\s*soon)$/i.test(
-                                        String(ctaText).trim(),
-                                      );
                                     const rawLogoSrc =
                                       storePrice.logo ||
                                       (storeNameCandidate
@@ -5275,11 +5942,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                                               onClick={(e) =>
                                                 e.stopPropagation()
                                               }
-                                              className={`inline-flex items-center gap-1 whitespace-nowrap text-sm font-semibold transition-colors ${
-                                                isPreorderCta
-                                                  ? "text-blue-600 hover:text-blue-700"
-                                                  : "text-blue-600 hover:text-blue-700"
-                                              }`}
+                                              className="inline-flex items-center gap-1 whitespace-nowrap text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700"
                                             >
                                               {ctaText || "Buy Now"}
                                               <FaExternalLinkAlt className="text-xs" />
@@ -5306,7 +5969,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
                 {/* Floating Compare Bar - Appears when 2+ items selected */}
                 {compareItems.length >= 2 && (
-                  <div className="fixed bottom-6 left-4 right-4 z-40 max-w-sm rounded-xl border border-slate-200 bg-white p-4 shadow-lg animate-slide-up md:bottom-8 md:left-auto md:right-8 md:shadow-2xl">
+                  <div className="fixed bottom-6 left-4 right-4 z-40 max-w-sm rounded-xl border border-slate-100 bg-white p-4 shadow-[0_2px_2px_rgba(0,0,0,0.1)] animate-slide-up md:bottom-8 md:left-auto md:right-8">
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <p className="text-sm font-semibold text-slate-900">
@@ -5328,7 +5991,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
                 {/* No Results State */}
                 {sortedVariants.length === 0 && (
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 py-16 text-center transition-all duration-300">
+                  <div className="rounded-xl border border-slate-100 bg-white py-16 text-center shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-all duration-300">
                     <div className="max-w-md mx-auto">
                       <FaSearch className="mx-auto mb-4 text-5xl text-slate-300" />
                       <h3 className="mb-3 text-2xl font-semibold text-slate-900">
@@ -5448,13 +6111,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
             <MobilePhoneHighlights
               devices={baseDevices}
               className="mt-6"
-              context={
-                isUpcomingView
-                  ? "upcoming"
-                  : isNewFilterPath
-                    ? "latest"
-                    : "default"
-              }
+              context={isNewFilterPath ? "latest" : "default"}
             />
 
             <MobileSortSheet
@@ -5474,7 +6131,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                   onClick={() => setShowFilters(false)}
                 ></div>
 
-                <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl transform transition-transform duration-300 max-h-[90vh] overflow-hidden flex flex-col">
+                <div className="absolute bottom-0 left-0 right-0 flex max-h-[90vh] flex-col overflow-hidden rounded-t-3xl border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)] transform transition-transform duration-300">
                   <div className="flex items-center justify-between p-6 border-b border-gray-200  ">
                     <div className="flex items-center gap-3">
                       <div>
@@ -5562,7 +6219,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                       <div className="text-sm text-gray-600 mb-3">
                         Set your budget range for smartphone purchase
                       </div>
-                      <div className="rounded-xl border border-gray-200 bg-[#f8fbff] p-4">
+                      <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-[0_2px_2px_rgba(0,0,0,0.1)]">
                         <div className="flex justify-between text-sm font-medium text-gray-700 mb-4">
                           <div className="text-center">
                             <div className="text-xs text-gray-500">Minimum</div>
@@ -5729,22 +6386,22 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                       </div>
                     </div>
 
-                    {/* Battery Ranges */}
+                    {/* Battery Features */}
                     <div>
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
                           <FaBatteryFull className="text-orange-500" /> Battery
-                          Capacity
+                          Features
                         </h4>
                         <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
                           {filters.battery.length} selected
                         </span>
                       </div>
                       <div className="text-sm text-gray-600 mb-3">
-                        Filter by battery capacity for longer usage time
+                        Filter by capacity, fast charging, and wireless charging
                       </div>
                       <div className="space-y-2">
-                        {BATTERY_RANGES.map((r) => {
+                        {BATTERY_FEATURES.map((r) => {
                           const Icon = r.icon;
                           return (
                             <label

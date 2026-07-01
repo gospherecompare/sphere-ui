@@ -5,7 +5,7 @@ import HeroSection from "./Herosection";
 
 const FeaturedProduct = React.lazy(() => import("./FeaturedProduct"));
 const PopularBrands = React.lazy(() => import("./Popularbrand"));
-const LatestSmartphones = React.lazy(() => import("./UpcomingSmartphones"));
+const LatestSmartphones = React.lazy(() => import("./LatestSmartphones"));
 const BestPriceSection = React.lazy(() => import("./BestPrice"));
 const RecommendedSmartphones = React.lazy(() => import("./RecommendedSmartphones"));
 const LatestNewsArticlesSection = React.lazy(() =>

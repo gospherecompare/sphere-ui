@@ -379,7 +379,7 @@ const formatStoryAuthorDate = (story) =>
 
 const formatStoryLabel = (story) => {
   if (!story) return "News";
-  return "News";
+  return story.label || "News";
 };
 
 const readStoryText = (story) =>

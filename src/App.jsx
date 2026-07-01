@@ -161,13 +161,6 @@ const toSeoTextWithoutCommas = (value = "") =>
   String(value || "").replace(/,/g, "");
 
 const toCanonicalPath = (path) => {
-  if (path === "/smartphones/upcoming") return "/smartphones/upcoming";
-  if (path.startsWith("/smartphones/filter/upcoming"))
-    return "/smartphones/upcoming";
-  if (path.startsWith("/devices/smartphones/upcoming"))
-    return "/smartphones/upcoming";
-  if (path.startsWith("/devices/mobiles/upcoming"))
-    return "/smartphones/upcoming";
   if (path === "/career") return "/careers";
   if (path === "/articles") return "/news";
   if (path.startsWith("/articles/")) return "/news";
@@ -306,13 +299,6 @@ const resolveSeoMeta = (pathname) => {
       keywords: `${tvDetailName.toLowerCase()}, ${tvDetailName.toLowerCase()} tv price in india, ${tvDetailName.toLowerCase()} specifications, smart tv comparison india, tv prices list ${CURRENT_YEAR}`,
     },
     {
-      test: (p) => p === "/smartphones/upcoming",
-      title: `Upcoming Smartphones (${CURRENT_MONTH_YEAR}) - Expected Launches & Preorders - Hooks`,
-      description:
-        "Track upcoming smartphones, expected launch timelines, and preorder-ready devices to plan your next upgrade.",
-      keywords: `upcoming smartphones ${CURRENT_YEAR}, preorder phones, expected launch mobiles, new launch phones, smartphones launch calendar india`,
-    },
-    {
       test: () => Boolean(smartphoneFilterMeta),
       title:
         smartphoneFilterSlug === "new"
@@ -326,7 +312,7 @@ const resolveSeoMeta = (pathname) => {
             ).toLowerCase()} with detailed specs latest prices reviews and comparisons to choose the right phone for your budget.`,
       keywords:
         smartphoneFilterSlug === "new"
-          ? `latest smartphones ${CURRENT_YEAR}, new launch mobiles, upcoming phones india, smartphone releases`
+          ? `latest smartphones ${CURRENT_YEAR}, new launch mobiles, smartphone releases`
           : `smartphones ${String(
               smartphoneFilterMeta?.label || "",
             ).toLowerCase()}, best smartphones ${String(
@@ -772,10 +758,6 @@ function App() {
             element={<Smartphones />}
           />
           <Route
-            path="/smartphones/upcoming"
-            element={<UpcomingSmartphonesList />}
-          />
-          <Route
             path="/smartphones/filter/:filterSlug"
             element={<Smartphones />}
           />
@@ -786,6 +768,10 @@ function App() {
           <Route
             path="/smartphones/top"
             element={<Navigate to="/trending/smartphones" replace />}
+          />
+          <Route
+            path="/smartphones/upcoming"
+            element={<UpcomingSmartphonesList />}
           />
           <Route path="/tvs" element={<TVs />} />
           <Route path="/tvs/latest" element={<TVs />} />
@@ -798,6 +784,7 @@ function App() {
             path="/trending"
             element={<Navigate to="/trending/smartphones" replace />}
           />
+          <Route path="/trending/smartphones" element={<Smartphones />} />
           <Route path="/trending/:category" element={<TrendingProductsHub />} />
 
           {/* Category shortcuts */}

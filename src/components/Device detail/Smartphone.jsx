@@ -302,25 +302,6 @@ const normalizeStorePriceRow = (
     store?.available_from ||
     store?.availableFrom ||
     null;
-  const saleStartDate = saleStartRaw ? new Date(saleStartRaw) : null;
-  const hasFutureSaleDate =
-    saleStartDate instanceof Date &&
-    !Number.isNaN(saleStartDate.getTime()) &&
-    saleStartDate > new Date();
-  const availabilityText = String(
-    store?.availability_status ||
-      store?.availabilityStatus ||
-      store?.cta_label ||
-      store?.ctaLabel ||
-      "",
-  )
-    .trim()
-    .toLowerCase();
-  const isPrebooking =
-    store?.is_prebooking === true ||
-    store?.isPrebooking === true ||
-    /pre(book|order)|coming\s*soon|not[\s_-]*started/.test(availabilityText) ||
-    hasFutureSaleDate;
 
   return {
     ...store,
@@ -338,12 +319,11 @@ const normalizeStorePriceRow = (
     cta_label:
       store?.cta_label ||
       store?.ctaLabel ||
-      (isPrebooking ? "Coming Soon" : rawUrl ? "Buy Now" : "Unavailable"),
+      (rawUrl ? "Buy Now" : "Unavailable"),
     availability_status:
       store?.availability_status || store?.availabilityStatus || null,
     sale_start_date: saleStartRaw,
     sale_date: store?.sale_date || store?.saleDate || null,
-    is_prebooking: isPrebooking,
     logo: store?.logo || store?.store_logo || store?.storeLogo || "",
   };
 };
@@ -386,7 +366,6 @@ const getRenderableStorePriceRows = (source) => {
         numericPrice: fallbackPrice,
         url: "",
         cta_label: "Buy Now",
-        is_prebooking: false,
         logo: "",
       },
     ];
@@ -931,14 +910,35 @@ const MobileDetailCard = () => {
     return null;
   };
 
+  const getLocalDateOnlyString = (value = new Date()) => {
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   const normalizeDateLikeValue = (value) => {
     if (value == null) return null;
     if (value instanceof Date) {
-      return Number.isNaN(value.getTime()) ? null : value.toISOString();
+      const dateOnly = getLocalDateOnlyString(value);
+      return dateOnly ? `${dateOnly}T00:00:00` : null;
     }
     if (typeof value === "object") return null;
-    const dt = new Date(value);
-    return Number.isNaN(dt.getTime()) ? null : dt.toISOString();
+    const raw = String(value).trim();
+    if (!raw) return null;
+    const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (isoMatch)
+      return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}T00:00:00`;
+    const dmyMatch = raw.match(/^(\d{1,2})[\s/-](\d{1,2})[\s/-](\d{4})$/);
+    if (dmyMatch) {
+      const day = String(Number(dmyMatch[1])).padStart(2, "0");
+      const month = String(Number(dmyMatch[2])).padStart(2, "0");
+      return `${dmyMatch[3]}-${month}-${day}T00:00:00`;
+    }
+    const dateOnly = getLocalDateOnlyString(raw);
+    return dateOnly ? `${dateOnly}T00:00:00` : null;
   };
 
   const formatDateForDisplay = (value) => {
@@ -955,15 +955,23 @@ const MobileDetailCard = () => {
     }
   };
 
+  const isFutureDateValue = (value) => {
+    const normalized = normalizeDateLikeValue(value);
+    if (!normalized) return false;
+    const parsed = new Date(normalized);
+    if (Number.isNaN(parsed.getTime())) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return parsed.getTime() > today.getTime();
+  };
+
   const normalizeLaunchStatus = (value) => {
     if (!value) return null;
     const text = String(value).trim().toLowerCase();
     if (!text) return null;
     if (/rumou?r/.test(text)) return "rumored";
     if (/announce/.test(text)) return "announced";
-    if (/(pre[-\s]?order|pre[-\s]?book|prebooking|presale)/i.test(text))
-      return "upcoming";
-    if (/(upcoming|coming soon|expected|launching soon)/i.test(text))
+    if (/(upcoming|coming soon|expected|scheduled)/i.test(text))
       return "upcoming";
     if (/(available|on sale|in stock)/i.test(text)) return "available";
     if (/(released|launched|out now)/i.test(text)) return "released";
@@ -974,9 +982,8 @@ const MobileDetailCard = () => {
     if (!value) return null;
     const text = String(value).trim().toLowerCase();
     if (!text) return null;
-    if (/(pre[-\s]?order|pre[-\s]?book|prebooking|presale)/i.test(text))
-      return "preorder";
-    if (/(sale[\s_-]?scheduled|scheduled)/i.test(text)) return "sale_scheduled";
+    if (/(sale[\s_-]?scheduled|upcoming|coming soon|expected)/i.test(text))
+      return "sale_scheduled";
     if (/(sale[\s_-]?started|started)/i.test(text)) return "sale_started";
     if (/(store[\s_-]?pending|store[\s_-]?listing[\s_-]?pending)/i.test(text))
       return "store_pending";
@@ -1027,34 +1034,6 @@ const MobileDetailCard = () => {
     );
   };
 
-  const isPrebookingStore = (storePrice) => {
-    if (!storePrice || typeof storePrice !== "object") return false;
-    if (storePrice.is_prebooking === true || storePrice.isPrebooking === true)
-      return true;
-
-    const storeStatusText = String(
-      storePrice.availability_status ??
-        storePrice.availabilityStatus ??
-        storePrice.sale_status ??
-        storePrice.saleStatus ??
-        "",
-    )
-      .trim()
-      .toLowerCase();
-    if (
-      /(pre(book|order)|upcoming|coming\s*soon|not[\s_-]*started|pre[\s-]*sale)/i.test(
-        storeStatusText,
-      )
-    ) {
-      return true;
-    }
-
-    const ctaText = String(storePrice.cta_label || "").trim();
-    if (/^(pre(book|order)|coming\s*soon)$/i.test(ctaText)) return true;
-
-    return false;
-  };
-
   const getDeviceStoreRows = (device) => {
     const rows = [];
 
@@ -1080,8 +1059,18 @@ const MobileDetailCard = () => {
 
   const hasLiveStoreSignal = (store) => {
     if (!store || typeof store !== "object") return false;
-    if (store?.is_prebooking === true || store?.isPrebooking === true)
+    if (
+      isFutureDateValue(
+        store.sale_start_date ||
+          store.saleStartDate ||
+          store.sale_date ||
+          store.saleDate ||
+          store.available_from ||
+          store.availableFrom,
+      )
+    ) {
       return false;
+    }
 
     const availabilityText = String(
       store?.availability_status ??
@@ -1094,11 +1083,6 @@ const MobileDetailCard = () => {
     )
       .trim()
       .toLowerCase();
-
-    if (
-      /pre(book|order)|coming\s*soon|not[\s_-]*started/.test(availabilityText)
-    )
-      return false;
 
     if (store?.is_live === true || store?.isLive === true) return true;
     if (
@@ -1199,6 +1183,24 @@ const MobileDetailCard = () => {
     );
     if (direct) return new Date(direct);
 
+    const storePrices = Array.isArray(device.storePrices)
+      ? device.storePrices
+      : Array.isArray(device.store_prices)
+        ? device.store_prices
+        : [];
+    for (const store of storePrices) {
+      const storeDate = normalizeDateLikeValue(
+        store?.sale_start_date ||
+          store?.saleStartDate ||
+          store?.sale_date ||
+          store?.saleDate ||
+          store?.available_from ||
+          store?.availableFrom ||
+          null,
+      );
+      if (storeDate) return new Date(storeDate);
+    }
+
     const variants = Array.isArray(device.variants)
       ? device.variants
       : Array.isArray(device.variants_json)
@@ -1236,66 +1238,17 @@ const MobileDetailCard = () => {
 
   const getDeviceLaunchStatus = (device) => {
     if (!device) return null;
-    const explicitLaunchStage = normalizeLaunchStatus(
-      device.launch_status_override ||
-        device.launchStatusOverride ||
-        device.launch_status ||
-        device.launchStatus ||
-        device.launch_status_text ||
-        device.launchStatusText ||
-        device.status ||
-        device.availability ||
-        device.badge,
-    );
-    const saleStage = normalizeSaleStatus(
-      device.saleStatus ||
-        device.sale_status ||
-        device.saleStatusText ||
-        device.sale_status_text ||
-        device.availabilityStatus ||
-        device.availability_status ||
-        "",
-    );
-    const saleStartDate = getSaleStartDateFromDevice(device);
-    const storeRows = getDeviceStoreRows(device);
-    const storeStage = String(device.storeStage || device.store_stage || "")
-      .trim()
-      .toLowerCase();
-    const hasLiveStore =
-      storeRows.some(hasLiveStoreSignal) || storeStage === "live";
-    const hasPrebookingStore =
-      storeRows.some(isPrebookingStore) || storeStage === "prebooking";
-    const now = Date.now();
-
-    if (
-      saleStage === "preorder" ||
-      saleStage === "sale_scheduled" ||
-      saleStage === "store_pending" ||
-      saleStage === "sale_tbd"
-    ) {
+    const saleStart = getSaleStartDateFromDevice(device);
+    if (saleStart) {
+      const today = new Date(`${getLocalDateOnlyString()}T00:00:00`);
+      return saleStart.getTime() > today.getTime() ? "upcoming" : "available";
+    }
+    const hasStoreEntries =
+      getDeviceStoreRows(device).some(hasStoreMarketSignal);
+    if (!hasStoreEntries) {
       return "upcoming";
     }
-
-    if (saleStage === "sale_started" || saleStage === "on_sale") {
-      return "available";
-    }
-
-    if (saleStartDate) {
-      if (saleStartDate.getTime() > now) return "upcoming";
-      return "available";
-    }
-
-    if (hasPrebookingStore) return "upcoming";
-    if (hasLiveStore) return "available";
-
-    if (explicitLaunchStage) {
-      if (explicitLaunchStage === "released") {
-        return "upcoming";
-      }
-      return explicitLaunchStage;
-    }
-
-    return "upcoming";
+    return "available";
   };
 
   const getBatteryCapacityRaw = (deviceData) => {
@@ -1410,11 +1363,6 @@ const MobileDetailCard = () => {
       normalizeDateLikeValue(d.launchDate) ||
       normalizeDateLikeValue(d.created_at) ||
       normalizeDateLikeValue(d.createdAt);
-    out.official_preorder_url =
-      d.official_preorder_url ||
-      d.officialPreorderUrl ||
-      out.official_preorder_url ||
-      null;
     out.launch_status_override =
       d.launch_status_override ||
       d.launchStatusOverride ||
@@ -4098,7 +4046,7 @@ Price: ${price}
           }
         };
         const sectionCardClass =
-          "overflow-hidden rounded-2xl border border-[#dde1ff] bg-gradient-to-br from-[#edf4ff] via-[#fbfcff] to-[#f3efff] shadow-[0_18px_44px_rgba(99,102,241,0.10)]";
+          "overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)]";
         const sectionDividerClass =
           "mt-4 h-px w-full bg-gradient-to-r from-[#6fa8ff] via-[#8e87ff] to-[#d2b6ff]";
         const fullSpecHighlightFormatter = new Intl.ListFormat("en", {
@@ -4936,7 +4884,7 @@ Price: ${price}
     return (
       <div
         key={section.key}
-        className={`flex h-full min-w-0 flex-col overflow-hidden rounded-2xl  bg-white px-3.5 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all duration-200 sm:px-4 md:px-5 md:py-5 ${layoutClass}`}
+        className={`flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white px-3.5 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all duration-200 sm:px-4 md:px-5 md:py-5 ${layoutClass}`}
       >
         <div className="flex items-center gap-2.5">
           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[#dce6f3] bg-[#f8fbff] md:h-8 md:w-8">
@@ -4989,7 +4937,7 @@ Price: ${price}
   }
 
   return (
-    <div className="w-full sm:px-4 lg:px-6 m-0">
+    <div className="w-full bg-white sm:px-4 lg:px-6 m-0">
       <SEO
         title={metaTitle}
         description={metaDescription}
@@ -5267,7 +5215,7 @@ Price: ${price}
 
       {/* Popular Comparisons */}
       {!compareDisabled && popularComparisonTargets.length > 0 && (
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8  pb-1">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8  pb-1 ">
           <div className="mb-3 flex flex-col gap-1 sm:mb-4">
             <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-500">
               Recommended Comparisons
@@ -5298,7 +5246,7 @@ Price: ${price}
                     key={String(otherId || otherName)}
                     type="button"
                     onClick={() => handlePopularCompare(d)}
-                    className="min-w-[84vw] max-w-[280px] flex-shrink-0 rounded-lg bg-white p-3 text-left transition-all hover:border-blue-200 hover:shadow-sm sm:min-w-[240px]"
+                    className="min-w-[84vw] max-w-[280px] flex-shrink-0 shadow-[0_2px_2px_rgba(0,0,0,0.1)] border border-slate-100 rounded-lg bg-white p-3 text-left transition-all hover:border-blue-200 hover:shadow-sm sm:min-w-[240px]"
                   >
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-md bg-slate-100">
@@ -5333,7 +5281,7 @@ Price: ${price}
       )}
 
       <div
-        className={`mx-auto max-w-7xl ${combineResponsiveClasses(RESPONSIVE_SPACING.pageMarginX)} py-6`}
+        className={`mx-auto max-w-7xl  ${combineResponsiveClasses(RESPONSIVE_SPACING.pageMarginX)} py-6`}
       >
         <div
           className={`flex flex-col lg:flex-row ${RESPONSIVE_SPACING.gapXLarge}`}
@@ -5344,7 +5292,7 @@ Price: ${price}
           >
             <div className="space-y-5">
               {/* Main Image */}
-              <div className="relative overflow-hidden rounded-[28px] bg-white px-4 py-8 sm:px-10 sm:py-12">
+              <div className="relative overflow-hidden rounded-[28px] shadow-[0_2px_2px_rgba(0,0,0,0.1)] border border-slate-100 bg-white px-4 py-8 sm:px-10 sm:py-12">
                 {carouselImages.length > 1 ? (
                   <>
                     <button
@@ -5432,10 +5380,10 @@ Price: ${price}
                         onClick={() => setSelectedVariant(index)}
                         aria-pressed={selectedVariant === index}
                         aria-label={`Select ${variant.ram} / ${variant.storage} variant`}
-                        className={`relative w-full rounded-2xl border p-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 sm:p-4 ${
+                        className={`relative w-full rounded-2xl border p-3 shadow-[0_2px_1px_rgba(0,0,0,0.1)] text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 sm:p-4 ${
                           selectedVariant === index
                             ? "border-blue-600 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-600 text-white shadow-md"
-                            : "border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50"
+                            : "border-slate-100 bg-white hover:border-blue-300 hover:bg-slate-50"
                         }`}
                       >
                         {selectedVariant === index ? (
@@ -5483,7 +5431,7 @@ Price: ${price}
               )}
 
               {currentVariantStoreRows.length > 0 ? (
-                <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+                <div className="mt-4 rounded-2xl border border-slate-100 shadow-[0_2px_2px_rgba(0,0,0,0.1)] bg-white p-4 sm:p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">
@@ -5520,11 +5468,6 @@ Price: ${price}
                         storeObj?.name ||
                         "Online Store";
                       const ctaText = storePrice.cta_label || "Buy Now";
-                      const isPreorderCta =
-                        storePrice.is_prebooking === true ||
-                        /^(pre(book|order)|coming\s*soon)$/i.test(
-                          String(ctaText).trim(),
-                        );
                       const rawLogoSrc =
                         storePrice.logo ||
                         (storeName ? getStoreLogo?.(storeName) : null) ||
@@ -5538,7 +5481,7 @@ Price: ${price}
                       return (
                         <div
                           key={`${storePrice.id || storeName || index}`}
-                          className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 px-3 py-3"
+                          className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-white px-3 py-3"
                         >
                           <div className="flex min-w-0 items-center gap-3">
                             {logoSrc ? (
@@ -5572,11 +5515,7 @@ Price: ${price}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
-                                className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-2 text-xs font-semibold transition-colors ${
-                                  isPreorderCta
-                                    ? "bg-blue-50 text-blue-700 hover:bg-blue-100"
-                                    : "bg-blue-600 text-white hover:bg-blue-700"
-                                }`}
+                                className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-blue-600 shadow-[0_2px_4px_rgba(0,0,0,0.1)] px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
                               >
                                 {ctaText || "Buy Now"}
                                 <FaExternalLinkAlt className="text-[10px]" />
@@ -5690,8 +5629,8 @@ Price: ${price}
                     battery details that matter most.
                   </p>
                 </div>
-                <div className="rounded-2xl border border-[#dce4f3]  p-3 sm:p-4 md:p-5">
-                  <div className="grid grid-cols-1 items-stretch gap-3 min-[420px]:grid-cols-2 md:hidden">
+                <div className="rounded-2xl border border-slate-100 p-3 shadow-[0_2px_2px_rgba(0,0,0,0.1)] sm:p-4 md:p-5">
+                  <div className="grid grid-cols-1 items-stretch gap-3 min-[420px]:grid-cols-2  md:hidden ">
                     {[
                       {
                         key: "battery",
@@ -5737,7 +5676,7 @@ Price: ${price}
                       )}
                   </div>
 
-                  <div className="hidden md:grid md:grid-cols-12 md:items-stretch md:gap-4 lg:gap-5">
+                  <div className="hidden md:grid md:grid-cols-12 md:items-stretch  md:gap-4 lg:gap-5">
                     {[
                       {
                         key: "performance",
@@ -5830,7 +5769,7 @@ Price: ${price}
       {shouldShowLinkedNews ? (
         <div className="w-full">
           <div className="mx-auto max-w-7xl px-0 py-0 sm:px-6 sm:py-8 lg:px-8">
-            <section className="overflow-hidden mx-auto w-full max-w-7xl  rounded-2xl border border-white shadow-[0_2px_4px_rgba(0,0,0,0.1)] p-4 sm:p-6 lg:p-8">
+            <section className="overflow-hidden mx-auto w-full max-w-7xl bg-purple-50  rounded-2xl  shadow-[0_2px_4px_rgba(0,0,0,0.1)] p-4 sm:p-6 lg:p-8">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.34em] text-purple-700 sm:text-[11px]">

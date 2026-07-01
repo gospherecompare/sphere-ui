@@ -441,17 +441,6 @@ const toCanonicalPath = (rawPath) => {
       return `/compare/${compareParts.join("-and-")}-comparison`;
     }
   }
-  if (pathName === "/smartphones/upcoming") return "/smartphones/upcoming";
-  if (pathName.startsWith("/smartphones/filter/upcoming"))
-    return "/smartphones/upcoming";
-  if (pathName.startsWith("/products/smartphones/upcoming"))
-    return "/smartphones/upcoming";
-  if (pathName.startsWith("/devices/smartphones/upcoming"))
-    return "/smartphones/upcoming";
-  if (pathName.startsWith("/products/mobiles/upcoming"))
-    return "/smartphones/upcoming";
-  if (pathName.startsWith("/devices/mobiles/upcoming"))
-    return "/smartphones/upcoming";
   if (pathName === "/career") return "/careers";
   if (pathName === "/blog" || pathName === "/blogs") return "/";
   if (pathName.startsWith("/blog/") || pathName.startsWith("/blogs/")) {
@@ -1568,13 +1557,6 @@ const resolveSeo = (routePath) => {
       keywords: `${tvDetailName.toLowerCase()}, ${tvDetailName.toLowerCase()} tv price in india, ${tvDetailName.toLowerCase()} specifications, smart tv comparison india, tv prices list ${CURRENT_YEAR}`,
     },
     {
-      test: (p) => p === "/smartphones/upcoming",
-      title: `Upcoming Smartphones ${CURRENT_YEAR} - Expected Launches & Preorders | Hooks`,
-      description:
-        "Track upcoming smartphones, expected launch timelines, and preorder-ready devices to plan your next upgrade.",
-      keywords: `upcoming smartphones ${CURRENT_YEAR}, preorder phones, expected launch mobiles, new launch phones, smartphones launch calendar india`,
-    },
-    {
       test: () =>
         Boolean(smartphoneBrandLabel) && Boolean(smartphoneFeatureMeta?.name),
       title: `${smartphoneBrandLabel} ${smartphoneFeatureMeta?.name || ""} Smartphones ${CURRENT_YEAR} - Prices Specs & Comparison | Hooks`,
@@ -1623,12 +1605,19 @@ const resolveSeo = (routePath) => {
             ).toLowerCase()} with detailed specs latest prices reviews and comparisons to choose the right phone for your budget.`,
       keywords:
         smartphoneFilterSlug === "new"
-          ? `latest smartphones ${CURRENT_YEAR}, new launch mobiles, upcoming phones india, smartphone releases`
+          ? `latest smartphones ${CURRENT_YEAR}, new launch mobiles, smartphone releases`
           : `smartphones ${String(
               smartphoneFilterMeta?.label || "",
             ).toLowerCase()}, best smartphones ${String(
               smartphoneFilterMeta?.label || "",
             ).toLowerCase()}, mobile price comparison india, compare smartphone specs, ${BUDGET_PHONE_KEYWORDS}`,
+    },
+    {
+      test: (p) => p === "/smartphones/upcoming",
+      title: `Upcoming Smartphones ${CURRENT_YEAR} - Expected Launches Features and Prices | Hooks`,
+      description:
+        "Browse upcoming smartphones in India, track expected launch timelines, compare preview specifications, and watch preorder-ready devices before they arrive on Hooks.",
+      keywords: `upcoming smartphones ${CURRENT_YEAR}, upcoming mobiles, expected phone prices, smartphone launch dates, mobile price comparison india`,
     },
     {
       test: (p) => p.startsWith("/smartphones"),

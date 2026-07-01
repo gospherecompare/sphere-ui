@@ -1306,7 +1306,6 @@ const Header = () => {
       subcategories: [
         { name: "All Smartphones" },
         { name: "Latest Releases" },
-        { name: "Upcoming Phones" },
         { name: "Top Phones" },
         { name: "Compare Phones" },
       ],
@@ -1413,12 +1412,12 @@ const Header = () => {
     { name: "Compare", link: toCanonicalPagePath("/compare") },
     { name: "TVs", link: toCanonicalPagePath("/tvs") },
     {
-      name: "Upcoming Mobiles",
-      link: toCanonicalPagePath("/smartphones/upcoming"),
-    },
-    {
       name: "Latest Mobiles",
       link: toCanonicalPagePath("/smartphones/filter/new"),
+    },
+    {
+      name: "Upcoming Mobiles",
+      link: toCanonicalPagePath("/smartphones/upcoming"),
     },
     {
       name: "Trending Mobiles",
@@ -1466,8 +1465,6 @@ const Header = () => {
     if (target === "/") return currentPath === "/";
     if (target === "/compare")
       return currentPath === "/compare" || currentPath.startsWith("/compare/");
-    if (target === "/smartphones/upcoming")
-      return currentPath === "/smartphones/upcoming";
     if (target === "/smartphones/filter/new")
       return currentPath === "/smartphones/filter/new";
     if (target === "/trending/smartphones")
@@ -1505,8 +1502,8 @@ const Header = () => {
       accent: "blue",
       items: [
         { label: "All Smartphones", href: "/smartphones" },
-        { label: "Upcoming Mobiles", href: "/smartphones/upcoming" },
         { label: "Latest Mobiles", href: "/smartphones/filter/new" },
+        { label: "Upcoming Mobiles", href: "/smartphones/upcoming" },
         { label: "Trending Mobiles", href: "/trending/smartphones" },
         { label: "TVs", href: "/tvs" },
       ],

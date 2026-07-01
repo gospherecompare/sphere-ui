@@ -84,8 +84,8 @@ const renderFilterBreadcrumb = ({ match }) =>
       .toLowerCase();
 
     if (raw === "new") return "Latest Mobiles";
-    if (raw === "trending") return "Top Mobiles";
     if (raw === "upcoming") return "Upcoming Mobiles";
+    if (raw === "trending") return "Top Mobiles";
 
     return slugToTitle(raw || "Filter");
   })();
@@ -132,8 +132,8 @@ const routes = [
   },
   { path: "/products", breadcrumb: "Explore" },
   { path: "/smartphones", breadcrumb: "Smartphones" },
-  { path: "/smartphones/upcoming", breadcrumb: "Upcoming Mobiles" },
   { path: "/smartphones/latest", breadcrumb: "Latest Mobiles" },
+  { path: "/smartphones/upcoming", breadcrumb: "Upcoming Mobiles" },
   { path: "/smartphones/top", breadcrumb: "Top Mobiles" },
   { path: "/networking", breadcrumb: "Networking" },
   { path: "/tvs", breadcrumb: "TVs" },

@@ -78,6 +78,14 @@ export const installPreloadedFetchInterceptor = () => {
       return nativeFetch(input, init);
     }
 
+    const cacheMode = normalizeMethod(
+      init?.cache ??
+        (typeof input === "object" && input ? input.cache : undefined),
+    );
+    if (cacheMode === "NO-STORE" || cacheMode === "RELOAD") {
+      return nativeFetch(input, init);
+    }
+
     const requestUrl = toRequestUrl(input);
     if (!requestUrl) return nativeFetch(input, init);
 

@@ -157,14 +157,12 @@ export const createProductSchema = ({
 export const mapAvailabilityFromStatus = (status) => {
   const value = String(status || "").toLowerCase().trim();
   if (!value) return "InStock";
-  if (value.includes("preorder") || value.includes("pre-order")) {
-    return "PreOrder";
-  }
   if (
-    value.includes("upcoming") ||
-    value.includes("coming soon") ||
     value.includes("announced") ||
-    value.includes("rumored")
+    value.includes("rumored") ||
+    value.includes("upcoming") ||
+    value.includes("scheduled") ||
+    value.includes("coming soon")
   ) {
     return "PreSale";
   }

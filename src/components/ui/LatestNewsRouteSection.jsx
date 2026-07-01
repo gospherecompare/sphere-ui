@@ -103,9 +103,9 @@ const LatestNewsRouteSection = ({
 
   return (
     <section
-      className={`mx-auto w-full max-w-7xl rounded-2xl border border-white shadow-[0_2px_4px_rgba(0,0,0,0.1)] bg-purple-100 px-3 py-6 sm:px-5 sm:py-8 md:px-6 md:py-10 ${className}`}
+      className={`mx-auto w-full max-w-7xl rounded-2xl  shadow-[0_2px_4px_rgba(0,0,0,0.1)] bg-purple-100 px-3 py-6 sm:px-5 sm:py-8 md:px-6 md:py-10 ${className}`}
     >
-      <div className="mb-4 flex flex-col items-start justify-between gap-3 sm:mb-6 sm:flex-row sm:items-center sm:gap-4">
+      <div className="mb-4 flex flex-col items-start border-b-1 border-blue-500 pb-4 justify-between gap-3 sm:mb-6 sm:flex-row sm:items-center sm:gap-4">
         <div className="min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-[0.34em] text-purple-700 sm:text-[11px]">
             Latest Updates
@@ -182,7 +182,8 @@ const LatestNewsRouteSection = ({
                       </span>
                       <span className="whitespace-nowrap text-right opacity-90">
                         <span className="block">{story.publishedAt}</span>
-                        {story.updatedAt && story.updatedAt !== story.publishedAt ? (
+                        {story.updatedAt &&
+                        story.updatedAt !== story.publishedAt ? (
                           <span className="block opacity-75">
                             Updated {story.updatedAt}
                           </span>
@@ -237,7 +238,8 @@ const LatestNewsRouteSection = ({
                     </span>
                     <span className="whitespace-nowrap text-right opacity-90">
                       <span className="block">{story.publishedAt}</span>
-                      {story.updatedAt && story.updatedAt !== story.publishedAt ? (
+                      {story.updatedAt &&
+                      story.updatedAt !== story.publishedAt ? (
                         <span className="block opacity-75">
                           Updated {story.updatedAt}
                         </span>

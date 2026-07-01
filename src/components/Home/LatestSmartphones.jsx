@@ -1,4 +1,4 @@
-// src/components/Home/UpcomingSmartphones.jsx
+// src/components/Home/LatestSmartphones.jsx
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { createProductPath } from "../../utils/slugGenerator";
