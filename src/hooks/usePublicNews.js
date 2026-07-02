@@ -614,8 +614,8 @@ const formatDateLabel = (value) => {
   }).format(date);
 };
 
-const formatImageCreditLabel = (caption, source) => {
-  const raw = safeText(caption) || safeText(source);
+const formatImageCreditLabel = (...values) => {
+  const raw = values.map(safeText).find(Boolean);
   if (!raw || /^(asset|url|hooks newsroom)$/i.test(raw)) return "";
   if (/^https?:\/\//i.test(raw)) {
     try {
@@ -908,7 +908,18 @@ const normalizeBlogStory = (blog) => {
       });
   const heroImageSource = safeText(blog.hero_image_source);
   const heroImageCaption = safeText(blog.hero_image_caption);
-  const imageCredit = formatImageCreditLabel(heroImageCaption, heroImageSource);
+  const imageCredit = formatImageCreditLabel(
+    blog.image_credit,
+    blog.imageCredit,
+    blog.hero_image_credit,
+    blog.heroImageCredit,
+    blog.photo_credit,
+    blog.photoCredit,
+    blog.credit,
+    blog.credits,
+    heroImageCaption,
+    heroImageSource,
+  );
 
   return {
     id: Number(blog.id) || slug,

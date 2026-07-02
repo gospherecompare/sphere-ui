@@ -43,19 +43,10 @@ const SmartphoneFaqSection = ({
       className={`overflow-hidden rounded-2xl bg-white ${className}`}
     >
       <div className="px-4 pt-4 sm:px-6">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
           <h2 className="text-lg font-bold tracking-tight text-[#07122f] sm:text-xl">
             {title}
           </h2>
-          {hasMore ? (
-            <button
-              type="button"
-              onClick={() => setShowAll((current) => !current)}
-              className="shrink-0 text-sm font-bold text-blue-600 transition hover:text-blue-700"
-            >
-              {showAll ? "Show less" : "View all"}
-            </button>
-          ) : null}
         </div>
         <FaqHeaderDivider />
       </div>
@@ -99,6 +90,18 @@ const SmartphoneFaqSection = ({
           );
         })}
       </div>
+
+      {hasMore ? (
+        <div className="flex justify-center px-4 pb-4 sm:px-6">
+          <button
+            type="button"
+            onClick={() => setShowAll((current) => !current)}
+            className="text-sm font-bold text-blue-600 transition hover:text-blue-700"
+          >
+            {showAll ? "Show less" : "View all"}
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 };

@@ -557,7 +557,7 @@ const NewsStoryPage = () => {
               />
               {imageCredit ? (
                 <p className="mt-3 text-center text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                  Photo: {imageCredit}
+                  Image credits: {imageCredit}
                 </p>
               ) : null}
             </div>

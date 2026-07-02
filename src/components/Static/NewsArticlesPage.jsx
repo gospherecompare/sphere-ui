@@ -842,47 +842,45 @@ const LatestNewsTimeline = ({ stories = [] }) => {
 
   return (
     <section className="min-w-0">
-      <div className="mb-8">
+      <div className="mb-6 border-b border-[#d9dee7] pb-4 sm:mb-8">
         <h2 className="text-[28px] font-black leading-none tracking-[-0.04em] text-[#06133a] sm:text-[34px]">
           Latest News
         </h2>
-        <div className="mt-4 h-[2px] w-full border-t border-[#d9dee7]" />
       </div>
 
-      <div className="relative space-y-10 pl-5 sm:pl-7">
-        <div className="absolute bottom-0 left-0 top-0 border-l border-dashed border-[#d7deeb]" />
+      <div className="ml-1 space-y-8 border-l border-dashed border-[#d7deeb] pl-5 sm:ml-0 sm:space-y-10 sm:pl-7">
         {stories.map((story) => (
           <article key={story.slug} className="relative">
-            <div className="mb-5 flex items-center gap-4">
-              <span className="absolute -left-5 h-6 border-l-2 border-[#0066ff] sm:-left-7" />
-              <time className="text-[15px] font-bold text-[#005bc8]">
+            <div className="relative mb-4 flex items-center gap-3 sm:mb-5">
+              <span className="absolute -left-[21px] h-6 border-l-2 border-[#0066ff] sm:-left-[29px]" />
+              <time className="text-[14px] font-black text-[#0066ff] sm:text-[15px]">
                 {formatStoryDate(story)}
               </time>
             </div>
 
             <Link
               to={createNewsStoryPath(story.slug)}
-              className="group block rounded-[19px] transition-transform duration-300 hover:-translate-y-0.5"
+              className="group block rounded-2xl transition-transform duration-300 hover:-translate-y-0.5"
             >
-              <div className="grid min-h-[190px] gap-5 rounded-[18px] bg-white p-4 shadow-[0_18px_45px_rgba(15,23,42,0.05)] sm:grid-cols-[minmax(0,1fr)_220px] sm:items-center sm:gap-7 sm:p-5">
-                <div className="flex min-w-0 flex-col">
-                  <span className="mb-4 inline-flex w-fit rounded-md bg-[#eef3fb] px-3 py-1 text-[11px] font-bold text-[#06133a]">
+              <div className="grid gap-4 rounded-2xl border border-slate-100 bg-white p-4 shadow-[0_2px_2px_rgba(0,0,0,0.1)] sm:grid-cols-[minmax(0,1fr)_220px] sm:items-center sm:gap-7 sm:p-5">
+                <div className="min-w-0">
+                  <span className="mb-3 inline-flex w-fit rounded-md bg-[#eef3fb] px-3 py-1 text-[10px] font-bold text-[#06133a] sm:mb-4 sm:text-[11px]">
                     {getLatestStoryPill(story)}
                   </span>
-                  <h3 className="line-clamp-2 text-[19px] font-black leading-[1.35] tracking-[-0.02em] text-[#06133a] transition-colors group-hover:text-[#005dff] sm:text-[20px]">
+                  <h3 className="line-clamp-3 text-[17px] font-black leading-[1.32] tracking-[-0.02em] text-[#06133a] transition-colors group-hover:text-[#005dff] sm:line-clamp-2 sm:text-[20px]">
                     {story.title}
                   </h3>
-                  <p className="mt-3 line-clamp-2 max-w-2xl text-[13px] leading-6 text-[#6b7890]">
+                  <p className="mt-3 line-clamp-3 max-w-2xl text-[12px] leading-6 text-[#6b7890] sm:line-clamp-2 sm:text-[13px]">
                     {story.summary}
                   </p>
-                  <p className="mt-5 text-[13px] font-semibold text-[#0050b8]">
+                  <p className="mt-4 text-[12px] font-semibold text-[#0050b8] sm:text-[13px]">
                     {story.author || "Hooks news"}
                   </p>
                 </div>
 
                 <StoryImage
                   story={story}
-                  className="h-[150px] w-full rounded-lg sm:h-[160px] sm:w-[220px]"
+                  className="aspect-[16/9] w-full rounded-xl sm:h-[160px] sm:w-[220px]"
                 />
               </div>
             </Link>

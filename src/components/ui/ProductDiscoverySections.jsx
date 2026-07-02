@@ -733,20 +733,12 @@ const DiscoveryHeaderDivider = () => (
 
 const DiscoveryCardHeader = ({
   title = "",
-  viewAllPath = "/smartphones",
-  entityType = "smartphones",
 }) => (
   <div className="px-3.5 pt-3.5 sm:px-5 sm:pt-4">
-    <div className="flex items-start justify-between gap-3">
+    <div className="flex items-start gap-3">
       <h4 className="text-[15px] font-semibold tracking-tight text-slate-900 sm:text-base">
         {title}
       </h4>
-      <Link
-        to={normalizeDiscoveryPath(viewAllPath, entityType)}
-        className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-blue-700 transition-colors hover:text-blue-800"
-      >
-        View all <span aria-hidden="true">&gt;</span>
-      </Link>
     </div>
     <DiscoveryHeaderDivider />
   </div>
@@ -762,18 +754,13 @@ const toCompactPriceLabel = (label = "") => {
 
 const PriceDiscoveryBlock = ({
   items = [],
-  viewAllPath = "/smartphones",
   entityType = "smartphones",
 }) => {
   if (!Array.isArray(items) || items.length === 0) return null;
 
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)]">
-      <DiscoveryCardHeader
-        title="Discover by Price"
-        viewAllPath={viewAllPath}
-        entityType={entityType}
-      />
+      <DiscoveryCardHeader title="Discover by Price" />
       <div className="grid grid-cols-2 gap-2 px-3.5 py-3.5 sm:flex sm:flex-wrap sm:px-5 sm:py-4">
         {items.slice(0, 8).map((item, index) => (
           <Link
@@ -791,18 +778,13 @@ const PriceDiscoveryBlock = ({
 
 const PopularSearchesBlock = ({
   items = [],
-  viewAllPath = "/smartphones",
   entityType = "smartphones",
 }) => {
   if (!Array.isArray(items) || items.length === 0) return null;
 
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)]">
-      <DiscoveryCardHeader
-        title="Popular Searches"
-        viewAllPath={viewAllPath}
-        entityType={entityType}
-      />
+      <DiscoveryCardHeader title="Popular Searches" />
       <div className="grid grid-cols-2 gap-2 px-3.5 py-3.5 sm:flex sm:flex-wrap sm:px-5 sm:py-4">
         {items.slice(0, 10).map((item, index) => (
           <Link
@@ -820,7 +802,6 @@ const PopularSearchesBlock = ({
 
 const TopBrandsBlock = ({
   items = [],
-  viewAllPath = "/smartphones",
   entityType = "smartphones",
   titleText = "Brand",
   subtitleText = "Explore products by key features",
@@ -831,6 +812,7 @@ const TopBrandsBlock = ({
   if (!Array.isArray(items) || items.length === 0) return null;
   const sectionMeta = getSectionMeta("brand");
   const isPlainSurface = surface === "plain";
+  const visibleItems = items.slice(0, 5);
 
   return (
     <div
@@ -847,7 +829,7 @@ const TopBrandsBlock = ({
             : "px-1 pt-3.5 sm:px-5 sm:pt-4"
         }
       >
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
           <div className="flex items-start gap-3">
             <div className="min-w-0">
               <h4 className="text-[15px] font-semibold tracking-tight text-slate-900 sm:text-base">
@@ -859,20 +841,14 @@ const TopBrandsBlock = ({
               </p>
             </div>
           </div>
-          <Link
-            to={normalizeDiscoveryPath(viewAllPath, entityType)}
-            className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-blue-700 transition-colors duration-200 ease-out hover:text-blue-800"
-          >
-            View all <span aria-hidden="true">&gt;</span>
-          </Link>
         </div>
         <DiscoveryHeaderDivider />
       </div>
 
       <div>
         <div className="px-3.5 py-4 sm:px-6 sm:py-5">
-          <div className="grid grid-cols-4 items-start gap-2 sm:flex sm:min-w-max sm:gap-4">
-            {items.map((item, index) => {
+          <div className="grid grid-cols-5 items-start gap-2 sm:flex sm:justify-start sm:gap-4">
+            {visibleItems.map((item, index) => {
               const rawBrandName = normalizeText(item?.name || item?.label);
               const brandName = trimMobilesSuffix
                 ? rawBrandName.replace(/\s+Mobiles$/i, "")
@@ -1339,14 +1315,12 @@ const ProductDiscoverySections = ({
             <div className="min-w-0">
               <PriceDiscoveryBlock
                 items={byPriceLinks}
-                viewAllPath={entityConfig.basePath}
                 entityType={entityConfig.type}
               />
             </div>
             <div className="min-w-0">
               <TopBrandsBlock
                 items={topBrandLinks}
-                viewAllPath={entityConfig.basePath}
                 entityType={entityConfig.type}
                 titleText="Brand"
                 subtitleText={`Explore ${entityConfig.pluralTitle} by key features`}
@@ -1365,7 +1339,6 @@ const ProductDiscoverySections = ({
               >
                 <PopularSearchesBlock
                   items={popularLinks}
-                  viewAllPath={entityConfig.basePath}
                   entityType={entityConfig.type}
                 />
               </div>
@@ -1393,7 +1366,6 @@ const ProductDiscoverySections = ({
               />
               <TopBrandsBlock
                 items={topBrandLinks}
-                viewAllPath={entityConfig.basePath}
                 entityType={entityConfig.type}
                 titleText="Brand"
                 subtitleText={`Explore ${entityConfig.pluralTitle} by key features`}

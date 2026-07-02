@@ -205,9 +205,20 @@ const formatUpdatedDate = (story) => {
 };
 
 const formatImageCredit = (story) => {
-  const raw = String(
-    story?.heroImageCaption || story?.heroImageSource || "",
-  ).trim();
+  const raw = [
+    story?.imageCredit,
+    story?.credit,
+    story?.heroImageCredit,
+    story?.hero_image_credit,
+    story?.photoCredit,
+    story?.photo_credit,
+    story?.credits,
+    story?.heroImageCaption,
+    story?.heroImageSource,
+  ]
+    .map((value) => String(value || "").trim())
+    .find(Boolean);
+
   if (!raw || /^(asset|url|hooks newsroom)$/i.test(raw)) return "";
   if (/^https?:\/\//i.test(raw)) {
     try {
@@ -1124,7 +1135,7 @@ const NewsStoryArticlePage = () => {
                     ) : null}
                     {imageCredit ? (
                       <span className="basis-full text-[#7d8898] sm:ml-auto sm:basis-auto">
-                        Photo: {imageCredit}
+                        Image credits: {imageCredit}
                       </span>
                     ) : null}
                   </div>
