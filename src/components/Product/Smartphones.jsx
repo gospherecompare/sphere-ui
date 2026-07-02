@@ -2800,23 +2800,13 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       ? {
           display: "-webkit-box",
           WebkitBoxOrient: "vertical",
-          WebkitLineClamp: 2,
+          WebkitLineClamp: 1,
           overflow: "hidden",
         }
       : undefined;
-  const heroContentWidthClass = shouldHideInteractiveFilters
-    ? "max-w-5xl"
-    : isExpandedHeroDescriptionPath
-      ? "max-w-4xl"
-      : "max-w-3xl";
-  const heroTitleWidthClass = shouldHideInteractiveFilters
-    ? "max-w-4xl"
-    : "max-w-3xl";
-  const heroSubtitleWidthClass = shouldHideInteractiveFilters
-    ? "max-w-4xl"
-    : isExpandedHeroDescriptionPath
-      ? "max-w-4xl"
-      : "max-w-3xl";
+  const heroContentWidthClass = "max-w-7xl";
+  const heroTitleWidthClass = "max-w-7xl";
+  const heroSubtitleWidthClass = "max-w-7xl";
   const productColumnWidthClass = shouldHideInteractiveFilters
     ? "w-full max-w-5xl"
     : "flex-1";
@@ -4241,6 +4231,187 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     return count;
   };
 
+  const renderMobileFilterBadge = (value) => (
+    <span className="shrink-0 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
+      {value}
+    </span>
+  );
+
+  const renderMobileFilterBlock = ({
+    title,
+    subtitle,
+    badge = null,
+    children,
+    className = "mb-8",
+  }) => (
+    <div className={className}>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h4 className="text-base font-bold text-slate-900">{title}</h4>
+          {subtitle ? (
+            <p className="mt-1 text-xs text-slate-500">{subtitle}</p>
+          ) : null}
+        </div>
+        {badge !== null ? renderMobileFilterBadge(badge) : null}
+      </div>
+      {children}
+    </div>
+  );
+
+  const renderMobileSearchInput = ({
+    value,
+    onChange,
+    placeholder,
+    clearLabel,
+  }) => (
+    <div className="relative mb-3">
+      <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" />
+      <input
+        type="text"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-9 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
+      />
+      {value ? (
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+          aria-label={clearLabel}
+        >
+          <FaTimes className="text-xs" />
+        </button>
+      ) : null}
+    </div>
+  );
+
+  const renderMobileOptionList = ({
+    items,
+    emptyText,
+    isSelected,
+    onChange,
+    getLabel = (item) => item,
+    getKey = (item) => getLabel(item),
+    getMeta = null,
+    maxHeightClass = "max-h-44",
+  }) => (
+    <div
+      className={`no-scrollbar ${maxHeightClass} space-y-1 overflow-y-auto rounded-xl bg-white p-1`}
+    >
+      {items.map((item) => {
+        const selected = isSelected(item);
+        const label = getLabel(item);
+        const meta = typeof getMeta === "function" ? getMeta(item) : null;
+        return (
+          <label
+            key={getKey(item)}
+            className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              selected
+                ? "bg-blue-50 text-blue-700"
+                : "text-slate-700 hover:bg-slate-50"
+            }`}
+          >
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={() => onChange(item)}
+              className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white checked:border-blue-600 checked:bg-blue-600"
+            />
+            <span className="min-w-0 flex-1 truncate">{label}</span>
+            {meta !== null && meta !== undefined ? (
+              <span className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-500">
+                {meta}
+              </span>
+            ) : null}
+          </label>
+        );
+      })}
+      {items.length === 0 ? (
+        <div className="px-3 py-2 text-sm text-slate-400">{emptyText}</div>
+      ) : null}
+    </div>
+  );
+
+  const renderPriceRangeControl = () => {
+    const priceMin = Number(filters.priceRange?.min ?? MIN_PRICE);
+    const priceMax = Number(filters.priceRange?.max ?? MAX_PRICE);
+    const minPercent = Math.max(
+      0,
+      Math.min(100, ((priceMin || 0) / (MAX_PRICE || 1)) * 100),
+    );
+    const rangePercent = Math.max(
+      0,
+      Math.min(100, ((priceMax - priceMin) / (MAX_PRICE || 1)) * 100),
+    );
+
+    return (
+      <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-[0_2px_2px_rgba(0,0,0,0.1)]">
+        <div className="mb-4 flex items-start justify-between text-xs text-slate-500">
+          <div>
+            <div>Minimum</div>
+            <div className="mt-1 text-sm font-bold text-slate-900">
+              ₹ {priceMin.toLocaleString()}
+            </div>
+          </div>
+          <div className="text-right">
+            <div>Maximum</div>
+            <div className="mt-1 text-sm font-bold text-slate-900">
+              ₹ {priceMax.toLocaleString()}
+            </div>
+          </div>
+        </div>
+
+        <div className="relative mb-4 h-7">
+          <div className="absolute left-0 right-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-slate-200"></div>
+          <div
+            className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-blue-500"
+            style={{
+              left: `${minPercent}%`,
+              width: `${rangePercent}%`,
+            }}
+          ></div>
+
+          <input
+            type="range"
+            min={MIN_PRICE}
+            max={MAX_PRICE}
+            value={priceMin}
+            onChange={(event) =>
+              updatePriceRange(Number(event.target.value), priceMax)
+            }
+            className="absolute left-0 right-0 top-1/2 h-5 w-full -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-400 [&::-webkit-slider-thumb]:bg-white"
+          />
+
+          <input
+            type="range"
+            min={MIN_PRICE}
+            max={MAX_PRICE}
+            value={priceMax}
+            onChange={(event) =>
+              updatePriceRange(priceMin, Number(event.target.value))
+            }
+            className="absolute left-0 right-0 top-1/2 h-5 w-full -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-400 [&::-webkit-slider-thumb]:bg-white"
+          />
+        </div>
+
+        <div className="mb-3 flex items-center justify-between text-xs text-slate-400">
+          <span>₹ {MIN_PRICE.toLocaleString()}</span>
+          <span>₹ {MAX_PRICE.toLocaleString()}</span>
+        </div>
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => updatePriceRange(MIN_PRICE, MAX_PRICE)}
+            className="rounded-lg px-3 py-1.5 text-sm font-medium text-blue-600 transition-colors duration-200 hover:bg-slate-100 hover:text-blue-700"
+          >
+            Reset Range
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   // Expand/collapse removed: details are always shown by default.
 
   const trackFeatureClick = (featureId) => {
@@ -4407,7 +4578,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       {/* Main Content */}
       <div className="relative mx-auto max-w-7xl px-4 pt-0 pb-8 sm:px-6 sm:pb-12 md:pb-16 lg:px-8 lg:pb-20">
         <div className="relative">
-          <section className="relative left-1/2 isolate w-screen -translate-x-1/2 overflow-hidden px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+          <section className="relative left-1/2 isolate w-screen -translate-x-1/2 overflow-hidden px-4 pt-6 pb-0 sm:px-6 sm:pt-8 lg:px-8 lg:pt-10">
             <div className="relative mx-auto max-w-7xl">
               <div className={heroContentWidthClass}>
                 <h1
@@ -4430,14 +4601,14 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                     className="mt-2.5 inline-flex items-center gap-2 text-sm font-semibold text-blue-700 transition-colors duration-200 hover:text-blue-900"
                     aria-expanded={showHeroDescription}
                   >
-                    {showHeroDescription ? "Show less" : "Read more"}
+                    {showHeroDescription ? "Read less" : "Read more"}
                   </button>
                 ) : null}
               </div>
             </div>
           </section>
 
-          <div className="mt-4">
+          <div className="mt-3 sm:mt-4">
             <MobileListingControls
               activeFilterCount={getActiveFiltersCount()}
               onOpenFilters={() => setShowFilters(true)}
@@ -4449,7 +4620,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                 <div className="overflow-hidden pt-0 pb-2 sm:pb-3">
                   <div className="mb-2 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
-                      <FaFilter className="text-blue-600" />
                       <h3 className="text-sm font-semibold text-slate-900 sm:text-base">
                         Popular Features
                       </h3>
@@ -4688,102 +4858,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                         </span>
                       </div>
 
-                      <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-[0_2px_2px_rgba(0,0,0,0.1)]">
-                        <div className="mb-4 flex justify-between text-sm font-medium text-slate-900">
-                          <div className="text-center">
-                            <div className="text-xs text-slate-500">
-                              Minimum
-                            </div>
-                            <div className="font-bold">
-                              ₹ {filters.priceRange.min?.toLocaleString()}
-                            </div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-xs text-slate-500">
-                              Maximum
-                            </div>
-                            <div className="font-bold">
-                              ₹ {filters.priceRange.max?.toLocaleString()}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Dual Range Slider */}
-                        <div className="relative mb-8">
-                          <div className="absolute top-1/2 h-2 w-full -translate-y-1/2 rounded-full bg-slate-200"></div>
-                          <div
-                            className="absolute h-2 bg-gradient-to-r from-blue-300 via-blue-700 to-blue-900 rounded-full top-1/2 transform -translate-y-1/2"
-                            style={{
-                              left: `${Math.max(
-                                0,
-                                Math.min(
-                                  100,
-                                  ((filters.priceRange.min || 0) /
-                                    (MAX_PRICE || 1)) *
-                                    100,
-                                ),
-                              )}%`,
-                              width: `${Math.max(
-                                0,
-                                Math.min(
-                                  100,
-                                  ((filters.priceRange.max -
-                                    filters.priceRange.min) /
-                                    (MAX_PRICE || 1)) *
-                                    100,
-                                ),
-                              )}%`,
-                            }}
-                          ></div>
-
-                          <input
-                            type="range"
-                            min={MIN_PRICE}
-                            max={MAX_PRICE}
-                            value={filters.priceRange.min}
-                            onChange={(e) =>
-                              updatePriceRange(
-                                Number(e.target.value),
-                                filters.priceRange.max,
-                              )
-                            }
-                            className="absolute w-full top-1/2 h-4 -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-400 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-blue-500/30 [&::-webkit-slider-thumb]:cursor-pointer"
-                          />
-
-                          <input
-                            type="range"
-                            min={MIN_PRICE}
-                            max={MAX_PRICE}
-                            value={filters.priceRange.max}
-                            onChange={(e) =>
-                              updatePriceRange(
-                                filters.priceRange.min,
-                                Number(e.target.value),
-                              )
-                            }
-                            className="absolute w-full top-1/2 h-4 -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-400 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-blue-500/30 [&::-webkit-slider-thumb]:cursor-pointer"
-                          />
-                        </div>
-
-                        <div className="flex justify-between items-center text-xs mb-3">
-                          <span className="text-slate-500">
-                            ₹ {MIN_PRICE.toLocaleString()}
-                          </span>
-                          <span className="text-slate-500">
-                            ₹ {MAX_PRICE.toLocaleString()}
-                          </span>
-                        </div>
-                        <div className="flex justify-center">
-                          <button
-                            onClick={() =>
-                              updatePriceRange(MIN_PRICE, MAX_PRICE)
-                            }
-                            className="rounded-lg px-3 py-1.5 font-medium text-blue-600 transition-colors duration-200 hover:bg-slate-100 hover:text-blue-500"
-                          >
-                            Reset Range
-                          </button>
-                        </div>
-                      </div>
+                      {renderPriceRangeControl()}
                     </div>
 
                     {/* RAM Filter */}
@@ -6123,409 +6198,352 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
               subtitle="Arrange smartphones by preference"
             />
 
-            {/* Mobile Filter Overlay - Remains the same but with enhanced descriptions */}
+            {/* Filter Overlay */}
             {showFilters && (
-              <div className="lg:hidden fixed inset-0 z-50">
+              <div className="fixed inset-0 z-50 lg:hidden">
                 <div
-                  className="absolute inset-0 bg-black bg-opacity-50 transition-opacity duration-300"
+                  className="absolute inset-0 bg-slate-950/50 transition-opacity duration-300"
                   onClick={() => setShowFilters(false)}
                 ></div>
 
-                <div className="absolute bottom-0 left-0 right-0 flex max-h-[90vh] flex-col overflow-hidden rounded-t-3xl border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)] transform transition-transform duration-300">
-                  <div className="flex items-center justify-between p-6 border-b border-gray-200  ">
-                    <div className="flex items-center gap-3">
-                      <div>
-                        <h3 className="text-xl font-bold text-gray-900">
-                          Refine Search
-                        </h3>
-                        <p className="text-sm text-gray-500">
-                          Filter smartphones by specifications
+                <div className="absolute bottom-0 left-0 right-0 mx-auto flex max-h-[92vh] w-full max-w-lg transform flex-col overflow-hidden rounded-t-2xl border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-transform duration-300 sm:bottom-4 sm:rounded-2xl">
+                  <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-6">
+                    <div className="min-w-0">
+                      <h3 className="text-xl font-bold text-slate-900">
+                        Refine Search
+                      </h3>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Filter smartphones by specifications
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      {getActiveFiltersCount() > 0 ? (
+                        <button
+                          type="button"
+                          onClick={clearFilters}
+                          className="rounded-lg px-3 py-1.5 text-xs font-semibold text-blue-600 transition-colors duration-200 hover:bg-slate-50 hover:text-blue-500"
+                        >
+                          RESET
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => setShowFilters(false)}
+                        className="rounded-lg p-2 text-slate-500 transition-colors duration-200 hover:bg-slate-100 hover:text-slate-800"
+                        aria-label="Close filters"
+                      >
+                        <FaTimes className="text-base" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="no-scrollbar flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+                    {getActiveFiltersCount() > 0 ? (
+                      <div className="mb-6 rounded-xl border border-slate-100 bg-white p-4 shadow-[0_2px_2px_rgba(0,0,0,0.1)]">
+                        <div className="mb-2 flex items-center justify-between">
+                          <span className="text-sm font-semibold text-slate-900">
+                            Active Filters
+                          </span>
+                          <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-600">
+                            {getActiveFiltersCount()}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500">
+                          {filteredVariants.length} devices match
                         </p>
                       </div>
-                    </div>
-                    <button
-                      onClick={() => setShowFilters(false)}
-                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-                    >
-                      <FaTimes className="text-gray-500 text-lg" />
-                    </button>
-                  </div>
+                    ) : null}
 
-                  <div className="no-scrollbar flex-1 space-y-6 overflow-y-auto p-6">
-                    {/* Brand Filter (mobile) */}
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
-                          Manufacturer Brands
-                        </h4>
-                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                          {filters.brand.length} selected
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-600 mb-3">
-                        Select smartphone brands to compare
-                      </div>
-                      <div className="relative mb-3">
-                        <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
-                        <input
-                          type="text"
-                          value={brandFilterQuery}
-                          onChange={(e) => setBrandFilterQuery(e.target.value)}
-                          placeholder="Search brand..."
-                          className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        {filteredBrandOptions.map((brand) => (
-                          <label
-                            key={brand}
-                            className="flex items-center gap-3 cursor-pointer group hover:bg-gray-50 px-3 py-2.5 rounded-lg transition-all duration-200 border border-transparent hover:border-gray-200"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={filters.brand.includes(brand)}
-                              onChange={() =>
-                                handleFilterChange("brand", brand)
-                              }
-                              className="w-4 h-4 appearance-none rounded border border-gray-300 bg-white transition-all duration-200 checked:border-blue-600 checked:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-                            />
-                            <span className="text-gray-700 font-medium">
-                              {brand}
-                            </span>
-                            <div className="ml-auto text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                              {devices.filter((d) => d.brand === brand).length}
-                            </div>
-                          </label>
-                        ))}
-                        {filteredBrandOptions.length === 0 && (
-                          <div className="text-sm text-gray-500 px-2 py-1">
-                            No brands found
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Price Range (mobile) */}
-                    <div>
-                      <div className="flex items-center justify-between mb-3 ">
-                        <h4 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
-                          Price Range
-                        </h4>
-                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                          ₹ {filters.priceRange.min?.toLocaleString()} - ₹
-                          {filters.priceRange.max?.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-600 mb-3">
-                        Set your budget range for smartphone purchase
-                      </div>
-                      <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-[0_2px_2px_rgba(0,0,0,0.1)]">
-                        <div className="flex justify-between text-sm font-medium text-gray-700 mb-4">
-                          <div className="text-center">
-                            <div className="text-xs text-gray-500">Minimum</div>
-                            <div className="font-bold">
-                              ₹ {filters.priceRange.min?.toLocaleString()}
-                            </div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-xs text-gray-500">Maximum</div>
-                            <div className="font-bold">
-                              ₹ {filters.priceRange.max?.toLocaleString()}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="relative mb-4">
-                          <div className="absolute h-2 bg-gray-200 rounded-full w-full top-1/2 transform -translate-y-1/2"></div>
-                          <div
-                            className="absolute h-2 bg-gradient-to-r from-blue-900 via-blue-850 to-blue-950 rounded-full top-1/2 transform -translate-y-1/2"
-                            style={{
-                              left: `${Math.max(
-                                0,
-                                Math.min(
-                                  100,
-                                  ((filters.priceRange.min || 0) /
-                                    (MAX_PRICE || 1)) *
-                                    100,
-                                ),
-                              )}%`,
-                              width: `${Math.max(
-                                0,
-                                Math.min(
-                                  100,
-                                  ((filters.priceRange.max -
-                                    filters.priceRange.min) /
-                                    (MAX_PRICE || 1)) *
-                                    100,
-                                ),
-                              )}%`,
-                            }}
-                          />
-
+                    {renderMobileFilterBlock({
+                      title: "Search Phones",
+                      subtitle: "Match model, name, or brand",
+                      children: (
+                        <div className="relative">
+                          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" />
                           <input
-                            type="range"
-                            min={MIN_PRICE}
-                            max={MAX_PRICE}
-                            value={filters.priceRange.min}
-                            onChange={(e) =>
-                              updatePriceRange(
-                                Number(e.target.value),
-                                filters.priceRange.max,
-                              )
+                            type="text"
+                            value={searchQuery}
+                            onChange={(event) =>
+                              setSearchQuery(event.target.value)
                             }
-                            className="absolute w-full top-1/2 transform -translate-y-1/2 appearance-none h-4 bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-indigo-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer"
+                            placeholder="Search smartphones..."
+                            className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-8 pr-9 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
                           />
-
-                          <input
-                            type="range"
-                            min={MIN_PRICE}
-                            max={MAX_PRICE}
-                            value={filters.priceRange.max}
-                            onChange={(e) =>
-                              updatePriceRange(
-                                filters.priceRange.min,
-                                Number(e.target.value),
-                              )
-                            }
-                            className="absolute w-full top-1/2 transform -translate-y-1/2 appearance-none h-4 bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:  [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:  [&::-webkit-slider-thumb]:cursor-pointer"
-                          />
-
-                          <div className="flex justify-between items-center text-xs mb-2">
-                            <span className="text-gray-500">
-                              ₹ {MIN_PRICE.toLocaleString()}
-                            </span>
-                            <span className="text-gray-500">
-                              ₹ {MAX_PRICE.toLocaleString()}
-                            </span>
-                          </div>
-                          <div className="flex justify-center">
+                          {searchQuery ? (
                             <button
-                              onClick={() =>
-                                updatePriceRange(MIN_PRICE, MAX_PRICE)
-                              }
-                              className="text-blue-600 hover:text-blue-700 font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors duration-200"
+                              type="button"
+                              onClick={() => setSearchQuery("")}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                              aria-label="Clear smartphone search"
                             >
-                              Reset Range
+                              <FaTimes className="text-xs" />
                             </button>
-                          </div>
+                          ) : null}
                         </div>
-                      </div>
-                    </div>
+                      ),
+                    })}
 
-                    {/* RAM */}
-                    <div>
-                      <div className="flex items-center justify-between mb-3 ">
-                        <h4 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
-                          <FaMemory className="text-blue-500" /> Memory (RAM)
-                        </h4>
-                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                          {filters.ram.length} selected
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-600 mb-3">
-                        Choose RAM capacity for multitasking performance
-                      </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        {ramOptions.map((ram) => (
-                          <label
-                            key={ram}
-                            className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium ${
-                              filters.ram.includes(ram)
-                                ? "bg-gradient-to-b from-blue-600 via-blue-500 to-blue-600 text-white  "
-                                : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300 hover: "
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={filters.ram.includes(ram)}
-                              onChange={() => handleFilterChange("ram", ram)}
-                              className="sr-only"
-                            />
-                            <FaMemory className="text-sm" />
-                            <span>{ram}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
+                    {renderMobileFilterBlock({
+                      title: "Brands",
+                      subtitle: "Select by manufacturer",
+                      badge: filters.brand.length,
+                      children: (
+                        <>
+                          {renderMobileSearchInput({
+                            value: brandFilterQuery,
+                            onChange: setBrandFilterQuery,
+                            placeholder: "Search brand...",
+                            clearLabel: "Clear brand search",
+                          })}
+                          {renderMobileOptionList({
+                            items: filteredBrandOptions,
+                            emptyText: "No brands found",
+                            isSelected: (brand) =>
+                              filters.brand.includes(brand),
+                            onChange: (brand) =>
+                              handleFilterChange("brand", brand),
+                            getMeta: (brand) =>
+                              devices.filter((device) => device.brand === brand)
+                                .length,
+                            maxHeightClass: "max-h-60",
+                          })}
+                        </>
+                      ),
+                    })}
 
-                    {/* Storage */}
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
-                          <FaShoppingBag className="text-green-500" /> Storage
-                          Capacity
-                        </h4>
-                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                          {filters.storage.length} selected
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-600 mb-3">
-                        Select internal storage options for apps and media
-                      </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        {storageOptions.map((storage) => (
-                          <label
-                            key={storage}
-                            className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium ${
-                              filters.storage.includes(storage)
-                                ? "bg-gradient-to-b from-blue-600 via-blue-500 to-blue-600 text-white  "
-                                : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300 hover: "
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={filters.storage.includes(storage)}
-                              onChange={() =>
-                                handleFilterChange("storage", storage)
-                              }
-                              className="sr-only"
-                            />
-                            <span className="text-sm">{storage}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
+                    {renderMobileFilterBlock({
+                      title: "Price Range",
+                      subtitle: "Set your budget",
+                      badge: `₹ ${filters.priceRange.min?.toLocaleString()}`,
+                      children: renderPriceRangeControl(),
+                    })}
 
-                    {/* Battery Features */}
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
-                          <FaBatteryFull className="text-orange-500" /> Battery
-                          Features
-                        </h4>
-                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                          {filters.battery.length} selected
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-600 mb-3">
-                        Filter by capacity, fast charging, and wireless charging
-                      </div>
-                      <div className="space-y-2">
-                        {BATTERY_FEATURES.map((r) => {
-                          const Icon = r.icon;
-                          return (
-                            <label
-                              key={r.id}
-                              className={`flex items-center justify-between gap-2 cursor-pointer px-4 py-3 rounded-xl transition-all duration-200 font-medium ${
-                                filters.battery.includes(r.id)
-                                  ? "bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 text-white  "
-                                  : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300"
-                              }`}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={filters.battery.includes(r.id)}
-                                onChange={() =>
-                                  handleFilterChange("battery", r.id)
-                                }
-                                className="sr-only"
-                              />
-                              <div className="flex items-center gap-3">
-                                <Icon className="text-sm" />
-                                <span>{r.label}</span>
-                              </div>
-                              <div
-                                className={`${
-                                  filters.battery.includes(r.id)
-                                    ? " "
-                                    : "bg-gray-300"
-                                } w-2 h-2 rounded-full`}
-                              />
-                            </label>
-                          );
-                        })}
-                      </div>
-                    </div>
+                    {renderMobileFilterBlock({
+                      title: "Memory (RAM)",
+                      subtitle: "Multitasking performance",
+                      badge: filters.ram.length,
+                      children: (
+                        <>
+                          {renderMobileSearchInput({
+                            value: ramFilterQuery,
+                            onChange: setRamFilterQuery,
+                            placeholder: "Search RAM...",
+                            clearLabel: "Clear RAM search",
+                          })}
+                          {renderMobileOptionList({
+                            items: filteredRamOptions,
+                            emptyText: "No RAM options found",
+                            isSelected: (ram) =>
+                              filters.ram.some(
+                                (value) =>
+                                  normalizeMemoryFilterLabel(value, "GB") ===
+                                  ram,
+                              ),
+                            onChange: (ram) => handleFilterChange("ram", ram),
+                          })}
+                        </>
+                      ),
+                    })}
 
-                    {/* Processor / Network / Refresh / Camera */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <h5 className="font-semibold text-gray-800 mb-2">
-                          Processor
-                        </h5>
-                        <div className="space-y-2">
-                          {processorOptions.map((p) => (
-                            <label
-                              key={p}
-                              className="flex items-center gap-3 cursor-pointer"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={filters.processor.includes(p)}
-                                onChange={() =>
-                                  handleFilterChange("processor", p)
-                                }
-                                className="w-4 h-4"
-                              />
-                              <span className="text-sm">{p}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
+                    {renderMobileFilterBlock({
+                      title: "Storage Capacity",
+                      subtitle: "Apps and media space",
+                      badge: filters.storage.length,
+                      children: (
+                        <>
+                          {renderMobileSearchInput({
+                            value: storageFilterQuery,
+                            onChange: setStorageFilterQuery,
+                            placeholder: "Search storage...",
+                            clearLabel: "Clear storage search",
+                          })}
+                          {renderMobileOptionList({
+                            items: filteredStorageOptions,
+                            emptyText: "No storage options found",
+                            isSelected: (storage) =>
+                              filters.storage.some(
+                                (value) =>
+                                  normalizeMemoryFilterLabel(value, "GB") ===
+                                  storage,
+                              ),
+                            onChange: (storage) =>
+                              handleFilterChange("storage", storage),
+                          })}
+                        </>
+                      ),
+                    })}
 
-                      <div>
-                        <h5 className="font-semibold text-gray-800 mb-2">
-                          Network
-                        </h5>
-                        <div className="space-y-2">
-                          {networkOptions.map((n) => (
-                            <label
-                              key={n}
-                              className="flex items-center gap-3 cursor-pointer"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={filters.network.includes(n)}
-                                onChange={() =>
-                                  handleFilterChange("network", n)
-                                }
-                                className="w-4 h-4"
-                              />
-                              <span className="text-sm">{n}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
+                    {renderMobileFilterBlock({
+                      title: "Battery Features",
+                      subtitle: "Capacity and charging",
+                      badge: filters.battery.length,
+                      children: (
+                        <>
+                          {renderMobileSearchInput({
+                            value: batteryFilterQuery,
+                            onChange: setBatteryFilterQuery,
+                            placeholder: "Search battery...",
+                            clearLabel: "Clear battery search",
+                          })}
+                          {renderMobileOptionList({
+                            items: filteredBatteryFeatures,
+                            emptyText: "No battery options found",
+                            isSelected: (item) =>
+                              filters.battery.includes(item.id),
+                            onChange: (item) =>
+                              handleFilterChange("battery", item.id),
+                            getLabel: (item) => item.label,
+                            getKey: (item) => item.id,
+                          })}
+                        </>
+                      ),
+                    })}
 
-                      <div>
-                        <h5 className="font-semibold text-gray-800 mb-2">
-                          Refresh Rate
-                        </h5>
-                        <div className="space-y-2">
-                          {refreshRateOptions.map((r) => (
-                            <label
-                              key={r}
-                              className="flex items-center gap-3 cursor-pointer"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={filters.refreshRate.includes(r)}
-                                onChange={() =>
-                                  handleFilterChange("refreshRate", r)
-                                }
-                                className="w-4 h-4"
-                              />
-                              <span className="text-sm">{r}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
+                    {processorOptions.length > 0
+                      ? renderMobileFilterBlock({
+                          title: "Processor",
+                          subtitle: "Chipset family",
+                          badge: filters.processor.length,
+                          children: (
+                            <>
+                              {renderMobileSearchInput({
+                                value: processorFilterQuery,
+                                onChange: setProcessorFilterQuery,
+                                placeholder: "Search processor...",
+                                clearLabel: "Clear processor search",
+                              })}
+                              {renderMobileOptionList({
+                                items: filteredProcessorOptions,
+                                emptyText: "No processor options found",
+                                isSelected: (processor) =>
+                                  filters.processor.includes(processor),
+                                onChange: (processor) =>
+                                  handleFilterChange("processor", processor),
+                              })}
+                            </>
+                          ),
+                        })
+                      : null}
+
+                    {networkOptions.length > 0
+                      ? renderMobileFilterBlock({
+                          title: "Network",
+                          subtitle: "Cellular support",
+                          badge: filters.network.length,
+                          children: (
+                            <>
+                              {renderMobileSearchInput({
+                                value: networkFilterQuery,
+                                onChange: setNetworkFilterQuery,
+                                placeholder: "Search network...",
+                                clearLabel: "Clear network search",
+                              })}
+                              {renderMobileOptionList({
+                                items: filteredNetworkOptions,
+                                emptyText: "No network options found",
+                                isSelected: (network) =>
+                                  filters.network.includes(network),
+                                onChange: (network) =>
+                                  handleFilterChange("network", network),
+                              })}
+                            </>
+                          ),
+                        })
+                      : null}
+
+                    {refreshRateOptions.length > 0
+                      ? renderMobileFilterBlock({
+                          title: "Refresh Rate",
+                          subtitle: "Display smoothness",
+                          badge: filters.refreshRate.length,
+                          children: (
+                            <>
+                              {renderMobileSearchInput({
+                                value: refreshRateFilterQuery,
+                                onChange: setRefreshRateFilterQuery,
+                                placeholder: "Search refresh rate...",
+                                clearLabel: "Clear refresh rate search",
+                              })}
+                              {renderMobileOptionList({
+                                items: filteredRefreshRateOptions,
+                                emptyText: "No refresh rate options found",
+                                isSelected: (rate) =>
+                                  filters.refreshRate.includes(rate),
+                                onChange: (rate) =>
+                                  handleFilterChange("refreshRate", rate),
+                              })}
+                            </>
+                          ),
+                        })
+                      : null}
+
+                    {rearCameraOptions.length > 0
+                      ? renderMobileFilterBlock({
+                          title: "Rear Camera",
+                          subtitle: "Main camera resolution",
+                          badge: filters.rearCamera.length,
+                          children: (
+                            <>
+                              {renderMobileSearchInput({
+                                value: rearCameraFilterQuery,
+                                onChange: setRearCameraFilterQuery,
+                                placeholder: "Search rear camera...",
+                                clearLabel: "Clear rear camera search",
+                              })}
+                              {renderMobileOptionList({
+                                items: filteredRearCameraOptions,
+                                emptyText: "No rear camera options found",
+                                isSelected: (camera) =>
+                                  filters.rearCamera.includes(camera),
+                                onChange: (camera) =>
+                                  handleFilterChange("rearCamera", camera),
+                              })}
+                            </>
+                          ),
+                        })
+                      : null}
+
+                    {frontCameraOptions.length > 0
+                      ? renderMobileFilterBlock({
+                          title: "Front Camera",
+                          subtitle: "Selfie camera resolution",
+                          badge: filters.frontCamera.length,
+                          className: "mb-2",
+                          children: (
+                            <>
+                              {renderMobileSearchInput({
+                                value: frontCameraFilterQuery,
+                                onChange: setFrontCameraFilterQuery,
+                                placeholder: "Search front camera...",
+                                clearLabel: "Clear front camera search",
+                              })}
+                              {renderMobileOptionList({
+                                items: filteredFrontCameraOptions,
+                                emptyText: "No front camera options found",
+                                isSelected: (camera) =>
+                                  filters.frontCamera.includes(camera),
+                                onChange: (camera) =>
+                                  handleFilterChange("frontCamera", camera),
+                              })}
+                            </>
+                          ),
+                        })
+                      : null}
                   </div>
-                  {/* ... [Filter content from original] ... */}
 
-                  {/* Apply Button */}
-                  <div className="mt-auto shrink-0 border-t border-slate-200 bg-white p-6">
+                  <div className="mt-auto shrink-0 border-t border-slate-200 bg-white px-5 py-4 sm:px-6">
                     <div className="flex gap-3">
                       <button
+                        type="button"
                         onClick={() => setShowFilters(false)}
-                        className="flex-1 rounded-xl bg-slate-100 py-4 font-semibold text-slate-700 transition-colors duration-200 hover:bg-slate-200"
+                        className="flex-1 rounded-xl bg-slate-100 py-3.5 font-semibold text-slate-700 transition-colors duration-200 hover:bg-slate-200"
                       >
                         Cancel
                       </button>
                       <button
+                        type="button"
                         onClick={() => setShowFilters(false)}
-                        className="flex-1 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 py-4 font-semibold text-white transition-all duration-200 hover:from-indigo-700 hover:to-blue-700"
+                        className="flex-1 rounded-xl bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 py-3.5 font-semibold text-white transition-all duration-200 hover:from-blue-700 hover:to-blue-600"
                       >
                         Apply Filters
                       </button>
@@ -6546,6 +6564,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
               currentBrandObj?.name || featuredDiscoveryProduct.brand || ""
             }
             entityType="smartphones"
+            layout="latestPhones"
           />
         </section>
       ) : null}
