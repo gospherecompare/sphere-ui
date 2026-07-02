@@ -120,7 +120,7 @@ const LatestNewsRouteSection = ({
 
         <Link
           to="/news"
-          className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-md bg-purple-600 px-3 py-2 text-[11px] font-semibold leading-5 text-white transition-colors hover:bg-purple-700 sm:w-auto sm:text-[12px]"
+          className="hidden w-full shrink-0 items-center justify-center gap-2 rounded-md bg-purple-600 px-3 py-2 text-[11px] font-semibold leading-5 text-white transition-colors hover:bg-purple-700 sm:inline-flex sm:w-auto sm:text-[12px]"
         >
           View all
           <FaArrowRight className="text-[10px] sm:text-[11px]" />
@@ -212,6 +212,14 @@ const LatestNewsRouteSection = ({
                 ))}
               </div>
             ) : null}
+
+            <Link
+              to="/news"
+              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md bg-purple-600 px-3 py-2 text-[11px] font-semibold leading-5 text-white transition-colors hover:bg-purple-700"
+            >
+              View all
+              <FaArrowRight className="text-[10px]" />
+            </Link>
           </div>
 
           <div className="hidden grid-cols-2 gap-4 sm:grid lg:grid-cols-3 xl:grid-cols-4">

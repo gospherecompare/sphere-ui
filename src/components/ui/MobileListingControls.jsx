@@ -1,5 +1,5 @@
 import React from "react";
-import { FaChevronDown, FaSort, FaTimes } from "react-icons/fa";
+import { FaChevronDown, FaTimes } from "react-icons/fa";
 
 const MobileListingControls = ({
   activeFilterCount = 0,
@@ -8,13 +8,13 @@ const MobileListingControls = ({
   className = "",
 }) => (
   <div
-    className={`sticky top-[64px] z-30 -mx-4 mb-3 border-y border-slate-100 bg-white/95 px-4 py-2.5 shadow-[0_2px_2px_rgba(0,0,0,0.1)] backdrop-blur lg:hidden ${className}`}
+    className={`sticky top-[var(--mobile-listing-controls-top,52px)] z-40 -mx-4 mb-3  bg-white px-4 py-2 lg:hidden ${className}`}
   >
     <div className="grid grid-cols-2 gap-2">
       <button
         type="button"
         onClick={onOpenFilters}
-        className="flex h-11 items-center justify-between rounded-xl border border-slate-100 bg-white px-3 text-xs font-semibold text-slate-800 shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-colors hover:border-blue-200 hover:text-blue-700"
+        className="flex h-9 items-center justify-between rounded-lg border border-slate-100 bg-white px-3 text-xs font-semibold text-slate-800 shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-colors hover:border-blue-200 hover:text-blue-700"
       >
         <span className="flex items-center gap-2">
           Filters
@@ -30,11 +30,9 @@ const MobileListingControls = ({
       <button
         type="button"
         onClick={onOpenSort}
-        className="flex h-11 items-center justify-between rounded-xl border border-slate-100 bg-white px-3 text-xs font-semibold text-slate-800 shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-colors hover:border-blue-200 hover:text-blue-700"
+        className="flex h-9 items-center justify-between rounded-lg border border-slate-100 bg-white px-3 text-xs font-semibold text-slate-800 shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-colors hover:border-blue-200 hover:text-blue-700"
       >
-        <span className="flex items-center gap-2">
-          Sort
-        </span>
+        <span className="flex items-center gap-2">Sort</span>
         <FaChevronDown className="text-[10px] text-slate-400" />
       </button>
     </div>

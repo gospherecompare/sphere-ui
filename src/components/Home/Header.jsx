@@ -316,6 +316,10 @@ const Header = () => {
           );
         }
         document.documentElement.style.setProperty(
+          "--mobile-listing-controls-top",
+          `${measuredMobile}px`,
+        );
+        document.documentElement.style.setProperty(
           "--desktop-header-height",
           "0px",
         );
@@ -324,6 +328,10 @@ const Header = () => {
 
       document.documentElement.style.setProperty(
         "--mobile-header-height",
+        "0px",
+      );
+      document.documentElement.style.setProperty(
+        "--mobile-listing-controls-top",
         "0px",
       );
       document.documentElement.style.setProperty(
@@ -351,6 +359,29 @@ const Header = () => {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const updateListingControlsOffset = () => {
+      const isMobile = window.innerWidth < 768;
+      const measuredMobile = Math.ceil(
+        mobileHeaderRef.current?.getBoundingClientRect().height || 52,
+      );
+
+      document.documentElement.style.setProperty(
+        "--mobile-listing-controls-top",
+        isMobile && isMobileHeaderVisible ? `${measuredMobile}px` : "0px",
+      );
+    };
+
+    updateListingControlsOffset();
+    window.addEventListener("resize", updateListingControlsOffset);
+
+    return () => {
+      window.removeEventListener("resize", updateListingControlsOffset);
+    };
+  }, [isMobileHeaderVisible]);
 
   // Close mega menu on outside click
   useEffect(() => {

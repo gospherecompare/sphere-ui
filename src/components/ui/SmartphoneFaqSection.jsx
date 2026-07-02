@@ -40,7 +40,7 @@ const SmartphoneFaqSection = ({
 
   return (
     <section
-      className={`overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)] ${className}`}
+      className={`overflow-hidden rounded-2xl bg-white ${className}`}
     >
       <div className="px-4 pt-4 sm:px-6">
         <div className="flex items-center justify-between gap-3">

@@ -486,13 +486,13 @@ const BrandLogo = ({ src = "", label = "" }) => {
   const initial = normalizeText(label).charAt(0).toUpperCase() || "?";
 
   return (
-    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-md sm:h-14 sm:w-14">
+    <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-md sm:h-14 sm:w-14">
       {imageSrc && !failed ? (
         <img
           src={imageSrc}
           alt={label || "Brand"}
           loading="lazy"
-          className="h-9 w-9 object-contain"
+          className="h-8 w-8 object-contain sm:h-9 sm:w-9"
           onError={() => setFailed(true)}
         />
       ) : (
@@ -736,7 +736,7 @@ const DiscoveryCardHeader = ({
   viewAllPath = "/smartphones",
   entityType = "smartphones",
 }) => (
-  <div className="px-4 pt-4 sm:px-5">
+  <div className="px-3.5 pt-3.5 sm:px-5 sm:pt-4">
     <div className="flex items-start justify-between gap-3">
       <h4 className="text-[15px] font-semibold tracking-tight text-slate-900 sm:text-base">
         {title}
@@ -774,12 +774,12 @@ const PriceDiscoveryBlock = ({
         viewAllPath={viewAllPath}
         entityType={entityType}
       />
-      <div className="flex flex-wrap gap-2 px-4 py-4 sm:px-5">
+      <div className="grid grid-cols-2 gap-2 px-3.5 py-3.5 sm:flex sm:flex-wrap sm:px-5 sm:py-4">
         {items.slice(0, 8).map((item, index) => (
           <Link
             key={`${item.path || item.label || "price"}-${index}`}
             to={normalizeDiscoveryPath(item.path || "", entityType)}
-            className="inline-flex rounded-full bg-blue-50 px-3.5 py-2 text-xs font-semibold text-blue-700 no-underline transition-colors hover:bg-blue-100 hover:text-blue-800 hover:no-underline"
+            className="inline-flex min-h-9 items-center justify-center rounded-full bg-blue-50 px-3 py-2 text-center text-[11px] font-semibold leading-snug text-blue-700 no-underline transition-colors hover:bg-blue-100 hover:text-blue-800 hover:no-underline sm:min-h-0 sm:px-3.5 sm:text-xs"
           >
             {toCompactPriceLabel(item.label)}
           </Link>
@@ -803,12 +803,12 @@ const PopularSearchesBlock = ({
         viewAllPath={viewAllPath}
         entityType={entityType}
       />
-      <div className="flex flex-wrap gap-2 px-4 py-4 sm:px-5">
+      <div className="grid grid-cols-2 gap-2 px-3.5 py-3.5 sm:flex sm:flex-wrap sm:px-5 sm:py-4">
         {items.slice(0, 10).map((item, index) => (
           <Link
             key={`${item.path || item.label || "popular"}-${index}`}
             to={normalizeDiscoveryPath(item.path || "", entityType)}
-            className="inline-flex rounded-full bg-blue-50 px-3.5 py-2 text-xs font-semibold text-blue-700 no-underline transition-colors hover:bg-blue-100 hover:text-blue-800 hover:no-underline"
+            className="inline-flex min-h-9 items-center justify-center rounded-full bg-blue-50 px-3 py-2 text-center text-[11px] font-semibold leading-snug text-blue-700 no-underline transition-colors hover:bg-blue-100 hover:text-blue-800 hover:no-underline sm:min-h-0 sm:px-3.5 sm:text-xs"
           >
             {item.label || "Explore"}
           </Link>
@@ -843,7 +843,7 @@ const TopBrandsBlock = ({
       <div
         className={
           isPlainSurface
-            ? "px-4 pt-4 sm:px-6"
+            ? "px-3.5 pt-3.5 sm:px-6 sm:pt-4"
             : "px-1 pt-3.5 sm:px-5 sm:pt-4"
         }
       >
@@ -861,17 +861,17 @@ const TopBrandsBlock = ({
           </div>
           <Link
             to={normalizeDiscoveryPath(viewAllPath, entityType)}
-            className="inline-flex shrink-0 items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-[11px] font-semibold text-blue-700 transition-colors duration-200 ease-out hover:border-blue-200 hover:bg-blue-100 hover:text-blue-800"
+            className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-blue-700 transition-colors duration-200 ease-out hover:text-blue-800"
           >
-            View all
+            View all <span aria-hidden="true">&gt;</span>
           </Link>
         </div>
         <DiscoveryHeaderDivider />
       </div>
 
       <div>
-        <div className="no-scrollbar overflow-x-auto px-4 py-4 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-6 sm:py-5">
-          <div className="flex min-w-max items-start gap-3 pr-2 sm:gap-4">
+        <div className="px-3.5 py-4 sm:px-6 sm:py-5">
+          <div className="grid grid-cols-4 items-start gap-2 sm:flex sm:min-w-max sm:gap-4">
             {items.map((item, index) => {
               const rawBrandName = normalizeText(item?.name || item?.label);
               const brandName = trimMobilesSuffix
@@ -882,7 +882,7 @@ const TopBrandsBlock = ({
                 <Link
                   key={`${item.path || brandName || "brand"}-${index}`}
                   to={normalizeDiscoveryPath(item.path || "", entityType)}
-                  className="group flex w-[88px] shrink-0 flex-col items-center gap-2 rounded-2xl bg-transparent px-2.5 py-3 text-center transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-blue-50/40 sm:w-[96px]"
+                  className="group flex min-w-0 flex-col items-center gap-2 rounded-2xl bg-transparent px-1 py-2.5 text-center transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-blue-50/40 sm:w-[96px] sm:shrink-0 sm:px-2.5 sm:py-3"
                 >
                   <BrandLogo
                     src={item.logo_url || item.image_url || ""}
