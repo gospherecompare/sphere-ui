@@ -477,7 +477,7 @@ const getNewsPageTitle = (route = null) =>
 const getNewsPageDescription = (route = null) =>
   route
     ? route.description
-    : "Browse technology news, product launches, science updates, consumer tech, sports technology, and editorial guides on Hooks.";
+    : "Read the latest technology news, smartphone launches, AI updates, gadget releases, industry trends, and expert insights from India and around the world on TryHook.";
 
 const scoreStory = (story, index) => {
   const ageHours = Math.max(0, (Date.now() - parseStoryTime(story)) / 36e5);
@@ -1378,7 +1378,7 @@ const NewsArticlesPage = () => {
       name: taxonomyRoute?.title || "Hooks News",
       description: pageDescription,
       url: canonical,
-      image: "https://tryhook.shop/hook-logo.svg",
+      image: "https://tryhook.shop/hook-logo.png",
     }),
     createWebPageSchema({
       name: taxonomyRoute?.title || "Hooks News",
@@ -1400,7 +1400,7 @@ const NewsArticlesPage = () => {
         url={canonical}
         robots="index, follow"
         ogType="website"
-        image="https://tryhook.shop/hook-logo.svg"
+        image="https://tryhook.shop/hook-logo.png"
         schema={pageSchema}
       />
 

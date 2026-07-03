@@ -831,9 +831,11 @@ const NewsStoryArticlePage = () => {
   }, [story?.body, story?.summary]);
 
   const articleDescription =
-    stripMarkup(story?.summary) ||
-    articleParagraphs[0] ||
-    "Hooks editorial coverage.";
+    story?.title
+      ? `Read the latest ${story.title} with official announcements, launch details, pricing, availability, specifications, features, and expert analysis on TryHook.`
+      : stripMarkup(story?.summary) ||
+        articleParagraphs[0] ||
+        "Hooks editorial coverage.";
   const articleHtml = useMemo(
     () => sanitizeArticleHtml(story?.contentHtml || ""),
     [story?.contentHtml],

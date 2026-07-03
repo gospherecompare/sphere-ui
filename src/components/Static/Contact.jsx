@@ -354,7 +354,6 @@ const Contact = () => {
       <SEO
         title="Contact TryHook - Support, Feedback, and Inquiries"
         description="Contact TryHook for general questions, product corrections, platform support, feedback, partnerships, and editorial inquiries."
-        image="https://tryhook.shop/hook-logo.svg"
         url={canonical}
         robots="index, follow"
         ogType="website"

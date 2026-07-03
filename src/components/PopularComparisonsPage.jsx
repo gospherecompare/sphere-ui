@@ -533,7 +533,7 @@ const PopularComparisonsPage = () => {
       (item) => item.image,
     )?.image;
     return {
-      url: firstComparisonImage || `${SITE_ORIGIN}/hook-logo.svg`,
+      url: firstComparisonImage || `${SITE_ORIGIN}/hook-logo.png`,
       width: 1200,
       height: 630,
       alt: "Popular mobile phone and device comparisons on Hooks",

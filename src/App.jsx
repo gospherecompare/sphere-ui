@@ -30,7 +30,7 @@ import { getTvRouteFeatureMeta } from "./utils/tvPopularFeatures";
 import { toCanonicalPagePath, toCanonicalPageUrl } from "./utils/publicUrl";
 
 const SITE_ORIGIN = "https://tryhook.shop";
-const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/hook-logo.svg`;
+const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/hook-logo.png`;
 const CURRENT_YEAR = new Date().getFullYear();
 const CURRENT_MONTH_YEAR = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -283,7 +283,7 @@ const resolveSeoMeta = (pathname) => {
       title:
         "Compare Smartphones, Laptops & TVs in India - Specs, Prices & Reviews - Hooks",
       description:
-        "Compare smartphones, laptops, TVs, and networking devices in India with specs, prices, variants, and trend insights. Discover latest launches on Hooks.",
+        "Stay updated with the latest technology news, smartphone launches, AI updates, laptops, tablets, wearables, reviews, comparisons, prices, specifications, and buying guides on TryHook.",
       keywords: `hooks, best gadget comparison site, mobile price comparison india, compare laptops smartphones tvs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, latest laptops in india ${CURRENT_YEAR}, latest smart tvs in india ${CURRENT_YEAR}, new launch and trending gadgets, top selling gadgets india, compare specs`,
     },
     {
@@ -486,7 +486,7 @@ const RouteSeoFallback = () => {
       <meta property="og:url" content={canonicalUrl} />
       <meta property="og:image" content={DEFAULT_OG_IMAGE} />
       <meta property="og:image:secure_url" content={DEFAULT_OG_IMAGE} />
-      <meta property="og:image:type" content="image/svg+xml" />
+      <meta property="og:image:type" content="image/png" />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
       <meta property="og:image:alt" content="Hooks preview image" />

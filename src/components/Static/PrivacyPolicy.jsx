@@ -139,7 +139,6 @@ const PrivacyPolicy = () => {
       <SEO
         title="Privacy Policy - TryHook"
         description="Read the TryHook Privacy Policy to understand how information is collected, used, stored, protected, and handled when you use the website."
-        image={`${SITE_ORIGIN}/hook-logo.svg`}
         url={canonical}
         robots="index, follow"
         ogType="website"

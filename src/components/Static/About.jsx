@@ -135,7 +135,6 @@ const About = () => {
       <SEO
         title="About TryHook - Discover Technology, Compare Smarter"
         description="Learn why TryHook exists and how it helps users discover, compare, and understand smartphones, TVs, laptops, AI, technology news, and innovation."
-        image={`${SITE_ORIGIN}/hook-logo.svg`}
         url={canonical}
         robots="index, follow"
         ogType="website"

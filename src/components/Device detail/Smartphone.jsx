@@ -69,7 +69,10 @@ import {
   usePublicNewsFeed,
 } from "../../hooks/usePublicNews";
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
-import { resolveSmartphoneBadgeScore } from "../../utils/smartphoneBadgeScore";
+import {
+  formatSmartphoneBadgeScore,
+  resolveSmartphoneBadgeScore,
+} from "../../utils/smartphoneBadgeScore";
 import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
 import { toCanonicalPageUrl } from "../../utils/publicUrl";
 import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
@@ -404,9 +407,7 @@ const BaseSpecScoreBadge = ({
       : percentageRaw;
   const percentage =
     safePercentageRaw != null
-      ? displayNormalized != null
-        ? safePercentageRaw
-        : remapScoreToBand(safePercentageRaw, 80, 98)
+      ? safePercentageRaw
       : null;
   const label = percentage != null ? `${percentage.toFixed(1)}%` : "--";
   const isGlass = variant === "glass";
@@ -1610,8 +1611,14 @@ const MobileDetailCard = () => {
     out.field_profile = profileResult;
     const canShowSpecScore = isSpecScoreAllowed(out);
     if (!canShowSpecScore) {
+      out.spec_score_v2_raw = null;
+      out.specScoreV2Raw = null;
       out.spec_score = null;
       out.specScore = null;
+      out.hook_score = null;
+      out.hookScore = null;
+      out.Hookss_score = null;
+      out.HookssScore = null;
       out.spec_score_v2 = null;
       out.specScoreV2 = null;
       out.spec_score_display = null;
@@ -1626,13 +1633,6 @@ const MobileDetailCard = () => {
       out.overallScoreDisplay = null;
       out.overall_score_v2_display_80_98 = null;
       out.overallScoreV2Display8098 = null;
-    } else if (
-      out.spec_score == null &&
-      out.overall_score == null &&
-      out.hook_score == null
-    ) {
-      out.spec_score = profileResult.score;
-      out.overall_score = profileResult.score;
     }
 
     return out;
@@ -1763,7 +1763,9 @@ const MobileDetailCard = () => {
   const headerSpecScoreValue = useMemo(() => {
     if (!allowSpecScore || !scoreSourceData) return null;
     const rawValue = Number(resolveSmartphoneBadgeScore(scoreSourceData));
-    return Number.isFinite(rawValue) ? Math.round(rawValue) : null;
+    return Number.isFinite(rawValue)
+      ? formatSmartphoneBadgeScore(rawValue)
+      : null;
   }, [allowSpecScore, scoreSourceData]);
   const headerSpecScoreBlock =
     headerSpecScoreValue != null ? (
@@ -2009,10 +2011,10 @@ const MobileDetailCard = () => {
       };
     }
     return buildScoreSummary(scoreSourceData, {
-      allowProfileSectionFallback: true,
+      allowProfileSectionFallback: false,
       allowProfileOverallFallback: false,
-      allowSectionAverageFallback: true,
-      allowFallbackPersistedScores: true,
+      allowSectionAverageFallback: false,
+      allowFallbackPersistedScores: false,
     });
   }, [scoreSourceData, buildScoreSummary, allowSpecScore]);
   const getSectionScore = useCallback(
@@ -2021,7 +2023,7 @@ const MobileDetailCard = () => {
       const matched = scoreSummary.sections.find(
         (section) => section.key === key,
       );
-      return matched?.score ?? scoreSummary.overall;
+      return matched?.score ?? null;
     },
     [scoreSummary],
   );
@@ -4085,7 +4087,7 @@ Price: ${price}
               <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-blue-600">
                 Full Specifications
               </p>
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-[#556b95]">
+              <p className="mt-3 max-w-7xl text-sm leading-6 text-[#556b95]">
                 {fullSpecIntroText}
               </p>
             </div>
@@ -5049,8 +5051,12 @@ Price: ${price}
                   </button>
                 </div>
                 {headerSummary ? (
-                  <div className="mt-2 max-w-3xl">
-                    <p className="text-sm leading-6 text-slate-600 sm:text-base">
+                  <div className="mt-2 max-w-7xl">
+                    <p
+                      className={`text-sm leading-6 text-slate-600 sm:text-base ${
+                        showHeaderSummaryFull ? "" : "line-clamp-1"
+                      }`}
+                    >
                       {visibleHeaderSummary}
                     </p>
                     {headerSummaryHasMore ? (
@@ -5185,28 +5191,28 @@ Price: ${price}
                   </button>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 text-[13px] text-slate-600 sm:gap-3 sm:text-sm">
-                  {headerSpecScoreBlock}
-                </div>
+                <div className="flex flex-col items-end gap-2 text-right">
+                  {headerSpecScoreBlock ? (
+                    <div className="text-[13px] text-slate-600 sm:text-sm">
+                      {headerSpecScoreBlock}
+                    </div>
+                  ) : null}
 
-                {hasLaunchDate ? (
-                  <div className="flex flex-wrap items-center gap-2 text-[13px] text-slate-600 sm:text-sm">
-                    <span
-                      className="hidden h-4 w-px bg-slate-200 sm:inline-block"
-                      aria-hidden="true"
-                    />
-                    <span>
-                      Launched On:{" "}
-                      <span className="font-semibold text-slate-900">
-                        {launchDateParsed.toLocaleDateString("en-US", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        })}
+                  {hasLaunchDate ? (
+                    <div className="text-[13px] text-slate-600 sm:text-sm">
+                      <span>
+                        Launched On:{" "}
+                        <span className="font-semibold text-slate-900">
+                          {launchDateParsed.toLocaleDateString("en-US", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </span>
                       </span>
-                    </span>
-                  </div>
-                ) : null}
+                    </div>
+                  ) : null}
+                </div>
               </div>
             </div>
           </div>
@@ -5225,7 +5231,7 @@ Price: ${price}
               <span className="text-blue-600">{metaBrand || "this brand"}</span>{" "}
               devices
             </h2>
-            <p className="max-w-3xl text-sm leading-6 text-slate-500">
+            <p className="max-w-7xl text-sm leading-6 text-slate-500">
               Explore popular alternatives and see how this model stacks up
               against other phones from the same brand.
             </p>

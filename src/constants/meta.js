@@ -26,7 +26,7 @@ export const smartphoneMeta = {
         : name || brand || "";
     if (!identity) return "";
 
-    const intro = `Explore ${identity} price in India, complete specifications, key features, RAM and storage variants, display, camera and battery details, and a clear buying guide to help you choose the right variant.`;
+    const intro = `Check the latest ${identity} price in India, full specifications, features, images, variants, launch date, availability, reviews, and comparisons on TryHook.`;
     const cleanHighlights = Array.isArray(highlights)
       ? highlights.filter(Boolean).slice(0, 3)
       : [];

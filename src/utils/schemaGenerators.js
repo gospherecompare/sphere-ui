@@ -239,7 +239,7 @@ export const createCollectionSchema = ({
     name: name || "",
     description: description || "",
     url: toAbsolutePageUrl(url || "/"),
-    image: image || `${SITE_ORIGIN}/hook-logo.svg`,
+    image: image || `${SITE_ORIGIN}/hook-logo.png`,
   };
 };
 
@@ -278,7 +278,7 @@ export const createNewsArticleSchema = ({
       name: publisherName,
       logo: {
         "@type": "ImageObject",
-        url: `${SITE_ORIGIN}/hook-logo.svg`,
+        url: `${SITE_ORIGIN}/hook-logo.png`,
       },
     },
     mainEntityOfPage: toAbsolutePageUrl(url || "/"),
@@ -320,7 +320,7 @@ export const createOrganizationSchema = () => {
     "@type": "Organization",
     name: "Hooks",
     url: toAbsolutePageUrl("/"),
-    logo: `${SITE_ORIGIN}/hook-logo.svg`,
+    logo: `${SITE_ORIGIN}/hook-logo.png`,
     description:
       "Compare smartphones, laptops, TVs, and gadgets with specs, prices, and reviews",
     sameAs: [
@@ -464,7 +464,7 @@ export const createAboutPageSchema = ({
       "@type": "Organization",
       name: organizationName,
       url: toAbsolutePageUrl("/"),
-      logo: `${SITE_ORIGIN}/hook-logo.svg`,
+      logo: `${SITE_ORIGIN}/hook-logo.png`,
       description:
         "Compare smartphones, laptops, TVs, and gadgets with specs, prices, and trend insights",
     },

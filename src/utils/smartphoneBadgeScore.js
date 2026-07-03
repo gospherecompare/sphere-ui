@@ -2,37 +2,49 @@ import { normalizeScore100Value } from "./groupScoreStats";
 
 const resolveFirstScore = (...values) => {
   for (const value of values) {
+    if (value == null || value === "") continue;
     const normalized = normalizeScore100Value(value);
     if (normalized != null) return normalized;
   }
   return null;
 };
 
+const resolveServerScore = (value, source) => {
+  if (value == null || value === "") return null;
+  const normalized = normalizeScore100Value(value);
+  if (normalized == null) return null;
+
+  const sourceKey = String(source || "")
+    .trim()
+    .toLowerCase();
+  if (sourceKey.includes("fallback") || sourceKey.includes("unavailable")) {
+    return null;
+  }
+
+  return normalized;
+};
+
 export const resolveSmartphoneBadgeScore = (device) => {
   if (!device || typeof device !== "object") return null;
 
-  const displayScore = resolveFirstScore(
-    device?.spec_score_v2_display_80_98,
-    device?.specScoreV2Display8098,
-    device?.overall_score_v2_display_80_98,
-    device?.overallScoreV2Display8098,
-    device?.spec_score_display,
-    device?.specScoreDisplay,
-    device?.overall_score_display,
-    device?.overallScoreDisplay,
-  );
-  if (displayScore != null) return displayScore;
+  const specSource = device?.spec_score_source ?? device?.specScoreSource;
+  const hookSource = device?.hook_score_source ?? device?.hookScoreSource;
 
   return resolveFirstScore(
-    device?.spec_score_v2,
-    device?.specScoreV2,
-    device?.overall_score_v2,
-    device?.overallScoreV2,
-    device?.spec_score,
-    device?.specScore,
-    device?.overall_score,
-    device?.overallScore,
+    resolveServerScore(device?.spec_score, specSource),
+    resolveServerScore(device?.specScore, specSource),
+    resolveServerScore(device?.hook_score, hookSource),
+    resolveServerScore(device?.hookScore, hookSource),
+    resolveServerScore(device?.Hookss_score, hookSource),
+    resolveServerScore(device?.HookssScore, hookSource),
   );
+};
+
+export const formatSmartphoneBadgeScore = (value) => {
+  const normalized = normalizeScore100Value(value);
+  if (normalized == null) return null;
+
+  return String(Math.round(normalized));
 };
 
 export default resolveSmartphoneBadgeScore;

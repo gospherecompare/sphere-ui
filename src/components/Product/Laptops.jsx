@@ -1610,13 +1610,54 @@ const Laptops = () => {
       : `${siteOrigin}/${value}`;
   };
 
+  const getListingProductImage = (device) => {
+    if (!device || typeof device !== "object") return "";
+    const directImages = [
+      ...(Array.isArray(device.images) ? device.images : []),
+      ...(Array.isArray(device.images_json) ? device.images_json : []),
+      device.image,
+      device.image_url,
+      device.imageUrl,
+      device.thumbnail,
+      device.thumbnail_url,
+      device.thumbnailUrl,
+      device.primary_image,
+      device.primaryImage,
+      device.product_image,
+      device.productImage,
+    ];
+    const direct = directImages.find(Boolean);
+    if (direct) return direct;
+
+    const variant = Array.isArray(device.variants)
+      ? device.variants.find((entry) => {
+          if (!entry || typeof entry !== "object") return false;
+          return (
+            (Array.isArray(entry.images) && entry.images.find(Boolean)) ||
+            (Array.isArray(entry.images_json) && entry.images_json.find(Boolean)) ||
+            entry.image ||
+            entry.image_url ||
+            entry.imageUrl
+          );
+        })
+      : null;
+    if (!variant) return "";
+    return (
+      (Array.isArray(variant.images) && variant.images.find(Boolean)) ||
+      (Array.isArray(variant.images_json) && variant.images_json.find(Boolean)) ||
+      variant.image ||
+      variant.image_url ||
+      variant.imageUrl ||
+      ""
+    );
+  };
+
   const listOgImage = useMemo(() => {
     const firstWithImage = sortedVariants.find((device) =>
-      Array.isArray(device?.images) ? device.images.find(Boolean) : false,
+      Boolean(getListingProductImage(device)),
     );
-    const raw =
-      firstWithImage?.images?.find(Boolean) || firstWithImage?.image || "";
-    return toAbsoluteUrl(raw);
+    const raw = getListingProductImage(firstWithImage);
+    return toAbsoluteUrl(raw) || `${SITE_ORIGIN}/hook-logo.png`;
   }, [sortedVariants, siteOrigin]);
 
   const listCanonicalPath =

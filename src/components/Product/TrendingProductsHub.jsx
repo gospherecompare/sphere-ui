@@ -1424,11 +1424,57 @@ const TrendingProductsHub = () => {
   }, [config.metaKeywords, activeCategory, visible, products]);
   const canonicalPath = `/trending/${activeCategory}`;
   const canonicalUrl = toCanonicalPageUrl(canonicalPath, SITE_ORIGIN);
+
+  const getTrendingProductImage = (product) => {
+    if (!product || typeof product !== "object") return "";
+    const directImages = [
+      ...(Array.isArray(product.images) ? product.images : []),
+      ...(Array.isArray(product.images_json) ? product.images_json : []),
+      product.image,
+      product.image_url,
+      product.imageUrl,
+      product.thumbnail,
+      product.thumbnail_url,
+      product.thumbnailUrl,
+      product.primary_image,
+      product.primaryImage,
+      product.product_image,
+      product.productImage,
+    ];
+    const direct = directImages.find((value) => text(value));
+    if (direct) return direct;
+
+    const variant = Array.isArray(product.variants)
+      ? product.variants.find((entry) => {
+          if (!entry || typeof entry !== "object") return false;
+          return (
+            (Array.isArray(entry.images) && entry.images.find((value) => text(value))) ||
+            (Array.isArray(entry.images_json) &&
+              entry.images_json.find((value) => text(value))) ||
+            text(entry.image) ||
+            text(entry.image_url) ||
+            text(entry.imageUrl)
+          );
+        })
+      : null;
+    if (!variant) return "";
+    return (
+      (Array.isArray(variant.images) &&
+        variant.images.find((value) => text(value))) ||
+      (Array.isArray(variant.images_json) &&
+        variant.images_json.find((value) => text(value))) ||
+      variant.image ||
+      variant.image_url ||
+      variant.imageUrl ||
+      ""
+    );
+  };
+
   const ogImage = first(
-    arr(visible).find((p) => text(p?.image))?.image,
-    arr(products).find((p) => text(p?.image))?.image,
+    getTrendingProductImage(arr(visible).find((p) => text(getTrendingProductImage(p)))),
+    getTrendingProductImage(arr(products).find((p) => text(getTrendingProductImage(p)))),
   );
-  const ogImageUrl = ogImage || `${SITE_ORIGIN}/hook-logo.svg`;
+  const ogImageUrl = ogImage || `${SITE_ORIGIN}/hook-logo.png`;
   const ogImageMeta = {
     url: ogImageUrl,
     width: 1200,

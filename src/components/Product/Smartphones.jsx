@@ -49,7 +49,10 @@ import MobileListingControls, {
 import { generateSlug } from "../../utils/slugGenerator";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
-import { resolveSmartphoneBadgeScore } from "../../utils/smartphoneBadgeScore";
+import {
+  formatSmartphoneBadgeScore,
+  resolveSmartphoneBadgeScore,
+} from "../../utils/smartphoneBadgeScore";
 import {
   createCollectionSchema,
   createItemListSchema,
@@ -1523,15 +1526,18 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     };
     const isAiPhone = detectAiPhone();
 
+    const specScoreRaw = toNumber(
+      apiDevice.spec_score ?? apiDevice.specScore ?? null,
+    );
     const overallScoreRaw = toNumber(
-      apiDevice.spec_score_v2 ??
-        apiDevice.specScoreV2 ??
-        apiDevice.overall_score_v2 ??
-        apiDevice.overallScoreV2 ??
-        apiDevice.spec_score ??
-        apiDevice.specScore ??
-        apiDevice.overall_score ??
-        apiDevice.overallScore,
+      apiDevice.overall_score ?? apiDevice.overallScore ?? null,
+    );
+    const hookScoreRaw = toNumber(
+      apiDevice.hook_score ??
+        apiDevice.hookScore ??
+        apiDevice.Hookss_score ??
+        apiDevice.HookssScore ??
+        null,
     );
     const overallScoreDisplay = toNumber(
       apiDevice.spec_score_v2_display_80_98 ??
@@ -1738,7 +1744,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         toString(apiDevice.availableDateLabel),
         "",
       ),
-      spec_score: overallScoreRaw,
+      spec_score: specScoreRaw,
+      hook_score: hookScoreRaw,
+      hookScore: hookScoreRaw,
       spec_score_v2_raw: toNumber(
         apiDevice.spec_score_v2_raw ?? apiDevice.specScoreV2Raw ?? null,
       ),
@@ -1842,7 +1850,11 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     baseDevice.storeStatus = resolveStoreStage(baseDevice);
     if (!isSpecScoreAllowed(baseDevice)) {
       baseDevice.allowSpecScore = false;
+      baseDevice.spec_score_v2_raw = null;
+      baseDevice.spec_score_v2 = null;
       baseDevice.spec_score = null;
+      baseDevice.hook_score = null;
+      baseDevice.hookScore = null;
       baseDevice.overall_score = null;
       baseDevice.overall_score_display = null;
     }
@@ -2699,7 +2711,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
   let seoTitle = `Smartphones (${currentYear}) - Price, Specifications and Features in India - Hooks`;
   let seoDescription = sanitizeDescription(
-    "Browse the latest smartphones on Hooks with updated prices, key specifications, and featured launches. Use filters to explore brands, budgets, and performance tiers in one place.",
+    "Explore the latest smartphones with prices in India, full specifications, features, reviews, comparisons, images, and buying guides on TryHook.",
   );
   const featureHeroText = currentFeatureMeta
     ? `Browse smartphones focused on ${currentFeatureMeta.name.toLowerCase()} and compare how different brands approach this feature across budget, mid-range, and flagship models. This page helps you review battery life, charging behavior, display quality, chipset efficiency, camera tradeoffs, RAM, storage, and software support so you can shortlist phones that suit your needs without opening multiple product pages. Use the feature cards to spot the models that stand out, then open the listings that match your priority.`
@@ -2708,19 +2720,19 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   if (isSingleSmartphonePath) {
     seoTitle = `Smartphones (${currentYear}) - Price, Specifications and Features in India - Hooks`;
     seoDescription =
-      "Browse the latest smartphones on Hooks. Explore detailed specifications, prices, reviews, and featured launches before you buy.";
+      "Explore the latest smartphones with prices in India, full specifications, features, reviews, comparisons, images, and buying guides on TryHook.";
   } else if (isNewFilterPath) {
     seoTitle = `Latest Smartphones (${currentDayMonthYear}) - Full Specifications, Features and Price - Hooks`;
     seoDescription =
-      "Browse the latest smartphones across camera, battery, display, and performance with updated prices, full specifications, and launch details on Hooks.";
+      "Browse the latest smartphones across camera, battery, display, and performance with updated prices, full specifications, and launch details on TryHook.";
   } else if (isTrendingFilterPath) {
     seoTitle = `Trending Smartphones (${currentDayMonthYear}) - Full Specifications, Features and Price - Hooks`;
     seoDescription =
-      "Browse trending smartphones in India with updated prices, full specifications, and key features across camera, battery, display, performance, RAM, storage, and network support on Hooks.";
+      "Browse trending smartphones in India with updated prices, full specifications, and key features across camera, battery, display, performance, RAM, storage, and network support on TryHook.";
   } else if (isUpcomingFilterPath) {
     seoTitle = `Upcoming Smartphones (${currentDayMonthYear}) - Expected Launches, Features and Prices - Hooks`;
     seoDescription =
-      "Browse upcoming smartphones in India, track expected launch timelines, compare preview specifications, and watch preorder-ready devices before they arrive on Hooks.";
+      "Browse upcoming smartphones in India, track expected launch timelines, compare preview specifications, and watch preorder-ready devices before they arrive on TryHook.";
   } else if (currentFeatureMeta) {
     const featureContextParts = [
       currentBrandObj?.name ? `${currentBrandObj.name}` : "",
@@ -2736,16 +2748,16 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
     seoTitle = `${featureContext} (${currentMonthYear}) - Prices, Specs & Comparison - Hooks`;
     seoDescription = sanitizeDescription(
-      `Explore ${featureContext.toLowerCase()} in India with updated prices and detailed specifications covering battery camera display and performance comparisons on Hooks. Discover phones focused on ${featureDescription}.`,
+      `Explore ${featureContext.toLowerCase()} in India with updated prices and detailed specifications covering battery camera display and performance comparisons on TryHook. Discover phones focused on ${featureDescription}.`,
     );
   } else if (priceFilter) {
     seoTitle = `Best Smartphones ${seoPriceFilterLabel} (${currentMonthYear}) - Full Specifications Features and Price - Hooks`;
-    seoDescription = `Explore the best smartphones ${seoPriceFilterLabel.toLowerCase()} with detailed specs latest prices reviews and comparisons to choose the right phone for your budget.`;
+    seoDescription = `Explore the best smartphones ${seoPriceFilterLabel.toLowerCase()} with detailed specs, latest prices, reviews, and comparisons to choose the right phone for your budget on TryHook.`;
   } else if (currentBrandObj) {
     seoTitle = `${currentBrandObj.name} Smartphones (${currentMonthYear}) - Full Specifications, Features and Price - Hooks`;
     seoDescription = sanitizeDescription(
       currentBrandObj.description ||
-        `Explore ${currentBrandObj.name} smartphones on Hooks. Compare models, check prices, specifications, reviews, and find the best phone for your needs.`,
+        `Discover the latest ${currentBrandObj.name} smartphones with prices, specifications, launches, reviews, comparisons, news, and buying guides on TryHook.`,
     );
   }
   // Heading label: prefer new launches, then price-filtered collection
@@ -4473,15 +4485,56 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     return raw.startsWith("/") ? `${siteOrigin}${raw}` : `${siteOrigin}/${raw}`;
   };
 
-  const listOgImage = useMemo(() => {
-    const firstWithImage = sortedVariants.find((device) =>
-      Array.isArray(device?.images) ? device.images.find(Boolean) : false,
+  const getListingProductImage = (device) => {
+    if (!device || typeof device !== "object") return "";
+    const directImages = [
+      ...(Array.isArray(device.images) ? device.images : []),
+      device.image,
+      device.image_url,
+      device.imageUrl,
+      device.thumbnail,
+      device.thumbnail_url,
+      device.thumbnailUrl,
+      device.primary_image,
+      device.primaryImage,
+      device.product_image,
+      device.productImage,
+    ];
+    const direct = directImages.find(Boolean);
+    if (direct) return direct;
+
+    const variant = Array.isArray(device.variants)
+      ? device.variants.find((entry) => {
+          if (!entry || typeof entry !== "object") return false;
+          return (
+            (Array.isArray(entry.images) && entry.images.find(Boolean)) ||
+            entry.image ||
+            entry.image_url ||
+            entry.imageUrl
+          );
+        })
+      : null;
+    if (!variant) return "";
+    return (
+      (Array.isArray(variant.images) && variant.images.find(Boolean)) ||
+      variant.image ||
+      variant.image_url ||
+      variant.imageUrl ||
+      ""
     );
-    const raw =
-      firstWithImage?.images?.find(Boolean) || firstWithImage?.image || "";
+  };
+
+  const listOgImage = useMemo(() => {
+    const sourceRows = visibleVariants.length
+      ? visibleVariants
+      : sortedVariants;
+    const firstWithImage = sourceRows.find((device) =>
+      Boolean(getListingProductImage(device)),
+    );
+    const raw = getListingProductImage(firstWithImage);
     const abs = toAbsoluteUrl(raw);
-    return abs || `${SITE_ORIGIN}/hook-logo.svg`;
-  }, [sortedVariants, siteOrigin]);
+    return abs || `${SITE_ORIGIN}/hook-logo.png`;
+  }, [visibleVariants, sortedVariants, siteOrigin]);
 
   const listOgImageMeta = listOgImage
     ? {
@@ -5401,7 +5454,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                         ? Number(resolveSmartphoneBadgeScore(device))
                         : null;
                       const scoreValue = Number.isFinite(scoreValueRaw)
-                        ? Math.round(scoreValueRaw)
+                        ? formatSmartphoneBadgeScore(scoreValueRaw)
                         : null;
                       const isAiDevice = Boolean(
                         device.specs?.isAiPhone ||
@@ -5626,6 +5679,30 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                             })}
                           </div>
                         ) : null;
+                      const renderSpecScore = () =>
+                        scoreValue != null ? (
+                          <div
+                            className="flex items-end gap-1.5 leading-none"
+                            aria-label={`Spec score ${scoreValue} out of 100`}
+                          >
+                            <div className="flex items-baseline leading-none">
+                              <span className="text-3xl font-semibold leading-none text-blue-600">
+                                {scoreValue}
+                              </span>
+                              <span className="text-xs font-semibold text-blue-500">
+                                /100
+                              </span>
+                            </div>
+                            <div className="flex flex-col items-start leading-none">
+                              <span className="text-[8px] font-semibold uppercase tracking-[0.32em] text-blue-400">
+                                Spec
+                              </span>
+                              <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-blue-500">
+                                Score
+                              </span>
+                            </div>
+                          </div>
+                        ) : null;
                       return (
                         <div
                           key={`${device.id ?? device.model ?? ""}-${_idx}`}
@@ -5653,21 +5730,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
                             <div className="mt-4 hidden flex-col gap-3 lg:flex lg:flex-row lg:items-center lg:justify-between">
                               <div className="flex flex-wrap items-center gap-4">
-                                {scoreValue != null ? (
-                                  <div className="flex items-end gap-1 leading-none">
-                                    <span className="text-3xl font-semibold leading-none text-blue-600">
-                                      {scoreValue}
-                                    </span>
-                                    <div className="flex flex-col items-start leading-none">
-                                      <span className="text-[8px] font-semibold uppercase tracking-[0.32em] text-blue-400">
-                                        Spec
-                                      </span>
-                                      <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-blue-500">
-                                        Score
-                                      </span>
-                                    </div>
-                                  </div>
-                                ) : null}
+                                {renderSpecScore()}
                               </div>
 
                               {hasLaunchDate ? (
@@ -5716,21 +5779,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                                     {device.name || device.model}
                                   </h3>
 
-                                  {scoreValue != null ? (
-                                    <div className="flex items-end gap-1 leading-none">
-                                      <span className="text-3xl font-semibold leading-none text-blue-600">
-                                        {scoreValue}
-                                      </span>
-                                      <div className="flex flex-col items-start leading-none">
-                                        <span className="text-[8px] font-semibold uppercase tracking-[0.32em] text-blue-400">
-                                          Spec
-                                        </span>
-                                        <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-blue-500">
-                                          Score
-                                        </span>
-                                      </div>
-                                    </div>
-                                  ) : null}
+                                  {renderSpecScore()}
                                 </div>
 
                                 <div className="hidden lg:block text-[13px] leading-6 text-slate-700 sm:text-sm sm:leading-7 sm:text-base">

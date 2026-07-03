@@ -981,13 +981,31 @@ const Networking = () => {
       : `${siteOrigin}/${value}`;
   };
 
+  const getListingProductImage = (device) => {
+    if (!device || typeof device !== "object") return "";
+    const directImages = [
+      ...(Array.isArray(device.images) ? device.images : []),
+      ...(Array.isArray(device.images_json) ? device.images_json : []),
+      device.image,
+      device.image_url,
+      device.imageUrl,
+      device.thumbnail,
+      device.thumbnail_url,
+      device.thumbnailUrl,
+      device.primary_image,
+      device.primaryImage,
+      device.product_image,
+      device.productImage,
+    ];
+    return directImages.find(Boolean) || "";
+  };
+
   const listOgImage = useMemo(() => {
     const firstWithImage = sortedVariants.find((device) =>
-      Array.isArray(device?.images) ? device.images.find(Boolean) : false,
+      Boolean(getListingProductImage(device)),
     );
-    const raw =
-      firstWithImage?.images?.find(Boolean) || firstWithImage?.image || "";
-    return toAbsoluteUrl(raw);
+    const raw = getListingProductImage(firstWithImage);
+    return toAbsoluteUrl(raw) || `${SITE_ORIGIN}/hook-logo.png`;
   }, [sortedVariants, siteOrigin]);
 
   const listSchemaUrl = toCanonicalPageUrl(

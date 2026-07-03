@@ -12,6 +12,48 @@ const uniquePush = (arr, seen, value) => {
   arr.push(text);
 };
 
+const mergeKeywordBuckets = ({
+  dynamicKeywords = [],
+  staticKeywords = [],
+  maxKeywords = 45,
+  dynamicRatio = 0.7,
+}) => {
+  const limit = Math.max(1, Math.floor(Number(maxKeywords) || 45));
+  const ratio = Math.min(0.9, Math.max(0.5, Number(dynamicRatio) || 0.7));
+  const dynamicTarget = Math.ceil(limit * ratio);
+  const keywords = [];
+  const seen = new Set();
+  const add = (value) => uniquePush(keywords, seen, value);
+
+  let dynamicIndex = 0;
+  let staticIndex = 0;
+
+  while (
+    dynamicIndex < dynamicKeywords.length &&
+    keywords.length < dynamicTarget
+  ) {
+    add(dynamicKeywords[dynamicIndex]);
+    dynamicIndex += 1;
+  }
+
+  while (staticIndex < staticKeywords.length && keywords.length < limit) {
+    add(staticKeywords[staticIndex]);
+    staticIndex += 1;
+  }
+
+  while (dynamicIndex < dynamicKeywords.length && keywords.length < limit) {
+    add(dynamicKeywords[dynamicIndex]);
+    dynamicIndex += 1;
+  }
+
+  while (staticIndex < staticKeywords.length && keywords.length < limit) {
+    add(staticKeywords[staticIndex]);
+    staticIndex += 1;
+  }
+
+  return keywords.slice(0, limit).join(", ");
+};
+
 const getByPath = (obj, path) => {
   if (!obj || !path) return undefined;
   const parts = String(path)
@@ -361,31 +403,40 @@ export const buildDeviceSeoKeywords = ({
   currentYear = "",
   baseTerms = [],
   maxKeywords = 45,
+  dynamicRatio = 0.7,
 }) => {
-  const keywords = [];
-  const seen = new Set();
-  const add = (value) => uniquePush(keywords, seen, value);
+  const staticKeywords = [];
+  const dynamicKeywords = [];
+  const staticSeen = new Set();
+  const dynamicSeen = new Set();
+  const addStatic = (value) => uniquePush(staticKeywords, staticSeen, value);
+  const addDynamic = (value) => uniquePush(dynamicKeywords, dynamicSeen, value);
 
-  baseTerms.forEach(add);
+  baseTerms.forEach(addStatic);
   const name = resolveName(device, productName);
   const brandName = resolveBrand(device, brand);
   const categoryText = toText(category);
 
-  if (categoryText) add(categoryText);
-  if (currentYear) add(`${categoryText || "devices"} ${currentYear}`);
+  if (categoryText) addStatic(categoryText);
+  if (currentYear) addStatic(`${categoryText || "devices"} ${currentYear}`);
   if (name) {
-    add(name);
-    add(`${name} price in india`);
-    add(`${name} specifications`);
-    add(`${name} review`);
+    addDynamic(name);
+    addDynamic(`${name} price in india`);
+    addDynamic(`${name} specifications`);
+    addDynamic(`${name} review`);
   }
-  if (brandName && categoryText) add(`${brandName} ${categoryText}`);
-  if (brandName) add(`${brandName} devices`);
+  if (brandName && categoryText) addDynamic(`${brandName} ${categoryText}`);
+  if (brandName) addDynamic(`${brandName} devices`);
 
   const signals = extractSignals(device || {});
-  appendSignalKeywords(add, name, signals);
+  appendSignalKeywords(addDynamic, name, signals);
 
-  return keywords.slice(0, maxKeywords).join(", ");
+  return mergeKeywordBuckets({
+    dynamicKeywords,
+    staticKeywords,
+    maxKeywords,
+    dynamicRatio,
+  });
 };
 
 export const buildListSeoKeywords = ({
@@ -395,36 +446,44 @@ export const buildListSeoKeywords = ({
   baseTerms = [],
   contextTerms = [],
   maxKeywords = 45,
+  dynamicRatio = 0.7,
 }) => {
-  const keywords = [];
-  const seen = new Set();
-  const add = (value) => uniquePush(keywords, seen, value);
+  const staticKeywords = [];
+  const dynamicKeywords = [];
+  const staticSeen = new Set();
+  const dynamicSeen = new Set();
+  const addStatic = (value) => uniquePush(staticKeywords, staticSeen, value);
+  const addDynamic = (value) => uniquePush(dynamicKeywords, dynamicSeen, value);
 
-  baseTerms.forEach(add);
-  contextTerms.forEach(add);
+  baseTerms.forEach(addStatic);
+  contextTerms.forEach(addDynamic);
   const categoryText = toText(category);
-  if (categoryText) add(categoryText);
-  if (currentYear) add(`${categoryText || "devices"} ${currentYear}`);
+  if (categoryText) addStatic(categoryText);
+  if (currentYear) addStatic(`${categoryText || "devices"} ${currentYear}`);
 
   const sample = Array.isArray(devices) ? devices.slice(0, 14) : [];
   for (const device of sample) {
     const name = resolveName(device);
     const brand = resolveBrand(device);
-    if (brand && categoryText) add(`${brand} ${categoryText}`);
+    if (brand && categoryText) addDynamic(`${brand} ${categoryText}`);
     if (name) {
-      add(name);
-      add(`${name} price in india`);
-      add(`${name} specifications`);
+      addDynamic(name);
+      addDynamic(`${name} price in india`);
+      addDynamic(`${name} specifications`);
     }
     const signals = extractSignals(device || {});
-    appendSignalKeywords(add, name, signals);
+    appendSignalKeywords(addDynamic, name, signals);
   }
 
-  return keywords.slice(0, maxKeywords).join(", ");
+  return mergeKeywordBuckets({
+    dynamicKeywords,
+    staticKeywords,
+    maxKeywords,
+    dynamicRatio,
+  });
 };
 
 export default {
   buildDeviceSeoKeywords,
   buildListSeoKeywords,
 };
-

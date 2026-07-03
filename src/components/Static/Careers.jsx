@@ -4,6 +4,8 @@ import useTitle from "../../hooks/useTitle";
 import { createWebPageSchema } from "../../utils/schemaGenerators";
 import { toCanonicalPageUrl } from "../../utils/publicUrl";
 
+const SITE_ORIGIN = "https://tryhook.shop";
+const CAREERS_OG_IMAGE = `${SITE_ORIGIN}/hook-logo.png`;
 const CAREERS_API_BASE = (
   import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in"
 ).replace(/\/$/, "");
@@ -1414,6 +1416,12 @@ const Careers = () => {
           property="og:description"
           content="Apply for Frontend, Backend, Content Developer, and Fullstack roles at Hooks."
         />
+        <meta property="og:image" content={CAREERS_OG_IMAGE} />
+        <meta property="og:image:secure_url" content={CAREERS_OG_IMAGE} />
+        <meta property="og:image:type" content="image/png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="Careers at Hooks preview image" />
         <meta
           name="twitter:title"
           content="Careers at Hooks - Join Hooks Team"
@@ -1422,6 +1430,9 @@ const Careers = () => {
           name="twitter:description"
           content="Apply for Frontend, Backend, Content Developer, and Fullstack roles at Hooks."
         />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:image" content={CAREERS_OG_IMAGE} />
+        <meta name="twitter:image:alt" content="Careers at Hooks preview image" />
         <meta name="robots" content="index, follow" />
         <link rel="canonical" href={canonical} />
         {careersSchemaJson && (

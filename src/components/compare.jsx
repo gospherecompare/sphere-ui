@@ -4575,8 +4575,8 @@ const MobileCompare = () => {
           publishedDescription: publishedComparePage?.meta_description || "",
         })
       : canonicalCompareEntries.length > 0
-        ? "Compare selected devices with latest price specifications camera battery performance and features in India."
-        : "Compare smartphones laptops and more with latest price specifications camera battery performance and features in India.";
+        ? "Compare selected devices with detailed specifications, price, camera, display, battery, performance, software, benchmarks, and key differences on TryHook."
+        : "Compare devices with detailed specifications, price, camera, display, battery, performance, software, benchmarks, and key differences on TryHook.";
   const metaKeywords = useMemo(
     () =>
       buildListSeoKeywords({

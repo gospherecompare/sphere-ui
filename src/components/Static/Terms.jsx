@@ -194,7 +194,6 @@ const Terms = () => {
       <SEO
         title="Terms & Conditions - TryHook"
         description="Read the Terms and Conditions governing access to and use of the TryHook technology discovery, comparison, and editorial platform."
-        image={`${SITE_ORIGIN}/hook-logo.svg`}
         url={canonical}
         robots="index, follow"
         ogType="website"
