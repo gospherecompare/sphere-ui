@@ -405,10 +405,7 @@ const BaseSpecScoreBadge = ({
     (normalized == null || normalized === 0)
       ? null
       : percentageRaw;
-  const percentage =
-    safePercentageRaw != null
-      ? safePercentageRaw
-      : null;
+  const percentage = safePercentageRaw != null ? safePercentageRaw : null;
   const label = percentage != null ? `${percentage.toFixed(1)}%` : "--";
   const isGlass = variant === "glass";
   const containerClass = isGlass
@@ -5220,8 +5217,8 @@ Price: ${price}
       </section>
 
       {/* Popular Comparisons */}
-      {!compareDisabled && popularComparisonTargets.length > 0 && (
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8  pb-1 ">
+      {popularComparisonTargets.length > 0 && (
+        <div className="mx-auto max-w-7xl px-4 pb-1 sm:px-6 lg:px-8">
           <div className="mb-3 flex flex-col gap-1 sm:mb-4">
             <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-500">
               Recommended Comparisons
@@ -5236,7 +5233,7 @@ Price: ${price}
               against other phones from the same brand.
             </p>
           </div>
-          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-3">
+          <div className="flex flex-nowrap gap-3 overflow-x-auto pb-3 no-scrollbar">
             {popularComparisonTargets
               .slice(
                 0,
@@ -5252,7 +5249,7 @@ Price: ${price}
                     key={String(otherId || otherName)}
                     type="button"
                     onClick={() => handlePopularCompare(d)}
-                    className="min-w-[84vw] max-w-[280px] flex-shrink-0 shadow-[0_2px_2px_rgba(0,0,0,0.1)] border border-slate-100 rounded-lg bg-white p-3 text-left transition-all hover:border-blue-200 hover:shadow-sm sm:min-w-[240px]"
+                    className="w-[84vw] max-w-[320px] flex-shrink-0 rounded-lg border border-slate-100 bg-white p-4 text-left shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-all hover:border-blue-200 hover:shadow-sm sm:w-[280px]"
                   >
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-md bg-slate-100">
@@ -5298,7 +5295,7 @@ Price: ${price}
           >
             <div className="space-y-5">
               {/* Main Image */}
-              <div className="relative overflow-hidden rounded-[28px] shadow-[0_2px_2px_rgba(0,0,0,0.1)] border border-slate-100 bg-white px-4 py-8 sm:px-10 sm:py-12">
+              <div className="relative overflow-hidden rounded-[28px] shadow-[0_2px_2px_rgba(0,0,0,0.1)] border border-slate-100 bg-slate-100 px-4 py-8 sm:px-10 sm:py-12">
                 {carouselImages.length > 1 ? (
                   <>
                     <button
@@ -5320,7 +5317,7 @@ Price: ${price}
                   </>
                 ) : null}
 
-                <div className="flex min-h-[340px] items-center justify-center sm:min-h-[420px]">
+                <div className="flex min-h-[340px] items-center bg-slate-100 justify-center sm:min-h-[420px]">
                   <img
                     src={
                       carouselImages[activeImage] ||

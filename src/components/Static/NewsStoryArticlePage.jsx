@@ -62,6 +62,94 @@ const stripMarkup = (value) =>
     .replace(/\s+/g, " ")
     .trim();
 
+const clipDescription = (value, maxWords = 34) => {
+  const text = stripMarkup(value);
+  if (!text) return "";
+  const words = text.split(/\s+/).filter(Boolean);
+  if (words.length <= maxWords) return text;
+  return `${words.slice(0, maxWords).join(" ")}...`;
+};
+
+const normalizeDescriptionKey = (value) =>
+  stripMarkup(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const isUsefulArticleDescription = (value, title) => {
+  const text = stripMarkup(value);
+  if (text.length < 48) return false;
+
+  const normalized = normalizeDescriptionKey(text);
+  const normalizedTitle = normalizeDescriptionKey(title);
+  if (!normalized || normalized === normalizedTitle) return false;
+
+  return !/^read the latest\b/i.test(text) &&
+    !/official announcements, launch details, pricing, availability, specifications, features, and expert analysis/i.test(
+      text,
+    );
+};
+
+const buildContextAwareFallbackDescription = (story = {}) => {
+  const title = stripMarkup(story?.title);
+  if (!title) return "Hooks editorial coverage with the key details and context.";
+
+  const context = [
+    title,
+    story?.category,
+    story?.label,
+    story?.brandName,
+    story?.productName,
+    ...(Array.isArray(story?.tags) ? story.tags : []),
+  ]
+    .map(stripMarkup)
+    .join(" ")
+    .toLowerCase();
+
+  if (/(gta|game|gaming|pre[-\s]?order|release date)/i.test(context)) {
+    return `${title} coverage with release timing, edition details, pre-order updates, and what players should know.`;
+  }
+
+  if (
+    /(whatsapp|google wallet|aadhaar|instagram|app|software|android|ios|username|account|wallet)/i.test(
+      context,
+    )
+  ) {
+    return `${title} explained with rollout details, user impact, availability, and the practical changes to know.`;
+  }
+
+  if (
+    /(phone|mobile|smartphone|oneplus|realme|vivo|oppo|samsung|xiaomi|pixel|battery|mah|display|dimensity|snapdragon|camera)/i.test(
+      context,
+    )
+  ) {
+    return `${title} coverage with launch context, key hardware details, pricing signals, availability, and buyer-relevant takeaways.`;
+  }
+
+  return `${title} coverage with the key details, background context, and why the update matters.`;
+};
+
+const buildArticleDescription = (story, articleParagraphs = []) => {
+  const title = story?.title;
+  const candidates = [
+    story?.metaDescription,
+    story?.description,
+    story?.excerpt,
+    story?.summary,
+    ...articleParagraphs,
+  ];
+
+  const useful = candidates.find((candidate) =>
+    isUsefulArticleDescription(candidate, title),
+  );
+
+  return clipDescription(
+    useful || buildContextAwareFallbackDescription(story),
+    34,
+  );
+};
+
 const normalizeTagKey = (value) =>
   stripMarkup(value)
     .toLowerCase()
@@ -830,12 +918,10 @@ const NewsStoryArticlePage = () => {
     return summary ? [summary] : [];
   }, [story?.body, story?.summary]);
 
-  const articleDescription =
-    story?.title
-      ? `Read the latest ${story.title} with official announcements, launch details, pricing, availability, specifications, features, and expert analysis on TryHook.`
-      : stripMarkup(story?.summary) ||
-        articleParagraphs[0] ||
-        "Hooks editorial coverage.";
+  const articleDescription = useMemo(
+    () => buildArticleDescription(story, articleParagraphs),
+    [story, articleParagraphs],
+  );
   const articleHtml = useMemo(
     () => sanitizeArticleHtml(story?.contentHtml || ""),
     [story?.contentHtml],
@@ -1037,7 +1123,7 @@ const NewsStoryArticlePage = () => {
 
       <main className="min-h-screen bg-white text-[#111111]">
         <section className="bg-white">
-          <div className="mx-auto max-w-[1280px] px-4 pb-1 pt-2 sm:px-6 sm:pt-2 lg:px-8">
+          <div className="mx-auto max-w-[1280px] px-4 pb-2 pt-2 sm:px-6 sm:pb-3 sm:pt-2 lg:px-8">
             <nav
               aria-label="Breadcrumb"
               className="line-clamp-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] leading-5 text-[#7b8796] sm:text-[12px]"
@@ -1069,10 +1155,12 @@ const NewsStoryArticlePage = () => {
                       </span>
                     )}
                     {!isLast ? (
-                      <FaChevronRight
+                      <span
                         aria-hidden="true"
-                        className="h-2.5 w-2.5 text-[#b6c2cf]"
-                      />
+                        className="text-[11px] font-medium text-[#b6c2cf]"
+                      >
+                        /
+                      </span>
                     ) : null}
                   </React.Fragment>
                 );
@@ -1082,12 +1170,12 @@ const NewsStoryArticlePage = () => {
         </section>
 
         <section className="bg-white">
-          <div className="mx-auto max-w-[1280px] px-4 pb-3 pt-1 sm:px-6 sm:pb-4 sm:pt-2 lg:px-8 lg:pb-3">
+          <div className="mx-auto max-w-[1280px] px-4 pb-3 pt-2 sm:px-6 sm:pb-4 sm:pt-2 lg:px-8 lg:pb-3">
             <div className="max-w-[1120px]">
               <h1 className="news-article-headline font-[Newsreader] text-[24px] md:text-[28px] lg:text-[26px] leading-[1.05] tracking-[-0.035em] font-extrabold text-slate-950">
                 {story.title}
               </h1>
-              <p className="news-article-deck mt-2 max-w-[72ch] text-[15px] leading-6 text-[#5f6670] sm:mt-3 sm:text-[19px] sm:leading-8">
+              <p className="news-article-deck mt-2 text-[15px] leading-6 text-[#5f6670] sm:mt-3 sm:text-[19px] sm:leading-8">
                 {articleDescription}
               </p>
               <ArticleShareLinks
@@ -1195,18 +1283,10 @@ const NewsStoryArticlePage = () => {
                     </>
                   )}
 
-                  {articleKeywords.length ? (
-                    <div className="mt-7 border-t border-[#eceff3] pt-4 text-[13px] leading-6 text-[#6b7280] sm:mt-10 sm:pt-5">
-                      <span className="font-semibold text-[#202226]">
-                        Further reading:
-                      </span>{" "}
-                      {articleKeywords.join(", ")}
-                    </div>
-                  ) : null}
                 </article>
 
                 {relatedStories.length ? (
-                  <section className="mt-8 sm:mt-12">
+                  <section className="mt-5 sm:mt-8">
                     <SectionTitle eyebrow="Related" title="Related News" />
 
                     <div className="mt-4 grid grid-cols-2 gap-3 sm:mt-6 sm:grid-cols-4 sm:gap-4">
@@ -1274,7 +1354,7 @@ const NewsStoryArticlePage = () => {
                 ) : null}
               </div>
 
-              <aside className="space-y-5 xl:sticky xl:top-6 xl:max-h-[calc(100vh-3rem)] xl:self-start xl:overflow-y-auto xl:pr-1 xl:[scrollbar-width:none] xl:[&::-webkit-scrollbar]:hidden">
+              <aside className="space-y-5 xl:self-start">
                 <SidebarSection title="Trending News">
                   <div className="divide-y divide-[#eceff3]">
                     {trendingStories.map((item) => (

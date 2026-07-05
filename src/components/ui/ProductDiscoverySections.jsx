@@ -1024,8 +1024,7 @@ const ProductDiscoverySections = ({
     }
     return {};
   }, [brandCatalog, catalogItems, entityConfig.type]);
-  const isLatestPhonesLayout =
-    layout === "latestPhones" && entityConfig.type === "smartphones";
+  const isLatestPhonesLayout = layout === "latestPhones";
   const isBudgetSidebarLayout =
     layout === "budgetSidebar" && entityConfig.type === "smartphones";
   const isSidebarVariant = variant === "sidebar";
@@ -1135,7 +1134,8 @@ const ProductDiscoverySections = ({
         );
 
         return {
-          label: normalizeText(item?.name) || "Latest Phone",
+          label:
+            normalizeText(item?.name) || `Latest ${entityConfig.singularTitle}`,
           path: normalizeDiscoveryPath(
             toProductPath(item, entityConfig.type),
             entityConfig.type,

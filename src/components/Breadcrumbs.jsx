@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import useBreadcrumbs from "use-react-router-breadcrumbs";
-import { FaChevronRight, FaHome } from "react-icons/fa";
 import {
   getSmartphoneFeatureRouteMeta,
   toReadableListingLabel,
@@ -206,7 +205,8 @@ export default function Breadcrumbs() {
       return;
     }
     const isProductDetailPath =
-      PRODUCT_DETAIL_PATH_RE.test(pathname) && !TV_LISTING_PATH_RE.test(pathname);
+      PRODUCT_DETAIL_PATH_RE.test(pathname) &&
+      !TV_LISTING_PATH_RE.test(pathname);
 
     if (!isProductDetailPath) {
       setDetailCrumbLabel("");
@@ -318,10 +318,13 @@ export default function Breadcrumbs() {
   const isLegacyDetailsPath = LEGACY_DETAILS_PATH_RE.test(path);
   const isProductDetailPath =
     PRODUCT_DETAIL_PATH_RE.test(path) && !TV_LISTING_PATH_RE.test(path);
-  const shouldCompactOnMobile = visibleBreadcrumbs.length > 2;
-  const mobileBreadcrumbs = shouldCompactOnMobile
-    ? [visibleBreadcrumbs[0], visibleBreadcrumbs[visibleBreadcrumbs.length - 1]]
-    : visibleBreadcrumbs;
+  const mobileBreadcrumbs = visibleBreadcrumbs;
+
+  const BreadcrumbSeparator = () => (
+    <span className="flex-shrink-0 px-1 text-xs font-medium text-slate-400">
+      /
+    </span>
+  );
 
   const renderBreadcrumbItem = (bc, idx, isLast, compact = false) => {
     const to = bc.match.pathname;
@@ -353,9 +356,6 @@ export default function Breadcrumbs() {
             >
               {idx === 0 ? (
                 <div className="flex items-center gap-1.5">
-                  <div className="flex h-5 w-5 items-center justify-center rounded-full transition-all duration-200 group-hover:from-purple-50 group-hover:to-red-100">
-                    <FaHome className="text-gray-500 text-[10px] transition-colors group-hover:text-red-600" />
-                  </div>
                   <span className="max-w-[6.5rem] truncate font-medium text-gray-700 transition-colors group-hover:text-gray-900">
                     {label}
                   </span>
@@ -373,6 +373,7 @@ export default function Breadcrumbs() {
               </span>
             </div>
           )}
+          {!isLast && <BreadcrumbSeparator />}
         </div>
       );
     }
@@ -382,13 +383,10 @@ export default function Breadcrumbs() {
         {!isLast ? (
           <Link
             to={to}
-            className="group flex items-center gap-1 px-2.5 py-0.5 text-xs transition-all duration-200"
+            className="group flex items-center gap-1  py-0.5 text-xs transition-all duration-200"
           >
             {idx === 0 ? (
               <div className="flex items-center gap-1.5">
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-purple-100 to-red-50 transition-all duration-200 group-hover:from-purple-50 group-hover:to-red-100">
-                  <FaHome className="text-[10px] text-gray-500 transition-colors group-hover:text-red-600" />
-                </div>
                 <span className="font-medium text-gray-600 transition-colors group-hover:text-gray-900">
                   {label}
                 </span>
@@ -403,7 +401,6 @@ export default function Breadcrumbs() {
           </Link>
         ) : (
           <div className="relative flex items-center gap-1 px-2.5 py-0.5">
-            <div className="absolute -left-1 h-1.5 w-1.5 rounded-full bg-gradient-to-r from-purple-600 to-red-600" />
             <span className="bg-gradient-to-r from-purple-600 to-purple-600 bg-clip-text text-sm font-semibold text-transparent">
               {label}
             </span>
@@ -411,17 +408,15 @@ export default function Breadcrumbs() {
         )}
 
         {!isLast && (
-          <div className="flex items-center px-1">
-            <FaChevronRight className="text-xs text-gray-300" />
-          </div>
+          <BreadcrumbSeparator />
         )}
       </div>
     );
   };
 
   return (
-    <div className="bg-transparent border-b border-gray-200">
-      <div className="mx-auto w-full max-w-6xl overflow-hidden px-2 pb-0 pt-0.5 lg:px-4">
+    <div className="bg-white ">
+      <div className="mx-auto w-full max-w-7xl overflow-hidden px-2 pb-0 pt-0.5 ">
         <nav
           aria-label="breadcrumb"
           className="flex items-center gap-1 overflow-x-auto py-0.5 sm:hidden hide-scrollbar no-scrollbar scroll-smooth"
@@ -431,11 +426,6 @@ export default function Breadcrumbs() {
             return (
               <React.Fragment key={`${bc.match.pathname}-${idx}`}>
                 {renderBreadcrumbItem(bc, idx, isLast, true)}
-                {shouldCompactOnMobile && idx === 0 ? (
-                  <span className="flex-shrink-0 px-1 text-xs font-semibold text-gray-400">
-                    ...
-                  </span>
-                ) : null}
               </React.Fragment>
             );
           })}

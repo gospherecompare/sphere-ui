@@ -2093,7 +2093,7 @@ const TVDetailCard = () => {
   const renderSpecTable = (data) => {
     if (!data || typeof data !== "object") {
       return (
-        <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/70 py-6 text-center text-sm text-slate-500">
+        <div className="rounded-lg border border-dashed border-slate-100 bg-white py-6 text-center text-sm text-slate-500 shadow-[0_2px_2px_rgba(0,0,0,0.1)]">
           No data available
         </div>
       );
@@ -2106,7 +2106,7 @@ const TVDetailCard = () => {
 
     if (!rows.length) {
       return (
-        <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/70 py-6 text-center text-sm text-slate-500">
+        <div className="rounded-lg border border-dashed border-slate-100 bg-white py-6 text-center text-sm text-slate-500 shadow-[0_2px_2px_rgba(0,0,0,0.1)]">
           No data available
         </div>
       );
@@ -2209,7 +2209,7 @@ const TVDetailCard = () => {
         return (
           <section
             id={sectionId}
-            className="overflow-hidden rounded-2xl border border-[#dde1ff] bg-gradient-to-br from-[#edf4ff] via-[#fbfcff] to-[#f3efff] shadow-[0_18px_44px_rgba(99,102,241,0.10)]"
+            className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)]"
           >
             <div className="px-4 pt-4 sm:px-6 sm:pt-6">
               <h4 className="text-xl font-semibold tracking-tight text-[#123986] sm:text-2xl">
@@ -2227,13 +2227,13 @@ const TVDetailCard = () => {
       return (
         <div
           id="tv-specifications"
-          className="w-full max-w-4xl px-2 sm:px-0"
+          className="w-full max-w-7xl px-2 sm:px-0"
         >
           <div className="hidden text-slate-900 sm:block">
             <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-blue-600">
               Full Specifications
             </p>
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-[#556b95]">
+            <p className="mt-3 max-w-7xl text-sm leading-6 text-[#556b95]">
               {headerTitle} specifications cover display quality, smart TV
               features, audio, connectivity, ports, gaming, and physical
               details.
@@ -2305,7 +2305,7 @@ const TVDetailCard = () => {
 
     return (
       <div id="tv-specifications" className="space-y-6">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+        <div className="rounded-xl border border-slate-100 bg-white p-5 shadow-[0_2px_2px_rgba(0,0,0,0.1)] sm:p-6">
           <div className="mb-6 flex items-center justify-between gap-2">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
               <FaMicrochip className={currentColor.text} />
@@ -2317,7 +2317,7 @@ const TVDetailCard = () => {
         {hasContent(applianceData.features) && (
           <div
             id="tv-features"
-            className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
+            className="rounded-xl border border-slate-100 bg-white p-5 shadow-[0_2px_2px_rgba(0,0,0,0.1)] sm:p-6"
           >
             <div className="mb-6 flex items-center justify-between gap-2">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -2331,7 +2331,7 @@ const TVDetailCard = () => {
         {hasContent(applianceData.performance) && (
           <div
             id="tv-performance"
-            className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
+            className="rounded-xl border border-slate-100 bg-white p-5 shadow-[0_2px_2px_rgba(0,0,0,0.1)] sm:p-6"
           >
             <div className="mb-6 flex items-center justify-between gap-2">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -2345,7 +2345,7 @@ const TVDetailCard = () => {
         {hasContent(applianceData.physical_details) && (
           <div
             id="tv-physical_details"
-            className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
+            className="rounded-xl border border-slate-100 bg-white p-5 shadow-[0_2px_2px_rgba(0,0,0,0.1)] sm:p-6"
           >
             <div className="mb-6 flex items-center justify-between gap-2">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -2359,7 +2359,7 @@ const TVDetailCard = () => {
         {hasContent(applianceData.warranty) && (
           <div
             id="tv-warranty"
-            className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
+            className="rounded-xl border border-slate-100 bg-white p-5 shadow-[0_2px_2px_rgba(0,0,0,0.1)] sm:p-6"
           >
             <div className="mb-6 flex items-center justify-between gap-2">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -2393,7 +2393,7 @@ const TVDetailCard = () => {
   if (!loading && !applianceData) {
     return (
       <div className="mx-auto max-w-7xl w-full px-2 py-4 sm:px-4 sm:py-6 lg:px-6 lg:py-8">
-        <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
+        <div className="rounded-2xl border border-slate-100 bg-white p-12 text-center shadow-[0_2px_2px_rgba(0,0,0,0.1)]">
           <div className="text-gray-400 text-6xl mb-4">TV</div>
           <h3 className="text-2xl font-semibold text-gray-900 mb-3">
             Product Not Found
@@ -2666,7 +2666,7 @@ const TVDetailCard = () => {
     : [];
 
   return (
-    <div className="w-full">
+    <div className="w-full bg-white">
       <Helmet prioritizeSeoTags>
         <title>{metaTitleWithMonthYear}</title>
         <meta name="description" content={metaDescription} />
@@ -2777,8 +2777,8 @@ const TVDetailCard = () => {
 
       <div className="overflow-hidden">
         <section className="w-full text-slate-900">
-          <div className="mx-auto max-w-7xl px-3 pb-4 pt-0 sm:px-6 sm:pb-5 lg:px-8 lg:pb-6">
-            <div className="px-3 pb-3 pt-3 sm:px-6 sm:pb-6 sm:pt-4 lg:px-7 lg:pb-7 lg:pt-4">
+          <div className="mx-auto max-w-7xl px-3 pb-0 pt-0 sm:px-6 sm:pb-0 lg:px-8 lg:pb-0">
+            <div className="px-3 pb-0 pt-3 sm:px-6 sm:pb-0 sm:pt-4 lg:px-7 lg:pb-0 lg:pt-4">
               <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                 <div className="min-w-0 flex-1">
                   {headerDescriptor ? (
@@ -2792,8 +2792,12 @@ const TVDetailCard = () => {
                     </h1>
                   </div>
 
-                  <div className="mt-2 max-w-3xl">
-                    <p className="text-sm leading-6 text-slate-600 sm:text-base">
+                  <div className="mt-2 max-w-7xl">
+                    <p
+                      className={`text-sm leading-6 text-slate-600 sm:text-base ${
+                        showHeaderSummaryFull ? "" : "line-clamp-1"
+                      }`}
+                    >
                       {visibleHeaderSummary}
                     </p>
                     {headerSummaryHasMore ? (
@@ -2805,14 +2809,14 @@ const TVDetailCard = () => {
                         className="mt-2 inline-flex items-center text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700"
                         aria-expanded={showHeaderSummaryFull}
                       >
-                        {showHeaderSummaryFull ? "Show less" : "Read more"}
+                        {showHeaderSummaryFull ? "Read less" : "Read more"}
                       </button>
                     ) : null}
                   </div>
 
                   <div className="mt-3 flex flex-wrap items-center gap-2 text-[13px] sm:text-sm">
                     {currentVariantLabel ? (
-                      <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-medium text-slate-700">
+                      <span className="rounded-full border border-slate-100 bg-white px-3 py-1 font-medium text-slate-700 shadow-[0_2px_2px_rgba(0,0,0,0.1)]">
                         {currentVariantLabel}
                       </span>
                     ) : null}
@@ -2839,7 +2843,7 @@ const TVDetailCard = () => {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={toggleFavorite}
-                        className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
+                        className="rounded-full border border-slate-100 bg-white p-2 shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-colors hover:bg-slate-50"
                       >
                         <FaHeart
                           className={`text-lg ${
@@ -2851,7 +2855,7 @@ const TVDetailCard = () => {
                       </button>
                       <button
                         onClick={handleShare}
-                        className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
+                        className="rounded-full border border-slate-100 bg-white p-2 shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-colors hover:bg-slate-50"
                       >
                         <FaShareAlt className="text-lg text-slate-500" />
                       </button>
@@ -2880,7 +2884,7 @@ const TVDetailCard = () => {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={toggleFavorite}
-                      className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
+                      className="rounded-full border border-slate-100 bg-white p-2 shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-colors hover:bg-slate-50"
                     >
                       <FaHeart
                         className={`text-lg ${
@@ -2892,7 +2896,7 @@ const TVDetailCard = () => {
                     </button>
                     <button
                       onClick={handleShare}
-                      className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
+                      className="rounded-full border border-slate-100 bg-white p-2 shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-colors hover:bg-slate-50"
                     >
                       <FaShareAlt className="text-lg text-slate-500" />
                     </button>
@@ -2906,10 +2910,6 @@ const TVDetailCard = () => {
 
                   {headerLaunchText ? (
                     <div className="flex flex-wrap items-center gap-2 text-[13px] text-slate-600 sm:text-sm">
-                      <span
-                        className="hidden h-4 w-px bg-slate-200 sm:inline-block"
-                        aria-hidden="true"
-                      />
                       <span>
                         Launched On:{" "}
                         <span className="font-semibold text-slate-900">
@@ -2924,13 +2924,13 @@ const TVDetailCard = () => {
           </div>
         </section>
 
-        <div className="mx-auto max-w-7xl px-3 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-3 pb-6 pt-0 sm:px-6 sm:pb-6 lg:px-8">
           <div className="flex flex-col gap-6 lg:flex-row">
             {/* Images Section */}
-            <div className="lg:w-2/5 rounded-md bg-transparent p-4 shadow-none sm:p-6">
+            <div className="rounded-md bg-transparent p-0 shadow-none lg:w-2/5">
               <div className="space-y-5">
                 {/* Main Image */}
-                <div className="relative overflow-hidden rounded-[28px] bg-white px-4 py-8 sm:px-10 sm:py-12">
+                <div className="relative overflow-hidden rounded-[28px] border border-slate-100 bg-white px-4 py-8 shadow-[0_2px_2px_rgba(0,0,0,0.1)] sm:px-10 sm:py-12">
                   {galleryImages.length > 1 ? (
                     <>
                       <button
@@ -2990,7 +2990,7 @@ const TVDetailCard = () => {
                 <button
                   type="button"
                   onClick={handleShare}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-blue-50 py-3 font-semibold text-slate-700 transition-all hover:bg-blue-100"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-100 bg-white py-3 font-semibold text-slate-700 shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-all hover:border-blue-200 hover:text-blue-700"
                 >
                   <FaShareAlt className="text-blue-500" />
                   <span>Share</span>
@@ -3009,10 +3009,10 @@ const TVDetailCard = () => {
                         key={variant.id || index}
                         onClick={() => setSelectedVariant(index)}
                         aria-pressed={selectedVariant === index}
-                        className={`relative rounded-2xl border p-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 sm:p-4 ${
+                        className={`relative rounded-2xl border p-3 text-left shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 sm:p-4 ${
                           selectedVariant === index
                             ? "border-blue-600 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-600 text-white shadow-md"
-                            : "border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/40"
+                            : "border-slate-100 bg-white hover:border-blue-300 hover:bg-slate-50"
                         }`}
                       >
                         {selectedVariant === index ? (
@@ -3119,7 +3119,7 @@ const TVDetailCard = () => {
                       return (
                         <div
                           key={store.id || index}
-                          className="rounded-xl border border-slate-200 bg-white p-2.5 transition-all duration-200 hover:border-blue-300 hover:shadow-sm"
+                          className="rounded-xl border border-slate-100 bg-white p-2.5 shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-all duration-200 hover:border-blue-300"
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2.5 flex-1">
@@ -3187,14 +3187,14 @@ const TVDetailCard = () => {
                       and connectivity details that matter most.
                     </p>
                   </div>
-                  <div className="rounded-2xl border border-[#dce4f3] bg-gradient-to-br from-[#eef3ff] via-[#f7f8ff] to-[#f2eeff] p-3 sm:p-4 md:p-5">
+                  <div className="rounded-2xl border border-slate-100 bg-white p-3 shadow-[0_2px_2px_rgba(0,0,0,0.1)] sm:p-4 md:p-5">
                     <div className="grid items-stretch gap-3 md:grid-cols-2 lg:gap-5">
                       {tvSummarySections.map((section) => {
                         const Icon = section.Icon;
                         return (
                           <div
                             key={section.key}
-                            className="flex h-full flex-col rounded-2xl border border-[#dce4f3] bg-white/75 p-4 transition-all duration-200 sm:p-5"
+                            className="flex h-full flex-col rounded-2xl border border-slate-100 bg-white p-4 transition-all duration-200 sm:p-5"
                           >
                             <div className="flex items-start gap-3">
                               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-50 ring-1 ring-slate-200">
@@ -3243,24 +3243,49 @@ const TVDetailCard = () => {
             </div>
           </div>
 
+          {activeTab === "specifications" ? (
+            <div className="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px]">
+              <div className="min-w-0">{renderTabContent()}</div>
+              {currentProductId ? (
+                <aside className="min-w-0 px-4 sm:px-0 lg:sticky lg:top-24">
+                  <ProductDiscoverySections
+                    productId={currentProductId}
+                    currentBrand={applianceData?.brand || ""}
+                    entityType="tvs"
+                    catalogItems={homeAppliances}
+                    brandCatalog={brands}
+                    className="w-full"
+                    layout="latestPhones"
+                    variant="sidebar"
+                  />
+                </aside>
+              ) : null}
+            </div>
+          ) : (
+            <>
+              <div className="mt-6 p-0 sm:p-2">{renderTabContent()}</div>
+
+              {currentProductId ? (
+                <div className="mt-6 px-4 sm:px-0">
+                  <ProductDiscoverySections
+                    productId={currentProductId}
+                    currentBrand={applianceData?.brand || ""}
+                    entityType="tvs"
+                    catalogItems={homeAppliances}
+                    brandCatalog={brands}
+                    className="w-full"
+                    layout="latestPhones"
+                  />
+                </div>
+              ) : null}
+            </>
+          )}
+
           <LatestNewsRouteSection
             className="mt-6"
             productType="tv"
             subtitle="Fresh TV launches, display technology updates, and buying context from the Hooks news desk."
           />
-
-          <div className="mt-6 p-0 sm:p-2">{renderTabContent()}</div>
-
-          {currentProductId ? (
-            <ProductDiscoverySections
-              productId={currentProductId}
-              currentBrand={applianceData?.brand || ""}
-              entityType="tvs"
-              catalogItems={homeAppliances}
-              brandCatalog={brands}
-              className="mt-6 w-full px-4 sm:px-0"
-            />
-          ) : null}
         </div>
       </div>
     </div>

@@ -4631,7 +4631,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       {/* Main Content */}
       <div className="relative mx-auto max-w-7xl px-4 pt-0 pb-8 sm:px-6 sm:pb-12 md:pb-16 lg:px-8 lg:pb-20">
         <div className="relative">
-          <section className="relative left-1/2 isolate w-screen -translate-x-1/2 overflow-hidden px-4 pt-6 pb-0 sm:px-6 sm:pt-8 lg:px-8 lg:pt-10">
+          <section className="relative left-1/2 isolate w-screen -translate-x-1/2 overflow-hidden px-4 pb-0 pt-3 sm:px-6 sm:pt-4 lg:px-8 lg:pt-5">
             <div className="relative mx-auto max-w-7xl">
               <div className={heroContentWidthClass}>
                 <h1

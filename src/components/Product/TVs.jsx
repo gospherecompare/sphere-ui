@@ -1658,7 +1658,7 @@ const TVs = () => {
     // Convert to arrays and sort
     return {
       brands: Array.from(meta.brands).sort(),
-      applianceTypes: Array.from(meta.applianceTypes).sort(),
+      applianceTypes: Array.from(meta.applianceTypes).filter(Boolean).sort(),
 
       // Washing Machine
       loadType: Array.from(meta.loadType).sort(),
@@ -1696,7 +1696,9 @@ const TVs = () => {
       tvFeatures: Array.from(meta.tvFeatures).sort(),
 
       // Common
-      releaseYears: Array.from(meta.releaseYears).sort((a, b) => b - a),
+      releaseYears: Array.from(meta.releaseYears)
+        .filter(Boolean)
+        .sort((a, b) => b - a),
 
       // Capacity ranges (dynamic)
       capacityRanges: (() => {
@@ -2027,13 +2029,22 @@ const TVs = () => {
   // Get selected appliance type for specific filters
   const selectedApplianceType =
     filters.applianceType.length === 1 ? filters.applianceType[0] : null;
+  const effectiveSpecificFilterType =
+    selectedApplianceType ||
+    (extractDynamicFilters.screenSize.length ||
+    extractDynamicFilters.resolution.length ||
+    extractDynamicFilters.tvFeatures.length
+      ? "tv"
+      : null);
 
   const specificFiltersConfig = useMemo(
     () =>
-      selectedApplianceType
-        ? getSpecificFiltersForType(selectedApplianceType)
+      effectiveSpecificFilterType
+        ? getSpecificFiltersForType(effectiveSpecificFilterType).filter(
+            (filter) => Array.isArray(filter.options) && filter.options.length,
+          )
         : [],
-    [selectedApplianceType],
+    [effectiveSpecificFilterType, extractDynamicFilters],
   );
 
   // Apply query param filters
@@ -2300,8 +2311,10 @@ const TVs = () => {
 
     // Specific filters (only if appliance type matches)
     if (
-      selectedApplianceType === device.applianceTypeDisplay &&
-      filters.specific
+      filters.specific &&
+      (selectedApplianceType
+        ? selectedApplianceType === device.applianceTypeDisplay
+        : true)
     ) {
       for (const [filterKey, selectedValues] of Object.entries(
         filters.specific,
@@ -2595,13 +2608,11 @@ const TVs = () => {
       ? {
           display: "-webkit-box",
           WebkitBoxOrient: "vertical",
-          WebkitLineClamp: 3,
+          WebkitLineClamp: 1,
           overflow: "hidden",
         }
       : undefined;
-  const heroSubtitleWidthClass = isExpandedHeroDescriptionPath
-    ? "max-w-6xl"
-    : "max-w-3xl";
+  const heroSubtitleWidthClass = "max-w-7xl";
   useEffect(() => {
     if (isExpandedHeroDescriptionPath) {
       setShowHeroDescription(false);
@@ -2783,7 +2794,7 @@ const TVs = () => {
   };
 
   return (
-    <div className="min-h-screen text-slate-900">
+    <div className="min-h-screen bg-white text-slate-900">
       <style>{animationStyles}</style>
       <Helmet prioritizeSeoTags>
         <title>{seoTitle}</title>
@@ -2820,9 +2831,9 @@ const TVs = () => {
       </Helmet>
       {/* Main Content */}
       <div className="relative mx-auto max-w-7xl px-4 pt-0 pb-8 sm:px-6 sm:pb-12 md:pb-16 lg:px-8 lg:pb-20">
-        <section className="relative left-1/2 isolate w-screen -translate-x-1/2 overflow-hidden px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+        <section className="relative left-1/2 isolate w-screen -translate-x-1/2 overflow-hidden px-4 pb-0 pt-3 sm:px-6 sm:pt-4 lg:px-8 lg:pt-5">
           <div className="relative mx-auto max-w-7xl">
-            <div className={isExpandedHeroDescriptionPath ? "max-w-6xl" : "max-w-4xl"}>
+            <div className="max-w-7xl">
               <h1 className="text-[11px] font-bold uppercase tracking-[0.32em] text-purple-600 sm:text-xs">
                 {heroTitleText}
               </h1>
@@ -2841,7 +2852,7 @@ const TVs = () => {
                   className="mt-2.5 inline-flex items-center gap-2 text-sm font-semibold text-blue-700 transition-colors duration-200 hover:text-blue-900"
                   aria-expanded={showHeroDescription}
                 >
-                  {showHeroDescription ? "Show less" : "Read more"}
+                  {showHeroDescription ? "Read less" : "Read more"}
                 </button>
               ) : null}
 
@@ -2849,7 +2860,15 @@ const TVs = () => {
           </div>
         </section>
 
-        <div className="mt-4 overflow-hidden pt-0 pb-2 sm:pb-3">
+        <div className="mt-3 sm:mt-4">
+          <MobileListingControls
+            activeFilterCount={getActiveFiltersCount()}
+            onOpenFilters={() => setShowFilters(true)}
+            onOpenSort={() => setShowSort(true)}
+          />
+        </div>
+
+        <div className="overflow-hidden pt-0 pb-2 sm:pb-3">
           <div className="mb-2 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <FaFilter className="text-blue-600" />
@@ -2894,12 +2913,6 @@ const TVs = () => {
             })}
           </div>
         </div>
-        <MobileListingControls
-          activeFilterCount={getActiveFiltersCount()}
-          onOpenFilters={() => setShowFilters(true)}
-          onOpenSort={() => setShowSort(true)}
-        />
-
         <div className="mb-3 overflow-hidden">
           <div className="hidden items-center justify-end gap-4 lg:flex">
             {getActiveFiltersCount() > 0 && (
@@ -2915,7 +2928,7 @@ const TVs = () => {
 
           <div className="space-y-3 sm:space-y-4 lg:hidden">
             {getActiveFiltersCount() > 0 && (
-              <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-4 shadow-[0_2px_2px_rgba(0,0,0,0.1)]">
                 <div className="flex items-center gap-3">
                   <FaInfoCircle className="text-blue-500" />
                   <div>
@@ -2943,7 +2956,7 @@ const TVs = () => {
         <div className="flex flex-col gap-4 lg:flex-row md:gap-6">
           {/* Desktop Filter Sidebar */}
           <div className="hidden lg:block lg:w-72 flex-shrink-0">
-            <div className="sticky top-6 rounded-2xl border border-white p-5 shadow-[0_2px_4px_rgba(0,0,0,0.1)] lg:p-6">
+            <div className="sticky top-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-[0_2px_2px_rgba(0,0,0,0.1)] lg:p-6">
               {/* Filters Header */}
               <div className="mb-6 flex items-center justify-between border-b border-slate-200 px-2 pb-4 sm:mb-8 sm:px-3 md:px-4">
                 <div>
@@ -2967,7 +2980,7 @@ const TVs = () => {
 
               {/* Active Filters Badge */}
               {getActiveFiltersCount() > 0 && (
-                <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 shadow-sm sm:mb-8">
+                <div className="mb-6 rounded-xl border border-slate-100 bg-white p-4 shadow-[0_2px_2px_rgba(0,0,0,0.1)] sm:mb-8">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-semibold text-slate-900">
                       Active Filters
@@ -3035,6 +3048,49 @@ const TVs = () => {
                 </div>
               </div>
 
+              {/* Appliance Type Filter */}
+              {extractDynamicFilters.applianceTypes.length > 1 && (
+                <div className="mb-8">
+                  <div className="mb-3 flex items-center justify-between">
+                    <h4 className="text-lg font-semibold text-slate-900">
+                      TV Type
+                    </h4>
+                    <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">
+                      {filters.applianceType.length} selected
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {extractDynamicFilters.applianceTypes.map((type) => (
+                      <label
+                        key={type}
+                        className={`flex cursor-pointer items-center justify-between gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition-colors duration-200 ${
+                          filters.applianceType.includes(type)
+                            ? "border-blue-400 bg-blue-50 text-blue-700"
+                            : "border-slate-100 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={filters.applianceType.includes(type)}
+                          onChange={() =>
+                            handleFilterChange("applianceType", type)
+                          }
+                          className="sr-only"
+                        />
+                        <span>{type}</span>
+                        <span
+                          className={`h-2 w-2 rounded-full ${
+                            filters.applianceType.includes(type)
+                              ? "bg-blue-600"
+                              : "bg-slate-300"
+                          }`}
+                        />
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Price Range Filter */}
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-4">
@@ -3051,7 +3107,7 @@ const TVs = () => {
                     {formatRupeeNumber(filters.priceRange.max)}
                   </span>
                 </div>
-                <div className="rounded-xl border border-slate-200 bg-[#f8fbff] p-4">
+                <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-[0_2px_2px_rgba(0,0,0,0.1)]">
                   <div className="flex justify-between text-sm font-medium text-slate-700 mb-4">
                     <div className="text-center">
                       <div className="text-xs text-slate-500">Minimum</div>
@@ -3236,13 +3292,89 @@ const TVs = () => {
                 </div>
               )}
 
+              {/* Energy Rating Filter */}
+              {extractDynamicFilters.energyRating.length > 0 && (
+                <div className="mb-8">
+                  <div className="mb-3 flex items-center justify-between">
+                    <h4 className="text-lg font-semibold text-slate-900">
+                      Energy Rating
+                    </h4>
+                    <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">
+                      {filters.energyRating.length} selected
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {extractDynamicFilters.energyRating.map((rating) => (
+                      <label
+                        key={rating}
+                        className={`flex cursor-pointer items-center justify-center rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
+                          filters.energyRating.includes(rating)
+                            ? "border-blue-400 bg-blue-50 text-blue-700"
+                            : "border-slate-100 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={filters.energyRating.includes(rating)}
+                          onChange={() =>
+                            handleFilterChange("energyRating", rating)
+                          }
+                          className="sr-only"
+                        />
+                        <span>{rating}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Release Year Filter */}
+              {extractDynamicFilters.releaseYears.length > 0 && (
+                <div className="mb-8">
+                  <div className="mb-3 flex items-center justify-between">
+                    <h4 className="text-lg font-semibold text-slate-900">
+                      Release Year
+                    </h4>
+                    <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">
+                      {filters.releaseYear.length} selected
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {extractDynamicFilters.releaseYears.map((year) => {
+                      const value = String(year);
+                      return (
+                        <label
+                          key={value}
+                          className={`flex cursor-pointer items-center justify-center rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
+                            filters.releaseYear.includes(value)
+                              ? "border-blue-400 bg-blue-50 text-blue-700"
+                              : "border-slate-100 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={filters.releaseYear.includes(value)}
+                            onChange={() =>
+                              handleFilterChange("releaseYear", value)
+                            }
+                            className="sr-only"
+                          />
+                          <span>{value}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Specific Filters for Selected Appliance Type */}
-              {selectedApplianceType && specificFiltersConfig.length > 0 && (
+              {effectiveSpecificFilterType &&
+                specificFiltersConfig.length > 0 && (
                 <div className="mb-8">
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="font-semibold text-slate-900 text-lg flex items-center gap-2">
                       <FaCog className="text-blue-500" />
-                      {selectedApplianceType} Filters
+                      {selectedApplianceType || "TV"} Filters
                     </h4>
                     <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
                       {Object.values(filters.specific || {}).flat().length}{" "}
@@ -3309,7 +3441,7 @@ const TVs = () => {
                   <div
                     key={`${device.id}-${idx}`}
                     onClick={(e) => handleView(device, e)}
-                    className="smooth-transition fade-in-up h-full w-full mx-auto overflow-hidden rounded-lg bg-white cursor-pointer transition-all duration-300 hover:bg-slate-50"
+                    className="smooth-transition fade-in-up h-full w-full mx-auto overflow-hidden rounded-lg border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)] cursor-pointer transition-all duration-300 hover:bg-slate-50"
                   >
                     <div className="p-5 sm:p-6 transition-all duration-300">
                       {/* Desktop Header Section - Hidden on mobile */}
@@ -3584,7 +3716,7 @@ const TVs = () => {
 
                           {/* Store Prices - Desktop */}
                           {hasStoreSection && (
-                            <div className="hidden rounded-[24px] border border-blue-100 bg-[#f8fbff] p-2.5 sm:p-4 lg:block">
+                            <div className="hidden rounded-[24px] border border-slate-100 bg-white p-2.5 shadow-[0_2px_2px_rgba(0,0,0,0.1)] sm:p-4 lg:block">
                               <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
                                 <FaStore className="text-emerald-500" />
                                 Check Price On
@@ -3695,7 +3827,7 @@ const TVs = () => {
                       </div>
 
                       {hasStoreSection && (
-                        <div className="mt-4 rounded-[20px] border border-blue-100 bg-[#f8fbff] p-3 sm:p-4 lg:hidden">
+                        <div className="mt-4 rounded-[20px] border border-slate-100 bg-white p-3 shadow-[0_2px_2px_rgba(0,0,0,0.1)] sm:p-4 lg:hidden">
                           <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
                             <FaStore className="text-emerald-500" />
                             Check Price On
@@ -3783,7 +3915,7 @@ const TVs = () => {
 
             {/* No Results State */}
             {sortedVariants.length === 0 && (
-              <div className="rounded-xl border border-slate-200 bg-slate-50 py-16 text-center transition-all duration-300">
+              <div className="rounded-xl border border-slate-100 bg-white py-16 text-center shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-all duration-300">
                 <div className="max-w-md mx-auto">
                   <FaSearch className="text-slate-300 text-5xl mx-auto mb-4" />
                   <h3 className="text-2xl font-semibold text-slate-900 mb-3">
@@ -3864,6 +3996,7 @@ const TVs = () => {
           brandCatalog={deviceContext?.brands || []}
           currentBrand={currentBrandObj?.name || filterBrand || ""}
           className="mt-6"
+          layout="latestPhones"
         />
 
         <MobileSortSheet
@@ -3883,7 +4016,7 @@ const TVs = () => {
               onClick={() => setShowFilters(false)}
             ></div>
 
-            <div className="absolute bottom-0 left-0 right-0 max-h-[90vh] overflow-hidden rounded-t-3xl bg-white transform transition-transform duration-300">
+            <div className="absolute bottom-0 left-0 right-0 mx-auto flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)] transform transition-transform duration-300 sm:bottom-4 sm:rounded-2xl">
               <div className="flex items-center justify-between border-b border-slate-200 bg-white p-6">
                 <div className="flex items-center gap-3">
                   <div>
@@ -3903,7 +4036,7 @@ const TVs = () => {
                 </button>
               </div>
 
-              <div className="no-scrollbar p-6 overflow-y-auto max-h-[70vh] pb-40 space-y-6">
+              <div className="no-scrollbar flex-1 space-y-6 overflow-y-auto p-6 pb-40">
                 {/* Brand */}
                 <div>
                   <h4 className="font-semibold text-slate-900 text-lg mb-3">
@@ -3946,6 +4079,42 @@ const TVs = () => {
                   )}
                 </div>
 
+                {/* TV Type */}
+                {extractDynamicFilters.applianceTypes.length > 0 && (
+                  <div>
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <h4 className="text-lg font-semibold text-slate-900">
+                        TV Type
+                      </h4>
+                      <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">
+                        {filters.applianceType.length} selected
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {extractDynamicFilters.applianceTypes.map((type) => (
+                        <label
+                          key={type}
+                          className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
+                            filters.applianceType.includes(type)
+                              ? "border-blue-400 bg-blue-50 text-blue-700"
+                              : "border-slate-100 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={filters.applianceType.includes(type)}
+                            onChange={() =>
+                              handleFilterChange("applianceType", type)
+                            }
+                            className="sr-only"
+                          />
+                          <span>{type}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Price Range */}
                 <div>
                   <div className="flex items-center justify-between mb-3">
@@ -3957,7 +4126,7 @@ const TVs = () => {
                       {formatRupeeNumber(filters.priceRange.max)}
                     </span>
                   </div>
-                  <div className="rounded-xl border border-slate-200 bg-[#f8fbff] p-4">
+                  <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-[0_2px_2px_rgba(0,0,0,0.1)]">
                     <div className="relative mb-4">
                       <div className="absolute h-2 bg-slate-200 rounded-full w-full top-1/2 transform -translate-y-1/2"></div>
                       <div
@@ -4088,26 +4257,145 @@ const TVs = () => {
                   </div>
                 </div>
 
+                {/* Capacity Range */}
+                {extractDynamicFilters.capacityRanges.length > 0 && (
+                  <div>
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <h4 className="text-lg font-semibold text-slate-900">
+                        Size Range
+                      </h4>
+                      <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">
+                        {filters.capacityRange.length} selected
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
+                      {extractDynamicFilters.capacityRanges.map((range) => (
+                        <label
+                          key={range.id}
+                          className={`flex cursor-pointer items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
+                            filters.capacityRange.includes(range.id)
+                              ? "border-blue-400 bg-blue-50 text-blue-700"
+                              : "border-slate-100 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={filters.capacityRange.includes(range.id)}
+                            onChange={() =>
+                              handleFilterChange("capacityRange", range.id)
+                            }
+                            className="sr-only"
+                          />
+                          <span>{range.label}</span>
+                          <span
+                            className={`h-2 w-2 rounded-full ${
+                              filters.capacityRange.includes(range.id)
+                                ? "bg-blue-600"
+                                : "bg-slate-300"
+                            }`}
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Energy Rating */}
+                {extractDynamicFilters.energyRating.length > 0 && (
+                  <div>
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <h4 className="text-lg font-semibold text-slate-900">
+                        Energy Rating
+                      </h4>
+                      <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">
+                        {filters.energyRating.length} selected
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {extractDynamicFilters.energyRating.map((rating) => (
+                        <label
+                          key={rating}
+                          className={`flex cursor-pointer items-center justify-center rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
+                            filters.energyRating.includes(rating)
+                              ? "border-blue-400 bg-blue-50 text-blue-700"
+                              : "border-slate-100 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={filters.energyRating.includes(rating)}
+                            onChange={() =>
+                              handleFilterChange("energyRating", rating)
+                            }
+                            className="sr-only"
+                          />
+                          <span>{rating}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Release Year */}
+                {extractDynamicFilters.releaseYears.length > 0 && (
+                  <div>
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <h4 className="text-lg font-semibold text-slate-900">
+                        Release Year
+                      </h4>
+                      <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">
+                        {filters.releaseYear.length} selected
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {extractDynamicFilters.releaseYears.map((year) => {
+                        const value = String(year);
+                        return (
+                          <label
+                            key={value}
+                            className={`flex cursor-pointer items-center justify-center rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
+                              filters.releaseYear.includes(value)
+                                ? "border-blue-400 bg-blue-50 text-blue-700"
+                                : "border-slate-100 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={filters.releaseYear.includes(value)}
+                              onChange={() =>
+                                handleFilterChange("releaseYear", value)
+                              }
+                              className="sr-only"
+                            />
+                            <span>{value}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {/* Specific Filters for Selected Appliance Type (Mobile) */}
-                {selectedApplianceType && specificFiltersConfig.length > 0 && (
+                {effectiveSpecificFilterType &&
+                  specificFiltersConfig.length > 0 && (
                   <div>
                     <h4 className="font-semibold text-slate-900 text-lg mb-3">
-                      {selectedApplianceType} Filters
+                      {selectedApplianceType || "TV"} Filters
                     </h4>
                     <div className="space-y-4">
-                      {specificFiltersConfig.slice(0, 2).map((filter) => (
+                      {specificFiltersConfig.map((filter) => (
                         <div key={filter.key}>
                           <h5 className="font-medium text-slate-800 text-sm mb-2">
                             {filter.label}
                           </h5>
                           <div className="grid grid-cols-2 gap-2">
-                            {filter.options.slice(0, 4).map((option) => (
+                            {filter.options.map((option) => (
                               <label
                                 key={option}
                                 className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium text-sm border ${
                                   filters.specific[filter.key]?.includes(option)
-                                    ? "bg-gradient-to-b from-blue-500 to-sky-500 text-white border-blue-400"
-                                    : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-slate-50"
+                                    ? "border-blue-400 bg-blue-50 text-blue-700"
+                                    : "border-slate-100 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700"
                                 }`}
                               >
                                 <input

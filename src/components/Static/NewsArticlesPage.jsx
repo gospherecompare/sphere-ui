@@ -1414,7 +1414,9 @@ const NewsArticlesPage = () => {
               <Link to="/" className="hover:text-[#2563eb]">
                 Home
               </Link>
-              <FaChevronRight className="h-2.5 w-2.5 text-[#b6c2cf]" />
+              <span className="text-[12px] font-medium text-[#b6c2cf]">
+                /
+              </span>
               {taxonomyRoute ? (
                 <Link to="/news" className="hover:text-[#2563eb]">
                   News
@@ -1424,7 +1426,9 @@ const NewsArticlesPage = () => {
               )}
               {taxonomyRoute ? (
                 <>
-                  <FaChevronRight className="h-2.5 w-2.5 text-[#b6c2cf]" />
+                  <span className="text-[12px] font-medium text-[#b6c2cf]">
+                    /
+                  </span>
                   <span className="font-semibold text-[#1f2937]">
                     {taxonomyRoute.title}
                   </span>

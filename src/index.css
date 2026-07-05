@@ -167,18 +167,6 @@ small {
   animation: fadeIn 0.2s ease-in-out;
 }
 
-@keyframes hooksRouteProgress {
-  0% {
-    transform: translateX(-62%) scaleX(0.35);
-  }
-  45% {
-    transform: translateX(8%) scaleX(0.72);
-  }
-  100% {
-    transform: translateX(118%) scaleX(0.35);
-  }
-}
-
 @keyframes hooksLoaderPanelIn {
   from {
     opacity: 0;
@@ -227,12 +215,6 @@ small {
     background-color: rgb(37, 99, 235);
     transform: scaleX(1);
   }
-}
-
-.hooks-route-progress {
-  width: 46%;
-  animation: hooksRouteProgress 1.05s ease-in-out infinite;
-  will-change: transform;
 }
 
 .hooks-loader-panel {
@@ -343,7 +325,6 @@ small {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hooks-route-progress,
   .hooks-loader-panel,
   .hooks-loader-orbit,
   .hooks-loader-bot,

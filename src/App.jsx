@@ -61,42 +61,44 @@ const BUDGET_PHONE_KEYWORDS =
 const DEFAULT_SEO_KEYWORDS = `hooks, best gadget comparison site, mobile price comparison india, moblie price comparison india, compare laptops smartphones tvs, compare smartphone tv laptops, compare specs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch phones, trending phone in india, most popular mobiles, top selling gadgets india, 5g phones in india, ai phones in india, ${BUDGET_PHONE_KEYWORDS}, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, gaming laptops india, student laptops india, laptop comparison india, vacuum cooler laptop and phone, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000, smart tv comparison india`;
 
 const Home = React.lazy(() => import("./components/Home/Home"));
-const Smartphones = React.lazy(() => import("./components/Product/Smartphones"));
-const UpcomingSmartphonesList = React.lazy(() =>
-  import("./components/Product/UpcomingSmartphonesList"),
+const Smartphones = React.lazy(
+  () => import("./components/Product/Smartphones"),
+);
+const UpcomingSmartphonesList = React.lazy(
+  () => import("./components/Product/UpcomingSmartphonesList"),
 );
 const Networking = React.lazy(() => import("./components/Product/Networking"));
 const TVs = React.lazy(() => import("./components/Product/TVs"));
-const TrendingProductsHub = React.lazy(() =>
-  import("./components/Product/TrendingProductsHub"),
+const TrendingProductsHub = React.lazy(
+  () => import("./components/Product/TrendingProductsHub"),
 );
-const PopularComparisonsPage = React.lazy(() =>
-  import("./components/PopularComparisonsPage"),
+const PopularComparisonsPage = React.lazy(
+  () => import("./components/PopularComparisonsPage"),
 );
 const DeviceComparison = React.lazy(() => import("./components/compare"));
 const About = React.lazy(() => import("./components/Static/About"));
 const Careers = React.lazy(() => import("./components/Static/Careers"));
 const Contact = React.lazy(() => import("./components/Static/Contact"));
-const NewsArticlesPage = React.lazy(() =>
-  import("./components/Static/NewsArticlesPage"),
+const NewsArticlesPage = React.lazy(
+  () => import("./components/Static/NewsArticlesPage"),
 );
-const PrivacyPolicy = React.lazy(() =>
-  import("./components/Static/PrivacyPolicy.jsx"),
+const PrivacyPolicy = React.lazy(
+  () => import("./components/Static/PrivacyPolicy.jsx"),
 );
 const Terms = React.lazy(() => import("./components/Static/Terms.jsx"));
 const NotFound = React.lazy(() => import("./components/Static/NotFound"));
-const MobileDetailCard = React.lazy(() =>
-  import("./components/Device detail/Smartphone"),
+const MobileDetailCard = React.lazy(
+  () => import("./components/Device detail/Smartphone"),
 );
 const TVDetailCard = React.lazy(() => import("./components/Device detail/TV"));
-const NetworkingDetailCard = React.lazy(() =>
-  import("./components/Device detail/Network"),
+const NetworkingDetailCard = React.lazy(
+  () => import("./components/Device detail/Network"),
 );
 const Login = React.lazy(() => import("./components/Auths/Login"));
 const Signup = React.lazy(() => import("./components/Auths/Signup"));
 const Wishlist = React.lazy(() => import("./components/Wishlist"));
-const AccountManagement = React.lazy(() =>
-  import("./components/AccountManagement"),
+const AccountManagement = React.lazy(
+  () => import("./components/AccountManagement"),
 );
 
 const normalizeSeoPath = (pathname) => {
@@ -271,8 +273,7 @@ const resolveSeoMeta = (pathname) => {
   const rules = [
     {
       test: (p) => p.startsWith("/news"),
-      title:
-        "News - Mobile Coverage, Gadget Guides & Launch Updates - Hooks",
+      title: "News - Mobile Coverage, Gadget Guides & Launch Updates - Hooks",
       description:
         "Browse the latest mobile coverage, gadget updates, launch coverage, and editorial guides on Hooks.",
       keywords:
@@ -500,104 +501,29 @@ const RouteSeoFallback = () => {
   );
 };
 
-const GlobalLoadingExperience = () => {
-  const location = useLocation();
-  const [routePulse, setRoutePulse] = React.useState(false);
-  const [activeFetches, setActiveFetches] = React.useState(() =>
-    typeof window !== "undefined" ? window.__HOOKS_FETCH_IN_FLIGHT__ || 0 : 0,
-  );
-  const [showPanel, setShowPanel] = React.useState(false);
-
-  React.useEffect(() => {
-    setRoutePulse(true);
-    const timeout = window.setTimeout(() => setRoutePulse(false), 520);
-    return () => window.clearTimeout(timeout);
-  }, [location.pathname, location.search]);
-
-  React.useEffect(() => {
-    const onActivity = (event) => {
-      const nextCount = Number(event?.detail?.count ?? 0);
-      setActiveFetches(Number.isFinite(nextCount) ? Math.max(0, nextCount) : 0);
-    };
-
-    window.addEventListener("hooks:fetch-activity", onActivity);
-    return () => window.removeEventListener("hooks:fetch-activity", onActivity);
-  }, []);
-
-  const hasNetworkWork = activeFetches > 0;
-
-  React.useEffect(() => {
-    if (hasNetworkWork) {
-      const timeout = window.setTimeout(() => setShowPanel(true), 260);
-      return () => window.clearTimeout(timeout);
-    }
-
-    const timeout = window.setTimeout(() => setShowPanel(false), 180);
-    return () => window.clearTimeout(timeout);
-  }, [hasNetworkWork]);
-
-  if (!routePulse && !hasNetworkWork && !showPanel) return null;
-
-  return (
-    <>
-      <div className="pointer-events-none fixed inset-x-0 top-0 z-[9998] h-1 overflow-hidden bg-blue-50/70">
-        <div className="hooks-route-progress h-full rounded-r-full bg-gradient-to-r from-blue-500 via-cyan-400 to-emerald-400" />
-      </div>
-
-      {showPanel ? (
-        <div
-          role="status"
-          aria-live="polite"
-          className="hooks-loader-panel pointer-events-none fixed bottom-[calc(74px+env(safe-area-inset-bottom))] left-4 right-4 z-[9997] mx-auto max-w-sm rounded-2xl border border-blue-100/80 bg-white/95 p-4 shadow-[0_18px_55px_rgba(15,23,42,0.16)] backdrop-blur-md sm:bottom-6 sm:left-auto sm:right-6 sm:mx-0"
-        >
-          <div className="flex items-center gap-3">
-            <div className="hooks-loader-bot relative h-12 w-12 shrink-0" aria-hidden="true">
-              <span className="hooks-loader-bot-antenna" />
-              <span className="hooks-loader-bot-face">
-                <span className="hooks-loader-bot-eyes">
-                  <span />
-                  <span />
-                </span>
-                <span className="hooks-loader-bot-mouth" />
-              </span>
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-slate-950">
-                Syncing gadget intelligence
-              </p>
-              <p className="mt-0.5 text-xs leading-5 text-slate-500">
-                Pulling the freshest specs, prices, and launch signals.
-              </p>
-            </div>
-          </div>
-          <div className="mt-3 grid grid-cols-4 gap-1.5">
-            {[0, 1, 2, 3].map((index) => (
-              <span
-                key={index}
-                className="hooks-loader-pill h-1.5 rounded-full bg-blue-100"
-                style={{ animationDelay: `${index * 120}ms` }}
-              />
-            ))}
-          </div>
-        </div>
-      ) : null}
-    </>
-  );
+const preloadCoreRouteChunks = () => {
+  void import("./components/Product/Smartphones");
+  void import("./components/Product/TVs");
+  void import("./components/Static/NewsArticlesPage");
+  void import("./components/Device detail/Smartphone");
+  void import("./components/Device detail/TV");
+  void import("./components/Product/TrendingProductsHub");
 };
 
-const RouteChunkFallback = () => (
-  <main
-    aria-busy="true"
-    className="min-h-[45vh] bg-white px-4 py-10 md:min-h-[50vh]"
-  >
-    <div className="mx-auto flex max-w-6xl items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4 text-sm font-semibold text-slate-500 shadow-sm md:max-w-sm">
-      <span className="h-3 w-3 animate-pulse rounded-full bg-blue-600" />
-      Loading page...
-    </div>
-  </main>
-);
-
 function App() {
+  React.useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const preload = () => preloadCoreRouteChunks();
+    if ("requestIdleCallback" in window) {
+      const idleId = window.requestIdleCallback(preload, { timeout: 1200 });
+      return () => window.cancelIdleCallback(idleId);
+    }
+
+    const timeoutId = window.setTimeout(preload, 700);
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
   const AppliancesListRedirect = () => {
     const location = useLocation();
     return <Navigate to={`/tvs${location.search || ""}`} replace />;
@@ -691,12 +617,7 @@ function App() {
 
   const AppliancesDetailRedirect = () => {
     const { slug } = useParams();
-    return (
-      <Navigate
-        to={toCanonicalPagePath(`/tvs/${slug}`)}
-        replace
-      />
-    );
+    return <Navigate to={toCanonicalPagePath(`/tvs/${slug}`)} replace />;
   };
 
   const ProductDetailRedirect = ({ toBasePath, preserveSearch = true }) => {
@@ -714,7 +635,6 @@ function App() {
   return (
     <Router>
       <RouteSeoFallback />
-      <GlobalLoadingExperience />
       <AppPushOptInPrompt />
       <div className="min-h-screen w-full overflow-x-hidden pb-[calc(58px+env(safe-area-inset-bottom))] lg:pb-0">
         <Header />
@@ -723,143 +643,156 @@ function App() {
         <aside className="hidden xl:block absolute right-45 top-20 h-40 z-30 w-[170px]">
           {/* BannerSlot disabled (incomplete). */}
         </aside>
-        <React.Suspense fallback={<RouteChunkFallback />}>
+        <React.Suspense fallback={null}>
+          <Breadcrumbs />
           <Routes>
             {/* Home */}
             <Route path="/" element={<Home />} />
 
-          {/* Authentication */}
-          <Route path="/login" element={<Login asPage />} />
-          <Route path="/signup" element={<Signup asPage />} />
+            {/* Authentication */}
+            <Route path="/login" element={<Login asPage />} />
+            <Route path="/signup" element={<Signup asPage />} />
 
-          {/* User Account */}
-          <Route path="/account" element={<AccountManagement />} />
-          <Route path="/wishlist" element={<Wishlist />} />
+            {/* User Account */}
+            <Route path="/account" element={<AccountManagement />} />
+            <Route path="/wishlist" element={<Wishlist />} />
 
-          {/* Product Listings - SEO friendly category paths */}
-          <Route path="/search" element={<LegacySearchRedirect />} />
-          <Route path="/brands" element={<BrandsRedirect />} />
-          <Route path="/brand/:slug" element={<BrandLandingRedirect />} />
-          <Route path="/smartphones" element={<Smartphones />} />
-          <Route
-            path="/smartphones/feature/:featureSlug/brand/:brandSlug"
-            element={<SmartphoneListingOrderRedirect />}
-          />
-          <Route
-            path="/smartphones/brand/:brandSlug/feature/:featureSlug"
-            element={<Smartphones />}
-          />
-          <Route
-            path="/smartphones/brand/:brandSlug"
-            element={<Smartphones />}
-          />
-          <Route
-            path="/smartphones/feature/:featureSlug"
-            element={<Smartphones />}
-          />
-          <Route
-            path="/smartphones/filter/:filterSlug"
-            element={<Smartphones />}
-          />
-          <Route
-            path="/smartphones/latest"
-            element={<Navigate to="/smartphones/filter/new" replace />}
-          />
-          <Route
-            path="/smartphones/top"
-            element={<Navigate to="/trending/smartphones" replace />}
-          />
-          <Route
-            path="/smartphones/upcoming"
-            element={<UpcomingSmartphonesList />}
-          />
-          <Route path="/tvs" element={<TVs />} />
-          <Route path="/tvs/latest" element={<TVs />} />
-          <Route path="/tvs/features/:featureSlug" element={<TVs />} />
-          <Route path="/appliances" element={<AppliancesListRedirect />} />
-          <Route path="/networking" element={<Networking />} />
+            {/* Product Listings - SEO friendly category paths */}
+            <Route path="/search" element={<LegacySearchRedirect />} />
+            <Route path="/brands" element={<BrandsRedirect />} />
+            <Route path="/brand/:slug" element={<BrandLandingRedirect />} />
+            <Route path="/smartphones" element={<Smartphones />} />
+            <Route
+              path="/smartphones/feature/:featureSlug/brand/:brandSlug"
+              element={<SmartphoneListingOrderRedirect />}
+            />
+            <Route
+              path="/smartphones/brand/:brandSlug/feature/:featureSlug"
+              element={<Smartphones />}
+            />
+            <Route
+              path="/smartphones/brand/:brandSlug"
+              element={<Smartphones />}
+            />
+            <Route
+              path="/smartphones/feature/:featureSlug"
+              element={<Smartphones />}
+            />
+            <Route
+              path="/smartphones/filter/:filterSlug"
+              element={<Smartphones />}
+            />
+            <Route
+              path="/smartphones/latest"
+              element={<Navigate to="/smartphones/filter/new" replace />}
+            />
+            <Route
+              path="/smartphones/top"
+              element={<Navigate to="/trending/smartphones" replace />}
+            />
+            <Route
+              path="/smartphones/upcoming"
+              element={<UpcomingSmartphonesList />}
+            />
+            <Route path="/tvs" element={<TVs />} />
+            <Route path="/tvs/latest" element={<TVs />} />
+            <Route path="/tvs/features/:featureSlug" element={<TVs />} />
+            <Route path="/appliances" element={<AppliancesListRedirect />} />
+            <Route path="/networking" element={<Networking />} />
 
-          {/* Unified Trending Product Explorer */}
-          <Route
-            path="/trending"
-            element={<Navigate to="/trending/smartphones" replace />}
-          />
-          <Route path="/trending/smartphones" element={<Smartphones />} />
-          <Route path="/trending/:category" element={<TrendingProductsHub />} />
+            {/* Unified Trending Product Explorer */}
+            <Route
+              path="/trending"
+              element={<Navigate to="/trending/smartphones" replace />}
+            />
+            <Route path="/trending/smartphones" element={<Smartphones />} />
+            <Route
+              path="/trending/:category"
+              element={<TrendingProductsHub />}
+            />
 
-          {/* Category shortcuts */}
-          <Route path="/mobiles" element={<Smartphones />} />
-          <Route path="/devices/smartphones" element={<Smartphones />} />
-          <Route path="/devices/tvs" element={<TVs />} />
-          <Route
-            path="/devices/appliances"
-            element={<AppliancesListRedirect />}
-          />
-          <Route path="/devices/networking" element={<Networking />} />
+            {/* Category shortcuts */}
+            <Route path="/mobiles" element={<Smartphones />} />
+            <Route path="/devices/smartphones" element={<Smartphones />} />
+            <Route path="/devices/tvs" element={<TVs />} />
+            <Route
+              path="/devices/appliances"
+              element={<AppliancesListRedirect />}
+            />
+            <Route path="/devices/networking" element={<Networking />} />
 
-          {/* Product Detail Pages - SEO-friendly slug-based routes */}
-          <Route path="/smartphones/:slug" element={<MobileDetailCard />} />
-          <Route
-            path="/smartphone/:slug"
-            element={<ProductDetailRedirect toBasePath="/smartphones" />}
-          />
-          <Route path="/tvs/:slug" element={<TVDetailCard />} />
-          <Route
-            path="/appliances/:slug"
-            element={<AppliancesDetailRedirect />}
-          />
-          <Route path="/networking/:slug" element={<NetworkingDetailCard />} />
+            {/* Product Detail Pages - SEO-friendly slug-based routes */}
+            <Route path="/smartphones/:slug" element={<MobileDetailCard />} />
+            <Route
+              path="/smartphone/:slug"
+              element={<ProductDetailRedirect toBasePath="/smartphones" />}
+            />
+            <Route path="/tvs/:slug" element={<TVDetailCard />} />
+            <Route
+              path="/appliances/:slug"
+              element={<AppliancesDetailRedirect />}
+            />
+            <Route
+              path="/networking/:slug"
+              element={<NetworkingDetailCard />}
+            />
 
-          <Route
-            path="/devices/smartphones/:slug"
-            element={<ProductDetailRedirect toBasePath="/smartphones" />}
-          />
-          <Route
-            path="/devices/mobiles/:slug"
-            element={<ProductDetailRedirect toBasePath="/smartphones" />}
-          />
-          <Route
-            path="/devices/tvs/:slug"
-            element={
-              <ProductDetailRedirect
-                toBasePath="/tvs"
-                preserveSearch={false}
-              />
-            }
-          />
-          <Route
-            path="/devices/appliances/:slug"
-            element={
-              <ProductDetailRedirect
-                toBasePath="/tvs"
-                preserveSearch={false}
-              />
-            }
-          />
+            <Route
+              path="/devices/smartphones/:slug"
+              element={<ProductDetailRedirect toBasePath="/smartphones" />}
+            />
+            <Route
+              path="/devices/mobiles/:slug"
+              element={<ProductDetailRedirect toBasePath="/smartphones" />}
+            />
+            <Route
+              path="/devices/tvs/:slug"
+              element={
+                <ProductDetailRedirect
+                  toBasePath="/tvs"
+                  preserveSearch={false}
+                />
+              }
+            />
+            <Route
+              path="/devices/appliances/:slug"
+              element={
+                <ProductDetailRedirect
+                  toBasePath="/tvs"
+                  preserveSearch={false}
+                />
+              }
+            />
 
-          {/* Comparison */}
-          <Route path="/compare/:compareSlug" element={<DeviceComparison />} />
-          <Route path="/compare" element={<DeviceComparison />} />
-          <Route
-            path="/popular-comparisons"
-            element={<PopularComparisonsPage />}
-          />
+            {/* Comparison */}
+            <Route
+              path="/compare/:compareSlug"
+              element={<DeviceComparison />}
+            />
+            <Route path="/compare" element={<DeviceComparison />} />
+            <Route
+              path="/popular-comparisons"
+              element={<PopularComparisonsPage />}
+            />
 
-          {/* Placeholder routes for footer links (can be implemented later) */}
-          <Route path="/about" element={<About />} />
-          <Route path="/careers" element={<Careers />} />
-          <Route path="/career" element={<Navigate to="/careers" replace />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/news" element={<NewsArticlesPage />} />
-          <Route path="/news/:slug" element={<NewsArticlesPage />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/terms" element={<Terms />} />
+            {/* Placeholder routes for footer links (can be implemented later) */}
+            <Route path="/about" element={<About />} />
+            <Route path="/careers" element={<Careers />} />
+            <Route
+              path="/career"
+              element={<Navigate to="/careers" replace />}
+            />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/news" element={<NewsArticlesPage />} />
+            <Route path="/news/:slug" element={<NewsArticlesPage />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<Terms />} />
 
-          {/* 404 Fallback */}
+            {/* 404 Fallback */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </React.Suspense>
-        <Breadcrumbs />
+
         {/* BannerSlot disabled (incomplete). */}
         <Footer />
         <MobileBottomNavigation />
