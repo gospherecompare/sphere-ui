@@ -1759,7 +1759,9 @@ const MobileDetailCard = () => {
   const SpecScoreBadge = allowSpecScore ? BaseSpecScoreBadge : HiddenScoreBadge;
   const headerSpecScoreValue = useMemo(() => {
     if (!allowSpecScore || !scoreSourceData) return null;
-    const rawValue = Number(resolveSmartphoneBadgeScore(scoreSourceData));
+    const resolvedValue = resolveSmartphoneBadgeScore(scoreSourceData);
+    if (resolvedValue == null) return null;
+    const rawValue = Number(resolvedValue);
     return Number.isFinite(rawValue)
       ? formatSmartphoneBadgeScore(rawValue)
       : null;
@@ -5017,20 +5019,20 @@ Price: ${price}
         <div
           className={`mx-auto max-w-7xl ${combineResponsiveClasses(RESPONSIVE_SPACING.pageMarginX)} pb-4 pt-0 sm:pb-5 sm:pt-0 lg:pb-6 lg:pt-0`}
         >
-          <div className="px-3 pb-3 pt-3 sm:px-6 sm:pb-6 sm:pt-4 lg:px-7 lg:pb-7 lg:pt-4">
+          <div className="px-4 pb-4 pt-3 sm:px-6 sm:pb-6 sm:pt-4 lg:px-7 lg:pb-7 lg:pt-4">
             <div
-              className={`flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between`}
+              className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between"
             >
               <div className="min-w-0 flex-1">
                 {headerDescriptor ? (
-                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.32em] text-blue-500 sm:text-xs">
+                  <p className="mb-2 text-[10px] font-semibold uppercase leading-relaxed tracking-[0.32em] text-blue-500 sm:text-xs">
                     {headerDescriptor}
                   </p>
                 ) : null}
                 <div
-                  className={`flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center ${RESPONSIVE_SPACING.gapMedium}`}
+                  className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3"
                 >
-                  <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-[2rem]">
+                  <h1 className="text-[1.45rem] font-semibold leading-tight tracking-tight text-slate-900 sm:text-[2rem]">
                     {headerTitle}
                   </h1>
                   <button
@@ -5041,14 +5043,14 @@ Price: ${price}
                       }
                       navigate("/compare");
                     }}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-slate-800 sm:w-auto"
+                    className="hidden items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-slate-800 sm:inline-flex"
                   >
                     <FaPlus className="text-sm" />
                     Compare
                   </button>
                 </div>
                 {headerSummary ? (
-                  <div className="mt-2 max-w-7xl">
+                  <div className="mt-3 max-w-7xl sm:mt-2">
                     <p
                       className={`text-sm leading-6 text-slate-600 sm:text-base ${
                         showHeaderSummaryFull ? "" : "line-clamp-1"
@@ -5062,7 +5064,7 @@ Price: ${price}
                         onClick={() =>
                           setShowHeaderSummaryFull((prev) => !prev)
                         }
-                        className="mt-2 inline-flex items-center text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700"
+                        className="mt-1.5 inline-flex items-center text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700 sm:mt-2"
                         aria-expanded={showHeaderSummaryFull}
                       >
                         {showHeaderSummaryFull ? "Show less" : "Read more"}
@@ -5100,29 +5102,30 @@ Price: ${price}
                 </div>
 
                 {currentVariant || headerSpecScoreBlock ? (
-                  <div className="mt-4 flex items-start justify-between gap-3 sm:block">
+                  <div className="mt-4 flex items-end justify-between gap-4 sm:block">
                     <div className="min-w-0">
                       {currentVariant ? (
                         <>
-                          <div className="text-[2rem] font-bold tracking-tight text-emerald-600 sm:text-3xl">
+                          <div className="text-[1.9rem] font-bold leading-none tracking-tight text-emerald-600 sm:text-3xl">
                             {currentPriceDisplay || "Price not available"}
                           </div>
-                          <div className="text-[13px] text-slate-500 sm:pb-0.5 sm:text-sm">
+                          <div className="mt-1 text-[12px] text-slate-500 sm:pb-0.5 sm:text-sm">
                             ({currentVariant.ram} / {currentVariant.storage})
                           </div>
                         </>
                       ) : null}
                     </div>
                     {headerSpecScoreBlock ? (
-                      <div className="shrink-0 sm:hidden">
+                      <div className="shrink-0 pb-0.5 sm:hidden">
                         {headerSpecScoreBlock}
                       </div>
                     ) : null}
                   </div>
                 ) : null}
 
-                <div className="mt-5 flex flex-col gap-3 xl:hidden">
-                  <div className="flex items-center gap-2">
+                <div className="mt-4 flex flex-col gap-3 xl:hidden">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
                     <button
                       onClick={toggleFavorite}
                       className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
@@ -5141,6 +5144,22 @@ Price: ${price}
                     >
                       <FaShareAlt className="text-lg text-slate-500" />
                     </button>
+                    </div>
+
+                    {hasLaunchDate ? (
+                      <div className="flex flex-wrap items-center justify-end gap-1 text-right text-[12px] text-slate-600 sm:text-sm">
+                        <span>
+                          Launched On:{" "}
+                          <span className="font-semibold text-slate-900">
+                            {launchDateParsed.toLocaleDateString("en-US", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </span>
+                        </span>
+                      </div>
+                    ) : null}
                   </div>
 
                   {headerSpecScoreBlock ? (
@@ -5149,20 +5168,19 @@ Price: ${price}
                     </div>
                   ) : null}
 
-                  {hasLaunchDate ? (
-                    <div className="flex flex-wrap items-center gap-2 text-[13px] text-slate-600 sm:text-sm">
-                      <span>
-                        Launched On:{" "}
-                        <span className="font-semibold text-slate-900">
-                          {launchDateParsed.toLocaleDateString("en-US", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          })}
-                        </span>
-                      </span>
-                    </div>
-                  ) : null}
+                  <button
+                    onClick={() => {
+                      if (compareTarget) {
+                        handlePopularCompare(compareTarget);
+                        return;
+                      }
+                      navigate("/compare");
+                    }}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-slate-800 sm:hidden"
+                  >
+                    <FaPlus className="text-sm" />
+                    Compare
+                  </button>
                 </div>
               </div>
 
@@ -5223,12 +5241,12 @@ Price: ${price}
             <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-500">
               Recommended Comparisons
             </p>
-            <h2 className="text-lg font-semibold tracking-tight text-slate-900">
+            <h2 className="text-base font-semibold tracking-tight text-slate-900 sm:text-lg">
               Compare with{" "}
               <span className="text-blue-600">{metaBrand || "this brand"}</span>{" "}
               devices
             </h2>
-            <p className="max-w-7xl text-sm leading-6 text-slate-500">
+            <p className="max-w-7xl text-[13px] leading-5 text-slate-500 sm:text-sm sm:leading-6">
               Explore popular alternatives and see how this model stacks up
               against other phones from the same brand.
             </p>

@@ -5450,9 +5450,13 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                         launchDateParsed &&
                         !Number.isNaN(launchDateParsed.getTime());
                       const allowSpecScore = devicePolicy.allowSpecScore;
-                      const scoreValueRaw = allowSpecScore
-                        ? Number(resolveSmartphoneBadgeScore(device))
+                      const resolvedScoreValue = allowSpecScore
+                        ? resolveSmartphoneBadgeScore(device)
                         : null;
+                      const scoreValueRaw =
+                        resolvedScoreValue == null
+                          ? null
+                          : Number(resolvedScoreValue);
                       const scoreValue = Number.isFinite(scoreValueRaw)
                         ? formatSmartphoneBadgeScore(scoreValueRaw)
                         : null;

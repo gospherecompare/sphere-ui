@@ -9,14 +9,18 @@ const resolveFirstScore = (...values) => {
   return null;
 };
 
-const resolveServerScore = (value, source) => {
+const resolveServerScore = (value, source, options = {}) => {
   if (value == null || value === "") return null;
   const normalized = normalizeScore100Value(value);
   if (normalized == null) return null;
 
+  const { requireSource = false } = options;
   const sourceKey = String(source || "")
     .trim()
     .toLowerCase();
+  if (requireSource && !sourceKey) {
+    return null;
+  }
   if (sourceKey.includes("fallback") || sourceKey.includes("unavailable")) {
     return null;
   }
@@ -28,15 +32,9 @@ export const resolveSmartphoneBadgeScore = (device) => {
   if (!device || typeof device !== "object") return null;
 
   const specSource = device?.spec_score_source ?? device?.specScoreSource;
-  const hookSource = device?.hook_score_source ?? device?.hookScoreSource;
-
   return resolveFirstScore(
     resolveServerScore(device?.spec_score, specSource),
     resolveServerScore(device?.specScore, specSource),
-    resolveServerScore(device?.hook_score, hookSource),
-    resolveServerScore(device?.hookScore, hookSource),
-    resolveServerScore(device?.Hookss_score, hookSource),
-    resolveServerScore(device?.HookssScore, hookSource),
   );
 };
 
