@@ -19,6 +19,8 @@ import {
 const NEWS_GRID_LIMIT = 50;
 const NEWS_MOBILE_QUERY = "(max-width: 639px)";
 const NEWS_HERO_ROTATE_MS = 5200;
+const NEWS_HERO_STORY_LIMIT = 5;
+const NEWS_HERO_LATEST_RATIO = 0.6;
 
 const NEWS_TOPICS = [
   { label: "Mobiles", matcher: (story) => isMobileStory(story) },
@@ -491,6 +493,36 @@ const scoreStory = (story, index) => {
   return priorityScore + recencyScore + mediaScore - index * 0.2;
 };
 
+const buildWeightedHeroStories = ({
+  latest = [],
+  pinned = [],
+  fallback = [],
+  limit = NEWS_HERO_STORY_LIMIT,
+} = {}) => {
+  const latestCount = Math.ceil(limit * NEWS_HERO_LATEST_RATIO);
+  const pinnedCount = Math.max(0, limit - latestCount);
+  const picked = [];
+  const used = new Set();
+
+  const pushStories = (source = [], count = limit) => {
+    for (const story of source) {
+      if (picked.length >= limit || count <= 0) break;
+      if (!story?.slug || used.has(story.slug)) continue;
+      used.add(story.slug);
+      picked.push(story);
+      count -= 1;
+    }
+  };
+
+  pushStories(latest, latestCount);
+  pushStories(pinned, pinnedCount);
+  pushStories(latest, limit - picked.length);
+  pushStories(pinned, limit - picked.length);
+  pushStories(fallback, limit - picked.length);
+
+  return picked;
+};
+
 const buildNewsLayout = (stories = []) => {
   const validStories = [...stories].filter(
     (story) => story?.slug && story?.title,
@@ -527,6 +559,7 @@ const buildNewsLayout = (stories = []) => {
         list.findIndex((item) => item.slug === story.slug) === index,
     )
     .slice(0, 8);
+  const pinned = recent.filter((story) => story.pinned).slice(0, 12);
   const launches = recent
     .filter((story) => getStoryBucket(story) === "launches")
     .slice(0, 12);
@@ -541,6 +574,7 @@ const buildNewsLayout = (stories = []) => {
 
   return {
     hero,
+    pinned,
     spotlight,
     topNews: topNews.length ? topNews : latest.slice(0, 9),
     reviews,
@@ -1347,12 +1381,11 @@ const NewsArticlesPage = () => {
   );
   const heroCarouselStories = useMemo(
     () =>
-      uniqueStoriesBySlug([
-        layout.hero,
-        ...layout.trending,
-        ...layout.latest,
-        ...layout.topNews,
-      ]).slice(0, 5),
+      buildWeightedHeroStories({
+        latest: layout.latest,
+        pinned: layout.pinned,
+        fallback: [layout.hero, ...layout.topNews],
+      }),
     [layout],
   );
   const pageTitle = getNewsPageTitle(taxonomyRoute);

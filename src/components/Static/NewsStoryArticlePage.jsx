@@ -271,6 +271,16 @@ const sanitizeArticleHtml = (value) => {
 const getStoryCategory = (story) =>
   stripMarkup(story?.label || story?.category || "News");
 
+const getRelatedStoryMetaLabel = (story) => {
+  const brandOrProduct = stripMarkup(story?.brandName || story?.productName);
+  if (brandOrProduct) return brandOrProduct;
+
+  const category = stripMarkup(story?.category).toLowerCase();
+  if (category === "launches") return "Launches";
+
+  return getStoryCategory(story);
+};
+
 const formatAbsoluteDate = (story) => {
   const date = parseStoryDate(story);
   if (!date) return story?.publishedAt || "Recent update";
@@ -794,16 +804,22 @@ const SidebarSection = ({ title, children }) => (
 const RelatedStoryTile = ({ story }) => (
   <Link
     to={createNewsStoryPath(story.slug)}
-    className="group overflow-hidden border border-[#e5e7eb] bg-white"
+    className="group flex min-w-0 items-stretch gap-3 overflow-hidden bg-white p-2 transition-colors hover:bg-[#f8fafc] sm:gap-4 sm:p-3"
   >
-    <StoryImage story={story} className="aspect-[4/3] w-full" />
+    <StoryImage
+      story={story}
+      className="h-24 w-28 shrink-0 rounded-md sm:h-28 sm:w-40"
+    />
 
-    <div className="bg-gradient-to-r from-[#1e293b] to-[#312e81] px-3 py-3">
-      <h3 className="line-clamp-3 text-[15px] font-semibold leading-5 text-white transition-colors group-hover:text-[#ddd6fe]">
+    <div className="min-w-0 flex-1 self-center py-1">
+      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#7c3aed] sm:text-[11px]">
+        {getRelatedStoryMetaLabel(story)} | {formatAbsoluteDate(story)}
+      </p>
+      <h3 className="mt-1.5 line-clamp-2 text-[15px] font-bold leading-5 text-[#18212f] transition-colors group-hover:text-[#2563eb] sm:text-[18px] sm:leading-6">
         {story.title}
       </h3>
-      <p className="mt-2 text-[11px] text-white/70">
-        {formatAbsoluteDate(story)}
+      <p className="mt-2 line-clamp-2 text-[12px] leading-5 text-[#667085] sm:text-[14px] sm:leading-6">
+        {clipDescription(story.summary || story.description || story.excerpt, 18)}
       </p>
     </div>
   </Link>
@@ -1289,7 +1305,7 @@ const NewsStoryArticlePage = () => {
                   <section className="mt-5 sm:mt-8">
                     <SectionTitle eyebrow="Related" title="Related News" />
 
-                    <div className="mt-4 grid grid-cols-2 gap-3 sm:mt-6 sm:grid-cols-4 sm:gap-4">
+                    <div className="mt-4 divide-y divide-[#e6ebf2] border-y border-[#e6ebf2] sm:mt-6">
                       {paginatedRelatedStories.map((item) => (
                         <RelatedStoryTile key={item.slug} story={item} />
                       ))}

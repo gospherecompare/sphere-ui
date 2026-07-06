@@ -62,13 +62,11 @@ import { smartphoneMeta } from "../../constants/meta";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
 import { buildCanonicalComparePath } from "../../utils/compareRoutes";
 import { createWebPageSchema } from "../../utils/schemaGenerators";
-import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import useStoreLogos from "../../hooks/useStoreLogos";
 import {
   createNewsStoryPath,
   usePublicNewsFeed,
 } from "../../hooks/usePublicNews";
-import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
 import {
   formatSmartphoneBadgeScore,
   resolveSmartphoneBadgeScore,
@@ -180,14 +178,6 @@ const normalizeScore100 = (value) => {
   if (n <= 1) return Math.max(0, Math.min(100, n * 100));
   if (n <= 10) return Math.max(0, Math.min(100, n * 10));
   return Math.max(0, Math.min(100, n));
-};
-
-const remapScoreToBand = (value, min = 80, max = 98) => {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return null;
-  const clamped = Math.max(0, Math.min(100, n));
-  const ratio = clamped / 100;
-  return min + (max - min) * ratio;
 };
 
 const toAbsoluteUrl = (url) => {
@@ -573,7 +563,6 @@ const MobileDetailCard = () => {
     smartphone,
     refreshDevices,
   } = useDevice();
-  const deviceFieldProfiles = useDeviceFieldProfiles();
   const { getLogo, getStore, getStoreLogo } = useStoreLogos();
   const navigate = useNavigate();
 
@@ -1600,12 +1589,6 @@ const MobileDetailCard = () => {
         : out.sensors || [];
 
     out.biometrics = d.biometrics || out.biometrics || {};
-    const profileResult = resolveDeviceFieldProfile(
-      "smartphone",
-      out,
-      deviceFieldProfiles,
-    );
-    out.field_profile = profileResult;
     const canShowSpecScore = isSpecScoreAllowed(out);
     if (!canShowSpecScore) {
       out.spec_score_v2_raw = null;
@@ -1798,7 +1781,7 @@ const MobileDetailCard = () => {
     return null;
   }, []);
   const buildScoreSummary = useCallback(
-    (deviceData, options = {}) => {
+    (deviceData) => {
       if (!deviceData) {
         return {
           overall: null,
@@ -1806,13 +1789,6 @@ const MobileDetailCard = () => {
           sections: [],
         };
       }
-
-      const {
-        allowProfileSectionFallback = true,
-        allowProfileOverallFallback = true,
-        allowSectionAverageFallback = true,
-        allowFallbackPersistedScores = true,
-      } = options;
 
       const normalizeScoreSource = (value) =>
         String(value || "")
@@ -1829,13 +1805,7 @@ const MobileDetailCard = () => {
         ) {
           return null;
         }
-        if (
-          !allowFallbackPersistedScores &&
-          sourceKey &&
-          sourceKey.includes("fallback")
-        ) {
-          return null;
-        }
+        if (sourceKey.includes("fallback")) return null;
 
         return normalized;
       };
@@ -1845,56 +1815,17 @@ const MobileDetailCard = () => {
         deviceData.ratings ||
         deviceData.rating_json ||
         {};
-      const specScoreV2Source =
-        deviceData.spec_score_v2_source ?? deviceData.specScoreV2Source;
-      const overallScoreV2Source =
-        deviceData.overall_score_v2_source ?? deviceData.overallScoreV2Source;
       const specScoreSource =
         deviceData.spec_score_source ?? deviceData.specScoreSource;
       const overallScoreSource =
         deviceData.overall_score_source ?? deviceData.overallScoreSource;
       const persistedSpecScore = pickScore100(
-        resolvePersistedScore(deviceData.spec_score_v2, specScoreV2Source),
-        resolvePersistedScore(deviceData.specScoreV2, specScoreV2Source),
         resolvePersistedScore(deviceData.spec_score, specScoreSource),
         resolvePersistedScore(deviceData.specScore, specScoreSource),
       );
       const persistedOverallScore = pickScore100(
-        resolvePersistedScore(
-          deviceData.overall_score_v2,
-          overallScoreV2Source,
-        ),
-        resolvePersistedScore(deviceData.overallScoreV2, overallScoreV2Source),
         resolvePersistedScore(deviceData.overall_score, overallScoreSource),
         resolvePersistedScore(deviceData.overallScore, overallScoreSource),
-      );
-      const persistedOverallScoreDisplay = pickScore100(
-        resolvePersistedScore(
-          deviceData.overall_score_v2_display_80_98,
-          overallScoreV2Source,
-        ),
-        resolvePersistedScore(
-          deviceData.overallScoreV2Display8098,
-          overallScoreV2Source,
-        ),
-        resolvePersistedScore(
-          deviceData.spec_score_v2_display_80_98,
-          specScoreV2Source,
-        ),
-        resolvePersistedScore(
-          deviceData.specScoreV2Display8098,
-          specScoreV2Source,
-        ),
-        resolvePersistedScore(deviceData.spec_score_display, specScoreSource),
-        resolvePersistedScore(deviceData.specScoreDisplay, specScoreSource),
-        resolvePersistedScore(
-          deviceData.overall_score_display,
-          overallScoreSource,
-        ),
-        resolvePersistedScore(
-          deviceData.overallScoreDisplay,
-          overallScoreSource,
-        ),
       );
 
       const sections = [
@@ -1908,9 +1839,6 @@ const MobileDetailCard = () => {
             deviceData.performance_json?.score,
             sphereRating?.performance?.score,
             sphereRating?.performance,
-            allowProfileSectionFallback
-              ? deviceData.field_profile?.section_scores?.core
-              : null,
           ),
         },
         {
@@ -1923,9 +1851,6 @@ const MobileDetailCard = () => {
             deviceData.display_json?.score,
             sphereRating?.display?.score,
             sphereRating?.display,
-            allowProfileSectionFallback
-              ? deviceData.field_profile?.section_scores?.display
-              : null,
           ),
         },
         {
@@ -1950,9 +1875,6 @@ const MobileDetailCard = () => {
             deviceData.battery_json?.score,
             sphereRating?.battery?.score,
             sphereRating?.battery,
-            allowProfileSectionFallback
-              ? deviceData.field_profile?.section_scores?.core
-              : null,
           ),
         },
         {
@@ -1973,29 +1895,14 @@ const MobileDetailCard = () => {
         },
       ];
 
-      const numericSectionScores = sections
-        .map((section) => section.score)
-        .filter((score) => Number.isFinite(score) && score > 0);
-      const sectionAverage =
-        numericSectionScores.length > 0
-          ? numericSectionScores.reduce((sum, score) => sum + score, 0) /
-            numericSectionScores.length
-          : null;
-
       const overall = pickScore100(
         persistedOverallScore,
         persistedSpecScore,
-        allowProfileOverallFallback ? deviceData.field_profile?.score : null,
-        allowSectionAverageFallback ? sectionAverage : null,
       );
-      const overallDisplay =
-        persistedOverallScoreDisplay != null
-          ? persistedOverallScoreDisplay
-          : remapScoreToBand(overall, 80, 98);
 
       return {
         overall,
-        overallDisplay,
+        overallDisplay: overall,
         sections,
       };
     },
@@ -2009,12 +1916,7 @@ const MobileDetailCard = () => {
         sections: [],
       };
     }
-    return buildScoreSummary(scoreSourceData, {
-      allowProfileSectionFallback: false,
-      allowProfileOverallFallback: false,
-      allowSectionAverageFallback: false,
-      allowFallbackPersistedScores: false,
-    });
+    return buildScoreSummary(scoreSourceData);
   }, [scoreSourceData, buildScoreSummary, allowSpecScore]);
   const getSectionScore = useCallback(
     (key) => {
@@ -2026,20 +1928,6 @@ const MobileDetailCard = () => {
     },
     [scoreSummary],
   );
-  const getSectionScoreDisplay = useCallback(
-    (key) => {
-      if (!allowSpecScore || !scoreSourceData) return null;
-      if (!key || key === "overall") {
-        return resolveSmartphoneBadgeScore(scoreSourceData);
-      }
-      const matched = scoreSummary.sections.find(
-        (section) => section.key === key,
-      );
-      return matched?.score ?? scoreSummary.overall;
-    },
-    [allowSpecScore, scoreSourceData, scoreSummary],
-  );
-
   const smartphoneTabTitle = mobileData?.name
     ? smartphoneMeta.title({
         name: mobileData?.name || mobileData?.model || "",

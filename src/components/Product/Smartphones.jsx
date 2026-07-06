@@ -47,8 +47,6 @@ import MobileListingControls, {
   MobileSortSheet,
 } from "../ui/MobileListingControls";
 import { generateSlug } from "../../utils/slugGenerator";
-import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
-import { resolveDeviceFieldProfile } from "../../utils/deviceFieldProfiles";
 import {
   formatSmartphoneBadgeScore,
   resolveSmartphoneBadgeScore,
@@ -289,7 +287,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   `;
 
   const deviceContext = useDevice();
-  const deviceFieldProfiles = useDeviceFieldProfiles();
   const { smartphone, smartphoneAll } = deviceContext || {};
   const location = useLocation();
   const navigate = useNavigate();
@@ -1041,12 +1038,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     // pick: choose first non-null, non-empty value
     const pick = (...vals) =>
       vals.find((v) => v != null && String(v).trim() !== "");
-    const profileResult = resolveDeviceFieldProfile(
-      "smartphone",
-      apiDevice,
-      deviceFieldProfiles,
-    );
-    const profileDisplay = profileResult.display_display || {};
+    const profileDisplay = {};
 
     // If this device already looks normalized (from Redux), return as-is to avoid double-normalization
     if (
@@ -1843,7 +1835,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       ),
       storePrices: storePrices,
       variants: variants,
-      field_profile: profileResult,
     };
     baseDevice.launchStatus = resolveLaunchStage(baseDevice);
     baseDevice.saleStatus = resolveSaleStage(baseDevice);
