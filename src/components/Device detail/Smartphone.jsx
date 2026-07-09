@@ -451,7 +451,7 @@ const formatLinkedNewsDate = (value) => {
   return `${month} ${day}, '${year}`;
 };
 
-const LinkedNewsStoryCard = ({ story, compact = false }) => {
+const LinkedNewsStoryCard = ({ story }) => {
   if (!story?.slug || !story?.title) return null;
 
   const storyPath = createNewsStoryPath(story.slug);
@@ -464,15 +464,12 @@ const LinkedNewsStoryCard = ({ story, compact = false }) => {
   const dateLabel = formatLinkedNewsDate(
     story?.publishedIso || story?.updatedIso || story?.publishedAt,
   );
-  const baseCardClass = compact
-    ? "group grid h-full gap-3 rounded-[22px] border border-white/80 bg-white/90 p-3 transition-all duration-200 hover:-translate-y-0.5 sm:grid-cols-[96px,1fr]"
-    : "group flex h-full flex-col rounded-[24px] border border-[#e8edfb] bg-white p-3 transition-all duration-200 hover:-translate-y-0.5";
-  const imageWrapClass = compact
-    ? "aspect-[6/5] overflow-hidden rounded-[16px] border border-[#edf1fc] bg-[#eef2ff] sm:h-full"
-    : "aspect-[5/3] overflow-hidden rounded-[16px] border border-[#edf1fc] bg-[#eef2ff]";
-  const titleClass = compact
-    ? "text-[0.98rem] leading-6 text-[#082a72] line-clamp-3"
-    : "text-[1.15rem] leading-8 text-[#082a72] line-clamp-3";
+  const baseCardClass =
+    "group flex h-full w-full flex-col overflow-hidden rounded-[20px] border border-[#dde6fb] bg-white shadow-[0_10px_28px_rgba(28,45,98,0.08)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#c9d7fb] hover:shadow-[0_18px_44px_rgba(28,45,98,0.14)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3557d3]";
+  const imageWrapClass =
+    "relative aspect-[16/9] overflow-hidden bg-[#f6f8ff]";
+  const titleClass =
+    "text-[0.98rem] leading-6 text-[#082a72] line-clamp-2 sm:text-[1.03rem] sm:leading-7";
 
   return (
     <Link to={storyPath} className={baseCardClass}>
@@ -482,7 +479,7 @@ const LinkedNewsStoryCard = ({ story, compact = false }) => {
             src={story.image}
             alt={story?.heroImageAlt || story.title}
             loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            className="h-full w-full scale-[1.04] object-cover object-center transition-transform duration-300 group-hover:scale-[1.08]"
           />
         ) : (
           <div className="flex h-full items-end bg-gradient-to-br from-[#ed174c] via-[#f35b4f] to-[#f7b267] p-4 text-white">
@@ -498,42 +495,20 @@ const LinkedNewsStoryCard = ({ story, compact = false }) => {
         )}
       </div>
 
-      <div
-        className={
-          compact
-            ? "min-w-0 self-stretch py-1"
-            : "flex flex-1 flex-col px-1 pb-1 pt-4"
-        }
-      >
-        {!compact ? (
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#5f74c6]">
-            {story?.label || "News"}
-          </p>
-        ) : null}
-
+      <div className="flex flex-1 flex-col px-4 pb-4 pt-3">
         <h3
-          className={`font-bold transition-colors group-hover:text-[#3557d3] ${titleClass} ${
-            compact ? "" : "mt-2"
-          }`}
+          className={`font-bold transition-colors group-hover:text-[#3557d3] ${titleClass}`}
         >
           {story.title}
         </h3>
 
         {linkedProductsLabel ? (
-          <p
-            className={`mt-2 line-clamp-2 text-[12px] font-medium text-[#5f6d8f] ${
-              compact ? "" : "max-w-[28rem]"
-            }`}
-          >
+          <p className="mt-2 line-clamp-2 max-w-[28rem] text-[12px] font-medium text-[#5f6d8f]">
             Linked products: {linkedProductsLabel}
           </p>
         ) : null}
 
-        <div
-          className={`flex items-center justify-between gap-3 text-[13px] ${
-            compact ? "mt-3" : "mt-auto pt-5"
-          }`}
-        >
+        <div className="mt-auto flex items-center justify-between gap-3 border-t border-[#eef2fb] pt-3 text-[12px]">
           <span className="min-w-0 truncate font-medium text-[#946739]">
             {authorLabel}
           </span>
@@ -2088,11 +2063,13 @@ const MobileDetailCard = () => {
       );
     });
   }, [currentProductId, linkedNewsStories]);
-  const linkedNewsHeroStory = exactLinkedNewsStories[0] || null;
-  const linkedNewsSecondaryStories = exactLinkedNewsStories.slice(1, 3);
+  const linkedNewsDisplayStories = exactLinkedNewsStories.slice(
+    0,
+    LINKED_NEWS_LIMIT,
+  );
   const linkedNewsHeading =
     mobileData?.name || mobileData?.model || "Smartphone";
-  const shouldShowLinkedNews = exactLinkedNewsStories.length > 0;
+  const shouldShowLinkedNews = linkedNewsDisplayStories.length > 0;
   const currentVariantStoreRows = useMemo(() => {
     const variantRows = getRenderableStorePriceRows(currentVariant);
     if (variantRows.length > 0) return variantRows;
@@ -5693,7 +5670,7 @@ Price: ${price}
                     multi-product stories linked to more than one device.
                   </p>
                 </div>
-                {linkedNewsSecondaryStories.length > 0 ? (
+                {linkedNewsDisplayStories.length > 1 ? (
                   <div className="inline-flex items-center rounded-full border border-white/80 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[#6373a0]">
                     {exactLinkedNewsStories.length} Linked News
                   </div>
@@ -5701,24 +5678,16 @@ Price: ${price}
               </div>
               <div className="mt-5 h-px w-full bg-[#cfd8f1]" />
 
-              {linkedNewsHeroStory ? (
-                <div className="mt-6 grid items-start gap-4 xl:grid-cols-[264px,minmax(0,1fr)]">
-                  <div className="max-w-[264px]">
-                    <LinkedNewsStoryCard story={linkedNewsHeroStory} />
+              <div className="no-scrollbar mt-6 flex snap-x snap-mandatory flex-nowrap items-stretch gap-4 overflow-x-auto pb-2 pr-6">
+                {linkedNewsDisplayStories.map((story) => (
+                  <div
+                    key={story.slug}
+                    className="w-[min(76vw,264px)] shrink-0 snap-start sm:w-[264px] lg:w-[280px]"
+                  >
+                    <LinkedNewsStoryCard story={story} />
                   </div>
-                  {linkedNewsSecondaryStories.length > 0 ? (
-                    <div className="grid gap-4 sm:grid-cols-2 xl:max-w-[420px]">
-                      {linkedNewsSecondaryStories.map((story) => (
-                        <LinkedNewsStoryCard
-                          key={story.slug}
-                          story={story}
-                          compact={true}
-                        />
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
+                ))}
+              </div>
 
               <div className="mt-8 flex justify-center">
                 <Link

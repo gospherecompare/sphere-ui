@@ -7,9 +7,11 @@ import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import {
   createAboutPageSchema,
+  createBreadcrumbSchema,
   createCollectionSchema,
   createContactPageSchema,
   createItemListSchema,
+  createNewsArticleSchema,
   createProductSchema,
   createWebApplicationSchema,
   createWebPageSchema,
@@ -72,6 +74,7 @@ const ENABLE_PUPPETEER_PRERENDER =
     .toLowerCase() === "true";
 const MAX_DETAIL_ROUTES_PER_CATEGORY = 1000;
 const MAX_COMPARE_ROUTES = 300;
+const MAX_NEWS_ROUTES = 50;
 const POPULAR_COMPARISON_PRELOAD_ROWS = 12;
 const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
 const SMARTPHONE_LIST_SLUGS = new Set(["upcoming"]);
@@ -212,6 +215,7 @@ const BUDGET_PHONE_KEYWORDS =
   "budget phones under 10000, budget phones under 15000, budget phones under 20000, budget phones under 30000, budget phones under 50000";
 const DEFAULT_SEO_KEYWORDS = `hook, best gadget comparison site, mobile price comparison india, moblie price comparison india, compare laptops smartphones tvs, compare smartphone tv laptops, compare specs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch phones, trending phone in india, most popular mobiles, top selling gadgets india, 5g phones in india, ai phones in india, ${BUDGET_PHONE_KEYWORDS}, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, gaming laptops india, student laptops india, laptop comparison india, vacuum cooler laptop and phone, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000, smart tv comparison india`;
 let publishedCompareRouteMeta = new Map();
+let publishedNewsRouteMeta = new Map();
 const STATIC_PRERENDER_ROUTES = [
   "/",
   "/news",
@@ -906,7 +910,13 @@ const fetchRouteSpecificPreloadedPayload = async (
   }
 
   if (canonicalPath.startsWith("/news/")) {
-    return null;
+    const newsSlug = getNewsSlugFromPath(canonicalPath);
+    if (!newsSlug) return null;
+
+    return fetchPayloadForEndpoints([
+      buildNewsStoryEndpoint(newsSlug),
+      `${API_BASE_URL}/public/blogs?limit=18`,
+    ]);
   }
 
   if (canonicalPath === "/popular-comparisons") {
@@ -1031,6 +1041,42 @@ const fetchCompareRoutesFromApi = async () => {
       title: String(row?.title || "").trim(),
       description: String(row?.meta_description || "").trim(),
       updatedAt: row?.updated_at || null,
+    });
+    routes.push(routePath);
+  }
+
+  return [...new Set(routes)];
+};
+
+const getNewsSlugFromPath = (canonicalPath = "") => {
+  const match = String(canonicalPath || "").match(/^\/news\/([^/]+)\/?$/i);
+  if (!match) return "";
+
+  try {
+    return decodeURIComponent(match[1]).trim().toLowerCase();
+  } catch {
+    return String(match[1] || "").trim().toLowerCase();
+  }
+};
+
+const buildNewsStoryEndpoint = (slug = "") =>
+  `${API_BASE_URL}/public/blogs/${encodeURIComponent(String(slug || "").trim())}`;
+
+const fetchNewsRoutesFromApi = async () => {
+  publishedNewsRouteMeta = new Map();
+  const body = await fetchApiBody(`${API_BASE_URL}/public/blogs?limit=${MAX_NEWS_ROUTES}`);
+  const rows = parseApiRows(body, ["blogs"]);
+  const routes = [];
+
+  for (const row of rows) {
+    if (routes.length >= MAX_NEWS_ROUTES) break;
+    const slug = String(row?.slug || "").trim().toLowerCase();
+    if (!slug) continue;
+    const routePath = normalizePath(`/news/${slug}`);
+    publishedNewsRouteMeta.set(routePath, {
+      title: String(row?.title || row?.meta_title || "").trim(),
+      publishedAt: row?.published_at || row?.updated_at || null,
+      updatedAt: row?.updated_at || row?.published_at || null,
     });
     routes.push(routePath);
   }
@@ -1321,10 +1367,6 @@ const filterValidPrerenderRoutes = async (routes = []) => {
         return publishedCompareRouteMeta.has(routePath) ? routePath : null;
       }
 
-      if (routePath.startsWith("/news/")) {
-        return null;
-      }
-
       return routePath;
     }),
   );
@@ -1336,6 +1378,7 @@ const getPrerenderRoutes = async () => {
   const sitemapRoutes = routesFromSitemap();
   const detailRoutes = await fetchDetailRoutesFromApi();
   const compareRoutes = await fetchCompareRoutesFromApi();
+  const newsRoutes = await fetchNewsRoutesFromApi();
   const smartphoneListingRoutes = await fetchSmartphoneListingRoutesFromApi();
   const tvListingRoutes = await fetchTvListingRoutesFromApi();
   return filterValidPrerenderRoutes([
@@ -1345,6 +1388,7 @@ const getPrerenderRoutes = async () => {
       ...sitemapRoutes,
       ...detailRoutes,
       ...compareRoutes,
+      ...newsRoutes,
       ...smartphoneListingRoutes,
       ...tvListingRoutes,
     ]),
@@ -1363,6 +1407,13 @@ const shouldIncludeInSitemap = (routePath = "/") => {
   if (!normalized) return false;
   return !NOINDEX_SITEMAP_PATHS.has(normalized);
 };
+
+const escapeSitemapXml = (value = "") =>
+  String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 
 const buildSitemapXml = (routes = []) => {
   const today = new Date().toISOString().slice(0, 10);
@@ -1388,13 +1439,45 @@ const buildSitemapXml = (routes = []) => {
         routePath.startsWith("/smartphones/") ||
         routePath.startsWith("/laptops/") ||
         routePath.startsWith("/tvs/") ||
-        routePath.startsWith("/networking/");
+        routePath.startsWith("/networking/") ||
+        routePath.startsWith("/news/");
       const priority = routePath === "/" ? "1.0" : isDetailPage ? "0.8" : "0.7";
       return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>${priority}</priority>\n  </url>`;
     })
     .join("\n");
 
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
+};
+
+const buildNewsSitemapXml = () => {
+  const now = Date.now();
+  const twoDaysMs = 2 * 24 * 60 * 60 * 1000;
+  const entries = [...publishedNewsRouteMeta.entries()]
+    .map(([routePath, meta]) => {
+      const publishedTime = new Date(meta?.publishedAt || meta?.updatedAt || "");
+      if (Number.isNaN(publishedTime.getTime())) return null;
+      if (now - publishedTime.getTime() > twoDaysMs) return null;
+
+      const title = String(meta?.title || "").trim();
+      if (!title) return null;
+
+      return {
+        loc: toCanonicalPageUrl(routePath, SITE_ORIGIN),
+        title,
+        publishedAt: publishedTime.toISOString(),
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 1000);
+
+  const urls = entries
+    .map(
+      (entry) =>
+        `  <url>\n    <loc>${escapeSitemapXml(entry.loc)}</loc>\n    <news:news>\n      <news:publication>\n        <news:name>Hooks</news:name>\n        <news:language>en</news:language>\n      </news:publication>\n      <news:publication_date>${escapeSitemapXml(entry.publishedAt)}</news:publication_date>\n      <news:title>${escapeSitemapXml(entry.title)}</news:title>\n    </news:news>\n  </url>`,
+    )
+    .join("\n");
+
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">\n${urls}\n</urlset>\n`;
 };
 
 const writeSitemapFile = (outputPath, routes = []) => {
@@ -1407,6 +1490,16 @@ const writeSitemapFile = (outputPath, routes = []) => {
 const syncPublicSitemap = (routes = []) =>
   writeSitemapFile(path.join(__dirname, "public", "sitemap.xml"), routes);
 
+const writeNewsSitemapFile = (outputPath) => {
+  const xml = buildNewsSitemapXml();
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+  fs.writeFileSync(outputPath, xml, "utf8");
+  return outputPath;
+};
+
+const syncPublicNewsSitemap = () =>
+  writeNewsSitemapFile(path.join(__dirname, "public", "news-sitemap.xml"));
+
 const createSitemapPlugin = (routes = []) => ({
   name: "hook-generate-sitemap",
   apply: "build",
@@ -1415,6 +1508,17 @@ const createSitemapPlugin = (routes = []) => ({
     const outputPath = path.join(outputDir, "sitemap.xml");
     writeSitemapFile(outputPath, routes);
     console.log(`[sitemap] Generated ${outputPath}`);
+  },
+});
+
+const createNewsSitemapPlugin = () => ({
+  name: "hook-generate-news-sitemap",
+  apply: "build",
+  closeBundle() {
+    const outputDir = path.join(__dirname, "dist");
+    const outputPath = path.join(outputDir, "news-sitemap.xml");
+    writeNewsSitemapFile(outputPath);
+    console.log(`[news-sitemap] Generated ${outputPath}`);
   },
 });
 
@@ -1742,12 +1846,102 @@ const resolveSeo = (routePath) => {
   };
 };
 
+const stripMarkupForSeo = (value = "") =>
+  String(value || "")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const clipSeoText = (value = "", maxLength = 160) => {
+  const text = stripMarkupForSeo(value);
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, Math.max(0, maxLength - 3)).replace(/\s+\S*$/, "")}...`;
+};
+
+const getNewsArticleFromPayload = (canonicalPath = "", preloadedApiPayload) => {
+  const slug = getNewsSlugFromPath(canonicalPath);
+  if (!slug) return null;
+  return preloadedApiPayload?.byUrl?.[buildNewsStoryEndpoint(slug)]?.blog || null;
+};
+
+const getNewsArticleSeo = (canonicalPath = "", preloadedApiPayload) => {
+  const blog = getNewsArticleFromPayload(canonicalPath, preloadedApiPayload);
+  if (!blog) return null;
+
+  const title = stripMarkupForSeo(blog.meta_title || blog.title || "");
+  if (!title) return null;
+
+  const description =
+    clipSeoText(
+      blog.meta_description ||
+        blog.excerpt ||
+        blog.content_rendered ||
+        `${title} from the Hooks news desk.`,
+      170,
+    ) || `${title} from the Hooks news desk.`;
+
+  const tags = Array.isArray(blog.tags)
+    ? blog.tags
+    : String(blog.tags || "")
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean);
+
+  return {
+    blog,
+    title: `${title} - Hooks`,
+    headline: title,
+    description,
+    image: blog.hero_image || `${SITE_ORIGIN}/hook-logo.png`,
+    authorName: stripMarkupForSeo(blog.author_name || "Hooks News"),
+    articleSection: stripMarkupForSeo(blog.category || "News"),
+    keywords: [
+      blog.category,
+      blog.product_name,
+      blog.brand_name,
+      ...(tags || []),
+    ].filter(Boolean),
+    datePublished: blog.published_at || blog.updated_at || undefined,
+    dateModified: blog.updated_at || blog.published_at || undefined,
+  };
+};
+
 const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
   const seo = resolveSeo(routePath);
   const canonicalPath = seo.canonicalPath;
   const canonicalUrl = toCanonicalPageUrl(canonicalPath, SITE_ORIGIN);
 
   if (canonicalPath === "/") return [];
+
+  const newsArticleSeo = getNewsArticleSeo(canonicalPath, preloadedApiPayload);
+  if (newsArticleSeo) {
+    return [
+      createBreadcrumbSchema([
+        { label: "Home", url: SITE_ORIGIN },
+        { label: "News", url: toCanonicalPageUrl("/news", SITE_ORIGIN) },
+        { label: newsArticleSeo.headline, url: canonicalUrl },
+      ]),
+      createNewsArticleSchema({
+        headline: newsArticleSeo.headline,
+        description: newsArticleSeo.description,
+        url: canonicalUrl,
+        image: newsArticleSeo.image,
+        datePublished: newsArticleSeo.datePublished,
+        dateModified: newsArticleSeo.dateModified,
+        authorName: newsArticleSeo.authorName,
+        articleSection: newsArticleSeo.articleSection,
+        keywords: newsArticleSeo.keywords,
+      }),
+    ];
+  }
 
   const smartphoneDetailName = getSmartphoneDetailName(canonicalPath);
   if (smartphoneDetailName) {
@@ -2134,9 +2328,114 @@ const applySeoToHtml = (html, routePath) => {
   return next;
 };
 
+const applyNewsArticleSeoToHtml = (html, routePath, preloadedApiPayload) => {
+  const canonicalPath = toCanonicalPath(normalizePath(routePath || "/"));
+  const articleSeo = getNewsArticleSeo(canonicalPath, preloadedApiPayload);
+  if (!articleSeo) return html;
+
+  const canonicalUrl = toCanonicalPageUrl(canonicalPath, SITE_ORIGIN);
+  let next = html;
+
+  next = next.replace(
+    /<title>[\s\S]*?<\/title>/i,
+    `<title>${escapeHtml(articleSeo.title)}</title>`,
+  );
+  next = replaceMetaTag(
+    next,
+    /<meta\s+name=["']description["'][^>]*>/i,
+    `<meta name="description" content="${escapeHtml(articleSeo.description)}">`,
+  );
+  next = replaceMetaTag(
+    next,
+    /<meta\s+name=["']robots["'][^>]*>/i,
+    `<meta name="robots" content="index, follow">`,
+  );
+  next = replaceMetaTag(
+    next,
+    /<link\s+rel=["']canonical["'][^>]*>/i,
+    `<link rel="canonical" href="${escapeHtml(canonicalUrl)}">`,
+  );
+  next = replaceMetaTag(
+    next,
+    /<meta\s+property=["']og:type["'][^>]*>/i,
+    '<meta property="og:type" content="article">',
+  );
+  next = replaceMetaTag(
+    next,
+    /<meta\s+property=["']og:title["'][^>]*>/i,
+    `<meta property="og:title" content="${escapeHtml(articleSeo.title)}">`,
+  );
+  next = replaceMetaTag(
+    next,
+    /<meta\s+property=["']og:description["'][^>]*>/i,
+    `<meta property="og:description" content="${escapeHtml(articleSeo.description)}">`,
+  );
+  next = replaceMetaTag(
+    next,
+    /<meta\s+property=["']og:url["'][^>]*>/i,
+    `<meta property="og:url" content="${escapeHtml(canonicalUrl)}">`,
+  );
+  next = replaceMetaTag(
+    next,
+    /<meta\s+property=["']og:image["'][^>]*>/i,
+    `<meta property="og:image" content="${escapeHtml(articleSeo.image)}">`,
+  );
+  next = replaceMetaTag(
+    next,
+    /<meta\s+name=["']twitter:title["'][^>]*>/i,
+    `<meta name="twitter:title" content="${escapeHtml(articleSeo.title)}">`,
+  );
+  next = replaceMetaTag(
+    next,
+    /<meta\s+name=["']twitter:description["'][^>]*>/i,
+    `<meta name="twitter:description" content="${escapeHtml(articleSeo.description)}">`,
+  );
+  next = replaceMetaTag(
+    next,
+    /<meta\s+name=["']twitter:image["'][^>]*>/i,
+    `<meta name="twitter:image" content="${escapeHtml(articleSeo.image)}">`,
+  );
+
+  if (articleSeo.datePublished) {
+    next = replaceMetaTag(
+      next,
+      /<meta\s+property=["']article:published_time["'][^>]*>/i,
+      `<meta property="article:published_time" content="${escapeHtml(articleSeo.datePublished)}">`,
+    );
+  }
+  if (articleSeo.dateModified) {
+    next = replaceMetaTag(
+      next,
+      /<meta\s+property=["']article:modified_time["'][^>]*>/i,
+      `<meta property="article:modified_time" content="${escapeHtml(articleSeo.dateModified)}">`,
+    );
+  }
+  if (articleSeo.authorName) {
+    next = replaceMetaTag(
+      next,
+      /<meta\s+property=["']article:author["'][^>]*>/i,
+      `<meta property="article:author" content="${escapeHtml(articleSeo.authorName)}">`,
+    );
+  }
+  if (articleSeo.articleSection) {
+    next = replaceMetaTag(
+      next,
+      /<meta\s+property=["']article:section["'][^>]*>/i,
+      `<meta property="article:section" content="${escapeHtml(articleSeo.articleSection)}">`,
+    );
+  }
+
+  return next;
+};
+
 const processRouteHtml = (html, routePath, preloadedApiPayload) => {
   const normalizedRoute = normalizePath(routePath || "/");
   let nextHtml = applySeoToHtml(html, normalizedRoute);
+  nextHtml = applyNewsArticleSeoToHtml(
+    nextHtml,
+    normalizedRoute,
+    preloadedApiPayload,
+  );
   nextHtml = injectStructuredData(
     nextHtml,
     normalizedRoute,
@@ -2175,6 +2474,7 @@ const usesSharedPreloadedPayload = (canonicalPath = "/") =>
 export default defineConfig(async () => {
   const prerenderRoutes = await getPrerenderRoutes();
   syncPublicSitemap(prerenderRoutes);
+  syncPublicNewsSitemap();
   const sharedPreloadedApiPayload = await fetchPreloadedApiPayload();
   const detailWidgetContextMap = buildDetailWidgetContextMap(
     sharedPreloadedApiPayload,
@@ -2256,6 +2556,7 @@ export default defineConfig(async () => {
         processHtml,
       }),
       createSitemapPlugin(prerenderRoutes),
+      createNewsSitemapPlugin(),
     ],
     server: {
       port: 3000,

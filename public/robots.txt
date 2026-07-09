@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://tryhook.shop/sitemap.xml
+Sitemap: https://tryhook.shop/news-sitemap.xml

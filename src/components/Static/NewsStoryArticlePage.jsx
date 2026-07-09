@@ -1202,9 +1202,6 @@ const NewsStoryArticlePage = () => {
                 description={articleDescription}
                 url={canonicalUrl}
               />
-              <div className="mt-4">
-                <GooglePreferredSourceButton />
-              </div>
             </div>
           </div>
         </section>
@@ -1230,7 +1227,7 @@ const NewsStoryArticlePage = () => {
                     eager
                     className="aspect-[16/10] w-full rounded-sm border border-[#e5e7eb] sm:aspect-[16/9]"
                   />
-                  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-[#e5eaf0] pb-4 text-[10px] font-semibold uppercase tracking-[0.13em] text-[#64748b] sm:gap-x-4 sm:text-[11px] sm:tracking-[0.14em]">
+                  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-[10px] font-semibold uppercase tracking-[0.13em] text-[#64748b] sm:gap-x-4 sm:text-[11px] sm:tracking-[0.14em]">
                     <span className="inline-flex rounded-full bg-[#f1f5f9] px-3 py-1.5 text-[#334155]">
                       {story.readTime}
                     </span>
@@ -1250,6 +1247,9 @@ const NewsStoryArticlePage = () => {
                         Image credits: {imageCredit}
                       </span>
                     ) : null}
+                  </div>
+                  <div className="mt-4 border-t border-[#e5eaf0] pt-4">
+                    <GooglePreferredSourceButton variant="article" />
                   </div>
                 </div>
 
