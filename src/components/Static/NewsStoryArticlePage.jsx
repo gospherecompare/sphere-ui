@@ -21,6 +21,8 @@ import {
   usePublicNewsFeed,
   usePublicNewsStory,
 } from "../../hooks/usePublicNews";
+import GoogleSwgBasic from "../News/GoogleSwgBasic";
+import GooglePreferredSourceButton from "../News/GooglePreferredSourceButton";
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -1136,6 +1138,7 @@ const NewsStoryArticlePage = () => {
         image={story.image}
         schema={schema}
       />
+      <GoogleSwgBasic />
 
       <main className="min-h-screen bg-white text-[#111111]">
         <section className="bg-white">
@@ -1199,6 +1202,9 @@ const NewsStoryArticlePage = () => {
                 description={articleDescription}
                 url={canonicalUrl}
               />
+              <div className="mt-4">
+                <GooglePreferredSourceButton />
+              </div>
             </div>
           </div>
         </section>

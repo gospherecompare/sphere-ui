@@ -15,6 +15,7 @@ import {
   usePublicNewsFeed,
   useStoryListSchemaItems,
 } from "../../hooks/usePublicNews";
+import GooglePreferredSourceButton from "../News/GooglePreferredSourceButton";
 
 const NEWS_GRID_LIMIT = 50;
 const NEWS_MOBILE_QUERY = "(max-width: 639px)";
@@ -1525,6 +1526,7 @@ const NewsArticlesPage = () => {
               </div>
 
               <aside className="min-w-0 space-y-5 xl:sticky xl:top-6">
+                <GooglePreferredSourceButton panel compact />
                 <SideList title="Trending" stories={display.trendingSide} />
                 <SideList title="Recent" stories={display.recentSide} />
                 <LatestLaunches stories={display.launchSide} />
