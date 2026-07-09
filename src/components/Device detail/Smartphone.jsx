@@ -5670,11 +5670,6 @@ Price: ${price}
                     multi-product stories linked to more than one device.
                   </p>
                 </div>
-                {linkedNewsDisplayStories.length > 1 ? (
-                  <div className="inline-flex items-center rounded-full border border-white/80 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[#6373a0]">
-                    {exactLinkedNewsStories.length} Linked News
-                  </div>
-                ) : null}
               </div>
               <div className="mt-5 h-px w-full bg-[#cfd8f1]" />
 
