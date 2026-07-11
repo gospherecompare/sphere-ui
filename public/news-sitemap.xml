@@ -1,5 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
-
+  <url>
+    <loc>https://tryhook.shop/news/realme-narzo-100x-5g-confirmed-to-launch-in-india-on-july-15-with-8000mah-battery/</loc>
+    <news:news>
+      <news:publication>
+        <news:name>Hooks</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2026-07-11T09:43:00.000Z</news:publication_date>
+      <news:title>Realme Narzo 100x 5G Confirmed to Launch in India on July 15 with 8000mAh Battery</news:title>
+    </news:news>
+  </url>
+  <url>
+    <loc>https://tryhook.shop/news/motorola-edge-70-max-set-to-launch-in-india-on-july-15-with-snapdragon-8-gen-5/</loc>
+    <news:news>
+      <news:publication>
+        <news:name>Hooks</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2026-07-10T21:42:00.000Z</news:publication_date>
+      <news:title>Motorola Edge 70 Max Set to Launch in India on July 15 with Snapdragon 8 Gen 5</news:title>
+    </news:news>
+  </url>
+  <url>
+    <loc>https://tryhook.shop/news/iqoo-z11-lite-india-launch-confirmed-for-july-24-dimensity-6300-and-ai-features-teased/</loc>
+    <news:news>
+      <news:publication>
+        <news:name>Hooks</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2026-07-09T16:01:00.000Z</news:publication_date>
+      <news:title>iQOO Z11 Lite India launch confirmed for July 24 Dimensity 6300 and AI features teased</news:title>
+    </news:news>
+  </url>
 </urlset>
