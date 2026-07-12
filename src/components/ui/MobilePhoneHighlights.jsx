@@ -301,7 +301,9 @@ const MobilePhoneHighlights = ({
   const rows = serverRows.length > 0 ? serverRows : fallbackRows;
   const mobileRows = rows.slice(0, 2);
   const highlightTitle =
-    context === "latest"
+    context === "upcoming"
+      ? "Upcoming Mobile Phones in India"
+      : context === "latest"
       ? "Latest Mobile Phones in India"
       : "Mobile Phone Highlights in India";
 

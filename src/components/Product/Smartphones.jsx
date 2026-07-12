@@ -170,7 +170,12 @@ const compareMemoryFilterLabels = (a, b) => {
 };
 
 // Enhanced Image Carousel - Simplified without counts/indicators
-const ImageCarousel = ({ images = [] }) => {
+const ImageCarousel = ({
+  images = [],
+  fallbackTitle = "Official teaser pending",
+  fallbackSubtitle = "Image coming soon",
+  fallbackLogo = "",
+}) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const imageFrameClass =
     "h-44 w-32 sm:h-48 sm:w-32 lg:h-52 lg:w-36 rounded-2xl bg-gray-100 overflow-hidden flex items-center justify-center";
@@ -184,12 +189,28 @@ const ImageCarousel = ({ images = [] }) => {
   if (!images || images.length === 0) {
     return (
       <div className="relative flex h-full w-full items-center justify-center">
-        <div className={imageFrameClass}>
-          <div className="text-center px-3">
-            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-200">
-              <FaMobileAlt className="text-gray-400 text-sm" />
+        <div
+          className={`${imageFrameClass} border border-slate-100 bg-gradient-to-br from-slate-50 via-white to-blue-50`}
+        >
+          <div className="px-3 text-center">
+            <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-blue-100">
+              {fallbackLogo ? (
+                <img
+                  src={fallbackLogo}
+                  alt=""
+                  className="h-7 w-7 object-contain"
+                  loading="lazy"
+                />
+              ) : (
+                <FaMobileAlt className="text-blue-500 text-sm" />
+              )}
             </div>
-            <span className="text-xs text-gray-500">No image</span>
+            <span className="block text-[11px] font-semibold text-slate-600">
+              {fallbackTitle}
+            </span>
+            <span className="mt-1 block text-[10px] text-slate-400">
+              {fallbackSubtitle}
+            </span>
           </div>
         </div>
       </div>
@@ -870,6 +891,65 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     return "none";
   };
 
+  const formatLaunchDate = (date) =>
+    date
+      ? date.toLocaleDateString("en-US", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+      : "";
+
+  const resolveLaunchDateLabel = (device, launchDate) => {
+    const typeText = String(
+      device?.launchDateType ||
+        device?.launch_date_type ||
+        device?.launchStatus ||
+        device?.launch_status ||
+        "",
+    ).toLowerCase();
+    if (/confirm|official|announc/.test(typeText)) return "Launch date";
+    if (/rumou?r|estimate|expect|predict/.test(typeText))
+      return "Expected launch";
+    return "Launch date";
+  };
+
+  const resolveUpcomingExpectedPriceMeta = (device) => {
+    const numeric = extractNumericPrice(
+      device?.expected_price ||
+        device?.expectedPrice ||
+        device?.manual_expected_price ||
+        device?.manualExpectedPrice,
+    );
+    const source = String(
+      device?.expected_price_source || device?.expectedPriceSource || "",
+    )
+      .trim()
+      .toLowerCase();
+    return { numeric, source };
+  };
+
+  const resolveUpcomingPriceLabel = (device, fallbackNumericPrice = 0) => {
+    const originalNumeric =
+      extractNumericPrice(
+        device?.original_price ||
+          device?.originalPrice ||
+          device?.starting_price ||
+          device?.startingPrice ||
+          device?.price,
+      ) || fallbackNumericPrice;
+    if (originalNumeric > 0) {
+      return `₹ ${originalNumeric.toLocaleString("en-IN")}`;
+    }
+
+    const expected = resolveUpcomingExpectedPriceMeta(device);
+    if (expected.numeric > 0) {
+      return `₹ ${expected.numeric.toLocaleString("en-IN")}`;
+    }
+
+    return "Price not confirmed";
+  };
+
   const getRenderType = (device) => {
     const backendRenderType = String(
       device?.render_type || device?.renderType || "",
@@ -1176,6 +1256,40 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     if (serverBestPriceNumeric > 0) {
       numericPrice = serverBestPriceNumeric;
     }
+    const expectedPriceRaw = pick(
+      apiDevice.expected_price,
+      apiDevice.expectedPrice,
+      apiDevice.manual_expected_price,
+      apiDevice.manualExpectedPrice,
+      "",
+    );
+    const expectedPriceNumeric = extractNumericPrice(expectedPriceRaw);
+    const expectedPriceSource = pick(
+      toString(apiDevice.expected_price_source),
+      toString(apiDevice.expectedPriceSource),
+      "",
+    );
+    const expectedPriceBasis = pick(
+      toString(apiDevice.expected_price_basis),
+      toString(apiDevice.expectedPriceBasis),
+      "",
+    );
+    const expectedPriceConfidence = pick(
+      toString(apiDevice.expected_price_confidence),
+      toString(apiDevice.expectedPriceConfidence),
+      "",
+    );
+    const originalPriceNumeric = extractNumericPrice(
+      apiDevice.original_price || apiDevice.originalPrice,
+    );
+    const startingPriceNumeric = extractNumericPrice(
+      apiDevice.starting_price || apiDevice.startingPrice,
+    );
+    const priceSource = pick(
+      toString(apiDevice.price_source),
+      toString(apiDevice.priceSource),
+      "",
+    );
 
     // Battery (support multiple shapes)
     const batteryRaw =
@@ -1675,6 +1789,36 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         toString(apiDevice.priceConfidence),
         "",
       ),
+      original_price: originalPriceNumeric > 0 ? originalPriceNumeric : "",
+      originalPrice: originalPriceNumeric > 0 ? originalPriceNumeric : "",
+      starting_price: startingPriceNumeric > 0 ? startingPriceNumeric : "",
+      startingPrice: startingPriceNumeric > 0 ? startingPriceNumeric : "",
+      price_source: priceSource,
+      priceSource: priceSource,
+      expected_price: expectedPriceNumeric > 0 ? expectedPriceNumeric : "",
+      expectedPrice: expectedPriceNumeric > 0 ? expectedPriceNumeric : "",
+      expected_price_source: expectedPriceSource,
+      expectedPriceSource: expectedPriceSource,
+      expected_price_basis: expectedPriceBasis,
+      expectedPriceBasis: expectedPriceBasis,
+      expected_price_confidence: expectedPriceConfidence,
+      expectedPriceConfidence: expectedPriceConfidence,
+      price_is_expected:
+        apiDevice.price_is_expected === true ||
+        apiDevice.priceIsExpected === true ||
+        expectedPriceNumeric > 0,
+      priceIsExpected:
+        apiDevice.priceIsExpected === true ||
+        apiDevice.price_is_expected === true ||
+        expectedPriceNumeric > 0,
+      price_is_estimated:
+        apiDevice.price_is_estimated === true ||
+        apiDevice.priceIsEstimated === true ||
+        expectedPriceSource === "algorithm",
+      priceIsEstimated:
+        apiDevice.priceIsEstimated === true ||
+        apiDevice.price_is_estimated === true ||
+        expectedPriceSource === "algorithm",
       specConfidence: pick(
         toString(apiDevice.spec_confidence),
         toString(apiDevice.specConfidence),
@@ -4665,7 +4809,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                   <div className="mb-2 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-semibold text-slate-900 sm:text-base">
-                        Popular Features
+                        {isUpcomingFilterPath
+                          ? "Launch Signals"
+                          : "Popular Features"}
                       </h3>
                     </div>
                     {normalizedFeature && (
@@ -4679,7 +4825,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                   </div>
                   {popularFeatureOrderLoaded && (
                     <p className="mb-2 text-xs text-slate-500">
-                      Popular choices from other users (last 7 days)
+                      {isUpcomingFilterPath
+                        ? "Track upcoming phones by battery, camera, AI and brand signals"
+                        : "Popular choices from other users (last 7 days)"}
                     </p>
                   )}
                   <div className="flex gap-2.5 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -5434,12 +5582,22 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                             return hasUrl || hasPrice;
                           })
                         : availableStoreRows;
-                      const launchDateParsed = device.launchDate
-                        ? new Date(device.launchDate)
-                        : null;
+                      const renderType = getRenderType(device);
+                      const isUpcomingCard =
+                        isUpcomingFilterPath || renderType === "upcoming";
+                      const launchDateParsed =
+                        parseDateValue(device.launchDate) ||
+                        resolveSaleStartDate(device) ||
+                        null;
                       const hasLaunchDate =
                         launchDateParsed &&
                         !Number.isNaN(launchDateParsed.getTime());
+                      const launchDateText = hasLaunchDate
+                        ? formatLaunchDate(launchDateParsed)
+                        : "Date not confirmed";
+                      const launchDateLabel = isUpcomingCard
+                        ? resolveLaunchDateLabel(device, launchDateParsed)
+                        : "Launched";
                       const allowSpecScore = devicePolicy.allowSpecScore;
                       const resolvedScoreValue = allowSpecScore
                         ? resolveSmartphoneBadgeScore(device)
@@ -5455,13 +5613,13 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                         device.specs?.isAiPhone ||
                         getAiFeatureCount(device) > 0,
                       );
-                      const statusLabel =
-                        device.display_status ||
-                        device.displayStatus ||
-                        (getRenderType(device) === "available"
-                          ? "Available now"
-                          : null);
+                      const statusLabel = isUpcomingCard
+                        ? null
+                        : device.display_status ||
+                          device.displayStatus ||
+                          (renderType === "available" ? "Available now" : null);
                       const cardBadgeLabel =
+                        (isUpcomingCard ? "Upcoming" : null) ||
                         statusLabel ||
                         (listFilter === "trending"
                           ? device.trendBadge || "Trending"
@@ -5492,6 +5650,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                       const brandPriceNumeric = extractNumericPrice(
                         device.numericPrice || device.price,
                       );
+                      const upcomingExpectedPrice =
+                        resolveUpcomingExpectedPriceMeta(device);
                       const shouldUseBrandPriceFallback =
                         storeRowsForDisplay.length === 0 &&
                         brandPriceNumeric > 0;
@@ -5504,13 +5664,29 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                             display_store_name: device.brand || "Brand",
                             logo: brandLogoSrc,
                             price: device.price || brandPriceNumeric,
-                            cta_label:
-                              getRenderType(device) === "upcoming"
-                                ? "Upcoming"
-                                : "Brand price",
+                            cta_label: "Brand price",
                             is_brand_price: true,
                           }
                         : null;
+                      const shouldUseExpectedPriceFallback =
+                        isUpcomingCard &&
+                        storeRowsForDisplay.length === 0 &&
+                        !shouldUseBrandPriceFallback &&
+                        upcomingExpectedPrice.numeric > 0;
+                      const expectedPriceFallbackRow =
+                        shouldUseExpectedPriceFallback
+                          ? {
+                              id: `${device.id ?? device.model ?? "phone"}-expected-price`,
+                              store: device.brand || "Expected",
+                              store_name: device.brand || "Expected",
+                              storeName: device.brand || "Expected",
+                              display_store_name: device.brand || "Expected",
+                              logo: brandLogoSrc,
+                              price: upcomingExpectedPrice.numeric,
+                              cta_label: "Expected price",
+                              is_expected_price: true,
+                            }
+                          : null;
                       const primaryStoreRow = storeRowsForDisplay[0] || null;
                       const primaryStoreName =
                         primaryStoreRow?.display_store_name ||
@@ -5546,10 +5722,44 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                           ? storePriceRowsForDisplay
                           : brandPriceFallbackRow
                             ? [brandPriceFallbackRow]
-                            : [];
+                            : expectedPriceFallbackRow
+                              ? [expectedPriceFallbackRow]
+                              : [];
                       const isBrandPriceOnly =
                         priceRowsForDisplay.length > 0 &&
                         priceRowsForDisplay.every((row) => row?.is_brand_price);
+                      const isExpectedPriceOnly =
+                        priceRowsForDisplay.length > 0 &&
+                        priceRowsForDisplay.every(
+                          (row) => row?.is_expected_price,
+                        );
+                      const hasListedPrice =
+                        brandPriceNumeric > 0 ||
+                        priceRowsForDisplay.some(
+                          (row) =>
+                            !row?.is_expected_price &&
+                            extractNumericPrice(row?.price) > 0,
+                        );
+                      const upcomingPriceEyebrow = hasListedPrice
+                        ? "Price"
+                        : upcomingExpectedPrice.numeric > 0
+                          ? "Expected price"
+                          : "Price";
+                      const pricePanelTitle = isBrandPriceOnly
+                        ? "Brand Price"
+                        : isExpectedPriceOnly
+                          ? "Expected Price"
+                          : "Check Price On";
+                      const upcomingPriceLabel = isUpcomingCard
+                        ? resolveUpcomingPriceLabel(device, brandPriceNumeric)
+                        : "";
+                      const cardPriceLabel =
+                        device.price ||
+                        (isUpcomingCard &&
+                        upcomingPriceLabel &&
+                        upcomingPriceLabel !== "Price not confirmed"
+                          ? upcomingPriceLabel
+                          : "");
                       const availableDateRaw =
                         device.saleStartDate ||
                         device.sale_start_date ||
@@ -5717,9 +5927,18 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                               </div>
 
                               <div className="flex flex-wrap items-center gap-3 lg:justify-end">
-                                <div className="text-xl font-semibold tracking-tight text-[#14255e] sm:text-2xl">
-                                  {device.price}
-                                </div>
+                                {cardPriceLabel ? (
+                                  <div className="text-right">
+                                    {isUpcomingCard ? (
+                                      <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                        {upcomingPriceEyebrow}
+                                      </div>
+                                    ) : null}
+                                    <div className="text-xl font-semibold tracking-tight text-[#14255e] sm:text-2xl">
+                                      {cardPriceLabel}
+                                    </div>
+                                  </div>
+                                ) : null}
                               </div>
                             </div>
 
@@ -5732,16 +5951,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                                 <div className="flex items-center gap-1.5 text-sm text-slate-700 sm:justify-end">
                                   <FaCalendarAlt className="text-slate-400" />
                                   <span>
-                                    Launched:{" "}
+                                    {launchDateLabel}:{" "}
                                     <span className="font-semibold text-slate-900">
-                                      {launchDateParsed.toLocaleDateString(
-                                        "en-US",
-                                        {
-                                          day: "2-digit",
-                                          month: "short",
-                                          year: "numeric",
-                                        },
-                                      )}
+                                      {launchDateText}
                                     </span>
                                   </span>
                                 </div>
@@ -5759,6 +5971,15 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                                 <div className="flex w-full justify-start sm:justify-center">
                                   <ImageCarousel
                                     images={device.images}
+                                    fallbackTitle={
+                                      isUpcomingCard ? "" : "No image"
+                                    }
+                                    fallbackSubtitle={
+                                      isUpcomingCard
+                                        ? device.brand || "Launch image coming"
+                                        : "Image coming soon"
+                                    }
+                                    fallbackLogo={brandLogoSrc}
                                     className="shadow-md"
                                   />
                                 </div>
@@ -5783,11 +6004,20 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
                                 {renderVariantSelector("hidden lg:flex")}
 
-                                <div className="flex items-center gap-2 lg:hidden">
-                                  <div className="text-lg font-semibold tracking-tight text-[#14255e] sm:text-xl">
-                                    {device.price}
+                                {cardPriceLabel ? (
+                                  <div className="flex items-center gap-2 lg:hidden">
+                                    <div>
+                                      {isUpcomingCard ? (
+                                        <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                          {upcomingPriceEyebrow}
+                                        </div>
+                                      ) : null}
+                                      <div className="text-lg font-semibold tracking-tight text-[#14255e] sm:text-xl">
+                                        {cardPriceLabel}
+                                      </div>
+                                    </div>
                                   </div>
-                                </div>
+                                ) : null}
 
                                 {availableOnText ? (
                                   <div className="hidden items-center gap-1.5 text-sm text-slate-700 lg:flex">
@@ -5805,9 +6035,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                                   <div className="hidden rounded-[14px] border border-slate-200 bg-white p-2.5 sm:p-4 lg:block">
                                     <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900 border-b-1 border-slate-200 pb-2">
                                       <FaStore className="text-emerald-500" />
-                                      {isBrandPriceOnly
-                                        ? "Brand Price"
-                                        : "Check Price On"}
+                                      {pricePanelTitle}
                                     </div>
                                     <div className="space-y-2">
                                       {priceRowsForDisplay.map(
@@ -5938,16 +6166,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                                 <div className="flex items-center gap-1.5 text-sm text-slate-700 lg:hidden">
                                   <FaCalendarAlt className="text-slate-400" />
                                   <span>
-                                    Launched:{" "}
+                                    {launchDateLabel}:{" "}
                                     <span className="font-semibold text-slate-900">
-                                      {launchDateParsed.toLocaleDateString(
-                                        "en-US",
-                                        {
-                                          day: "2-digit",
-                                          month: "short",
-                                          year: "numeric",
-                                        },
-                                      )}
+                                      {launchDateText}
                                     </span>
                                   </span>
                                 </div>
@@ -5976,9 +6197,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                                 <div className="rounded-[20px] border border-slate-200 bg-white p-3  sm:p-4">
                                   <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
                                     <FaStore className="text-emerald-500" />
-                                    {isBrandPriceOnly
-                                      ? "Brand Price"
-                                      : "Check Price On"}
+                                    {pricePanelTitle}
                                   </div>
                                   <div className="space-y-2">
                                     {priceRowsForDisplay.map(
@@ -6216,7 +6435,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                 </div>
               </div>
 
-              {sortedVariants.length > 1 ? (
+              {!isUpcomingFilterPath && sortedVariants.length > 1 ? (
                 <PopularMobileComparisonsStrip
                   devices={sortedVariants}
                   className="mt-8"
@@ -6228,7 +6447,13 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
               <MobilePhoneHighlights
                 devices={baseDevices}
                 className="mt-6"
-                context={isNewFilterPath ? "latest" : "default"}
+                context={
+                  isUpcomingFilterPath
+                    ? "upcoming"
+                    : isNewFilterPath
+                      ? "latest"
+                      : "default"
+                }
               />
 
               <MobileSortSheet
@@ -6252,10 +6477,14 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                     <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-6">
                       <div className="min-w-0">
                         <h3 className="text-xl font-bold text-slate-900">
-                          Refine Search
+                          {isUpcomingFilterPath
+                            ? "Refine Launch Tracker"
+                            : "Refine Search"}
                         </h3>
                         <p className="mt-1 text-sm text-slate-500">
-                          Filter smartphones by specifications
+                          {isUpcomingFilterPath
+                            ? "Filter upcoming phones by launch signals"
+                            : "Filter smartphones by specifications"}
                         </p>
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
@@ -6600,7 +6829,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         </div>
       </div>
 
-      {featuredDiscoveryProduct ? (
+      {!isUpcomingFilterPath && featuredDiscoveryProduct ? (
         <section className="mx-auto mt-8 max-w-7xl px-4 pb-8 sm:mt-10 sm:px-6 sm:pb-12 md:pb-16 lg:px-8 lg:pb-20">
           <ProductDiscoverySections
             productId={featuredDiscoveryProduct.productId}

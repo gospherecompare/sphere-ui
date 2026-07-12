@@ -614,6 +614,22 @@ const formatDateLabel = (value) => {
   }).format(date);
 };
 
+const parseDateValue = (value) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const shouldUseUpdatedDate = (publishedValue, updatedValue) => {
+  const updatedDate = parseDateValue(updatedValue);
+  if (!updatedDate) return false;
+
+  const publishedDate = parseDateValue(publishedValue);
+  if (!publishedDate) return true;
+  if (updatedDate.getTime() <= publishedDate.getTime()) return false;
+
+  return formatDateLabel(updatedDate) !== formatDateLabel(publishedDate);
+};
+
 const formatImageCreditLabel = (...values) => {
   const raw = values.map(safeText).find(Boolean);
   if (!raw || /^(asset|url|hooks newsroom)$/i.test(raw)) return "";
@@ -885,7 +901,9 @@ const normalizeBlogStory = (blog) => {
     24,
   );
   const publishedIso = safeText(blog.published_at) || safeText(blog.updated_at);
-  const updatedIso = safeText(blog.updated_at) || publishedIso;
+  const rawUpdatedIso = safeText(blog.updated_at) || publishedIso;
+  const hasDisplayableUpdate = shouldUseUpdatedDate(publishedIso, rawUpdatedIso);
+  const updatedIso = hasDisplayableUpdate ? rawUpdatedIso : publishedIso;
   const publishedDateLabel = formatDateLabel(publishedIso || updatedIso);
   const updatedDateLabel = formatDateLabel(updatedIso || publishedIso);
   const fallbackAuthor = CATEGORY_AUTHORS[category] || CATEGORY_AUTHORS.news;
@@ -938,7 +956,7 @@ const normalizeBlogStory = (blog) => {
     publishedAt: publishedDateLabel,
     updatedAt: updatedDateLabel,
     publishedLabel: `Published ${publishedDateLabel}`,
-    updatedLabel: `Updated ${updatedDateLabel}`,
+    updatedLabel: hasDisplayableUpdate ? `Updated ${updatedDateLabel}` : "",
     publishedIso: publishedIso || new Date().toISOString(),
     updatedIso: updatedIso || publishedIso || new Date().toISOString(),
     readTime: estimateReadTime(articleHtml || summarySource),

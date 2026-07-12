@@ -81,14 +81,13 @@ const formatUpdatedLabel = (story) => {
   if (!updatedDate) return "";
 
   const publishedDate = parseStoryDate(story);
-  if (
-    publishedDate &&
-    Math.abs(updatedDate.getTime() - publishedDate.getTime()) < 60 * 1000
-  ) {
+  const updatedLabel = DATE_FORMATTER.format(updatedDate);
+  const publishedLabel = publishedDate ? DATE_FORMATTER.format(publishedDate) : "";
+  if (publishedLabel && updatedLabel === publishedLabel) {
     return "";
   }
 
-  return `Updated ${DATE_FORMATTER.format(updatedDate)}`;
+  return `Updated ${updatedLabel}`;
 };
 
 const getInitials = (name = "") => {

@@ -211,6 +211,34 @@ const CURRENT_MONTH_LONG_YEAR = new Intl.DateTimeFormat("en-US", {
   month: "long",
   year: "numeric",
 }).format(new Date());
+const NEWS_DATE_FORMATTER = new Intl.DateTimeFormat("en-GB", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+});
+const parseNewsDate = (value) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+const formatNewsDateLabel = (value) => {
+  const date = parseNewsDate(value);
+  return date ? NEWS_DATE_FORMATTER.format(date) : "";
+};
+const resolveNewsDateModified = (publishedValue, updatedValue) => {
+  const published = publishedValue || updatedValue || undefined;
+  const updated = updatedValue || publishedValue || undefined;
+  const updatedDate = parseNewsDate(updated);
+  if (!updatedDate) return published;
+
+  const publishedDate = parseNewsDate(published);
+  if (!publishedDate) return updated;
+  if (updatedDate.getTime() <= publishedDate.getTime()) return published;
+  if (formatNewsDateLabel(updatedDate) === formatNewsDateLabel(publishedDate)) {
+    return published;
+  }
+
+  return updated;
+};
 const BUDGET_PHONE_KEYWORDS =
   "budget phones under 10000, budget phones under 15000, budget phones under 20000, budget phones under 30000, budget phones under 50000";
 const DEFAULT_SEO_KEYWORDS = `hook, best gadget comparison site, mobile price comparison india, moblie price comparison india, compare laptops smartphones tvs, compare smartphone tv laptops, compare specs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch phones, trending phone in india, most popular mobiles, top selling gadgets india, 5g phones in india, ai phones in india, ${BUDGET_PHONE_KEYWORDS}, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, gaming laptops india, student laptops india, laptop comparison india, vacuum cooler laptop and phone, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000, smart tv comparison india`;
@@ -1073,10 +1101,15 @@ const fetchNewsRoutesFromApi = async () => {
     const slug = String(row?.slug || "").trim().toLowerCase();
     if (!slug) continue;
     const routePath = normalizePath(`/news/${slug}`);
+    const publishedAt = row?.published_at || row?.updated_at || null;
+    const updatedAt = resolveNewsDateModified(
+      publishedAt,
+      row?.updated_at || publishedAt,
+    );
     publishedNewsRouteMeta.set(routePath, {
       title: String(row?.title || row?.meta_title || "").trim(),
-      publishedAt: row?.published_at || row?.updated_at || null,
-      updatedAt: row?.updated_at || row?.published_at || null,
+      publishedAt,
+      updatedAt,
     });
     routes.push(routePath);
   }
@@ -1895,6 +1928,12 @@ const getNewsArticleSeo = (canonicalPath = "", preloadedApiPayload) => {
         .map((tag) => tag.trim())
         .filter(Boolean);
 
+  const datePublished = blog.published_at || blog.updated_at || undefined;
+  const dateModified = resolveNewsDateModified(
+    datePublished,
+    blog.updated_at || datePublished,
+  );
+
   return {
     blog,
     title: `${title} - Hooks`,
@@ -1909,8 +1948,8 @@ const getNewsArticleSeo = (canonicalPath = "", preloadedApiPayload) => {
       blog.brand_name,
       ...(tags || []),
     ].filter(Boolean),
-    datePublished: blog.published_at || blog.updated_at || undefined,
-    dateModified: blog.updated_at || blog.published_at || undefined,
+    datePublished,
+    dateModified,
   };
 };
 

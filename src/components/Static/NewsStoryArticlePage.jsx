@@ -294,14 +294,13 @@ const formatUpdatedDate = (story) => {
   if (!updatedDate) return "";
 
   const publishedDate = parseStoryDate(story);
-  if (
-    publishedDate &&
-    Math.abs(updatedDate.getTime() - publishedDate.getTime()) < 60 * 1000
-  ) {
+  const updatedLabel = DATE_FORMATTER.format(updatedDate);
+  const publishedLabel = publishedDate ? DATE_FORMATTER.format(publishedDate) : "";
+  if (publishedLabel && updatedLabel === publishedLabel) {
     return "";
   }
 
-  return DATE_FORMATTER.format(updatedDate);
+  return updatedLabel;
 };
 
 const formatImageCredit = (story) => {
@@ -1227,25 +1226,27 @@ const NewsStoryArticlePage = () => {
                     eager
                     className="aspect-[16/10] w-full rounded-sm border border-[#e5e7eb] sm:aspect-[16/9]"
                   />
-                  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-[10px] font-semibold uppercase tracking-[0.13em] text-[#64748b] sm:gap-x-4 sm:text-[11px] sm:tracking-[0.14em]">
-                    <span className="inline-flex rounded-full bg-[#f1f5f9] px-3 py-1.5 text-[#334155]">
-                      {story.readTime}
-                    </span>
-                    <span className="inline-flex items-center normal-case tracking-normal text-[#334155]">
-                      By {storyAuthor}
-                    </span>
-                    <span className="inline-flex items-center">
-                      Published {formatAbsoluteDate(story)}
-                    </span>
-                    {updatedDateLabel ? (
+                  <div className="mt-3 space-y-2">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[10px] font-semibold uppercase tracking-[0.13em] text-[#64748b] sm:gap-x-4 sm:text-[11px] sm:tracking-[0.14em]">
+                      <span className="inline-flex rounded-full bg-[#f1f5f9] px-3 py-1.5 text-[#334155]">
+                        {story.readTime}
+                      </span>
+                      <span className="inline-flex items-center normal-case tracking-normal text-[#334155]">
+                        By {storyAuthor}
+                      </span>
                       <span className="inline-flex items-center">
-                        Updated {updatedDateLabel}
+                        Published {formatAbsoluteDate(story)}
                       </span>
-                    ) : null}
+                      {updatedDateLabel ? (
+                        <span className="inline-flex items-center">
+                          Updated {updatedDateLabel}
+                        </span>
+                      ) : null}
+                    </div>
                     {imageCredit ? (
-                      <span className="basis-full text-[#7d8898] sm:ml-auto sm:basis-auto">
+                      <p className="max-w-full text-left text-[10px] font-semibold uppercase leading-relaxed tracking-[0.13em] text-[#7d8898] sm:text-[11px] sm:tracking-[0.14em]">
                         Image credits: {imageCredit}
-                      </span>
+                      </p>
                     ) : null}
                   </div>
                   <div className="mt-4 border-t border-[#e5eaf0] pt-4">

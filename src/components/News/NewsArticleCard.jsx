@@ -3,6 +3,9 @@ import { Link } from "react-router-dom";
 import { FaClock, FaUser, FaArrowRight } from "react-icons/fa";
 import { createNewsStoryPath } from "../../hooks/usePublicNews";
 
+const normalizeDateLabel = (value = "") =>
+  String(value || "").trim().toLowerCase();
+
 const NewsArticleCard = ({
   article,
   featured = false,
@@ -21,7 +24,8 @@ const NewsArticleCard = ({
     slug = "",
   } = article;
   const storyPath = createNewsStoryPath(slug);
-  const showUpdatedAt = updatedAt && updatedAt !== publishedAt;
+  const showUpdatedAt =
+    updatedAt && normalizeDateLabel(updatedAt) !== normalizeDateLabel(publishedAt);
 
   if (featured) {
     return (
