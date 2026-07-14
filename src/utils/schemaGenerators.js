@@ -96,7 +96,9 @@ export const createProductSchema = ({
     if (typeof price === "number" && Number.isFinite(price)) {
       return String(price);
     }
-    const cleaned = String(price).replace(/[^\d.]/g, "").trim();
+    const cleaned = String(price)
+      .replace(/[^\d.]/g, "")
+      .trim();
     return cleaned || null;
   })();
 
@@ -109,7 +111,11 @@ export const createProductSchema = ({
   };
 
   if (image) {
-    const imageDefaults = { width: imageWidth, height: imageHeight, alt: imageAlt };
+    const imageDefaults = {
+      width: imageWidth,
+      height: imageHeight,
+      alt: imageAlt,
+    };
     const normalizedImages = (Array.isArray(image) ? image : [image])
       .map((entry) => normalizeImageObject(entry, imageDefaults))
       .filter(Boolean);
@@ -155,7 +161,9 @@ export const createProductSchema = ({
  * Map launch status values to schema.org Offer availability
  */
 export const mapAvailabilityFromStatus = (status) => {
-  const value = String(status || "").toLowerCase().trim();
+  const value = String(status || "")
+    .toLowerCase()
+    .trim();
   if (!value) return "InStock";
   if (
     value.includes("announced") ||
@@ -198,8 +206,8 @@ export const createItemListSchema = ({
         "@type": "ListItem",
         position: index + 1,
         name: item.name || "",
-        url: item.url ? toAbsolutePageUrl(item.url) : "",
       };
+      if (item.url) entry.url = toAbsolutePageUrl(item.url);
       if (item.image) entry.image = toAbsoluteUrl(item.image);
       return entry;
     });

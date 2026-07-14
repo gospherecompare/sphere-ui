@@ -40,7 +40,11 @@ import useDevice from "../hooks/useDevice";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import normalizeProduct from "../utils/normalizeProduct";
 import { Helmet } from "react-helmet-async";
-import { createWebApplicationSchema } from "../utils/schemaGenerators";
+import {
+  createWebApplicationSchema,
+  createItemListSchema,
+  createProductSchema,
+} from "../utils/schemaGenerators";
 import { buildListSeoKeywords } from "../utils/seoKeywordBuilder";
 import { normalizeSeoTitle } from "../utils/seoTitle";
 import { toCanonicalPageUrl } from "../utils/publicUrl";
@@ -383,7 +387,8 @@ const collectStoreRows = (device) => {
       ? device.variants_json
       : [];
   for (const variant of variants) {
-    if (Array.isArray(variant?.store_prices)) rows.push(...variant.store_prices);
+    if (Array.isArray(variant?.store_prices))
+      rows.push(...variant.store_prices);
     if (Array.isArray(variant?.storePrices)) rows.push(...variant.storePrices);
   }
   return rows.filter(Boolean);
@@ -392,13 +397,13 @@ const collectStoreRows = (device) => {
 const hasStoreEntrySignal = (store) =>
   Boolean(
     store?.price ||
-      store?.url ||
-      store?.store ||
-      store?.store_name ||
-      store?.storeName ||
-      store?.display_store_name ||
-      store?.sale_start_date ||
-      store?.saleStartDate,
+    store?.url ||
+    store?.store ||
+    store?.store_name ||
+    store?.storeName ||
+    store?.display_store_name ||
+    store?.sale_start_date ||
+    store?.saleStartDate,
   );
 
 const resolveLaunchStage = (device) => {
@@ -583,6 +588,11 @@ const joinCompareNamesWithoutCommas = (names = []) => {
   return clean.join(" and ");
 };
 
+const getCurrentMonthLongYear = () =>
+  new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(
+    new Date(),
+  );
+
 const buildCompareTitleText = ({
   names = [],
   segmentLabel = "",
@@ -591,16 +601,18 @@ const buildCompareTitleText = ({
   const overridden = String(publishedTitle || "").trim();
   if (overridden) return overridden;
 
-  const joined = joinCompareNamesWithoutCommas(names);
-  if (!joined)
-    return "Device Comparison Price Specifications and Features in India";
+  const vsJoined = names.filter(Boolean).join(" vs ");
+  const monthYear = getCurrentMonthLongYear();
+
+  if (!vsJoined)
+    return `Compare Smartphones, Laptops & TVs Side-by-Side (${monthYear}) | Hooks`;
 
   const segment = String(segmentLabel || "").trim();
   if (segment) {
-    return `Compare ${joined} in the ${segment} Segment Price Specifications and Features in India`;
+    return `${vsJoined} — ${segment} Segment: Price, Specs & Comparison (${monthYear}) | Hooks`;
   }
 
-  return `Compare ${joined} Price Specifications and Features in India`;
+  return `${vsJoined}: Price, Specs & Comparison in India (${monthYear}) | Hooks`;
 };
 
 const buildCompareDescriptionText = ({
@@ -613,15 +625,15 @@ const buildCompareDescriptionText = ({
 
   const joined = joinCompareNamesWithoutCommas(names);
   if (!joined) {
-    return "Compare devices with latest price specifications camera battery performance and features in India.";
+    return "Compare devices with latest price specifications camera battery performance and features in India. | Hooks";
   }
 
   const segment = String(segmentLabel || "").trim();
   if (segment) {
-    return `Compare ${joined} in the ${segment} Segment with latest price specifications camera battery performance and features in India`;
+    return `See how ${joined} compare in the ${segment} segment on price, specifications, camera, battery, and performance in India. | Hooks`;
   }
 
-  return `Compare ${joined} with latest price specifications camera battery performance and features in India`;
+  return `See how ${joined} compare on price, specifications, camera, battery, and performance in India. | Hooks`;
 };
 
 const sortCompareEntries = (left, right) => {
@@ -4563,8 +4575,8 @@ const MobileCompare = () => {
           publishedTitle: publishedComparePage?.title || "",
         })
       : canonicalCompareEntries.length > 0
-        ? "Compare Selected Devices Price Specifications and Features in India"
-        : "Device Comparison Price Specifications and Features in India";
+        ? `Compare Selected Devices: Price, Specs & Comparison (${getCurrentMonthLongYear()}) | Hooks`
+        : `Compare Smartphones, Laptops & TVs Side-by-Side (${getCurrentMonthLongYear()}) | Hooks`;
   const normalizedMetaTitle = normalizeSeoTitle(metaTitle);
 
   const metaDescription =
@@ -4575,8 +4587,8 @@ const MobileCompare = () => {
           publishedDescription: publishedComparePage?.meta_description || "",
         })
       : canonicalCompareEntries.length > 0
-        ? "Compare selected devices with detailed specifications, price, camera, display, battery, performance, software, benchmarks, and key differences on TryHook."
-        : "Compare devices with detailed specifications, price, camera, display, battery, performance, software, benchmarks, and key differences on TryHook.";
+        ? "Compare selected devices with detailed specifications, price, camera, display, battery, performance, software, benchmarks, and key differences on Hooks."
+        : "Compare devices with detailed specifications, price, camera, display, battery, performance, software, benchmarks, and key differences on Hooks.";
   const metaKeywords = useMemo(
     () =>
       buildListSeoKeywords({
@@ -4613,6 +4625,53 @@ const MobileCompare = () => {
     });
     return JSON.stringify(schema);
   }, [normalizedMetaTitle, metaDescription, canonicalCompareUrl]);
+
+  const compareItemListSchemaJson = useMemo(() => {
+    if (!Array.isArray(activeDevices) || activeDevices.length < 2) return null;
+
+    const schema = createItemListSchema({
+      name: normalizedMetaTitle,
+      url: canonicalCompareUrl,
+      description: metaDescription,
+      items: activeDevices.map((device) => ({
+        name: device?.name || device?.model || device?.title || "",
+        image:
+          device?.image ||
+          (Array.isArray(device?.images) ? device.images[0] : ""),
+        url: canonicalCompareUrl,
+      })),
+    });
+    return JSON.stringify(schema);
+  }, [
+    activeDevices,
+    normalizedMetaTitle,
+    metaDescription,
+    canonicalCompareUrl,
+  ]);
+
+  const compareProductSchemasJson = useMemo(() => {
+    if (!Array.isArray(activeDevices) || activeDevices.length < 2) return [];
+
+    return activeDevices
+      .map((device) => {
+        const name = device?.name || device?.model || device?.title || "";
+        if (!name) return null;
+        const price = resolveLowestPriceForSeo(device);
+        const schema = createProductSchema({
+          name,
+          description: `${name} price, specifications, and comparison details on Hooks.`,
+          image:
+            device?.image ||
+            (Array.isArray(device?.images) ? device.images[0] : ""),
+          url: canonicalCompareUrl,
+          brand: device?.brand || "",
+          price: price != null ? price : undefined,
+          priceCurrency: "INR",
+        });
+        return JSON.stringify(schema);
+      })
+      .filter(Boolean);
+  }, [activeDevices, canonicalCompareUrl]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -4907,7 +4966,7 @@ const MobileCompare = () => {
             >
               Load more
             </button>
-          </div> 
+          </div>
         ) : null}
       </div>
     </aside>
@@ -5042,6 +5101,19 @@ const MobileCompare = () => {
         {compareSchemaJson && (
           <script type="application/ld+json">{compareSchemaJson}</script>
         )}
+        {compareItemListSchemaJson && (
+          <script type="application/ld+json">
+            {compareItemListSchemaJson}
+          </script>
+        )}
+        {compareProductSchemasJson.map((json, index) => (
+          <script
+            key={`compare-product-schema-${index}`}
+            type="application/ld+json"
+          >
+            {json}
+          </script>
+        ))}
       </Helmet>
       {/* Page Header */}
       <div className="sticky top-0 z-40 w-full  px-4 py-4 sm:px-6 lg:px-8">

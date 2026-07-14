@@ -42,7 +42,8 @@ const __dirname = path.dirname(__filename);
 const SITE_ORIGIN = "https://tryhook.shop";
 const DEFAULT_REMOTE_API_BASE_URL = "https://api.apisphere.in/api";
 const DEFAULT_LOCAL_API_BASE_URL = "http://localhost:5000/api";
-const trimTrailingSlash = (value = "") => String(value || "").replace(/\/+$/g, "");
+const trimTrailingSlash = (value = "") =>
+  String(value || "").replace(/\/+$/g, "");
 const resolvePrerenderApiBaseUrl = () => {
   const configured =
     process.env.HOOKS_PRERENDER_API_BASE_URL ||
@@ -211,6 +212,26 @@ const CURRENT_MONTH_LONG_YEAR = new Intl.DateTimeFormat("en-US", {
   month: "long",
   year: "numeric",
 }).format(new Date());
+const getOrdinalSuffix = (day) => {
+  const value = Number(day);
+  if (!Number.isFinite(value)) return "";
+  if (value % 10 === 1 && value !== 11) return "st";
+  if (value % 10 === 2 && value !== 12) return "nd";
+  if (value % 10 === 3 && value !== 13) return "rd";
+  return "th";
+};
+// Prefers a real per-product update timestamp (once the API exposes one);
+// falls back to today's date, matching meta.js's resolveFreshnessDate.
+const resolveFreshnessDate = (rawUpdatedAt) => {
+  const parsed = rawUpdatedAt ? new Date(rawUpdatedAt) : null;
+  const date = parsed && !Number.isNaN(parsed.getTime()) ? parsed : new Date();
+  const day = date.getDate();
+  const month = new Intl.DateTimeFormat("en-US", { month: "long" }).format(
+    date,
+  );
+  const year = date.getFullYear();
+  return `${day}${getOrdinalSuffix(day)} ${month}, ${year}`;
+};
 const NEWS_DATE_FORMATTER = new Intl.DateTimeFormat("en-GB", {
   day: "2-digit",
   month: "short",
@@ -424,14 +445,19 @@ const getTvDetailName = (canonicalPath = "") =>
     : extractDetailSlugName(canonicalPath, "/tvs/");
 
 const extractCompareRouteNames = (path) => {
-  const legacyMatch = String(path || "").match(/^\/compare\/([^/]+)-vs-([^/]+)$/i);
+  const legacyMatch = String(path || "").match(
+    /^\/compare\/([^/]+)-vs-([^/]+)$/i,
+  );
   if (legacyMatch) {
-    return [toReadableTitleFromSlug(legacyMatch[1]), toReadableTitleFromSlug(legacyMatch[2])].filter(
-      Boolean,
-    );
+    return [
+      toReadableTitleFromSlug(legacyMatch[1]),
+      toReadableTitleFromSlug(legacyMatch[2]),
+    ].filter(Boolean);
   }
 
-  const modernMatch = String(path || "").match(/^\/compare\/([^/]+?)-comparison$/i);
+  const modernMatch = String(path || "").match(
+    /^\/compare\/([^/]+?)-comparison$/i,
+  );
   if (!modernMatch) return [];
 
   return String(modernMatch[1] || "")
@@ -696,7 +722,9 @@ const sanitizePreloadValue = (value) => {
       typeof sanitizedChild === "string"
     ) {
       const rawRoute = sanitizedChild.trim();
-      next[key] = rawRoute ? toCanonicalPath(normalizePath(rawRoute)) : rawRoute;
+      next[key] = rawRoute
+        ? toCanonicalPath(normalizePath(rawRoute))
+        : rawRoute;
       continue;
     }
     next[key] = sanitizedChild;
@@ -903,7 +931,10 @@ const fetchRouteSpecificPreloadedPayload = async (
     return fetchPayloadForEndpoints([`${API_BASE_URL}/tvs`]);
   }
 
-  const networkingSlug = getSingleSegmentRouteTail(canonicalPath, "/networking");
+  const networkingSlug = getSingleSegmentRouteTail(
+    canonicalPath,
+    "/networking",
+  );
   if (networkingSlug) {
     const endpoints = [`${API_BASE_URL}/networking`];
     const networkingRows = getPreloadedRows(
@@ -1052,7 +1083,9 @@ const fetchDetailRoutesFromApi = async () => {
 
 const fetchCompareRoutesFromApi = async () => {
   publishedCompareRouteMeta = new Map();
-  const body = await fetchApiBody(`${API_BASE_URL}/public/compare-pages/routes`);
+  const body = await fetchApiBody(
+    `${API_BASE_URL}/public/compare-pages/routes`,
+  );
   const rows = Array.isArray(body?.routes) ? body.routes : [];
   const routes = [];
 
@@ -1061,7 +1094,11 @@ const fetchCompareRoutesFromApi = async () => {
     const routePath = normalizePath(
       row?.route_path || (row?.slug ? `/compare/${row.slug}` : ""),
     );
-    if (!routePath || routePath === "/compare" || !routePath.startsWith("/compare/")) {
+    if (
+      !routePath ||
+      routePath === "/compare" ||
+      !routePath.startsWith("/compare/")
+    ) {
       continue;
     }
 
@@ -1083,7 +1120,9 @@ const getNewsSlugFromPath = (canonicalPath = "") => {
   try {
     return decodeURIComponent(match[1]).trim().toLowerCase();
   } catch {
-    return String(match[1] || "").trim().toLowerCase();
+    return String(match[1] || "")
+      .trim()
+      .toLowerCase();
   }
 };
 
@@ -1092,13 +1131,17 @@ const buildNewsStoryEndpoint = (slug = "") =>
 
 const fetchNewsRoutesFromApi = async () => {
   publishedNewsRouteMeta = new Map();
-  const body = await fetchApiBody(`${API_BASE_URL}/public/blogs?limit=${MAX_NEWS_ROUTES}`);
+  const body = await fetchApiBody(
+    `${API_BASE_URL}/public/blogs?limit=${MAX_NEWS_ROUTES}`,
+  );
   const rows = parseApiRows(body, ["blogs"]);
   const routes = [];
 
   for (const row of rows) {
     if (routes.length >= MAX_NEWS_ROUTES) break;
-    const slug = String(row?.slug || "").trim().toLowerCase();
+    const slug = String(row?.slug || "")
+      .trim()
+      .toLowerCase();
     if (!slug) continue;
     const routePath = normalizePath(`/news/${slug}`);
     const publishedAt = row?.published_at || row?.updated_at || null;
@@ -1117,13 +1160,14 @@ const fetchNewsRoutesFromApi = async () => {
   return [...new Set(routes)];
 };
 
-
 const fetchSmartphoneListingRoutesFromApi = async () => {
   const routes = Object.keys(SMARTPHONE_FEATURE_ROUTE_META).map((featureId) =>
     buildSmartphoneFeaturePath(featureId),
   );
   const seen = new Set(routes);
-  const rows = await fetchApiRows(`${API_BASE_URL}/smartphones`, ["smartphones"]);
+  const rows = await fetchApiRows(`${API_BASE_URL}/smartphones`, [
+    "smartphones",
+  ]);
   let addedBrandCount = 0;
 
   for (const row of rows) {
@@ -1229,8 +1273,9 @@ const matchesLaptopListingRoute = (row, routeMeta = {}) => {
 const fetchLaptopListingRoutesFromApi = async () => {
   const rows = await fetchApiRows(`${API_BASE_URL}/laptops`, ["laptops"]);
   const routes = new Set(["/laptops/latest", ...LAPTOP_BUDGET_ROUTE_PATHS]);
-  const featureIds = Object.keys(LAPTOP_FEATURE_ROUTE_META).filter((featureId) =>
-    rows.some((row) => matchesLaptopFeatureRoute(row, featureId)),
+  const featureIds = Object.keys(LAPTOP_FEATURE_ROUTE_META).filter(
+    (featureId) =>
+      rows.some((row) => matchesLaptopFeatureRoute(row, featureId)),
   );
   const brands = new Map();
 
@@ -1290,7 +1335,9 @@ const fetchLaptopListingRoutesFromApi = async () => {
     });
     featureIds.forEach((featureId) => {
       if (brandRows.some((row) => matchesLaptopFeatureRoute(row, featureId))) {
-        routes.add(buildLaptopListingPath({ brand: brandSlug, feature: featureId }));
+        routes.add(
+          buildLaptopListingPath({ brand: brandSlug, feature: featureId }),
+        );
       }
     });
   });
@@ -1487,7 +1534,9 @@ const buildNewsSitemapXml = () => {
   const twoDaysMs = 2 * 24 * 60 * 60 * 1000;
   const entries = [...publishedNewsRouteMeta.entries()]
     .map(([routePath, meta]) => {
-      const publishedTime = new Date(meta?.publishedAt || meta?.updatedAt || "");
+      const publishedTime = new Date(
+        meta?.publishedAt || meta?.updatedAt || "",
+      );
       if (Number.isNaN(publishedTime.getTime())) return null;
       if (now - publishedTime.getTime() > twoDaysMs) return null;
 
@@ -1575,7 +1624,9 @@ const createStaticRouteHtmlPlugin = ({
 
     const baseHtml = fs.readFileSync(rootHtmlPath, "utf8");
     const uniqueRoutes = [
-      ...new Set(routes.map((routePath) => normalizePath(routePath)).filter(Boolean)),
+      ...new Set(
+        routes.map((routePath) => normalizePath(routePath)).filter(Boolean),
+      ),
     ];
     let generatedCount = 0;
 
@@ -1629,7 +1680,9 @@ const resolveSeo = (routePath) => {
   const tvDetailName = getTvDetailName(canonicalPath);
   const compareNames = extractCompareRouteNames(canonicalPath);
   const compareJoinedNames = joinCompareNamesWithoutCommas(compareNames);
-  const publishedCompareSeo = publishedCompareRouteMeta.get(canonicalPath) || null;
+  const compareVsJoinedNames = compareNames.filter(Boolean).join(" vs ");
+  const publishedCompareSeo =
+    publishedCompareRouteMeta.get(canonicalPath) || null;
   const smartphoneFilterSlug = (() => {
     const match = canonicalPath.match(/^\/smartphones\/filter\/([^/]+)$/i);
     if (!match) return "";
@@ -1660,14 +1713,14 @@ const resolveSeo = (routePath) => {
     },
     {
       test: () => Boolean(smartphoneDetailName),
-      title: `${smartphoneDetailName} Price, Specs & Comparison in India (${CURRENT_YEAR}) | Hooks`,
-      description: `Compare ${smartphoneDetailName} price in India, full specifications, variants, and launch details on Hook.`,
+      title: `${smartphoneDetailName} - Full Specifications & Price in India (${resolveFreshnessDate()}) | Hooks`,
+      description: `Compare ${smartphoneDetailName} price in India, full specifications, variants, and launch details on Hooks.`,
       keywords: `${smartphoneDetailName.toLowerCase()}, ${smartphoneDetailName.toLowerCase()} price in india, ${smartphoneDetailName.toLowerCase()} specifications, ${smartphoneDetailName.toLowerCase()} launch date, compare smartphones, mobile price comparison india`,
     },
     {
       test: () => Boolean(laptopDetailName),
-      title: `${laptopDetailName} Price, Specs & Comparison in India (${CURRENT_YEAR}) | Hooks`,
-      description: `Compare ${laptopDetailName} laptop price in India, full specifications, variants, and best store offers on Hook.`,
+      title: `${laptopDetailName} - Full Specifications & Price in India (${resolveFreshnessDate()}) | Hooks`,
+      description: `Compare ${laptopDetailName} laptop price in India, full specifications, variants, and best store offers on Hooks.`,
       keywords: `${laptopDetailName.toLowerCase()}, ${laptopDetailName.toLowerCase()} price in india, ${laptopDetailName.toLowerCase()} specs, compare laptops india, laptop prices list ${CURRENT_YEAR}`,
     },
     {
@@ -1689,14 +1742,14 @@ const resolveSeo = (routePath) => {
     },
     {
       test: () => Boolean(tvDetailName),
-      title: `${tvDetailName} Price, Specs & TV Comparison in India (${CURRENT_YEAR}) | Hooks`,
-      description: `Compare ${tvDetailName} TV price in India, size variants, display specs, smart features, and store offers on Hook.`,
+      title: `${tvDetailName} - Full Specifications & Price in India (${resolveFreshnessDate()}) | Hooks`,
+      description: `Compare ${tvDetailName} TV price in India, size variants, display specs, smart features, and store offers on Hooks.`,
       keywords: `${tvDetailName.toLowerCase()}, ${tvDetailName.toLowerCase()} tv price in india, ${tvDetailName.toLowerCase()} specifications, smart tv comparison india, tv prices list ${CURRENT_YEAR}`,
     },
     {
       test: () =>
         Boolean(smartphoneBrandLabel) && Boolean(smartphoneFeatureMeta?.name),
-      title: `${smartphoneBrandLabel} ${smartphoneFeatureMeta?.name || ""} Smartphones ${CURRENT_YEAR} - Prices Specs & Comparison | Hooks`,
+      title: `Best ${smartphoneBrandLabel} ${smartphoneFeatureMeta?.name || ""} Phones in India (${CURRENT_MONTH_LONG_YEAR}): Price & Specs | Hooks`,
       description: `Explore ${smartphoneBrandLabel.toLowerCase()} ${String(
         smartphoneFeatureMeta?.name || "",
       ).toLowerCase()} smartphones in India with updated prices and detailed specifications covering battery camera display and performance comparisons on Hooks. Discover phones focused on ${String(
@@ -1710,7 +1763,7 @@ const resolveSeo = (routePath) => {
     },
     {
       test: () => Boolean(smartphoneFeatureMeta?.name),
-      title: `${smartphoneFeatureMeta?.name || ""} Smartphones ${CURRENT_YEAR} - Prices Specs & Comparison | Hooks`,
+      title: `Best ${smartphoneFeatureMeta?.name || ""} Smartphones in India (${CURRENT_MONTH_LONG_YEAR}): Price & Specs | Hooks`,
       description: `Explore ${String(
         smartphoneFeatureMeta?.name || "",
       ).toLowerCase()} smartphones in India with updated prices and detailed specifications covering battery camera display and performance comparisons on Hooks. Discover phones focused on ${String(
@@ -1788,17 +1841,18 @@ const resolveSeo = (routePath) => {
       test: (p) => p.startsWith("/compare"),
       title:
         publishedCompareSeo?.title ||
-        (compareJoinedNames
-          ? `Compare ${compareJoinedNames} Price Specifications and Features in India`
-          : "Device Comparison Price Specifications and Features in India"),
+        (compareVsJoinedNames
+          ? `${compareVsJoinedNames}: Price, Specs & Comparison in India (${CURRENT_MONTH_LONG_YEAR}) | Hooks`
+          : `Compare Smartphones, Laptops & TVs Side-by-Side (${CURRENT_MONTH_LONG_YEAR}) | Hooks`),
       description:
         publishedCompareSeo?.description ||
         (compareJoinedNames
-          ? `Compare ${compareJoinedNames} with latest price specifications camera battery performance and features in India.`
-          : "Compare devices side by side with latest price specifications camera battery performance and features in India."),
-      keywords: compareNames.length >= 2
-        ? `${compareNames.map((name) => name.toLowerCase()).join(", ")}, compare ${compareNames.map((name) => name.toLowerCase()).join(" and ")}, compare devices india, smartphone comparison india`
-        : "device comparison, compare smartphones laptops tvs, compare smartphone tv laptops, compare spec online, compare prices india, side by side comparison, best gadget comparison site",
+          ? `See how ${compareJoinedNames} compare on price, specifications, camera, battery, and performance in India. | Hooks`
+          : "Compare devices side by side with latest price specifications camera battery performance and features in India. | Hooks"),
+      keywords:
+        compareNames.length >= 2
+          ? `${compareNames.map((name) => name.toLowerCase()).join(", ")}, compare ${compareNames.map((name) => name.toLowerCase()).join(" and ")}, compare devices india, smartphone comparison india`
+          : "device comparison, compare smartphones laptops tvs, compare smartphone tv laptops, compare spec online, compare prices india, side by side comparison, best gadget comparison site",
     },
     {
       test: (p) => p.startsWith("/trending"),
@@ -1817,25 +1871,25 @@ const resolveSeo = (routePath) => {
     },
     {
       test: (p) => p.startsWith("/careers"),
-      title: "Careers at Hook | Apply for Open Roles",
+      title: "Careers at Hooks | Apply for Open Roles",
       description:
-        "Apply for frontend, backend, content developer, and fullstack opportunities at Hook through a simple step-by-step application form.",
+        "Apply for frontend, backend, content developer, and fullstack opportunities at Hooks through a simple step-by-step application form.",
       keywords:
         "careers at hook, frontend jobs, backend jobs, fullstack jobs, content developer jobs, tech careers",
     },
     {
       test: (p) => p.startsWith("/about"),
-      title: "About Hook | Product Discovery & Comparison Platform",
+      title: "About Hooks | Product Discovery & Comparison Platform",
       description:
-        "Learn about Hook, our mission, and how we help users compare technology products with structured and transparent information.",
+        "Learn about Hooks, our mission, and how we help users compare technology products with structured and transparent information.",
       keywords:
         "about hook, product comparison platform, technology discovery, gadget research platform",
     },
     {
       test: (p) => p.startsWith("/contact"),
-      title: "Contact Hook | Support, Partnerships & Press",
+      title: "Contact Hooks | Support, Partnerships & Press",
       description:
-        "Contact Hook for product support, partnerships, and press queries. Reach the team through verified contact channels.",
+        "Contact Hooks for product support, partnerships, and press queries. Reach the team through verified contact channels.",
       keywords:
         "contact hook, support hook, partnerships, press inquiries, hook contact details",
     },
@@ -1843,7 +1897,7 @@ const resolveSeo = (routePath) => {
       test: (p) => p.startsWith("/privacy-policy"),
       title: "Privacy Policy | Hooks",
       description:
-        "Read Hook privacy policy to understand what data we collect, why we collect it, and how you can control your information.",
+        "Read Hooks privacy policy to understand what data we collect, why we collect it, and how you can control your information.",
       keywords:
         "privacy policy, data privacy, hook policy, personal data rights",
     },
@@ -1851,7 +1905,7 @@ const resolveSeo = (routePath) => {
       test: (p) => p.startsWith("/terms"),
       title: "Terms of Use | Hooks",
       description:
-        "Read Hook terms of use covering platform usage, content accuracy, and service limitations.",
+        "Read Hooks terms of use covering platform usage, content accuracy, and service limitations.",
       keywords: "terms of use, hook terms, website terms, usage policy",
     },
     {
@@ -1860,8 +1914,9 @@ const resolveSeo = (routePath) => {
         p.startsWith("/wishlist") ||
         p.startsWith("/login") ||
         p.startsWith("/signup"),
-      title: "Hook Account",
-      description: "Secure account pages for your Hook profile and saved data.",
+      title: "Hooks Account",
+      description:
+        "Secure account pages for your Hooks profile and saved data.",
       keywords: "hook account, user account, login, signup, wishlist",
       robots: "noindex, nofollow",
     },
@@ -1870,10 +1925,10 @@ const resolveSeo = (routePath) => {
   const matched = rules.find((rule) => rule.test(canonicalPath));
   return {
     canonicalPath,
-    title: matched?.title || "Hook | Smart Device Comparison Platform",
+    title: matched?.title || "Hooks | Smart Device Comparison Platform",
     description:
       matched?.description ||
-      "Compare smartphones, laptops, TVs, and networking devices with specs, variants, pricing insights, and trend signals on Hook.",
+      "Compare smartphones, laptops, TVs, and networking devices with specs, variants, pricing insights, and trend signals on Hooks.",
     keywords: matched?.keywords || DEFAULT_SEO_KEYWORDS,
     robots: matched?.robots || "index, follow",
   };
@@ -1902,7 +1957,9 @@ const clipSeoText = (value = "", maxLength = 160) => {
 const getNewsArticleFromPayload = (canonicalPath = "", preloadedApiPayload) => {
   const slug = getNewsSlugFromPath(canonicalPath);
   if (!slug) return null;
-  return preloadedApiPayload?.byUrl?.[buildNewsStoryEndpoint(slug)]?.blog || null;
+  return (
+    preloadedApiPayload?.byUrl?.[buildNewsStoryEndpoint(slug)]?.blog || null
+  );
 };
 
 const getNewsArticleSeo = (canonicalPath = "", preloadedApiPayload) => {
@@ -2048,7 +2105,7 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
   }
 
   if (canonicalPath.startsWith("/compare")) {
-    return [
+    const schemas = [
       createWebApplicationSchema({
         name: seo.title,
         description: seo.description,
@@ -2056,6 +2113,20 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
         applicationCategory: "UtilityApplication",
       }),
     ];
+
+    const compareNamesForSchema = extractCompareRouteNames(canonicalPath);
+    if (compareNamesForSchema.length >= 2) {
+      schemas.push(
+        createItemListSchema({
+          name: seo.title,
+          url: canonicalUrl,
+          description: seo.description,
+          items: compareNamesForSchema.map((name) => ({ name })),
+        }),
+      );
+    }
+
+    return schemas;
   }
 
   if (canonicalPath.startsWith("/about")) {
@@ -2121,11 +2192,10 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
     const laptopEndpoint = laptopListingRoute?.latest
       ? `${API_BASE_URL}/public/new/laptops`
       : `${API_BASE_URL}/laptops`;
-    const rows = getPreloadedRows(
-      preloadedApiPayload,
-      laptopEndpoint,
-      ["laptops", "results"],
-    );
+    const rows = getPreloadedRows(preloadedApiPayload, laptopEndpoint, [
+      "laptops",
+      "results",
+    ]);
     const filteredRows = laptopListingRoute
       ? rows.filter((row) => matchesLaptopListingRoute(row, laptopListingRoute))
       : rows;
@@ -2505,7 +2575,7 @@ const usesSharedPreloadedPayload = (canonicalPath = "/") =>
   canonicalPath.startsWith("/tvs/features/") ||
   Boolean(
     parseSmartphoneListingPath(canonicalPath)?.canonicalPath &&
-      canonicalPath !== "/smartphones",
+    canonicalPath !== "/smartphones",
   ) ||
   canonicalPath === "/compare" ||
   canonicalPath.startsWith("/compare/");

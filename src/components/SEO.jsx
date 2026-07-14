@@ -112,7 +112,8 @@ const SEO = ({
   );
 
   const imageInput = React.useMemo(() => {
-    if (!image || typeof image !== "object" || Array.isArray(image)) return null;
+    if (!image || typeof image !== "object" || Array.isArray(image))
+      return null;
     return image;
   }, [image]);
 
@@ -145,7 +146,8 @@ const SEO = ({
     return {
       url: absoluteImage,
       width: Number.isFinite(widthValue) && widthValue > 0 ? widthValue : null,
-      height: Number.isFinite(heightValue) && heightValue > 0 ? heightValue : null,
+      height:
+        Number.isFinite(heightValue) && heightValue > 0 ? heightValue : null,
       alt: resolvedAlt,
       type: imageType || inferImageType(absoluteImage),
     };
@@ -238,7 +240,11 @@ const SEO = ({
       {twitterCreator && (
         <meta name="twitter:creator" content={twitterCreator} />
       )}
-      <meta key="twitter:title" name="twitter:title" content={normalizedTitle} />
+      <meta
+        key="twitter:title"
+        name="twitter:title"
+        content={normalizedTitle}
+      />
       {description && (
         <meta
           key="twitter:description"

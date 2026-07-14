@@ -61,7 +61,11 @@ import SEO from "../SEO";
 import { smartphoneMeta } from "../../constants/meta";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
 import { buildCanonicalComparePath } from "../../utils/compareRoutes";
-import { createWebPageSchema } from "../../utils/schemaGenerators";
+import {
+  createWebPageSchema,
+  createProductSchema,
+  createBreadcrumbSchema,
+} from "../../utils/schemaGenerators";
 import useStoreLogos from "../../hooks/useStoreLogos";
 import {
   createNewsStoryPath,
@@ -466,8 +470,7 @@ const LinkedNewsStoryCard = ({ story }) => {
   );
   const baseCardClass =
     "group flex h-full w-full flex-col overflow-hidden rounded-[20px] border border-[#dde6fb] bg-white shadow-[0_10px_28px_rgba(28,45,98,0.08)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#c9d7fb] hover:shadow-[0_18px_44px_rgba(28,45,98,0.14)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3557d3]";
-  const imageWrapClass =
-    "relative aspect-[16/9] overflow-hidden bg-[#f6f8ff]";
+  const imageWrapClass = "relative aspect-[16/9] overflow-hidden bg-[#f6f8ff]";
   const titleClass =
     "text-[0.98rem] leading-6 text-[#082a72] line-clamp-2 sm:text-[1.03rem] sm:leading-7";
 
@@ -1870,10 +1873,7 @@ const MobileDetailCard = () => {
         },
       ];
 
-      const overall = pickScore100(
-        persistedOverallScore,
-        persistedSpecScore,
-      );
+      const overall = pickScore100(persistedOverallScore, persistedSpecScore);
 
       return {
         overall,
@@ -2552,6 +2552,12 @@ const MobileDetailCard = () => {
       name,
       brand,
       highlights,
+      updatedAt:
+        data?.updated_at ||
+        data?.updatedAt ||
+        data?.last_updated ||
+        data?.price_updated_at ||
+        null,
     });
   };
 
@@ -4209,9 +4215,16 @@ Price: ${price}
         ? descriptiveTitle
         : `${metaBrand} ${descriptiveTitle}`
       : descriptiveTitle;
+  const metaUpdatedAt =
+    mobileData?.updated_at ||
+    mobileData?.updatedAt ||
+    mobileData?.last_updated ||
+    mobileData?.price_updated_at ||
+    null;
   const metaTitleBase = smartphoneMeta.title({
     name: metaName,
     brand: metaBrand,
+    updatedAt: metaUpdatedAt,
   });
   const metaVariantTag = [currentVariant?.ram, currentVariant?.storage]
     .filter(Boolean)
@@ -4238,6 +4251,7 @@ Price: ${price}
     smartphoneMeta.description({
       name: metaName,
       brand: metaBrand,
+      updatedAt: metaUpdatedAt,
       highlights: [
         headerProcessor,
         normalizeMemoryLabel(metaRam) && `${normalizeMemoryLabel(metaRam)} RAM`,
@@ -4309,12 +4323,59 @@ Price: ${price}
   const pageSchema = useMemo(() => {
     const name = metaTitle || metaName || metaTitleBase || "";
     if (!name) return null;
-    return createWebPageSchema({
-      name,
-      description: metaDescription,
-      url: canonicalUrl,
-    });
-  }, [metaName, metaTitleBase, metaTitle, metaDescription, canonicalUrl]);
+
+    const schemas = [
+      createWebPageSchema({
+        name,
+        description: metaDescription,
+        url: canonicalUrl,
+      }),
+      createProductSchema({
+        name: titleWithBrand || metaName || name,
+        description: metaDescription,
+        image: ogImage,
+        imageWidth: ogImageWidth,
+        imageHeight: ogImageHeight,
+        imageAlt: ogImageAlt,
+        url: canonicalUrl,
+        brand: metaBrand || undefined,
+        price:
+          Number.isFinite(resolvedCurrentNumericPrice) &&
+          resolvedCurrentNumericPrice > 0
+            ? resolvedCurrentNumericPrice
+            : undefined,
+        priceCurrency: "INR",
+      }),
+      createBreadcrumbSchema([
+        { label: "Home", url: "/" },
+        { label: "Smartphones", url: "/smartphones" },
+        ...(metaBrand
+          ? [
+              {
+                label: metaBrand,
+                url: `/smartphones/brand/${generateSlug(metaBrand)}`,
+              },
+            ]
+          : []),
+        { label: metaName || name, url: canonicalUrl },
+      ]),
+    ];
+
+    return schemas;
+  }, [
+    metaName,
+    metaTitleBase,
+    metaTitle,
+    metaDescription,
+    canonicalUrl,
+    titleWithBrand,
+    metaBrand,
+    ogImage,
+    ogImageWidth,
+    ogImageHeight,
+    ogImageAlt,
+    resolvedCurrentNumericPrice,
+  ]);
   const metaKeywords = useMemo(
     () =>
       buildDeviceSeoKeywords({
@@ -4885,18 +4946,14 @@ Price: ${price}
           className={`mx-auto max-w-7xl ${combineResponsiveClasses(RESPONSIVE_SPACING.pageMarginX)} pb-4 pt-0 sm:pb-5 sm:pt-0 lg:pb-6 lg:pt-0`}
         >
           <div className="px-4 pb-4 pt-3 sm:px-6 sm:pb-6 sm:pt-4 lg:px-7 lg:pb-7 lg:pt-4">
-            <div
-              className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between"
-            >
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
               <div className="min-w-0 flex-1">
                 {headerDescriptor ? (
                   <p className="mb-2 text-[10px] font-semibold uppercase leading-relaxed tracking-[0.32em] text-blue-500 sm:text-xs">
                     {headerDescriptor}
                   </p>
                 ) : null}
-                <div
-                  className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3"
-                >
+                <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
                   <h1 className="text-[1.45rem] font-semibold leading-tight tracking-tight text-slate-900 sm:text-[2rem]">
                     {headerTitle}
                   </h1>
@@ -4991,24 +5048,24 @@ Price: ${price}
                 <div className="mt-4 flex flex-col gap-3 xl:hidden">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
-                    <button
-                      onClick={toggleFavorite}
-                      className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
-                    >
-                      <FaHeart
-                        className={`text-lg ${
-                          isFavorite
-                            ? "text-rose-500 fill-current"
-                            : "text-slate-500"
-                        }`}
-                      />
-                    </button>
-                    <button
-                      onClick={handleShare}
-                      className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
-                    >
-                      <FaShareAlt className="text-lg text-slate-500" />
-                    </button>
+                      <button
+                        onClick={toggleFavorite}
+                        className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
+                      >
+                        <FaHeart
+                          className={`text-lg ${
+                            isFavorite
+                              ? "text-rose-500 fill-current"
+                              : "text-slate-500"
+                          }`}
+                        />
+                      </button>
+                      <button
+                        onClick={handleShare}
+                        className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
+                      >
+                        <FaShareAlt className="text-lg text-slate-500" />
+                      </button>
                     </div>
 
                     {hasLaunchDate ? (
@@ -5126,40 +5183,68 @@ Price: ${price}
                 const otherId = d?.id ?? d?.product_id ?? d?.productId ?? null;
                 const otherName = d?.name || d?.model || "Device";
                 const otherImg = d?.images?.[0] || d?.image || "";
+                const compareHref = buildCanonicalComparePath({
+                  leftName:
+                    mobileData?.name ||
+                    mobileData?.product_name ||
+                    mobileData?.model,
+                  rightName: otherName,
+                  leftId: currentProductId,
+                  rightId: otherId,
+                  type: "smartphone",
+                });
+                const cardClassName =
+                  "w-[84vw] max-w-[320px] flex-shrink-0 rounded-lg border border-slate-100 bg-white p-4 text-left shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-all hover:border-blue-200 hover:shadow-sm sm:w-[280px]";
+                const cardInner = (
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-md bg-slate-100">
+                      {otherImg ? (
+                        <img
+                          src={otherImg}
+                          alt={otherName}
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                          }}
+                        />
+                      ) : null}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[11px] text-slate-500">
+                        Compare with
+                      </div>
+                      <div className="truncate text-sm font-semibold text-slate-900">
+                        {otherName}
+                      </div>
+                    </div>
+                    <span className="text-xs font-semibold text-blue-700">
+                      Compare
+                    </span>
+                  </div>
+                );
+
+                if (compareDisabled || !currentProductId || !otherId) {
+                  return (
+                    <button
+                      key={String(otherId || otherName)}
+                      type="button"
+                      onClick={() => handlePopularCompare(d)}
+                      className={cardClassName}
+                    >
+                      {cardInner}
+                    </button>
+                  );
+                }
 
                 return (
-                  <button
+                  <Link
                     key={String(otherId || otherName)}
-                    type="button"
-                    onClick={() => handlePopularCompare(d)}
-                    className="w-[84vw] max-w-[320px] flex-shrink-0 rounded-lg border border-slate-100 bg-white p-4 text-left shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-all hover:border-blue-200 hover:shadow-sm sm:w-[280px]"
+                    to={compareHref}
+                    state={{ initialProduct: mobileData }}
+                    className={cardClassName}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-md bg-slate-100">
-                        {otherImg ? (
-                          <img
-                            src={otherImg}
-                            alt={otherName}
-                            className="w-full h-full object-contain"
-                            onError={(e) => {
-                              e.currentTarget.style.display = "none";
-                            }}
-                          />
-                        ) : null}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-[11px] text-slate-500">
-                          Compare with
-                        </div>
-                        <div className="truncate text-sm font-semibold text-slate-900">
-                          {otherName}
-                        </div>
-                      </div>
-                      <span className="text-xs font-semibold text-blue-700">
-                        Compare
-                      </span>
-                    </div>
-                  </button>
+                    {cardInner}
+                  </Link>
                 );
               })}
           </div>
