@@ -14,7 +14,7 @@
  * DESKTOP (> 768px):
  *   - Full-width horizontal layout
  *   - Logo | Inline Search Bar | Spacer | Utility Icons + Auth
- *   - All wishlist, auth, and other features visible
+ *   - Logo | Inline Search Bar | Spacer | Utility actions
  *
  * ARCHITECTURE:
  * ─────────────
@@ -42,7 +42,6 @@
  */
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
-import Cookies from "js-cookie";
 import { useDevice } from "../../hooks/useDevice";
 import { createProductPath } from "../../utils/slugGenerator";
 import {
@@ -63,9 +62,6 @@ import {
   FaBars,
   FaArrowLeft,
   FaArrowRight,
-  FaHeart,
-  FaUser,
-  FaShoppingCart,
   FaChevronRight,
   FaChevronDown,
   FaInfoCircle,
@@ -89,8 +85,6 @@ import {
   FaCarBattery,
   FaChair,
   FaShieldAlt,
-  FaSignInAlt,
-  FaUserPlus,
   FaStore,
   FaCreditCard,
   FaShippingFast,
@@ -140,7 +134,6 @@ const MOBILE_HEADER_SHOW_SCROLL_DELTA = 6;
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const [searchSuggestions, setSearchSuggestions] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -149,8 +142,6 @@ const Header = () => {
   const [isDesktopSearchOpen, setIsDesktopSearchOpen] = useState(false);
   const [activeDesktopMenu, setActiveDesktopMenu] = useState("");
   const [isMobileHeaderVisible, setIsMobileHeaderVisible] = useState(true);
-  const [userName, setUserName] = useState("");
-  const [userEmail, setUserEmail] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
   const currentPath = (() => {
@@ -161,7 +152,6 @@ const Header = () => {
   const isLocalDevHost =
     typeof window !== "undefined" &&
     /^(localhost|127\.0\.0\.1|::1)$/.test(window.location.hostname || "");
-  const authDropdownRef = useRef(null);
   const searchRef = useRef(null);
   const searchInputRef = useRef(null);
   const mobileHeaderRef = useRef(null);
@@ -179,44 +169,6 @@ const Header = () => {
         : deviceCtx.smartphone)) ||
     [];
   const tvs = (deviceCtx && deviceCtx.homeAppliances) || [];
-
-  const readAuthFromCookies = () => {
-    const token = Cookies.get("arenak");
-
-    if (token) {
-      try {
-        const userData = JSON.parse(Cookies.get("user_data") || "{}");
-        const fullName =
-          `${userData.f_name || ""} ${userData.l_name || ""}`.trim() ||
-          userData.username ||
-          "User";
-        const email = userData.email || "user@example.com";
-
-        setIsLoggedIn(true);
-        setUserName(fullName);
-        setUserEmail(email);
-      } catch (err) {
-        console.error("Error parsing user data:", err);
-        setIsLoggedIn(false);
-        setUserName("");
-        setUserEmail("");
-      }
-    } else {
-      setIsLoggedIn(false);
-      setUserName("");
-      setUserEmail("");
-    }
-  };
-
-  // Check if user is logged in and get user data from cookies
-  useEffect(() => {
-    readAuthFromCookies();
-  }, []);
-
-  // Re-read auth after navigation (e.g., after login redirect)
-  useEffect(() => {
-    readAuthFromCookies();
-  }, [location.pathname]);
 
   useEffect(() => {
     setActiveDesktopMenu("");
@@ -1473,7 +1425,6 @@ const Header = () => {
       items: [
         { label: "Privacy Policy", href: "/privacy-policy" },
         { label: "Terms", href: "/terms" },
-        { label: "Wishlist", href: "/wishlist" },
       ],
     },
     {
@@ -1743,32 +1694,6 @@ const Header = () => {
     };
   }, []);
 
-  // Handle auth
-  const handleLogin = () => {
-    setIsLoggedIn(true);
-    navigate("/login");
-  };
-
-  const handleLogout = () => {
-    // Clear all authentication cookies
-    Cookies.remove("arenak");
-    Cookies.remove("user_data");
-    Cookies.remove("remembered_email");
-
-    // Clear any legacy individual user cookies if they exist
-    Cookies.remove("userEmail");
-    Cookies.remove("username");
-    Cookies.remove("userId");
-    Cookies.remove("userName");
-    Cookies.remove("authToken");
-    Cookies.remove("user");
-
-    setIsLoggedIn(false);
-    setUserName("");
-    setUserEmail("");
-    navigate("/");
-  };
-
   // Announcement Bar Component
   const AnnouncementBar = () => (
     <div className="bg-blue-500 text-white py-2 overflow-hidden">
@@ -1995,70 +1920,6 @@ const Header = () => {
           </div>
         </div>
       </div>
-    </div>
-  );
-
-  // Auth Dropdown Component
-  const AuthDropdown = () => (
-    <div
-      ref={authDropdownRef}
-      className="absolute top-full right-0 mt-2 w-72 bg-white rounded-lg shadow-xl z-50 border border-gray-200"
-    >
-      {isLoggedIn ? (
-        <div className="p-4">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="w-12 h-12 rounded-full flex items-center justify-center">
-              <FaUser className="w-6 h-6 text-blue-600" />
-            </div>
-            <div>
-              <h4 className="font-bold text-gray-800">Welcome, {userName}!</h4>
-              <p className="text-sm text-gray-600">{userEmail}</p>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <a
-              href="/account"
-              className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100"
-            >
-              <FaUser className="text-blue-600" />
-              <span>My Account</span>
-            </a>
-
-            <a
-              href="/wishlist"
-              className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100"
-            >
-              <FaHeart className="text-red-600" />
-              <span>My Wishlist</span>
-            </a>
-          </div>
-          <div className="mt-4 pt-4 border-t">
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center justify-center space-x-2 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
-            >
-              <span>Logout</span>
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="p-4">
-          <h4 className="font-bold text-lg mb-4 text-gray-800">
-            Login / Sign Up
-          </h4>
-          <p className="text-sm text-gray-600 mb-4">
-            Access your wishlist, and recommendations by logging in.
-          </p>
-
-          <button
-            onClick={handleLogin}
-            className="w-full flex items-center justify-center space-x-2 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg hover:from-blue-700 hover:to-cyan-600 transition mb-3"
-          >
-            <FaSignInAlt />
-            <span>Continue with Email</span>
-          </button>
-        </div>
-      )}
     </div>
   );
 
@@ -2747,17 +2608,6 @@ const Header = () => {
         kind: "link",
         href: toCanonicalPagePath("/trending/smartphones"),
       },
-      ...(isLoggedIn
-        ? [
-            {
-              id: "wishlist",
-              title: "Wishlist",
-              icon: FaHeart,
-              kind: "link",
-              href: "/wishlist",
-            },
-          ]
-        : []),
     ];
 
     return (

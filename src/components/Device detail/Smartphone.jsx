@@ -11,14 +11,11 @@ import ProductDiscoverySections from "../ui/ProductDiscoverySections";
 import SmartphoneFaqSection from "../ui/SmartphoneFaqSection";
 // import RecommendedSmartphones from "../Home/RecommendedSmartphones";
 import { useDevice } from "../../hooks/useDevice";
-import Cookies from "js-cookie";
-import latestNewsRouteSection from "../ui/LatestNewsRouteSection";
 import { buildClientSmartphoneFaqs } from "../../utils/smartphoneFaqs";
 
 import useTitle from "../../hooks/useTitle";
 import usePageEngagementTracker from "../../hooks/usePageEngagementTracker";
 import {
-  FaHeart,
   FaShare,
   FaCamera,
   FaBatteryFull,
@@ -78,8 +75,8 @@ import {
 import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
 import { toCanonicalPageUrl } from "../../utils/publicUrl";
 import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
+import { SMARTPHONE_FEATURE_CATALOG } from "../../utils/smartphonePopularFeatures";
 
-const token = Cookies.get("arenak");
 const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
 const SMARTPHONE_SEO_SUFFIX_ALIAS = "-price-in-indi";
 const RECENT_STORAGE_KEY = "hooks_recent_smartphones_v1";
@@ -529,7 +526,6 @@ const MobileDetailCard = () => {
   const [showHeaderSummaryFull, setShowHeaderSummaryFull] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState(0);
   const [showShareMenu, setShowShareMenu] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
   const variantInitKeyRef = useRef("");
   const recentStoreKeyRef = useRef("");
   const detailFetchKeyRef = useRef("");
@@ -2987,90 +2983,6 @@ Price: ${price}
     window.location.href = url;
   };
 
-  const toggleFavorite = async () => {
-    const token = Cookies.get("arenak");
-    if (!token) {
-      navigate("/login", { state: { returnTo: location.pathname } });
-      return;
-    }
-
-    const productId = mobileData?.id || mobileData?.model;
-
-    if (!isFavorite) {
-      try {
-        const res = await fetch("https://api.apisphere.in/api/wishlist", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            product_id: productId,
-            product_type: "smartphone",
-          }),
-        });
-
-        if (res.status === 401) {
-          navigate("/login");
-          return;
-        }
-
-        if (!res.ok) throw new Error(`Add favorite failed: ${res.status}`);
-        setIsFavorite(true);
-      } catch (err) {
-        console.error("Failed to add favorite via API:", err);
-      }
-    } else {
-      try {
-        const res = await fetch(
-          `https://api.apisphere.in/api/wishlist/${encodeURIComponent(productId)}`,
-          {
-            method: "DELETE",
-            headers: { Authorization: `Bearer ${token}` },
-          },
-        );
-
-        if (res.status === 401) {
-          navigate("/login");
-          return;
-        }
-
-        if (!res.ok) throw new Error(`Remove favorite failed: ${res.status}`);
-        setIsFavorite(false);
-      } catch (err) {
-        console.error("Failed to remove favorite via API:", err);
-      }
-    }
-  };
-
-  useEffect(() => {
-    const initFavorite = async () => {
-      const token = Cookies.get("arenak");
-      if (!token) return;
-      const productId = mobileData?.id || mobileData?.model;
-      if (!productId) return;
-
-      try {
-        const res = await fetch("https://api.apisphere.in/api/wishlist", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) return;
-        const json = await res.json();
-        const items = json.rows || json.wishlist || json.items || json || [];
-        const found = (Array.isArray(items) ? items : []).some(
-          (it) =>
-            String(it.product_id || it.id || it.favoriteId) ===
-            String(productId),
-        );
-        if (found) setIsFavorite(true);
-      } catch (err) {
-        console.error("Failed to initialize favorite status:", err);
-      }
-    };
-
-    initFavorite();
-  }, [mobileData?.id, mobileData?.model]);
-
   const mobileTabs = [
     { id: "specifications", label: "Basic", icon: FaMicrochip },
     { id: "display", label: "Display", icon: FaExpand },
@@ -4530,6 +4442,99 @@ Price: ${price}
     ],
   );
 
+  const compareTarget = popularComparisonTargets[0] || null;
+  const seoInternalLinks = useMemo(() => {
+    const links = [];
+    const pushLink = (href, label) => {
+      const cleanHref = String(href || "").trim();
+      const cleanLabel = String(label || "").replace(/\s+/g, " ").trim();
+      if (!cleanHref || !cleanLabel) return;
+      links.push({ href: cleanHref, label: cleanLabel });
+    };
+
+    const shortProductName =
+      metaName || mobileData?.name || mobileData?.model || headerTitle || "";
+    const brandSlug = metaBrand ? generateSlug(metaBrand) : "";
+
+    pushLink("/smartphones", "Browse all smartphones");
+
+    if (metaBrand && brandSlug) {
+      pushLink(
+        `/smartphones/brand/${brandSlug}`,
+        `More ${metaBrand} smartphones`,
+      );
+    }
+
+    const matchingFeatures = SMARTPHONE_FEATURE_CATALOG.filter((feature) => {
+      try {
+        return feature?.id && feature?.match?.(mobileData);
+      } catch {
+        return false;
+      }
+    }).slice(0, 2);
+
+    matchingFeatures.forEach((feature) => {
+      pushLink(
+        `/smartphones/feature/${feature.id}`,
+        `${feature.name} smartphones`,
+      );
+    });
+
+    pushLink("/smartphones/filter/new", "Latest smartphone launches");
+    pushLink(
+      launchStatus === "upcoming"
+        ? "/smartphones/upcoming"
+        : "/trending/smartphones",
+      launchStatus === "upcoming"
+        ? "Upcoming smartphones"
+        : "Trending smartphones in India",
+    );
+
+    const otherId =
+      compareTarget?.id ??
+      compareTarget?.product_id ??
+      compareTarget?.productId ??
+      null;
+    const otherName = compareTarget?.name || compareTarget?.model || "";
+
+    if (!compareDisabled && currentProductId && otherId && otherName) {
+      pushLink(
+        buildCanonicalComparePath({
+          leftName:
+            mobileData?.name || mobileData?.product_name || mobileData?.model,
+          rightName: otherName,
+          leftId: currentProductId,
+          rightId: otherId,
+          type: "smartphone",
+        }),
+        `Compare ${shortProductName || "this phone"} with ${otherName}`,
+      );
+    } else {
+      pushLink("/compare", "Compare smartphones side by side");
+    }
+
+    pushLink("/news", "Smartphone news and launch updates");
+
+    const seen = new Set();
+    return links
+      .filter((link) => {
+        const key = link.href.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 8);
+  }, [
+    compareDisabled,
+    compareTarget,
+    currentProductId,
+    headerTitle,
+    launchStatus,
+    metaBrand,
+    metaName,
+    mobileData,
+  ]);
+
   if (loading && !mobileData) {
     return (
       <div className="max-w-4xl mx-auto p-8">
@@ -4895,7 +4900,6 @@ Price: ${price}
     (section) => hasContent(section.leadPoint) || section.points.length > 0,
   );
 
-  const compareTarget = popularComparisonTargets[0] || null;
   const detailInfoSections = infoKeySections.filter(Boolean);
   const detailInfoSectionByKey = detailInfoSections.reduce((acc, section) => {
     acc[section.key] = section;
@@ -5173,18 +5177,6 @@ Price: ${price}
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={toggleFavorite}
-                        className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
-                      >
-                        <FaHeart
-                          className={`text-lg ${
-                            isFavorite
-                              ? "text-rose-500 fill-current"
-                              : "text-slate-500"
-                          }`}
-                        />
-                      </button>
-                      <button
                         onClick={handleShare}
                         className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
                       >
@@ -5233,18 +5225,6 @@ Price: ${price}
               <div className="hidden flex-col items-start gap-3 xl:flex xl:items-end">
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={toggleFavorite}
-                    className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
-                  >
-                    <FaHeart
-                      className={`text-lg ${
-                        isFavorite
-                          ? "text-rose-500 fill-current"
-                          : "text-slate-500"
-                      }`}
-                    />
-                  </button>
-                  <button
                     onClick={handleShare}
                     className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
                   >
@@ -5279,6 +5259,40 @@ Price: ${price}
           </div>
         </div>
       </section>
+
+      {seoInternalLinks.length > 0 ? (
+        <section className="mx-auto max-w-7xl px-4 pb-4 sm:px-6 lg:px-8">
+          <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:p-5">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-blue-600">
+                  Related smartphone pages
+                </p>
+                <h2 className="mt-1 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">
+                  Continue exploring {metaBrand ? `${metaBrand} ` : ""}
+                  smartphones
+                </h2>
+              </div>
+              <p className="max-w-xl text-[12px] leading-5 text-slate-500 sm:text-right sm:text-[13px]">
+                Jump to helpful brand lists, launch pages, comparison tools,
+                and related buying context.
+              </p>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {seoInternalLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  to={link.href}
+                  className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-2 text-[12px] font-semibold leading-none text-blue-700 transition-colors hover:border-blue-200 hover:bg-blue-100 sm:text-[13px]"
+                >
+                  <span>{link.label}</span>
+                  <FaArrowRight className="text-[10px]" aria-hidden="true" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       {/* Popular Comparisons */}
       {popularComparisonTargets.length > 0 && (
@@ -5670,19 +5684,6 @@ Price: ${price}
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={toggleFavorite}
-                    className="p-2 rounded-full hover:bg-gray-100"
-                    title="Add to favorites"
-                  >
-                    <FaHeart
-                      className={`text-xl ${
-                        isFavorite
-                          ? "text-gray-500 fill-current"
-                          : "text-gray-500"
-                      }`}
-                    />
-                  </button>
-                  <button
                     onClick={handleShare}
                     className="p-2 rounded-full hover:bg-gray-100"
                     title="Share"
@@ -5897,7 +5898,7 @@ Price: ${price}
                   to="/news"
                   className="inline-flex items-center gap-3 text-lg font-semibold text-[#082a72] transition-colors hover:text-[#3557d3]"
                 >
-                  View All News
+                  More smartphone news
                   <FaArrowRight className="text-base" />
                 </Link>
               </div>
@@ -5905,7 +5906,7 @@ Price: ${price}
           </div>
         </div>
       ) : null}
-      <LatestNewsRouteSection />
+      <LatestNewsRouteSection newsLinkLabel="More smartphone news" />
 
       {activeTab === "specifications" ? (
         <div className="w-full">

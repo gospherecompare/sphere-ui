@@ -4,7 +4,6 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import useDevice from "../../hooks/useDevice";
 import useStoreLogos from "../../hooks/useStoreLogos";
 import {
-  FaHeart,
   FaShareAlt,
   FaShare,
   FaLaptop,
@@ -27,7 +26,6 @@ import {
   FaFacebook,
   FaLink,
 } from "react-icons/fa";
-import Cookies from "js-cookie";
 import Spinner from "../ui/Spinner";
 import { laptopMeta } from "../../constants/meta";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
@@ -462,7 +460,6 @@ const LaptopDetailCard = () => {
   const [selectedVariant, setSelectedVariant] = useState(0);
   const [showAllStores, setShowAllStores] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [activeImage, setActiveImage] = useState(0);
   const [activeStoreId, setActiveStoreId] = useState(null);
   const [activeTab, setActiveTab] = useState("specifications");
@@ -1074,90 +1071,6 @@ const LaptopDetailCard = () => {
       console.error("Failed to copy:", err);
     }
   };
-
-  const toggleFavorite = async () => {
-    const token = Cookies.get("arenak");
-    if (!token) {
-      navigate("/login", { state: { returnTo: location.pathname } });
-      return;
-    }
-
-    const productId = laptopData?.id || laptopData?.model_number;
-
-    if (!isFavorite) {
-      try {
-        const res = await fetch("https://api.apisphere.in/api/wishlist", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            product_id: productId,
-            product_type: "laptop",
-          }),
-        });
-
-        if (res.status === 401) {
-          navigate("/login");
-          return;
-        }
-
-        if (!res.ok) throw new Error(`Add favorite failed: ${res.status}`);
-        setIsFavorite(true);
-      } catch (err) {
-        console.error("Failed to add favorite via API:", err);
-      }
-    } else {
-      try {
-        const res = await fetch(
-          `https://api.apisphere.in/api/wishlist/${encodeURIComponent(productId)}`,
-          {
-            method: "DELETE",
-            headers: { Authorization: `Bearer ${token}` },
-          },
-        );
-
-        if (res.status === 401) {
-          navigate("/login");
-          return;
-        }
-
-        if (!res.ok) throw new Error(`Remove favorite failed: ${res.status}`);
-        setIsFavorite(false);
-      } catch (err) {
-        console.error("Failed to remove favorite via API:", err);
-      }
-    }
-  };
-
-  useEffect(() => {
-    const initFavorite = async () => {
-      const token = Cookies.get("arenak");
-      if (!token) return;
-      const productId = laptopData?.id || laptopData?.model_number;
-      if (!productId) return;
-
-      try {
-        const res = await fetch("https://api.apisphere.in/api/wishlist", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) return;
-        const json = await res.json();
-        const items = json.rows || json.wishlist || json.items || json || [];
-        const found = (Array.isArray(items) ? items : []).some(
-          (it) =>
-            String(it.product_id || it.id || it.favoriteId) ===
-            String(productId),
-        );
-        if (found) setIsFavorite(true);
-      } catch (err) {
-        console.error("Failed to initialize favorite status:", err);
-      }
-    };
-
-    initFavorite();
-  }, [laptopData?.id, laptopData?.model_number]);
 
   // Tabs configuration for laptops
   const mobileTabs = [
@@ -1966,16 +1879,6 @@ const LaptopDetailCard = () => {
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={toggleFavorite}
-                className="p-2 rounded-full hover:bg-gray-100"
-              >
-                <FaHeart
-                  className={`text-lg ${
-                    isFavorite ? "text-red-500 fill-current" : "text-gray-400"
-                  }`}
-                />
-              </button>
-              <button
                 onClick={handleShare}
                 className="p-2 rounded-full hover:bg-gray-100"
               >
@@ -2052,19 +1955,6 @@ const LaptopDetailCard = () => {
             </div>
             <div className="flex flex-col items-start gap-3 xl:items-end">
               <div className="flex items-center gap-2">
-                <button
-                  onClick={toggleFavorite}
-                  className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
-                  title="Add to favorites"
-                >
-                  <FaHeart
-                    className={`text-lg ${
-                      isFavorite
-                        ? "text-rose-500 fill-current"
-                        : "text-slate-500"
-                    }`}
-                  />
-                </button>
                 <button
                   onClick={handleShare}
                   className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
@@ -2312,19 +2202,6 @@ const LaptopDetailCard = () => {
                   ) : null}
                 </div>
                 <div className="flex flex-col items-start gap-3 lg:items-end">
-                  <button
-                    onClick={toggleFavorite}
-                    className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
-                    title="Add to favorites"
-                  >
-                    <FaHeart
-                      className={`text-lg ${
-                        isFavorite
-                          ? "text-rose-500 fill-current"
-                          : "text-slate-500"
-                      }`}
-                    />
-                  </button>
                   <button
                     onClick={handleShare}
                     className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"

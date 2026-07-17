@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import useDevice from "../../hooks/useDevice";
-import Cookies from "js-cookie";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
 import {
   createProductSchema,
@@ -13,7 +12,6 @@ import usePageEngagementTracker from "../../hooks/usePageEngagementTracker";
 
 // Icons
 import {
-  FaHeart,
   FaShare,
   FaCheck,
   FaExternalLinkAlt,
@@ -175,7 +173,6 @@ const TVDetailCard = () => {
   const [selectedVariant, setSelectedVariant] = useState(0);
   const [copied, setCopied] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [showHeaderSummaryFull, setShowHeaderSummaryFull] = useState(false);
   // Review form removed
 
@@ -1548,90 +1545,6 @@ const TVDetailCard = () => {
     }
   };
 
-  const toggleFavorite = async () => {
-    const token = Cookies.get("arenak");
-    if (!token) {
-      navigate("/login", { state: { returnTo: location.pathname } });
-      return;
-    }
-
-    const productId = applianceData?.id || applianceData?.model_number;
-
-    if (!isFavorite) {
-      try {
-        const res = await fetch("https://api.apisphere.in/api/wishlist", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            product_id: productId,
-            product_type: "homeappliance",
-          }),
-        });
-
-        if (res.status === 401) {
-          navigate("/login");
-          return;
-        }
-
-        if (!res.ok) throw new Error(`Add favorite failed: ${res.status}`);
-        setIsFavorite(true);
-      } catch (err) {
-        console.error("Failed to add favorite via API:", err);
-      }
-    } else {
-      try {
-        const res = await fetch(
-          `https://api.apisphere.in/api/wishlist/${encodeURIComponent(productId)}`,
-          {
-            method: "DELETE",
-            headers: { Authorization: `Bearer ${token}` },
-          },
-        );
-
-        if (res.status === 401) {
-          navigate("/login");
-          return;
-        }
-
-        if (!res.ok) throw new Error(`Remove favorite failed: ${res.status}`);
-        setIsFavorite(false);
-      } catch (err) {
-        console.error("Failed to remove favorite via API:", err);
-      }
-    }
-  };
-
-  useEffect(() => {
-    const initFavorite = async () => {
-      const token = Cookies.get("arenak");
-      if (!token) return;
-      const productId = applianceData?.id || applianceData?.model_number;
-      if (!productId) return;
-
-      try {
-        const res = await fetch("https://api.apisphere.in/api/wishlist", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) return;
-        const json = await res.json();
-        const items = json.rows || json.wishlist || json.items || json || [];
-        const found = (Array.isArray(items) ? items : []).some(
-          (it) =>
-            String(it.product_id || it.id || it.favoriteId) ===
-            String(productId),
-        );
-        if (found) setIsFavorite(true);
-      } catch (err) {
-        console.error("Failed to initialize favorite status:", err);
-      }
-    };
-
-    initFavorite();
-  }, [applianceData?.id, applianceData?.model_number]);
-
   // Tabs configuration
   const isTvProduct = /tv|television/.test(
     String(
@@ -2842,18 +2755,6 @@ const TVDetailCard = () => {
                   <div className="mt-5 flex flex-col gap-3 xl:hidden">
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={toggleFavorite}
-                        className="rounded-full border border-slate-100 bg-white p-2 shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-colors hover:bg-slate-50"
-                      >
-                        <FaHeart
-                          className={`text-lg ${
-                            isFavorite
-                              ? "text-rose-500 fill-current"
-                              : "text-slate-500"
-                          }`}
-                        />
-                      </button>
-                      <button
                         onClick={handleShare}
                         className="rounded-full border border-slate-100 bg-white p-2 shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-colors hover:bg-slate-50"
                       >
@@ -2882,18 +2783,6 @@ const TVDetailCard = () => {
 
                 <div className="hidden flex-col items-start gap-3 xl:flex xl:items-end">
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={toggleFavorite}
-                      className="rounded-full border border-slate-100 bg-white p-2 shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-colors hover:bg-slate-50"
-                    >
-                      <FaHeart
-                        className={`text-lg ${
-                          isFavorite
-                            ? "text-rose-500 fill-current"
-                            : "text-slate-500"
-                        }`}
-                      />
-                    </button>
                     <button
                       onClick={handleShare}
                       className="rounded-full border border-slate-100 bg-white p-2 shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-colors hover:bg-slate-50"

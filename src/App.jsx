@@ -94,12 +94,6 @@ const TVDetailCard = React.lazy(() => import("./components/Device detail/TV"));
 const NetworkingDetailCard = React.lazy(
   () => import("./components/Device detail/Network"),
 );
-const Login = React.lazy(() => import("./components/Auths/Login"));
-const Signup = React.lazy(() => import("./components/Auths/Signup"));
-const Wishlist = React.lazy(() => import("./components/Wishlist"));
-const AccountManagement = React.lazy(
-  () => import("./components/AccountManagement"),
-);
 
 const normalizeSeoPath = (pathname) => {
   if (!pathname) return "/";
@@ -413,18 +407,6 @@ const resolveSeoMeta = (pathname) => {
         "Read Hooks terms of use covering platform usage, content accuracy, and service limitations.",
       keywords: "terms of use, hooks terms, website terms, usage policy",
     },
-    {
-      test: (p) =>
-        p.startsWith("/account") ||
-        p.startsWith("/wishlist") ||
-        p.startsWith("/login") ||
-        p.startsWith("/signup"),
-      title: "Hooks Account",
-      description:
-        "Secure account pages for your Hooks profile and saved data.",
-      keywords: "hooks account, user account, login, signup, wishlist",
-      robots: "noindex, nofollow",
-    },
   ];
 
   const matched = rules.find((rule) => rule.test(canonicalPath));
@@ -648,14 +630,6 @@ function App() {
           <Routes>
             {/* Home */}
             <Route path="/" element={<Home />} />
-
-            {/* Authentication */}
-            <Route path="/login" element={<Login asPage />} />
-            <Route path="/signup" element={<Signup asPage />} />
-
-            {/* User Account */}
-            <Route path="/account" element={<AccountManagement />} />
-            <Route path="/wishlist" element={<Wishlist />} />
 
             {/* Product Listings - SEO friendly category paths */}
             <Route path="/search" element={<LegacySearchRedirect />} />

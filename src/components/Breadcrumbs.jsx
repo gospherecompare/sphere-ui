@@ -177,8 +177,6 @@ const routes = [
     breadcrumb: renderSlugBreadcrumb,
   },
   { path: "/compare", breadcrumb: "Compare" },
-  { path: "/login", breadcrumb: "Login" },
-  { path: "/signup", breadcrumb: "Signup" },
   { path: "/brands", breadcrumb: "Brands" },
   { path: "/product/:id", breadcrumb: () => "Product Details" },
   { path: "/about", breadcrumb: "About" },

@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import useDevice from "../../hooks/useDevice";
-import Cookies from "js-cookie";
 import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
 import {
   createProductSchema,
@@ -15,7 +14,6 @@ import usePageEngagementTracker from "../../hooks/usePageEngagementTracker";
 // Icons
 import {
   FaStar,
-  FaHeart,
   FaShare,
   FaCopy,
   FaCheck,
@@ -153,7 +151,6 @@ const NetworkingDetailCard = () => {
   const [selectedVariant, setSelectedVariant] = useState(0);
   const [copied, setCopied] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [ratingsData, setRatingsData] = useState(null);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [newReview, setNewReview] = useState({
@@ -795,90 +792,6 @@ const NetworkingDetailCard = () => {
         setTimeout(() => setCopied(false), 2000);
       });
   };
-
-  const toggleFavorite = async () => {
-    const token = Cookies.get("arenak");
-    if (!token) {
-      navigate("/login", { state: { returnTo: location.pathname } });
-      return;
-    }
-
-    const productId = deviceData?.id || deviceData?.model_number;
-
-    if (!isFavorite) {
-      try {
-        const res = await fetch("https://api.apisphere.in/api/wishlist", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            product_id: productId,
-            product_type: "networking",
-          }),
-        });
-
-        if (res.status === 401) {
-          navigate("/login");
-          return;
-        }
-
-        if (!res.ok) throw new Error(`Add favorite failed: ${res.status}`);
-        setIsFavorite(true);
-      } catch (err) {
-        console.error("Failed to add favorite via API:", err);
-      }
-    } else {
-      try {
-        const res = await fetch(
-          `https://api.apisphere.in/api/wishlist/${encodeURIComponent(productId)}`,
-          {
-            method: "DELETE",
-            headers: { Authorization: `Bearer ${token}` },
-          },
-        );
-
-        if (res.status === 401) {
-          navigate("/login");
-          return;
-        }
-
-        if (!res.ok) throw new Error(`Remove favorite failed: ${res.status}`);
-        setIsFavorite(false);
-      } catch (err) {
-        console.error("Failed to remove favorite via API:", err);
-      }
-    }
-  };
-
-  useEffect(() => {
-    const initFavorite = async () => {
-      const token = Cookies.get("arenak");
-      if (!token) return;
-      const productId = deviceData?.id || deviceData?.model_number;
-      if (!productId) return;
-
-      try {
-        const res = await fetch("https://api.apisphere.in/api/wishlist", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) return;
-        const json = await res.json();
-        const items = json.rows || json.wishlist || json.items || json || [];
-        const found = (Array.isArray(items) ? items : []).some(
-          (it) =>
-            String(it.product_id || it.id || it.favoriteId) ===
-            String(productId),
-        );
-        if (found) setIsFavorite(true);
-      } catch (err) {
-        console.error("Failed to initialize favorite status:", err);
-      }
-    };
-
-    initFavorite();
-  }, [deviceData?.id, deviceData?.model_number]);
 
   const handleRatingChange = (category, value) => {
     const updatedReview = { ...newReview, [category]: value };
@@ -1563,16 +1476,6 @@ const NetworkingDetailCard = () => {
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={toggleFavorite}
-                className="p-2 rounded-full hover:bg-gray-100"
-              >
-                <FaHeart
-                  className={`text-lg ${
-                    isFavorite ? "text-red-500 fill-current" : "text-gray-400"
-                  }`}
-                />
-              </button>
-              <button
                 onClick={handleShare}
                 className="p-2 rounded-full hover:bg-gray-100"
               >
@@ -1618,16 +1521,6 @@ const NetworkingDetailCard = () => {
                 }}
               />
               <div className="absolute top-3 right-3 flex flex-col gap-2">
-                <button
-                  onClick={toggleFavorite}
-                  className="p-2 bg-white rounded-full shadow-md hover:shadow-lg"
-                >
-                  <FaHeart
-                    className={`${
-                      isFavorite ? "text-red-500 fill-current" : "text-gray-600"
-                    }`}
-                  />
-                </button>
                 <button
                   onClick={handleShare}
                   className="p-2 bg-white rounded-full shadow-md hover:shadow-lg"
@@ -1767,19 +1660,6 @@ const NetworkingDetailCard = () => {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={toggleFavorite}
-                    className="p-3 rounded-full hover:bg-gray-100"
-                    title="Add to favorites"
-                  >
-                    <FaHeart
-                      className={`text-xl ${
-                        isFavorite
-                          ? "text-red-500 fill-current"
-                          : "text-gray-400"
-                      }`}
-                    />
-                  </button>
                   <button
                     onClick={handleShare}
                     className="p-3 rounded-full hover:bg-gray-100 relative"

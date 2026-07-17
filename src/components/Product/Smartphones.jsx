@@ -23,7 +23,6 @@ import {
   FaExternalLinkAlt,
   FaExchangeAlt,
   FaPlus,
-  FaHeart,
 } from "react-icons/fa";
 import { useDevice } from "../../hooks/useDevice";
 import { useNavigate, useLocation, useParams } from "react-router-dom";

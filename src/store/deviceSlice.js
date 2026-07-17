@@ -1,5 +1,4 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import Cookies from "js-cookie";
 
 const REMOTE_API_BASE_URL = "https://api.apisphere.in/api";
 const LOCAL_API_BASE_URL = "http://localhost:5000/api";
