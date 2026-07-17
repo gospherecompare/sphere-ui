@@ -965,6 +965,7 @@ const MobileDetailCard = () => {
 
   const getCompetitorLimitForStage = (stage) => {
     if (stage === "rumored") return 0;
+    if (stage === "upcoming") return 0;
     if (stage === "announced") return 2;
     return 10;
   };
@@ -1607,9 +1608,7 @@ const MobileDetailCard = () => {
   );
   const scoreSourceData = selectedResolvedForRoute
     ? normalizeSmartphone(selectedResolvedForRoute)
-    : !routeSlug
-      ? mobileData
-      : null;
+    : mobileData;
   const resolvedCanonicalRouteSlug = useMemo(
     () =>
       getCanonicalSeoSlugForDevice(
@@ -1670,6 +1669,65 @@ const MobileDetailCard = () => {
     () => getDeviceLaunchStatus(mobileData),
     [mobileData],
   );
+  const hasMeaningfulSpecContent = (value) => {
+    if (value == null || value === false) return false;
+    if (typeof value === "string") {
+      const text = value.trim();
+      if (!text) return false;
+      const lower = text.toLowerCase();
+      return ![
+        "n/a",
+        "na",
+        "null",
+        "undefined",
+        "invalid date",
+        "{}",
+        "[]",
+      ].includes(lower);
+    }
+    if (typeof value === "number") return Number.isFinite(value);
+    if (Array.isArray(value)) return value.some(hasMeaningfulSpecContent);
+    if (typeof value === "object") {
+      return Object.values(value).some(hasMeaningfulSpecContent);
+    }
+    return Boolean(value);
+  };
+  const resolveVisibleSpecScore = (device) => {
+    if (!device || typeof device !== "object") return null;
+    const scoreValues = [
+      resolveSmartphoneBadgeScore(device),
+      device.spec_score_v2_display_80_98,
+      device.specScoreV2Display8098,
+      device.spec_score_display,
+      device.specScoreDisplay,
+      device.spec_score_v2,
+      device.specScoreV2,
+      device.spec_score,
+      device.specScore,
+      device.overall_score_v2_display_80_98,
+      device.overallScoreV2Display8098,
+      device.overall_score_display,
+      device.overallScoreDisplay,
+      device.overall_score_v2,
+      device.overallScoreV2,
+      device.overall_score,
+      device.overallScore,
+    ];
+
+    for (const value of scoreValues) {
+      if (value == null || value === "") continue;
+      const rawValue =
+        typeof value === "string"
+          ? value.match(/\d+(?:\.\d+)?/)?.[0]
+          : value;
+      const numericValue = Number(formatSmartphoneBadgeScore(rawValue));
+      if (Number.isFinite(numericValue) && numericValue > 0) {
+        return numericValue;
+      }
+    }
+
+    return null;
+  };
   const serverPolicy = useMemo(() => {
     const allowCompareRaw =
       mobileData?.allowCompare ?? mobileData?.allow_compare ?? null;
@@ -1710,17 +1768,11 @@ const MobileDetailCard = () => {
     return getCompareLimitForStage(launchStatus);
   }, [launchStatus, serverPolicy]);
   const compareDisabled = compareLimit === 0;
-  const competitorLimit = useMemo(() => {
-    if (serverPolicy.allowCompetitors === false) return 0;
-    if (Number.isFinite(serverPolicy.competitorLimit))
-      return serverPolicy.competitorLimit;
-    return getCompetitorLimitForStage(launchStatus);
-  }, [launchStatus, serverPolicy]);
   const allowSpecScore = serverPolicy.allowSpecScore === true;
   const SpecScoreBadge = allowSpecScore ? BaseSpecScoreBadge : HiddenScoreBadge;
   const headerSpecScoreValue = useMemo(() => {
     if (!allowSpecScore || !scoreSourceData) return null;
-    const resolvedValue = resolveSmartphoneBadgeScore(scoreSourceData);
+    const resolvedValue = resolveVisibleSpecScore(scoreSourceData);
     if (resolvedValue == null) return null;
     const rawValue = Number(resolvedValue);
     return Number.isFinite(rawValue)
@@ -2020,6 +2072,45 @@ const MobileDetailCard = () => {
       : "";
   const currentProductId =
     mobileData?.product_id ?? mobileData?.productId ?? mobileData?.id ?? null;
+  const isCompleteUpcomingForCompetitors = useMemo(() => {
+    if (launchStatus !== "upcoming") return false;
+    if (serverPolicy.allowCompetitors === false) return false;
+    if (!mobileData) return false;
+
+    const hasAllowedScore =
+      serverPolicy.allowSpecScore === true &&
+      resolveVisibleSpecScore(scoreSourceData || mobileData) != null;
+    if (!hasAllowedScore) return false;
+
+    const requiredGroups = [
+      mobileData.performance,
+      mobileData.display,
+      mobileData.camera,
+      mobileData.battery,
+    ];
+    const filledRequiredGroups = requiredGroups.filter(
+      hasMeaningfulSpecContent,
+    ).length;
+    const hasVariantOrPrice =
+      (Array.isArray(mobileData.variants) && mobileData.variants.length > 0) ||
+      resolvedCurrentNumericPrice > 0;
+
+    return filledRequiredGroups >= 3 && hasVariantOrPrice;
+  }, [
+    launchStatus,
+    mobileData,
+    resolvedCurrentNumericPrice,
+    scoreSourceData,
+    serverPolicy.allowCompetitors,
+    serverPolicy.allowSpecScore,
+  ]);
+  const competitorLimit = useMemo(() => {
+    if (serverPolicy.allowCompetitors === false) return 0;
+    if (Number.isFinite(serverPolicy.competitorLimit))
+      return serverPolicy.competitorLimit;
+    if (isCompleteUpcomingForCompetitors) return 10;
+    return getCompetitorLimitForStage(launchStatus);
+  }, [isCompleteUpcomingForCompetitors, launchStatus, serverPolicy]);
   const smartphoneFaqItems = useMemo(() => {
     const apiFaqs = Array.isArray(mobileData?.faqs)
       ? mobileData.faqs.filter(
@@ -2178,13 +2269,8 @@ const MobileDetailCard = () => {
   const popularComparisonTargets = useMemo(() => {
     const list = Array.isArray(smartphone) ? smartphone : [];
     if (!currentProductId || list.length === 0) return [];
-
-    const normalizePrice = (d) => {
-      const vars = Array.isArray(d?.variants) ? d.variants : [];
-      const raw = vars?.[0]?.base_price ?? d?.base_price ?? d?.price ?? null;
-      const n = Number(raw);
-      return Number.isFinite(n) ? n : null;
-    };
+    const currentPrice =
+      resolvedCurrentNumericPrice > 0 ? resolvedCurrentNumericPrice : null;
 
     const normalized = list
       .map((d) => normalizeSmartphone(d))
@@ -2198,10 +2284,43 @@ const MobileDetailCard = () => {
         const brand = String(d.brand || "").toLowerCase();
         const sameBrand = Boolean(currentBrand && brand === currentBrand);
         const rating = Number(d.rating ?? d.avg_rating ?? 0) || 0;
-        const price = normalizePrice(d);
-        return { d, sameBrand, rating, price };
+        const resolvedPrice = resolveDeviceNumericPrice(d);
+        const price = resolvedPrice > 0 ? resolvedPrice : null;
+        const score =
+          resolveSmartphoneBadgeScore(d) ??
+          Number(
+            d.overall_score_v2 ??
+              d.overallScoreV2 ??
+              d.overall_score ??
+              d.overallScore ??
+              0,
+          ) ??
+          0;
+        let priceFit = 55;
+        if (currentPrice && price) {
+          const diffRatio =
+            Math.abs(currentPrice - price) / Math.max(currentPrice, price);
+          priceFit =
+            diffRatio <= 0.15
+              ? 100
+              : diffRatio <= 0.3
+                ? 90
+                : diffRatio <= 0.5
+                  ? 72
+                  : Math.max(20, 62 - (diffRatio - 0.5) * 80);
+        }
+        const ratingScore = rating <= 5 ? rating * 20 : rating;
+        const selectionScore =
+          priceFit * 0.46 +
+          (Number.isFinite(score) ? score : 70) * 0.32 +
+          (Number.isFinite(ratingScore) ? ratingScore : 55) * 0.1 +
+          (sameBrand ? 12 : 0);
+        return { d, sameBrand, rating, price, selectionScore };
       })
       .sort((a, b) => {
+        if (b.selectionScore !== a.selectionScore) {
+          return b.selectionScore - a.selectionScore;
+        }
         if (a.sameBrand !== b.sameBrand) return a.sameBrand ? -1 : 1;
         if (b.rating !== a.rating) return b.rating - a.rating;
         if (a.price == null && b.price != null) return 1;
@@ -2209,9 +2328,14 @@ const MobileDetailCard = () => {
         if (a.price != null && b.price != null) return a.price - b.price;
         return 0;
       })
-      .slice(0, 6)
+      .slice(0, 30)
       .map((x) => x.d);
-  }, [smartphone, currentProductId, mobileData?.brand]);
+  }, [
+    smartphone,
+    currentProductId,
+    mobileData?.brand,
+    resolvedCurrentNumericPrice,
+  ]);
 
   const handlePopularCompare = useCallback(
     (other) => {
@@ -5164,13 +5288,11 @@ Price: ${price}
               Recommended Comparisons
             </p>
             <h2 className="text-base font-semibold tracking-tight text-slate-900 sm:text-lg">
-              Compare with{" "}
-              <span className="text-blue-600">{metaBrand || "this brand"}</span>{" "}
-              devices
+              Compare with <span className="text-blue-600">similar phones</span>
             </h2>
             <p className="max-w-7xl text-[13px] leading-5 text-slate-500 sm:text-sm sm:leading-6">
-              Explore popular alternatives and see how this model stacks up
-              against other phones from the same brand.
+              Explore close alternatives across brands, price segments, and key
+              specs.
             </p>
           </div>
           <div className="flex flex-nowrap gap-3 overflow-x-auto pb-3 no-scrollbar">
@@ -5724,6 +5846,7 @@ Price: ${price}
                 onCompare={handlePopularCompare}
                 compareDisabled={compareDisabled}
                 fallbackCompetitors={popularComparisonTargets}
+                currentDevice={mobileData}
                 currentBrand={mobileData?.brand || ""}
                 currentPrice={resolvedCurrentNumericPrice}
                 maxCards={competitorLimit}

@@ -13,7 +13,7 @@ import {
   FaAdjust,
   FaCheckCircle,
 } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { createProductPath } from "../../utils/slugGenerator";
 import { buildCanonicalComparePath } from "../../utils/compareRoutes";
 import { readPreloadedApiResponse } from "../../utils/preloadedApi";
@@ -54,39 +54,96 @@ const toFiniteNumber = (value) => {
   return Number.isFinite(n) ? n : null;
 };
 
+const toPriceNumber = (value) => {
+  if (value == null || value === "") return null;
+  const normalized =
+    typeof value === "string" ? value.replace(/[^0-9.]/g, "") : value;
+  const n = Number(normalized);
+  return Number.isFinite(n) && n > 0 ? n : null;
+};
+
 const resolveLowestPrice = (device) => {
   if (!device || typeof device !== "object") return null;
-  const direct = toFiniteNumber(device.price ?? device.base_price);
+  const candidates = [
+    toPriceNumber(
+      device.price ??
+        device.base_price ??
+        device.basePrice ??
+        device.numericPrice ??
+        null,
+    ),
+  ];
+
+  const topLevelStores = Array.isArray(device.store_prices)
+    ? device.store_prices
+    : Array.isArray(device.storePrices)
+      ? device.storePrices
+      : [];
+  for (const store of topLevelStores) {
+    candidates.push(toPriceNumber(store?.price));
+  }
+
   const variants = Array.isArray(device.variants) ? device.variants : [];
-  const variantMin = variants.reduce((min, variant) => {
-    const candidate = toFiniteNumber(
-      variant?.base_price ?? variant?.price ?? variant?.basePrice,
+  for (const variant of variants) {
+    candidates.push(
+      toPriceNumber(
+        variant?.base_price ??
+          variant?.price ??
+          variant?.basePrice ??
+          variant?.numericPrice ??
+          null,
+      ),
     );
-    if (candidate == null) return min;
-    if (min == null) return candidate;
-    return Math.min(min, candidate);
-  }, null);
-  if (direct != null && variantMin != null) return Math.min(direct, variantMin);
-  return variantMin != null ? variantMin : direct;
+
+    const stores = Array.isArray(variant?.store_prices)
+      ? variant.store_prices
+      : Array.isArray(variant?.storePrices)
+        ? variant.storePrices
+        : [];
+    for (const store of stores) {
+      candidates.push(toPriceNumber(store?.price));
+    }
+  }
+
+  const validCandidates = candidates.filter((candidate) => candidate != null);
+  return validCandidates.length > 0 ? Math.min(...validCandidates) : null;
 };
 
 const resolveBestStoreName = (device) => {
   if (!device || typeof device !== "object") return null;
   if (device.best_store_name) return String(device.best_store_name);
 
-  const variants = Array.isArray(device.variants) ? device.variants : [];
+  const topLevelStores = Array.isArray(device.store_prices)
+    ? device.store_prices
+    : Array.isArray(device.storePrices)
+      ? device.storePrices
+      : [];
   let best = null;
+  for (const store of topLevelStores) {
+    const price = toPriceNumber(store?.price);
+    if (price == null) continue;
+    if (!best || price < best.price) {
+      best = {
+        price,
+        name: store?.store_name || store?.store || store?.storeName || null,
+      };
+    }
+  }
+
+  const variants = Array.isArray(device.variants) ? device.variants : [];
   for (const variant of variants) {
     const stores = Array.isArray(variant?.store_prices)
       ? variant.store_prices
-      : [];
+      : Array.isArray(variant?.storePrices)
+        ? variant.storePrices
+        : [];
     for (const store of stores) {
-      const price = toFiniteNumber(store?.price);
+      const price = toPriceNumber(store?.price);
       if (price == null) continue;
       if (!best || price < best.price) {
         best = {
           price,
-          name: store?.store_name || store?.store || null,
+          name: store?.store_name || store?.store || store?.storeName || null,
         };
       }
     }
@@ -147,14 +204,466 @@ const formatCompetitorName = (value) => {
   return out;
 };
 
+const clampNumber = (value, min = 0, max = 100) =>
+  Math.min(max, Math.max(min, value));
+
+const stringifySpecValue = (value) => {
+  if (value == null) return "";
+  if (Array.isArray(value)) return value.map(stringifySpecValue).join(" ");
+  if (typeof value === "object") {
+    return Object.values(value).map(stringifySpecValue).join(" ");
+  }
+  return String(value);
+};
+
+const pickSpecValue = (...values) =>
+  values.find((value) => normalizeText(stringifySpecValue(value))) ?? "";
+
+const normalizeSpecText = (value) =>
+  stringifySpecValue(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9.]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const parseSpecNumber = (value) => {
+  const text = stringifySpecValue(value).replace(/,/g, "");
+  const match = text.match(/\d+(?:\.\d+)?/);
+  if (!match) return null;
+  const parsed = Number(match[0]);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const parseGbValue = (value) => {
+  const text = normalizeSpecText(value);
+  const parsed = parseSpecNumber(text);
+  if (parsed == null) return null;
+  return /\btb\b/.test(text) ? parsed * 1024 : parsed;
+};
+
+const maxParsedValue = (values, parser = parseSpecNumber) => {
+  const parsed = values
+    .flat()
+    .map((value) => parser(value))
+    .filter((value) => Number.isFinite(value) && value > 0);
+  return parsed.length > 0 ? Math.max(...parsed) : null;
+};
+
+const getVariantRows = (device) =>
+  Array.isArray(device?.variants)
+    ? device.variants
+    : Array.isArray(device?.variant)
+      ? device.variant
+      : [];
+
+const resolveCandidateScore = (device) => {
+  const values = [
+    resolveSmartphoneBadgeScore(device),
+    device?.spec_score_v2_display_80_98,
+    device?.specScoreV2Display8098,
+    device?.spec_score_display,
+    device?.specScoreDisplay,
+    device?.spec_score_v2,
+    device?.specScoreV2,
+    device?.spec_score,
+    device?.specScore,
+    device?.overall_score_v2_display_80_98,
+    device?.overallScoreV2Display8098,
+    device?.overall_score_v2,
+    device?.overallScoreV2,
+    device?.overall_score,
+    device?.overallScore,
+  ];
+
+  for (const value of values) {
+    const parsed = toFiniteNumber(value) ?? parseSpecNumber(value);
+    if (parsed != null) return clampNumber(parsed);
+  }
+  return null;
+};
+
+const getProcessorTokens = (value) => {
+  const ignored = new Set([
+    "qualcomm",
+    "mediatek",
+    "processor",
+    "chipset",
+    "mobile",
+    "octa",
+    "core",
+    "gen",
+    "soc",
+  ]);
+  return normalizeSpecText(value)
+    .split(" ")
+    .filter((token) => token.length > 1 && !ignored.has(token));
+};
+
+const tokenOverlapRatio = (leftTokens, rightTokens) => {
+  if (!leftTokens.length || !rightTokens.length) return null;
+  const left = new Set(leftTokens);
+  const right = new Set(rightTokens);
+  const matches = [...left].filter((token) => right.has(token)).length;
+  return matches / Math.max(left.size, right.size);
+};
+
+const numericSimilarityRatio = (left, right, tolerance) => {
+  if (left == null || right == null || tolerance <= 0) return null;
+  return clampNumber(1 - Math.abs(left - right) / tolerance, 0, 1);
+};
+
+const scorePriceFit = (currentPrice, competitorPrice) => {
+  if (!(currentPrice > 0) || !(competitorPrice > 0)) return 55;
+  const denominator = Math.max(currentPrice, competitorPrice);
+  const diffRatio = Math.abs(currentPrice - competitorPrice) / denominator;
+  if (diffRatio <= 0.15) return 100;
+  if (diffRatio <= 0.3) return 90;
+  if (diffRatio <= 0.5) return 72;
+  return clampNumber(62 - (diffRatio - 0.5) * 80, 20, 62);
+};
+
+const resolveRatingScore = (device) => {
+  const rating = toFiniteNumber(device?.rating ?? device?.avg_rating);
+  if (rating == null || rating <= 0) return 55;
+  return rating <= 5 ? clampNumber(rating * 20) : clampNumber(rating);
+};
+
+const resolveRecencyScore = (device) => {
+  const launchTime = parseTimeValue(
+    device?.launch_date || device?.launchDate || device?.created_at,
+  );
+  if (launchTime == null) return 55;
+  const ageDays = Math.max(0, (Date.now() - launchTime) / 86400000);
+  return clampNumber(100 - ageDays / 4, 45, 100);
+};
+
+const buildDeviceSignals = (device, overrides = {}) => {
+  const variants = getVariantRows(device);
+  const performance = device?.performance || {};
+  const display = device?.display || {};
+  const camera = device?.camera || device?.cameras || {};
+  const battery = device?.battery || {};
+  const processorText = pickSpecValue(
+    performance.processor,
+    performance.chipset,
+    device?.processor,
+    device?.chipset,
+    device?.cpu,
+  );
+  const displayType = normalizeSpecText(
+    pickSpecValue(
+      display.display_type,
+      display.displayType,
+      display.type,
+      device?.display_type,
+      device?.screen_type,
+    ),
+  );
+  const networkText = normalizeSpecText(
+    pickSpecValue(
+      device?.network,
+      device?.network_connectivity,
+      device?.connectivity,
+      device?.general,
+      device?.sim,
+      device?.technology,
+    ),
+  );
+
+  return {
+    brand: normalizeSpecText(
+      overrides.brand || device?.brand || device?.brand_name,
+    ),
+    price:
+      overrides.price && overrides.price > 0
+        ? overrides.price
+        : resolveLowestPrice(device),
+    score: resolveCandidateScore(device),
+    ratingScore: resolveRatingScore(device),
+    recencyScore: resolveRecencyScore(device),
+    processorText: normalizeText(stringifySpecValue(processorText)),
+    processorTokens: getProcessorTokens(processorText),
+    ramGb: maxParsedValue(
+      [
+        variants.map((variant) => variant?.ram ?? variant?.memory),
+        performance.ram,
+        performance.ram_options,
+        device?.ram,
+        device?.memory,
+      ],
+      parseGbValue,
+    ),
+    storageGb: maxParsedValue(
+      [
+        variants.map((variant) => variant?.storage ?? variant?.ROM_storage),
+        performance.storage,
+        performance.storage_options,
+        performance.ROM_storage,
+        device?.storage,
+      ],
+      parseGbValue,
+    ),
+    batteryMah: maxParsedValue([
+      battery.battery_capacity_mah,
+      battery.battery_capacity,
+      battery.capacity,
+      device?.battery_capacity_mah,
+      device?.battery_capacity,
+      device?.battery,
+    ]),
+    chargingW: maxParsedValue([
+      battery.charging_wattage,
+      battery.fast_charging,
+      battery.quick_charging,
+      battery.charging,
+      device?.charging,
+    ]),
+    refreshHz: maxParsedValue([
+      display.refresh_rate,
+      display.refreshRate,
+      display.screen_refresh_rate,
+      device?.refresh_rate,
+      device?.refreshRate,
+    ]),
+    displaySize: maxParsedValue([
+      display.size,
+      display.screen_size,
+      display.screenSize,
+      device?.screen_size,
+    ]),
+    displayType,
+    rearCameraMp: maxParsedValue([
+      camera.rear_camera,
+      camera.rearCamera,
+      camera.rear,
+      device?.rear_camera,
+      device?.main_camera,
+    ]),
+    frontCameraMp: maxParsedValue([
+      camera.front_camera,
+      camera.frontCamera,
+      camera.front,
+      device?.front_camera,
+      device?.selfie_camera,
+    ]),
+    networkGeneration: /\b5g\b/.test(networkText)
+      ? "5g"
+      : /\b(4g|lte)\b/.test(networkText)
+        ? "4g"
+        : "",
+  };
+};
+
+const scoreSpecSimilarity = (currentSignals, competitorSignals) => {
+  const weighted = [];
+  const add = (ratio, weight) => {
+    if (ratio == null) return;
+    weighted.push({ ratio: clampNumber(ratio, 0, 1), weight });
+  };
+
+  add(
+    tokenOverlapRatio(
+      currentSignals.processorTokens,
+      competitorSignals.processorTokens,
+    ),
+    18,
+  );
+  add(
+    numericSimilarityRatio(
+      currentSignals.ramGb,
+      competitorSignals.ramGb,
+      Math.max((currentSignals.ramGb || 0) * 0.75, 4),
+    ),
+    10,
+  );
+  add(
+    numericSimilarityRatio(
+      currentSignals.storageGb,
+      competitorSignals.storageGb,
+      Math.max((currentSignals.storageGb || 0) * 0.75, 128),
+    ),
+    8,
+  );
+  add(
+    numericSimilarityRatio(
+      currentSignals.batteryMah,
+      competitorSignals.batteryMah,
+      Math.max((currentSignals.batteryMah || 0) * 0.35, 1500),
+    ),
+    10,
+  );
+  add(
+    numericSimilarityRatio(
+      currentSignals.chargingW,
+      competitorSignals.chargingW,
+      Math.max((currentSignals.chargingW || 0) * 0.75, 35),
+    ),
+    5,
+  );
+  add(
+    numericSimilarityRatio(
+      currentSignals.refreshHz,
+      competitorSignals.refreshHz,
+      Math.max((currentSignals.refreshHz || 0) * 0.5, 60),
+    ),
+    8,
+  );
+  add(
+    numericSimilarityRatio(
+      currentSignals.displaySize,
+      competitorSignals.displaySize,
+      0.8,
+    ),
+    5,
+  );
+  add(
+    numericSimilarityRatio(
+      currentSignals.rearCameraMp,
+      competitorSignals.rearCameraMp,
+      Math.max((currentSignals.rearCameraMp || 0) * 0.7, 50),
+    ),
+    7,
+  );
+  add(
+    numericSimilarityRatio(
+      currentSignals.frontCameraMp,
+      competitorSignals.frontCameraMp,
+      Math.max((currentSignals.frontCameraMp || 0) * 0.75, 20),
+    ),
+    4,
+  );
+  if (currentSignals.networkGeneration && competitorSignals.networkGeneration) {
+    add(
+      currentSignals.networkGeneration === competitorSignals.networkGeneration
+        ? 1
+        : 0,
+      7,
+    );
+  }
+  if (currentSignals.displayType && competitorSignals.displayType) {
+    add(currentSignals.displayType === competitorSignals.displayType ? 1 : 0, 4);
+  }
+
+  const totalWeight = weighted.reduce((sum, item) => sum + item.weight, 0);
+  if (totalWeight <= 0) return 55;
+  const total = weighted.reduce(
+    (sum, item) => sum + item.ratio * item.weight,
+    0,
+  );
+  return clampNumber((total / totalWeight) * 100);
+};
+
+const buildCompetitorReasons = ({
+  sameBrand,
+  priceScore,
+  specSimilarity,
+  currentSignals,
+  competitorSignals,
+}) => {
+  const parts = [];
+  if (priceScore >= 80) parts.push("Close price band");
+  if (sameBrand) parts.push("Same brand option");
+  if (specSimilarity >= 74) parts.push("Similar core specs");
+  if (
+    tokenOverlapRatio(
+      currentSignals.processorTokens,
+      competitorSignals.processorTokens,
+    ) >= 0.5
+  ) {
+    parts.push("Similar processor class");
+  }
+  if (
+    currentSignals.networkGeneration &&
+    currentSignals.networkGeneration === competitorSignals.networkGeneration
+  ) {
+    parts.push(`${currentSignals.networkGeneration.toUpperCase()} ready`);
+  }
+  if (parts.length === 0) parts.push("Worth comparing");
+  return parts;
+};
+
+const buildComparableSpecBullets = ({
+  priceScore,
+  specSimilarity,
+  competitorSignals,
+}) => {
+  const bullets = [];
+  if (priceScore >= 80) bullets.push("Close in price");
+  if (specSimilarity >= 74) bullets.push("Similar everyday specs");
+  if (competitorSignals.processorText) {
+    bullets.push(`Processor: ${competitorSignals.processorText}`);
+  }
+  if (competitorSignals.ramGb || competitorSignals.storageGb) {
+    const ram = competitorSignals.ramGb
+      ? `${Math.round(competitorSignals.ramGb)} GB RAM`
+      : "";
+    const storage = competitorSignals.storageGb
+      ? `${Math.round(competitorSignals.storageGb)} GB storage`
+      : "";
+    bullets.push([ram, storage].filter(Boolean).join(" / "));
+  }
+  if (competitorSignals.batteryMah) {
+    bullets.push(`Battery: ${Math.round(competitorSignals.batteryMah)} mAh`);
+  }
+  if (competitorSignals.rearCameraMp) {
+    bullets.push(`Rear camera: ${Math.round(competitorSignals.rearCameraMp)} MP`);
+  }
+  return bullets.filter(Boolean).slice(0, 5);
+};
+
+const humanizeComparisonText = (value) => {
+  let text = normalizeText(value).replace(/\s+/g, " ");
+  if (!text) return "";
+
+  const replacements = [
+    [/^Weaker processor tier$/i, "Lower processor class"],
+    [/^Higher Weight:\s*/i, "Heavier build: "],
+    [/^Lower Weight:\s*/i, "Lighter build: "],
+    [/^Higher Screen Size:\s*/i, "Larger screen: "],
+    [/^Lower Screen Size:\s*/i, "Smaller screen: "],
+    [/^Higher Brightness:\s*/i, "Brighter display: "],
+    [/^Lower Brightness:\s*/i, "Lower display brightness: "],
+    [/^Higher Battery Capacity:\s*/i, "Bigger battery: "],
+    [/^Lower Battery Capacity:\s*/i, "Smaller battery: "],
+    [/^Rear Camera:\s*/i, "Rear camera: "],
+    [/^Front Camera:\s*/i, "Front camera: "],
+    [/^Higher /i, "More "],
+    [/^Lower /i, "Less "],
+    [/\bScreen Size\b/g, "screen size"],
+    [/\bBattery Capacity\b/g, "battery"],
+    [/\bBrightness\b/g, "brightness"],
+    [/\bWeight\b/g, "weight"],
+  ];
+
+  for (const [pattern, replacement] of replacements) {
+    text = text.replace(pattern, replacement);
+  }
+
+  return text;
+};
+
+const formatMatchSummary = (competitor) => {
+  const reasonParts = normalizeText(competitor?.reason)
+    .split("|")
+    .map(humanizeComparisonText)
+    .filter(Boolean);
+  if (reasonParts.length > 0) return reasonParts.slice(0, 2).join(" / ");
+  return "Balanced alternative with close pricing and practical specs.";
+};
+
 const buildFallbackCompetitorRows = ({
   productId,
   fallbackCompetitors,
+  currentDevice,
   currentBrand,
   currentPrice,
 }) => {
   const list = Array.isArray(fallbackCompetitors) ? fallbackCompetitors : [];
   const currentId = Number(productId);
+  const currentSignals = buildDeviceSignals(currentDevice || {}, {
+    brand: currentBrand,
+    price: currentPrice,
+  });
 
   return list
     .map((item) => {
@@ -169,16 +678,16 @@ const buildFallbackCompetitorRows = ({
       const price = resolveLowestPrice(item);
       const bestStoreName = resolveBestStoreName(item);
       const sameBrand =
-        currentBrand && brand
-          ? currentBrand.toLowerCase() === brand.toLowerCase()
+        currentSignals.brand && brand
+          ? currentSignals.brand === normalizeSpecText(brand)
           : false;
 
-      let priceScore = 60;
-      if (currentPrice != null && price != null && currentPrice > 0) {
-        const diff = Math.abs(price - currentPrice);
-        const tolerance = Math.max(currentPrice * 0.35, 7000);
-        priceScore = Math.max(20, 100 - (diff / tolerance) * 100);
-      }
+      const competitorSignals = buildDeviceSignals(item, { price });
+      const priceScore = scorePriceFit(currentSignals.price, price);
+      const specSimilarity = scoreSpecSimilarity(
+        currentSignals,
+        competitorSignals,
+      );
 
       const hookScore = toFiniteNumber(item?.hook_score);
       const overallScoreRaw = toFiniteNumber(
@@ -192,24 +701,37 @@ const buildFallbackCompetitorRows = ({
           item?.specScore ??
           null,
       );
-      const overallScoreDisplay = resolveSmartphoneBadgeScore(item);
+      const candidateScore = resolveCandidateScore(item);
+      const overallScoreDisplay =
+        resolveSmartphoneBadgeScore(item) ?? candidateScore;
       const competitionScore = Math.round(
         Math.min(
-          95,
+          98,
           Math.max(
             45,
-            priceScore * 0.65 +
-              (hookScore != null ? hookScore : 65) * 0.25 +
-              (sameBrand ? 10 : 0),
+            priceScore * 0.38 +
+              (candidateScore != null ? candidateScore : 70) * 0.24 +
+              specSimilarity * 0.22 +
+              (sameBrand ? 100 : 55) * 0.07 +
+              competitorSignals.ratingScore * 0.05 +
+              competitorSignals.recencyScore * 0.04 +
+              (hookScore != null ? hookScore : 0) * 0.02,
           ),
         ),
       );
 
-      const reasonParts = [];
-      if (sameBrand) reasonParts.push("Same brand alternative");
-      if (currentPrice != null && price != null)
-        reasonParts.push("Similar price range");
-      reasonParts.push("Popular compare pick");
+      const reasonParts = buildCompetitorReasons({
+        sameBrand,
+        priceScore,
+        specSimilarity,
+        currentSignals,
+        competitorSignals,
+      });
+      const commonFeatures = buildComparableSpecBullets({
+        priceScore,
+        specSimilarity,
+        competitorSignals,
+      });
 
       return {
         id: competitorId,
@@ -261,37 +783,59 @@ const buildFallbackCompetitorRows = ({
         overall_score_display: overallScoreDisplay,
         overallScoreDisplay: overallScoreDisplay,
         competition_score: competitionScore,
+        match_score: competitionScore,
+        price_match_score: Math.round(priceScore),
+        spec_match_score: Math.round(specSimilarity),
         reason: reasonParts.slice(0, 2).join(" | "),
-        common_features: ["Comparable segment and demand"],
+        common_features:
+          commonFeatures.length > 0
+            ? commonFeatures
+            : ["Relevant alternative in this segment"],
         advantages: [],
         disadvantages: [],
       };
     })
-    .filter(Boolean);
+    .filter(Boolean)
+    .sort((a, b) => {
+      const matchDiff =
+        (b.match_score ?? b.competition_score ?? 0) -
+        (a.match_score ?? a.competition_score ?? 0);
+      if (matchDiff !== 0) return matchDiff;
+      const scoreDiff =
+        (b.overall_score_display ?? b.spec_score_display ?? 0) -
+        (a.overall_score_display ?? a.spec_score_display ?? 0);
+      if (scoreDiff !== 0) return scoreDiff;
+      return (a.price ?? Number.MAX_SAFE_INTEGER) -
+        (b.price ?? Number.MAX_SAFE_INTEGER);
+    });
 };
 
 const buildInsights = (competitor) => {
-  const advantages = normalizeList(competitor?.advantages).map((text) => ({
-    text,
-    type: "advantage",
-  }));
-  const disadvantages = normalizeList(competitor?.disadvantages).map(
-    (text) => ({
-      text,
+  const advantages = normalizeList(competitor?.advantages)
+    .map((text) => ({
+      text: humanizeComparisonText(text),
+      type: "advantage",
+    }))
+    .filter((item) => item.text);
+  const disadvantages = normalizeList(competitor?.disadvantages)
+    .map((text) => ({
+      text: humanizeComparisonText(text),
       type: "disadvantage",
-    }),
-  );
-  const common = normalizeList(competitor?.common_features).map((text) => ({
-    text,
-    type: "common",
-  }));
+    }))
+    .filter((item) => item.text);
+  const common = normalizeList(competitor?.common_features)
+    .map((text) => ({
+      text: humanizeComparisonText(text),
+      type: "common",
+    }))
+    .filter((item) => item.text);
   const merged = [...advantages, ...disadvantages, ...common];
   if (merged.length > 0) return merged;
   return [
     {
       type: "common",
       text:
-        competitor?.reason ||
+        formatMatchSummary(competitor) ||
         "Strong alternative in similar price and performance segment.",
     },
   ];
@@ -321,8 +865,8 @@ const buildExtendedInsights = (competitor) => {
 
   // Keep show more meaningful on every card.
   const filler = [
-    { type: "common", text: "Strong alternative in the same segment" },
-    { type: "common", text: "Competitive option for side-by-side comparison" },
+    { type: "common", text: "Balanced pick in this segment" },
+    { type: "common", text: "Useful side-by-side comparison" },
   ];
   while (unique.length < 4 && filler.length > 0) {
     unique.push(filler.shift());
@@ -357,6 +901,8 @@ const CompetitorCard = ({
   baseProductName,
   productLabel = "Device",
   expanded = false,
+  productPath = "",
+  comparePath = "",
   onExpandAll,
   onCollapseSelf,
   onCompare,
@@ -367,7 +913,7 @@ const CompetitorCard = ({
     [competitor],
   );
   const visibleInsights = useMemo(
-    () => (expanded ? insights : insights.slice(0, 6)),
+    () => (expanded ? insights : insights.slice(0, 5)),
     [expanded, insights],
   );
   const insightGroups = useMemo(() => {
@@ -385,68 +931,97 @@ const CompetitorCard = ({
   }, [visibleInsights]);
   const orderedInsights = useMemo(
     () => [
-      ...insightGroups.disadvantage,
-      ...insightGroups.advantage,
       ...insightGroups.common,
+      ...insightGroups.advantage,
+      ...insightGroups.disadvantage,
     ],
     [insightGroups],
   );
   const displayName = formatCompetitorName(competitor?.name);
+  const displayScore =
+    resolveCandidateScore(competitor) ??
+    toFiniteNumber(competitor?.competition_score);
   const descriptor =
     normalizeText(competitor?.reason).replace(/\s*\|\s*/g, " • ") ||
     "Close match in similar price and performance segment.";
   const buyFrom =
     competitor?.best_store_name || competitor?.brand_name || "Hooks";
+  const matchSummary = formatMatchSummary(competitor);
+  const cardProductPath =
+    productPath || createProductPath("/smartphones", displayName);
+  const compareLabel = `Compare ${baseProductName || "this device"} vs ${displayName}`;
 
   return (
-    <article className="group relative w-[84vw] max-w-[320px] shrink-0 overflow-hidden rounded-2xl shadow-[0_2px_2px_rgba(0,0,0,0.1)] border-slate-100 border bg-white  transition-colors duration-200 hover:border-blue-200 sm:w-[280px]">
+    <article className="group relative w-[84vw] max-w-[320px] shrink-0 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-colors duration-200 hover:border-blue-200 sm:w-[292px]">
       <div className="flex h-full flex-col">
-        <div className="p-3 pb-3 sm:p-4">
-          <div className="mx-auto mt-3 h-24 w-24 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-b from-blue-50/70 to-white p-1.5">
-            {competitor?.image_url ? (
-              <img
-                src={competitor.image_url}
-                alt={displayName}
-                className="h-full w-full object-contain"
-                onError={(event) => {
-                  event.currentTarget.style.display = "none";
-                }}
-              />
+        <div className="p-4 pb-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-blue-600">
+              Recommended Pick
+            </span>
+            {displayScore != null ? (
+              <span className="rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700">
+                {Math.round(displayScore)}% match
+              </span>
             ) : null}
           </div>
-          <h3 className="space-grotesk-title mt-3 line-clamp-2 text-[14px] leading-tight text-slate-900 sm:text-[15px]">
-            {displayName}
-          </h3>
-          <p className="mt-1 text-[12px] leading-snug text-slate-600">
-            From <span className="font-semibold text-slate-900">{buyFrom}</span>
-          </p>
-          <div className="mt-2 flex items-center justify-between gap-2">
-            <p className="inline-flex items-center rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[14px] font-semibold text-emerald-600">
-              {formatPrice(competitor?.price)}
-            </p>
+          <div className="mt-4 flex items-center gap-3">
+            <Link
+              to={cardProductPath}
+              aria-label={`View ${displayName} specs, price, and details`}
+              className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-b from-blue-50/70 to-white p-1.5 transition hover:border-blue-200"
+            >
+              {competitor?.image_url ? (
+                <img
+                  src={competitor.image_url}
+                  alt={displayName}
+                  className="h-full w-full object-contain"
+                  onError={(event) => {
+                    event.currentTarget.style.display = "none";
+                  }}
+                />
+              ) : null}
+            </Link>
+            <div className="min-w-0 flex-1">
+              <h3 className="space-grotesk-title line-clamp-2 text-[14px] leading-tight text-slate-900 sm:text-[15px]">
+                <Link
+                  to={cardProductPath}
+                  className="transition hover:text-blue-600"
+                >
+                  {displayName}
+                </Link>
+              </h3>
+              <p className="mt-1 text-[12px] leading-snug text-slate-600">
+                By{" "}
+                <span className="font-semibold text-slate-900">{buyFrom}</span>
+              </p>
+              <p className="mt-2 inline-flex items-center rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[13px] font-semibold text-emerald-600">
+                {formatPrice(competitor?.price)}
+              </p>
+            </div>
           </div>
-          <p className="mt-2 line-clamp-2 text-[12px] leading-snug text-slate-500">
-            {descriptor}
+          <p className="mt-3 line-clamp-2 text-[12px] leading-snug text-slate-500">
+            {matchSummary}
           </p>
         </div>
 
-        <div className="border-t border-slate-100  p-3 sm:p-4">
+        <div className="border-t border-slate-100 p-4 pt-3">
           <div className="mb-2 flex items-center justify-between gap-2">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.34em] text-blue-600">
-              Quick Comparison
+            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-blue-600">
+              Why It Matches
             </p>
           </div>
 
-          <ul className="space-y-1.5 rounded-2xl border border-slate-200 bg-white px-3 py-3">
+          <ul className="space-y-1.5 rounded-2xl bg-slate-50 px-3 py-3">
             {orderedInsights.map((item, index) => {
               const meta = insightMeta(item.type);
               return (
                 <li
                   key={`insight-${index}`}
-                  className="flex items-start gap-2 py-1 first:pt-0 last:pb-0"
+                  className="grid grid-cols-[14px_minmax(0,1fr)] items-start gap-2 py-1 first:pt-0 last:pb-0"
                 >
                   <meta.Icon
-                    className={`mt-0.5 shrink-0 text-[12px] ${meta.iconClass}`}
+                    className={`mt-0.5 text-[12px] ${meta.iconClass}`}
                   />
                   <span className="text-[12px] leading-snug text-slate-600">
                     {item.text}
@@ -500,21 +1075,29 @@ const CompetitorCard = ({
             </div>
           </div>
           <div className="px-3 py-4 sm:px-4">
-            <button
-              type="button"
-              onClick={() => {
-                if (compareDisabled) return;
-                onCompare?.(competitor);
-              }}
-              disabled={compareDisabled}
-              className={`inline-flex w-full items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-xs font-semibold transition-colors ${
-                compareDisabled
-                  ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
-                  : "border-blue-600 bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 text-white hover:from-blue-700 hover:via-cyan-700 hover:to-blue-700"
-              }`}
-            >
-              Compare Now
-            </button>
+            {comparePath && !compareDisabled ? (
+              <Link
+                to={comparePath}
+                onClick={(event) => {
+                  if (typeof onCompare !== "function") return;
+                  event.preventDefault();
+                  onCompare(competitor);
+                }}
+                aria-label={compareLabel}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-blue-600 bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 px-3 py-2.5 text-xs font-semibold text-white transition-colors hover:from-blue-700 hover:via-cyan-700 hover:to-blue-700"
+              >
+                <span>Compare Now</span>
+                <span className="sr-only">{compareLabel}</span>
+              </Link>
+            ) : (
+              <button
+                type="button"
+                disabled
+                className="inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-lg border border-slate-200 bg-slate-100 px-3 py-2.5 text-xs font-semibold text-slate-400"
+              >
+                Compare Now
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -522,7 +1105,12 @@ const CompetitorCard = ({
   );
 };
 
-const RecentLaunchesPanel = ({ brandName = "", items = [], onOpenProduct }) => {
+const RecentLaunchesPanel = ({
+  brandName = "",
+  items = [],
+  productBasePath = "/smartphones",
+  onOpenProduct,
+}) => {
   if (!Array.isArray(items) || items.length === 0) return null;
 
   return (
@@ -536,15 +1124,22 @@ const RecentLaunchesPanel = ({ brandName = "", items = [], onOpenProduct }) => {
           const launch = formatLaunchDate(
             item?.launch_date || item?.launchDate,
           );
+          const itemName = item?.name || "Device";
+          const itemPath = createProductPath(productBasePath, itemName);
           return (
-            <button
+            <Link
               key={key}
-              type="button"
-              onClick={() => onOpenProduct?.(item)}
+              to={itemPath}
+              onClick={(event) => {
+                if (typeof onOpenProduct !== "function") return;
+                event.preventDefault();
+                onOpenProduct(item);
+              }}
+              aria-label={`View ${itemName} specs and price`}
               className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-left text-[12px] font-medium text-slate-700 transition-colors hover:border-blue-200 hover:bg-blue-50/50"
             >
               <div className="min-w-0">
-                <p className="truncate">{item?.name || "Device"}</p>
+                <p className="truncate">{itemName}</p>
                 {launch ? (
                   <p className="text-[11px] font-normal text-slate-500">
                     {launch}
@@ -552,7 +1147,7 @@ const RecentLaunchesPanel = ({ brandName = "", items = [], onOpenProduct }) => {
                 ) : null}
               </div>
               <FaChevronRight className="shrink-0 text-[10px] text-slate-500" />
-            </button>
+            </Link>
           );
         })}
       </div>
@@ -565,6 +1160,7 @@ const CompetitorCards = ({
   onCompare,
   fallbackCompetitors = [],
   recentLaunches = [],
+  currentDevice = null,
   currentBrand = "",
   currentPrice = null,
   title = "",
@@ -652,6 +1248,7 @@ const CompetitorCards = ({
     const fallbackRows = buildFallbackCompetitorRows({
       productId,
       fallbackCompetitors,
+      currentDevice,
       currentBrand,
       currentPrice,
     });
@@ -680,6 +1277,7 @@ const CompetitorCards = ({
     payload,
     productId,
     fallbackCompetitors,
+    currentDevice,
     currentBrand,
     currentPrice,
     maxCards,
@@ -966,25 +1564,55 @@ const CompetitorCards = ({
               ref={railRef}
               className="no-scrollbar flex gap-3 overflow-x-auto pb-1 scroll-smooth"
             >
-              {limitedCompetitors.map((competitor) => (
-                <CompetitorCard
-                  key={String(competitor.id)}
-                  competitor={competitor}
-                  baseProductName={productName}
-                  productLabel={productLabel}
-                  expanded={expandAll && !collapsedMap[String(competitor.id)]}
-                  onExpandAll={handleExpandAll}
-                  onCollapseSelf={handleCollapseSingle}
-                  onCompare={handleCompare}
-                  compareDisabled={compareDisabled}
-                />
-              ))}
+              {limitedCompetitors.map((competitor) => {
+                const competitorId = Number(competitor?.id);
+                const currentId = Number(productId);
+                const competitorName =
+                  competitor?.name || competitor?.model || "Competitor";
+                const productPath = createProductPath(
+                  productBasePath,
+                  competitorName,
+                );
+                const comparePath =
+                  Number.isInteger(currentId) &&
+                  currentId > 0 &&
+                  Number.isInteger(competitorId) &&
+                  competitorId > 0
+                    ? buildCanonicalComparePath({
+                        leftName: productName,
+                        rightName: competitorName,
+                        leftId: currentId,
+                        rightId: competitorId,
+                        type:
+                          entityType === "smartphones"
+                            ? "smartphone"
+                            : entityType,
+                      })
+                    : "";
+
+                return (
+                  <CompetitorCard
+                    key={String(competitor.id)}
+                    competitor={competitor}
+                    baseProductName={productName}
+                    productLabel={productLabel}
+                    productPath={productPath}
+                    comparePath={comparePath}
+                    expanded={expandAll && !collapsedMap[String(competitor.id)]}
+                    onExpandAll={handleExpandAll}
+                    onCollapseSelf={handleCollapseSingle}
+                    onCompare={handleCompare}
+                    compareDisabled={compareDisabled}
+                  />
+                );
+              })}
             </div>
           </div>
           {hasRecentLaunches ? (
             <RecentLaunchesPanel
               brandName={currentBrand}
               items={recentLaunchRows}
+              productBasePath={productBasePath}
               onOpenProduct={handleOpenRecentProduct}
             />
           ) : null}
