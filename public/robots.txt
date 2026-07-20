@@ -3,3 +3,5 @@ Allow: /
 
 Sitemap: https://tryhook.shop/sitemap.xml
 Sitemap: https://tryhook.shop/news-sitemap.xml
+Sitemap: https://api.apisphere.in/api/sitemap.xml
+Sitemap: https://api.apisphere.in/api/news-sitemap.xml

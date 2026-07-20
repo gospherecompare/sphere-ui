@@ -1432,7 +1432,7 @@ const NewsArticlesPage = () => {
         title={pageTitle}
         description={pageDescription}
         url={canonical}
-        robots="index, follow"
+        robots="index, follow, max-image-preview:large"
         ogType="website"
         image="https://tryhook.shop/hook-logo.png"
         schema={pageSchema}

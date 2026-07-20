@@ -426,6 +426,7 @@ const NewsStoryPage = () => {
           description: story.summary,
           url: canonicalUrl,
           image: story.image,
+          imageAlt: story.heroImageAlt || story.title,
           datePublished: story.publishedIso,
           dateModified: story.updatedIso,
           authorName: story.author,
@@ -494,9 +495,10 @@ const NewsStoryPage = () => {
         title={`${story.title} - Hooks`}
         description={story.summary}
         url={canonicalUrl}
-        robots="index, follow"
+        robots="index, follow, max-image-preview:large"
         ogType="article"
         image={story.image}
+        imageAlt={story.heroImageAlt || story.title}
         schema={schema}
       />
 

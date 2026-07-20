@@ -1113,6 +1113,7 @@ const NewsStoryArticlePage = () => {
           description: articleDescription,
           url: canonicalUrl,
           image: story.image,
+          imageAlt: story.heroImageAlt || story.title,
           datePublished: story.publishedIso,
           dateModified: story.updatedIso,
           authorName: storyAuthor,
@@ -1132,9 +1133,10 @@ const NewsStoryArticlePage = () => {
         title={`${story.title} - Hooks`}
         description={articleDescription}
         url={canonicalUrl}
-        robots="index, follow"
+        robots="index, follow, max-image-preview:large"
         ogType="article"
         image={story.image}
+        imageAlt={story.heroImageAlt || story.title}
         schema={schema}
       />
       <GoogleSwgBasic />

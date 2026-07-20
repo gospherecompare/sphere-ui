@@ -263,6 +263,7 @@ const resolveNewsDateModified = (publishedValue, updatedValue) => {
 const BUDGET_PHONE_KEYWORDS =
   "budget phones under 10000, budget phones under 15000, budget phones under 20000, budget phones under 30000, budget phones under 50000";
 const DEFAULT_SEO_KEYWORDS = `hook, best gadget comparison site, mobile price comparison india, moblie price comparison india, compare laptops smartphones tvs, compare smartphone tv laptops, compare specs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch phones, trending phone in india, most popular mobiles, top selling gadgets india, 5g phones in india, ai phones in india, ${BUDGET_PHONE_KEYWORDS}, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, gaming laptops india, student laptops india, laptop comparison india, vacuum cooler laptop and phone, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000, smart tv comparison india`;
+const DEFAULT_INDEX_ROBOTS = "index, follow, max-image-preview:large";
 let publishedCompareRouteMeta = new Map();
 let publishedNewsRouteMeta = new Map();
 const STATIC_PRERENDER_ROUTES = [
@@ -1515,6 +1516,7 @@ const buildSitemapXml = (routes = []) => {
   const urls = canonicalRoutes
     .map((routePath) => {
       const loc = toCanonicalPageUrl(routePath, SITE_ORIGIN);
+      const lastmod = getRouteSitemapLastmod(routePath, today);
       const isDetailPage =
         routePath.startsWith("/smartphones/") ||
         routePath.startsWith("/laptops/") ||
@@ -1522,7 +1524,7 @@ const buildSitemapXml = (routes = []) => {
         routePath.startsWith("/networking/") ||
         routePath.startsWith("/news/");
       const priority = routePath === "/" ? "1.0" : isDetailPage ? "0.8" : "0.7";
-      return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>${priority}</priority>\n  </url>`;
+      return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>${priority}</priority>\n  </url>`;
     })
     .join("\n");
 
@@ -1930,7 +1932,7 @@ const resolveSeo = (routePath) => {
       matched?.description ||
       "Compare smartphones, laptops, TVs, and networking devices with specs, variants, pricing insights, and trend signals on Hooks.",
     keywords: matched?.keywords || DEFAULT_SEO_KEYWORDS,
-    robots: matched?.robots || "index, follow",
+    robots: matched?.robots || DEFAULT_INDEX_ROBOTS,
   };
 };
 
@@ -1952,6 +1954,47 @@ const clipSeoText = (value = "", maxLength = 160) => {
   const text = stripMarkupForSeo(value);
   if (text.length <= maxLength) return text;
   return `${text.slice(0, Math.max(0, maxLength - 3)).replace(/\s+\S*$/, "")}...`;
+};
+
+const toAbsoluteAssetUrl = (value = "", fallbackPath = "/hook-logo.png") => {
+  const raw = String(value || "").trim();
+  const fallback = `${SITE_ORIGIN}${fallbackPath}`;
+  if (!raw) return fallback;
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (raw.startsWith("//")) return `https:${raw}`;
+  if (raw.startsWith("/")) return `${SITE_ORIGIN}${raw}`;
+  return `${SITE_ORIGIN}/${raw}`;
+};
+
+const inferImageType = (url = "") => {
+  const raw = String(url || "").toLowerCase().split(/[?#]/, 1)[0];
+  if (raw.endsWith(".png")) return "image/png";
+  if (raw.endsWith(".webp")) return "image/webp";
+  if (raw.endsWith(".avif")) return "image/avif";
+  if (raw.endsWith(".gif")) return "image/gif";
+  return "image/jpeg";
+};
+
+const toSitemapLastmod = (value, fallback) => {
+  const date = parseNewsDate(value);
+  if (!date) return fallback;
+  return date.toISOString().slice(0, 10);
+};
+
+const getRouteSitemapLastmod = (routePath = "/", fallbackDate = "") => {
+  const normalizedRoute = normalizePath(routePath);
+
+  if (normalizedRoute.startsWith("/news/")) {
+    const meta = publishedNewsRouteMeta.get(normalizedRoute);
+    return toSitemapLastmod(meta?.updatedAt || meta?.publishedAt, fallbackDate);
+  }
+
+  if (normalizedRoute.startsWith("/compare/")) {
+    const meta = publishedCompareRouteMeta.get(normalizedRoute);
+    return toSitemapLastmod(meta?.updatedAt, fallbackDate);
+  }
+
+  return fallbackDate;
 };
 
 const getNewsArticleFromPayload = (canonicalPath = "", preloadedApiPayload) => {
@@ -1990,13 +2033,19 @@ const getNewsArticleSeo = (canonicalPath = "", preloadedApiPayload) => {
     datePublished,
     blog.updated_at || datePublished,
   );
+  const image = toAbsoluteAssetUrl(blog.hero_image || "/hook-logo.png");
+  const imageAlt = stripMarkupForSeo(blog.hero_image_alt || title);
 
   return {
     blog,
     title: `${title} - Hooks`,
     headline: title,
     description,
-    image: blog.hero_image || `${SITE_ORIGIN}/hook-logo.png`,
+    image,
+    imageAlt,
+    imageWidth: 1200,
+    imageHeight: 630,
+    imageType: inferImageType(image),
     authorName: stripMarkupForSeo(blog.author_name || "Hooks News"),
     articleSection: stripMarkupForSeo(blog.category || "News"),
     keywords: [
@@ -2030,6 +2079,7 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
         description: newsArticleSeo.description,
         url: canonicalUrl,
         image: newsArticleSeo.image,
+        imageAlt: newsArticleSeo.imageAlt,
         datePublished: newsArticleSeo.datePublished,
         dateModified: newsArticleSeo.dateModified,
         authorName: newsArticleSeo.authorName,
@@ -2359,11 +2409,15 @@ const injectStructuredData = (html, routePath, preloadedApiPayload) => {
   const schemas = buildStructuredDataForRoute(routePath, preloadedApiPayload);
   if (!schemas || schemas.length === 0) return html;
 
+  const canonicalUrl = toCanonicalPageUrl(
+    toCanonicalPath(normalizePath(routePath || "/")),
+    SITE_ORIGIN,
+  );
   const entries = Array.isArray(schemas) ? schemas : [schemas];
   const scripts = entries
     .map(
       (schema) =>
-        `<script type="application/ld+json">${escapeInlineJson(schema)}</script>`,
+        `<script type="application/ld+json" data-hooks-prerender-schema="true" data-hooks-prerender-canonical="${escapeHtml(canonicalUrl)}">${escapeInlineJson(schema)}</script>`,
     )
     .join("\n");
   return html.replace("</head>", `${scripts}\n</head>`);
@@ -2457,7 +2511,7 @@ const applyNewsArticleSeoToHtml = (html, routePath, preloadedApiPayload) => {
   next = replaceMetaTag(
     next,
     /<meta\s+name=["']robots["'][^>]*>/i,
-    `<meta name="robots" content="index, follow">`,
+    `<meta name="robots" content="${DEFAULT_INDEX_ROBOTS}">`,
   );
   next = replaceMetaTag(
     next,
@@ -2491,6 +2545,38 @@ const applyNewsArticleSeoToHtml = (html, routePath, preloadedApiPayload) => {
   );
   next = replaceMetaTag(
     next,
+    /<meta\s+property=["']og:image:secure_url["'][^>]*>/i,
+    `<meta property="og:image:secure_url" content="${escapeHtml(articleSeo.image)}">`,
+  );
+  next = replaceMetaTag(
+    next,
+    /<meta\s+property=["']og:image:type["'][^>]*>/i,
+    `<meta property="og:image:type" content="${escapeHtml(articleSeo.imageType)}">`,
+  );
+  next = replaceMetaTag(
+    next,
+    /<meta\s+property=["']og:image:width["'][^>]*>/i,
+    `<meta property="og:image:width" content="${articleSeo.imageWidth}">`,
+  );
+  next = replaceMetaTag(
+    next,
+    /<meta\s+property=["']og:image:height["'][^>]*>/i,
+    `<meta property="og:image:height" content="${articleSeo.imageHeight}">`,
+  );
+  if (articleSeo.imageAlt) {
+    next = replaceMetaTag(
+      next,
+      /<meta\s+property=["']og:image:alt["'][^>]*>/i,
+      `<meta property="og:image:alt" content="${escapeHtml(articleSeo.imageAlt)}">`,
+    );
+  }
+  next = replaceMetaTag(
+    next,
+    /<meta\s+name=["']twitter:card["'][^>]*>/i,
+    '<meta name="twitter:card" content="summary_large_image">',
+  );
+  next = replaceMetaTag(
+    next,
     /<meta\s+name=["']twitter:title["'][^>]*>/i,
     `<meta name="twitter:title" content="${escapeHtml(articleSeo.title)}">`,
   );
@@ -2504,6 +2590,13 @@ const applyNewsArticleSeoToHtml = (html, routePath, preloadedApiPayload) => {
     /<meta\s+name=["']twitter:image["'][^>]*>/i,
     `<meta name="twitter:image" content="${escapeHtml(articleSeo.image)}">`,
   );
+  if (articleSeo.imageAlt) {
+    next = replaceMetaTag(
+      next,
+      /<meta\s+name=["']twitter:image:alt["'][^>]*>/i,
+      `<meta name="twitter:image:alt" content="${escapeHtml(articleSeo.imageAlt)}">`,
+    );
+  }
 
   if (articleSeo.datePublished) {
     next = replaceMetaTag(

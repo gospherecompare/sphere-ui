@@ -5,6 +5,9 @@ import { normalizeSeoTitle } from "../utils/seoTitle";
 import { toCanonicalPageUrl } from "../utils/publicUrl";
 
 const SITE_ORIGIN = "https://tryhook.shop";
+const DEFAULT_ROBOTS = "index, follow, max-image-preview:large";
+const PRERENDER_SCHEMA_SELECTOR =
+  'script[type="application/ld+json"][data-hooks-prerender-schema="true"]';
 
 /**
  * Convert relative/absolute URLs to full absolute URLs
@@ -55,6 +58,14 @@ const inferImageType = (url) => {
   return "image/jpeg";
 };
 
+const hasMatchingPrerenderSchema = (canonicalUrl) => {
+  if (typeof document === "undefined" || !canonicalUrl) return false;
+  return Array.from(document.querySelectorAll(PRERENDER_SCHEMA_SELECTOR)).some(
+    (node) =>
+      node.getAttribute("data-hooks-prerender-canonical") === canonicalUrl,
+  );
+};
+
 /**
  * Production-Ready SEO Component
  * Handles all SEO meta tags, canonical URLs, Open Graph, and Twitter Cards
@@ -69,7 +80,7 @@ const inferImageType = (url) => {
  * @param {string} description - Meta description
  * @param {string} image - OG and Twitter image URL (absolute or relative)
  * @param {string} url - Canonical URL (if not provided, uses window.location.href)
- * @param {string} robots - robots meta directive (default: "index, follow")
+ * @param {string} robots - robots meta directive (default: indexable with large image previews)
  * @param {string} ogType - Open Graph type (default: "website")
  * @param {string} twitterCreator - Twitter creator handle (default: "@tryhooks")
  *
@@ -91,7 +102,7 @@ const SEO = ({
   imageAlt = "",
   imageType = null,
   url = null,
-  robots = "index, follow",
+  robots = DEFAULT_ROBOTS,
   ogType = "website",
   twitterCreator = "@tryhooks",
   schema = null,
@@ -110,6 +121,23 @@ const SEO = ({
     () => normalizeSeoTitle(title),
     [title],
   );
+  const hasStaticSchema = React.useMemo(
+    () => hasMatchingPrerenderSchema(canonicalUrl),
+    [canonicalUrl],
+  );
+
+  React.useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+
+    document.querySelectorAll(PRERENDER_SCHEMA_SELECTOR).forEach((node) => {
+      const schemaUrl = node.getAttribute("data-hooks-prerender-canonical");
+      if (schemaUrl && schemaUrl !== canonicalUrl) {
+        node.remove();
+      }
+    });
+
+    return undefined;
+  }, [canonicalUrl]);
 
   const imageInput = React.useMemo(() => {
     if (!image || typeof image !== "object" || Array.isArray(image))
@@ -183,11 +211,12 @@ const SEO = ({
   }, [schema, schemaType, canonicalUrl, pathname]);
 
   const schemaJson = React.useMemo(() => {
+    if (hasStaticSchema) return null;
     if (!resolvedSchema) return null;
     return typeof resolvedSchema === "string"
       ? resolvedSchema
       : JSON.stringify(resolvedSchema);
-  }, [resolvedSchema]);
+  }, [hasStaticSchema, resolvedSchema]);
 
   return (
     <Helmet prioritizeSeoTags>
