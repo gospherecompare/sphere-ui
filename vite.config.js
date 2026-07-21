@@ -74,7 +74,10 @@ const ENABLE_PUPPETEER_PRERENDER =
     .trim()
     .toLowerCase() === "true";
 const MAX_DETAIL_ROUTES_PER_CATEGORY = 1000;
-const MAX_COMPARE_ROUTES = 300;
+const MAX_COMPARE_ROUTES = 380;
+const MAX_COMPARE_EXPANSION_PRODUCTS = 24;
+const MAX_COMPARE_EXPANDED_ROUTES = 240;
+const MAX_COMPARE_EXPANDED_CANDIDATES = 360;
 const MAX_NEWS_ROUTES = 50;
 const POPULAR_COMPARISON_PRELOAD_ROWS = 12;
 const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
@@ -484,6 +487,200 @@ const toSlug = (value = "") =>
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "");
+
+const extractCompareRouteSlugParts = (routePath = "") => {
+  const match = String(routePath || "").match(/^\/compare\/(.+)-comparison$/i);
+  if (!match) return [];
+  return String(match[1] || "")
+    .split("-and-")
+    .map((part) => toSlug(part))
+    .filter(Boolean)
+    .slice(0, 3);
+};
+
+const buildCompareRoutePathFromSlugParts = (parts = []) => {
+  const cleanParts = (Array.isArray(parts) ? parts : [])
+    .map((part) => toSlug(part))
+    .filter(Boolean)
+    .slice(0, 3);
+  if (cleanParts.length < 2) return "";
+  return `/compare/${cleanParts.join("-and-")}-comparison`;
+};
+
+const createCompareRouteMetaFromPage = (page = {}, fallback = {}) => ({
+  title: String(page?.title || fallback?.title || "").trim(),
+  description: String(
+    page?.meta_description || page?.metaDescription || fallback?.description || "",
+  ).trim(),
+  updatedAt:
+    page?.updated_at ||
+    page?.updatedAt ||
+    page?.last_compared_at ||
+    page?.lastComparedAt ||
+    fallback?.updatedAt ||
+    null,
+});
+
+const addCompareRouteMeta = (routePath, meta = {}) => {
+  const normalizedRoute = normalizePath(toCanonicalPath(routePath));
+  if (
+    !normalizedRoute ||
+    normalizedRoute === "/compare" ||
+    !normalizedRoute.startsWith("/compare/")
+  ) {
+    return "";
+  }
+
+  publishedCompareRouteMeta.set(normalizedRoute, {
+    title: String(meta?.title || "").trim(),
+    description: String(meta?.description || meta?.meta_description || "").trim(),
+    updatedAt: meta?.updatedAt || meta?.updated_at || null,
+    compareCount: Number(meta?.compareCount ?? meta?.compare_count) || 0,
+  });
+
+  return normalizedRoute;
+};
+
+const buildExpandedCompareRouteCandidates = (routes = [], routeMeta = new Map()) => {
+  const pairRoutes = [];
+  const productStats = new Map();
+
+  const rememberProduct = (slug, index, score = 1) => {
+    if (!slug) return;
+    const existing = productStats.get(slug) || {
+      slug,
+      firstIndex: index,
+      routeCount: 0,
+      score: 0,
+    };
+    existing.firstIndex = Math.min(existing.firstIndex, index);
+    existing.routeCount += 1;
+    existing.score += Math.max(1, Number(score) || 1);
+    productStats.set(slug, existing);
+  };
+
+  routes.forEach((routePath, index) => {
+    const parts = extractCompareRouteSlugParts(routePath);
+    if (parts.length !== 2) return;
+    const meta = routeMeta.get(routePath) || {};
+    const score = Number(meta.compareCount ?? meta.compare_count) || 1;
+    pairRoutes.push({ routePath, parts, index, score });
+    parts.forEach((part) => rememberProduct(part, index, score));
+  });
+
+  const candidates = new Map();
+  const addCandidate = (parts, score = 1, priority = 1) => {
+    const uniqueParts = [];
+    const seen = new Set();
+    for (const part of Array.isArray(parts) ? parts : []) {
+      const slug = toSlug(part);
+      if (!slug || seen.has(slug)) continue;
+      seen.add(slug);
+      uniqueParts.push(slug);
+      if (uniqueParts.length === 3) break;
+    }
+    if (uniqueParts.length !== 3) return;
+
+    const routePath = buildCompareRoutePathFromSlugParts(uniqueParts);
+    if (!routePath || routeMeta.has(routePath)) return;
+    const existing = candidates.get(routePath);
+    const nextScore = Math.max(1, Number(score) || 1);
+    const nextPriority = Math.max(1, Number(priority) || 1);
+    if (
+      !existing ||
+      nextPriority > existing.priority ||
+      (nextPriority === existing.priority && nextScore > existing.score)
+    ) {
+      candidates.set(routePath, {
+        routePath,
+        parts: uniqueParts,
+        priority: nextPriority,
+        score: nextScore,
+      });
+    }
+  };
+
+  for (let leftIndex = 0; leftIndex < pairRoutes.length; leftIndex += 1) {
+    for (let rightIndex = leftIndex + 1; rightIndex < pairRoutes.length; rightIndex += 1) {
+      const left = pairRoutes[leftIndex];
+      const right = pairRoutes[rightIndex];
+      const union = [...new Set([...left.parts, ...right.parts])];
+      if (union.length !== 3) continue;
+      const orderedUnion = union.sort((a, b) => {
+        const aStats = productStats.get(a);
+        const bStats = productStats.get(b);
+        return (aStats?.firstIndex ?? 9999) - (bStats?.firstIndex ?? 9999);
+      });
+      addCandidate(orderedUnion, left.score + right.score, 3);
+    }
+  }
+
+  const topProducts = Array.from(productStats.values())
+    .sort((left, right) => {
+      const scoreDiff = right.score - left.score;
+      if (scoreDiff !== 0) return scoreDiff;
+      const countDiff = right.routeCount - left.routeCount;
+      if (countDiff !== 0) return countDiff;
+      return left.firstIndex - right.firstIndex;
+    })
+    .slice(0, MAX_COMPARE_EXPANSION_PRODUCTS);
+
+  for (let a = 0; a < topProducts.length; a += 1) {
+    for (let b = a + 1; b < topProducts.length; b += 1) {
+      for (let c = b + 1; c < topProducts.length; c += 1) {
+        const rankSpan = c - a;
+        if (rankSpan > 8) break;
+        const parts = [topProducts[a].slug, topProducts[b].slug, topProducts[c].slug];
+        const combinedScore =
+          topProducts[a].score + topProducts[b].score + topProducts[c].score;
+        addCandidate(parts, 100000 - rankSpan * 1000 + combinedScore, 2);
+      }
+    }
+  }
+
+  const fallbackTopProducts = topProducts.slice(0, 18);
+  for (let a = 0; a < fallbackTopProducts.length; a += 1) {
+    for (let b = a + 1; b < fallbackTopProducts.length; b += 1) {
+      for (let c = b + 1; c < fallbackTopProducts.length; c += 1) {
+        const parts = [
+          fallbackTopProducts[a].slug,
+          fallbackTopProducts[b].slug,
+          fallbackTopProducts[c].slug,
+        ];
+        const score =
+          fallbackTopProducts[a].score +
+          fallbackTopProducts[b].score +
+          fallbackTopProducts[c].score;
+        addCandidate(parts, score, 1);
+      }
+    }
+  }
+
+  return Array.from(candidates.values())
+    .sort((left, right) => {
+      const scoreDiff = right.score - left.score;
+      if (scoreDiff !== 0) return scoreDiff;
+      return right.priority - left.priority;
+    })
+    .slice(0, MAX_COMPARE_EXPANDED_CANDIDATES);
+};
+
+const resolveCompareRouteFromApi = async (routePath = "", fallbackMeta = {}) => {
+  const slug = getSingleSegmentRouteTail(routePath, "/compare");
+  if (!slug) return "";
+
+  const endpoint = `${API_BASE_URL}/public/compare-pages/resolve?slug=${encodeURIComponent(slug)}`;
+  const body = await fetchApiBody(endpoint);
+  const page = body?.page || null;
+  const items = Array.isArray(page?.items) ? page.items : [];
+  if (!page || items.length < 2 || items.length > 3) return "";
+
+  const resolvedRoute = addCompareRouteMeta(
+    page.route_path || routePath,
+    createCompareRouteMetaFromPage(page, fallbackMeta),
+  );
+  return resolvedRoute;
+};
 
 const toCanonicalPath = (rawPath) => {
   const pathName = normalizePath(rawPath);
@@ -1103,12 +1300,31 @@ const fetchCompareRoutesFromApi = async () => {
       continue;
     }
 
-    publishedCompareRouteMeta.set(routePath, {
+    const normalizedRoute = addCompareRouteMeta(routePath, {
       title: String(row?.title || "").trim(),
-      description: String(row?.meta_description || "").trim(),
+      description: String(row?.meta_description || row?.description || "").trim(),
       updatedAt: row?.updated_at || null,
+      compareCount: row?.compare_count || 0,
     });
-    routes.push(routePath);
+    if (normalizedRoute) routes.push(normalizedRoute);
+  }
+
+  const expandedCandidates = buildExpandedCompareRouteCandidates(
+    routes,
+    publishedCompareRouteMeta,
+  );
+  let expandedRouteCount = 0;
+  for (const candidate of expandedCandidates) {
+    if (routes.length >= MAX_COMPARE_ROUTES) break;
+    if (expandedRouteCount >= MAX_COMPARE_EXPANDED_ROUTES) break;
+    if (publishedCompareRouteMeta.has(candidate.routePath)) continue;
+    const resolvedRoute = await resolveCompareRouteFromApi(candidate.routePath, {
+      updatedAt: body?.generated_at || null,
+    });
+    if (resolvedRoute) {
+      routes.push(resolvedRoute);
+      expandedRouteCount += 1;
+    }
   }
 
   return [...new Set(routes)];
