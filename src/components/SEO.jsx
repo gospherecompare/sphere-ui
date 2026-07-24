@@ -6,8 +6,8 @@ import { toCanonicalPageUrl } from "../utils/publicUrl";
 
 const SITE_ORIGIN = "https://tryhook.shop";
 const DEFAULT_ROBOTS = "index, follow, max-image-preview:large";
-const PRERENDER_SCHEMA_SELECTOR =
-  'script[type="application/ld+json"][data-hooks-prerender-schema="true"]';
+const SSR_SCHEMA_SELECTOR =
+  'script[type="application/ld+json"][data-hooks-ssr-schema="true"]';
 
 /**
  * Convert relative/absolute URLs to full absolute URLs
@@ -58,11 +58,11 @@ const inferImageType = (url) => {
   return "image/jpeg";
 };
 
-const hasMatchingPrerenderSchema = (canonicalUrl) => {
+const hasMatchingSsrSchema = (canonicalUrl) => {
   if (typeof document === "undefined" || !canonicalUrl) return false;
-  return Array.from(document.querySelectorAll(PRERENDER_SCHEMA_SELECTOR)).some(
+  return Array.from(document.querySelectorAll(SSR_SCHEMA_SELECTOR)).some(
     (node) =>
-      node.getAttribute("data-hooks-prerender-canonical") === canonicalUrl,
+      node.getAttribute("data-hooks-ssr-canonical") === canonicalUrl,
   );
 };
 
@@ -122,15 +122,15 @@ const SEO = ({
     [title],
   );
   const hasStaticSchema = React.useMemo(
-    () => hasMatchingPrerenderSchema(canonicalUrl),
+    () => hasMatchingSsrSchema(canonicalUrl),
     [canonicalUrl],
   );
 
   React.useEffect(() => {
     if (typeof document === "undefined") return undefined;
 
-    document.querySelectorAll(PRERENDER_SCHEMA_SELECTOR).forEach((node) => {
-      const schemaUrl = node.getAttribute("data-hooks-prerender-canonical");
+    document.querySelectorAll(SSR_SCHEMA_SELECTOR).forEach((node) => {
+      const schemaUrl = node.getAttribute("data-hooks-ssr-canonical");
       if (schemaUrl && schemaUrl !== canonicalUrl) {
         node.remove();
       }

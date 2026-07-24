@@ -1241,10 +1241,9 @@ const Header = () => {
     }
   };
 
-  // Restore focus synchronously after controlled updates when the input was
-  // focused before the update. This avoids losing focus on desktop when
-  // suggestions appear. We use useLayoutEffect to run before the browser paints.
-  React.useLayoutEffect(() => {
+  // Restore focus after controlled updates when the input was focused before
+  // the update. Focus restoration is browser-only and does not belong in SSR.
+  useEffect(() => {
     if (
       inputWasFocusedRef.current &&
       searchInputRef.current &&

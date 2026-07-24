@@ -1,4 +1,64 @@
 const isRecord = (value) => value && typeof value === "object";
+const ASSET_CACHE_NAME = "hooks-assets-v1";
+
+const isCacheableAssetRequest = (request) => {
+  if (request.method !== "GET") return false;
+
+  try {
+    const url = new URL(request.url);
+    if (url.origin !== self.location.origin) return false;
+    if (!url.pathname.startsWith("/assets/")) return false;
+
+    return ["script", "style", "font", "image"].includes(
+      request.destination,
+    );
+  } catch {
+    return false;
+  }
+};
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(self.skipWaiting());
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches
+      .keys()
+      .then((cacheNames) =>
+        Promise.all(
+          cacheNames
+            .filter(
+              (cacheName) =>
+                cacheName.startsWith("hooks-assets-") &&
+                cacheName !== ASSET_CACHE_NAME,
+            )
+            .map((cacheName) => caches.delete(cacheName)),
+        ),
+      )
+      .then(() => self.clients.claim()),
+  );
+});
+
+self.addEventListener("fetch", (event) => {
+  if (!isCacheableAssetRequest(event.request)) return;
+
+  event.respondWith(
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) return cachedResponse;
+
+      return fetch(event.request).then((response) => {
+        if (!response.ok) return response;
+
+        const responseCopy = response.clone();
+        caches.open(ASSET_CACHE_NAME).then((cache) =>
+          cache.put(event.request, responseCopy),
+        );
+        return response;
+      });
+    }),
+  );
+});
 
 const toAbsoluteUrl = (value) => {
   const rawValue = String(value || "").trim();

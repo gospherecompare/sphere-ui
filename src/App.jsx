@@ -8,7 +8,8 @@ import Breadcrumbs from "./components/Breadcrumbs";
 import {
   Route,
   Routes,
-  BrowserRouter as Router,
+  BrowserRouter,
+  StaticRouter,
   Navigate,
   useLocation,
   useParams,
@@ -492,7 +493,10 @@ const preloadCoreRouteChunks = () => {
   void import("./components/Product/TrendingProductsHub");
 };
 
-function App() {
+function App({ ssrLocation } = {}) {
+  const RouterComponent = ssrLocation ? StaticRouter : BrowserRouter;
+  const routerProps = ssrLocation ? { location: ssrLocation } : {};
+
   React.useEffect(() => {
     if (typeof window === "undefined") return undefined;
 
@@ -615,7 +619,7 @@ function App() {
   };
 
   return (
-    <Router>
+    <RouterComponent {...routerProps}>
       <RouteSeoFallback />
       <AppPushOptInPrompt />
       <div className="min-h-screen w-full overflow-x-hidden pb-[calc(58px+env(safe-area-inset-bottom))] lg:pb-0">
@@ -772,7 +776,7 @@ function App() {
         <MobileBottomNavigation />
         {/* BannerSlot disabled (incomplete). */}
       </div>
-    </Router>
+    </RouterComponent>
   );
 }
 

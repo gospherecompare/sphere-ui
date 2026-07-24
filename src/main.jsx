@@ -8,10 +8,8 @@ import { store } from "./store";
 import { HelmetProvider } from "react-helmet-async";
 import { installApiAliasFetch } from "./utils/installApiAliasFetch";
 import { installFetchActivityTracker } from "./utils/installFetchActivityTracker";
-import { installPreloadedFetchInterceptor } from "./utils/installPreloadedFetch";
 
 installApiAliasFetch();
-installPreloadedFetchInterceptor();
 installFetchActivityTracker();
 
 createRoot(document.getElementById("root")).render(

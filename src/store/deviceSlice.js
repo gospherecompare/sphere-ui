@@ -2,7 +2,6 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
 const REMOTE_API_BASE_URL = "https://api.apisphere.in/api";
 const LOCAL_API_BASE_URL = "http://localhost:5000/api";
-const WINDOW_PAYLOAD_KEY = "__HOOKS_PRERENDER_DATA__";
 
 const normalizeApiBase = (value) => {
   const trimmed = String(value || "").trim();
@@ -499,99 +498,6 @@ const normalizeCategoriesCollection = (body, preferredKeys = []) => {
   }));
 };
 
-const buildPreloadedDeviceState = () => {
-  if (typeof window === "undefined") return {};
-  const payload = window[WINDOW_PAYLOAD_KEY];
-  const byUrl =
-    payload && typeof payload === "object" && payload.byUrl
-      ? payload.byUrl
-      : null;
-
-  if (!byUrl || typeof byUrl !== "object") return {};
-
-  const next = {};
-  const readBodyForPath = (path) => {
-    for (const baseUrl of API_BASE_URL_ALIASES) {
-      const url = `${baseUrl}${path}`;
-      if (Object.prototype.hasOwnProperty.call(byUrl, url)) {
-        return byUrl[url];
-      }
-    }
-    return undefined;
-  };
-
-  try {
-    const smartphoneBody = readBodyForPath("/smartphones");
-    if (typeof smartphoneBody !== "undefined") {
-      const smartphones = normalizeSmartphoneCollection(smartphoneBody, [
-        "new",
-        "smartphones",
-      ]);
-      next.smartphone = smartphones;
-      next.smartphoneAll = smartphones;
-      next.loaded = true;
-    }
-  } catch {
-    // Ignore malformed preloaded smartphone payloads.
-  }
-
-  try {
-    const networkingBody = readBodyForPath("/networking");
-    if (typeof networkingBody !== "undefined") {
-      next.networking = normalizeNetworkingCollection(networkingBody, [
-        "networking",
-      ]);
-      next.networkingLoaded = true;
-    }
-  } catch {
-    // Ignore malformed preloaded networking payloads.
-  }
-
-  try {
-    const laptopBody = readBodyForPath("/laptops");
-    if (typeof laptopBody !== "undefined") {
-      next.laptops = normalizeLaptopsCollection(laptopBody, ["new", "laptops"]);
-      next.laptopsLoaded = true;
-    }
-  } catch {
-    // Ignore malformed preloaded laptop payloads.
-  }
-
-  try {
-    const tvBody = readBodyForPath("/tvs");
-    if (typeof tvBody !== "undefined") {
-      next.homeAppliances = normalizeHomeAppliancesCollection(tvBody, ["tvs"]);
-      next.homeAppliancesLoaded = true;
-    }
-  } catch {
-    // Ignore malformed preloaded TV payloads.
-  }
-
-  try {
-    const brandBody = readBodyForPath("/brand");
-    if (typeof brandBody !== "undefined") {
-      next.brands = normalizeBrandsCollection(brandBody, ["brands"]);
-      next.brandsLoaded = true;
-    }
-  } catch {
-    // Ignore malformed preloaded brand payloads.
-  }
-
-  try {
-    const categoryBody = readBodyForPath("/category");
-    if (typeof categoryBody !== "undefined") {
-      next.categories = normalizeCategoriesCollection(categoryBody, [
-        "categories",
-      ]);
-      next.categoriesLoaded = true;
-    }
-  } catch {
-    // Ignore malformed preloaded category payloads.
-  }
-
-  return next;
-};
-
 export const fetchSmartphones = createAsyncThunk(
   "device/fetchSmartphones",
   // Accept an optional options object: { feature }
@@ -1035,7 +941,6 @@ const initialState = {
   laptops: [],
   laptopsLoading: false,
   laptopsLoaded: false,
-  ...buildPreloadedDeviceState(),
 };
 
 const deviceSlice = createSlice({
