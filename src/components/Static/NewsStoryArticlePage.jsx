@@ -907,7 +907,10 @@ const NewsStoryArticlePage = () => {
   const { story, loading, error, notFound } = usePublicNewsStory(slug);
   const { stories: feedStories = [] } = usePublicNewsFeed({ limit: 18 });
   const [relatedPage, setRelatedPage] = useState(0);
-  const [isRelatedMobileLayout, setIsRelatedMobileLayout] = useState(false);
+  const [isRelatedMobileLayout, setIsRelatedMobileLayout] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia(RELATED_STORIES_MOBILE_QUERY).matches;
+  });
 
   const canonicalUrl = `https://tryhook.shop${createNewsStoryPath(slug)}`;
 

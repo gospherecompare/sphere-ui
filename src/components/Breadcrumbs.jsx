@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { getBreadcrumbs } from "use-react-router-breadcrumbs";
+import useBreadcrumbs from "use-react-router-breadcrumbs";
 import {
   getSmartphoneFeatureRouteMeta,
   toReadableListingLabel,
@@ -186,8 +186,8 @@ const routes = [
 ];
 
 export default function Breadcrumbs() {
+  const breadcrumbs = useBreadcrumbs(routes);
   const location = useLocation();
-  const breadcrumbs = getBreadcrumbs({ routes, location });
   const [detailCrumbLabel, setDetailCrumbLabel] = useState("");
   const pathname = String(location.pathname || "").toLowerCase();
 

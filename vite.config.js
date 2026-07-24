@@ -1,10 +1,10 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
-import vike from "vike/plugin";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 import {
   createAboutPageSchema,
   createBreadcrumbSchema,
@@ -33,6 +33,10 @@ import {
 } from "./src/utils/laptopListingRoutes.js";
 import { toCanonicalPageUrl } from "./src/utils/publicUrl.js";
 
+const require = createRequire(import.meta.url);
+const vitePrerender = require("vite-plugin-prerender");
+const Renderer = vitePrerender.PuppeteerRenderer;
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const SITE_ORIGIN = "https://tryhook.shop";
@@ -40,9 +44,9 @@ const DEFAULT_REMOTE_API_BASE_URL = "https://api.apisphere.in/api";
 const DEFAULT_LOCAL_API_BASE_URL = "http://localhost:5000/api";
 const trimTrailingSlash = (value = "") =>
   String(value || "").replace(/\/+$/g, "");
-const resolveApiBaseUrl = () => {
+const resolvePrerenderApiBaseUrl = () => {
   const configured =
-    process.env.HOOKS_SSR_API_BASE_URL ||
+    process.env.HOOKS_PRERENDER_API_BASE_URL ||
     process.env.VITE_API_BASE_URL ||
     "";
   if (String(configured || "").trim()) return trimTrailingSlash(configured);
@@ -57,7 +61,7 @@ const resolveApiBaseUrl = () => {
 
   return isDevServer ? DEFAULT_LOCAL_API_BASE_URL : DEFAULT_REMOTE_API_BASE_URL;
 };
-const API_BASE_URL = resolveApiBaseUrl();
+const API_BASE_URL = resolvePrerenderApiBaseUrl();
 const API_ORIGIN = (() => {
   try {
     return new URL(API_BASE_URL).origin;
@@ -65,6 +69,10 @@ const API_ORIGIN = (() => {
     return new URL(DEFAULT_REMOTE_API_BASE_URL).origin;
   }
 })();
+const ENABLE_PUPPETEER_PRERENDER =
+  String(process.env.HOOKS_ENABLE_PUPPETEER_PRERENDER || "")
+    .trim()
+    .toLowerCase() === "true";
 const MAX_DETAIL_ROUTES_PER_CATEGORY = 1000;
 const MAX_COMPARE_ROUTES = 380;
 const MAX_COMPARE_EXPANSION_PRODUCTS = 24;
@@ -261,7 +269,7 @@ const DEFAULT_SEO_KEYWORDS = `hook, best gadget comparison site, mobile price co
 const DEFAULT_INDEX_ROBOTS = "index, follow, max-image-preview:large";
 let publishedCompareRouteMeta = new Map();
 let publishedNewsRouteMeta = new Map();
-const STATIC_SITEMAP_ROUTES = [
+const STATIC_PRERENDER_ROUTES = [
   "/",
   "/news",
   "/smartphones",
@@ -782,7 +790,7 @@ const routesFromSitemap = () => {
     return parsed;
   } catch (err) {
     console.warn(
-      "[sitemap] Failed to read sitemap routes, using static route list only.",
+      "[prerender] Failed to read sitemap routes, using static route list only.",
     );
     return [];
   }
@@ -862,7 +870,7 @@ const fetchApiRows = async (endpoint, preferredKeys = []) => {
     return parseApiRows(body, preferredKeys);
   } catch (error) {
     console.warn(
-      `[sitemap] Failed to fetch routes from ${endpoint}: ${error?.message || error}`,
+      `[prerender] Failed to fetch detail routes from ${endpoint}: ${error?.message || error}`,
     );
     return [];
   }
@@ -878,7 +886,7 @@ const fetchApiBody = async (endpoint) => {
     return await response.json();
   } catch (error) {
     console.warn(
-      `[sitemap] Failed to fetch route data from ${endpoint}: ${error?.message || error}`,
+      `[prerender] Failed to fetch preloaded payload from ${endpoint}: ${error?.message || error}`,
     );
     return null;
   }
@@ -1265,8 +1273,9 @@ const fetchDetailRoutesFromApi = async () => {
     }
   }
 
-  // Include canonical detail routes in the sitemap. Alias routes resolve at
-  // request time and should not create duplicate crawlable URLs.
+  // Only prerender canonical detail routes. Alias routes should resolve through
+  // the SPA router when requested, but should not exist as standalone static
+  // HTML files because that creates duplicate crawlable URLs.
   return [...new Set(routes)];
 };
 
@@ -1641,7 +1650,7 @@ const fetchTvListingRoutesFromApi = async () => {
   });
 };
 
-const filterValidSitemapRoutes = async (routes = []) => {
+const filterValidPrerenderRoutes = async (routes = []) => {
   const uniqueRoutes = [
     ...new Set(
       routes
@@ -1662,17 +1671,17 @@ const filterValidSitemapRoutes = async (routes = []) => {
   return filteredRoutes.filter(Boolean);
 };
 
-const getSitemapRoutes = async () => {
+const getPrerenderRoutes = async () => {
   const sitemapRoutes = routesFromSitemap();
   const detailRoutes = await fetchDetailRoutesFromApi();
   const compareRoutes = await fetchCompareRoutesFromApi();
   const newsRoutes = await fetchNewsRoutesFromApi();
   const smartphoneListingRoutes = await fetchSmartphoneListingRoutesFromApi();
   const tvListingRoutes = await fetchTvListingRoutesFromApi();
-  return filterValidSitemapRoutes([
+  return filterValidPrerenderRoutes([
     ...new Set([
       "/",
-      ...STATIC_SITEMAP_ROUTES,
+      ...STATIC_PRERENDER_ROUTES,
       ...sitemapRoutes,
       ...detailRoutes,
       ...compareRoutes,
@@ -1810,6 +1819,56 @@ const createNewsSitemapPlugin = () => ({
     const outputPath = path.join(outputDir, "news-sitemap.xml");
     writeNewsSitemapFile(outputPath);
     console.log(`[news-sitemap] Generated ${outputPath}`);
+  },
+});
+
+const createStaticRouteHtmlPlugin = ({
+  routes = [],
+  getPreloadedPayloadForRoute,
+  processHtml,
+}) => ({
+  name: "hook-generate-route-html",
+  apply: "build",
+  async closeBundle() {
+    const outputDir = path.join(__dirname, "dist");
+    const rootHtmlPath = path.join(outputDir, "index.html");
+
+    if (!fs.existsSync(rootHtmlPath)) {
+      console.warn(
+        `[route-html] Skipped route HTML generation because ${rootHtmlPath} was not found.`,
+      );
+      return;
+    }
+
+    const baseHtml = fs.readFileSync(rootHtmlPath, "utf8");
+    const uniqueRoutes = [
+      ...new Set(
+        routes.map((routePath) => normalizePath(routePath)).filter(Boolean),
+      ),
+    ];
+    let generatedCount = 0;
+
+    for (const routePath of uniqueRoutes) {
+      const payload = await getPreloadedPayloadForRoute(routePath);
+      const html = processHtml(baseHtml, routePath, payload);
+
+      if (routePath === "/") {
+        fs.writeFileSync(rootHtmlPath, html, "utf8");
+        generatedCount += 1;
+        continue;
+      }
+
+      const outputPath = path.join(
+        outputDir,
+        routePath.replace(/^\/+/, ""),
+        "index.html",
+      );
+      fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+      fs.writeFileSync(outputPath, html, "utf8");
+      generatedCount += 1;
+    }
+
+    console.log(`[route-html] Generated ${generatedCount} route HTML files.`);
   },
 });
 
@@ -2552,8 +2611,8 @@ const escapeInlineJson = (value) =>
 
 const injectPreloadedPayload = (html, payload) => {
   if (!payload) return html;
-  if (html.includes('id="hook-ssr-data"')) return html;
-  const scriptTag = `<script id="hook-ssr-data">window.__HOOKS_SSR_DATA__=${escapeInlineJson(payload)};</script>`;
+  if (html.includes('id="hook-prerender-data"')) return html;
+  const scriptTag = `<script id="hook-prerender-data">window.__HOOKS_PRERENDER_DATA__=${escapeInlineJson(payload)};</script>`;
   return html.replace("</head>", `${scriptTag}\n</head>`);
 };
 
@@ -2574,7 +2633,7 @@ const injectStructuredData = (html, routePath, preloadedApiPayload) => {
   const scripts = entries
     .map(
       (schema) =>
-        `<script type="application/ld+json" data-hooks-ssr-schema="true" data-hooks-ssr-canonical="${escapeHtml(canonicalUrl)}">${escapeInlineJson(schema)}</script>`,
+        `<script type="application/ld+json" data-hooks-prerender-schema="true" data-hooks-prerender-canonical="${escapeHtml(canonicalUrl)}">${escapeInlineJson(schema)}</script>`,
     )
     .join("\n");
   return html.replace("</head>", `${scripts}\n</head>`);
@@ -2808,6 +2867,17 @@ const processRouteHtml = (html, routePath, preloadedApiPayload) => {
   return nextHtml;
 };
 
+const resolvePrerenderRoutePath = (renderedRoute) => {
+  if (
+    renderedRoute &&
+    Object.prototype.hasOwnProperty.call(renderedRoute, "originalRoute")
+  ) {
+    return normalizePath(renderedRoute.originalRoute || "/");
+  }
+
+  return normalizePath(renderedRoute?.route || "/");
+};
+
 const usesSharedPreloadedPayload = (canonicalPath = "/") =>
   PRELOAD_CANONICAL_PATHS.has(canonicalPath) ||
   SMARTPHONE_FILTER_ROUTE_PATHS.has(canonicalPath) ||
@@ -2819,21 +2889,91 @@ const usesSharedPreloadedPayload = (canonicalPath = "/") =>
   canonicalPath === "/compare" ||
   canonicalPath.startsWith("/compare/");
 
-export default defineConfig(async ({ command }) => {
-  const isBuild = command === "build";
-  // Route discovery and payload collection are build-time compatibility work.
-  // Running them during dev blocks the SSR server on every API endpoint.
-  const sitemapRoutes = isBuild ? await getSitemapRoutes() : [];
-  if (isBuild) {
-    syncPublicSitemap(sitemapRoutes);
-    syncPublicNewsSitemap();
-  }
+export default defineConfig(async () => {
+  const prerenderRoutes = await getPrerenderRoutes();
+  syncPublicSitemap(prerenderRoutes);
+  syncPublicNewsSitemap();
+  const sharedPreloadedApiPayload = await fetchPreloadedApiPayload();
+  const detailWidgetContextMap = buildDetailWidgetContextMap(
+    sharedPreloadedApiPayload,
+  );
+  const routePayloadCache = new Map();
+  const getPreloadedPayloadForRoute = async (routePath) => {
+    const canonicalPath = toCanonicalPath(normalizePath(routePath || "/"));
+    if (routePayloadCache.has(canonicalPath)) {
+      return routePayloadCache.get(canonicalPath);
+    }
+
+    const sharedPayload = usesSharedPreloadedPayload(canonicalPath)
+      ? sharedPreloadedApiPayload
+      : null;
+    const routeSpecificPayload = await fetchRouteSpecificPreloadedPayload(
+      canonicalPath,
+      detailWidgetContextMap,
+      sharedPreloadedApiPayload,
+    );
+    const mergedPayload = mergePreloadedPayloads(
+      sharedPayload,
+      routeSpecificPayload,
+    );
+
+    routePayloadCache.set(canonicalPath, mergedPayload);
+    return mergedPayload;
+  };
+  const processHtml = (html, routePath, payload) =>
+    processRouteHtml(html, routePath, payload);
+
   return {
     plugins: [
-      vike(),
       react(),
       tailwindcss(),
-      createSitemapPlugin(sitemapRoutes),
+      {
+        name: "hooks-route-seo-dev",
+        apply: "serve",
+        async transformIndexHtml(html, ctx) {
+          const rawPath = String(ctx?.path || ctx?.url || "/")
+            .split("?")[0]
+            .split("#")[0];
+          const payload = await getPreloadedPayloadForRoute(rawPath || "/");
+          return processHtml(html, rawPath || "/", payload);
+        },
+      },
+      ...(ENABLE_PUPPETEER_PRERENDER
+        ? [
+            vitePrerender({
+              staticDir: path.join(__dirname, "dist"),
+              routes: prerenderRoutes,
+              renderer: new Renderer({
+                renderAfterTime: 1500,
+                maxConcurrentRoutes: 4,
+                consoleHandler(route, message) {
+                  const type = message?.type?.() || "log";
+                  const text = message?.text?.() || "";
+                  if (type === "error" || text.includes("Error")) {
+                    console.log(`[prerender:${route}] ${type}: ${text}`);
+                  }
+                },
+              }),
+              async postProcess(renderedRoute) {
+                const routePath = resolvePrerenderRoutePath(renderedRoute);
+                renderedRoute.route = routePath;
+                const payload = await getPreloadedPayloadForRoute(routePath);
+                renderedRoute.html = processHtml(
+                  renderedRoute.html || "",
+                  routePath,
+                  payload,
+                );
+                return renderedRoute;
+              },
+            }),
+          ]
+        : []),
+      createStaticRouteHtmlPlugin({
+        routes: prerenderRoutes,
+        getPreloadedPayloadForRoute,
+        processHtml,
+      }),
+      createSitemapPlugin(prerenderRoutes),
       createNewsSitemapPlugin(),
     ],
     server: {

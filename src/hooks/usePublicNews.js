@@ -605,7 +605,6 @@ const formatDateLabel = (value) => {
     day: "2-digit",
     month: "short",
     year: "numeric",
-    timeZone: "Asia/Kolkata",
   }).format(date);
 };
 
