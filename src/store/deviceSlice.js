@@ -1,16 +1,14 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { normalizeApiBaseUrl } from "../utils/apiUrl";
 
 const REMOTE_API_BASE_URL = "https://api.apisphere.in/api";
 const LOCAL_API_BASE_URL = "http://localhost:5000/api";
 
-const normalizeApiBase = (value) => {
-  const trimmed = String(value || "").trim();
-  if (!trimmed) return "";
-  return trimmed.replace(/\/+$/, "");
-};
-
 const resolveApiBaseUrl = () => {
-  const configured = normalizeApiBase(import.meta.env.VITE_API_BASE_URL);
+  const configuredValue = String(import.meta.env.VITE_API_BASE_URL || "").trim();
+  const configured = configuredValue
+    ? normalizeApiBaseUrl(configuredValue)
+    : "";
   if (configured) return configured;
 
   if (typeof window !== "undefined") {

@@ -2609,14 +2609,17 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const [showSort, setShowSort] = useState(false);
   const [showHeroDescription, setShowHeroDescription] = useState(false);
   const [compareItems, setCompareItems] = useState([]);
-  const [likedItems, setLikedItems] = useState(() => {
+  const [likedItems, setLikedItems] = useState([]);
+
+  useEffect(() => {
     try {
       const stored = localStorage.getItem("likedSmartphones");
-      return stored ? JSON.parse(stored) : [];
+      const parsed = stored ? JSON.parse(stored) : [];
+      setLikedItems(Array.isArray(parsed) ? parsed : []);
     } catch {
-      return [];
+      setLikedItems([]);
     }
-  });
+  }, []);
   const [currentPage, setCurrentPage] = useState(1);
   const compareLimit = useMemo(
     () => getCompareLimitForDevices(compareItems),

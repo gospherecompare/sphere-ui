@@ -3,13 +3,11 @@ import { Helmet } from "react-helmet-async";
 import useTitle from "../../hooks/useTitle";
 import { createWebPageSchema } from "../../utils/schemaGenerators";
 import { toCanonicalPageUrl } from "../../utils/publicUrl";
+import { buildApiUrl } from "../../utils/apiUrl";
 
 const SITE_ORIGIN = "https://tryhook.shop";
 const CAREERS_OG_IMAGE = `${SITE_ORIGIN}/hook-logo.png`;
-const CAREERS_API_BASE = (
-  import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in"
-).replace(/\/$/, "");
-const CAREERS_API_URL = `${CAREERS_API_BASE}/api/careers`;
+const CAREERS_API_URL = buildApiUrl("/careers");
 
 const ROLE_OPTIONS = [
   { value: "frontend", label: "Frontend Developer" },

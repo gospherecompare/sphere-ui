@@ -4,10 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { createProductPath } from "../../utils/slugGenerator";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
 import { FaArrowRight, FaMobileAlt } from "react-icons/fa";
-
-const API_BASE = (
-  import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in"
-).replace(/\/$/, "");
+import { buildApiUrl } from "../../utils/apiUrl";
 
 const toText = (value) => {
   if (value === null || value === undefined) return null;
@@ -184,10 +181,10 @@ const LatestSmartphones = () => {
     const fetchLatest = async () => {
       setLoadingLatest(true);
       setCurrentDevices([]);
-      const latestEndpoint = "/api/public/new/smartphones";
+      const latestEndpoint = "/public/new/smartphones";
 
       try {
-        const latestRes = await fetch(`${API_BASE}${latestEndpoint}`);
+        const latestRes = await fetch(buildApiUrl(latestEndpoint));
         if (!latestRes.ok)
           throw new Error("Failed to fetch latest smartphones");
         const latestJson = await latestRes.json();

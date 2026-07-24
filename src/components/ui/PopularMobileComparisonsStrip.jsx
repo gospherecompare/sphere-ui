@@ -6,10 +6,10 @@ import {
   toCanonicalCompareSlug,
 } from "../../utils/compareRoutes";
 import { readPreloadedApiResponse } from "../../utils/preloadedApi";
-
-const API_BASE = (
-  import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in"
-).replace(/\/$/, "");
+import {
+  API_ORIGIN_URL,
+  buildApiUrl,
+} from "../../utils/apiUrl";
 
 const normalizeText = (value) => String(value || "").trim();
 
@@ -18,9 +18,9 @@ const normalizeAssetUrl = (value) => {
   if (!raw) return "";
   if (/^(https?:|data:|blob:)/i.test(raw)) return raw;
   if (raw.startsWith("//")) return `https:${raw}`;
-  if (raw.startsWith("/")) return `${API_BASE}${raw}`;
+  if (raw.startsWith("/")) return `${API_ORIGIN_URL}${raw}`;
   if (/^(uploads|assets|images)\//i.test(raw)) {
-    return `${API_BASE}/${raw.replace(/^\/+/, "")}`;
+    return `${API_ORIGIN_URL}/${raw.replace(/^\/+/, "")}`;
   }
   return raw;
 };
@@ -71,7 +71,9 @@ const makeComparisonKey = (item) => {
   return idPair.join("|");
 };
 
-const MOST_COMPARED_ENDPOINT = `${API_BASE}/api/public/trending/most-compared`;
+const MOST_COMPARED_ENDPOINT = buildApiUrl(
+  "/public/trending/most-compared",
+);
 
 const mapRemoteComparisonsPayload = (json) => {
   const rows = Array.isArray(json?.mostCompared) ? json.mostCompared : [];

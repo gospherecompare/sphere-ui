@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { createProductPath } from "../../utils/slugGenerator";
+import { buildApiUrl } from "../../utils/apiUrl";
 
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in/api";
-const SMARTPHONE_HIGHLIGHTS_ENDPOINT = `${API_BASE}/public/smartphones/highlights`;
+const SMARTPHONE_HIGHLIGHTS_ENDPOINT = buildApiUrl(
+  "/public/smartphones/highlights",
+);
 
 const normalizeText = (value) => String(value || "").trim();
 

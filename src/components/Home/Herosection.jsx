@@ -11,11 +11,8 @@ import {
 } from "react-icons/fa";
 import useDevice from "../../hooks/useDevice";
 import { createProductPath } from "../../utils/slugGenerator";
+import { buildApiUrl } from "../../utils/apiUrl";
 import "../../styles/hideScrollbar.css";
-
-const API_BASE = (
-  import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in/api"
-).replace(/\/$/, "");
 
 const CATEGORY_META = [
   {
@@ -372,7 +369,7 @@ const HeroSection = () => {
 
     const loadTrending = async () => {
       try {
-        const response = await fetch(`${API_BASE}/public/trending/all`, {
+        const response = await fetch(buildApiUrl("/public/trending/all"), {
           signal: controller.signal,
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -406,7 +403,9 @@ const HeroSection = () => {
       setFeaturedPhonesLoading(true);
       try {
         const response = await fetch(
-          `${API_BASE}/public/search-popularity?productType=smartphone&limit=${HERO_POPULAR_CARD_LIMIT}`,
+          buildApiUrl(
+            `/public/search-popularity?productType=smartphone&limit=${HERO_POPULAR_CARD_LIMIT}`,
+          ),
           { signal: controller.signal },
         );
         if (!response.ok) throw new Error(`HTTP ${response.status}`);

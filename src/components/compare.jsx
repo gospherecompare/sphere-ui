@@ -50,6 +50,7 @@ import { normalizeSeoTitle } from "../utils/seoTitle";
 import { toCanonicalPageUrl } from "../utils/publicUrl";
 import { readPreloadedApiResponse } from "../utils/preloadedApi";
 import { buildCanonicalComparePathFromDevices } from "../utils/compareRoutes";
+import { normalizeApiBaseUrl } from "../utils/apiUrl";
 
 const Search = FaSearch;
 const X = FaTimes;
@@ -268,10 +269,8 @@ const MAX_DEVICES = 4;
 const MIN_DEVICES = 2;
 const SITE_ORIGIN = "https://tryhook.shop";
 const resolveCompareApiBase = () => {
-  const configured = String(import.meta.env.VITE_API_BASE_URL || "")
-    .trim()
-    .replace(/\/$/, "");
-  if (configured) return configured;
+  const configured = String(import.meta.env.VITE_API_BASE_URL || "").trim();
+  if (configured) return normalizeApiBaseUrl(configured);
 
   if (typeof window !== "undefined") {
     const hostname = window.location?.hostname;

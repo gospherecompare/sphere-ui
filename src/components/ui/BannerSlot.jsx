@@ -1,7 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in";
+import { buildApiUrl } from "../../utils/apiUrl";
 
 const DEFAULT_SIZES = {
   top_leaderboard: { desktop: "970x90", tablet: "728x90", mobile: "320x50" },
@@ -62,7 +60,9 @@ const BannerSlot = ({
         setStatus("loading");
         setBanner(null);
         const res = await fetch(
-          `${API_BASE}/api/public/banners?placement=${encodeURIComponent(resolvedPlacement)}&limit=1`,
+          buildApiUrl(
+            `/public/banners?placement=${encodeURIComponent(resolvedPlacement)}&limit=1`,
+          ),
           { signal: controller.signal },
         );
         if (!res.ok) {

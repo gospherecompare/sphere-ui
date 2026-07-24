@@ -18,10 +18,7 @@ import { createProductPath } from "../../utils/slugGenerator";
 import { buildCanonicalComparePath } from "../../utils/compareRoutes";
 import { readPreloadedApiResponse } from "../../utils/preloadedApi";
 import { resolveSmartphoneBadgeScore } from "../../utils/smartphoneBadgeScore";
-
-const API_BASE = (
-  import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in"
-).replace(/\/$/, "");
+import { buildApiUrl } from "../../utils/apiUrl";
 
 const formatPrice = (value) => {
   const n = Number(value);
@@ -44,9 +41,11 @@ const buildCompetitorsEndpoint = (productId, entityType) => {
   const pid = Number(productId);
   if (!Number.isInteger(pid) || pid <= 0) return "";
   const queryEntity = encodeURIComponent(String(entityType || "smartphones"));
-  return `${API_BASE}/api/public/product/${encodeURIComponent(
-    pid,
-  )}/competitors?entity_type=${queryEntity}`;
+  return buildApiUrl(
+    `/public/product/${encodeURIComponent(
+      pid,
+    )}/competitors?entity_type=${queryEntity}`,
+  );
 };
 
 const toFiniteNumber = (value) => {

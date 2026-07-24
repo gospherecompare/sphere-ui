@@ -1,9 +1,9 @@
+import { normalizeApiBaseUrl } from "../utils/apiUrl";
+
 const DEFAULT_API_BASE_URL = "https://api.apisphere.in/api";
 const DEFAULT_LOCAL_API_BASE_URL = "http://localhost:5000/api";
 const SITE_ORIGIN = "https://tryhook.shop";
 const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
-
-const trimTrailingSlash = (value = "") => String(value || "").replace(/\/+$/g, "");
 
 // Keep the browser build compatible with Vite/Vike's module runner. Environment
 // keys must be statically named during SSR.
@@ -17,7 +17,7 @@ const nodeEnv =
 const isServerDevelopment =
   typeof window === "undefined" && nodeEnv !== "production";
 
-export const API_BASE_URL = trimTrailingSlash(
+export const API_BASE_URL = normalizeApiBaseUrl(
   serverApiBaseUrl ||
     viteApiBaseUrl ||
     (isServerDevelopment ? DEFAULT_LOCAL_API_BASE_URL : DEFAULT_API_BASE_URL),

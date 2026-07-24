@@ -6,17 +6,15 @@ import {
   FaStore,
 } from "react-icons/fa";
 import { buildAffiliateRedirectHref } from "../../hooks/useAffiliatePlacements";
-
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in";
+import { API_ORIGIN_URL } from "../../utils/apiUrl";
 
 const toAbsoluteAssetUrl = (value) => {
   const raw = String(value || "").trim();
   if (!raw) return "";
   if (/^(?:[a-z][a-z0-9+.-]*:)?\/\//i.test(raw)) return raw;
   if (/^(?:data:|blob:)/i.test(raw)) return raw;
-  if (raw.startsWith("/")) return `${API_BASE}${raw}`;
-  return `${API_BASE}/${raw.replace(/^\/+/, "")}`;
+  if (raw.startsWith("/")) return `${API_ORIGIN_URL}${raw}`;
+  return `${API_ORIGIN_URL}/${raw.replace(/^\/+/, "")}`;
 };
 
 const formatPrice = (value, currencyCode = "INR") => {

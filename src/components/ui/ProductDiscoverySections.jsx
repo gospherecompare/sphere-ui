@@ -21,10 +21,7 @@ import {
   LAPTOP_DISCOVERY_PRICE_BUCKETS,
   stripLaptopSeoQueryParams,
 } from "../../utils/laptopListingRoutes";
-
-const API_BASE = (
-  import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in"
-).replace(/\/$/, "");
+import { buildApiUrl } from "../../utils/apiUrl";
 
 const normalizeText = (value) => String(value || "").trim();
 
@@ -188,9 +185,11 @@ const buildDiscoveryEndpoint = (productId, entityType) => {
   const pid = Number(productId);
   if (!Number.isInteger(pid) || pid <= 0) return "";
   const queryEntity = encodeURIComponent(normalizeEntityType(entityType));
-  return `${API_BASE}/api/public/product/${encodeURIComponent(
-    pid,
-  )}/discovery?entity_type=${queryEntity}`;
+  return buildApiUrl(
+    `/public/product/${encodeURIComponent(
+      pid,
+    )}/discovery?entity_type=${queryEntity}`,
+  );
 };
 
 const fixCurrencyText = (value = "") => {

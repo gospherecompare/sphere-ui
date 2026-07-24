@@ -19,32 +19,13 @@ import {
   primaryContactEmail,
   supportContactEmail,
 } from "../../utils/hookContactChannels";
+import { buildApiUrl } from "../../utils/apiUrl";
 
 const contactEmail = primaryContactEmail;
 const contactPageChannels = hookContactChannels.filter((channel) =>
   ["contact", "support"].includes(channel.key),
 );
-const getContactApiBase = () => {
-  const envBase = import.meta.env.VITE_API_BASE_URL;
-  if (envBase) return String(envBase).replace(/\/$/, "");
-
-  if (typeof window !== "undefined") {
-    const hostname = String(window.location.hostname || "").toLowerCase();
-    if (
-      hostname === "localhost" ||
-      hostname === "127.0.0.1" ||
-      hostname === "::1"
-    ) {
-      return "http://localhost:5000";
-    }
-  }
-
-  return "https://api.apisphere.in";
-};
-const CONTACT_API_BASE = (
-  getContactApiBase()
-).replace(/\/$/, "");
-const CONTACT_API_URL = `${CONTACT_API_BASE}/api/contact-submissions`;
+const CONTACT_API_URL = buildApiUrl("/contact-submissions");
 
 const supportPillars = [
   {

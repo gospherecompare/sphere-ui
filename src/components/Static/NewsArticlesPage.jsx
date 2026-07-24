@@ -482,8 +482,11 @@ const getNewsPageDescription = (route = null) =>
     ? route.description
     : "Read the latest technology news, smartphone launches, AI updates, gadget releases, industry trends, and expert insights from India and around the world on TryHook.";
 
-const scoreStory = (story, index) => {
-  const ageHours = Math.max(0, (Date.now() - parseStoryTime(story)) / 36e5);
+const scoreStory = (story, index, referenceTime) => {
+  const ageHours = Math.max(
+    0,
+    (referenceTime - parseStoryTime(story)) / 36e5,
+  );
   const recencyScore = Math.max(0, 90 - ageHours / 8);
   const priorityScore =
     (story?.pinned ? 150 : 0) +
@@ -528,8 +531,14 @@ const buildNewsLayout = (stories = []) => {
   const validStories = [...stories].filter(
     (story) => story?.slug && story?.title,
   );
+  const referenceTime = validStories.reduce(
+    (latest, story) => Math.max(latest, parseStoryTime(story)),
+    0,
+  );
   const ranked = [...validStories].sort(
-    (left, right) => scoreStory(right, 0) - scoreStory(left, 0),
+    (left, right) =>
+      scoreStory(right, 0, referenceTime) -
+      scoreStory(left, 0, referenceTime),
   );
   const recent = [...validStories].sort(
     (left, right) => parseStoryTime(right) - parseStoryTime(left),
@@ -633,10 +642,7 @@ const buildNewsBrands = (brands = []) => {
 };
 
 const useIsNewsMobileLayout = () => {
-  const [isMobile, setIsMobile] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.matchMedia(NEWS_MOBILE_QUERY).matches;
-  });
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;

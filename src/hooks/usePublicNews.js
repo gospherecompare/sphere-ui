@@ -1,13 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { readPreloadedApiResponse } from "../utils/preloadedApi";
 import { toCanonicalPagePath } from "../utils/publicUrl";
-
-const API_BASE = (() => {
-  const configuredBase = String(import.meta.env.VITE_API_BASE_URL || "").trim();
-  if (configuredBase) return configuredBase.replace(/\/$/, "");
-
-  return "https://api.apisphere.in";
-})();
+import { buildApiUrl } from "../utils/apiUrl";
 
 const DEFAULT_STORY_IMAGE = "/hook-logo.png";
 
@@ -611,6 +605,7 @@ const formatDateLabel = (value) => {
     day: "2-digit",
     month: "short",
     year: "numeric",
+    timeZone: "Asia/Kolkata",
   }).format(date);
 };
 
@@ -1031,11 +1026,11 @@ const buildNewsFeedEndpoint = ({
     params.set("productId", String(productId));
   }
   if (safeText(productType)) params.set("productType", safeText(productType));
-  return `${API_BASE}/api/public/blogs?${params.toString()}`;
+  return buildApiUrl(`/public/blogs?${params.toString()}`);
 };
 
 const buildNewsStoryEndpoint = (slug = "") =>
-  `${API_BASE}/api/public/blogs/${encodeURIComponent(safeText(slug))}`;
+  buildApiUrl(`/public/blogs/${encodeURIComponent(safeText(slug))}`);
 
 const normalizeStoriesFromPayload = (payload) =>
   Array.isArray(payload?.blogs)

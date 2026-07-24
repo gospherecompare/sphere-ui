@@ -5,11 +5,9 @@ import { FaArrowRight, FaFire, FaMobileAlt, FaRupeeSign } from "react-icons/fa";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
 import { createProductPath } from "../../utils/slugGenerator";
 import { buildPublicSmartphoneFeaturePath as buildSmartphoneFeaturePath } from "../../utils/smartphoneListingRoutes";
+import { buildApiUrl } from "../../utils/apiUrl";
 import "../../styles/hideScrollbar.css";
 
-const API_BASE = (
-  import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in"
-).replace(/\/$/, "");
 const FEATURED_PHONES_LIMIT = 6;
 const FEATURED_FETCH_LIMIT = 25;
 const RUPEE = "\u20B9";
@@ -659,7 +657,9 @@ const FeaturedProduct = () => {
 
       try {
         const response = await fetch(
-          `${API_BASE}/api/public/trending/smartphones?limit=${FEATURED_FETCH_LIMIT}`,
+          buildApiUrl(
+            `/public/trending/smartphones?limit=${FEATURED_FETCH_LIMIT}`,
+          ),
           {
             cache: "no-store",
             signal: controller.signal,

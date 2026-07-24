@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || "https://api.apisphere.in";
+import { buildApiUrl } from "../utils/apiUrl";
 
 const normalizeIdList = (values) =>
   Array.from(
@@ -42,9 +40,11 @@ export const buildAffiliateRedirectHref = ({
   if (slot) params.set("slot", String(slot));
   if (productId) params.set("productId", String(productId));
   if (blogId) params.set("blogId", String(blogId));
-  return `${API_BASE}/api/public/affiliate-redirect/${encodeURIComponent(
-    placementId,
-  )}${params.toString() ? `?${params.toString()}` : ""}`;
+  return buildApiUrl(
+    `/public/affiliate-redirect/${encodeURIComponent(placementId)}${
+      params.toString() ? `?${params.toString()}` : ""
+    }`,
+  );
 };
 
 export const useAffiliatePlacements = ({
@@ -66,7 +66,9 @@ export const useAffiliatePlacements = ({
     if (serializedProductIds) params.set("productIds", serializedProductIds);
     if (productId) params.set("productId", String(productId));
     if (blogId) params.set("blogId", String(blogId));
-    return `${API_BASE}/api/public/affiliate-placements?${params.toString()}`;
+    return buildApiUrl(
+      `/public/affiliate-placements?${params.toString()}`,
+    );
   }, [blogId, pageType, productId, serializedProductIds]);
 
   const [placements, setPlacements] = useState([]);
