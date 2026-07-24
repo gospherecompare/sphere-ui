@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { createProductPath } from "../../utils/slugGenerator";
 import { buildApiUrl } from "../../utils/apiUrl";
+import { fetchPublicJson } from "../../utils/publicJsonRequest";
 
 const SMARTPHONE_HIGHLIGHTS_ENDPOINT = buildApiUrl(
   "/public/smartphones/highlights",
@@ -254,12 +255,9 @@ const MobilePhoneHighlights = ({
 
     (async () => {
       try {
-        const response = await fetch(SMARTPHONE_HIGHLIGHTS_ENDPOINT, {
-          cache: "no-store",
+        const body = await fetchPublicJson(SMARTPHONE_HIGHLIGHTS_ENDPOINT, {
           signal: controller.signal,
         });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const body = await response.json();
         const normalized = normalizeServerHighlightRows(body);
         if (!cancelled && normalized.length > 0) {
           setServerRows(normalized);

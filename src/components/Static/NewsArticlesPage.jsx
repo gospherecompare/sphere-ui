@@ -1358,7 +1358,7 @@ const NewsArticlesPage = () => {
     () => filterStoriesForTaxonomyRoute(stories, taxonomyRoute),
     [stories, taxonomyRoute],
   );
-  const deviceContext = useDevice();
+  const deviceContext = useDevice({ resources: ["brands"] });
   const storySchemaItems = useStoryListSchemaItems(routedStories);
   const layout = useMemo(() => buildNewsLayout(routedStories), [routedStories]);
   const featuredBrands = useMemo(

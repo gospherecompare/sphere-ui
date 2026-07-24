@@ -26,15 +26,36 @@ const inFlightInitialLoads = {
   categories: false,
 };
 
-export function useDevice() {
+const ALL_DEVICE_RESOURCES = [
+  "smartphones",
+  "networking",
+  "laptops",
+  "tvs",
+  "brands",
+  "categories",
+];
+
+export function useDevice({ resources = ALL_DEVICE_RESOURCES } = {}) {
   const dispatch = useDispatch();
   const state = useSelector((s) => s.device || {});
+  const requestedResources = Array.isArray(resources)
+    ? resources
+    : ALL_DEVICE_RESOURCES;
+  const loadSmartphones = requestedResources.includes("smartphones");
+  const loadNetworking = requestedResources.includes("networking");
+  const loadLaptops = requestedResources.includes("laptops");
+  const loadTvs =
+    requestedResources.includes("tvs") ||
+    requestedResources.includes("homeAppliances");
+  const loadBrands = requestedResources.includes("brands");
+  const loadCategories = requestedResources.includes("categories");
 
   // load data when relevant flags show data is missing. Include explicit
   // dependencies so the effect won't be re-run unexpectedly and will only
   // dispatch actions when a resource is actually missing.
   useEffect(() => {
     if (
+      loadSmartphones &&
       !state.loaded &&
       !state.loading &&
       !inFlightInitialLoads.smartphones
@@ -45,6 +66,7 @@ export function useDevice() {
       });
     }
     if (
+      loadNetworking &&
       !state.networkingLoaded &&
       !state.networkingLoading &&
       !inFlightInitialLoads.networking
@@ -55,6 +77,7 @@ export function useDevice() {
       });
     }
     if (
+      loadLaptops &&
       !state.laptopsLoaded &&
       !state.laptopsLoading &&
       !inFlightInitialLoads.laptops
@@ -65,6 +88,7 @@ export function useDevice() {
       });
     }
     if (
+      loadTvs &&
       !state.homeAppliancesLoaded &&
       !state.homeAppliancesLoading &&
       !inFlightInitialLoads.tvs
@@ -75,6 +99,7 @@ export function useDevice() {
       });
     }
     if (
+      loadBrands &&
       !state.brandsLoaded &&
       !state.brandsLoading &&
       !inFlightInitialLoads.brands
@@ -85,6 +110,7 @@ export function useDevice() {
       });
     }
     if (
+      loadCategories &&
       !state.categoriesLoaded &&
       !state.categoriesLoading &&
       !inFlightInitialLoads.categories
@@ -96,6 +122,12 @@ export function useDevice() {
     }
   }, [
     dispatch,
+    loadSmartphones,
+    loadNetworking,
+    loadLaptops,
+    loadTvs,
+    loadBrands,
+    loadCategories,
     state.loaded,
     state.loading,
     state.networkingLoaded,

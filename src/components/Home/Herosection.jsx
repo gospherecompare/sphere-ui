@@ -12,6 +12,7 @@ import {
 import useDevice from "../../hooks/useDevice";
 import { createProductPath } from "../../utils/slugGenerator";
 import { buildApiUrl } from "../../utils/apiUrl";
+import { fetchPublicJson } from "../../utils/publicJsonRequest";
 import "../../styles/hideScrollbar.css";
 
 const CATEGORY_META = [
@@ -319,13 +320,7 @@ const dedupeCards = (cards) => {
 
 const HeroSection = () => {
   const navigate = useNavigate();
-  const {
-    smartphone,
-    smartphoneAll,
-    laptops,
-    homeAppliances,
-    brands,
-  } = useDevice();
+  const { brands } = useDevice({ resources: ["brands"] });
   const [activeCategory, setActiveCategory] = useState("smartphones");
   const [searchQuery, setSearchQuery] = useState("");
   const [liveTrending, setLiveTrending] = useState([]);
@@ -333,25 +328,30 @@ const HeroSection = () => {
   const [featuredPhonesLoading, setFeaturedPhonesLoading] = useState(false);
 
   const categoryRows = useMemo(() => {
-    const phones =
-      Array.isArray(smartphoneAll) && smartphoneAll.length
-        ? smartphoneAll
-        : Array.isArray(smartphone)
-          ? smartphone
-          : [];
-
-    const sourceMap = {
-      smartphones: phones,
-      laptops: Array.isArray(laptops) ? laptops : [],
-      tvs: Array.isArray(homeAppliances) ? homeAppliances : [],
-    };
-
     return CATEGORY_META.map((category) => ({
       ...category,
-      items: sourceMap[category.id] || [],
-      count: (sourceMap[category.id] || []).length,
+      items: liveTrending.filter((item) => {
+        const itemCategory = resolveCategoryFromType(
+          firstText(
+            item?.product_type,
+            item?.productType,
+            item?.deviceType,
+          ),
+        );
+        return itemCategory === category.id;
+      }),
+      count: liveTrending.filter((item) => {
+        const itemCategory = resolveCategoryFromType(
+          firstText(
+            item?.product_type,
+            item?.productType,
+            item?.deviceType,
+          ),
+        );
+        return itemCategory === category.id;
+      }).length,
     }));
-  }, [homeAppliances, laptops, smartphone, smartphoneAll]);
+  }, [liveTrending]);
 
   useEffect(() => {
     const firstAvailable = categoryRows.find((category) => category.count > 0);
@@ -369,11 +369,12 @@ const HeroSection = () => {
 
     const loadTrending = async () => {
       try {
-        const response = await fetch(buildApiUrl("/public/trending/all"), {
-          signal: controller.signal,
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const payload = await response.json();
+        const payload = await fetchPublicJson(
+          buildApiUrl("/public/trending/all"),
+          {
+            signal: controller.signal,
+          },
+        );
         const rows = Array.isArray(payload?.trending)
           ? payload.trending
           : Array.isArray(payload?.results)
@@ -402,15 +403,12 @@ const HeroSection = () => {
     const loadPopularDevices = async () => {
       setFeaturedPhonesLoading(true);
       try {
-        const response = await fetch(
+        const json = await fetchPublicJson(
           buildApiUrl(
             `/public/search-popularity?productType=smartphone&limit=${HERO_POPULAR_CARD_LIMIT}`,
           ),
           { signal: controller.signal },
         );
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-        const json = await response.json();
         const devices = Array.isArray(json?.devices)
           ? json.devices
           : Array.isArray(json?.data)

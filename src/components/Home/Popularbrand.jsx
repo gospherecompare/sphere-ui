@@ -65,7 +65,7 @@ const PopularBrands = () => {
   const navigate = useNavigate();
   const isLoaded = useRevealAnimation();
 
-  const deviceCtx = useDevice();
+  const deviceCtx = useDevice({ resources: ["brands"] });
   const allBrands = useMemo(() => deviceCtx?.brands || [], [deviceCtx?.brands]);
 
   // Get unique individual brands for horizontal scrolling

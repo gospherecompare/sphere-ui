@@ -69,6 +69,7 @@ import {
 import { buildCanonicalComparePathFromDevices } from "../../utils/compareRoutes";
 import { toCanonicalPagePath } from "../../utils/publicUrl";
 import { isPublishedProduct } from "../../utils/publishedProducts";
+import { fetchPublicJson } from "../../utils/publicJsonRequest";
 import "../../styles/hideScrollbar.css";
 
 const ROUTE_FEED_CACHE_KEY = "hooks_smartphone_route_feed_v1";
@@ -306,7 +307,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     }
   `;
 
-  const deviceContext = useDevice();
+  const deviceContext = useDevice({
+    resources: ["smartphones", "brands"],
+  });
   const { smartphone, smartphoneAll } = deviceContext || {};
   const location = useLocation();
   const navigate = useNavigate();
@@ -357,12 +360,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
     (async () => {
       try {
-        const res = await fetch(
+        const data = await fetchPublicJson(
           "https://api.apisphere.in/api/public/popular-features?deviceType=smartphone&days=7&limit=16",
-          controller ? { signal: controller.signal } : undefined,
+          { signal: controller?.signal },
         );
-        if (!res.ok) return;
-        const data = await res.json();
         const order = Array.isArray(data?.results)
           ? data.results
               .map((r) => r.feature_id || r.featureId || r.id)

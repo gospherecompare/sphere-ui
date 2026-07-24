@@ -897,7 +897,9 @@ const MobileCompare = () => {
   const searchResultsRef = useRef(null);
   const catalogSearchInputRef = useRef(null);
 
-  const { devices: availableDevices = [], loading, getDevice } = useDevice();
+  const { devices: availableDevices = [], loading, getDevice } = useDevice({
+    resources: ["smartphones", "networking", "laptops", "tvs"],
+  });
   const location = useLocation();
   const navigate = useNavigate();
   const { compareSlug = "" } = useParams();

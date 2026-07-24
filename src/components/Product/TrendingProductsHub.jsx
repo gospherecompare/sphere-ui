@@ -13,7 +13,6 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import Spinner from "../ui/Spinner";
-import useDevice from "../../hooks/useDevice";
 import useStoreLogos from "../../hooks/useStoreLogos";
 import SEO from "../SEO";
 import ProductDiscoverySections from "../ui/ProductDiscoverySections";
@@ -29,6 +28,7 @@ import {
 import { buildListSeoKeywords } from "../../utils/seoKeywordBuilder";
 import { normalizeSeoTitle } from "../../utils/seoTitle";
 import { toCanonicalPageUrl } from "../../utils/publicUrl";
+import { fetchPublicJson } from "../../utils/publicJsonRequest";
 import {
   computePopularSmartphoneFeatures,
   SMARTPHONE_FEATURE_CATALOG,
@@ -884,121 +884,9 @@ const mergeProducts = (items) => {
   return Array.from(map.values());
 };
 
-const getProductId = (item) => {
-  const id =
-    item?.product_id ??
-    item?.id ??
-    item?.productId ??
-    item?.basic_info?.product_id ??
-    item?.basic_info_json?.product_id ??
-    null;
-  return id == null ? null : String(id);
-};
-
-const pickFirstArray = (...values) => {
-  for (const value of values) {
-    if (arr(value).length) return arr(value);
-  }
-  return [];
-};
-
-const enrichRowWithCatalog = (row, catalogItem) => {
-  if (!catalogItem) return row;
-
-  const merged = { ...catalogItem, ...row };
-
-  const objectSectionKeys = [
-    "battery",
-    "camera",
-    "display",
-    "performance",
-    "memory",
-    "storage",
-    "physical",
-    "connectivity",
-    "network",
-    "audio",
-    "multimedia",
-    "basic_info",
-    "basic_info_json",
-    "key_specs_json",
-    "display_json",
-    "audio_json",
-    "smart_tv_json",
-    "gaming_json",
-    "ports_json",
-    "connectivity_json",
-    "product_details_json",
-    "metadata_json",
-  ];
-
-  objectSectionKeys.forEach((section) => {
-    const catalogSection = obj(catalogItem[section]);
-    const rowSection = obj(row[section]);
-    if (Object.keys(catalogSection).length || Object.keys(rowSection).length) {
-      merged[section] = { ...catalogSection, ...rowSection };
-    }
-  });
-
-  const catalogMeta = obj(catalogItem.metadata || catalogItem.metadata_json);
-  const rowMeta = obj(row.metadata || row.metadata_json);
-  if (Object.keys(catalogMeta).length || Object.keys(rowMeta).length) {
-    merged.metadata = { ...catalogMeta, ...rowMeta };
-    const catalogSpecSections = obj(catalogMeta.spec_sections);
-    const rowSpecSections = obj(rowMeta.spec_sections);
-    if (
-      Object.keys(catalogSpecSections).length ||
-      Object.keys(rowSpecSections).length
-    ) {
-      merged.metadata.spec_sections = {
-        ...catalogSpecSections,
-        ...rowSpecSections,
-      };
-    }
-  }
-
-  const rowSpecSections = obj(rowMeta.spec_sections);
-  const catalogSpecSections = obj(catalogMeta.spec_sections);
-
-  const variants = pickFirstArray(
-    row.variants,
-    row.variants_json,
-    rowMeta.variants,
-    rowMeta.variants_json,
-    rowSpecSections.variants_json,
-    catalogItem.variants,
-    catalogItem.variants_json,
-    catalogMeta.variants,
-    catalogMeta.variants_json,
-    catalogSpecSections.variants_json,
-  );
-  if (variants.length) merged.variants = variants;
-
-  const images = pickFirstArray(
-    row.images,
-    row.images_json,
-    rowMeta.images,
-    rowSpecSections.images_json,
-    catalogItem.images,
-    catalogItem.images_json,
-    catalogMeta.images,
-    catalogSpecSections.images_json,
-  );
-  if (images.length) merged.images = images;
-
-  const storePrices = pickFirstArray(
-    row.store_prices,
-    catalogItem.store_prices,
-  );
-  if (storePrices.length) merged.store_prices = storePrices;
-
-  return merged;
-};
-
 const TrendingProductsHub = () => {
   const navigate = useNavigate();
   const { category } = useParams();
-  const deviceStore = useDevice();
   const { getStoreLogo, getLogo, getStore } = useStoreLogos();
   const requestedCategory = String(category || "").toLowerCase();
   const isRemovedLaptopCategory =
@@ -1040,22 +928,6 @@ const TrendingProductsHub = () => {
     }
   }, [isRemovedLaptopCategory, navigate]);
 
-  const smartphoneCatalog = useMemo(() => {
-    if (arr(deviceStore?.smartphoneAll).length)
-      return deviceStore.smartphoneAll;
-    return arr(deviceStore?.smartphone);
-  }, [deviceStore?.smartphoneAll, deviceStore?.smartphone]);
-
-  const laptopCatalog = useMemo(
-    () => arr(deviceStore?.laptops),
-    [deviceStore?.laptops],
-  );
-
-  const tvCatalog = useMemo(
-    () => arr(deviceStore?.homeAppliances),
-    [deviceStore?.homeAppliances],
-  );
-
   const heroDescriptionStyle = showFullDescription
     ? undefined
     : {
@@ -1065,22 +937,6 @@ const TrendingProductsHub = () => {
         overflow: "hidden",
       };
   const heroDescriptionWidthClass = "max-w-4xl";
-
-  const catalogLookup = useMemo(() => {
-    const source =
-      activeCategory === "laptops"
-        ? laptopCatalog
-        : activeCategory === "tvs"
-          ? tvCatalog
-          : smartphoneCatalog;
-
-    const lookup = new Map();
-    source.forEach((item) => {
-      const id = getProductId(item);
-      if (id) lookup.set(id, item);
-    });
-    return lookup;
-  }, [activeCategory, smartphoneCatalog, laptopCatalog, tvCatalog]);
 
   useEffect(() => {
     if (!category || activeCategory !== category) {
@@ -1109,9 +965,9 @@ const TrendingProductsHub = () => {
       setLoading(true);
       setError("");
       try {
-        const res = await fetch(`${API_BASE}${config.endpoint}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const payload = await res.json();
+        const payload = await fetchPublicJson(
+          `${API_BASE}${config.endpoint}`,
+        );
         if (canceled) return;
         const rows = getRows(payload, activeCategory);
         setRawRows(rows);
@@ -1131,17 +987,12 @@ const TrendingProductsHub = () => {
   }, [activeCategory, config.endpoint]);
 
   const products = useMemo(() => {
-    const enrichedRows = rawRows.map((row) => {
-      const id = getProductId(row);
-      const catalogItem = id ? catalogLookup.get(id) : null;
-      return enrichRowWithCatalog(row, catalogItem);
-    });
     return mergeProducts(
-      enrichedRows.map((row, index) =>
+      rawRows.map((row, index) =>
         buildProduct(row, activeCategory, index),
       ),
     );
-  }, [rawRows, activeCategory, catalogLookup]);
+  }, [rawRows, activeCategory]);
 
   const popularFeatures = useMemo(() => {
     if (activeCategory === "laptops") {

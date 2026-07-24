@@ -22,6 +22,7 @@ import {
   stripLaptopSeoQueryParams,
 } from "../../utils/laptopListingRoutes";
 import { buildApiUrl } from "../../utils/apiUrl";
+import { fetchPublicJson } from "../../utils/publicJsonRequest";
 
 const normalizeText = (value) => String(value || "").trim();
 
@@ -989,11 +990,9 @@ const ProductDiscoverySections = ({
       setLoading(true);
       setError("");
       try {
-        const response = await fetch(discoveryEndpoint, {
+        const data = await fetchPublicJson(discoveryEndpoint, {
           signal: controller.signal,
         });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const data = await response.json();
         if (!cancelled) setPayload(data);
       } catch (err) {
         if (err?.name === "AbortError") return;

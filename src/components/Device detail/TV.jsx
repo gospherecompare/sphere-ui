@@ -207,7 +207,7 @@ const TVDetailCard = () => {
     homeAppliancesLoading,
     refreshHomeAppliances,
     brands,
-  } = useDevice();
+  } = useDevice({ resources: ["tvs", "brands"] });
 
   const doesApplianceMatchSlug = (appliance, slug) => {
     if (!appliance || !slug) return false;

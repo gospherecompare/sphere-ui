@@ -5,6 +5,7 @@ import { createProductPath } from "../../utils/slugGenerator";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
 import { FaArrowRight, FaMobileAlt } from "react-icons/fa";
 import { buildApiUrl } from "../../utils/apiUrl";
+import { fetchPublicJson } from "../../utils/publicJsonRequest";
 
 const toText = (value) => {
   if (value === null || value === undefined) return null;
@@ -184,10 +185,9 @@ const LatestSmartphones = () => {
       const latestEndpoint = "/public/new/smartphones";
 
       try {
-        const latestRes = await fetch(buildApiUrl(latestEndpoint));
-        if (!latestRes.ok)
-          throw new Error("Failed to fetch latest smartphones");
-        const latestJson = await latestRes.json();
+        const latestJson = await fetchPublicJson(
+          buildApiUrl(latestEndpoint),
+        );
         if (cancelled) return;
 
         const rows = getLatestRows(latestJson);

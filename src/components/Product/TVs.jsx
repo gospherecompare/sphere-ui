@@ -70,6 +70,7 @@ import {
   TV_PRICE_STEP,
 } from "../../utils/tvPriceRanges";
 import { isPublishedProduct } from "../../utils/publishedProducts";
+import { fetchPublicJson } from "../../utils/publicJsonRequest";
 import "../../styles/hideScrollbar.css";
 import MobileListingControls, {
   MobileSortSheet,
@@ -1146,7 +1147,9 @@ const TVs = () => {
   };
 
   // Use Redux-provided home appliances (via `useDevice`) or fallback to mock
-  const { homeAppliances, homeAppliancesLoading, setDevices } = useDevice();
+  const { homeAppliances, homeAppliancesLoading, setDevices } = useDevice({
+    resources: ["tvs"],
+  });
 
   const sourceDevices =
     Array.isArray(homeAppliances) && homeAppliances.length
@@ -1953,13 +1956,10 @@ const TVs = () => {
       const deviceTypeCandidates = ["tv", "television", "home-appliance"];
       for (const deviceType of deviceTypeCandidates) {
         try {
-          const res = await fetch(
+          const data = await fetchPublicJson(
             `https://api.apisphere.in/api/public/popular-features?deviceType=${encodeURIComponent(deviceType)}&days=7&limit=16`,
-            controller ? { signal: controller.signal } : undefined,
+            { signal: controller?.signal },
           );
-          if (!res.ok) continue;
-
-          const data = await res.json();
           const order = Array.isArray(data?.results)
             ? data.results
                 .map((r) => r.feature_id || r.featureId || r.id)
@@ -2097,7 +2097,7 @@ const TVs = () => {
     }
   }, [search]);
 
-  const deviceContext = useDevice();
+  const deviceContext = useDevice({ resources: ["tvs", "brands"] });
   const filterBrand =
     Array.isArray(filters?.brand) && filters.brand[0] ? filters.brand[0] : null;
   const currentBrandObj = (() => {

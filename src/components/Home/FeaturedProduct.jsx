@@ -6,10 +6,11 @@ import useRevealAnimation from "../../hooks/useRevealAnimation";
 import { createProductPath } from "../../utils/slugGenerator";
 import { buildPublicSmartphoneFeaturePath as buildSmartphoneFeaturePath } from "../../utils/smartphoneListingRoutes";
 import { buildApiUrl } from "../../utils/apiUrl";
+import { fetchPublicJson } from "../../utils/publicJsonRequest";
 import "../../styles/hideScrollbar.css";
 
 const FEATURED_PHONES_LIMIT = 6;
-const FEATURED_FETCH_LIMIT = 25;
+const FEATURED_FETCH_LIMIT = 120;
 const RUPEE = "\u20B9";
 
 const budgetRanges = [
@@ -656,21 +657,14 @@ const FeaturedProduct = () => {
       setFeaturedPhones([]);
 
       try {
-        const response = await fetch(
+        const payload = await fetchPublicJson(
           buildApiUrl(
             `/public/trending/smartphones?limit=${FEATURED_FETCH_LIMIT}`,
           ),
           {
-            cache: "no-store",
             signal: controller.signal,
           },
         );
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-
-        const payload = await response.json();
         if (cancelled) return;
 
         const normalized = getTrendingRows(payload)

@@ -355,7 +355,9 @@ const Networking = () => {
   // `useDevice` will dispatch `fetchNetworking` on mount if needed.
   // fall back to `mockNetworkingDevices` if API data unavailable.
   // Note: `mockNetworkingDevices` is intentionally empty; server data is preferred.
-  const { networking, networkingLoading, setDevices } = useDevice();
+  const { networking, networkingLoading, setDevices } = useDevice({
+    resources: ["networking"],
+  });
 
   // do not early-return here — keep hooks consistent; show spinner in UI when loading
 
@@ -574,7 +576,9 @@ const Networking = () => {
   const filter = params.get("filter");
   const dispatch = useDispatch();
 
-  const deviceContext = useDevice();
+  const deviceContext = useDevice({
+    resources: ["networking", "brands"],
+  });
   const filterBrand =
     Array.isArray(filters?.brand) && filters.brand[0] ? filters.brand[0] : null;
   const currentBrandObj = (() => {

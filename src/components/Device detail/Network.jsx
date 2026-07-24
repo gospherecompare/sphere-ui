@@ -184,7 +184,9 @@ const NetworkingDetailCard = () => {
   const modelFromSlug = routeSlug ? extractNameFromSlug(routeSlug) : null;
   const searchModel = modelParam || modelFromSlug;
 
-  const { networking, networkingLoading, refreshNetworking } = useDevice();
+  const { networking, networkingLoading, refreshNetworking } = useDevice({
+    resources: ["networking"],
+  });
 
   // Normalize device data to ensure consistent field names
   const normalizeDevice = (device) => {

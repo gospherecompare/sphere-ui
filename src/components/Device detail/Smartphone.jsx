@@ -536,7 +536,7 @@ const MobileDetailCard = () => {
     error,
     smartphone,
     refreshDevices,
-  } = useDevice();
+  } = useDevice({ resources: ["smartphones"] });
   const { getLogo, getStore, getStoreLogo } = useStoreLogos();
   const navigate = useNavigate();
 

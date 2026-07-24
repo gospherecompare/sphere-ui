@@ -63,6 +63,7 @@ import {
 import { isPublishedProduct } from "../../utils/publishedProducts";
 import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
 import ProductDiscoverySections from "../ui/ProductDiscoverySections";
+import { fetchPublicJson } from "../../utils/publicJsonRequest";
 import MobileListingControls, {
   MobileSortSheet,
 } from "../ui/MobileListingControls";
@@ -280,13 +281,10 @@ const Laptops = () => {
       const deviceTypeCandidates = ["laptop", "notebook"];
       for (const deviceType of deviceTypeCandidates) {
         try {
-          const res = await fetch(
+          const data = await fetchPublicJson(
             `https://api.apisphere.in/api/public/popular-features?deviceType=${encodeURIComponent(deviceType)}&days=7&limit=16`,
-            controller ? { signal: controller.signal } : undefined,
+            { signal: controller?.signal },
           );
-          if (!res.ok) continue;
-
-          const data = await res.json();
           const order = Array.isArray(data?.results)
             ? data.results
                 .map((r) => r.feature_id || r.featureId || r.id)
@@ -813,7 +811,7 @@ const Laptops = () => {
   };
 
   // Transform API/store data to devices array
-  const { laptops } = useDevice();
+  const { laptops } = useDevice({ resources: ["laptops"] });
 
   const sourceDevices = Array.isArray(laptops) ? laptops : [];
 
@@ -1049,7 +1047,7 @@ const Laptops = () => {
     page: "laptops",
   });
 
-  const deviceContext = useDevice();
+  const deviceContext = useDevice({ resources: ["laptops", "brands"] });
   const filterBrand =
     routeBrandSlug ||
     (Array.isArray(filters?.brand) && filters.brand[0] ? filters.brand[0] : null);

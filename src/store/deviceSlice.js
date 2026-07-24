@@ -595,9 +595,7 @@ export const fetchSmartphones = createAsyncThunk(
   // Accept an optional options object: { feature }
   async (opts = {}, { rejectWithValue }) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/smartphones`, {
-        cache: "no-store",
-      });
+      const res = await fetch(`${API_BASE_URL}/smartphones`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       return normalizeSmartphoneCollection(data, ["new", "smartphones"]);
@@ -619,9 +617,7 @@ export const fetchTrendingSmartphones = createAsyncThunk(
   "device/fetchTrendingSmartphones",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/public/trending/smartphones`, {
-        cache: "no-store",
-      });
+      const res = await fetch(`${API_BASE_URL}/public/trending/smartphones`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       return normalizeSmartphoneCollection(data, ["trending", "smartphones"]);
@@ -636,9 +632,7 @@ export const fetchNewLaunchSmartphones = createAsyncThunk(
   "device/fetchNewLaunchSmartphones",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/public/new/smartphones`, {
-        cache: "no-store",
-      });
+      const res = await fetch(`${API_BASE_URL}/public/new/smartphones`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       return normalizeSmartphoneCollection(data, ["smartphones", "new"]);
@@ -653,9 +647,7 @@ export const fetchUpcomingSmartphones = createAsyncThunk(
   "device/fetchUpcomingSmartphones",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/public/upcoming/smartphones`, {
-        cache: "no-store",
-      });
+      const res = await fetch(`${API_BASE_URL}/public/upcoming/smartphones`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       return normalizeSmartphoneCollection(data, ["upcoming", "smartphones"]);
@@ -669,9 +661,7 @@ export const fetchNetworking = createAsyncThunk(
   "device/fetchNetworking",
   async (opts = {}, { rejectWithValue }) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/networking`, {
-        cache: "no-store",
-      });
+      const res = await fetch(`${API_BASE_URL}/networking`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
       return normalizeNetworkingCollection(body, ["networking"]);
@@ -697,7 +687,6 @@ export const fetchTrendingNetworking = createAsyncThunk(
     try {
       const res = await fetch(
         "https://api.apisphere.in/api/public/trending/networking",
-        { cache: "no-store" },
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
@@ -724,7 +713,6 @@ export const fetchNewLaunchNetworking = createAsyncThunk(
     try {
       const res = await fetch(
         "https://api.apisphere.in/api/public/new/networking",
-        { cache: "no-store" },
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
@@ -748,9 +736,7 @@ export const fetchLaptops = createAsyncThunk(
   "device/fetchLaptops",
   async (opts = {}, { rejectWithValue }) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/laptops`, {
-        cache: "no-store",
-      });
+      const res = await fetch(`${API_BASE_URL}/laptops`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
       return normalizeLaptopsCollection(body, ["new", "laptops"]);
@@ -774,7 +760,6 @@ export const fetchTrendingLaptops = createAsyncThunk(
     try {
       const res = await fetch(
         "https://api.apisphere.in/api/public/trending/laptops",
-        { cache: "no-store" },
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
@@ -803,7 +788,6 @@ export const fetchNewLaunchLaptops = createAsyncThunk(
     try {
       const res = await fetch(
         "https://api.apisphere.in/api/public/new/laptops",
-        { cache: "no-store" },
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
@@ -818,9 +802,7 @@ export const fetchHomeAppliances = createAsyncThunk(
   "device/fetchHomeAppliances",
   async (opts = {}, { rejectWithValue }) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/tvs`, {
-        cache: "no-store",
-      });
+      const res = await fetch(`${API_BASE_URL}/tvs`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
       return normalizeHomeAppliancesCollection(body, ["tvs"]);
@@ -845,9 +827,7 @@ export const fetchTrendingHomeAppliances = createAsyncThunk(
   "device/fetchTrendingHomeAppliances",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/public/trending/tvs`, {
-        cache: "no-store",
-      });
+      const res = await fetch(`${API_BASE_URL}/public/trending/tvs`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
       const arr = Array.isArray(body)
@@ -871,9 +851,7 @@ export const fetchNewLaunchHomeAppliances = createAsyncThunk(
   "device/fetchNewLaunchHomeAppliances",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/public/new/tvs`, {
-        cache: "no-store",
-      });
+      const res = await fetch(`${API_BASE_URL}/public/new/tvs`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
       const arr = Array.isArray(body)
@@ -896,9 +874,7 @@ export const fetchBrands = createAsyncThunk(
   "device/fetchBrands",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/brand`, {
-        cache: "no-store",
-      });
+      const res = await fetch(`${API_BASE_URL}/brand`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       return normalizeBrandsCollection(data, ["brands"]);
@@ -922,7 +898,6 @@ export const fetchCategories = createAsyncThunk(
       // Use the public categories endpoint (no auth) to avoid 401 on public site
       const res = await fetch(`${API_BASE_URL}/category`, {
         method: "GET",
-        cache: "no-store",
         headers: {
           "Content-Type": "application/json",
         },
@@ -975,7 +950,6 @@ export const fetchSmartphone = createAsyncThunk(
           `https://api.apisphere.in/api/public/product/${encodeURIComponent(
             identifier,
           )}`,
-          { cache: "no-store" },
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const body = await res.json();

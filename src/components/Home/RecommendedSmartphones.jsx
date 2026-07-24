@@ -5,6 +5,8 @@ import { useSelector } from "react-redux";
 import { createProductPath } from "../../utils/slugGenerator";
 import useRevealAnimation from "../../hooks/useRevealAnimation";
 import { FaArrowRight, FaMobileAlt } from "react-icons/fa";
+import { fetchPublicJson } from "../../utils/publicJsonRequest";
+import { buildApiUrl } from "../../utils/apiUrl";
 
 const RECENT_STORAGE_KEY = "hooks_recent_smartphones_v1";
 const FALLBACK_CACHE_KEY = "hooks_reco_fallback_cache_v1";
@@ -573,11 +575,9 @@ const RecommendedSmartphones = ({
           return;
         }
 
-        const r = await fetch(
-          "https://api.apisphere.in/api/public/trending/smartphones?limit=120",
+        const json = await fetchPublicJson(
+          buildApiUrl("/public/trending/smartphones?limit=120"),
         );
-        if (!r.ok) throw new Error("Failed to fetch recommendations");
-        const json = await r.json();
         if (cancelled) return;
 
         const rows = Array.isArray(json?.trending)

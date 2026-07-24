@@ -524,7 +524,7 @@ function App() {
   const BrandLandingRedirect = () => {
     const { slug = "" } = useParams();
     const location = useLocation();
-    const deviceContext = useDevice();
+    const deviceContext = useDevice({ resources: ["brands"] });
     const brands = Array.isArray(deviceContext?.brands)
       ? deviceContext.brands
       : [];

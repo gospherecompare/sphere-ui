@@ -10,6 +10,8 @@ import {
   FaWifi,
   FaArrowRight,
 } from "react-icons/fa";
+import { fetchPublicJson } from "../../utils/publicJsonRequest";
+import { buildApiUrl } from "../../utils/apiUrl";
 
 const normalizeScore100 = (value) => {
   const n = Number(value);
@@ -356,7 +358,7 @@ const parsePriceNumber = (value) => {
 
 const getCategoryEndpoint = (activeCategory) => {
   const endpointMap = {
-    smartphone: "/api/public/trending/smartphones?limit=15",
+    smartphone: "/api/public/trending/smartphones?limit=120",
     laptop: "/api/public/trending/laptops?limit=15",
     appliance: "/api/public/trending/tvs?limit=15",
     networking: "/api/public/trending/networking?limit=15",
@@ -664,9 +666,9 @@ const BestPriceSection = () => {
       const endpoint = getCategoryEndpoint(activeCategory);
 
       try {
-        const r = await fetch(`https://api.apisphere.in${endpoint}`);
-        if (!r.ok) throw new Error("Failed to fetch trending");
-        const json = await r.json();
+        const json = await fetchPublicJson(
+          buildApiUrl(endpoint.replace(/^\/api/, "")),
+        );
         if (cancelled) return;
 
         const rows = getTrendingRows(json, activeCategory);

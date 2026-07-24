@@ -10,6 +10,7 @@ import {
   API_ORIGIN_URL,
   buildApiUrl,
 } from "../../utils/apiUrl";
+import { fetchPublicJson } from "../../utils/publicJsonRequest";
 
 const normalizeText = (value) => String(value || "").trim();
 
@@ -187,12 +188,9 @@ const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
 
     const loadComparisons = async () => {
       try {
-        const response = await fetch(
-          MOST_COMPARED_ENDPOINT,
-          controller ? { signal: controller.signal } : undefined,
-        );
-        if (!response.ok) return;
-        const json = await response.json();
+        const json = await fetchPublicJson(MOST_COMPARED_ENDPOINT, {
+          signal: controller?.signal,
+        });
         if (cancelled) return;
         setRemoteComparisons(mapRemoteComparisonsPayload(json));
       } catch (err) {

@@ -9,6 +9,7 @@ import {
   SMARTPHONE_FEATURE_CATALOG,
 } from "../../utils/smartphonePopularFeatures";
 import { buildPublicSmartphoneFeaturePath as buildSmartphoneFeaturePath } from "../../utils/smartphoneListingRoutes";
+import { fetchPublicJson } from "../../utils/publicJsonRequest";
 import {
   HOME_SECTION_LEAD_DARK,
   HOME_SECTION_TITLE_DARK,
@@ -68,7 +69,7 @@ const FeatureCard = ({ feature, index, isActive, isLoaded, onClick }) => {
 
 const MobileFeaturesFinder = () => {
   const navigate = useNavigate();
-  const deviceCtx = useDevice();
+  const deviceCtx = useDevice({ resources: ["smartphones"] });
   const smartphones = useMemo(
     () =>
       (deviceCtx.smartphoneAll && deviceCtx.smartphoneAll.length
@@ -91,12 +92,10 @@ const MobileFeaturesFinder = () => {
 
     (async () => {
       try {
-        const res = await fetch(
+        const data = await fetchPublicJson(
           "https://api.apisphere.in/api/public/popular-features?deviceType=smartphone&days=7&limit=16",
-          controller ? { signal: controller.signal } : undefined,
+          { signal: controller?.signal },
         );
-        if (!res.ok) return;
-        const data = await res.json();
         const order = Array.isArray(data?.results)
           ? data.results
               .map((r) => r.feature_id || r.featureId || r.id)

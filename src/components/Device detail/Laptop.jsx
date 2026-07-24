@@ -451,7 +451,9 @@ const LaptopDetailCard = () => {
   const modelFromSlug = routeSlug ? extractNameFromSlug(routeSlug) : null;
   const searchModel = query.get("model") || modelFromSlug;
 
-  const { laptops, brands } = useDevice();
+  const { laptops, brands } = useDevice({
+    resources: ["laptops", "brands"],
+  });
 
   // local state
   const navigate = useNavigate();

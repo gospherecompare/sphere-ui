@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { readPreloadedApiResponse } from "../utils/preloadedApi";
 import { toCanonicalPagePath } from "../utils/publicUrl";
 import { buildApiUrl } from "../utils/apiUrl";
+import { fetchPublicJson } from "../utils/publicJsonRequest";
 
 const DEFAULT_STORY_IMAGE = "/hook-logo.png";
 
@@ -986,30 +987,10 @@ const normalizeBlogStory = (blog) => {
 };
 
 const fetchJson = async (url, { signal } = {}) => {
-  const response = await fetch(url, {
+  return fetchPublicJson(url, {
     signal,
-    cache: "no-store",
-    headers: {
-      Accept: "application/json",
-    },
+    cacheTtlMs: 30_000,
   });
-
-  const contentType = String(response.headers.get("content-type") || "").toLowerCase();
-  const data = contentType.includes("application/json")
-    ? await response.json().catch(() => ({}))
-    : null;
-
-  if (!response.ok) {
-    const error = new Error(data?.message || "Failed to fetch news data");
-    error.status = response.status;
-    throw error;
-  }
-
-  if (!contentType.includes("application/json")) {
-    throw new Error("Story API returned a non-JSON response");
-  }
-
-  return data;
 };
 
 const buildNewsFeedEndpoint = ({
@@ -1091,13 +1072,14 @@ export const usePublicNewsFeed = ({
       setStories(normalizeStoriesFromPayload(preloadedPayload));
       setLoading(false);
       setError("");
+      return undefined;
     }
 
     const controller = new AbortController();
     let active = true;
 
     const loadStories = async () => {
-      if (!preloadedPayload) setLoading(true);
+      setLoading(true);
       setError("");
 
       try {
