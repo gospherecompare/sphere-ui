@@ -32,6 +32,13 @@ import {
   parseLaptopListingPath,
 } from "./src/utils/laptopListingRoutes.js";
 import { toCanonicalPageUrl } from "./src/utils/publicUrl.js";
+import {
+  NEWS_LISTING_SEO,
+  buildNewsArticleSeo,
+  escapeNewsHtml,
+  sanitizeNewsArticleHtml,
+  stripNewsMarkup,
+} from "./src/utils/newsSeo.js";
 
 const require = createRequire(import.meta.url);
 const vitePrerender = require("vite-plugin-prerender");
@@ -78,7 +85,7 @@ const MAX_COMPARE_ROUTES = 380;
 const MAX_COMPARE_EXPANSION_PRODUCTS = 24;
 const MAX_COMPARE_EXPANDED_ROUTES = 240;
 const MAX_COMPARE_EXPANDED_CANDIDATES = 360;
-const MAX_NEWS_ROUTES = 50;
+const MAX_NEWS_ROUTES = 1000;
 const POPULAR_COMPARISON_PRELOAD_ROWS = 12;
 const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
 const SMARTPHONE_LIST_SLUGS = new Set(["upcoming"]);
@@ -1346,12 +1353,75 @@ const getNewsSlugFromPath = (canonicalPath = "") => {
 const buildNewsStoryEndpoint = (slug = "") =>
   `${API_BASE_URL}/public/blogs/${encodeURIComponent(String(slug || "").trim())}`;
 
+const fetchNewsRoutesFromSitemap = async () => {
+  const endpoint = `${API_BASE_URL}/sitemap.xml`;
+  let response;
+
+  try {
+    response = await fetch(endpoint);
+  } catch (error) {
+    throw new Error(
+      `[news-prerender] Unable to fetch ${endpoint}: ${error?.message || error}`,
+    );
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      `[news-prerender] Unable to fetch ${endpoint}: HTTP ${response.status}`,
+    );
+  }
+
+  const xml = await response.text();
+  const entries = [...xml.matchAll(/<url>\s*([\s\S]*?)\s*<\/url>/gi)]
+    .map((match) => {
+      const block = match?.[1] || "";
+      const loc = block.match(/<loc>\s*([^<]+?)\s*<\/loc>/i)?.[1]?.trim();
+      const lastmod = block
+        .match(/<lastmod>\s*([^<]+?)\s*<\/lastmod>/i)?.[1]
+        ?.trim();
+      if (!loc) return null;
+
+      let routePath;
+      try {
+        routePath = normalizePath(new URL(loc, SITE_ORIGIN).pathname || "");
+      } catch {
+        return null;
+      }
+
+      return getNewsSlugFromPath(routePath)
+        ? { routePath, lastmod: lastmod || null }
+        : null;
+    })
+    .filter(Boolean);
+
+  if (!entries.length) {
+    throw new Error(
+      `[news-prerender] ${endpoint} did not contain any published article routes.`,
+    );
+  }
+
+  return entries.slice(0, MAX_NEWS_ROUTES);
+};
+
 const fetchNewsRoutesFromApi = async () => {
   publishedNewsRouteMeta = new Map();
   const body = await fetchApiBody(
-    `${API_BASE_URL}/public/blogs?limit=${MAX_NEWS_ROUTES}`,
+    `${API_BASE_URL}/public/blogs?limit=50`,
   );
+  if (!body) {
+    throw new Error(
+      "[news-prerender] The published news feed is unavailable; refusing to emit generic article shells.",
+    );
+  }
+
   const rows = parseApiRows(body, ["blogs"]);
+  if (!rows.length) {
+    throw new Error(
+      "[news-prerender] The published news feed is empty; refusing to emit an empty news listing.",
+    );
+  }
+
+  const sitemapEntries = await fetchNewsRoutesFromSitemap();
   const routes = [];
 
   for (const row of rows) {
@@ -1372,6 +1442,18 @@ const fetchNewsRoutesFromApi = async () => {
       updatedAt,
     });
     routes.push(routePath);
+  }
+
+  for (const entry of sitemapEntries) {
+    if (routes.length >= MAX_NEWS_ROUTES) break;
+    if (!publishedNewsRouteMeta.has(entry.routePath)) {
+      publishedNewsRouteMeta.set(entry.routePath, {
+        title: "",
+        publishedAt: null,
+        updatedAt: entry.lastmod,
+      });
+    }
+    routes.push(entry.routePath);
   }
 
   return [...new Set(routes)];
@@ -2081,11 +2163,9 @@ const resolveSeo = (routePath) => {
     },
     {
       test: (p) => p === "/news",
-      title: "News & Articles | Hooks",
-      description:
-        "Technology news, product launches, science updates, consumer tech, sports technology, and practical guides from the Hooks newsroom.",
-      keywords:
-        "technology news, latest mobile news, science news, consumer tech news, sports technology, launch stories, practical guides, hooks newsroom",
+      title: NEWS_LISTING_SEO.title,
+      description: NEWS_LISTING_SEO.description,
+      keywords: NEWS_LISTING_SEO.keywords,
     },
     {
       test: (p) => p.startsWith("/careers"),
@@ -2166,12 +2246,6 @@ const stripMarkupForSeo = (value = "") =>
     .replace(/\s+/g, " ")
     .trim();
 
-const clipSeoText = (value = "", maxLength = 160) => {
-  const text = stripMarkupForSeo(value);
-  if (text.length <= maxLength) return text;
-  return `${text.slice(0, Math.max(0, maxLength - 3)).replace(/\s+\S*$/, "")}...`;
-};
-
 const toAbsoluteAssetUrl = (value = "", fallbackPath = "/hook-logo.png") => {
   const raw = String(value || "").trim();
   const fallback = `${SITE_ORIGIN}${fallbackPath}`;
@@ -2225,17 +2299,8 @@ const getNewsArticleSeo = (canonicalPath = "", preloadedApiPayload) => {
   const blog = getNewsArticleFromPayload(canonicalPath, preloadedApiPayload);
   if (!blog) return null;
 
-  const title = stripMarkupForSeo(blog.meta_title || blog.title || "");
-  if (!title) return null;
-
-  const description =
-    clipSeoText(
-      blog.meta_description ||
-        blog.excerpt ||
-        blog.content_rendered ||
-        `${title} from the Hooks news desk.`,
-      170,
-    ) || `${title} from the Hooks news desk.`;
+  const sharedSeo = buildNewsArticleSeo(blog);
+  if (!sharedSeo.headline) return null;
 
   const tags = Array.isArray(blog.tags)
     ? blog.tags
@@ -2250,13 +2315,17 @@ const getNewsArticleSeo = (canonicalPath = "", preloadedApiPayload) => {
     blog.updated_at || datePublished,
   );
   const image = toAbsoluteAssetUrl(blog.hero_image || "/hook-logo.png");
-  const imageAlt = stripMarkupForSeo(blog.hero_image_alt || title);
+  const imageAlt = stripMarkupForSeo(
+    blog.hero_image_alt || sharedSeo.headline,
+  );
 
   return {
     blog,
-    title: `${title} - Hooks`,
-    headline: title,
-    description,
+    title: sharedSeo.title,
+    headline: sharedSeo.headline,
+    description: sharedSeo.description,
+    canonicalPath: sharedSeo.canonicalPath,
+    canonicalUrl: sharedSeo.canonicalUrl,
     image,
     imageAlt,
     imageWidth: 1200,
@@ -2281,6 +2350,50 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
   const canonicalUrl = toCanonicalPageUrl(canonicalPath, SITE_ORIGIN);
 
   if (canonicalPath === "/") return [];
+
+  if (canonicalPath === "/news") {
+    const rows = getPreloadedRows(
+      preloadedApiPayload,
+      `${API_BASE_URL}/public/blogs?limit=50`,
+      ["blogs"],
+    );
+    const items = rows
+      .map((blog) => {
+        const articleSeo = buildNewsArticleSeo(blog);
+        if (!articleSeo.slug || !articleSeo.headline) return null;
+        return {
+          name: articleSeo.headline,
+          url: articleSeo.canonicalUrl,
+          image: blog.hero_image
+            ? toAbsoluteAssetUrl(blog.hero_image)
+            : undefined,
+        };
+      })
+      .filter(Boolean);
+
+    return [
+      createBreadcrumbSchema([
+        { label: "Home", url: toCanonicalPageUrl("/", SITE_ORIGIN) },
+        { label: "News", url: canonicalUrl },
+      ]),
+      createCollectionSchema({
+        name: "Hooks News",
+        description: NEWS_LISTING_SEO.description,
+        url: canonicalUrl,
+        image: `${SITE_ORIGIN}/hook-logo.png`,
+      }),
+      createWebPageSchema({
+        name: "Hooks News",
+        description: NEWS_LISTING_SEO.description,
+        url: canonicalUrl,
+      }),
+      createItemListSchema({
+        name: "Latest News",
+        url: canonicalUrl,
+        items,
+      }),
+    ];
+  }
 
   const newsArticleSeo = getNewsArticleSeo(canonicalPath, preloadedApiPayload);
   if (newsArticleSeo) {
@@ -2639,6 +2752,171 @@ const injectStructuredData = (html, routePath, preloadedApiPayload) => {
   return html.replace("</head>", `${scripts}\n</head>`);
 };
 
+const formatNewsPrerenderDate = (value = "") => {
+  const date = parseNewsDate(value);
+  if (!date) return "";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+};
+
+const buildNewsListingPrerenderMarkup = (preloadedApiPayload) => {
+  const blogs = getPreloadedRows(
+    preloadedApiPayload,
+    `${API_BASE_URL}/public/blogs?limit=50`,
+    ["blogs"],
+  );
+
+  if (!blogs.length) {
+    throw new Error(
+      "[news-prerender] Missing published stories for the /news listing.",
+    );
+  }
+
+  const cards = blogs
+    .map((blog) => {
+      const articleSeo = buildNewsArticleSeo(blog);
+      if (!articleSeo.slug || !articleSeo.headline) return "";
+      const image = blog.hero_image
+        ? `<img src="${escapeNewsHtml(toAbsoluteAssetUrl(blog.hero_image))}" alt="${escapeNewsHtml(blog.hero_image_alt || articleSeo.headline)}" loading="lazy" class="aspect-[16/9] w-full rounded-xl object-cover" />`
+        : "";
+      const dateValue = blog.published_at || blog.updated_at || "";
+      const dateLabel = formatNewsPrerenderDate(dateValue);
+
+      return `<article class="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+  <a href="${escapeNewsHtml(articleSeo.canonicalPath)}" class="group block">
+    ${image}
+    <p class="mt-4 text-xs font-bold uppercase tracking-wider text-blue-700">${escapeNewsHtml(blog.category || "News")}</p>
+    <h2 class="mt-2 text-xl font-bold leading-tight text-slate-950 group-hover:text-blue-700">${escapeNewsHtml(articleSeo.headline)}</h2>
+    <p class="mt-3 text-sm leading-6 text-slate-600">${escapeNewsHtml(articleSeo.description)}</p>
+    ${dateLabel ? `<time datetime="${escapeNewsHtml(dateValue)}" class="mt-3 block text-xs text-slate-500">${escapeNewsHtml(dateLabel)}</time>` : ""}
+  </a>
+</article>`;
+    })
+    .filter(Boolean)
+    .join("\n");
+
+  if (!cards) {
+    throw new Error(
+      "[news-prerender] Published stories did not produce crawlable listing links.",
+    );
+  }
+
+  return `<main data-news-prerendered="listing" class="min-h-screen bg-white text-slate-950">
+  <section class="mx-auto max-w-[1280px] px-4 py-8 sm:px-6 lg:px-8">
+    <nav aria-label="Breadcrumb" class="mb-5 text-sm text-slate-500">
+      <a href="/" class="hover:text-blue-700">Home</a>
+      <span aria-hidden="true"> / </span>
+      <span aria-current="page">News</span>
+    </nav>
+    <header class="max-w-4xl">
+      <h1 class="text-4xl font-black tracking-tight text-slate-950">News &amp; Articles</h1>
+      <p class="mt-4 text-lg leading-8 text-slate-600">${escapeNewsHtml(NEWS_LISTING_SEO.description)}</p>
+    </header>
+    <section aria-label="Latest news articles" class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      ${cards}
+    </section>
+  </section>
+</main>`;
+};
+
+const buildNewsArticlePrerenderMarkup = (
+  canonicalPath,
+  preloadedApiPayload,
+) => {
+  const articleSeo = getNewsArticleSeo(canonicalPath, preloadedApiPayload);
+  if (!articleSeo?.blog || !articleSeo.headline) {
+    throw new Error(
+      `[news-prerender] Missing article payload for ${canonicalPath}.`,
+    );
+  }
+
+  const { blog } = articleSeo;
+  const articleHtml = sanitizeNewsArticleHtml(blog.content_rendered || "");
+  if (!stripNewsMarkup(articleHtml)) {
+    throw new Error(
+      `[news-prerender] Article ${canonicalPath} does not contain indexable body content.`,
+    );
+  }
+
+  const relatedBlogs = getPreloadedRows(
+    preloadedApiPayload,
+    `${API_BASE_URL}/public/blogs?limit=18`,
+    ["blogs"],
+  )
+    .filter((item) => item?.slug && item.slug !== blog.slug)
+    .slice(0, 6);
+  const relatedLinks = relatedBlogs
+    .map((item) => {
+      const relatedSeo = buildNewsArticleSeo(item);
+      return relatedSeo.slug && relatedSeo.headline
+        ? `<li><a href="${escapeNewsHtml(relatedSeo.canonicalPath)}" class="font-semibold text-slate-800 hover:text-blue-700">${escapeNewsHtml(relatedSeo.headline)}</a></li>`
+        : "";
+    })
+    .filter(Boolean)
+    .join("\n");
+  const image = blog.hero_image
+    ? `<figure class="mt-8">
+        <img src="${escapeNewsHtml(toAbsoluteAssetUrl(blog.hero_image))}" alt="${escapeNewsHtml(blog.hero_image_alt || articleSeo.headline)}" class="aspect-[16/9] w-full rounded-xl object-cover" />
+        ${blog.hero_image_caption ? `<figcaption class="mt-2 text-xs text-slate-500">${escapeNewsHtml(blog.hero_image_caption)}</figcaption>` : ""}
+      </figure>`
+    : "";
+  const publishedValue = blog.published_at || blog.updated_at || "";
+  const publishedLabel = formatNewsPrerenderDate(publishedValue);
+  const author = stripMarkupForSeo(blog.author_name || "Hooks News");
+
+  return `<main data-news-prerendered="article" class="min-h-screen bg-white text-slate-950">
+  <section class="mx-auto max-w-[1120px] px-4 py-8 sm:px-6 lg:px-8">
+    <nav aria-label="Breadcrumb" class="text-sm text-slate-500">
+      <a href="/" class="hover:text-blue-700">Home</a>
+      <span aria-hidden="true"> / </span>
+      <a href="/news/" class="hover:text-blue-700">News</a>
+      <span aria-hidden="true"> / </span>
+      <span aria-current="page">${escapeNewsHtml(articleSeo.headline)}</span>
+    </nav>
+    <header class="mt-6 max-w-5xl">
+      <p class="text-xs font-bold uppercase tracking-wider text-blue-700">${escapeNewsHtml(blog.category || "News")}</p>
+      <h1 class="mt-3 text-4xl font-black leading-tight tracking-tight text-slate-950">${escapeNewsHtml(articleSeo.headline)}</h1>
+      <p class="mt-4 text-lg leading-8 text-slate-600">${escapeNewsHtml(articleSeo.description)}</p>
+      <p class="mt-4 text-sm text-slate-500">By ${escapeNewsHtml(author)}${publishedLabel ? ` · <time datetime="${escapeNewsHtml(publishedValue)}">${escapeNewsHtml(publishedLabel)}</time>` : ""}</p>
+    </header>
+    ${image}
+    <article class="news-article-prose mt-8 space-y-6 text-lg leading-8 text-slate-800">
+      ${articleHtml}
+    </article>
+    ${relatedLinks ? `<aside aria-label="Related news" class="mt-10 border-t border-slate-200 pt-6">
+      <h2 class="text-2xl font-bold text-slate-950">Related News</h2>
+      <ul class="mt-4 space-y-3">${relatedLinks}</ul>
+    </aside>` : ""}
+  </section>
+</main>`;
+};
+
+const injectNewsRouteContent = (html, routePath, preloadedApiPayload) => {
+  const canonicalPath = toCanonicalPath(normalizePath(routePath || "/"));
+  if (canonicalPath !== "/news" && !canonicalPath.startsWith("/news/")) {
+    return html;
+  }
+
+  const emptyRootPattern =
+    /<div\s+id=["']root["'][^>]*>\s*<\/div>/i;
+  if (!emptyRootPattern.test(html)) {
+    return html;
+  }
+
+  const markup =
+    canonicalPath === "/news"
+      ? buildNewsListingPrerenderMarkup(preloadedApiPayload)
+      : buildNewsArticlePrerenderMarkup(canonicalPath, preloadedApiPayload);
+
+  return html.replace(
+    emptyRootPattern,
+    `<div id="root">${markup}</div>`,
+  );
+};
+
 const applySeoToHtml = (html, routePath) => {
   const seo = resolveSeo(routePath);
   const canonicalUrl = toCanonicalPageUrl(seo.canonicalPath, SITE_ORIGIN);
@@ -2723,6 +3001,11 @@ const applyNewsArticleSeoToHtml = (html, routePath, preloadedApiPayload) => {
     next,
     /<meta\s+name=["']description["'][^>]*>/i,
     `<meta name="description" content="${escapeHtml(articleSeo.description)}">`,
+  );
+  next = replaceMetaTag(
+    next,
+    /<meta\s+name=["']keywords["'][^>]*>/i,
+    `<meta name="keywords" content="${escapeHtml(articleSeo.keywords.join(", "))}">`,
   );
   next = replaceMetaTag(
     next,
@@ -2863,6 +3146,12 @@ const processRouteHtml = (html, routePath, preloadedApiPayload) => {
   if (preloadedApiPayload) {
     nextHtml = injectPreloadedPayload(nextHtml, preloadedApiPayload);
   }
+
+  nextHtml = injectNewsRouteContent(
+    nextHtml,
+    normalizedRoute,
+    preloadedApiPayload,
+  );
 
   return nextHtml;
 };

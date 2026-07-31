@@ -23,6 +23,7 @@ import {
 } from "../../hooks/usePublicNews";
 import GoogleSwgBasic from "../News/GoogleSwgBasic";
 import GooglePreferredSourceButton from "../News/GooglePreferredSourceButton";
+import { buildNewsArticleSeo } from "../../utils/newsSeo";
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -70,86 +71,6 @@ const clipDescription = (value, maxWords = 34) => {
   const words = text.split(/\s+/).filter(Boolean);
   if (words.length <= maxWords) return text;
   return `${words.slice(0, maxWords).join(" ")}...`;
-};
-
-const normalizeDescriptionKey = (value) =>
-  stripMarkup(value)
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-const isUsefulArticleDescription = (value, title) => {
-  const text = stripMarkup(value);
-  if (text.length < 48) return false;
-
-  const normalized = normalizeDescriptionKey(text);
-  const normalizedTitle = normalizeDescriptionKey(title);
-  if (!normalized || normalized === normalizedTitle) return false;
-
-  return !/^read the latest\b/i.test(text) &&
-    !/official announcements, launch details, pricing, availability, specifications, features, and expert analysis/i.test(
-      text,
-    );
-};
-
-const buildContextAwareFallbackDescription = (story = {}) => {
-  const title = stripMarkup(story?.title);
-  if (!title) return "Hooks editorial coverage with the key details and context.";
-
-  const context = [
-    title,
-    story?.category,
-    story?.label,
-    story?.brandName,
-    story?.productName,
-    ...(Array.isArray(story?.tags) ? story.tags : []),
-  ]
-    .map(stripMarkup)
-    .join(" ")
-    .toLowerCase();
-
-  if (/(gta|game|gaming|pre[-\s]?order|release date)/i.test(context)) {
-    return `${title} coverage with release timing, edition details, pre-order updates, and what players should know.`;
-  }
-
-  if (
-    /(whatsapp|google wallet|aadhaar|instagram|app|software|android|ios|username|account|wallet)/i.test(
-      context,
-    )
-  ) {
-    return `${title} explained with rollout details, user impact, availability, and the practical changes to know.`;
-  }
-
-  if (
-    /(phone|mobile|smartphone|oneplus|realme|vivo|oppo|samsung|xiaomi|pixel|battery|mah|display|dimensity|snapdragon|camera)/i.test(
-      context,
-    )
-  ) {
-    return `${title} coverage with launch context, key hardware details, pricing signals, availability, and buyer-relevant takeaways.`;
-  }
-
-  return `${title} coverage with the key details, background context, and why the update matters.`;
-};
-
-const buildArticleDescription = (story, articleParagraphs = []) => {
-  const title = story?.title;
-  const candidates = [
-    story?.metaDescription,
-    story?.description,
-    story?.excerpt,
-    story?.summary,
-    ...articleParagraphs,
-  ];
-
-  const useful = candidates.find((candidate) =>
-    isUsefulArticleDescription(candidate, title),
-  );
-
-  return clipDescription(
-    useful || buildContextAwareFallbackDescription(story),
-    34,
-  );
 };
 
 const normalizeTagKey = (value) =>
@@ -935,10 +856,11 @@ const NewsStoryArticlePage = () => {
     return summary ? [summary] : [];
   }, [story?.body, story?.summary]);
 
-  const articleDescription = useMemo(
-    () => buildArticleDescription(story, articleParagraphs),
+  const articleSeo = useMemo(
+    () => buildNewsArticleSeo(story, { articleParagraphs }),
     [story, articleParagraphs],
   );
+  const articleDescription = articleSeo.description;
   const articleHtml = useMemo(
     () => sanitizeArticleHtml(story?.contentHtml || ""),
     [story?.contentHtml],
@@ -1109,7 +1031,7 @@ const NewsStoryArticlePage = () => {
           storyBreadcrumbs.map(({ label, url }) => ({ label, url })),
         ),
         createNewsArticleSchema({
-          headline: story.title,
+          headline: articleSeo.headline,
           description: articleDescription,
           url: canonicalUrl,
           image: story.image,
@@ -1130,8 +1052,9 @@ const NewsStoryArticlePage = () => {
   return (
     <>
       <SEO
-        title={`${story.title} - Hooks`}
+        title={articleSeo.title}
         description={articleDescription}
+        keywords={articleKeywords.join(", ")}
         url={canonicalUrl}
         robots="index, follow, max-image-preview:large"
         ogType="article"
