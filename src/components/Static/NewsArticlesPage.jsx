@@ -16,6 +16,7 @@ import {
   useStoryListSchemaItems,
 } from "../../hooks/usePublicNews";
 import GooglePreferredSourceButton from "../News/GooglePreferredSourceButton";
+import { NEWS_LISTING_SEO } from "../../utils/newsSeo";
 
 const NEWS_GRID_LIMIT = 50;
 const NEWS_MOBILE_QUERY = "(max-width: 639px)";
@@ -475,12 +476,12 @@ const filterStoriesForTaxonomyRoute = (stories = [], route = null) =>
 const getNewsPageTitle = (route = null) =>
   route
     ? `${route.title} - TryHook News`
-    : "News - Technology, Science & Product Updates - Hooks";
+    : NEWS_LISTING_SEO.title;
 
 const getNewsPageDescription = (route = null) =>
   route
     ? route.description
-    : "Read the latest technology news, smartphone launches, AI updates, gadget releases, industry trends, and expert insights from India and around the world on TryHook.";
+    : NEWS_LISTING_SEO.description;
 
 const scoreStory = (story, index) => {
   const ageHours = Math.max(0, (Date.now() - parseStoryTime(story)) / 36e5);
@@ -1350,7 +1351,9 @@ const NewsArticlesPage = () => {
     !shouldRenderArticle &&
     (!taxonomyRoute || hasExtraNewsRouteSegments);
   const canonicalPath = taxonomyRoute?.path || "/news";
-  const canonical = `https://tryhook.shop${canonicalPath}`;
+  const canonical = taxonomyRoute
+    ? `https://tryhook.shop${canonicalPath}`
+    : NEWS_LISTING_SEO.canonicalUrl;
   const { stories, loading, error } = usePublicNewsFeed({
     limit: NEWS_GRID_LIMIT,
   });
@@ -1403,7 +1406,7 @@ const NewsArticlesPage = () => {
   const pageSchema = [
     createBreadcrumbSchema([
       { label: "Home", url: "https://tryhook.shop/" },
-      { label: "News", url: "https://tryhook.shop/news" },
+      { label: "News", url: NEWS_LISTING_SEO.canonicalUrl },
       ...(taxonomyRoute
         ? [{ label: taxonomyRoute.title, url: canonical }]
         : []),
