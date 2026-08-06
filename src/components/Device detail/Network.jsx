@@ -1320,7 +1320,7 @@ const NetworkingDetailCard = () => {
       "",
     brand: deviceData?.brand || deviceData?.brand_name || "",
   });
-  const metaKeywords = buildDeviceSeoKeywords({
+  const _metaKeywords = buildDeviceSeoKeywords({
     device: deviceData,
     productName: deviceData?.name || deviceData?.model || "",
     brand: deviceData?.brand || deviceData?.brand_name || "",
@@ -1366,12 +1366,11 @@ const NetworkingDetailCard = () => {
   })();
 
   return (
-    <div className="max-w-8xl mx-auto bg-white">
+    <div className="hooks-product-detail hooks-network-detail max-w-8xl mx-auto bg-white">
       {/* SEO Helmet */}
       <Helmet prioritizeSeoTags>
         <title>{metaTitle}</title>
         <meta name="description" content={metaDescription} />
-        <meta name="keywords" content={metaKeywords} />
         {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
         <meta property="og:type" content="product" />
         <meta property="og:title" content={metaTitle} />

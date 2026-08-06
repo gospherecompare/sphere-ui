@@ -1,1051 +1,433 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  FaExchangeAlt,
-  FaLaptop,
+  FaArrowRight,
+  FaChevronLeft,
+  FaChevronRight,
   FaMobileAlt,
-  FaFilter,
-  FaFire,
-  FaSearch,
-  FaSort,
-  FaTimes,
-  FaTv,
 } from "react-icons/fa";
-import useRevealAnimation from "../hooks/useRevealAnimation";
-import SEO from "./SEO";
-// import RecommendedSmartphones from "./Home/RecommendedSmartphones";
-import ProductDiscoverySections from "./ui/ProductDiscoverySections";
 import {
   buildCanonicalComparePath,
-  buildCanonicalComparePathFromDevices,
-} from "../utils/compareRoutes";
-import {
-  getPreloadedApiMap,
-  readPreloadedApiResponse,
-} from "../utils/preloadedApi";
-import {
-  createBreadcrumbSchema,
-  createCollectionSchema,
-  createItemListSchema,
-} from "../utils/schemaGenerators";
-import { toCanonicalPageUrl } from "../utils/publicUrl";
+  toCanonicalCompareSlug,
+} from "../../utils/compareRoutes";
+import { readPreloadedApiResponse } from "../../utils/preloadedApi";
+import { API_ORIGIN_URL, buildApiUrl } from "../../utils/apiUrl";
+import { fetchPublicJson } from "../../utils/publicJsonRequest";
 
-const ITEMS_PER_PAGE = 12;
-const SITE_ORIGIN = "https://tryhook.shop";
-const POPULAR_COMPARISONS_PATH = "/popular-comparisons";
-const POPULAR_COMPARISONS_URL = toCanonicalPageUrl(
-  POPULAR_COMPARISONS_PATH,
-  SITE_ORIGIN,
-);
+const normalizeText = (value) => String(value || "").trim();
 
-const DEVICE_TYPE_OPTIONS = [
-  { value: "all", label: "All Devices", hint: "Browse every category" },
-  {
-    value: "smartphone",
-    label: "Smartphones & Mobiles",
-    hint: "Phone comparisons and popular face-offs",
-  },
-  {
-    value: "laptop",
-    label: "Laptops & Computers",
-    hint: "Compare work, study, and gaming laptops",
-  },
-  {
-    value: "tv",
-    label: "TVs & Televisions",
-    hint: "Smart TV and big-screen matchups",
-  },
-];
-
-const SORT_OPTIONS = [
-  {
-    value: "trending",
-    label: "Most Compared (Trending)",
-  },
-  {
-    value: "newest",
-    label: "Newest First",
-  },
-];
-
-const FILTER_CHIPS = [
-  {
-    id: "all",
-    label: "All Devices",
-    deviceType: "all",
-    icon: FaMobileAlt,
-  },
-  {
-    id: "smartphones",
-    label: "Smartphones",
-    deviceType: "smartphone",
-    icon: FaMobileAlt,
-  },
-  {
-    id: "laptops",
-    label: "Laptops",
-    deviceType: "laptop",
-    icon: FaLaptop,
-  },
-  {
-    id: "tvs",
-    label: "TVs",
-    deviceType: "tv",
-    icon: FaTv,
-  },
-];
-
-const MOST_COMPARED_ENDPOINT =
-  "https://api.apisphere.in/api/public/trending/most-compared?days=180&scope=groups&limit=300";
-const SMARTPHONES_ENDPOINT = "https://api.apisphere.in/api/smartphones";
-const PRODUCT_ENDPOINT_BASE = "https://api.apisphere.in/api/public/product";
-
-const normalizeComparedProduct = (product = {}) => ({
-  product_id: product.product_id ?? product.productId ?? product.id ?? null,
-  id: product.product_id ?? product.productId ?? product.id ?? null,
-  product_name:
-    product.product_name || product.productName || product.name || "Device",
-  name: product.product_name || product.productName || product.name || "Device",
-  product_type:
-    product.product_type ||
-    product.productType ||
-    product.deviceType ||
-    "unknown",
-  image_url:
-    product.image_url || product.image || product.product_image || null,
-  image: product.image_url || product.image || product.product_image || null,
-  best_price: product.best_price ?? product.bestPrice ?? product.price ?? null,
-  detail_path: product.detail_path || product.detailPath || "",
-});
-
-const mapMostComparedRows = (json) =>
-  (json?.mostCompared || []).map((r) => {
-    const products =
-      Array.isArray(r.products) && r.products.length
-        ? r.products.map(normalizeComparedProduct)
-        : [
-            normalizeComparedProduct({
-              product_id: r.product_id,
-              product_name: r.product_name,
-              product_type: r.product_type,
-              image_url: r.product_image,
-            }),
-            normalizeComparedProduct({
-              product_id: r.compared_product_id,
-              product_name: r.compared_product_name,
-              product_type: r.compared_product_type,
-              image_url: r.compared_product_image,
-            }),
-          ].filter((product) => product.product_id != null);
-    const [left, right] = products;
-    return {
-      ...r,
-      products,
-      product_count: Number(r.product_count) || products.length,
-      left_id: left?.product_id ?? r.product_id,
-      left_name: left?.product_name ?? r.product_name,
-      left_image: left?.image_url ?? r.product_image ?? null,
-      left_type: left?.product_type ?? r.product_type ?? "unknown",
-      right_id: right?.product_id ?? r.compared_product_id,
-      right_name: right?.product_name ?? r.compared_product_name,
-      right_image: right?.image_url ?? r.compared_product_image ?? null,
-      right_type: right?.product_type ?? r.compared_product_type ?? "unknown",
-      compare_count: Number(r.compare_count) || 0,
-      unique_users: Number(r.unique_users ?? r.unique_user_count) || 0,
-      last_compared_at: r.last_compared_at || null,
-      route_path: r.route_path || "",
-    };
-  });
-
-const mapSmartphonesById = (json) => {
-  const rows = Array.isArray(json)
-    ? json
-    : Array.isArray(json?.smartphones)
-      ? json.smartphones
-      : Array.isArray(json?.data)
-        ? json.data
-        : Array.isArray(json?.rows)
-          ? json.rows
-          : [];
-
-  const next = {};
-  for (const row of rows) {
-    const id = row?.id ?? row?.product_id ?? row?.productId ?? null;
-    if (id == null) continue;
-    next[String(id)] = row;
+const normalizeAssetUrl = (value) => {
+  const raw = normalizeText(value);
+  if (!raw) return "";
+  if (/^(https?:|data:|blob:)/i.test(raw)) return raw;
+  if (raw.startsWith("//")) return `https:${raw}`;
+  if (raw.startsWith("/")) return `${API_ORIGIN_URL}${raw}`;
+  if (/^(uploads|assets|images)\//i.test(raw)) {
+    return `${API_ORIGIN_URL}/${raw.replace(/^\/+/, "")}`;
   }
-  return next;
+  return raw;
 };
 
-const mapPreloadedProductsById = () => {
-  const byUrl = getPreloadedApiMap();
-  if (!byUrl) return {};
+const isSmartphoneType = (value) =>
+  /(smartphone|smart phone|mobile|phone)/i.test(normalizeText(value));
 
-  const next = {};
+const getDeviceProductId = (device) => {
+  const raw =
+    device?.productId ??
+    device?.product_id ??
+    device?.baseId ??
+    device?.base_id ??
+    null;
+  const numeric = Number(raw);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+};
 
-  Object.entries(byUrl).forEach(([rawUrl, value]) => {
-    try {
-      const parsed = new URL(rawUrl, window.location.origin);
-      if (parsed.search) return;
+const getDeviceName = (device) =>
+  normalizeText(device?.name || device?.model || device?.title);
 
-      const segments = parsed.pathname.split("/").filter(Boolean);
-      if (
-        segments.length !== 4 ||
-        segments[0] !== "api" ||
-        segments[1] !== "public" ||
-        segments[2] !== "product"
-      ) {
-        return;
-      }
+const getDeviceImage = (device) =>
+  normalizeAssetUrl(
+    (Array.isArray(device?.images) ? device.images[0] : "") ||
+      device?.image ||
+      device?.image_url ||
+      device?.product_image,
+  );
 
-      const productId = String(segments[3] || "").trim();
-      if (!productId) return;
-      next[productId] = value;
-    } catch {
-      // Ignore malformed payload keys.
-    }
+const buildComparePath = (item) =>
+  buildCanonicalComparePath({
+    leftName: item.leftName,
+    rightName: item.rightName,
+    leftId: item.leftId,
+    rightId: item.rightId,
+    type: "smartphone",
   });
 
-  return next;
+const makeComparisonKey = (item) => {
+  const idPair =
+    item.leftId && item.rightId
+      ? [String(item.leftId), String(item.rightId)].sort()
+      : [
+          toCanonicalCompareSlug(item.leftName),
+          toCanonicalCompareSlug(item.rightName),
+        ].sort();
+  return idPair.join("|");
 };
 
-const PopularComparisonsPage = () => {
-  const [data, setData] = useState(() =>
-    mapMostComparedRows(readPreloadedApiResponse(MOST_COMPARED_ENDPOINT) || {}),
-  );
-  const [loading, setLoading] = useState(
-    () => !readPreloadedApiResponse(MOST_COMPARED_ENDPOINT),
-  );
-  const [currentPage, setCurrentPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [deviceTypeFilter, setDeviceTypeFilter] = useState("all");
-  const [sortBy, setSortBy] = useState("trending");
-  const [productById, setProductById] = useState(() =>
-    mapPreloadedProductsById(),
-  );
-  const [smartphoneById, setSmartphoneById] = useState(() =>
-    mapSmartphonesById(readPreloadedApiResponse(SMARTPHONES_ENDPOINT) || {}),
-  );
-  const isLoaded = useRevealAnimation();
+const MOST_COMPARED_ENDPOINT = buildApiUrl("/public/trending/most-compared");
 
-  // Fetch comparisons data
-  useEffect(() => {
-    const preloadedPayload = readPreloadedApiResponse(MOST_COMPARED_ENDPOINT);
-    if (preloadedPayload) {
-      setData(mapMostComparedRows(preloadedPayload));
-      setLoading(false);
-      return undefined;
-    }
+const mapRemoteComparisonsPayload = (json) => {
+  const rows = Array.isArray(json?.mostCompared) ? json.mostCompared : [];
+  return rows
+    .filter(
+      (row) =>
+        isSmartphoneType(row?.product_type) &&
+        isSmartphoneType(row?.compared_product_type),
+    )
+    .map((row) => ({
+      leftId: row.product_id,
+      leftName: normalizeText(row.product_name),
+      leftImage: normalizeAssetUrl(row.product_image),
+      rightId: row.compared_product_id,
+      rightName: normalizeText(row.compared_product_name),
+      rightImage: normalizeAssetUrl(row.compared_product_image),
+      compareCount: Number(row.compare_count) || 0,
+      source: "remote",
+    }))
+    .filter((item) => item.leftName && item.rightName);
+};
 
-    let cancelled = false;
-    (async () => {
-      try {
-        setLoading(true);
-        const res = await fetch(MOST_COMPARED_ENDPOINT);
-        if (!res.ok) return;
-        const json = await res.json();
-        if (cancelled) return;
-        setData(mapMostComparedRows(json));
-        setLoading(false);
-      } catch {
-        setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+const buildLocalComparisons = (devices = []) => {
+  const uniqueDevices = [];
+  const seen = new Set();
 
-  useEffect(() => {
-    const preloadedPayload = readPreloadedApiResponse(SMARTPHONES_ENDPOINT);
-    if (preloadedPayload) {
-      setSmartphoneById(mapSmartphonesById(preloadedPayload));
-      return undefined;
-    }
-
-    let cancelled = false;
-
-    const loadSmartphones = async () => {
-      try {
-        const res = await fetch(SMARTPHONES_ENDPOINT, {
-          cache: "no-store",
-        });
-        if (!res.ok) return;
-        const json = await res.json();
-        if (cancelled) return;
-        setSmartphoneById(mapSmartphonesById(json));
-      } catch {
-        if (!cancelled) setSmartphoneById({});
-      }
-    };
-
-    loadSmartphones();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // Filter and sort logic
-  const processedData = useMemo(() => {
-    let filtered = data;
-    const normalizedSearchQuery = searchQuery.trim().toLowerCase();
-
-    // Apply device type filter
-    if (deviceTypeFilter !== "all") {
-      filtered = data.filter(
-        (item) =>
-          (Array.isArray(item.products) ? item.products : []).some((product) =>
-            String(product?.product_type || "")
-              .toLowerCase()
-              .includes(deviceTypeFilter),
-          ) ||
-          item.left_type?.toLowerCase().includes(deviceTypeFilter) ||
-          item.right_type?.toLowerCase().includes(deviceTypeFilter),
-      );
-    }
-
-    if (normalizedSearchQuery) {
-      filtered = filtered.filter((item) => {
-        const haystacks = [
-          ...(Array.isArray(item.products)
-            ? item.products.map((product) => product?.product_name)
-            : []),
-          item?.left_name,
-          item?.right_name,
-          item?.left_type,
-          item?.right_type,
-          (Array.isArray(item.products) ? item.products : [])
-            .map((product) => product?.product_name)
-            .filter(Boolean)
-            .join(" vs ") ||
-            `${item?.left_name || ""} vs ${item?.right_name || ""}`,
-        ];
-        return haystacks.some((value) =>
-          String(value || "")
-            .toLowerCase()
-            .includes(normalizedSearchQuery),
-        );
-      });
-    }
-
-    // Apply sorting
-    let sorted = [...filtered];
-    if (sortBy === "trending") {
-      sorted.sort((a, b) => b.compare_count - a.compare_count);
-    } else if (sortBy === "newest") {
-      sorted.reverse();
-    }
-
-    return sorted;
-  }, [data, deviceTypeFilter, searchQuery, sortBy]);
-
-  // Pagination
-  const totalPages = Math.ceil(processedData.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedData = processedData.slice(
-    startIndex,
-    startIndex + ITEMS_PER_PAGE,
-  );
-
-  const featuredDiscoveryProduct = useMemo(() => {
-    if (deviceTypeFilter !== "all" && deviceTypeFilter !== "smartphone") {
-      return null;
-    }
-
-    for (const item of processedData) {
-      const products =
-        Array.isArray(item?.products) && item.products.length
-          ? item.products
-          : [
-              {
-                product_id: item?.left_id,
-                product_type: item?.left_type,
-                product_name: item?.left_name,
-              },
-              {
-                product_id: item?.right_id,
-                product_type: item?.right_type,
-                product_name: item?.right_name,
-              },
-            ];
-
-      const phone = products.find((product) =>
-        String(product?.product_type || "")
-          .toLowerCase()
-          .includes("smartphone"),
-      );
-      const phoneId = Number(phone?.product_id);
-      if (Number.isInteger(phoneId)) {
-        return {
-          productId: phoneId,
-          name: phone?.product_name || "this phone",
-        };
-      }
-    }
-
-    return null;
-  }, [processedData, deviceTypeFilter]);
-
-  const missingProductIds = useMemo(() => {
-    const ids = new Set();
-    const rows = Array.isArray(paginatedData) ? paginatedData : [];
-    for (const item of rows) {
-      const products =
-        Array.isArray(item?.products) && item.products.length
-          ? item.products
-          : [
-              {
-                product_id: item?.left_id,
-                product_type: item?.left_type,
-              },
-              {
-                product_id: item?.right_id,
-                product_type: item?.right_type,
-              },
-            ];
-
-      for (const product of products) {
-        const id = product?.product_id;
-        const type = String(product?.product_type || "").toLowerCase();
-        if (
-          id != null &&
-          !type.includes("smartphone") &&
-          !Object.prototype.hasOwnProperty.call(productById, String(id))
-        ) {
-          ids.add(String(id));
-        }
-      }
-    }
-    return Array.from(ids);
-  }, [paginatedData, productById]);
-
-  useEffect(() => {
-    if (!missingProductIds.length) return;
-    let cancelled = false;
-
-    const loadProducts = async () => {
-      const results = await Promise.all(
-        missingProductIds.map(async (id) => {
-          try {
-            const res = await fetch(
-              `${PRODUCT_ENDPOINT_BASE}/${encodeURIComponent(id)}`,
-              { cache: "no-store" },
-            );
-            if (!res.ok) return [id, null];
-            const json = await res.json();
-            return [id, json];
-          } catch {
-            return [id, null];
-          }
-        }),
-      );
-
-      if (cancelled) return;
-      setProductById((prev) => {
-        const next = { ...prev };
-        for (const [id, product] of results) {
-          next[String(id)] = product;
-        }
-        return next;
-      });
-    };
-
-    loadProducts();
-    return () => {
-      cancelled = true;
-    };
-  }, [missingProductIds]);
-
-  const pageTitle =
-    "Popular Mobile Phone & Device Comparisons in India - Hooks";
-  const pageDescription =
-    "Explore popular mobile phone and device comparisons in India on Hooks. Compare trending smartphones, laptops, and TVs side by side before you buy.";
-  const pageKeywords =
-    "popular mobile comparisons, popular phone comparisons India, compare mobile phones, smartphone comparison India, compare laptops, compare TVs, device comparison, trending product comparisons";
-
-  const listSchemaItems = useMemo(() => {
-    return processedData.slice(0, 20).map((item) => {
-      const products =
-        Array.isArray(item.products) && item.products.length
-          ? item.products
-          : [
-              {
-                product_id: item.left_id,
-                product_name: item.left_name,
-                product_type: item.left_type,
-                image_url: item.left_image,
-              },
-              {
-                product_id: item.right_id,
-                product_name: item.right_name,
-                product_type: item.right_type,
-                image_url: item.right_image,
-              },
-            ].filter((product) => product.product_id != null);
-
-      const path =
-        item.route_path ||
-        buildCanonicalComparePathFromDevices({
-          devices: products,
-          getName: (product) => product?.product_name || product?.name || "",
-          getId: (product) => product?.product_id || product?.id || null,
-        }) ||
-        buildCanonicalComparePath({
-          leftName: item.left_name,
-          rightName: item.right_name,
-        });
-
-      const image = products
-        .map((product) => {
-          const productId = String(product?.product_id ?? "");
-          const isPhone = String(product?.product_type || "")
-            .toLowerCase()
-            .includes("smartphone");
-          const resolvedProduct = isPhone
-            ? smartphoneById[productId] || productById[productId] || null
-            : productById[productId] || null;
-          return (
-            product?.image_url ||
-            product?.image ||
-            resolvedProduct?.image_url ||
-            resolvedProduct?.image ||
-            (Array.isArray(resolvedProduct?.images)
-              ? resolvedProduct.images.find(Boolean)
-              : null)
-          );
-        })
-        .find(Boolean);
-
-      return {
-        name:
-          products
-            .map((product) => product?.product_name || product?.name)
-            .filter(Boolean)
-            .join(" vs ") || `${item.left_name} vs ${item.right_name}`,
-        url: toCanonicalPageUrl(path || "/compare", SITE_ORIGIN),
-        image: image || undefined,
-      };
+  for (const device of Array.isArray(devices) ? devices : []) {
+    const name = getDeviceName(device);
+    if (!name) continue;
+    const productId = getDeviceProductId(device);
+    const key = productId
+      ? `id:${productId}`
+      : `name:${toCanonicalCompareSlug(name)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    uniqueDevices.push({
+      id: productId,
+      name,
+      image: getDeviceImage(device),
     });
-  }, [processedData, productById, smartphoneById]);
+  }
 
-  const pageOgImageMeta = useMemo(() => {
-    const firstComparisonImage = listSchemaItems.find(
-      (item) => item.image,
-    )?.image;
-    return {
-      url: firstComparisonImage || `${SITE_ORIGIN}/hook-logo.png`,
-      width: 1200,
-      height: 630,
-      alt: "Popular mobile phone and device comparisons on Hooks",
-    };
-  }, [listSchemaItems]);
+  const candidates = uniqueDevices.slice(0, 12);
+  const pairs = [];
+  const addPair = (left, right) => {
+    if (!left || !right || left.name === right.name) return;
+    pairs.push({
+      leftId: left.id,
+      leftName: left.name,
+      leftImage: left.image,
+      rightId: right.id,
+      rightName: right.name,
+      rightImage: right.image,
+      compareCount: 0,
+      source: "local",
+    });
+  };
 
-  const comparisonSchema = useMemo(
-    () => [
-      createCollectionSchema({
-        name: "Popular Mobile Phone & Device Comparisons in India",
-        description: pageDescription,
-        url: POPULAR_COMPARISONS_URL,
-        image: pageOgImageMeta,
-      }),
-      createItemListSchema({
-        name: "Popular Mobile Phone & Device Comparisons",
-        description: pageDescription,
-        url: POPULAR_COMPARISONS_URL,
-        items: listSchemaItems,
-      }),
-      createBreadcrumbSchema([
-        { label: "Home", url: SITE_ORIGIN },
-        { label: "Popular Comparisons", url: POPULAR_COMPARISONS_URL },
-      ]),
-    ],
-    [listSchemaItems, pageDescription, pageOgImageMeta],
-  );
+  for (let index = 0; index < candidates.length - 1; index += 2) {
+    addPair(candidates[index], candidates[index + 1]);
+  }
 
-  const hasCustomFilter =
-    deviceTypeFilter !== "all" ||
-    sortBy !== SORT_OPTIONS[0].value ||
-    searchQuery.trim().length > 0;
-  const showingLabel = `Showing ${processedData.length.toLocaleString()} of ${data.length.toLocaleString()} options`;
+  for (
+    let index = 0;
+    pairs.length < 8 && index < candidates.length - 1;
+    index += 1
+  ) {
+    addPair(candidates[index], candidates[index + 1]);
+  }
+
+  return pairs;
+};
+
+const PhoneVisual = ({ src = "", label = "" }) => {
+  const [failed, setFailed] = useState(false);
+  const imageSrc = normalizeAssetUrl(src);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [imageSrc]);
 
   return (
-    <div className="min-h-screen bg-white text-slate-900">
-      <SEO
-        title={pageTitle}
-        description={pageDescription}
-        keywords={pageKeywords}
-        image={pageOgImageMeta}
-        url={POPULAR_COMPARISONS_URL}
-        robots="index, follow, max-image-preview:large"
-        schema={comparisonSchema}
-      />
-
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
-        {/* Header Section */}
-        <div
-          className={`mb-6 sm:mb-8 transition-all duration-700 ${
-            isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-          }`}
-        >
-          <div className="mb-3 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.32em] text-blue-600 sm:text-xs">
-            <FaFire className="text-sm" />
-            <span>COMPARISON COLLECTION</span>
-          </div>
-
-          <h1 className="max-w-4xl text-2xl font-semibold tracking-tight text-[#14255e] sm:text-3xl md:text-4xl">
-            Popular Device Comparisons
-          </h1>
-
-          <h4 className="mt-3 max-w-4xl text-sm leading-7 text-slate-600 sm:text-base sm:leading-8">
-            Explore the most compared devices trending right now. See what users
-            are comparing and make informed buying decisions with accurate specs
-            and features.
-          </h4>
+    <div className="flex h-36 min-w-0 items-center justify-center sm:h-40 xl:h-44">
+      {imageSrc && !failed ? (
+        <img
+          src={imageSrc}
+          alt={label || "Smartphone"}
+          loading="lazy"
+          className="h-full w-full scale-[1.06] object-contain transition-transform duration-300 group-hover:scale-[1.1] dark:mix-blend-multiply dark:brightness-125 dark:contrast-110"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <div className="grid h-20 w-14 place-items-center rounded-lg bg-white/80 text-blue-300 dark:bg-[#14243a] dark:text-[#77a5ff]">
+          <FaMobileAlt className="text-3xl" />
         </div>
-
-        {/* Filters Section */}
-        <div className="mb-6 sm:mb-8">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <FaFilter className="text-blue-600" />
-              <h3 className="text-sm font-semibold text-slate-900 sm:text-base">
-                Popular Categories
-              </h3>
-            </div>
-            {(deviceTypeFilter !== "all" || searchQuery.trim()) && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchQuery("");
-                  setDeviceTypeFilter("all");
-                  setCurrentPage(1);
-                }}
-                className="text-xs font-semibold text-blue-700 transition-colors hover:text-blue-900 sm:text-sm"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-          <p className="mb-3 text-xs text-slate-500">
-            Popular comparison groups users explore most on Hooks
-          </p>
-          <div className="flex gap-2.5 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {FILTER_CHIPS.map((chip) => {
-              const isActive = deviceTypeFilter === chip.deviceType;
-              const Icon = chip.icon;
-
-              return (
-                <button
-                  key={chip.id}
-                  type="button"
-                  onClick={() => {
-                    setDeviceTypeFilter(chip.deviceType);
-                    setCurrentPage(1);
-                  }}
-                  className={`flex items-center gap-2 whitespace-nowrap rounded-full px-3 py-2 text-xs font-semibold transition-colors duration-200 sm:text-sm ${
-                    isActive
-                      ? "bg-blue-600 text-white"
-                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                  }`}
-                >
-                  <span className={isActive ? "text-white" : "text-blue-600"}>
-                    <Icon className="text-base" />
-                  </span>
-                  <span>{chip.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="mb-6 sm:mb-8">
-            <div className="mb-4 hidden items-center justify-between gap-4 md:mb-5 lg:mb-6 lg:flex">
-              <div className="flex-1 max-w-xl">
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <FaSearch className="text-slate-400 transition-colors duration-200 group-focus-within:text-blue-500" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Search comparisons by brand, model, or device..."
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="w-full rounded-lg border border-slate-200 bg-white py-3 pl-12 pr-4 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-400 sm:text-base"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 shrink-0">
-                <div className="flex items-center gap-2">
-                  <FaFilter className="text-slate-400" />
-                  <span className="text-sm text-slate-600">Sort by:</span>
-                </div>
-                <div className="relative min-w-[210px]">
-                  <select
-                    value={sortBy}
-                    onChange={(e) => {
-                      setSortBy(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="w-full cursor-pointer appearance-none rounded-lg border border-slate-200 bg-white px-4 py-2.5 pr-10 text-slate-700 transition-all duration-200 hover:border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  >
-                    {SORT_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
-                    <svg
-                      className="fill-current h-4 w-4"
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                    >
-                      <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                    </svg>
-                  </div>
-                </div>
-
-                {hasCustomFilter && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearchQuery("");
-                      setDeviceTypeFilter("all");
-                      setSortBy("trending");
-                      setCurrentPage(1);
-                    }}
-                    className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-blue-600 transition-colors hover:bg-slate-100 hover:text-blue-700"
-                  >
-                    <FaTimes />
-                    Clear Filters
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="mb-4 space-y-3 sm:mb-5 sm:space-y-4 md:mb-6 lg:hidden">
-              <div className="relative group">
-                <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors duration-200 group-focus-within:text-blue-500" />
-                <input
-                  type="text"
-                  placeholder="Search comparisons..."
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="h-12 w-full rounded-lg border border-slate-200 py-2 pl-12 pr-4 text-slate-900 transition-all duration-200 placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-400"
-                />
-              </div>
-
-              <div className="relative">
-                <select
-                  value={sortBy}
-                  onChange={(e) => {
-                    setSortBy(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="h-12 w-full appearance-none rounded-lg border border-slate-200 bg-white px-4 pr-10 text-slate-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                >
-                  {SORT_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
-                  <svg
-                    className="fill-current h-4 w-4"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                  </svg>
-                </div>
-              </div>
-
-              {hasCustomFilter && (
-                <div className="flex items-center justify-between rounded-lg border border-blue-100 bg-[#f8fbff] p-4">
-                  <div className="flex items-center gap-3">
-                    <FaFilter className="text-blue-600" />
-                    <div>
-                      <span className="text-sm font-semibold text-slate-900">
-                        Filters are active
-                      </span>
-                      <p className="text-xs text-slate-600">{showingLabel}</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearchQuery("");
-                      setDeviceTypeFilter("all");
-                      setSortBy("trending");
-                      setCurrentPage(1);
-                    }}
-                    className="text-sm font-semibold text-blue-700 hover:text-blue-900"
-                  >
-                    Clear
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-2 border-t border-slate-200 pt-5 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <h3 className="text-xl font-semibold tracking-tight text-[#14255e] sm:text-2xl">
-                  Available Comparisons
-                </h3>
-                <p className="mt-1 text-sm leading-6 text-slate-500">
-                  Browse the most compared device matchups with current filters
-                  and sorting applied.
-                </p>
-              </div>
-              <div className="text-sm font-medium text-slate-500">
-                {showingLabel}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Loading State */}
-        {loading ? (
-          <div className="text-center py-12">
-            <FaSort className="mx-auto animate-spin text-3xl text-blue-600" />
-            <p className="mt-4 font-medium text-slate-600">
-              Loading popular comparisons...
-            </p>
-          </div>
-        ) : paginatedData.length === 0 ? (
-          <div className="text-center py-12">
-            <FaExchangeAlt className="mx-auto mb-4 text-4xl text-slate-400" />
-            <p className="font-medium text-slate-600">
-              No comparisons found for this filter
-            </p>
-            <button
-              onClick={() => {
-                setDeviceTypeFilter("all");
-                setCurrentPage(1);
-              }}
-              className="mt-4 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
-            >
-              Reset Filters
-            </button>
-          </div>
-        ) : (
-          <>
-            {/* Comparisons Grid */}
-            <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-3">
-              {paginatedData.map((item, index) => {
-                const products = (
-                  Array.isArray(item.products) && item.products.length
-                    ? item.products
-                    : [
-                        {
-                          product_id: item.left_id,
-                          product_name: item.left_name,
-                          product_type: item.left_type,
-                          image_url: item.left_image,
-                        },
-                        {
-                          product_id: item.right_id,
-                          product_name: item.right_name,
-                          product_type: item.right_type,
-                          image_url: item.right_image,
-                        },
-                      ]
-                )
-                  .filter((product) => product?.product_id != null)
-                  .slice(0, 4);
-                const enrichedProducts = products.map((product) => {
-                  const productId = String(product.product_id);
-                  const isPhone = String(product.product_type || "")
-                    .toLowerCase()
-                    .includes("smartphone");
-                  const resolvedProduct = isPhone
-                    ? smartphoneById[productId] ||
-                      productById[productId] ||
-                      null
-                    : productById[productId] || null;
-                  return {
-                    ...product,
-                    resolvedProduct,
-                    imageUrl:
-                      product.image_url ||
-                      product.image ||
-                      resolvedProduct?.image_url ||
-                      resolvedProduct?.image ||
-                      (Array.isArray(resolvedProduct?.images)
-                        ? resolvedProduct.images.find(Boolean)
-                        : null),
-                  };
-                });
-                const compareTitle =
-                  enrichedProducts
-                    .map((product) => product?.product_name || product?.name)
-                    .filter(Boolean)
-                    .join(" vs ") ||
-                  `${item.left_name || "Device"} vs ${item.right_name || "Device"}`;
-                const comparePath =
-                  item.route_path ||
-                  buildCanonicalComparePathFromDevices({
-                    devices: enrichedProducts,
-                    getName: (product) =>
-                      product?.product_name || product?.name || "",
-                    getId: (product) =>
-                      product?.product_id || product?.id || null,
-                  }) ||
-                  buildCanonicalComparePath({
-                    leftName: item.left_name,
-                    rightName: item.right_name,
-                  });
-
-                return (
-                  <Link
-                    key={`${item.product_ids?.join("-") || `${item.left_id}-${item.right_id}`}-${index}`}
-                    to={comparePath}
-                    state={
-                      comparePath === "/compare"
-                        ? {
-                            initialProducts: enrichedProducts.map(
-                              (product) => ({
-                                ...(product.resolvedProduct || product),
-                                id: product.product_id,
-                                productId: product.product_id,
-                                product_id: product.product_id,
-                                name: product.product_name,
-                                product_name: product.product_name,
-                                productType: product.product_type,
-                                product_type: product.product_type,
-                              }),
-                            ),
-                          }
-                        : undefined
-                    }
-                    className={`group transition-all duration-700 ${
-                      isLoaded ? "opacity-100" : "opacity-0"
-                    }`}
-                    style={{ transitionDelay: `${index * 50}ms` }}
-                  >
-                    <div className="flex h-full flex-col overflow-hidden rounded-lg border border-slate-200 bg-white p-4 transition-all duration-300 hover:border-blue-200 hover:bg-slate-50">
-                      <div
-                        className="grid gap-3 overflow-hidden"
-                        style={{
-                          gridTemplateColumns: `repeat(${Math.max(2, enrichedProducts.length)}, minmax(0, 1fr))`,
-                        }}
-                      >
-                        {enrichedProducts.map((product) => (
-                          <div
-                            key={`${item.compare_count}-${product.product_id}`}
-                            className="min-w-0 text-center"
-                          >
-                            <div className="relative mb-2 flex h-24 w-full items-center justify-center rounded-lg border border-slate-200 bg-slate-50 p-2 sm:h-28">
-                              {product.imageUrl ? (
-                                <img
-                                  src={product.imageUrl}
-                                  alt={product.product_name}
-                                  className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
-                                  loading="lazy"
-                                />
-                              ) : (
-                                <div className="flex h-full w-full items-center justify-center rounded-md bg-white">
-                                  <FaMobileAlt className="text-2xl text-slate-300" />
-                                </div>
-                              )}
-                            </div>
-                            <p className="truncate text-xs font-semibold text-[#14255e] sm:text-sm">
-                              {product.product_name}
-                            </p>
-                            <p className="mt-0.5 truncate text-[10px] font-medium capitalize text-slate-500">
-                              {product.product_type || "device"}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-blue-100 bg-[#f8fbff] px-3 py-2.5">
-                        <span className="min-w-0 truncate text-[12px] font-semibold leading-5 text-slate-700">
-                          {compareTitle}
-                        </span>
-                        <span className="shrink-0 text-[12px] font-semibold text-blue-700 transition-colors group-hover:text-blue-800">
-                          Compare
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="mb-8 flex items-center justify-center gap-2">
-                <button
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4"
-                >
-                  Previous
-                </button>
-
-                <div className="flex gap-1">
-                  {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                    let page;
-                    if (totalPages <= 7) {
-                      page = i + 1;
-                    } else if (currentPage <= 4) {
-                      page = i + 1;
-                    } else if (currentPage >= totalPages - 3) {
-                      page = totalPages - 6 + i;
-                    } else {
-                      page = currentPage - 3 + i;
-                    }
-                    return (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={`rounded-lg px-2 py-2 text-sm font-semibold transition sm:px-3 ${
-                          currentPage === page
-                            ? "bg-blue-600 text-white"
-                            : "border border-slate-200 text-slate-900 hover:bg-slate-50"
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <button
-                  onClick={() =>
-                    setCurrentPage(Math.min(totalPages, currentPage + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4"
-                >
-                  Next
-                </button>
-              </div>
-            )}
-            {/* {featuredDiscoveryProduct && <RecommendedSmartphones />} */}
-
-            {featuredDiscoveryProduct && (
-              <section className="mt-8 sm:mt-10 overflow-hidden ">
-                <ProductDiscoverySections
-                  productId={featuredDiscoveryProduct.productId}
-                  entityType="smartphones"
-                  className="px-4 pt-1 sm:px-0"
-                />
-              </section>
-            )}
-          </>
-        )}
-      </div>
+      )}
     </div>
   );
 };
 
-export default PopularComparisonsPage;
+const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
+  const scrollerRef = useRef(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [remoteComparisons, setRemoteComparisons] = useState(() =>
+    mapRemoteComparisonsPayload(
+      readPreloadedApiResponse(MOST_COMPARED_ENDPOINT),
+    ),
+  );
+
+  useEffect(() => {
+    const preloadedPayload = readPreloadedApiResponse(MOST_COMPARED_ENDPOINT);
+    if (preloadedPayload) {
+      setRemoteComparisons(mapRemoteComparisonsPayload(preloadedPayload));
+      return undefined;
+    }
+
+    let cancelled = false;
+    const controller =
+      typeof AbortController !== "undefined" ? new AbortController() : null;
+
+    const loadComparisons = async () => {
+      try {
+        const json = await fetchPublicJson(MOST_COMPARED_ENDPOINT, {
+          signal: controller?.signal,
+        });
+        if (!cancelled) {
+          setRemoteComparisons(mapRemoteComparisonsPayload(json));
+        }
+      } catch (error) {
+        if (error?.name !== "AbortError" && !cancelled) {
+          setRemoteComparisons([]);
+        }
+      }
+    };
+
+    loadComparisons();
+    return () => {
+      cancelled = true;
+      controller?.abort?.();
+    };
+  }, []);
+
+  const localComparisons = useMemo(
+    () => buildLocalComparisons(devices),
+    [devices],
+  );
+
+  const comparisons = useMemo(() => {
+    const seen = new Set();
+    return [...remoteComparisons, ...localComparisons]
+      .filter((item) => {
+        const key = makeComparisonKey(item);
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 12);
+  }, [localComparisons, remoteComparisons]);
+
+  useEffect(() => {
+    setActiveIndex((current) =>
+      Math.min(current, Math.max(0, comparisons.length - 1)),
+    );
+  }, [comparisons.length]);
+
+  if (comparisons.length === 0) return null;
+
+  const getCards = () =>
+    Array.from(
+      scrollerRef.current?.querySelectorAll("[data-matchup-card]") || [],
+    );
+
+  const scrollToComparison = (index) => {
+    const cards = getCards();
+    const targetIndex = Math.min(Math.max(index, 0), cards.length - 1);
+    const target = cards[targetIndex];
+    if (!target) return;
+
+    target.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "start",
+    });
+    setActiveIndex(targetIndex);
+  };
+
+  const handleScrollerScroll = () => {
+    const viewport = scrollerRef.current;
+    if (!viewport) return;
+    const cards = getCards();
+    if (!cards.length) return;
+
+    const viewportLeft = viewport.getBoundingClientRect().left;
+    let closestIndex = 0;
+    let closestDistance = Number.POSITIVE_INFINITY;
+
+    cards.forEach((card, index) => {
+      const distance = Math.abs(
+        card.getBoundingClientRect().left - viewportLeft,
+      );
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = index;
+      }
+    });
+
+    setActiveIndex(closestIndex);
+  };
+
+  const dotCount = Math.min(comparisons.length, 5);
+  const activeDot =
+    dotCount <= 1
+      ? 0
+      : Math.round(
+          (activeIndex / Math.max(1, comparisons.length - 1)) * (dotCount - 1),
+        );
+
+  return (
+    <section
+      className={`smartphones-matchups-section mx-auto w-full max-w-7xl bg-transparent py-6 text-slate-950 sm:py-8 dark:text-slate-100 ${className}`}
+      aria-labelledby="popular-phone-comparisons-title"
+    >
+      <div className="mb-5 flex items-end justify-between gap-3 px-1 sm:mb-6">
+        <div className="min-w-0">
+          <span className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-blue-600 sm:text-xs dark:text-blue-400">
+            Popular matchups
+          </span>
+          <h2
+            id="popular-phone-comparisons-title"
+            className="mt-1.5 max-w-3xl text-2xl font-black tracking-[-0.035em] text-slate-950 sm:text-3xl dark:text-white"
+          >
+            Compare popular mobile phones
+          </h2>
+          <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base dark:text-slate-400">
+            Pick a matchup and compare the details that matter.
+          </p>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2">
+          <Link
+            to="/popular-comparisons"
+            className="hidden min-h-10 items-center gap-2 rounded-lg bg-blue-50 px-4 text-sm font-bold text-blue-700 transition-colors hover:bg-blue-100 sm:inline-flex dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20"
+          >
+            View all
+            <FaArrowRight className="text-[11px]" />
+          </Link>
+          <button
+            type="button"
+            onClick={() => scrollToComparison(activeIndex - 1)}
+            disabled={activeIndex === 0}
+            aria-label="Previous phone comparison"
+            className="grid h-10 w-10 place-items-center rounded-lg bg-white text-blue-600 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-30 dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700"
+          >
+            <FaChevronLeft className="text-xs" />
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollToComparison(activeIndex + 1)}
+            disabled={activeIndex >= comparisons.length - 1}
+            aria-label="Next phone comparison"
+            className="grid h-10 w-10 place-items-center rounded-lg bg-white text-blue-600 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-30 dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700"
+          >
+            <FaChevronRight className="text-xs" />
+          </button>
+        </div>
+      </div>
+
+      <div
+        ref={scrollerRef}
+        onScroll={handleScrollerScroll}
+        className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-4 [&::-webkit-scrollbar]:hidden"
+      >
+        {comparisons.map((item, index) => {
+          const compareTitle = `${item.leftName} vs ${item.rightName}`;
+
+          return (
+            <Link
+              key={`${makeComparisonKey(item)}-${index}`}
+              data-matchup-card
+              to={buildComparePath(item)}
+              aria-label={`Compare ${item.leftName} with ${item.rightName}`}
+              className="group w-[86vw] max-w-[390px] shrink-0 snap-start rounded-xl border border-slate-200/80 bg-white p-3 transition-colors hover:bg-blue-50/40 sm:w-[390px] sm:p-4 lg:w-[calc((100%_-_2rem)/3)] lg:min-w-[340px] dark:border-slate-700/70 dark:bg-[#0f1c2d] dark:hover:bg-[#13243b]"
+            >
+              <div className="smartphones-product-stage relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 via-white to-slate-50 px-3 pb-3 pt-4 dark:bg-none dark:bg-[#0f1c2d] dark:ring-1 dark:ring-inset dark:ring-[#20324c]">
+                <span className="absolute left-4 top-3 text-[9px] font-extrabold uppercase tracking-[0.15em] text-blue-600 dark:text-blue-300">
+                  Matchup {index + 1}
+                </span>
+                <span className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-blue-100/50 dark:bg-blue-500/10" />
+                <span className="absolute -bottom-14 -left-10 h-32 w-32 rounded-full bg-indigo-100/40 dark:bg-indigo-400/10" />
+
+                <div className="relative mt-4 grid grid-cols-[minmax(0,1fr)_44px_minmax(0,1fr)] items-center gap-1 sm:grid-cols-[minmax(0,1fr)_48px_minmax(0,1fr)] sm:gap-2">
+                  <PhoneVisual src={item.leftImage} label={item.leftName} />
+
+                  <span className="grid h-10 w-10 place-items-center justify-self-center rounded-full bg-blue-600 text-[10px] font-black text-white sm:h-11 sm:w-11 sm:text-xs">
+                    VS
+                  </span>
+
+                  <PhoneVisual src={item.rightImage} label={item.rightName} />
+                </div>
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <p className="truncate text-sm font-extrabold text-slate-900 sm:text-base dark:text-slate-100">
+                  {item.leftName}
+                </p>
+                <p className="truncate text-right text-sm font-extrabold text-slate-900 sm:text-base dark:text-slate-100">
+                  {item.rightName}
+                </p>
+              </div>
+
+              <div className="mt-4 flex min-h-11 items-center justify-between gap-3 rounded-lg bg-blue-600 px-4 text-sm font-bold text-white transition-colors group-hover:bg-blue-700 dark:bg-blue-500 dark:group-hover:bg-blue-400">
+                <span className="min-w-0 truncate">Compare this matchup</span>
+                <FaArrowRight className="shrink-0 text-[11px] transition-transform group-hover:translate-x-0.5" />
+              </div>
+
+              <p className="sr-only">{compareTitle}</p>
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className="mt-4 flex items-center justify-center gap-2">
+        {Array.from({ length: dotCount }, (_, index) => (
+          <button
+            key={`matchup-dot-${index}`}
+            type="button"
+            onClick={() => {
+              const targetIndex =
+                dotCount <= 1
+                  ? 0
+                  : Math.round(
+                      (index / (dotCount - 1)) * (comparisons.length - 1),
+                    );
+              scrollToComparison(targetIndex);
+            }}
+            aria-label={`Go to comparison group ${index + 1}`}
+            className={`h-2 rounded-full transition-all ${
+              index === activeDot
+                ? "w-6 bg-blue-600 dark:bg-blue-400"
+                : "w-2 bg-slate-300 dark:bg-slate-600"
+            }`}
+          />
+        ))}
+      </div>
+
+      <Link
+        to="/popular-comparisons"
+        className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg bg-blue-50 px-4 text-sm font-bold text-blue-700 sm:hidden dark:bg-blue-500/10 dark:text-blue-300"
+      >
+        View all comparisons
+        <FaArrowRight className="text-[11px]" />
+      </Link>
+    </section>
+  );
+};
+
+export default PopularMobileComparisonsStrip;

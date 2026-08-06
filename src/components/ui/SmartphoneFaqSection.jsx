@@ -1,14 +1,10 @@
 import React, { useMemo, useState } from "react";
-import { FaMinus, FaPlus } from "react-icons/fa";
+import { FaChevronDown, FaMinus, FaPlus } from "react-icons/fa";
 
 const cleanFaqText = (value) =>
   String(value || "")
     .replace(/\s+/g, " ")
     .trim();
-
-const FaqHeaderDivider = () => (
-  <div className="mt-4 h-px w-full bg-blue-500" />
-);
 
 const SmartphoneFaqSection = ({
   items = [],
@@ -37,68 +33,104 @@ const SmartphoneFaqSection = ({
   const visibleLimit = Math.max(1, Number(initialLimit) || 6);
   const visibleFaqs = showAll ? faqs : faqs.slice(0, visibleLimit);
   const hasMore = faqs.length > visibleLimit;
+  const renderFaqCard = (faq) => {
+    const isOpen = openId === faq.id;
+
+    return (
+      <article
+        key={faq.id}
+        className="overflow-hidden border-b border-slate-200 bg-transparent shadow-none last:border-b-0 dark:border-slate-800"
+      >
+        <button
+          type="button"
+          onClick={() =>
+            setOpenId((current) => (current === faq.id ? null : faq.id))
+          }
+          className="group flex w-full items-start justify-between gap-4 px-0 py-4 text-left focus-visible:outline-none"
+          aria-expanded={isOpen}
+        >
+          <span className="min-w-0">
+            {faq.category ? (
+              <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.2em] text-blue-500">
+                {faq.category}
+              </span>
+            ) : null}
+            <span className="text-[15px] font-bold leading-6 text-slate-900 transition-colors group-hover:text-blue-700 dark:text-white dark:group-hover:text-blue-300">
+              {faq.question}
+            </span>
+          </span>
+          <span
+            className={`mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors group-focus-visible:ring-2 group-focus-visible:ring-blue-500 group-focus-visible:ring-offset-2 ${
+              isOpen
+                ? "bg-blue-600 text-white"
+                : "bg-slate-50 text-blue-600 group-hover:bg-blue-50 dark:bg-slate-800 dark:text-blue-400 dark:group-hover:bg-blue-500/10"
+            }`}
+            aria-hidden="true"
+          >
+            {isOpen ? (
+              <FaMinus className="text-[9px]" />
+            ) : (
+              <FaPlus className="text-[9px]" />
+            )}
+          </span>
+        </button>
+
+        {isOpen ? (
+          <div className="border-t border-slate-200 px-0 pb-5 pt-4 dark:border-slate-800">
+            <p className="text-[15px] leading-7 text-slate-600 dark:text-slate-300">
+              {faq.answer}
+            </p>
+          </div>
+        ) : null}
+      </article>
+    );
+  };
 
   return (
     <section
-      className={`overflow-hidden rounded-2xl bg-white ${className}`}
+      className={`overflow-hidden rounded-[20px] bg-transparent dark:bg-transparent ${className}`}
     >
-      <div className="px-4 pt-4 sm:px-6">
-        <div className="flex items-center gap-3">
-          <h2 className="text-lg font-bold tracking-tight text-[#07122f] sm:text-xl">
+      <header className="flex flex-col gap-2 px-4 py-5 sm:flex-row sm:items-end sm:justify-between sm:px-6">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-blue-600 dark:text-blue-400 sm:text-[11px]">
+            Helpful answers
+          </p>
+          <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950 dark:text-white">
             {title}
           </h2>
+          <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
+            Quick answers about price, launch status, specifications, and everyday use.
+          </p>
         </div>
-        <FaqHeaderDivider />
+        <span className="text-xs font-semibold text-slate-400">
+          {faqs.length} questions
+        </span>
+      </header>
+
+      <div className="flex flex-col gap-0 px-4 pb-4 sm:px-6 sm:pb-6 lg:hidden">
+        {visibleFaqs.map(renderFaqCard)}
       </div>
 
-      <div className="bg-white">
-        {visibleFaqs.map((faq) => {
-          const isOpen = openId === faq.id;
-          return (
-            <article key={faq.id} className="bg-white">
-              <button
-                type="button"
-                onClick={() =>
-                  setOpenId((current) => (current === faq.id ? null : faq.id))
-                }
-                className="flex w-full items-center justify-between gap-4 px-4 py-4 text-left focus:outline-none sm:px-6"
-                aria-expanded={isOpen}
-              >
-                <span className="text-sm font-bold leading-6 text-[#07122f] sm:text-base">
-                  {faq.question}
-                </span>
-                <span
-                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center text-blue-600 transition"
-                  aria-hidden="true"
-                >
-                  {isOpen ? (
-                    <FaMinus className="text-[10px]" />
-                  ) : (
-                    <FaPlus className="text-[10px]" />
-                  )}
-                </span>
-              </button>
-
-              {isOpen ? (
-                <div className="px-4 pb-4 pr-12 sm:px-6 sm:pr-16">
-                  <p className="text-sm leading-7 text-[#44516f]">
-                    {faq.answer}
-                  </p>
-                </div>
-              ) : null}
-            </article>
-          );
-        })}
+      <div className="hidden grid-cols-2 items-start gap-4 px-6 pb-6 lg:grid">
+        <div>
+          {visibleFaqs.filter((_, index) => index % 2 === 0).map(renderFaqCard)}
+        </div>
+        <div>
+          {visibleFaqs.filter((_, index) => index % 2 === 1).map(renderFaqCard)}
+        </div>
       </div>
 
       {hasMore ? (
-        <div className="flex justify-center px-4 pb-4 sm:px-6">
+        <div className="flex justify-center px-4 pb-5 sm:px-6">
           <button
             type="button"
             onClick={() => setShowAll((current) => !current)}
-            className="text-sm font-bold text-blue-600 transition hover:text-blue-700"
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-50 px-4 py-2.5 text-sm font-bold text-blue-700 transition hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-300"
           >
-            {showAll ? "Show less" : "View all"}
+            {showAll ? "Show fewer questions" : "View all questions"}
+            <FaChevronDown
+              className={`text-[10px] transition-transform ${showAll ? "rotate-180" : ""}`}
+            />
           </button>
         </div>
       ) : null}

@@ -2467,7 +2467,7 @@ const TVDetailCard = () => {
     resolution: metaResolution,
     os: metaOs,
   });
-  const metaKeywords = buildDeviceSeoKeywords({
+  const _metaKeywords = buildDeviceSeoKeywords({
     device: applianceData,
     productName: metaNameWithBrand || metaName || "",
     brand: metaBrand,
@@ -2579,11 +2579,10 @@ const TVDetailCard = () => {
     : [];
 
   return (
-    <div className="w-full bg-white">
+    <div className="hooks-product-detail hooks-tv-detail w-full bg-white">
       <Helmet prioritizeSeoTags>
         <title>{metaTitleWithMonthYear}</title>
         <meta name="description" content={metaDescription} />
-        <meta name="keywords" content={metaKeywords} />
         <link rel="canonical" href={canonicalUrl} />
         <meta property="og:type" content="product" />
         <meta property="og:title" content={metaTitleWithMonthYear} />

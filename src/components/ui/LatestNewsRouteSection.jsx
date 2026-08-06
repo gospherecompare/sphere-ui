@@ -1,12 +1,12 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { FaArrowRight } from "react-icons/fa";
+import { FaArrowRight, FaClock } from "react-icons/fa";
 import {
   createNewsStoryPath,
   usePublicNewsFeed,
 } from "../../hooks/usePublicNews";
 
-const NewsImage = ({ story }) => {
+const NewsImage = ({ story, className = "" }) => {
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
@@ -19,25 +19,161 @@ const NewsImage = ({ story }) => {
         src={story.image}
         alt={story.heroImageAlt || story.title}
         loading="lazy"
-        className="h-full w-full object-cover"
+        className={`h-full w-full object-cover ${className}`}
         onError={() => setFailed(true)}
       />
     );
   }
 
   return (
-    <div className="flex h-full w-full items-center justify-center bg-blue-50 px-4 text-center">
+    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-50 via-white to-slate-100 px-5 text-center">
       <div>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-blue-600">
+        <p className="text-[10px] font-extrabold uppercase tracking-[0.24em] text-blue-600">
           {story?.label || "News"}
         </p>
-        <p className="mt-2 line-clamp-3 text-sm font-semibold leading-5 text-slate-900">
+        <p className="mt-2 line-clamp-3 text-sm font-bold leading-5 text-slate-900">
           {story?.title || "Latest update"}
         </p>
       </div>
     </div>
   );
 };
+
+const StoryMeta = ({ story, compact = false, light = false }) => (
+  <div
+    className={`flex flex-wrap items-center gap-x-2 gap-y-1 font-medium ${
+      compact ? "text-[10px]" : "text-[11px] sm:text-xs"
+    } ${light ? "text-white/75" : "text-slate-500"}`}
+  >
+    <span>{story.author || "Hooks News"}</span>
+    <span aria-hidden="true">•</span>
+    <span>{story.publishedAt}</span>
+    {story.readTime ? (
+      <>
+        <span aria-hidden="true">•</span>
+        <span className="inline-flex items-center gap-1">
+          <FaClock className="text-[9px]" />
+          {story.readTime}
+        </span>
+      </>
+    ) : null}
+  </div>
+);
+
+const StoryLabel = ({ story, light = false }) => (
+  <span
+    className={`inline-flex w-fit items-center rounded-md px-2 py-1 text-[9px] font-extrabold uppercase tracking-[0.14em] ${
+      light
+        ? "bg-white/15 text-white backdrop-blur-sm"
+        : "bg-blue-50 text-blue-700"
+    }`}
+  >
+    {story.label || "News"}
+  </span>
+);
+
+const LeadingStoryCard = ({ story }) => (
+  <Link
+    to={createNewsStoryPath(story.slug)}
+    className="group grid min-h-[320px] overflow-hidden rounded-xl bg-slate-950 lg:grid-cols-[1.08fr_0.92fr]"
+  >
+    <div className="relative min-h-[260px] overflow-hidden lg:min-h-full">
+      <NewsImage
+        story={story}
+        className="transition-transform duration-500 group-hover:scale-[1.035]"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-slate-950/5 to-transparent lg:bg-gradient-to-r lg:from-transparent lg:via-transparent lg:to-slate-950/35" />
+      <div className="absolute left-4 top-4 lg:hidden">
+        <StoryLabel story={story} light />
+      </div>
+    </div>
+
+    <div className="flex min-w-0 flex-col justify-between p-5 sm:p-6 lg:p-7">
+      <div>
+        <div className="hidden lg:block">
+          <StoryLabel story={story} light />
+        </div>
+        <h3 className="mt-3 line-clamp-3 text-xl font-black leading-tight tracking-[-0.025em] text-white sm:text-2xl lg:text-[1.75rem]">
+          {story.title}
+        </h3>
+        {story.summary ? (
+          <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-300">
+            {story.summary}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="mt-6 flex items-end justify-between gap-4">
+        <StoryMeta story={story} light />
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-blue-600 text-white transition-transform duration-200 group-hover:translate-x-1">
+          <FaArrowRight className="text-xs" />
+        </span>
+      </div>
+    </div>
+  </Link>
+);
+
+const CompactStoryCard = ({ story }) => (
+  <Link
+    to={createNewsStoryPath(story.slug)}
+    className="group grid min-h-[112px] grid-cols-[116px_minmax(0,1fr)] gap-3 rounded-xl bg-[#f7f9fc] p-2.5 transition-colors hover:bg-blue-50/70 sm:grid-cols-[132px_minmax(0,1fr)]"
+  >
+    <div className="overflow-hidden rounded-lg bg-white">
+      <NewsImage
+        story={story}
+        className="transition-transform duration-300 group-hover:scale-[1.04]"
+      />
+    </div>
+
+    <div className="flex min-w-0 flex-col justify-between py-1 pr-1">
+      <div>
+        <StoryLabel story={story} />
+        <h3 className="mt-2 line-clamp-2 text-sm font-extrabold leading-5 tracking-tight text-slate-950 sm:text-[15px]">
+          {story.title}
+        </h3>
+      </div>
+
+      <div className="mt-3 flex items-center justify-between gap-3">
+        <StoryMeta story={story} compact />
+        <FaArrowRight className="shrink-0 text-[10px] text-blue-600 transition-transform duration-200 group-hover:translate-x-1" />
+      </div>
+    </div>
+  </Link>
+);
+
+const MobileStoryCard = ({ story }) => (
+  <Link
+    to={createNewsStoryPath(story.slug)}
+    className="group w-[88%] shrink-0 snap-center overflow-hidden rounded-xl bg-white sm:w-[72%]"
+  >
+    <div className="relative h-48 overflow-hidden rounded-xl bg-slate-100 min-[390px]:h-52">
+      <NewsImage
+        story={story}
+        className="transition-transform duration-300 group-hover:scale-[1.035]"
+      />
+      <div className="absolute left-3 top-3">
+        <StoryLabel story={story} light />
+      </div>
+    </div>
+
+    <div className="px-1 pb-2 pt-3">
+      <h3 className="line-clamp-2 text-base font-black leading-5 tracking-tight text-slate-950">
+        {story.title}
+      </h3>
+      {story.summary ? (
+        <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-600">
+          {story.summary}
+        </p>
+      ) : null}
+      <div className="mt-3 flex items-center justify-between gap-3">
+        <StoryMeta story={story} compact />
+        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700">
+          Read <FaArrowRight className="text-[9px]" />
+        </span>
+      </div>
+    </div>
+  </Link>
+);
 
 const LatestNewsRouteSection = ({
   className = "",
@@ -49,8 +185,11 @@ const LatestNewsRouteSection = ({
 }) => {
   const { stories, loading, error } = usePublicNewsFeed({ limit, productType });
   const visibleStories = stories.slice(0, limit);
+  const leadingStory = visibleStories[0] || null;
+  const compactStories = visibleStories.slice(1);
   const mobileCarouselRef = useRef(null);
   const [activeMobileIndex, setActiveMobileIndex] = useState(0);
+
   const resolvedNewsLinkLabel =
     newsLinkLabel ||
     (productType === "tv"
@@ -58,9 +197,11 @@ const LatestNewsRouteSection = ({
       : productType === "laptop"
         ? "Latest laptop news"
         : "Latest smartphone news");
-  const mobileStorySignature = visibleStories
-    .map((story) => story?.slug || "")
-    .join("|");
+
+  const mobileStorySignature = useMemo(
+    () => visibleStories.map((story) => story?.slug || "").join("|"),
+    [visibleStories],
+  );
 
   useEffect(() => {
     setActiveMobileIndex(0);
@@ -68,7 +209,7 @@ const LatestNewsRouteSection = ({
     if (container) {
       container.scrollTo({ left: 0, behavior: "auto" });
     }
-  }, [visibleStories.length]);
+  }, [mobileStorySignature]);
 
   const syncActiveMobileIndex = () => {
     const container = mobileCarouselRef.current;
@@ -103,10 +244,7 @@ const LatestNewsRouteSection = ({
       0,
     );
 
-    container.scrollTo({
-      left: nextLeft,
-      behavior: "smooth",
-    });
+    container.scrollTo({ left: nextLeft, behavior: "smooth" });
     setActiveMobileIndex(index);
   };
 
@@ -115,151 +253,92 @@ const LatestNewsRouteSection = ({
 
     const intervalId = window.setInterval(() => {
       if (typeof document !== "undefined" && document.hidden) return;
-
-      const container = mobileCarouselRef.current;
-      if (!container) return;
-
-      const cards = Array.from(container.children);
-      if (!cards.length) return;
-
-      const viewportCenter = container.scrollLeft + container.clientWidth / 2;
-      let currentIndex = 0;
-      let smallestDistance = Number.POSITIVE_INFINITY;
-
-      cards.forEach((card, index) => {
-        const cardCenter = card.offsetLeft + card.clientWidth / 2;
-        const distance = Math.abs(cardCenter - viewportCenter);
-        if (distance < smallestDistance) {
-          smallestDistance = distance;
-          currentIndex = index;
-        }
-      });
-
-      const nextIndex = (currentIndex + 1) % cards.length;
-      const target = cards[nextIndex];
-      const nextLeft = Math.max(
-        target.offsetLeft - (container.clientWidth - target.clientWidth) / 2,
-        0,
-      );
-
-      container.scrollTo({
-        left: nextLeft,
-        behavior: "smooth",
-      });
-      setActiveMobileIndex(nextIndex);
+      const nextIndex = (activeMobileIndex + 1) % visibleStories.length;
+      scrollToMobileStory(nextIndex);
     }, 5000);
 
     return () => window.clearInterval(intervalId);
-  }, [mobileStorySignature, visibleStories.length]);
+  }, [activeMobileIndex, mobileStorySignature, visibleStories.length]);
 
   if (!loading && (!visibleStories.length || error)) return null;
 
   return (
     <section
-      className={`mx-auto w-full max-w-7xl overflow-hidden rounded-2xl bg-purple-50 px-3 py-4 shadow-[0_2px_8px_rgba(15,23,42,0.08)] sm:px-5 sm:py-8 md:px-6 md:py-10 ${className}`}
+      className={`smartphones-news-section mx-auto w-full max-w-7xl rounded-[20px] bg-transparent p-0 dark:bg-transparent dark:text-[#f3f7ff] dark:[&_.bg-white]:bg-[#0f1c2d] dark:[&_.bg-slate-50]:bg-[#132238] dark:[&_.bg-slate-100]:bg-[#162941] dark:[&_.bg-slate-200]:bg-[#263750] dark:[&_.text-slate-950]:text-[#f3f7ff] dark:[&_.text-slate-900]:text-[#eaf1ff] dark:[&_.text-slate-600]:text-[#aebbd0] dark:[&_.text-slate-500]:text-[#94a4bd] sm:p-6 ${className}`}
     >
-      <div className="mb-3 flex flex-col items-start justify-between gap-2 border-b border-blue-500 pb-3 sm:mb-6 sm:flex-row sm:items-center sm:gap-4 sm:pb-4">
+      <div className="mb-5 flex items-end justify-between gap-4 sm:mb-6">
         <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.34em] text-purple-700 sm:text-[11px]">
-            Latest Updates
-          </p>
-          <h2 className="mt-1 text-sm font-semibold tracking-tight text-slate-900 sm:mt-2 sm:text-lg md:text-xl">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.28em] text-blue-700 sm:text-[11px]">
+              Latest Updates
+            </p>
+          </div>
+          <h2 className="mt-2 text-xl font-black tracking-[-0.025em] text-slate-950 sm:text-2xl lg:text-3xl">
             {title}
           </h2>
-          <p className="mt-1 max-w-2xl text-[11px] leading-relaxed text-slate-600 sm:text-[13px] sm:leading-relaxed">
+          <p className="mt-1.5 max-w-2xl text-xs leading-5 text-slate-600 sm:text-sm sm:leading-6">
             {subtitle}
           </p>
         </div>
 
         <Link
           to="/news"
-          className="hidden w-full shrink-0 items-center justify-center gap-2 rounded-md bg-purple-600 px-3 py-2 text-[11px] font-semibold leading-5 text-white transition-colors hover:bg-purple-700 sm:inline-flex sm:w-auto sm:text-[12px]"
+          className="hidden shrink-0 items-center gap-2 rounded-full bg-blue-600 px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-blue-700 sm:inline-flex"
         >
           {resolvedNewsLinkLabel}
-          <FaArrowRight className="text-[10px] sm:text-[11px]" />
+          <FaArrowRight className="text-[10px]" />
         </Link>
       </div>
 
       {loading && !visibleStories.length ? (
-        <>
-          <div className="sm:hidden">
-            <div className="flex snap-x snap-mandatory gap-0 overflow-x-auto pb-1 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {[1, 2, 3, 4].map((item) => (
-                <div
-                  key={item}
-                  className="h-[202px] w-full shrink-0 snap-center animate-pulse rounded-xl bg-white min-[390px]:h-[220px]"
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="hidden grid-cols-2 gap-4 sm:grid lg:grid-cols-3 xl:grid-cols-4">
-            {[1, 2, 3, 4].map((item) => (
+        <div className="grid gap-3 lg:grid-cols-[1.45fr_0.85fr]">
+          <div className="min-h-[360px] animate-pulse rounded-2xl bg-slate-200" />
+          <div className="space-y-3">
+            {[1, 2, 3].map((item) => (
               <div
                 key={item}
-                className="h-56 animate-pulse rounded-lg bg-white md:h-64 lg:h-72"
+                className="h-[112px] animate-pulse rounded-xl bg-slate-100"
               />
             ))}
           </div>
-        </>
+        </div>
       ) : null}
 
       {visibleStories.length ? (
         <>
+          <div className="hidden gap-3 sm:grid lg:grid-cols-[1.45fr_0.85fr]">
+            {leadingStory ? <LeadingStoryCard story={leadingStory} /> : null}
+            <div className="grid content-start gap-3">
+              {compactStories.map((story) => (
+                <CompactStoryCard key={story.slug} story={story} />
+              ))}
+            </div>
+          </div>
+
           <div className="sm:hidden">
             <div
               ref={mobileCarouselRef}
               onScroll={syncActiveMobileIndex}
-              className="flex snap-x snap-mandatory gap-0 overflow-x-auto pb-1 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-2 pr-7 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
               {visibleStories.map((story) => (
-                <Link
-                  key={story.slug}
-                  to={createNewsStoryPath(story.slug)}
-                  className="group relative h-[202px] w-full shrink-0 snap-center overflow-hidden rounded-xl bg-white shadow-sm transition-all duration-200 hover:shadow-lg min-[390px]:h-[220px]"
-                >
-                  <div className="absolute inset-0">
-                    <NewsImage story={story} />
-                  </div>
-
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/25 to-transparent transition-opacity group-hover:opacity-90" />
-
-                  <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
-                    <h3 className="line-clamp-2 text-[12px] font-semibold leading-4">
-                      {story.title}
-                    </h3>
-
-                    <div className="mt-2 flex items-end justify-between gap-3 text-[9px] leading-3">
-                      <span className="min-w-0 truncate font-semibold">
-                        {story.author || "By Hooks"}
-                      </span>
-                      <span className="shrink-0 whitespace-nowrap text-right opacity-90">
-                        <span className="block">{story.publishedAt}</span>
-                        {story.updatedAt &&
-                        story.updatedAt !== story.publishedAt ? (
-                          <span className="block opacity-75">
-                            Updated {story.updatedAt}
-                          </span>
-                        ) : null}
-                      </span>
-                    </div>
-                  </div>
-                </Link>
+                <MobileStoryCard key={story.slug} story={story} />
               ))}
             </div>
 
             {visibleStories.length > 1 ? (
-              <div className="mt-4 flex justify-center gap-2">
+              <div className="mt-3 flex justify-center gap-1.5">
                 {visibleStories.map((story, index) => (
                   <button
                     key={`${story.slug}-dot`}
                     type="button"
                     aria-label={`Go to story ${index + 1}`}
                     onClick={() => scrollToMobileStory(index)}
-                    className={`h-2 rounded-full transition-all duration-200 ${
+                    className={`h-1.5 rounded-full transition-all duration-200 ${
                       activeMobileIndex === index
-                        ? "w-6 bg-purple-700"
-                        : "w-2 bg-purple-300 hover:bg-purple-400"
+                        ? "w-5 bg-blue-600"
+                        : "w-1.5 bg-slate-300"
                     }`}
                   />
                 ))}
@@ -268,48 +347,11 @@ const LatestNewsRouteSection = ({
 
             <Link
               to="/news"
-              className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md bg-purple-600 px-3 py-2.5 text-[11px] font-semibold leading-5 text-white transition-colors hover:bg-purple-700"
+              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-xs font-bold text-white"
             >
               {resolvedNewsLinkLabel}
               <FaArrowRight className="text-[10px]" />
             </Link>
-          </div>
-
-          <div className="hidden grid-cols-2 gap-4 sm:grid lg:grid-cols-3 xl:grid-cols-4">
-            {visibleStories.map((story) => (
-              <Link
-                key={story.slug}
-                to={createNewsStoryPath(story.slug)}
-                className="group relative h-56 overflow-hidden rounded-lg bg-white transition-all duration-200 hover:shadow-lg md:h-64 lg:h-72 sm:rounded-xl"
-              >
-                <div className="absolute inset-0">
-                  <NewsImage story={story} />
-                </div>
-
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent transition-opacity group-hover:opacity-90" />
-
-                <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                  <h3 className="line-clamp-2 text-sm font-semibold leading-5">
-                    {story.title}
-                  </h3>
-
-                  <div className="mt-3 flex items-center justify-between text-[12px]">
-                    <span className="truncate pr-2 font-medium">
-                      {story.author || "By Hooks"}
-                    </span>
-                    <span className="whitespace-nowrap text-right opacity-90">
-                      <span className="block">{story.publishedAt}</span>
-                      {story.updatedAt &&
-                      story.updatedAt !== story.publishedAt ? (
-                        <span className="block opacity-75">
-                          Updated {story.updatedAt}
-                        </span>
-                      ) : null}
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            ))}
           </div>
         </>
       ) : null}

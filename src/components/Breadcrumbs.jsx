@@ -1,455 +1,241 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { FaChevronRight, FaHome } from "react-icons/fa";
+import { Helmet } from "react-helmet-async";
 import { Link, useLocation } from "react-router-dom";
-import useBreadcrumbs from "use-react-router-breadcrumbs";
-import {
-  getSmartphoneFeatureRouteMeta,
-  toReadableListingLabel,
-} from "../utils/smartphoneListingRoutes";
-import { getTvRouteFeatureMeta } from "../utils/tvPopularFeatures";
+import { createBreadcrumbSchema } from "../utils/schemaGenerators";
+import { toCanonicalPagePath, toCanonicalPageUrl } from "../utils/publicUrl";
 
-const PRODUCT_DETAIL_PATH_RE =
-  /^\/(smartphones|laptops|tvs|appliances|networking)\/[^/]+\/?$/i;
-const LEGACY_DETAILS_PATH_RE =
-  /^\/(smartphones|laptops|tvs|appliances|networking)\/details\/?$/i;
-const NEWS_ROUTE_RE = /^\/news(?:\/|$)/i;
-const TV_LISTING_PATH_RE = /^\/tvs\/(?:latest|features\/[^/]+)\/?$/i;
-const DETAIL_QUERY_KEYS = ["name", "product_name", "product", "title", "model"];
-
-const safeDecode = (value) => {
+const decodeSegment = (value = "") => {
   try {
-    return decodeURIComponent(String(value || ""));
+    return decodeURIComponent(value);
   } catch {
-    return String(value || "");
+    return value;
   }
 };
 
-const toReadableTitle = (text) => {
-  const raw = String(text || "").trim();
-  if (!raw) return "";
-  return raw
-    .split(/[-_]/g)
-    .filter(Boolean)
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join(" ");
-};
-
-const toProductLabel = (value) => {
-  let text = String(value || "")
+const titleCase = (value = "") =>
+  decodeSegment(String(value || ""))
+    .replace(/-price-in-india$/i, "")
+    .replace(/-comparison$/i, "")
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
     .replace(/\s+/g, " ")
     .trim();
-  if (!text) return "";
-  text = text.replace(/\s*\[\d{2}\/\d{2}\/\d{4}\]\s*$/i, "");
-  text = text.replace(/\s+\|\s+hooks\s*$/i, "");
-  // Product headings often append specs with " - " or " | ".
-  if (text.includes(" - ")) text = text.split(" - ")[0].trim();
-  if (text.includes(" | ")) text = text.split(" | ")[0].trim();
-  if (/^details$/i.test(text)) return "";
-  return text;
+
+const filterLabels = {
+  new: "Latest Smartphones",
+  "under-10000": "Phones Under ₹10,000",
+  "under-15000": "Phones Under ₹15,000",
+  "under-20000": "Phones Under ₹20,000",
+  "under-25000": "Phones Under ₹25,000",
+  "under-30000": "Phones Under ₹30,000",
+  "under-40000": "Phones Under ₹40,000",
+  "under-50000": "Phones Under ₹50,000",
+  "above-50000": "Phones Above ₹50,000",
 };
 
-const getDetailLabelFromSearch = (search) => {
-  const query = new URLSearchParams(search || "");
-  for (const key of DETAIL_QUERY_KEYS) {
-    const value = query.get(key);
-    if (value) {
-      return toReadableTitle(safeDecode(value));
+const routeLabels = {
+  smartphones: "Smartphones",
+  laptops: "Laptops",
+  tvs: "TVs",
+  networking: "Networking",
+  trending: "Trending",
+  compare: "Compare",
+  "popular-comparisons": "Popular Comparisons",
+  news: "News",
+  about: "About Hooks",
+  careers: "Careers",
+  contact: "Contact",
+  "privacy-policy": "Privacy Policy",
+  terms: "Terms & Conditions",
+  brand: "Brands",
+  feature: "Features",
+  filter: "Browse by Price",
+  upcoming: "Upcoming Smartphones",
+};
+
+const detailRoutePrefixes = new Set([
+  "smartphones",
+  "laptops",
+  "tvs",
+  "networking",
+]);
+
+const resolveVisibleHeading = () => {
+  if (typeof document === "undefined") return "";
+  const heading = document.querySelector("main h1, [role='main'] h1, h1");
+  const value = heading?.textContent?.replace(/\s+/g, " ").trim();
+  if (!value || value.length > 140) return "";
+  return value;
+};
+
+const buildCrumbs = (pathname, dynamicHeading) => {
+  const cleanPath = String(pathname || "/").replace(/\/+$/g, "") || "/";
+  if (cleanPath === "/") return [];
+
+  const segments = cleanPath.split("/").filter(Boolean);
+  const crumbs = [{ label: "Home", path: "/" }];
+  let accumulated = "";
+
+  segments.forEach((segment, index) => {
+    accumulated += `/${segment}`;
+    const previous = segments[index - 1];
+    const isLast = index === segments.length - 1;
+    const isProductDetail =
+      segments.length === 2 &&
+      detailRoutePrefixes.has(segments[0]) &&
+      index === 1;
+    const isNewsDetail =
+      segments[0] === "news" && segments.length === 2 && index === 1;
+    const isCompareDetail =
+      segments[0] === "compare" && segments.length === 2 && index === 1;
+
+    let label = routeLabels[segment] || titleCase(segment);
+
+    if (previous === "filter")
+      label = filterLabels[segment] || titleCase(segment);
+    if (previous === "brand") label = `${titleCase(segment)} Phones`;
+    if (previous === "feature") label = titleCase(segment);
+    if ((isProductDetail || isNewsDetail) && isLast && dynamicHeading) {
+      label = dynamicHeading;
     }
-  }
-  return "";
-};
-
-const slugToTitle = (slug) => {
-  if (!slug) return "Details";
-  const raw = safeDecode(slug);
-  return raw
-    .split(/[-_]/g)
-    .filter(Boolean)
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join(" ");
-};
-
-const renderSlugBreadcrumb = ({ match }) =>
-  slugToTitle(
-    (match && match.params && (match.params.slug || match.params.id)) ||
-      "Details",
-  );
-
-const renderFilterBreadcrumb = ({ match }) =>
-  (() => {
-    const raw = String(
-      (match && match.params && match.params.filterSlug) || "Filter",
-    )
-      .trim()
-      .toLowerCase();
-
-    if (raw === "new") return "Latest Mobiles";
-    if (raw === "upcoming") return "Upcoming Mobiles";
-    if (raw === "trending") return "Top Mobiles";
-
-    return slugToTitle(raw || "Filter");
-  })();
-
-const renderSmartphoneBrandBreadcrumb = ({ match }) =>
-  toReadableListingLabel(match?.params?.brandSlug || "Brand");
-
-const renderSmartphoneFeatureBreadcrumb = ({ match }) =>
-  getSmartphoneFeatureRouteMeta(match?.params?.featureSlug || "")?.name ||
-  toReadableListingLabel(match?.params?.featureSlug || "Feature");
-
-const renderTvFeatureBreadcrumb = ({ match }) =>
-  getTvRouteFeatureMeta(match?.params?.featureSlug || "")?.name ||
-  toReadableListingLabel(match?.params?.featureSlug || "Feature");
-
-const getLabelText = (label) => {
-  if (typeof label === "string" || typeof label === "number") {
-    return String(label);
-  }
-  if (React.isValidElement(label)) {
-    const child = label.props?.children;
-    if (typeof child === "string" || typeof child === "number") {
-      return String(child);
+    if (isCompareDetail) {
+      label = titleCase(segment).replace(/\bAnd\b/g, "vs");
     }
-  }
-  return "";
+
+    const shouldSkipUtilitySegment = ["filter", "feature", "brand"].includes(
+      segment,
+    );
+    if (!shouldSkipUtilitySegment) {
+      crumbs.push({ label, path: toCanonicalPagePath(accumulated) });
+    }
+  });
+
+  return crumbs;
 };
 
-const routes = [
-  { path: "/", breadcrumb: "Home" },
-  { path: "/trending", breadcrumb: "Trending" },
-  {
-    path: "/trending/:category",
-    breadcrumb: ({ match }) => {
-      const raw = String(match?.params?.category || "").toLowerCase();
-      if (raw.includes("smartphone") || raw.includes("mobile")) {
-        return "Smartphones";
-      }
-      if (raw.includes("tv") || raw.includes("television")) {
-        return "TVs";
-      }
-      return slugToTitle(raw || "products");
-    },
-  },
-  { path: "/products", breadcrumb: "Explore" },
-  { path: "/smartphones", breadcrumb: "Smartphones" },
-  { path: "/smartphones/latest", breadcrumb: "Latest Mobiles" },
-  { path: "/smartphones/upcoming", breadcrumb: "Upcoming Mobiles" },
-  { path: "/smartphones/top", breadcrumb: "Top Mobiles" },
-  { path: "/networking", breadcrumb: "Networking" },
-  { path: "/tvs", breadcrumb: "TVs" },
-  { path: "/tvs/latest", breadcrumb: "Latest TVs" },
-  { path: "/tvs/features", breadcrumb: null },
-  {
-    path: "/tvs/features/:featureSlug",
-    breadcrumb: renderTvFeatureBreadcrumb,
-  },
-  { path: "/appliances", breadcrumb: "TVs" },
-  { path: "/smartphones/filter", breadcrumb: null },
-  {
-    path: "/smartphones/filter/:filterSlug",
-    breadcrumb: renderFilterBreadcrumb,
-  },
-  {
-    path: "/smartphones/brand/:brandSlug",
-    breadcrumb: renderSmartphoneBrandBreadcrumb,
-  },
-  {
-    path: "/smartphones/feature/:featureSlug",
-    breadcrumb: renderSmartphoneFeatureBreadcrumb,
-  },
-  {
-    path: "/smartphones/brand/:brandSlug/feature/:featureSlug",
-    breadcrumb: renderSmartphoneFeatureBreadcrumb,
-  },
-  {
-    path: "/smartphones/:slug",
-    breadcrumb: renderSlugBreadcrumb,
-  },
-  {
-    path: "/tvs/:slug",
-    breadcrumb: renderSlugBreadcrumb,
-  },
-  {
-    path: "/appliances/:slug",
-    breadcrumb: renderSlugBreadcrumb,
-  },
-  {
-    path: "/networking/:slug",
-    breadcrumb: renderSlugBreadcrumb,
-  },
-  { path: "/compare", breadcrumb: "Compare" },
-  { path: "/brands", breadcrumb: "Brands" },
-  { path: "/product/:id", breadcrumb: () => "Product Details" },
-  { path: "/about", breadcrumb: "About" },
-  { path: "/contact", breadcrumb: "Contact" },
-  { path: "/privacy-policy", breadcrumb: "Privacy Policy" },
-  { path: "/terms", breadcrumb: "Terms" },
-];
-
-export default function Breadcrumbs() {
-  const breadcrumbs = useBreadcrumbs(routes);
+const Breadcrumbs = ({ variant = "default" }) => {
   const location = useLocation();
-  const [detailCrumbLabel, setDetailCrumbLabel] = useState("");
-  const pathname = String(location.pathname || "").toLowerCase();
-
-  const queryDerivedLabel = useMemo(
-    () => getDetailLabelFromSearch(location.search),
-    [location.search],
-  );
+  const [dynamicHeading, setDynamicHeading] = useState("");
 
   useEffect(() => {
-    const pathname = String(location.pathname || "");
-    if (NEWS_ROUTE_RE.test(pathname)) {
-      setDetailCrumbLabel("");
-      return;
-    }
-    const isProductDetailPath =
-      PRODUCT_DETAIL_PATH_RE.test(pathname) &&
-      !TV_LISTING_PATH_RE.test(pathname);
+    setDynamicHeading("");
+    if (typeof document === "undefined") return undefined;
 
-    if (!isProductDetailPath) {
-      setDetailCrumbLabel("");
-      return;
-    }
-
-    if (queryDerivedLabel) {
-      setDetailCrumbLabel(queryDerivedLabel);
-      return;
-    }
-
-    const resolveDetailLabel = () => {
-      // Prefer visible page heading first, then metadata fallbacks.
-      const heading = toProductLabel(document.querySelector("h1")?.textContent);
-      if (heading) return heading;
-
-      const ogTitle = toProductLabel(
-        document
-          .querySelector("meta[property='og:title']")
-          ?.getAttribute("content"),
-      );
-      if (ogTitle) return ogTitle;
-
-      const title = toProductLabel(document.title);
-      if (title) return title;
-
-      return "";
+    const update = () => {
+      const heading = resolveVisibleHeading();
+      if (heading) setDynamicHeading(heading);
     };
 
-    const updateDetailLabel = () => {
-      const nextLabel = resolveDetailLabel();
-      if (nextLabel) setDetailCrumbLabel(nextLabel);
-    };
-
-    updateDetailLabel();
-
-    const observer = new MutationObserver(updateDetailLabel);
-    observer.observe(document.head, {
-      childList: true,
-      subtree: true,
-      characterData: true,
-      attributes: true,
-    });
+    update();
+    const observer = new MutationObserver(update);
     observer.observe(document.body, {
       childList: true,
       subtree: true,
       characterData: true,
     });
+    const timeout = window.setTimeout(update, 1200);
 
-    return () => observer.disconnect();
-  }, [location.pathname, queryDerivedLabel]);
+    return () => {
+      observer.disconnect();
+      window.clearTimeout(timeout);
+    };
+  }, [location.pathname]);
 
-  const formatPriceBreadcrumb = (label, pathname) => {
-    const source = String(pathname || label || "").toLowerCase();
-    const match = source.match(/(under|above)[-_ ]?(\d+)/);
-    if (!match) return label;
-    const [, dir, raw] = match;
-    const value = Number(raw);
-    if (!Number.isFinite(value)) return label;
-    const formatted = value.toLocaleString();
-    const prefix = dir === "above" ? "Above" : "Under";
-    return `${prefix} ₹${formatted}`;
-  };
-
-  // Specific pages handle their own breadcrumb treatment.
-  if (
-    location &&
-    (pathname === "/" ||
-      pathname === "/contact" ||
-      pathname === "/contact/" ||
-      pathname === "/privacy-policy" ||
-      pathname === "/privacy-policy/")
-  ) {
-    return null;
-  }
-
-  const isNewsRoute = NEWS_ROUTE_RE.test(pathname);
-  if (isNewsRoute) return null;
-
-  if (!breadcrumbs || breadcrumbs.length <= 1) return null;
-
-  const visibleBreadcrumbs = breadcrumbs.filter((bc, idx, arr) => {
-    const rawLabel =
-      typeof bc.breadcrumb === "function"
-        ? bc.breadcrumb(bc.match)
-        : bc.breadcrumb;
-    const label = getLabelText(rawLabel).toLowerCase();
-    const crumbPath = String(bc.match?.pathname || "").toLowerCase();
-    const currentPath = String(location.pathname || "").toLowerCase();
-
-    if (
-      label === "filter" &&
-      /\/(smartphones|laptops|tvs|appliances|networking)\/filter(\/|$)/.test(
-        currentPath,
-      ) &&
-      /\/filter(\/|$)/.test(crumbPath || currentPath)
-    ) {
-      return false;
-    }
-
-    if (label !== "details") return true;
-    const next = arr[idx + 1];
-    if (!next) return true;
-    const nextPath = String(next.match?.pathname || "").toLowerCase();
-    return !/\/smartphones\/details\/(under|above)[-_ ]?\d+/.test(nextPath);
-  });
-
-  const path = String(location.pathname || "");
-  const isLegacyDetailsPath = LEGACY_DETAILS_PATH_RE.test(path);
-  const isProductDetailPath =
-    PRODUCT_DETAIL_PATH_RE.test(path) && !TV_LISTING_PATH_RE.test(path);
-  const mobileBreadcrumbs = visibleBreadcrumbs;
-
-  const BreadcrumbSeparator = () => (
-    <span className="flex-shrink-0 px-1 text-xs font-medium text-slate-400">
-      /
-    </span>
+  const crumbs = useMemo(
+    () => buildCrumbs(location.pathname, dynamicHeading),
+    [location.pathname, dynamicHeading],
   );
 
-  const renderBreadcrumbItem = (bc, idx, isLast, compact = false) => {
-    const to = bc.match.pathname;
-    const rawLabel =
-      typeof bc.breadcrumb === "function"
-        ? bc.breadcrumb(bc.match)
-        : bc.breadcrumb;
-    let label = formatPriceBreadcrumb(rawLabel, bc.match.pathname);
-    const labelText = getLabelText(label).trim().toLowerCase();
+  const schema = useMemo(
+    () =>
+      createBreadcrumbSchema(
+        crumbs.map((crumb) => ({
+          label: crumb.label,
+          url: toCanonicalPageUrl(crumb.path),
+        })),
+      ),
+    [crumbs],
+  );
 
-    // Always prefer resolved product title on detail pages for the last crumb.
-    if (isLast && isProductDetailPath && detailCrumbLabel) {
-      label = detailCrumbLabel;
-    } else if (
-      labelText === "details" &&
-      isLegacyDetailsPath &&
-      detailCrumbLabel
-    ) {
-      label = detailCrumbLabel;
-    }
+  const isPlain = variant === "plain";
+  const isCompareRoute = location.pathname === "/compare" || location.pathname.startsWith("/compare/");
 
-    if (compact) {
-      return (
-        <div key={to + idx} className="flex items-center shrink-0">
-          {!isLast ? (
-            <Link
-              to={to}
-              className="group flex items-center gap-1 px-2 py-0.5 text-xs transition-all duration-200 relative"
-            >
-              {idx === 0 ? (
-                <div className="flex items-center gap-1.5">
-                  <span className="max-w-[6.5rem] truncate font-medium text-gray-700 transition-colors group-hover:text-gray-900">
-                    {label}
-                  </span>
-                </div>
-              ) : (
-                <span className="max-w-[8rem] truncate font-semibold text-gray-900">
-                  {label}
-                </span>
-              )}
-            </Link>
-          ) : (
-            <div className="px-2 py-0.5 text-xs">
-              <span className="max-w-[9rem] truncate font-semibold text-gray-900">
-                {label}
-              </span>
-            </div>
-          )}
-          {!isLast && <BreadcrumbSeparator />}
-        </div>
-      );
-    }
-
-    return (
-      <div key={to + idx} className="flex items-center shrink-0">
-        {!isLast ? (
-          <Link
-            to={to}
-            className="group flex items-center gap-1  py-0.5 text-xs transition-all duration-200"
-          >
-            {idx === 0 ? (
-              <div className="flex items-center gap-1.5">
-                <span className="font-medium text-gray-600 transition-colors group-hover:text-gray-900">
-                  {label}
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1">
-                <span className="font-medium text-gray-600 transition-colors group-hover:text-gray-900">
-                  {label}
-                </span>
-              </div>
-            )}
-          </Link>
-        ) : (
-          <div className="relative flex items-center gap-1 px-2.5 py-0.5">
-            <span className="bg-gradient-to-r from-purple-600 to-purple-600 bg-clip-text text-sm font-semibold text-transparent">
-              {label}
-            </span>
-          </div>
-        )}
-
-        {!isLast && (
-          <BreadcrumbSeparator />
-        )}
-      </div>
-    );
-  };
+  if (crumbs.length <= 1 || (!isPlain && isCompareRoute)) return null;
 
   return (
-    <div className="bg-white ">
-      <div className="mx-auto w-full max-w-7xl overflow-hidden px-2 pb-0 pt-0.5 ">
+    <div className={isPlain ? "bg-transparent" : "hooks-breadcrumb-wrap"}>
+      <Helmet>
+        <script type="application/ld+json" data-hooks-breadcrumb-schema="true">
+          {JSON.stringify(schema)}
+        </script>
+      </Helmet>
+
+      <div className="mx-auto w-full max-w-[1440px] px-3 sm:px-5 lg:px-8">
         <nav
-          aria-label="breadcrumb"
-          className="flex items-center gap-1 overflow-x-auto py-0.5 sm:hidden hide-scrollbar no-scrollbar scroll-smooth"
+          aria-label="Breadcrumb"
+          className={
+            isPlain
+              ? " no-scrollbar flex min-h-10 items-center gap-2 overflow-x-auto py-2.5 text-xs sm:text-sm"
+              : "hooks-breadcrumbs no-scrollbar flex items-center gap-1 overflow-x-auto py-1.5"
+          }
         >
-          {mobileBreadcrumbs.map((bc, idx) => {
-            const isLast = idx === mobileBreadcrumbs.length - 1;
+          {crumbs.map((crumb, index) => {
+            const isLast = index === crumbs.length - 1;
             return (
-              <React.Fragment key={`${bc.match.pathname}-${idx}`}>
-                {renderBreadcrumbItem(bc, idx, isLast, true)}
+              <React.Fragment key={`${crumb.path}-${index}`}>
+                {index > 0 ? (
+                  isPlain ? (
+                    <span
+                      className="shrink-0 text-slate-300 dark:text-slate-600"
+                      aria-hidden="true"
+                    >
+                      ›
+                    </span>
+                  ) : (
+                    <FaChevronRight
+                      className="hooks-breadcrumb-separator h-2.5 w-2.5 shrink-0"
+                      aria-hidden="true"
+                    />
+                  )
+                ) : null}
+
+                {isLast ? (
+                  <span
+                    className={
+                      isPlain
+                        ? "max-w-[19rem] shrink-0 truncate font-semibold text-slate-900 dark:text-slate-100"
+                        : "hooks-breadcrumb-current max-w-[19rem] shrink-0 truncate"
+                    }
+                    aria-current="page"
+                  >
+                    {!isPlain && index === 0 ? (
+                      <FaHome className="mr-1.5 h-3 w-3" />
+                    ) : null}
+                    {crumb.label}
+                  </span>
+                ) : (
+                  <Link
+                    to={crumb.path}
+                    className={
+                      isPlain
+                        ? "max-w-[15rem] shrink-0 truncate font-medium text-slate-500 transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
+                        : "hooks-breadcrumb-link max-w-[15rem] shrink-0 truncate"
+                    }
+                  >
+                    {!isPlain && index === 0 ? (
+                      <FaHome className="mr-1.5 h-3 w-3" />
+                    ) : null}
+                    {crumb.label}
+                  </Link>
+                )}
               </React.Fragment>
             );
           })}
         </nav>
-
-        <nav
-          aria-label="breadcrumb"
-          className="hidden items-center gap-1 overflow-x-auto py-0.5 sm:flex hide-scrollbar no-scrollbar scroll-smooth"
-        >
-          {visibleBreadcrumbs.map((bc, idx) => {
-            const isLast = idx === visibleBreadcrumbs.length - 1;
-            return renderBreadcrumbItem(bc, idx, isLast, false);
-          })}
-        </nav>
-
-        <style>{`
-        /* Custom scrollbar for consistency */
-        .hide-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        .hide-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
       </div>
     </div>
   );
-}
+};
+
+export default Breadcrumbs;

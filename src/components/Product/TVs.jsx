@@ -2645,7 +2645,7 @@ const TVs = () => {
         `Browse ${currentBrandObj.name} TVs with detailed specifications, latest prices, and top store offers on Hooks.`,
     );
   }
-  const seoKeywords = useMemo(
+  const _seoKeywords = useMemo(
     () =>
       buildListSeoKeywords({
         devices: sortedVariants,
@@ -2794,12 +2794,11 @@ const TVs = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white text-slate-900">
+    <div className="hooks-product-listing hooks-tv-listing min-h-screen bg-white text-slate-900">
       <style>{animationStyles}</style>
       <Helmet prioritizeSeoTags>
         <title>{seoTitle}</title>
         <meta name="description" content={seoDescription} />
-        <meta name="keywords" content={seoKeywords} />
 
         {/* Canonical URL - CRITICAL for SEO per route */}
         <link rel="canonical" href={listSchemaUrl} />
@@ -2830,20 +2829,20 @@ const TVs = () => {
         )}
       </Helmet>
       {/* Main Content */}
-      <div className="relative mx-auto max-w-7xl px-4 pt-0 pb-8 sm:px-6 sm:pb-12 md:pb-16 lg:px-8 lg:pb-20">
-        <section className="relative left-1/2 isolate w-screen -translate-x-1/2 overflow-hidden px-4 pb-0 pt-3 sm:px-6 sm:pt-4 lg:px-8 lg:pt-5">
+      <div className="hooks-product-listing__inner relative mx-auto max-w-7xl px-4 pt-0 pb-8 sm:px-6 sm:pb-12 md:pb-16 lg:px-8 lg:pb-20">
+        <section className="hooks-category-hero relative left-1/2 isolate w-screen -translate-x-1/2 overflow-hidden px-4 pb-0 pt-3 sm:px-6 sm:pt-4 lg:px-8 lg:pt-5">
           <div className="relative mx-auto max-w-7xl">
             <div className="max-w-7xl">
-              <h1 className="text-[11px] font-bold uppercase tracking-[0.32em] text-purple-600 sm:text-xs">
+              <h1 className="hooks-category-hero__title">
                 {heroTitleText}
               </h1>
 
-              <h4
-                className={`mt-3 ${heroSubtitleWidthClass} text-sm leading-7 text-slate-600 sm:text-base sm:leading-8`}
+              <p
+                className={`hooks-category-hero__copy mt-3 ${heroSubtitleWidthClass}`}
                 style={heroSubtitleStyle}
               >
                 {heroSubtitleText}
-              </h4>
+              </p>
 
               {isExpandedHeroDescriptionPath ? (
                 <button
@@ -2956,7 +2955,7 @@ const TVs = () => {
         <div className="flex flex-col gap-4 lg:flex-row md:gap-6">
           {/* Desktop Filter Sidebar */}
           <div className="hidden lg:block lg:w-72 flex-shrink-0">
-            <div className="sticky top-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-[0_2px_2px_rgba(0,0,0,0.1)] lg:p-6">
+            <div className="hooks-filter-panel sticky top-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-[0_2px_2px_rgba(0,0,0,0.1)] lg:p-6">
               {/* Filters Header */}
               <div className="mb-6 flex items-center justify-between border-b border-slate-200 px-2 pb-4 sm:mb-8 sm:px-3 md:px-4">
                 <div>
@@ -3441,7 +3440,7 @@ const TVs = () => {
                   <div
                     key={`${device.id}-${idx}`}
                     onClick={(e) => handleView(device, e)}
-                    className="smooth-transition fade-in-up h-full w-full mx-auto overflow-hidden rounded-lg border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)] cursor-pointer transition-all duration-300 hover:bg-slate-50"
+                    className="hooks-product-card smooth-transition fade-in-up h-full w-full mx-auto overflow-hidden rounded-lg border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)] cursor-pointer transition-all duration-300 hover:bg-slate-50"
                   >
                     <div className="p-5 sm:p-6 transition-all duration-300">
                       {/* Desktop Header Section - Hidden on mobile */}

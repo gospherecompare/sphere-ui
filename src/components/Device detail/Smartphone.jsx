@@ -1,4 +1,4 @@
-﻿// src/components/MobileDetailCard.jsx
+// src/components/MobileDetailCard.jsx
 import React, {
   useState,
   useEffect,
@@ -7,7 +7,6 @@ import React, {
   useRef,
 } from "react";
 import CompetitorCards from "../ui/CompetitorCards";
-import ProductDiscoverySections from "../ui/ProductDiscoverySections";
 import SmartphoneFaqSection from "../ui/SmartphoneFaqSection";
 // import RecommendedSmartphones from "../Home/RecommendedSmartphones";
 import { useDevice } from "../../hooks/useDevice";
@@ -53,6 +52,7 @@ import {
 import "../../styles/hideScrollbar.css";
 import Spinner from "../ui/Spinner";
 import NotFound from "../Static/NotFound";
+import Breadcrumbs from "../Breadcrumbs";
 import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import SEO from "../SEO";
 import { smartphoneMeta } from "../../constants/meta";
@@ -75,6 +75,8 @@ import {
 import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
 import { toCanonicalPageUrl } from "../../utils/publicUrl";
 import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
+import DetailPageNavigator from "../ui/DetailPageNavigator";
+import HookLogo from "../ui/HookLogo";
 import { SMARTPHONE_FEATURE_CATALOG } from "../../utils/smartphonePopularFeatures";
 
 const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
@@ -400,7 +402,7 @@ const BaseSpecScoreBadge = ({
   const label = percentage != null ? `${percentage.toFixed(1)}%` : "--";
   const isGlass = variant === "glass";
   const containerClass = isGlass
-    ? "inline-flex flex-col items-center justify-center rounded-xl border border-white/70 bg-white/60 px-2.5 py-1.5 leading-none shadow-[0_8px_24px_rgba(59,130,246,0.10)] backdrop-blur-md ring-1 ring-white/40"
+    ? "inline-flex flex-col items-center justify-center rounded-xl border border-white/70 bg-white/60 px-2.5 py-1.5 leading-none  backdrop-blur-md ring-1 ring-white/40"
     : "inline-flex flex-col items-center justify-center rounded-md border border-blue-200 bg-blue-50/95 px-1.5 py-1 leading-none";
   const valueClass = isGlass
     ? "text-[11px] font-bold text-slate-700"
@@ -466,10 +468,11 @@ const LinkedNewsStoryCard = ({ story }) => {
     story?.publishedIso || story?.updatedIso || story?.publishedAt,
   );
   const baseCardClass =
-    "group flex h-full w-full flex-col overflow-hidden rounded-[20px] border border-[#dde6fb] bg-white shadow-[0_10px_28px_rgba(28,45,98,0.08)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#c9d7fb] hover:shadow-[0_18px_44px_rgba(28,45,98,0.14)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3557d3]";
-  const imageWrapClass = "relative aspect-[16/9] overflow-hidden bg-[#f6f8ff]";
+    "group flex h-full w-full flex-col overflow-hidden rounded-2xl bg-[#ffffff] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 dark:bg-slate-900 dark:shadow-none";
+  const imageWrapClass =
+    "relative aspect-[16/9] overflow-hidden bg-slate-100 dark:bg-slate-800";
   const titleClass =
-    "text-[0.98rem] leading-6 text-[#082a72] line-clamp-2 sm:text-[1.03rem] sm:leading-7";
+    "line-clamp-2 text-[0.98rem] leading-6 text-slate-900 dark:text-white sm:text-[1.03rem] sm:leading-7";
 
   return (
     <Link to={storyPath} className={baseCardClass}>
@@ -508,7 +511,7 @@ const LinkedNewsStoryCard = ({ story }) => {
           </p>
         ) : null}
 
-        <div className="mt-auto flex items-center justify-between gap-3 border-t border-[#eef2fb] pt-3 text-[12px]">
+        <div className="mt-auto flex items-center justify-between gap-3 pt-3 text-[12px]">
           <span className="min-w-0 truncate font-medium text-[#946739]">
             {authorLabel}
           </span>
@@ -519,13 +522,149 @@ const LinkedNewsStoryCard = ({ story }) => {
   );
 };
 
+const SmartphoneOrbitArtwork = () => (
+  <div
+    aria-hidden="true"
+    className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+  >
+    <div className="absolute left-[12%] top-[10%] h-32 w-32 rounded-full bg-blue-400/10 blur-3xl dark:bg-blue-400/10 sm:h-44 sm:w-44" />
+    <div className="absolute bottom-[8%] right-[8%] h-36 w-36 rounded-full bg-indigo-400/10 blur-3xl dark:bg-indigo-400/10 sm:h-52 sm:w-52" />
+
+    <svg
+      viewBox="0 0 620 500"
+      fill="none"
+      className="absolute inset-0 h-full w-full text-blue-500/20 dark:text-blue-300/15"
+      preserveAspectRatio="xMidYMid slice"
+    >
+      <ellipse
+        cx="310"
+        cy="250"
+        rx="198"
+        ry="154"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeDasharray="8 12"
+      />
+      <ellipse
+        cx="310"
+        cy="250"
+        rx="148"
+        ry="204"
+        stroke="currentColor"
+        strokeWidth="1"
+        strokeDasharray="3 13"
+        transform="rotate(22 310 250)"
+      />
+      <path
+        d="M74 357C160 314 191 349 244 316C302 281 288 210 360 183C417 161 463 185 550 133"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M102 117H174L197 140H247"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M445 374H512L534 352H574"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+      <circle cx="102" cy="117" r="4" fill="currentColor" />
+      <circle cx="247" cy="140" r="4" fill="currentColor" />
+      <circle cx="74" cy="357" r="4" fill="currentColor" />
+      <circle cx="360" cy="183" r="4" fill="currentColor" />
+      <circle cx="550" cy="133" r="4" fill="currentColor" />
+      <circle cx="445" cy="374" r="4" fill="currentColor" />
+      <circle cx="574" cy="352" r="4" fill="currentColor" />
+    </svg>
+
+    <div className="absolute left-5 top-5 hidden items-center gap-1.5 sm:flex">
+      <span className="h-1.5 w-8 rounded-full bg-blue-600/35 dark:bg-blue-400/35" />
+      <span className="h-1.5 w-3 rounded-full bg-blue-400/25 dark:bg-blue-300/25" />
+      <span className="h-1.5 w-1.5 rounded-full bg-indigo-500/30 dark:bg-indigo-300/30" />
+    </div>
+    <div className="absolute bottom-7 right-6 hidden grid-cols-3 gap-1.5 sm:grid">
+      {Array.from({ length: 9 }).map((_, index) => (
+        <span
+          key={index}
+          className={`h-1.5 w-1.5 rounded-full ${
+            index === 4
+              ? "bg-blue-600/40 dark:bg-blue-300/40"
+              : "bg-slate-400/20 dark:bg-slate-300/15"
+          }`}
+        />
+      ))}
+    </div>
+  </div>
+);
+
+const SmartphoneDetailArtwork = () => (
+  <div
+    aria-hidden="true"
+    className="pointer-events-none absolute -right-8 top-10 z-0 hidden h-64 w-72 overflow-hidden lg:block xl:-right-2"
+  >
+    <svg
+      viewBox="0 0 320 280"
+      fill="none"
+      className="h-full w-full text-blue-500/15 dark:text-blue-300/10"
+    >
+      <path
+        d="M32 210C87 174 116 195 154 165C201 128 189 79 272 34"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeDasharray="7 11"
+      />
+      <path d="M62 58H126L145 77H198" stroke="currentColor" strokeWidth="1.2" />
+      <rect
+        x="182"
+        y="74"
+        width="82"
+        height="144"
+        rx="20"
+        stroke="currentColor"
+        strokeWidth="1.3"
+      />
+      <rect
+        x="193"
+        y="90"
+        width="60"
+        height="102"
+        rx="13"
+        stroke="currentColor"
+        strokeWidth="1"
+        strokeDasharray="4 7"
+      />
+      <circle cx="223" cy="204" r="4" fill="currentColor" />
+      <circle cx="62" cy="58" r="4" fill="currentColor" />
+      <circle cx="198" cy="77" r="4" fill="currentColor" />
+      <circle cx="32" cy="210" r="4" fill="currentColor" />
+      <circle cx="272" cy="34" r="4" fill="currentColor" />
+      <path
+        d="M278 132H306M292 118V146"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+    </svg>
+    <div className="absolute right-10 top-4 h-20 w-20 rounded-full border border-blue-400/10 dark:border-blue-300/10" />
+    <div className="absolute right-16 top-10 h-8 w-8 rounded-full border border-indigo-400/10 dark:border-indigo-300/10" />
+  </div>
+);
+
 const MobileDetailCard = () => {
   const [activeTab, setActiveTab] = useState("specifications");
   const [activeImage, setActiveImage] = useState(0);
-  const [showAllSpecs, setShowAllSpecs] = useState(true);
+  const [showAllSpecs, setShowAllSpecs] = useState(false);
+  const [expandedSpecSections, setExpandedSpecSections] = useState({});
   const [showHeaderSummaryFull, setShowHeaderSummaryFull] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState(0);
   const [showShareMenu, setShowShareMenu] = useState(false);
+  const [activePageSection, setActivePageSection] = useState("detail-overview");
+  const [recentlyViewed, setRecentlyViewed] = useState([]);
   const variantInitKeyRef = useRef("");
   const recentStoreKeyRef = useRef("");
   const detailFetchKeyRef = useRef("");
@@ -1713,9 +1852,7 @@ const MobileDetailCard = () => {
     for (const value of scoreValues) {
       if (value == null || value === "") continue;
       const rawValue =
-        typeof value === "string"
-          ? value.match(/\d+(?:\.\d+)?/)?.[0]
-          : value;
+        typeof value === "string" ? value.match(/\d+(?:\.\d+)?/)?.[0] : value;
       const numericValue = Number(formatSmartphoneBadgeScore(rawValue));
       if (Number.isFinite(numericValue) && numericValue > 0) {
         return numericValue;
@@ -2257,6 +2394,11 @@ const MobileDetailCard = () => {
         ...list.filter((item) => String(item?.id) !== String(entry.id)),
       ].slice(0, MAX_RECENT_ITEMS);
       window.localStorage.setItem(RECENT_STORAGE_KEY, JSON.stringify(next));
+      setRecentlyViewed(
+        next
+          .filter((item) => String(item?.id) !== String(entry.id))
+          .slice(0, 6),
+      );
     } catch {
       // ignore storage errors
     }
@@ -3109,8 +3251,9 @@ Price: ${price}
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "start" });
       } else {
-        // subsection not present â€” activate the tab normally
-        setActiveTab(tabId);
+        document
+          .getElementById("spec-specifications")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     });
   };
@@ -3169,7 +3312,7 @@ Price: ${price}
               {primitiveEntries.map(([key, value]) => (
                 <div
                   key={key}
-                  className="flex items-center justify-between rounded-lg border border-slate-100 bg-gradient-to-r from-blue-600/10 to-transparent px-4 py-3 transition-all duration-200 hover:border-blue-200 hover:shadow-sm"
+                  className="flex items-center justify-between rounded-lg border border-slate-100 bg-gradient-to-r from-blue-600/10 to-transparent px-4 py-3 transition-all duration-200 hover:border-blue-200 "
                 >
                   <span className="text-gray-700 font-semibold text-sm flex-1">
                     {toNormalCase(key)}
@@ -3190,7 +3333,7 @@ Price: ${price}
             return (
               <div
                 key={gkey}
-                className="rounded-xl border border-blue-100 bg-gradient-to-br from-blue-600/10 to-white p-4 shadow-sm"
+                className="rounded-xl border border-blue-100 bg-gradient-to-br from-blue-600/10 to-white p-4 "
               >
                 <h4 className="mb-3 text-sm font-bold uppercase tracking-wide text-blue-900">
                   {toNormalCase(gkey)}
@@ -3225,7 +3368,7 @@ Price: ${price}
           {displayEntries.map(([key, value]) => (
             <div
               key={key}
-              className="flex items-center justify-between rounded-lg border border-slate-100 bg-gradient-to-r from-blue-600/10 to-transparent px-4 py-3 transition-all duration-200 hover:border-blue-200 hover:bg-blue-50/40 hover:shadow-md"
+              className="flex items-center justify-between rounded-lg border border-slate-100 bg-gradient-to-r from-blue-600/10 to-transparent px-4 py-3 transition-all duration-200 hover:border-blue-200 hover:bg-blue-50/40 "
             >
               <span className="text-gray-700 font-semibold text-sm flex-1">
                 {toNormalCase(key)}
@@ -3239,7 +3382,7 @@ Price: ${price}
         {entries.length > limit && (
           <button
             onClick={() => setShowAllSpecs(!showAllSpecs)}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 px-4 py-3 text-sm font-bold text-white shadow-md transition-all duration-200 hover:shadow-lg"
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 px-4 py-3 text-sm font-bold text-white  transition-all duration-200 "
           >
             {showAllSpecs
               ? "Show Less"
@@ -3255,7 +3398,11 @@ Price: ${price}
     );
   };
 
-  const renderCameraTable = (camera) => {
+  const renderCameraTable = (
+    camera,
+    limit = 5,
+    sectionId = "spec-camera",
+  ) => {
     if (!camera || !hasContent(camera))
       return (
         <div className="text-center py-4 text-gray-500">
@@ -3674,79 +3821,27 @@ Price: ${price}
       );
     }
 
-    const renderRowTable = (rows, options = {}) => {
-      if (!rows.length) return null;
-      const { valueClassName = "", singleValue = false } = options;
-
-      return (
-        <div className="space-y-3">
-          {rows.map((row, idx) => {
-            if (singleValue) {
-              return (
-                <div
-                  key={`${row.key}-${idx}`}
-                  className="text-sm leading-7 text-slate-700 break-words"
-                >
-                  {row.value}
-                </div>
-              );
-            }
-
-            return (
-              <div
-                key={`${row.label}-${idx}`}
-                className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-start gap-x-4 gap-y-1 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] sm:gap-6"
-              >
-                <div className="text-[13px] font-medium leading-5 text-[#45608f] sm:text-sm sm:text-slate-600">
-                  {row.label}
-                </div>
-                <div
-                  className={`break-words text-[15px] font-semibold leading-6 text-[#0d347f] sm:text-left sm:text-sm sm:text-slate-900 ${valueClassName}`}
-                >
-                  {row.value}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      );
-    };
-
-    const renderGroupContent = (group) => {
+    const cameraTableData = {};
+    groups.forEach((group) => {
       if (group.layout === "text") {
-        return renderRowTable([{ key: group.key, value: group.value }], {
-          singleValue: true,
-        });
+        cameraTableData[group.title] = group.value;
+        return;
       }
 
-      return renderRowTable(group.items);
-    };
+      group.items.forEach((item) => {
+        const label =
+          group.key === "main" ? item.label : `${group.title} ${item.label}`;
+        cameraTableData[label] = item.value;
+      });
+    });
 
-    return (
-      <div className="space-y-5">
-        {groups.map((group, idx) => (
-          <section
-            key={group.key}
-            className={
-              idx !== groups.length - 1 ? "border-b border-[#d9e6ff] pb-5" : ""
-            }
-          >
-            <div className="flex items-center justify-between gap-4">
-              <h5 className="text-sm font-semibold text-[#133b88] sm:text-base">
-                {group.title}
-              </h5>
-            </div>
-            <div className="mt-4">{renderGroupContent(group)}</div>
-          </section>
-        ))}
-      </div>
-    );
+    return renderSpecTable(cameraTableData, limit, sectionId);
   };
 
-  const renderSpecTable = (data, limit = 5) => {
+  const renderSpecTable = (data, limit = 5, sectionId = "specifications") => {
     if (!data || (typeof data === "object" && Object.keys(data).length === 0))
       return (
-        <div className="rounded-2xl border border-[#d9e6ff] bg-white py-6 text-center text-sm text-[#5f7094]">
+        <div className="rounded-2xl bg-[#f7f9fc] py-6 text-center text-sm text-[#5f7094]">
           No data available
         </div>
       );
@@ -3760,21 +3855,22 @@ Price: ${price}
       ),
     );
 
-    const displayEntries = showAllSpecs ? entries : entries.slice(0, limit);
+    const isExpanded = Boolean(expandedSpecSections[sectionId]);
+    const displayEntries = isExpanded ? entries : entries.slice(0, limit);
 
     return (
       <>
         {/* Mobile: Stacked Layout */}
-        <div className="space-y-3 sm:hidden">
+        <div className="divide-y divide-slate-200/80 dark:divide-slate-800 sm:hidden">
           {displayEntries.map(([key, value]) => (
             <div
               key={key}
-              className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-start gap-x-4 gap-y-1 py-1"
+              className="grid grid-cols-[5.75rem_minmax(0,1fr)] items-start gap-x-3 gap-y-1 py-3 first:pt-0 last:pb-0"
             >
-              <div className="text-[13px] font-medium leading-5 text-[#45608f]">
+              <div className="text-sm font-medium leading-5 text-slate-500 dark:text-slate-400">
                 {toNormalCase(key)}
               </div>
-              <div className="break-words text-[15px] font-semibold leading-6 text-[#0d347f]">
+              <div className="break-words text-[15px] font-semibold leading-5 text-slate-900 dark:text-slate-100">
                 {formatSpecValue(value, key)}
               </div>
             </div>
@@ -3782,27 +3878,51 @@ Price: ${price}
         </div>
 
         {/* Desktop: Table Layout */}
-        <div className="hidden space-y-4 sm:block">
+        <div className="hidden divide-y divide-slate-200/80 dark:divide-slate-800 sm:block">
           {displayEntries.map(([key, value]) => (
             <div
               key={key}
-              className="grid gap-2 py-1 sm:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] sm:gap-6"
+              className="grid min-h-11 items-center gap-2 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] sm:gap-6"
             >
-              <div className="text-sm font-medium text-[#58709d]">
+              <div className="text-sm font-medium text-slate-500 dark:text-slate-400">
                 {toNormalCase(key)}
               </div>
-              <div className="break-words text-sm font-semibold text-[#123986]">
+              <div className="break-words text-sm font-semibold text-slate-900 dark:text-slate-100">
                 {formatSpecValue(value, key)}
               </div>
             </div>
           ))}
         </div>
+        {entries.length > limit ? (
+          <button
+            type="button"
+            aria-expanded={isExpanded}
+            onClick={() =>
+              setExpandedSpecSections((current) => ({
+                ...current,
+                [sectionId]: !current[sectionId],
+              }))
+            }
+            className="mt-auto inline-flex w-full items-center justify-center gap-2 border-t border-slate-200/80 pt-4 text-sm font-bold text-blue-600 transition-colors hover:text-blue-700 dark:border-slate-800 dark:text-blue-400 dark:hover:text-blue-300"
+          >
+            {isExpanded ? "View fewer" : "View more"}
+            <FaChevronDown
+              className={`text-xs transition-transform ${
+                isExpanded ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+        ) : null}
       </>
     );
   };
 
   // Display-specific renderer â€” fallback to generic spec table when possible
-  const renderDisplayTable = (display, limit = 5) => {
+  const renderDisplayTable = (
+    display,
+    limit = 5,
+    sectionId = "spec-display",
+  ) => {
     if (
       !display ||
       (typeof display === "object" && Object.keys(display).length === 0)
@@ -3823,7 +3943,7 @@ Price: ${price}
     }
 
     // Reuse generic table renderer for object-like display data
-    return renderSpecTable(d, limit);
+    return renderSpecTable(d, limit, sectionId);
   };
 
   const toSectionTableData = (raw, fallbackKey) => {
@@ -3902,61 +4022,8 @@ Price: ${price}
             mobileData.updates ||
             "N/A",
         };
-        const specJumpSections = [
-          { id: "spec-general", label: "General", visible: true },
-          {
-            id: "spec-display",
-            label: "Display",
-            visible: hasContent(displayData),
-          },
-          { id: "spec-body", label: "Body", visible: hasContent(buildData) },
-          {
-            id: "spec-performance",
-            label: "Processor",
-            visible: hasContent(processorData),
-          },
-          {
-            id: "spec-camera",
-            label: "Main Camera",
-            visible: hasContent(cameraData),
-          },
-          {
-            id: "spec-os",
-            label: "Operating System",
-            visible: hasContent(osData),
-          },
-          {
-            id: "spec-battery",
-            label: "Battery",
-            visible: hasContent(batteryData),
-          },
-          {
-            id: "spec-connectivity",
-            label: "Connectivity",
-            visible: hasContent(connectivityData),
-          },
-          {
-            id: "spec-network",
-            label: "Network",
-            visible: hasContent(networkData),
-          },
-          { id: "spec-audio", label: "Audio", visible: hasContent(audioData) },
-          {
-            id: "spec-sensors",
-            label: "Sensors",
-            visible: hasContent(sensorsData),
-          },
-        ].filter((section) => section.visible);
-        const scrollToSpecSection = (sectionId) => {
-          const el = document.getElementById(sectionId);
-          if (el) {
-            el.scrollIntoView({ behavior: "smooth", block: "start" });
-          }
-        };
         const sectionCardClass =
-          "overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)]";
-        const sectionDividerClass =
-          "mt-4 h-px w-full bg-gradient-to-r from-[#6fa8ff] via-[#8e87ff] to-[#d2b6ff]";
+          "scroll-mt-[136px] sm:scroll-mt-[148px] flex flex-col overflow-hidden rounded-2xl bg-[#ffffff] shadow-sm dark:bg-slate-900";
         const fullSpecHighlightFormatter = new Intl.ListFormat("en", {
           style: "long",
           type: "conjunction",
@@ -3973,98 +4040,153 @@ Price: ${price}
           ? `${metaName || mobileData?.name || "This phone"} specifications cover ${fullSpecHighlightFormatter.format(fullSpecHighlights)}.`
           : "Browse the full hardware, software, battery, and connectivity details below.";
         const renderSectionCard = (sectionId, title, content) => (
-          <section id={sectionId} className={sectionCardClass}>
-            <div className="px-4 pt-4 sm:px-6 sm:pt-6">
-              <h4 className="text-xl font-semibold tracking-tight text-[#123986] sm:text-2xl">
+          <section
+            id={sectionId}
+            className={`${sectionCardClass} lg:min-h-[22rem]`}
+          >
+            <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50/60 px-4 py-4 dark:border-slate-800 dark:bg-slate-800/40 sm:px-5 sm:py-3.5">
+              <span className="h-6 w-1 rounded-full bg-blue-600" aria-hidden="true" />
+              <h4 className="text-[17px] font-bold tracking-tight text-slate-950 dark:text-white sm:text-base">
                 {title}
               </h4>
-              <div className={sectionDividerClass} />
             </div>
-            <div className="mt-5 px-4 pb-4 sm:px-6 sm:pb-6">{content}</div>
+            <div className="flex flex-1 flex-col px-4 py-4 sm:px-5 sm:py-4">{content}</div>
           </section>
         );
 
         return (
           <div
             id="spec-specifications"
-            className={`w-full max-w-4xl px-2 sm:px-0 ${combineResponsiveClasses(RESPONSIVE_SPACING.contentMarginY)}`}
+            className={`scroll-mt-[136px] sm:scroll-mt-[148px] w-full px-3 pb-2 sm:px-0 ${combineResponsiveClasses(RESPONSIVE_SPACING.contentMarginY)}`}
           >
-            <div className="hidden text-slate-900 sm:block">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-blue-600">
-                Full Specifications
-              </p>
-              <p className="mt-3 max-w-7xl text-sm leading-6 text-[#556b95]">
-                {fullSpecIntroText}
-              </p>
-            </div>
+            <section className="rounded-[20px] bg-transparent px-0 py-2 dark:bg-transparent sm:py-3">
+              <div className="max-w-4xl pb-2">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-blue-600 dark:text-blue-400 sm:text-[11px]">
+                    Full specifications
+                  </p>
+                  <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
+                    Complete hardware and software details
+                  </h2>
+                </div>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+                  {fullSpecIntroText}
+                </p>
+              </div>
 
-            <div className="space-y-4 sm:mt-6 sm:space-y-5">
-              {renderSectionCard(
-                "spec-general",
-                "General",
-                renderSpecTable(generalData, 5),
-              )}
-              {hasContent(displayData) &&
-                renderSectionCard(
-                  "spec-display",
-                  "Display",
-                  renderDisplayTable(displayData, 5),
-                )}
-              {hasContent(buildData) &&
-                renderSectionCard(
-                  "spec-body",
-                  "Body",
-                  renderSpecTable(buildData, 5),
-                )}
-              {hasContent(processorData) &&
-                renderSectionCard(
-                  "spec-performance",
-                  "Processor",
-                  renderSpecTable(processorData, 5),
-                )}
-              {hasContent(cameraData) &&
-                renderSectionCard(
-                  "spec-camera",
-                  "Main Camera",
-                  renderCameraTable(cameraData),
-                )}
-              {hasContent(osData) &&
-                renderSectionCard(
-                  "spec-os",
-                  "Operating System",
-                  renderSpecTable(osData, 5),
-                )}
-              {hasContent(batteryData) &&
-                renderSectionCard(
-                  "spec-battery",
-                  "Battery",
-                  renderSpecTable(batteryData, 5),
-                )}
-              {hasContent(connectivityData) &&
-                renderSectionCard(
-                  "spec-connectivity",
-                  "Connectivity",
-                  renderSpecTable(connectivityData, 5),
-                )}
-              {hasContent(networkData) &&
-                renderSectionCard(
-                  "spec-network",
-                  "Network",
-                  renderSpecTable(networkData, 5),
-                )}
-              {hasContent(audioData) &&
-                renderSectionCard(
-                  "spec-audio",
-                  "Audio",
-                  renderSpecTable(audioData, 5),
-                )}
-              {hasContent(sensorsData) &&
-                renderSectionCard(
-                  "spec-sensors",
-                  "Sensors",
-                  renderSpecTable(sensorsData, 5),
-                )}
-            </div>
+              <div className="mt-5 grid gap-5 lg:grid-cols-2 lg:items-start">
+                <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-5">
+                  <div className="order-1 min-w-0 lg:order-none">
+                    {renderSectionCard(
+                      "spec-general",
+                      "General",
+                      renderSpecTable(generalData, 5, "spec-general"),
+                    )}
+                  </div>
+                  {hasContent(buildData) ? (
+                    <div className="order-3 min-w-0 lg:order-none">
+                      {renderSectionCard(
+                        "spec-body",
+                        "Body",
+                        renderSpecTable(buildData, 5, "spec-body"),
+                      )}
+                    </div>
+                  ) : null}
+                  {hasContent(cameraData) ? (
+                    <div className="order-5 min-w-0 lg:order-none">
+                      {renderSectionCard(
+                        "spec-camera",
+                        "Main Camera",
+                        renderCameraTable(cameraData, 5, "spec-camera"),
+                      )}
+                    </div>
+                  ) : null}
+                  {hasContent(batteryData) ? (
+                    <div className="order-7 min-w-0 lg:order-none">
+                      {renderSectionCard(
+                        "spec-battery",
+                        "Battery",
+                        renderSpecTable(batteryData, 5, "spec-battery"),
+                      )}
+                    </div>
+                  ) : null}
+                  {hasContent(networkData) ? (
+                    <div className="order-9 min-w-0 lg:order-none">
+                      {renderSectionCard(
+                        "spec-network",
+                        "Network",
+                        renderSpecTable(networkData, 5, "spec-network"),
+                      )}
+                    </div>
+                  ) : null}
+                  {hasContent(sensorsData) ? (
+                    <div className="order-11 min-w-0 lg:order-none">
+                      {renderSectionCard(
+                        "spec-sensors",
+                        "Sensors",
+                        renderSpecTable(sensorsData, 5, "spec-sensors"),
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-5">
+                  {hasContent(displayData) ? (
+                    <div className="order-2 min-w-0 lg:order-none">
+                      {renderSectionCard(
+                        "spec-display",
+                        "Display",
+                        renderDisplayTable(displayData, 5, "spec-display"),
+                      )}
+                    </div>
+                  ) : null}
+                  {hasContent(processorData) ? (
+                    <div className="order-4 min-w-0 lg:order-none">
+                      {renderSectionCard(
+                        "spec-performance",
+                        "Processor",
+                        renderSpecTable(
+                          processorData,
+                          5,
+                          "spec-performance",
+                        ),
+                      )}
+                    </div>
+                  ) : null}
+                  {hasContent(osData) ? (
+                    <div className="order-6 min-w-0 lg:order-none">
+                      {renderSectionCard(
+                        "spec-os",
+                        "Operating System",
+                        renderSpecTable(osData, 5, "spec-os"),
+                      )}
+                    </div>
+                  ) : null}
+                  {hasContent(connectivityData) ? (
+                    <div className="order-8 min-w-0 lg:order-none">
+                      {renderSectionCard(
+                        "spec-connectivity",
+                        "Connectivity",
+                        renderSpecTable(
+                          connectivityData,
+                          5,
+                          "spec-connectivity",
+                        ),
+                      )}
+                    </div>
+                  ) : null}
+                  {hasContent(audioData) ? (
+                    <div className="order-10 min-w-0 lg:order-none">
+                      {renderSectionCard(
+                        "spec-audio",
+                        "Audio",
+                        renderSpecTable(audioData, 5, "spec-audio"),
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </section>
           </div>
         );
       }
@@ -4447,7 +4569,9 @@ Price: ${price}
     const links = [];
     const pushLink = (href, label) => {
       const cleanHref = String(href || "").trim();
-      const cleanLabel = String(label || "").replace(/\s+/g, " ").trim();
+      const cleanLabel = String(label || "")
+        .replace(/\s+/g, " ")
+        .trim();
       if (!cleanHref || !cleanLabel) return;
       links.push({ href: cleanHref, label: cleanLabel });
     };
@@ -4535,10 +4659,87 @@ Price: ${price}
     mobileData,
   ]);
 
+  const detailPageSections = useMemo(
+    () =>
+      [
+        { id: "detail-overview", label: "Overview", Icon: FaInfoCircle },
+        mobileData
+          ? { id: "detail-highlights", label: "Key Specs", Icon: FaMicrochip }
+          : null,
+        competitorLimit > 0
+          ? {
+              id: "detail-competitors",
+              label: "Competitors",
+              Icon: FaBalanceScale,
+            }
+          : null,
+        {
+          id: "spec-specifications",
+          label: "Specifications",
+          Icon: FaMemory,
+        },
+        { id: "detail-news", label: "News", Icon: FaFilm },
+        smartphoneFaqItems.length > 0
+          ? { id: "detail-faqs", label: "FAQs", Icon: FaInfoCircle }
+          : null,
+      ].filter(Boolean),
+    [competitorLimit, mobileData, smartphoneFaqItems.length],
+  );
+
+  const scrollToDetailSection = useCallback((sectionId) => {
+    const target = document.getElementById(sectionId);
+    if (!target) return;
+
+    const rootStyle = getComputedStyle(document.documentElement);
+    const headerOffset =
+      parseFloat(rootStyle.getPropertyValue("--site-sticky-header-offset")) ||
+      0;
+    const navigatorHeight =
+      parseFloat(rootStyle.getPropertyValue("--detail-page-nav-height")) || 58;
+    const top =
+      target.getBoundingClientRect().top +
+      window.scrollY -
+      headerOffset -
+      navigatorHeight -
+      12;
+
+    window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  }, []);
+
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      typeof IntersectionObserver === "undefined" ||
+      !detailPageSections.length
+    )
+      return;
+
+    const observed = detailPageSections
+      .map((section) => document.getElementById(section.id))
+      .filter(Boolean);
+    if (!observed.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visible?.target?.id) setActivePageSection(visible.target.id);
+      },
+      {
+        rootMargin: "-22% 0px -66% 0px",
+        threshold: [0.05, 0.2, 0.45],
+      },
+    );
+
+    observed.forEach((node) => observer.observe(node));
+    return () => observer.disconnect();
+  }, [detailPageSections]);
+
   if (loading && !mobileData) {
     return (
       <div className="max-w-4xl mx-auto p-8">
-        <div className="bg-white rounded-lg p-8 text-center">
+        <div className="rounded-lg bg-white p-8 text-center dark:bg-slate-900">
           <Spinner />
           <div className="text-sm text-gray-500 mt-3">Please wait</div>
         </div>
@@ -4549,7 +4750,7 @@ Price: ${price}
   if (!loading && !mobileData) {
     return (
       <div className="max-w-4xl mx-auto p-4">
-        <div className="bg-white rounded-lg p-8 text-center">
+        <div className="rounded-lg bg-white p-8 text-center dark:bg-slate-900">
           <div className="text-gray-400 text-6xl mb-4">ðŸ“±</div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
             Device Not Found
@@ -4939,7 +5140,7 @@ Price: ${price}
     return (
       <div
         key={section.key}
-        className={`flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white px-3.5 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all duration-200 sm:px-4 md:px-5 md:py-5 ${layoutClass}`}
+        className={`hooks-spec-card flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white px-3.5 py-4  transition-all duration-200 sm:px-4 md:px-5 md:py-5 ${layoutClass}`}
       >
         <div className="flex items-center gap-2.5">
           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[#dce6f3] bg-[#f8fbff] md:h-8 md:w-8">
@@ -4975,6 +5176,72 @@ Price: ${price}
     );
   };
 
+  const heroQuickSpecs = [
+    {
+      key: "display",
+      label: "Display",
+      value: headerDisplay || detailInfoSectionByKey.display?.leadPoint,
+      sub:
+        detailInfoSectionByKey.display?.points?.[0] || "Screen & refresh rate",
+      Icon: FaExpand,
+    },
+    {
+      key: "performance",
+      label: "Processor",
+      value: headerProcessor || detailInfoSectionByKey.performance?.leadPoint,
+      sub:
+        detailInfoSectionByKey.performance?.points?.[0] ||
+        "Chipset performance",
+      Icon: FaMicrochip,
+    },
+    {
+      key: "camera",
+      label: "Rear camera",
+      value:
+        detailInfoSectionByKey.camera?.leadPoint ||
+        (currentMainCameraMp ? `${currentMainCameraMp} MP` : "Camera details"),
+      sub: detailInfoSectionByKey.camera?.points?.[0] || "Photo & video",
+      Icon: FaCamera,
+    },
+    {
+      key: "battery",
+      label: "Battery",
+      value: detailInfoSectionByKey.battery?.leadPoint || batteryForShare,
+      sub: detailInfoSectionByKey.battery?.points?.[0] || "Life & charging",
+      Icon: FaBatteryFull,
+    },
+    {
+      key: "memory",
+      label: "RAM / Storage",
+      value: currentVariantLabel || detailInfoSectionByKey.memory?.leadPoint,
+      sub:
+        detailInfoSectionByKey.memory?.points?.[0] || "Selected configuration",
+      Icon: FaMemory,
+    },
+    {
+      key: "os",
+      label: "Software",
+      value: detailInfoSectionByKey.os?.leadPoint || "Software details",
+      sub: detailInfoSectionByKey.os?.points?.[0] || "Operating system",
+      Icon: FaMobile,
+    },
+  ].filter((item) => hasContent(item.value));
+
+  const formattedHeroLaunchDate = hasLaunchDate
+    ? launchDateParsed.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : "Date not announced";
+
+  const heroMarketLabel =
+    launchStatus === "upcoming"
+      ? "Upcoming"
+      : launchStatus === "available" || launchStatus === "released"
+        ? "In stock"
+        : "Availability pending";
+
   if (shouldRenderAliasNotFound) {
     return <NotFound />;
   }
@@ -4983,7 +5250,7 @@ Price: ${price}
   if (showInitialLoading) {
     return (
       <div className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
-        <div className="bg-white rounded-lg p-8 text-center shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-8 text-center">
           <Spinner />
           <div className="text-sm text-gray-500 mt-3">Please wait</div>
         </div>
@@ -4992,7 +5259,7 @@ Price: ${price}
   }
 
   return (
-    <div className="w-full bg-white sm:px-4 lg:px-6 m-0">
+    <div className="hooks-product-detail m-0 w-full bg-[#f3f6fb] text-slate-950 dark:bg-[#07111f] dark:text-slate-100">
       <SEO
         title={metaTitle}
         description={metaDescription}
@@ -5069,144 +5336,300 @@ Price: ${price}
         </div>
       )}
 
-      <section className="w-full text-slate-900">
-        <div
-          className={`mx-auto max-w-7xl ${combineResponsiveClasses(RESPONSIVE_SPACING.pageMarginX)} pb-4 pt-0 sm:pb-5 sm:pt-0 lg:pb-6 lg:pt-0`}
+      <main className="w-full bg-transparent">
+        <DetailPageNavigator
+          sections={detailPageSections}
+          activeId={activePageSection}
+          onNavigate={scrollToDetailSection}
+        />
+
+        <section
+          id="detail-overview"
+          className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full overflow-hidden bg-[#f3f6fb] dark:bg-[#0a1628]"
         >
-          <div className="px-4 pb-4 pt-3 sm:px-6 sm:pb-6 sm:pt-4 lg:px-7 lg:pb-7 lg:pt-4">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-              <div className="min-w-0 flex-1">
-                {headerDescriptor ? (
-                  <p className="mb-2 text-[10px] font-semibold uppercase leading-relaxed tracking-[0.32em] text-blue-500 sm:text-xs">
-                    {headerDescriptor}
-                  </p>
-                ) : null}
-                <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
-                  <h1 className="text-[1.45rem] font-semibold leading-tight tracking-tight text-slate-900 sm:text-[2rem]">
-                    {headerTitle}
-                  </h1>
-                  <button
-                    onClick={() => {
-                      if (compareTarget) {
-                        handlePopularCompare(compareTarget);
-                        return;
-                      }
-                      navigate("/compare");
-                    }}
-                    className="hidden items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-slate-800 sm:inline-flex"
-                  >
-                    <FaPlus className="text-sm" />
-                    Compare
-                  </button>
-                </div>
-                {headerSummary ? (
-                  <div className="mt-3 max-w-7xl sm:mt-2">
-                    <p
-                      className={`text-sm leading-6 text-slate-600 sm:text-base ${
-                        showHeaderSummaryFull ? "" : "line-clamp-1"
-                      }`}
-                    >
-                      {visibleHeaderSummary}
-                    </p>
-                    {headerSummaryHasMore ? (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setShowHeaderSummaryFull((prev) => !prev)
-                        }
-                        className="mt-1.5 inline-flex items-center text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700 sm:mt-2"
-                        aria-expanded={showHeaderSummaryFull}
-                      >
-                        {showHeaderSummaryFull ? "Show less" : "Read more"}
-                      </button>
+          <Breadcrumbs variant="plain" />
+
+          <div className="mx-auto w-full max-w-[1440px] px-3 pb-7 pt-5 sm:px-6 sm:pb-9 sm:pt-7 lg:px-8">
+            <div className="relative mx-auto w-full max-w-7xl bg-transparent dark:bg-transparent">
+              <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-7">
+                <div className="rounded-[24px] bg-transparent p-3 dark:bg-transparent sm:p-5 lg:p-6">
+                  <div className="grid gap-3 sm:grid-cols-[68px_minmax(0,1fr)]">
+                    {carouselImages.length > 1 ? (
+                      <div className="no-scrollbar order-2 flex snap-x snap-mandatory scroll-px-1 gap-2 overflow-x-auto px-1 py-1 sm:order-1 sm:flex-col sm:overflow-visible">
+                        {carouselImages.slice(0, 6).map((image, index) => (
+                          <button
+                            key={`${image}-${index}`}
+                            type="button"
+                            onClick={() => setActiveImage(index)}
+                            aria-label={`View ${headerTitle} image ${index + 1}`}
+                            className={`flex h-16 w-16 shrink-0 snap-start items-center justify-center overflow-hidden rounded-xl border-2 bg-[#ffffff] p-1.5 transition-all dark:bg-slate-900 ${
+                              activeImage === index
+                                ? "border-blue-500 shadow-sm dark:border-blue-400"
+                                : "border-transparent hover:border-blue-200 hover:bg-blue-50 dark:hover:border-slate-600 dark:hover:bg-slate-800"
+                            }`}
+                          >
+                            <img
+                              src={image}
+                              alt={`${headerTitle} view ${index + 1}`}
+                              loading={index === 0 ? "eager" : "lazy"}
+                              className="h-full w-full object-contain"
+                            />
+                          </button>
+                        ))}
+                      </div>
                     ) : null}
-                  </div>
-                ) : null}
 
-                <div className="mt-3 flex flex-wrap items-center gap-2 text-[13px] sm:text-sm">
-                  {currentVariantLabel ? (
-                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-medium text-slate-700">
-                      {currentVariantLabel}
-                    </span>
-                  ) : null}
-                  {mobileData?.isAiPhone ? (
-                    <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold leading-none text-sky-700 ring-1 ring-sky-100">
-                      <span
-                        className="inline-flex items-center justify-center h-3 w-3"
-                        aria-hidden="true"
-                      >
-                        <svg viewBox="0 0 64 64" className="h-3 w-3">
-                          <path
-                            d="M32 2C34.5 14.5 40 20 52 22C40 24 34.5 29.5 32 42C29.5 29.5 24 24 12 22C24 20 29.5 14.5 32 2Z"
-                            fill="red"
-                          />
-                          <path
-                            d="M50 34C51.5 41.5 55 45 62 46C55 47 51.5 50.5 50 58C48.5 50.5 45 47 38 46C45 45 48.5 41.5 50 34Z"
-                            fill="#7E57C2"
-                          />
-                        </svg>
-                      </span>
-                      <span>AI Phone</span>
-                    </span>
-                  ) : null}
-                </div>
+                    <div className="order-1 sm:order-2">
+                      <div className="relative flex min-h-[330px] items-center justify-center overflow-hidden rounded-[22px] bg-[#ffffff] p-6 shadow-sm dark:bg-[#0f1f34] dark:shadow-none sm:min-h-[430px] sm:p-8">
+                        <SmartphoneOrbitArtwork />
+                        {carouselImages.length > 1 ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={goToPreviousImage}
+                              aria-label="Previous product image"
+                              className="absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/80 p-2.5 text-slate-600 backdrop-blur-md transition hover:bg-white hover:text-blue-700 dark:bg-[#13223a]/90 dark:text-slate-300"
+                            >
+                              <FaChevronLeft className="text-xs" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={goToNextImage}
+                              aria-label="Next product image"
+                              className="absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/80 p-2.5 text-slate-600 backdrop-blur-md transition hover:bg-white hover:text-blue-700 dark:bg-[#13223a]/90 dark:text-slate-300"
+                            >
+                              <FaChevronRight className="text-xs" />
+                            </button>
+                          </>
+                        ) : null}
 
-                {currentVariant || headerSpecScoreBlock ? (
-                  <div className="mt-4 flex items-end justify-between gap-4 sm:block">
-                    <div className="min-w-0">
-                      {currentVariant ? (
-                        <>
-                          <div className="text-[1.9rem] font-bold leading-none tracking-tight text-emerald-600 sm:text-3xl">
-                            {currentPriceDisplay || "Price not available"}
+                        <img
+                          src={
+                            carouselImages[activeImage] ||
+                            carouselImages[0] ||
+                            "/placeholder-image.jpg"
+                          }
+                          alt={`${headerTitle} product image`}
+                          loading="eager"
+                          fetchPriority="high"
+                          className="relative z-[1] max-h-[300px] w-full max-w-[330px] object-contain sm:max-h-[390px]"
+                          onError={(event) => {
+                            event.currentTarget.src =
+                              "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='360' viewBox='0 0 360 360'%3E%3Crect width='360' height='360' rx='28' fill='%23f1f5f9'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle' font-family='Arial' font-size='18' fill='%2394a3b8'%3EPhone image%3C/text%3E%3C/svg%3E";
+                          }}
+                        />
+
+                        {carouselImages.length > 1 ? (
+                          <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5">
+                            {carouselImages.slice(0, 8).map((_, index) => (
+                              <button
+                                key={index}
+                                type="button"
+                                onClick={() => setActiveImage(index)}
+                                aria-label={`Open product image ${index + 1}`}
+                                className={`h-1.5 rounded-full transition-all ${
+                                  activeImage === index
+                                    ? "w-7 bg-blue-600"
+                                    : "w-1.5 bg-slate-300 dark:bg-slate-600"
+                                }`}
+                              />
+                            ))}
                           </div>
-                          <div className="mt-1 text-[12px] text-slate-500 sm:pb-0.5 sm:text-sm">
-                            ({currentVariant.ram} / {currentVariant.storage})
-                          </div>
-                        </>
+                        ) : null}
+                      </div>
+                      {carouselImages.length > 0 ? (
+                        <p className="mt-2 text-center text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                          {activeImage + 1} / {carouselImages.length}
+                        </p>
                       ) : null}
                     </div>
-                    {headerSpecScoreBlock ? (
-                      <div className="shrink-0 pb-0.5 sm:hidden">
-                        {headerSpecScoreBlock}
-                      </div>
-                    ) : null}
                   </div>
-                ) : null}
+                </div>
 
-                <div className="mt-4 flex flex-col gap-3 xl:hidden">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={handleShare}
-                        className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
-                      >
-                        <FaShareAlt className="text-lg text-slate-500" />
-                      </button>
+                <div className="relative isolate min-w-0 overflow-hidden rounded-[24px] bg-transparent p-4 sm:p-6 lg:p-7">
+                  <SmartphoneDetailArtwork />
+                  <div className="relative z-[1] flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span
+                          className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ring-1 ${
+                            launchStatus === "upcoming"
+                              ? "bg-violet-50 text-violet-700 ring-violet-100 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/20"
+                              : "bg-emerald-50 text-emerald-700 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20"
+                          }`}
+                        >
+                          <span
+                            className={`h-1.5 w-1.5 rounded-full ${
+                              launchStatus === "upcoming"
+                                ? "bg-violet-500"
+                                : "bg-emerald-500"
+                            }`}
+                          />
+                          {heroMarketLabel}
+                        </span>
+                        {mobileData?.isAiPhone ? (
+                          <span className="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
+                            AI phone
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.24em] text-blue-600 dark:text-blue-400">
+                        {mobileData?.brand || metaBrand || "Smartphone"}
+                      </p>
+                      <h1 className="mt-1 text-3xl font-black leading-tight tracking-tight text-slate-950 dark:text-white sm:text-4xl">
+                        {headerTitle}
+                      </h1>
                     </div>
 
-                    {hasLaunchDate ? (
-                      <div className="flex flex-wrap items-center justify-end gap-1 text-right text-[12px] text-slate-600 sm:text-sm">
-                        <span>
-                          Launched On:{" "}
-                          <span className="font-semibold text-slate-900">
-                            {launchDateParsed.toLocaleDateString("en-US", {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                            })}
-                          </span>
-                        </span>
-                      </div>
-                    ) : null}
+                    <div className="flex shrink-0 items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleShare}
+                        aria-label="Share smartphone"
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/70 text-slate-600 backdrop-blur-md transition hover:bg-white hover:text-blue-700 dark:bg-slate-800/80 dark:text-slate-300 dark:hover:bg-blue-500/10"
+                      >
+                        <FaShareAlt className="text-sm" />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={compareDisabled}
+                        onClick={() => {
+                          if (compareTarget) {
+                            handlePopularCompare(compareTarget);
+                            return;
+                          }
+                          navigate("/compare");
+                        }}
+                        className="hidden h-10 items-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-blue-500 dark:hover:bg-blue-400 sm:inline-flex"
+                      >
+                        <FaPlus className="text-xs" />
+                        Compare
+                      </button>
+                    </div>
                   </div>
 
-                  {headerSpecScoreBlock ? (
-                    <div className="hidden flex-wrap items-center gap-2 text-[13px] text-slate-600 sm:flex sm:gap-3 sm:text-sm">
-                      {headerSpecScoreBlock}
+                  {headerSummary ? (
+                    <div className="relative z-[1] mt-4">
+                      <p
+                        className={`text-sm leading-6 text-slate-600 dark:text-slate-300 sm:text-[15px] ${
+                          showHeaderSummaryFull ? "" : "line-clamp-2"
+                        }`}
+                      >
+                        {visibleHeaderSummary}
+                      </p>
+                      {headerSummaryHasMore ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowHeaderSummaryFull((value) => !value)
+                          }
+                          className="mt-1 text-sm font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                        >
+                          {showHeaderSummaryFull ? "Show less" : "Read more"}
+                        </button>
+                      ) : null}
                     </div>
                   ) : null}
 
+                  <div className="relative z-[1] mt-5 grid gap-3 sm:grid-cols-2">
+                    {headerSpecScoreValue != null ? (
+                      <div className="flex items-center gap-3 rounded-2xl bg-[#ffffff] p-4 shadow-sm backdrop-blur-md dark:bg-[#111f34]/80 dark:shadow-none">
+                        <HookLogo
+                          aria-label="Hooks"
+                          className="h-11 w-11 shrink-0 rounded-xl object-cover"
+                        />
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                            Spec score
+                          </p>
+                          <div className="mt-1 flex items-end gap-1">
+                            <span className="text-3xl font-black leading-none text-slate-950 dark:text-white">
+                              {headerSpecScoreValue}
+                            </span>
+                            <span className="pb-0.5 text-sm font-semibold text-slate-500">
+                              /100
+                            </span>
+                          </div>
+                          <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                            Based on specifications
+                          </p>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <div className="rounded-2xl bg-[#ffffff] p-4 shadow-sm backdrop-blur-md dark:bg-[#111f34]/80 dark:shadow-none">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                            Market status
+                          </p>
+                          <p
+                            className={`mt-1 text-base font-black ${launchStatus === "upcoming" ? "text-violet-600 dark:text-violet-300" : "text-emerald-600 dark:text-emerald-300"}`}
+                          >
+                            {heroMarketLabel}
+                          </p>
+                        </div>
+                        <span className="text-right text-xs leading-5 text-slate-500 dark:text-slate-400">
+                          {launchStatus === "upcoming"
+                            ? "Expected"
+                            : "Launched"}
+                          <br />
+                          <strong className="text-slate-800 dark:text-slate-200">
+                            {formattedHeroLaunchDate}
+                          </strong>
+                        </span>
+                      </div>
+                      <div className="mt-4">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                          {launchStatus === "upcoming"
+                            ? "Expected price"
+                            : "Starting price"}
+                        </p>
+                        <p className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+                          {currentPriceDisplay || "Price not announced"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    id="detail-highlights"
+                    className="relative z-[1] scroll-mt-[136px] mt-5 grid grid-cols-2 gap-1 rounded-2xl bg-[#ffffff] p-1 shadow-sm backdrop-blur-md dark:bg-[#111f34]/80 dark:shadow-none sm:scroll-mt-[148px] sm:grid-cols-3"
+                  >
+                    {heroQuickSpecs.slice(0, 6).map((item, index) => (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() =>
+                          handleTabClick(
+                            item.key === "memory" || item.key === "os"
+                              ? "specifications"
+                              : item.key,
+                          )
+                        }
+                        className="group min-w-0 rounded-xl px-3 py-4 text-left transition hover:bg-white/80 dark:hover:bg-slate-800/80"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                            <item.Icon className="text-xs" />
+                          </span>
+                          <span className="truncate text-xs font-semibold text-slate-500 dark:text-slate-400">
+                            {item.label}
+                          </span>
+                        </div>
+                        <p className="mt-2 line-clamp-2 text-[15px] font-black leading-5 text-slate-900 dark:text-white sm:text-base">
+                          {formatSpecValue(item.value, item.label)}
+                        </p>
+                        <p className="mt-0.5 truncate text-[11px] text-slate-500 dark:text-slate-400">
+                          {formatSpecValue(item.sub, item.label)}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+
                   <button
+                    type="button"
+                    disabled={compareDisabled}
                     onClick={() => {
                       if (compareTarget) {
                         handlePopularCompare(compareTarget);
@@ -5214,752 +5637,369 @@ Price: ${price}
                       }
                       navigate("/compare");
                     }}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-slate-800 sm:hidden"
+                    className="relative z-[1] mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40 sm:hidden"
                   >
-                    <FaPlus className="text-sm" />
-                    Compare
+                    <FaBalanceScale className="text-sm" />
+                    Compare with another phone
                   </button>
                 </div>
               </div>
 
-              <div className="hidden flex-col items-start gap-3 xl:flex xl:items-end">
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleShare}
-                    className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
-                  >
-                    <FaShareAlt className="text-lg text-slate-500" />
-                  </button>
-                </div>
-
-                <div className="flex flex-col items-end gap-2 text-right">
-                  {headerSpecScoreBlock ? (
-                    <div className="text-[13px] text-slate-600 sm:text-sm">
-                      {headerSpecScoreBlock}
-                    </div>
-                  ) : null}
-
-                  {hasLaunchDate ? (
-                    <div className="text-[13px] text-slate-600 sm:text-sm">
-                      <span>
-                        Launched On:{" "}
-                        <span className="font-semibold text-slate-900">
-                          {launchDateParsed.toLocaleDateString("en-US", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          })}
-                        </span>
+              <div className="mx-0 mb-4 mt-5 rounded-[22px] bg-[#ffffff] backdrop-blur-md dark:bg-[#111f34]/75 sm:mb-6">
+                <div className="grid min-w-0 lg:grid-cols-[minmax(0,1.12fr)_minmax(330px,0.88fr)] lg:divide-x lg:divide-slate-200/80 dark:lg:divide-slate-700/70">
+                  <div className="min-w-0 p-4 sm:p-6">
+                    <div className="flex flex-wrap items-end justify-between gap-3">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-blue-600 dark:text-blue-400">
+                          Select variant
+                        </p>
+                        <h2 className="mt-1 text-lg font-black text-slate-950 dark:text-white">
+                          Choose RAM and storage
+                        </h2>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                        {variants.length} option
+                        {variants.length === 1 ? "" : "s"}
                       </span>
                     </div>
-                  ) : null}
+
+                    {variants.length > 0 ? (
+                      <div className="mt-4 grid min-w-0 grid-cols-2 gap-3 sm:no-scrollbar sm:flex sm:snap-x sm:overflow-x-auto sm:pb-1">
+                        {variants.map((variant, index) => {
+                          const selected = selectedVariant === index;
+                          return (
+                            <button
+                              key={variant.variant_id ?? variant.id ?? index}
+                              type="button"
+                              onClick={() => setSelectedVariant(index)}
+                              aria-pressed={selected}
+                              className={`relative min-h-[88px] min-w-0 snap-start rounded-xl border p-3 text-left shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-2 dark:shadow-none dark:focus-visible:ring-offset-[#111f34] sm:min-w-[190px] sm:p-4 ${
+                                selected
+                                  ? "border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-500/10"
+                                  : "border-slate-200 bg-[#ffffff] hover:border-blue-300 hover:bg-blue-50/60 dark:border-slate-700 dark:bg-[#0f1d31] dark:hover:border-blue-500 dark:hover:bg-slate-800"
+                              }`}
+                            >
+                              {selected ? (
+                                <span className="absolute right-3 top-3 inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-white">
+                                  <FaCheck className="text-[9px]" />
+                                </span>
+                              ) : null}
+                              <p className="pr-6 text-sm font-black text-slate-900 dark:text-white">
+                                {variant.ram} / {variant.storage}
+                              </p>
+                              <p
+                                className={`mt-2 text-lg font-black ${selected ? "text-blue-700 dark:text-blue-300" : "text-emerald-600 dark:text-emerald-300"}`}
+                              >
+                                {formatPriceLabel(
+                                  resolveVariantNumericPrice(variant),
+                                ) || "Price pending"}
+                              </p>
+                              {variant.color_name ? (
+                                <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                                  {variant.color_name}
+                                </p>
+                              ) : null}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="mt-4 text-sm text-slate-500">
+                        Variant information is not available.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="min-w-0 p-4 sm:p-6 lg:pl-7">
+                    <div className="flex flex-wrap items-end justify-between gap-3">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-blue-600 dark:text-blue-400">
+                          Best prices
+                        </p>
+                        <h2 className="mt-1 text-lg font-black text-slate-950 dark:text-white">
+                          Buy from trusted stores
+                        </h2>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                        {currentVariantStoreRows.length} offer
+                        {currentVariantStoreRows.length === 1 ? "" : "s"}
+                      </span>
+                    </div>
+
+                    <div className="mt-4 space-y-3">
+                      {currentVariantStoreRows.length > 0 ? (
+                        currentVariantStoreRows
+                          .slice(0, 4)
+                          .map((storePrice, index) => {
+                            const storeObj =
+                              storePrice.storeObj ||
+                              (storePrice.store ||
+                              storePrice.store_name ||
+                              storePrice.storeName
+                                ? getStore?.(
+                                    storePrice.store ||
+                                      storePrice.store_name ||
+                                      storePrice.storeName ||
+                                      "",
+                                  )
+                                : null);
+                            const storeName =
+                              storePrice.display_store_name ||
+                              storePrice.store ||
+                              storePrice.store_name ||
+                              storePrice.storeName ||
+                              storeObj?.name ||
+                              "Online store";
+                            const rawLogoSrc =
+                              storePrice.logo ||
+                              (storeName ? getStoreLogo?.(storeName) : null) ||
+                              (storeName ? getLogo?.(storeName) : null) ||
+                              storeObj?.logo ||
+                              "";
+                            const logoSrc = rawLogoSrc
+                              ? toAbsoluteUrl(rawLogoSrc)
+                              : "";
+
+                            return (
+                              <div
+                                key={`${storePrice.id || storeName || index}`}
+                                className="flex min-h-[68px] min-w-0 items-center justify-between gap-2 rounded-xl border border-slate-200 bg-[#f8fafc] px-3 py-3 shadow-sm dark:border-slate-700 dark:bg-[#0f1d31] sm:gap-4 sm:px-4"
+                              >
+                                <div className="flex min-w-0 items-center gap-3">
+                                  <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-[#ffffff] p-1.5 dark:border-slate-700 dark:bg-slate-900">
+                                    {logoSrc ? (
+                                      <img
+                                        src={logoSrc}
+                                        alt={storeName}
+                                        className="h-full w-full object-contain"
+                                      />
+                                    ) : (
+                                      <FaStore className="text-sm text-slate-400" />
+                                    )}
+                                  </span>
+                                  <div className="min-w-0">
+                                    <p className="truncate text-sm font-bold text-slate-900 dark:text-white">
+                                      {storeName}
+                                    </p>
+                                    <p className="mt-0.5 text-base font-black text-emerald-600 dark:text-emerald-300">
+                                      {formatPriceLabel(storePrice.price) ||
+                                        "Price pending"}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {storePrice.url ? (
+                                  <a
+                                    href={toAbsoluteUrl(storePrice.url)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex min-w-[84px] shrink-0 items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-2.5 py-2.5 text-xs font-bold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-2 sm:min-w-[96px] sm:px-3"
+                                  >
+                                    {storePrice.cta_label || "Buy now"}
+                                    <FaExternalLinkAlt className="text-[9px]" />
+                                  </a>
+                                ) : (
+                                  <span className="inline-flex min-w-[84px] items-center justify-center rounded-lg bg-slate-200 px-2.5 py-2.5 text-xs font-bold text-slate-500 dark:bg-slate-700 dark:text-slate-300 sm:min-w-[96px] sm:px-3">
+                                    Unavailable
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })
+                      ) : (
+                        <div className="rounded-xl border border-dashed border-slate-300 px-4 py-5 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                          Store offers will appear here when available.
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {seoInternalLinks.length > 0 ? (
-        <section className="mx-auto max-w-7xl px-4 pb-4 sm:px-6 lg:px-8">
-          <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:p-5">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-blue-600">
-                  Related smartphone pages
-                </p>
-                <h2 className="mt-1 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">
-                  Continue exploring {metaBrand ? `${metaBrand} ` : ""}
-                  smartphones
-                </h2>
-              </div>
-              <p className="max-w-xl text-[12px] leading-5 text-slate-500 sm:text-right sm:text-[13px]">
-                Jump to helpful brand lists, launch pages, comparison tools,
-                and related buying context.
-              </p>
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {seoInternalLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  to={link.href}
-                  className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-2 text-[12px] font-semibold leading-none text-blue-700 transition-colors hover:border-blue-200 hover:bg-blue-100 sm:text-[13px]"
-                >
-                  <span>{link.label}</span>
-                  <FaArrowRight className="text-[10px]" aria-hidden="true" />
-                </Link>
-              ))}
             </div>
           </div>
         </section>
-      ) : null}
 
-      {/* Popular Comparisons */}
-      {popularComparisonTargets.length > 0 && (
-        <div className="mx-auto max-w-7xl px-4 pb-1 sm:px-6 lg:px-8">
-          <div className="mb-3 flex flex-col gap-1 sm:mb-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-500">
-              Recommended Comparisons
-            </p>
-            <h2 className="text-base font-semibold tracking-tight text-slate-900 sm:text-lg">
-              Compare with <span className="text-blue-600">similar phones</span>
-            </h2>
-            <p className="max-w-7xl text-[13px] leading-5 text-slate-500 sm:text-sm sm:leading-6">
-              Explore close alternatives across brands, price segments, and key
-              specs.
-            </p>
-          </div>
-          <div className="flex flex-nowrap gap-3 overflow-x-auto pb-3 no-scrollbar">
-            {popularComparisonTargets
-              .slice(
-                0,
-                compareLimit === 2 ? 2 : popularComparisonTargets.length,
-              )
-              .map((d) => {
-                const otherId = d?.id ?? d?.product_id ?? d?.productId ?? null;
-                const otherName = d?.name || d?.model || "Device";
-                const otherImg = d?.images?.[0] || d?.image || "";
-                const compareHref = buildCanonicalComparePath({
-                  leftName:
-                    mobileData?.name ||
-                    mobileData?.product_name ||
-                    mobileData?.model,
-                  rightName: otherName,
-                  leftId: currentProductId,
-                  rightId: otherId,
-                  type: "smartphone",
-                });
-                const cardClassName =
-                  "w-[84vw] max-w-[320px] flex-shrink-0 rounded-lg border border-slate-100 bg-white p-4 text-left shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-all hover:border-blue-200 hover:shadow-sm sm:w-[280px]";
-                const cardInner = (
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-md bg-slate-100">
-                      {otherImg ? (
-                        <img
-                          src={otherImg}
-                          alt={otherName}
-                          className="w-full h-full object-contain"
-                          onError={(e) => {
-                            e.currentTarget.style.display = "none";
-                          }}
-                        />
-                      ) : null}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-[11px] text-slate-500">
-                        Compare with
-                      </div>
-                      <div className="truncate text-sm font-semibold text-slate-900">
-                        {otherName}
-                      </div>
-                    </div>
-                    <span className="text-xs font-semibold text-blue-700">
-                      Compare
-                    </span>
-                  </div>
-                );
-
-                if (compareDisabled || !currentProductId || !otherId) {
-                  return (
-                    <button
-                      key={String(otherId || otherName)}
-                      type="button"
-                      onClick={() => handlePopularCompare(d)}
-                      className={cardClassName}
-                    >
-                      {cardInner}
-                    </button>
-                  );
-                }
-
-                return (
-                  <Link
-                    key={String(otherId || otherName)}
-                    to={compareHref}
-                    state={{ initialProduct: mobileData }}
-                    className={cardClassName}
-                  >
-                    {cardInner}
-                  </Link>
-                );
-              })}
-          </div>
-        </div>
-      )}
-
-      <div
-        className={`mx-auto max-w-7xl  ${combineResponsiveClasses(RESPONSIVE_SPACING.pageMarginX)} py-6`}
-      >
         <div
-          className={`flex flex-col lg:flex-row ${RESPONSIVE_SPACING.gapXLarge}`}
+          id="detail-competitors"
+          className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-[#f3f6fb] dark:bg-[#07111f]"
         >
-          {/* Images Section */}
-          <div
-            className={`lg:w-2/5 rounded-md bg-transparent ${combineResponsiveClasses(RESPONSIVE_SPACING.imagePadding)} shadow-none`}
-          >
-            <div className="space-y-5">
-              {/* Main Image */}
-              <div className="relative overflow-hidden rounded-[28px] shadow-[0_2px_2px_rgba(0,0,0,0.1)] border border-slate-100 bg-slate-100 px-4 py-8 sm:px-10 sm:py-12">
-                {carouselImages.length > 1 ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={goToPreviousImage}
-                      aria-label="Previous image"
-                      className="absolute left-4 top-1/2 z-10 -translate-y-1/2 rounded-full border border-slate-200 bg-white/95 p-3 text-slate-600 shadow-md transition-all hover:border-blue-300 hover:text-blue-700"
-                    >
-                      <FaChevronLeft className="text-sm" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={goToNextImage}
-                      aria-label="Next image"
-                      className="absolute right-4 top-1/2 z-10 -translate-y-1/2 rounded-full border border-slate-200 bg-white/95 p-3 text-slate-600 shadow-md transition-all hover:border-blue-300 hover:text-blue-700"
-                    >
-                      <FaChevronRight className="text-sm" />
-                    </button>
-                  </>
-                ) : null}
-
-                <div className="flex min-h-[340px] items-center bg-slate-100 justify-center sm:min-h-[420px]">
-                  <img
-                    src={
-                      carouselImages[activeImage] ||
-                      carouselImages[0] ||
-                      "/placeholder-image.jpg"
-                    }
-                    alt={mobileData.name}
-                    className="h-auto max-h-[260px] w-auto object-contain drop-shadow-[0_16px_24px_rgba(15,23,42,0.12)] sm:max-h-[360px]"
-                    onError={(e) => {
-                      e.target.src =
-                        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23f3f4f6'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='14' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E";
-                    }}
-                  />
-                </div>
-
-                {carouselImages.length > 1 ? (
-                  <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2">
-                    {carouselImages.map((_, index) => (
-                      <button
-                        key={index}
-                        type="button"
-                        onClick={() => setActiveImage(index)}
-                        aria-label={`Go to image ${index + 1}`}
-                        className={`h-2 rounded-full transition-all duration-300 ${
-                          activeImage === index
-                            ? "w-10 bg-slate-700"
-                            : "w-2.5 bg-slate-300 hover:bg-slate-400"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-
-              {/* color section */}
-
-              {/* Variant selection */}
-
-              {/* Share and Copy Link Buttons - Mobile */}
-              <div className="lg:hidden flex gap-2 mb-4">
-                <button
-                  type="button"
-                  onClick={handleShare}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-gradient-to-r from-blue-50 to-blue-50 py-3 font-semibold text-slate-700 transition-all hover:from-blue-100 hover:to-blue-100"
-                >
-                  <FaShareAlt className="text-blue-500" />
-                  <span>Share</span>
-                </button>
-              </div>
-
-              {variants && variants.length > 0 && (
-                <div className="mb-2">
-                  <div className="mb-3">
-                    <h4 className="text-base font-semibold text-slate-900">
-                      Available Variants
-                    </h4>
-                  </div>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    {variants.map((variant, index) => (
-                      <button
-                        key={variant.variant_id ?? variant.id ?? index}
-                        type="button"
-                        onClick={() => setSelectedVariant(index)}
-                        aria-pressed={selectedVariant === index}
-                        aria-label={`Select ${variant.ram} / ${variant.storage} variant`}
-                        className={`relative w-full rounded-2xl border p-3 shadow-[0_2px_1px_rgba(0,0,0,0.1)] text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 sm:p-4 ${
-                          selectedVariant === index
-                            ? "border-blue-600 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-600 text-white shadow-md"
-                            : "border-slate-100 bg-white hover:border-blue-300 hover:bg-slate-50"
-                        }`}
-                      >
-                        {selectedVariant === index ? (
-                          <span className="absolute right-2 top-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-blue-600 shadow-sm">
-                            <FaCheck className="text-[9px]" />
-                          </span>
-                        ) : null}
-                        <div className="flex items-start gap-2 sm:gap-2.5">
-                          <span
-                            className={`mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ring-1 sm:h-8 sm:w-8 ${
-                              selectedVariant === index
-                                ? "bg-white/15 text-white ring-white/20"
-                                : "bg-slate-50 text-slate-600 ring-slate-200"
-                            }`}
-                          >
-                            <FaMemory className="text-[13px] sm:text-sm" />
-                          </span>
-                          <div className="min-w-0">
-                            <div
-                              className={`text-[13px] font-semibold leading-tight sm:text-sm ${
-                                selectedVariant === index
-                                  ? "text-white"
-                                  : "text-slate-900"
-                              }`}
-                            >
-                              {variant.ram} / {variant.storage}
-                            </div>
-                            <div
-                              className={`mt-1 text-[13px] font-bold sm:text-sm ${
-                                selectedVariant === index
-                                  ? "text-emerald-200"
-                                  : "text-emerald-600"
-                              }`}
-                            >
-                              {formatPriceLabel(
-                                resolveVariantNumericPrice(variant),
-                              ) || "Price not available"}
-                            </div>
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {currentVariantStoreRows.length > 0 ? (
-                <div className="mt-4 rounded-2xl border border-slate-100 shadow-[0_2px_2px_rgba(0,0,0,0.1)] bg-white p-4 sm:p-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">
-                        Store Prices
-                      </p>
-                      <h4 className="mt-1 text-base font-semibold text-slate-900">
-                        Buy {currentVariantLabel || "this variant"} from a store
-                      </h4>
-                    </div>
-                    <span className="shrink-0 text-xs font-medium text-slate-500">
-                      {currentVariantStoreRows.length} offers
-                    </span>
-                  </div>
-
-                  <div className="mt-4 space-y-2">
-                    {currentVariantStoreRows.map((storePrice, index) => {
-                      const storeObj =
-                        storePrice.storeObj ||
-                        (storePrice.store ||
-                        storePrice.store_name ||
-                        storePrice.storeName
-                          ? getStore?.(
-                              storePrice.store ||
-                                storePrice.store_name ||
-                                storePrice.storeName ||
-                                "",
-                            )
-                          : null);
-                      const storeName =
-                        storePrice.display_store_name ||
-                        storePrice.store ||
-                        storePrice.store_name ||
-                        storePrice.storeName ||
-                        storeObj?.name ||
-                        "Online Store";
-                      const ctaText = storePrice.cta_label || "Buy Now";
-                      const rawLogoSrc =
-                        storePrice.logo ||
-                        (storeName ? getStoreLogo?.(storeName) : null) ||
-                        (storeName ? getLogo?.(storeName) : null) ||
-                        storeObj?.logo ||
-                        "";
-                      const logoSrc = rawLogoSrc
-                        ? toAbsoluteUrl(rawLogoSrc)
-                        : "";
-
-                      return (
-                        <div
-                          key={`${storePrice.id || storeName || index}`}
-                          className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-white px-3 py-3"
-                        >
-                          <div className="flex min-w-0 items-center gap-3">
-                            {logoSrc ? (
-                              <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white ring-1 ring-slate-200">
-                                <img
-                                  src={logoSrc}
-                                  alt={storeName}
-                                  className="h-full w-full object-contain"
-                                />
-                              </div>
-                            ) : (
-                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 ring-1 ring-slate-200">
-                                <FaStore className="text-xs text-slate-400" />
-                              </div>
-                            )}
-                            <div className="min-w-0">
-                              <div className="truncate text-sm font-semibold text-slate-900">
-                                {storeName}
-                              </div>
-                              <div className="mt-0.5 text-sm font-bold text-emerald-600">
-                                {formatPriceLabel(storePrice.price) ||
-                                  "Price not available"}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex shrink-0 items-center gap-3">
-                            {storePrice.url ? (
-                              <a
-                                href={toAbsoluteUrl(storePrice.url)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-blue-600 shadow-[0_2px_4px_rgba(0,0,0,0.1)] px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
-                              >
-                                {ctaText || "Buy Now"}
-                                <FaExternalLinkAlt className="text-[10px]" />
-                              </a>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-400">
-                                {ctaText || "Unavailable"}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+          <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
+            <div className="mx-auto w-full max-w-7xl space-y-4 sm:space-y-6">
+              {competitorLimit > 0 ? (
+                <CompetitorCards
+                  title={
+                    mobileData?.name
+                      ? `Competitors For ${mobileData.name}`
+                      : "Top Competitors"
+                  }
+                  productName={
+                    mobileData?.name || mobileData?.model || "This Device"
+                  }
+                  productId={currentProductId}
+                  onCompare={handlePopularCompare}
+                  compareDisabled={compareDisabled}
+                  fallbackCompetitors={popularComparisonTargets}
+                  currentDevice={mobileData}
+                  currentBrand={mobileData?.brand || ""}
+                  currentPrice={resolvedCurrentNumericPrice}
+                  maxCards={competitorLimit}
+                  className="w-full"
+                />
               ) : null}
+              <div className="space-y-4 sm:space-y-6">
+                {/* <RecommendedSmartphones /> */}
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Details Section - Right Side */}
-          <div className="lg:w-3/5">
-            {/* Desktop Header */}
-            <div className="hidden">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  {headerDescriptor ? (
-                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500 mb-1">
-                      {headerDescriptor}
+        <div className="w-full bg-[#f3f6fb] dark:bg-[#07111f]">
+          <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
+            <div className="mx-auto w-full max-w-7xl">{renderTabContent()}</div>
+          </div>
+        </div>
+
+        <div
+          id="detail-news"
+          className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-[#f3f6fb] dark:bg-[#07111f]"
+        >
+          {shouldShowLinkedNews ? (
+            <div className="w-full">
+              <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
+                <section className="mx-auto w-full max-w-7xl bg-transparent dark:bg-transparent">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.34em] text-blue-600 dark:text-blue-400 sm:text-[11px]">
+                        Related News
+                      </p>
+                      <h2 className="mt-1 text-base font-semibold tracking-tight text-slate-900 sm:mt-2 sm:text-lg md:text-xl">
+                        {linkedNewsHeading} <span className="">Coverage</span>
+                      </h2>
+                      <p className="mt-2 max-w-2xl text-sm text-[#5f6d8f]">
+                        Product-linked launch stories, updates, and buying
+                        context for this smartphone.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-5" />
+
+                  <div className="no-scrollbar mt-6 flex snap-x snap-mandatory flex-nowrap items-stretch gap-4 overflow-x-auto pb-2 pr-6">
+                    {linkedNewsDisplayStories.map((story) => (
+                      <div
+                        key={story.slug}
+                        className="w-[min(76vw,264px)] shrink-0 snap-start sm:w-[264px] lg:w-[280px]"
+                      >
+                        <LinkedNewsStoryCard story={story} />
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-8 flex justify-center">
+                    <Link
+                      to="/news"
+                      className="inline-flex items-center gap-3 text-base font-bold text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                    >
+                      More smartphone news
+                      <FaArrowRight className="text-base" />
+                    </Link>
+                  </div>
+                </section>
+              </div>
+            </div>
+          ) : null}
+          {!shouldShowLinkedNews ? (
+            <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
+              <div className="mx-auto w-full max-w-7xl">
+                <LatestNewsRouteSection newsLinkLabel="More smartphone news" />
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        {smartphoneFaqItems.length > 0 ? (
+          <div
+            id="detail-faqs"
+            className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-[#f3f6fb] dark:bg-[#07111f]"
+          >
+            <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
+              <div className="mx-auto w-full max-w-7xl">
+                <SmartphoneFaqSection
+                  items={smartphoneFaqItems}
+                  initialLimit={6}
+                />
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {recentlyViewed.length > 0 ? (
+          <section className="w-full bg-[#f3f6fb] dark:bg-[#07111f]">
+            <div className="mx-auto w-full max-w-[1440px] px-3 pb-10 pt-6 sm:px-6 sm:pb-12 lg:px-8">
+              <div className="mx-auto w-full max-w-7xl bg-transparent dark:bg-transparent">
+                <div className="flex items-end justify-between gap-4">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-blue-600 dark:text-blue-400">
+                      Continue browsing
                     </p>
-                  ) : null}
-                  <h1 className="text-2xl font-extrabold tracking-tight mb-2">
-                    {headerTitle}
-                  </h1>
-                  <h4 className="mb-3 flex items-center gap-2 text-sm font-medium text-slate-700">
-                    {currentVariantLabel ? (
-                      <span>{currentVariantLabel}</span>
-                    ) : null}
-                    {mobileData?.isAiPhone ? (
-                      <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-r from-blue-50 to-blue-50 px-2 py-0.5 text-[10px] font-semibold leading-none text-sky-700 ring-1 ring-sky-100">
-                        <span
-                          className="inline-flex items-center justify-center w-3 h-3"
-                          aria-hidden="true"
-                        >
-                          <svg viewBox="0 0 64 64" className="w-3 h-3">
-                            <path
-                              d="M32 2C34.5 14.5 40 20 52 22C40 24 34.5 29.5 32 42C29.5 29.5 24 24 12 22C24 20 29.5 14.5 32 2Z"
-                              fill="red"
+                    <h2 className="mt-1 text-lg font-bold tracking-tight text-slate-950 dark:text-white">
+                      Recently viewed smartphones
+                    </h2>
+                  </div>
+                  <Link
+                    to="/smartphones"
+                    className="hidden items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 sm:inline-flex"
+                  >
+                    View all
+                    <FaArrowRight className="text-xs" />
+                  </Link>
+                </div>
+
+                <div className="no-scrollbar mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 pr-4">
+                  {recentlyViewed.map((item) => {
+                    const itemName = item?.name || "Smartphone";
+                    const href = `/smartphones/${generateSlug(itemName)}${SMARTPHONE_SEO_SUFFIX}`;
+                    return (
+                      <Link
+                        key={String(item?.id || itemName)}
+                        to={href}
+                        className="grid w-[230px] shrink-0 snap-start grid-cols-[64px_minmax(0,1fr)] items-center gap-3 rounded-xl bg-[#ffffff] p-3 transition hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-blue-500/10"
+                      >
+                        <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg bg-white p-1 dark:bg-slate-900">
+                          {item?.image ? (
+                            <img
+                              src={item.image}
+                              alt={itemName}
+                              loading="lazy"
+                              className="h-full w-full object-contain"
                             />
-                            <path
-                              d="M50 34C51.5 41.5 55 45 62 46C55 47 51.5 50.5 50 58C48.5 50.5 45 47 38 46C45 45 48.5 41.5 50 34Z"
-                              fill="#7E57C2"
-                            />
-                          </svg>
-                        </span>
-                        <span>AI Phone</span>
-                      </span>
-                    ) : null}
-                  </h4>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleShare}
-                    className="p-2 rounded-full hover:bg-gray-100"
-                    title="Share"
-                  >
-                    <FaShareAlt className="text-xl text-gray-500" />
-                  </button>
-                  {/* Copy link removed â€” share-only */}
-                </div>
-              </div>
-              <div className="flex items-center gap-3 mb-6">
-                {currentVariant && (
-                  <>
-                    <span className="text-3xl font-bold text-green-600">
-                      {currentPriceDisplay || "Price not available"}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      ({currentVariant.ram} / {currentVariant.storage} )
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {detailInfoSections.length > 0 ? (
-              <div
-                className={`${combineResponsiveClasses(RESPONSIVE_SPACING.specSectionSpacing)} space-y-5`}
-              >
-                <div className="max-w-2xl ">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-blue-600">
-                    Key Specifications
-                  </p>
-                  <h3 className="mt-2 text-xl font-semibold text-slate-900 sm:text-2xl">
-                    Main hardware highlights
-                  </h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-500 sm:text-base">
-                    A quick breakdown of the processor, display, camera, and
-                    battery details that matter most.
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-slate-100 p-3 shadow-[0_2px_2px_rgba(0,0,0,0.1)] sm:p-4 md:p-5">
-                  <div className="grid grid-cols-1 items-stretch gap-3 min-[420px]:grid-cols-2  md:hidden ">
-                    {[
-                      {
-                        key: "battery",
-                        className: "",
-                      },
-                      {
-                        key: "performance",
-                        className: "",
-                      },
-                      {
-                        key: "camera",
-                        className: shouldUseTallMobileCameraCard
-                          ? "min-[420px]:row-span-2"
-                          : "",
-                      },
-                      {
-                        key: "display",
-                        className: "",
-                      },
-                      {
-                        key: "memory",
-                        className: "",
-                      },
-                      {
-                        key: "camera-front",
-                        className: "",
-                      },
-                      {
-                        key: "design",
-                        className: "",
-                      },
-                      {
-                        key: "os",
-                        className: "min-[420px]:col-span-2",
-                      },
-                    ]
-                      .filter((item) => detailInfoSectionByKey[item.key])
-                      .map((item) =>
-                        renderDetailInfoCard(
-                          detailInfoSectionByKey[item.key],
-                          item.className,
-                        ),
-                      )}
-                  </div>
-
-                  <div className="hidden md:grid md:grid-cols-12 md:items-stretch  md:gap-4 lg:gap-5">
-                    {[
-                      {
-                        key: "performance",
-                        className: "md:col-span-6",
-                      },
-                      {
-                        key: "display",
-                        className: "md:col-span-6",
-                      },
-                      {
-                        key: "battery",
-                        className: "md:col-span-4",
-                      },
-                      {
-                        key: "camera",
-                        className: "md:col-span-8",
-                      },
-                      {
-                        key: "memory",
-                        className: "md:col-span-6",
-                      },
-                      {
-                        key: "camera-front",
-                        className: "md:col-span-6",
-                      },
-                      {
-                        key: "design",
-                        className: "md:col-span-6",
-                      },
-                      {
-                        key: "os",
-                        className: "md:col-span-6",
-                      },
-                    ]
-                      .filter((item) => detailInfoSectionByKey[item.key])
-                      .map((item) =>
-                        renderDetailInfoCard(
-                          detailInfoSectionByKey[item.key],
-                          item.className,
-                        ),
-                      )}
-                  </div>
-                </div>
-                <div className="flex justify-center pt-1 sm:justify-end">
-                  <button
-                    type="button"
-                    onClick={() => handleTabClick("specifications")}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-blue-700 bg-blue-700 px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-blue-800 sm:w-auto sm:px-4 sm:py-2"
-                  >
-                    See full specifications
-                    <FaChevronRight className="text-xs" />
-                  </button>
+                          ) : (
+                            <FaMobile className="text-xl text-slate-300" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-bold text-slate-900 dark:text-white">
+                            {itemName}
+                          </p>
+                          {item?.brand ? (
+                            <p className="mt-0.5 truncate text-[11px] text-slate-500 dark:text-slate-400">
+                              {item.brand}
+                            </p>
+                          ) : null}
+                          {item?.price ? (
+                            <p className="mt-2 text-sm font-bold text-slate-900 dark:text-slate-100">
+                              {item.price}
+                            </p>
+                          ) : null}
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
-            ) : null}
-          </div>
-        </div>
-      </div>
-
-      <div className="w-full">
-        <div className="mx-auto max-w-7xl px-0 py-0 sm:px-6 sm:py-8 lg:px-8">
-          <div className="space-y-4 sm:space-y-6">
-            {competitorLimit > 0 ? (
-              <CompetitorCards
-                title={
-                  mobileData?.name
-                    ? `Competitors For ${mobileData.name}`
-                    : "Top Competitors"
-                }
-                productName={
-                  mobileData?.name || mobileData?.model || "This Device"
-                }
-                productId={currentProductId}
-                onCompare={handlePopularCompare}
-                compareDisabled={compareDisabled}
-                fallbackCompetitors={popularComparisonTargets}
-                currentDevice={mobileData}
-                currentBrand={mobileData?.brand || ""}
-                currentPrice={resolvedCurrentNumericPrice}
-                maxCards={competitorLimit}
-                className="w-full"
-              />
-            ) : null}
-            <div className="space-y-4 sm:space-y-6">
-              {/* <RecommendedSmartphones /> */}
             </div>
-          </div>
-        </div>
-      </div>
-
-      {shouldShowLinkedNews ? (
-        <div className="w-full">
-          <div className="mx-auto max-w-7xl px-0 py-0 sm:px-6 sm:py-8 lg:px-8">
-            <section className="overflow-hidden mx-auto w-full max-w-7xl bg-purple-50  rounded-2xl  shadow-[0_2px_4px_rgba(0,0,0,0.1)] p-4 sm:p-6 lg:p-8">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.34em] text-purple-700 sm:text-[11px]">
-                    Related News
-                  </p>
-                  <h2 className="mt-1 text-base font-semibold tracking-tight text-slate-900 sm:mt-2 sm:text-lg md:text-xl">
-                    {linkedNewsHeading} <span className="">Coverage</span>
-                  </h2>
-                  <p className="mt-2 max-w-2xl text-sm text-[#5f6d8f]">
-                    This block appears only when the news desk has a
-                    product-linked story saved for this smartphone, including
-                    multi-product stories linked to more than one device.
-                  </p>
-                </div>
-              </div>
-              <div className="mt-5 h-px w-full bg-[#cfd8f1]" />
-
-              <div className="no-scrollbar mt-6 flex snap-x snap-mandatory flex-nowrap items-stretch gap-4 overflow-x-auto pb-2 pr-6">
-                {linkedNewsDisplayStories.map((story) => (
-                  <div
-                    key={story.slug}
-                    className="w-[min(76vw,264px)] shrink-0 snap-start sm:w-[264px] lg:w-[280px]"
-                  >
-                    <LinkedNewsStoryCard story={story} />
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-8 flex justify-center">
-                <Link
-                  to="/news"
-                  className="inline-flex items-center gap-3 text-lg font-semibold text-[#082a72] transition-colors hover:text-[#3557d3]"
-                >
-                  More smartphone news
-                  <FaArrowRight className="text-base" />
-                </Link>
-              </div>
-            </section>
-          </div>
-        </div>
-      ) : null}
-      <LatestNewsRouteSection newsLinkLabel="More smartphone news" />
-
-      {activeTab === "specifications" ? (
-        <div className="w-full">
-          <div className="mx-auto max-w-7xl px-0 py-0 sm:px-6 sm:py-8 lg:px-8">
-            <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px]">
-              <div className="min-w-0">{renderTabContent()}</div>
-              <aside className="min-w-0 px-4 sm:px-0 lg:sticky lg:top-24">
-                <ProductDiscoverySections
-                  productId={currentProductId}
-                  currentBrand={mobileData?.brand || ""}
-                  className="w-full"
-                  layout="latestPhones"
-                  variant="sidebar"
-                />
-              </aside>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className="w-full">
-            <div className="mx-auto max-w-7xl px-0 py-0 sm:px-6 sm:py-8 lg:px-8">
-              {renderTabContent()}
-            </div>
-          </div>
-
-          <div className="w-full">
-            <div className="mx-auto max-w-7xl px-0 py-0 sm:px-6 sm:py-8 lg:px-8">
-              <div className="px-4 sm:px-0">
-                <ProductDiscoverySections
-                  productId={currentProductId}
-                  currentBrand={mobileData?.brand || ""}
-                  className="w-full"
-                  layout="latestPhones"
-                />
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
-      {smartphoneFaqItems.length > 0 ? (
-        <div className="w-full">
-          <div className="mx-auto max-w-7xl px-0 py-0 sm:px-6 sm:py-8 lg:px-8">
-            <div className="px-4 sm:px-0">
-              <SmartphoneFaqSection
-                items={smartphoneFaqItems}
-                initialLimit={6}
-              />
-            </div>
-          </div>
-        </div>
-      ) : null}
+          </section>
+        ) : null}
+      </main>
     </div>
   );
 };

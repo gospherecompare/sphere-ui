@@ -1,4 +1,4 @@
-﻿// src/components/DeviceList.jsx
+// src/components/DeviceList.jsx
 import React, { useState, useEffect, useMemo } from "react";
 import {
   FaStar,
@@ -19,9 +19,9 @@ import {
   FaCalendarAlt,
   FaMobileAlt,
   FaInfoCircle,
+  FaChevronDown,
   FaChevronRight,
   FaExternalLinkAlt,
-  FaExchangeAlt,
   FaPlus,
 } from "react-icons/fa";
 import { useDevice } from "../../hooks/useDevice";
@@ -37,6 +37,7 @@ import {
 // BannerSlot disabled until completed.
 import useStoreLogos from "../../hooks/useStoreLogos";
 import Spinner from "../ui/Spinner";
+import HookLogo from "../ui/HookLogo";
 import Breadcrumbs from "../Breadcrumbs";
 import SEO from "../SEO";
 import ProductDiscoverySections from "../ui/ProductDiscoverySections";
@@ -70,7 +71,6 @@ import { buildCanonicalComparePathFromDevices } from "../../utils/compareRoutes"
 import { toCanonicalPagePath } from "../../utils/publicUrl";
 import { isPublishedProduct } from "../../utils/publishedProducts";
 import { fetchPublicJson } from "../../utils/publicJsonRequest";
-import "../../styles/hideScrollbar.css";
 
 const ROUTE_FEED_CACHE_KEY = "hooks_smartphone_route_feed_v1";
 const SMARTPHONES_PER_PAGE = 20;
@@ -169,21 +169,39 @@ const compareMemoryFilterLabels = (a, b) => {
   return parse(a) - parse(b);
 };
 
-// Enhanced Image Carousel - Simplified without counts/indicators
+// Product image carousel with automatic five-second rotation
 const ImageCarousel = ({
   images = [],
   fallbackTitle = "Official teaser pending",
   fallbackSubtitle = "Image coming soon",
   fallbackLogo = "",
+  compact = false,
+  altText = "Smartphone product image",
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const imageFrameClass =
-    "h-44 w-32 sm:h-48 sm:w-32 lg:h-52 lg:w-36 rounded-2xl bg-gray-100 overflow-hidden flex items-center justify-center";
-  const imageClass = "h-full w-full object-contain p-0.5 sm:p-2";
+  const imageSignature = Array.isArray(images)
+    ? images.map((image) => String(image || "")).join("|")
+    : "";
+  const imageFrameClass = compact
+    ? "flex h-40 w-28 items-center justify-center overflow-hidden rounded-xl bg-transparent sm:h-44 sm:w-32"
+    : "flex h-48 w-32 items-center justify-center overflow-hidden rounded-xl bg-transparent sm:h-56 sm:w-40 lg:h-[340px] lg:w-[210px]";
+  const imageClass = compact
+    ? "h-full w-full scale-105 object-contain p-1"
+    : "h-full w-full object-contain p-1 sm:p-2 lg:p-3";
 
   useEffect(() => {
     setCurrentIndex(0);
-  }, [images]);
+  }, [imageSignature]);
+
+  useEffect(() => {
+    if (!Array.isArray(images) || images.length <= 1) return undefined;
+
+    const carouselTimer = window.setInterval(() => {
+      setCurrentIndex((index) => (index + 1) % images.length);
+    }, 5000);
+
+    return () => window.clearInterval(carouselTimer);
+  }, [images.length]);
 
   // If no images or single image, show static image
   if (!images || images.length === 0) {
@@ -224,7 +242,7 @@ const ImageCarousel = ({
         <div className={imageFrameClass}>
           <img
             src={images[0]}
-            alt="product"
+            alt={altText}
             className={imageClass}
             loading="lazy"
           />
@@ -233,40 +251,44 @@ const ImageCarousel = ({
     );
   }
 
-  // Multiple images case - dots only
+  // Multiple images rotate automatically every five seconds.
   return (
-    <div className="relative h-full w-full">
-      {/* Main Image */}
-      <div className="flex h-full w-full items-center justify-center">
-        <div className={`${imageFrameClass} relative`}>
-          <img
-            src={images[currentIndex]}
-            alt={`product-view-${currentIndex + 1}`}
-            className={imageClass}
-            loading="lazy"
-          />
-          {/* Dots inside image frame */}
-          <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
-            <div className="flex items-center gap-1 rounded-full px-2">
-              {images.map((_, index) => (
-                <button
-                  key={`dot-${index}`}
-                  onClick={(e) => {
-                    e?.stopPropagation();
-                    setCurrentIndex(index);
-                  }}
-                  aria-label={`Go to image ${index + 1}`}
-                  className={`h-1.5 rounded-full transition-all duration-200 ${
-                    currentIndex === index
-                      ? "w-5 bg-blue-500"
-                      : "w-1.5 bg-gray-300 hover:bg-gray-400"
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
+    <div className="flex h-full w-full flex-col items-center justify-center">
+      <div className={`${imageFrameClass} relative`}>
+        <img
+          src={images[currentIndex]}
+          alt={`${altText} view ${currentIndex + 1}`}
+          className={imageClass}
+          loading="lazy"
+        />
+      </div>
+
+      <div
+        className="mt-1.5 flex items-center justify-center"
+        aria-label="Product image carousel"
+      >
+        <div className="flex max-w-[100px] items-center justify-center gap-1 overflow-hidden">
+          {images.slice(0, 6).map((_, index) => (
+            <button
+              key={`dot-${index}`}
+              type="button"
+              onClick={(event) => {
+                event?.stopPropagation();
+                setCurrentIndex(index);
+              }}
+              aria-label={`Go to image ${index + 1}`}
+              className={`h-1.5 rounded-full transition-all duration-200 ${
+                currentIndex === index
+                  ? "w-4 bg-blue-600"
+                  : "w-1.5 bg-slate-300 hover:bg-slate-400"
+              }`}
+            />
+          ))}
         </div>
       </div>
+      <span className="mt-0.5 text-[8px] font-semibold text-slate-400">
+        {currentIndex + 1}/{images.length}
+      </span>
     </div>
   );
 };
@@ -290,23 +312,6 @@ const API_ASSET_ORIGIN = "https://api.apisphere.in";
 const SITE_ORIGIN = "https://tryhook.shop";
 
 const Smartphones = ({ onlyUpcoming = false } = {}) => {
-  // Add animation styles
-  const animationStyles = `
-    @keyframes slideUp {
-      from {
-        opacity: 0;
-        transform: translateY(100%);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-    .animate-slide-up {
-      animation: slideUp 0.3s ease-out forwards;
-    }
-  `;
-
   const deviceContext = useDevice({
     resources: ["smartphones", "brands"],
   });
@@ -2608,8 +2613,38 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const [frontCameraFilterQuery, setFrontCameraFilterQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
+  const [openDesktopFilterSection, setOpenDesktopFilterSection] =
+    useState("Search & Brands");
+  const [openMobileFilterSection, setOpenMobileFilterSection] = useState("");
+  const [showAllDesktopBrands, setShowAllDesktopBrands] = useState(false);
+  const [showPopularFeaturePicker, setShowPopularFeaturePicker] =
+    useState(false);
+  const [pendingPopularFeature, setPendingPopularFeature] = useState("");
   const [showHeroDescription, setShowHeroDescription] = useState(false);
   const [compareItems, setCompareItems] = useState([]);
+
+  useEffect(() => {
+    if (
+      (!showFilters && !showPopularFeaturePicker) ||
+      typeof document === "undefined"
+    ) {
+      return undefined;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    const handleKeyDown = (event) => {
+      if (event.key !== "Escape") return;
+      setShowFilters(false);
+      setShowPopularFeaturePicker(false);
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showFilters, showPopularFeaturePicker]);
   const [likedItems, setLikedItems] = useState(() => {
     try {
       const stored = localStorage.getItem("likedSmartphones");
@@ -2941,7 +2976,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
           ? featureHeroText
           : priceFilter || currentBrandObj
             ? seoDescription
-            : "Browse popular mobile phones in India with updated prices, detailed specifications, launch timelines, and key highlights from leading brands. Use the filters to narrow phones by budget, features, network support, battery, RAM, storage, and refresh rate, then compare your shortlisted options faster and focus on the models that best match your daily needs and buying priorities.";
+            : "Compare live prices, key specifications, variants and seller options across popular smartphones in India.";
   const heroSubtitleStyle =
     isExpandedHeroDescriptionPath && !showHeroDescription
       ? {
@@ -2954,9 +2989,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const heroContentWidthClass = "max-w-7xl";
   const heroTitleWidthClass = "max-w-7xl";
   const heroSubtitleWidthClass = "max-w-7xl";
-  const productColumnWidthClass = shouldHideInteractiveFilters
-    ? "w-full max-w-5xl"
-    : "flex-1";
+  const productColumnWidthClass = "w-full";
   useEffect(() => {
     if (isExpandedHeroDescriptionPath) {
       setShowHeroDescription(false);
@@ -4378,62 +4411,42 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     return count;
   };
 
-  const renderMobileFilterBadge = (value) => (
-    <span className="shrink-0 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
+  const renderFilterBadge = (value) => (
+    <span className="inline-flex min-w-7 shrink-0 items-center justify-center rounded-full bg-blue-50 px-2 py-1 text-[11px] font-bold text-blue-600">
       {value}
     </span>
   );
 
-  const renderMobileFilterBlock = ({
-    title,
-    subtitle,
-    badge = null,
-    children,
-    className = "mb-8",
-  }) => (
-    <div className={className}>
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h4 className="text-base font-bold text-slate-900">{title}</h4>
-          {subtitle ? (
-            <p className="mt-1 text-xs text-slate-500">{subtitle}</p>
-          ) : null}
-        </div>
-        {badge !== null ? renderMobileFilterBadge(badge) : null}
-      </div>
-      {children}
-    </div>
-  );
-
-  const renderMobileSearchInput = ({
+  const renderFilterSearchInput = ({
     value,
     onChange,
     placeholder,
     clearLabel,
+    className = "",
   }) => (
-    <div className="relative mb-3">
-      <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" />
+    <div className={`relative ${className}`}>
+      <FaSearch className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-slate-400" />
       <input
         type="text"
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-9 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-10 text-sm font-medium text-slate-900 outline-none transition placeholder:font-normal placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
       />
       {value ? (
         <button
           type="button"
           onClick={() => onChange("")}
-          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+          className="absolute right-2.5 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
           aria-label={clearLabel}
         >
-          <FaTimes className="text-xs" />
+          <FaTimes className="text-[11px]" />
         </button>
       ) : null}
     </div>
   );
 
-  const renderMobileOptionList = ({
+  const renderFilterOptionList = ({
     items,
     emptyText,
     isSelected,
@@ -4441,10 +4454,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     getLabel = (item) => item,
     getKey = (item) => getLabel(item),
     getMeta = null,
-    maxHeightClass = "max-h-44",
+    maxHeightClass = "max-h-52",
   }) => (
     <div
-      className={`no-scrollbar ${maxHeightClass} space-y-1 overflow-y-auto rounded-xl bg-white p-1`}
+      className={`[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${maxHeightClass} mt-3 space-y-1 overflow-y-auto`}
     >
       {items.map((item) => {
         const selected = isSelected(item);
@@ -4453,21 +4466,30 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         return (
           <label
             key={getKey(item)}
-            className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+            className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
               selected
-                ? "bg-blue-50 text-blue-700"
-                : "text-slate-700 hover:bg-slate-50"
+                ? "bg-blue-50 font-semibold text-blue-700"
+                : "font-medium text-slate-700 hover:bg-slate-50"
             }`}
           >
+            <span
+              className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border transition ${
+                selected
+                  ? "border-blue-600 bg-blue-600 text-white"
+                  : "border-slate-300 bg-white text-transparent"
+              }`}
+            >
+              <FaPlus className="rotate-45 text-[9px]" />
+            </span>
             <input
               type="checkbox"
               checked={selected}
               onChange={() => onChange(item)}
-              className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white checked:border-blue-600 checked:bg-blue-600"
+              className="sr-only"
             />
             <span className="min-w-0 flex-1 truncate">{label}</span>
             {meta !== null && meta !== undefined ? (
-              <span className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-500">
+              <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-500">
                 {meta}
               </span>
             ) : null}
@@ -4475,9 +4497,539 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         );
       })}
       {items.length === 0 ? (
-        <div className="px-3 py-2 text-sm text-slate-400">{emptyText}</div>
+        <div className="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-400">
+          {emptyText}
+        </div>
       ) : null}
     </div>
+  );
+
+  const renderDesktopFilterNavItem = ({
+    title,
+    badge = 0,
+    icon: Icon = FaFilter,
+  }) => {
+    const isActive = openDesktopFilterSection === title;
+    return (
+      <button
+        key={`desktop-filter-nav-${title}`}
+        type="button"
+        onClick={() => setOpenDesktopFilterSection(title)}
+        className={`flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3.5 text-left transition ${
+          isActive
+            ? "bg-blue-50 text-blue-700 ring-1 ring-blue-100"
+            : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
+        }`}
+        aria-pressed={isActive}
+      >
+        <span className="flex min-w-0 items-center gap-3">
+          <span
+            className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${
+              isActive
+                ? "bg-blue-600 text-white"
+                : "bg-slate-100 text-slate-500"
+            }`}
+          >
+            <Icon className="text-sm" />
+          </span>
+          <strong className="truncate text-sm font-bold">{title}</strong>
+        </span>
+        {renderFilterBadge(badge)}
+      </button>
+    );
+  };
+
+  const renderDesktopFilterPanel = ({ title, subtitle, children }) => {
+    if (openDesktopFilterSection !== title) return null;
+
+    const content =
+      title === "Search & Brands" ? (
+        <div className="space-y-7">
+          <div>
+            <label className="mb-3 block text-sm font-bold text-slate-900">
+              Search Phones
+            </label>
+            {renderFilterSearchInput({
+              value: searchQuery,
+              onChange: setSearchQuery,
+              placeholder: "Search smartphone model, name or brand",
+              clearLabel: "Clear smartphone search",
+            })}
+          </div>
+
+          <div>
+            <div className="mb-3 flex items-center justify-between gap-4">
+              <h5 className="text-sm font-bold text-slate-900">
+                Popular Brands
+              </h5>
+              {filters.brand.length > 0 ? (
+                <span className="text-xs font-bold text-blue-600">
+                  {filters.brand.length} selected
+                </span>
+              ) : null}
+            </div>
+            <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+              {brands
+                .slice(0, showAllDesktopBrands ? brands.length : 7)
+                .map((brand) => {
+                  const selected = filters.brand.includes(brand);
+                  const count = devices.filter(
+                    (device) => device.brand === brand,
+                  ).length;
+                  return (
+                    <button
+                      key={`desktop-brand-tile-${brand}`}
+                      type="button"
+                      onClick={() => handleFilterChange("brand", brand)}
+                      className={`flex min-h-20 items-center gap-3 rounded-2xl px-4 py-3 text-left transition ${
+                        selected
+                          ? "bg-blue-600 text-white"
+                          : "bg-slate-50 text-slate-900 hover:bg-blue-50"
+                      }`}
+                    >
+                      <span
+                        className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl text-xs font-black uppercase ${
+                          selected
+                            ? "bg-white/20 text-white"
+                            : "bg-white text-blue-600 ring-1 ring-slate-200"
+                        }`}
+                      >
+                        {String(brand).slice(0, 2)}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <strong className="block truncate text-sm">
+                          {brand}
+                        </strong>
+                        <small
+                          className={`mt-1 block text-xs ${
+                            selected ? "text-blue-100" : "text-slate-500"
+                          }`}
+                        >
+                          {count} phones
+                        </small>
+                      </span>
+                    </button>
+                  );
+                })}
+              {brands.length > 7 ? (
+                <button
+                  type="button"
+                  onClick={() => setShowAllDesktopBrands((current) => !current)}
+                  className="flex min-h-20 items-center justify-center gap-2 rounded-2xl bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
+                >
+                  <FaPlus className={showAllDesktopBrands ? "rotate-45" : ""} />
+                  {showAllDesktopBrands ? "Show less" : "View all"}
+                </button>
+              ) : null}
+            </div>
+          </div>
+
+          {showAllDesktopBrands ? (
+            <div className="rounded-xl bg-slate-50 p-4">
+              {renderFilterSearchInput({
+                value: brandFilterQuery,
+                onChange: setBrandFilterQuery,
+                placeholder: "Search all brands",
+                clearLabel: "Clear brand search",
+              })}
+              {renderFilterOptionList({
+                items: filteredBrandOptions,
+                emptyText: "No brands found",
+                isSelected: (brand) => filters.brand.includes(brand),
+                onChange: (brand) => handleFilterChange("brand", brand),
+                getMeta: (brand) =>
+                  devices.filter((device) => device.brand === brand).length,
+                maxHeightClass: "max-h-52",
+              })}
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        children
+      );
+
+    return (
+      <section key={`desktop-filter-panel-${title}`} className="min-w-0">
+        <div className="mb-6">
+          <h4 className="text-lg font-black tracking-tight text-slate-950">
+            {title}
+          </h4>
+          {subtitle ? (
+            <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
+          ) : null}
+        </div>
+        <div className="max-w-4xl">{content}</div>
+      </section>
+    );
+  };
+
+  const renderMobileFilterBlock = ({
+    title,
+    badge = 0,
+    icon: Icon = FaFilter,
+    children,
+    className = "",
+  }) => {
+    const isExpanded = openMobileFilterSection === title;
+    return (
+      <section
+        key={title}
+        className={`overflow-hidden rounded-2xl bg-white ring-1 transition ${
+          isExpanded ? "ring-blue-500" : "ring-slate-200"
+        } ${className}`}
+      >
+        <button
+          type="button"
+          className="flex min-h-14 w-full items-center justify-between gap-3 px-4 py-3 text-left"
+          onClick={() =>
+            setOpenMobileFilterSection((current) =>
+              current === title ? "" : title,
+            )
+          }
+          aria-expanded={isExpanded}
+        >
+          <span className="flex min-w-0 items-center gap-3">
+            <Icon
+              className={`shrink-0 text-sm ${
+                isExpanded ? "text-blue-600" : "text-slate-500"
+              }`}
+            />
+            <strong
+              className={`truncate text-sm font-bold ${
+                isExpanded ? "text-blue-700" : "text-slate-900"
+              }`}
+            >
+              {title}
+            </strong>
+          </span>
+          <span className="flex shrink-0 items-center gap-3 text-slate-500">
+            {renderFilterBadge(badge)}
+            <FaChevronRight
+              className={`text-xs transition-transform ${
+                isExpanded ? "rotate-90 text-blue-600" : ""
+              }`}
+            />
+          </span>
+        </button>
+        {isExpanded ? (
+          <div className="border-t border-slate-100 bg-slate-50/70 p-3">
+            <div className="rounded-2xl bg-white p-3">{children}</div>
+          </div>
+        ) : null}
+      </section>
+    );
+  };
+
+  const renderSelectedFiltersSummary = ({ compact = false } = {}) => {
+    const activeCount = getActiveFiltersCount();
+    return (
+      <section>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h5 className="text-sm font-bold text-slate-900">Selected filters</h5>
+          {activeCount > 0 ? (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="text-xs font-bold text-blue-600 transition hover:text-blue-700"
+            >
+              Clear all
+            </button>
+          ) : null}
+        </div>
+        <div
+          className={`rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 text-center ${
+            compact ? "px-4 py-5" : "px-5 py-7"
+          }`}
+        >
+          <span className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-white text-blue-600">
+            <FaFilter className="text-sm" />
+          </span>
+          <strong className="mt-3 block text-sm font-bold text-blue-700">
+            {activeCount > 0
+              ? `${activeCount} filter${activeCount === 1 ? "" : "s"} selected`
+              : "No filters selected yet"}
+          </strong>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            {activeCount > 0
+              ? `${filteredVariants.length} smartphones match your choices.`
+              : "Choose from the options to narrow down results."}
+          </p>
+        </div>
+      </section>
+    );
+  };
+
+  const renderFilterSections = (renderBlock) => (
+    <>
+      {renderBlock({
+        title: "Search & Brands",
+        subtitle: "Find a model or manufacturer",
+        badge: filters.brand.length,
+        icon: FaSearch,
+        children: (
+          <div className="space-y-4">
+            <div>
+              <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+                Search phones
+              </label>
+              {renderFilterSearchInput({
+                value: searchQuery,
+                onChange: setSearchQuery,
+                placeholder: "Model, name, or brand",
+                clearLabel: "Clear smartphone search",
+              })}
+            </div>
+            <div>
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <label className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+                  Brands
+                </label>
+                <span className="text-[11px] font-semibold text-slate-400">
+                  {brands.length} available
+                </span>
+              </div>
+              {renderFilterSearchInput({
+                value: brandFilterQuery,
+                onChange: setBrandFilterQuery,
+                placeholder: "Search brands",
+                clearLabel: "Clear brand search",
+              })}
+              {renderFilterOptionList({
+                items: filteredBrandOptions,
+                emptyText: "No brands found",
+                isSelected: (brand) => filters.brand.includes(brand),
+                onChange: (brand) => handleFilterChange("brand", brand),
+                getMeta: (brand) =>
+                  devices.filter((device) => device.brand === brand).length,
+                maxHeightClass: "max-h-60",
+              })}
+            </div>
+          </div>
+        ),
+      })}
+
+      {renderBlock({
+        title: "Price Range",
+        subtitle: "Set your preferred budget",
+        badge:
+          filters.priceRange.min > MIN_PRICE ||
+          filters.priceRange.max < MAX_PRICE
+            ? 1
+            : 0,
+        icon: FaMoneyBill,
+        children: renderPriceRangeControl(),
+      })}
+
+      {renderBlock({
+        title: "Memory (RAM)",
+        subtitle: "Multitasking performance",
+        badge: filters.ram.length,
+        icon: FaMemory,
+        children: (
+          <>
+            {renderFilterSearchInput({
+              value: ramFilterQuery,
+              onChange: setRamFilterQuery,
+              placeholder: "Search RAM",
+              clearLabel: "Clear RAM search",
+            })}
+            {renderFilterOptionList({
+              items: filteredRamOptions,
+              emptyText: "No RAM options found",
+              isSelected: (ram) =>
+                filters.ram.some(
+                  (value) => normalizeMemoryFilterLabel(value, "GB") === ram,
+                ),
+              onChange: (ram) => handleFilterChange("ram", ram),
+            })}
+          </>
+        ),
+      })}
+
+      {renderBlock({
+        title: "Storage Capacity",
+        subtitle: "Apps, media and files",
+        badge: filters.storage.length,
+        icon: FaShoppingBag,
+        children: (
+          <>
+            {renderFilterSearchInput({
+              value: storageFilterQuery,
+              onChange: setStorageFilterQuery,
+              placeholder: "Search storage",
+              clearLabel: "Clear storage search",
+            })}
+            {renderFilterOptionList({
+              items: filteredStorageOptions,
+              emptyText: "No storage options found",
+              isSelected: (storage) =>
+                filters.storage.some(
+                  (value) =>
+                    normalizeMemoryFilterLabel(value, "GB") === storage,
+                ),
+              onChange: (storage) => handleFilterChange("storage", storage),
+            })}
+          </>
+        ),
+      })}
+
+      {renderBlock({
+        title: "Battery Features",
+        subtitle: "Capacity and charging",
+        badge: filters.battery.length,
+        icon: FaBatteryFull,
+        children: (
+          <>
+            {renderFilterSearchInput({
+              value: batteryFilterQuery,
+              onChange: setBatteryFilterQuery,
+              placeholder: "Search battery features",
+              clearLabel: "Clear battery search",
+            })}
+            {renderFilterOptionList({
+              items: filteredBatteryFeatures,
+              emptyText: "No battery options found",
+              isSelected: (item) => filters.battery.includes(item.id),
+              onChange: (item) => handleFilterChange("battery", item.id),
+              getLabel: (item) => item.label,
+              getKey: (item) => item.id,
+            })}
+          </>
+        ),
+      })}
+
+      {processorOptions.length > 0
+        ? renderBlock({
+            title: "Processor",
+            subtitle: "Chipset family",
+            badge: filters.processor.length,
+            icon: FaRobot,
+            children: (
+              <>
+                {renderFilterSearchInput({
+                  value: processorFilterQuery,
+                  onChange: setProcessorFilterQuery,
+                  placeholder: "Search processor",
+                  clearLabel: "Clear processor search",
+                })}
+                {renderFilterOptionList({
+                  items: filteredProcessorOptions,
+                  emptyText: "No processor options found",
+                  isSelected: (processor) =>
+                    filters.processor.includes(processor),
+                  onChange: (processor) =>
+                    handleFilterChange("processor", processor),
+                })}
+              </>
+            ),
+          })
+        : null}
+
+      {networkOptions.length > 0
+        ? renderBlock({
+            title: "Network",
+            subtitle: "Cellular connectivity",
+            badge: filters.network.length,
+            icon: FaWifi,
+            children: (
+              <>
+                {renderFilterSearchInput({
+                  value: networkFilterQuery,
+                  onChange: setNetworkFilterQuery,
+                  placeholder: "Search network",
+                  clearLabel: "Clear network search",
+                })}
+                {renderFilterOptionList({
+                  items: filteredNetworkOptions,
+                  emptyText: "No network options found",
+                  isSelected: (network) => filters.network.includes(network),
+                  onChange: (network) => handleFilterChange("network", network),
+                })}
+              </>
+            ),
+          })
+        : null}
+
+      {refreshRateOptions.length > 0
+        ? renderBlock({
+            title: "Refresh Rate",
+            subtitle: "Display smoothness",
+            badge: filters.refreshRate.length,
+            icon: FaSyncAlt,
+            children: (
+              <>
+                {renderFilterSearchInput({
+                  value: refreshRateFilterQuery,
+                  onChange: setRefreshRateFilterQuery,
+                  placeholder: "Search refresh rate",
+                  clearLabel: "Clear refresh rate search",
+                })}
+                {renderFilterOptionList({
+                  items: filteredRefreshRateOptions,
+                  emptyText: "No refresh rate options found",
+                  isSelected: (rate) => filters.refreshRate.includes(rate),
+                  onChange: (rate) => handleFilterChange("refreshRate", rate),
+                })}
+              </>
+            ),
+          })
+        : null}
+
+      {rearCameraOptions.length > 0 || frontCameraOptions.length > 0
+        ? renderBlock({
+            title: "Camera",
+            subtitle: "Rear and selfie resolution",
+            badge: filters.rearCamera.length + filters.frontCamera.length,
+            icon: FaMobileAlt,
+            children: (
+              <div className="space-y-5">
+                {rearCameraOptions.length > 0 ? (
+                  <div>
+                    <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+                      Rear camera
+                    </label>
+                    {renderFilterSearchInput({
+                      value: rearCameraFilterQuery,
+                      onChange: setRearCameraFilterQuery,
+                      placeholder: "Search rear camera",
+                      clearLabel: "Clear rear camera search",
+                    })}
+                    {renderFilterOptionList({
+                      items: filteredRearCameraOptions,
+                      emptyText: "No rear camera options found",
+                      isSelected: (camera) =>
+                        filters.rearCamera.includes(camera),
+                      onChange: (camera) =>
+                        handleFilterChange("rearCamera", camera),
+                    })}
+                  </div>
+                ) : null}
+                {frontCameraOptions.length > 0 ? (
+                  <div>
+                    <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+                      Front camera
+                    </label>
+                    {renderFilterSearchInput({
+                      value: frontCameraFilterQuery,
+                      onChange: setFrontCameraFilterQuery,
+                      placeholder: "Search front camera",
+                      clearLabel: "Clear front camera search",
+                    })}
+                    {renderFilterOptionList({
+                      items: filteredFrontCameraOptions,
+                      emptyText: "No front camera options found",
+                      isSelected: (camera) =>
+                        filters.frontCamera.includes(camera),
+                      onChange: (camera) =>
+                        handleFilterChange("frontCamera", camera),
+                    })}
+                  </div>
+                ) : null}
+              </div>
+            ),
+          })
+        : null}
+    </>
   );
 
   const renderPriceRangeControl = () => {
@@ -4493,7 +5045,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     );
 
     return (
-      <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-[0_2px_2px_rgba(0,0,0,0.1)]">
+      <div className="rounded-2xl bg-white p-1">
         <div className="mb-4 flex items-start justify-between text-xs text-slate-500">
           <div>
             <div>Minimum</div>
@@ -4510,9 +5062,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         </div>
 
         <div className="relative mb-4 h-7">
-          <div className="absolute left-0 right-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-slate-200"></div>
+          <div className="absolute left-0 right-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-slate-200"></div>
           <div
-            className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-blue-500"
+            className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-gradient-to-r from-blue-600 to-indigo-500"
             style={{
               left: `${minPercent}%`,
               width: `${rangePercent}%`,
@@ -4550,7 +5102,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
           <button
             type="button"
             onClick={() => updatePriceRange(MIN_PRICE, MAX_PRICE)}
-            className="rounded-lg px-3 py-1.5 text-sm font-medium text-blue-600 transition-colors duration-200 hover:bg-slate-100 hover:text-blue-700"
+            className="rounded-xl bg-blue-50 px-3 py-2 text-xs font-bold text-blue-600 transition hover:bg-blue-100"
           >
             Reset Range
           </button>
@@ -4750,10 +5302,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
   return (
     <div
-      className="min-h-screen  text-slate-900 bg-white"
+      className="hooks-smartphones-page min-h-screen bg-[#f3f6fb] text-[#0f172a] dark:bg-[#07111f] dark:text-[#f3f7ff]"
       data-page-label={headerLabel}
     >
-      <style>{animationStyles}</style>
       <SEO
         title={seoTitle}
         description={seoDescription}
@@ -4764,805 +5315,397 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         schema={listSchema}
       />
       {/* Main Content */}
-      <div className="relative mx-auto max-w-7xl px-4 pt-0 pb-8 sm:px-6 sm:pb-12 md:pb-16 lg:px-8 lg:pb-20">
+      <div className="relative mx-auto max-w-[1440px] px-3 pb-10 sm:px-6 sm:pb-14 lg:px-8 lg:pb-20">
         <div className="relative">
-          <section className="relative left-1/2 isolate w-screen -translate-x-1/2 overflow-hidden px-4 pb-0 pt-3 sm:px-6 sm:pt-4 lg:px-8 lg:pt-5">
-            <div className="relative mx-auto max-w-7xl">
-              <div className={heroContentWidthClass}>
-                <h1
-                  className={`${heroTitleWidthClass} text-[11px] font-bold uppercase tracking-[0.32em] text-purple-600 sm:text-xs`}
-                >
-                  {heroTitleText}
-                </h1>
+          <section className="smartphones-hero relative left-1/2 isolate w-screen -translate-x-1/2 overflow-hidden bg-gradient-to-b from-white via-blue-50/70 to-[#f3f6fb] dark:from-[#091526] dark:via-[#0d1d33] dark:to-[#07111f]">
+            {normalizedRoutePathname === "/smartphones" ? (
+              <Breadcrumbs variant="plain" />
+            ) : null}
 
-                <h4
-                  className={`mt-3 ${heroSubtitleWidthClass} text-sm leading-7  text-slate-600 sm:text-base sm:leading-8`}
-                  style={heroSubtitleStyle}
-                >
-                  {heroSubtitleText}
-                </h4>
-
-                {isExpandedHeroDescriptionPath ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowHeroDescription((prev) => !prev)}
-                    className="mt-2.5 inline-flex items-center gap-2 text-sm font-semibold text-blue-700 transition-colors duration-200 hover:text-blue-900"
-                    aria-expanded={showHeroDescription}
+            <div className="px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
+              <div className="relative mx-auto max-w-7xl">
+              <div className="grid items-center gap-4 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-8">
+                <div className={`${heroContentWidthClass} min-w-0`}>
+                  <div className="mb-2 inline-flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.18em] text-blue-700 dark:text-[#8eb0ff]">
+                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-100" />
+                    Live smartphone catalogue
+                  </div>
+                  <h1
+                    className={`${heroTitleWidthClass} max-w-4xl text-4xl font-black leading-[0.98] tracking-[-0.055em] text-[#0f172a] sm:text-5xl lg:text-7xl dark:text-[#f7faff]`}
                   >
-                    {showHeroDescription ? "Read less" : "Read more"}
-                  </button>
-                ) : null}
+                    {heroTitleText}
+                  </h1>
+
+                  <p
+                    className={`${heroSubtitleWidthClass} mt-3 max-w-3xl text-sm leading-6 text-[#64748b] sm:text-base dark:text-[#afbdd2]`}
+                    style={heroSubtitleStyle}
+                  >
+                    {heroSubtitleText}
+                  </p>
+
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowFilters(true)}
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700"
+                    >
+                      <FaFilter /> Refine phones
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowSort(true)}
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#ffffff] px-5 py-2.5 text-sm font-bold text-[#1e293b] ring-1 ring-[#e2e8f0] transition hover:bg-[#f8fafc] lg:hidden dark:bg-[#0e1b2d] dark:text-[#eaf1ff] dark:ring-[#2a3d58] dark:hover:bg-[#132640]"
+                    >
+                      <FaSyncAlt /> Sort results
+                    </button>
+                    {isExpandedHeroDescriptionPath ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowHeroDescription((prev) => !prev)}
+                        className="inline-flex min-h-11 items-center gap-2 px-2 text-sm font-bold text-blue-700 transition hover:text-blue-900 dark:text-[#8eb0ff] dark:hover:text-[#b6ccff]"
+                        aria-expanded={showHeroDescription}
+                      >
+                        {showHeroDescription
+                          ? "Show less"
+                          : "Read buying context"}
+                        <FaChevronRight />
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div
+                  className="relative mx-auto hidden h-[190px] w-full max-w-[350px] sm:h-[220px] lg:block lg:h-[230px]"
+                  aria-label="Smartphone technology illustration"
+                  role="img"
+                >
+                  <div className="absolute inset-x-10 top-7 h-36 rounded-full bg-blue-500/15 blur-3xl" />
+                  <div className="absolute left-1/2 top-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full border border-blue-200/70" />
+                  <div className="absolute left-1/2 top-1/2 h-28 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full border border-indigo-200/60 -rotate-12" />
+                  <div className="absolute left-[17%] top-[18%] h-[152px] w-[78px] -rotate-12 rounded-[22px] bg-slate-950 p-1.5 sm:h-[174px] sm:w-[88px]">
+                    <div className="relative h-full w-full overflow-hidden rounded-[18px] bg-gradient-to-br from-slate-700 via-blue-700 to-indigo-700">
+                      <div className="absolute left-2 top-2 grid h-9 w-9 grid-cols-2 gap-1 rounded-xl bg-slate-950/65 p-1.5">
+                        <span className="rounded-full bg-blue-200" />
+                        <span className="rounded-full bg-slate-400" />
+                        <span className="rounded-full bg-indigo-300" />
+                        <span className="rounded-full bg-slate-700" />
+                      </div>
+                      <span className="absolute bottom-4 left-1/2 h-1 w-8 -translate-x-1/2 rounded-full bg-white/35" />
+                    </div>
+                  </div>
+                  <div className="absolute left-[46%] top-[4%] h-[174px] w-[86px] rotate-6 rounded-[24px] bg-slate-950 p-1.5 sm:h-[198px] sm:w-[98px]">
+                    <div className="relative h-full w-full overflow-hidden rounded-[20px] bg-gradient-to-br from-cyan-300 via-blue-500 to-indigo-700">
+                      <span className="absolute left-1/2 top-2 h-2 w-2 -translate-x-1/2 rounded-full bg-slate-950/80" />
+                      <span className="absolute -left-10 top-12 h-28 w-28 rounded-full border-[16px] border-white/25" />
+                      <span className="absolute -right-10 bottom-5 h-24 w-24 rounded-full border-[14px] border-cyan-100/25" />
+                    </div>
+                  </div>
+                  <div className="absolute left-1 top-3 grid h-11 w-11 place-items-center rounded-xl bg-white/75 text-blue-600 ring-1 ring-blue-100 backdrop-blur-sm dark:bg-[#0e1d31]/90 dark:text-[#8fb4ff] dark:ring-[#2a456c]">
+                    <FaRobot />
+                  </div>
+                  <div className="absolute bottom-4 left-4 grid h-10 w-10 place-items-center rounded-xl bg-white/75 text-blue-600 ring-1 ring-blue-100 backdrop-blur-sm dark:bg-[#0e1d31]/90 dark:text-[#8fb4ff] dark:ring-[#2a456c]">
+                    <FaWifi />
+                  </div>
+                  <div className="absolute right-3 top-8 grid h-11 w-11 place-items-center rounded-xl bg-white/75 text-blue-600 ring-1 ring-blue-100 backdrop-blur-sm dark:bg-[#0e1d31]/90 dark:text-[#8fb4ff] dark:ring-[#2a456c]">
+                    <FaBatteryFull />
+                  </div>
+                  <div className="absolute bottom-3 right-8 grid h-10 w-10 place-items-center rounded-xl bg-white/75 text-blue-600 ring-1 ring-blue-100 backdrop-blur-sm dark:bg-[#0e1d31]/90 dark:text-[#8fb4ff] dark:ring-[#2a456c]">
+                    <FaMobileAlt />
+                  </div>
+                  <span className="absolute right-2 top-1/2 h-2.5 w-2.5 rounded-full bg-cyan-400" />
+                  <span className="absolute bottom-8 left-1/3 h-2 w-2 rounded-full bg-indigo-400" />
+                </div>
               </div>
+            </div>
             </div>
           </section>
 
-          <div className="mt-3 sm:mt-4">
+          <div className="mt-0">
             <MobileListingControls
               activeFilterCount={getActiveFiltersCount()}
+              activeFeatureCount={normalizedFeature ? 1 : 0}
               onOpenFilters={() => setShowFilters(true)}
-              onOpenSort={() => setShowSort(true)}
+              onOpenPopularFeatures={() => {
+                setPendingPopularFeature(normalizedFeature || "");
+                setShowPopularFeaturePicker(true);
+              }}
+              currentFeatureLabel={
+                currentFeatureMeta?.name || "All popular features"
+              }
+              sortBy={sortBy}
+              sortOptions={SMARTPHONE_MOBILE_SORT_OPTIONS}
+              onSortChange={setSortBy}
             />
 
             {!shouldHideInteractiveFilters ? (
               <>
-                <div className="overflow-hidden pt-0 pb-2 sm:pb-3">
-                  <div className="mb-2 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-semibold text-slate-900 sm:text-base">
-                        {isUpcomingFilterPath
-                          ? "Launch Signals"
-                          : "Popular Features"}
-                      </h3>
-                    </div>
-                    {normalizedFeature && (
-                      <button
-                        onClick={() => setFeatureParam(null)}
-                        className="text-xs font-semibold text-blue-700 transition-colors duration-200 hover:text-blue-900"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                  {popularFeatureOrderLoaded && (
-                    <p className="mb-2 text-xs text-slate-500">
-                      {isUpcomingFilterPath
-                        ? "Track upcoming phones by battery, camera, AI and brand signals"
-                        : "Popular choices from other users (last 7 days)"}
-                    </p>
-                  )}
-                  <div className="flex gap-2.5 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                    {popularFeatures.map((pf) => {
-                      const isActive = normalizedFeature === pf.id;
-                      const Icon = pf.icon;
-                      return (
-                        <button
-                          key={pf.id}
-                          onClick={() => setFeatureParam(pf.id)}
-                          className={`flex items-center gap-2 rounded-full px-3 py-2 text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors duration-200 ${
-                            isActive
-                              ? "bg-blue-600 text-white"
-                              : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                          }`}
-                        >
-                          <span
-                            className={
-                              isActive ? "text-white" : "text-blue-600"
-                            }
-                          >
-                            {Icon ? <Icon className="text-base" /> : null}
+                {showPopularFeaturePicker ? (
+                  <div
+                    className="fixed inset-0 z-[90] flex items-end justify-center p-0 sm:items-center sm:p-6"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="popular-feature-filter-title"
+                  >
+                    <button
+                      type="button"
+                      className="absolute inset-0 bg-slate-950/45 backdrop-blur-[2px]"
+                      aria-label="Close popular feature filter"
+                      onClick={() => setShowPopularFeaturePicker(false)}
+                    />
+
+                    <div className="relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[30px] bg-white sm:max-h-[84vh] sm:max-w-5xl sm:rounded-[30px]">
+                      <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-4 py-4 sm:px-6 sm:py-5">
+                        <div className="flex min-w-0 items-start gap-3">
+                          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-600">
+                            <FaStar className="text-sm" />
                           </span>
-                          <span>{pf.name}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="mb-3 overflow-hidden">
-                  <div className="hidden items-center justify-end gap-4 lg:flex">
-                    {getActiveFiltersCount() > 0 && (
-                      <button
-                        onClick={clearFilters}
-                        className="flex items-center gap-2 rounded-[18px] px-4 py-2.5 text-sm font-medium text-blue-600 transition-colors duration-200 hover:bg-blue-50 hover:text-blue-700"
-                      >
-                        <FaTimes />
-                        Clear
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="space-y-3 sm:space-y-4 lg:hidden">
-                    {getActiveFiltersCount() > 0 && (
-                      <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-4 shadow-[0_2px_2px_rgba(0,0,0,0.1)]">
-                        <div className="flex items-center gap-3">
-                          <FaInfoCircle className="text-blue-500" />
-                          <div>
-                            <span className="text-sm font-medium text-slate-900">
-                              {getActiveFiltersCount()} filter
-                              {getActiveFiltersCount() > 1 ? "s" : ""} applied
-                            </span>
-                            <p className="mt-0.5 text-xs text-slate-500">
-                              Found {filteredVariants.length} of{" "}
-                              {variantCards.length} options
-                            </p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={clearFilters}
-                          className="rounded-lg px-3 py-1.5 text-sm font-medium text-blue-600 transition-colors duration-200 hover:bg-slate-100 hover:text-blue-700"
-                        >
-                          Clear all
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </>
-            ) : null}
-            <section className="">
-              <div className="mt-4 flex flex-col gap-4 lg:flex-row md:gap-6">
-                {/* Desktop Filter Sidebar */}
-                {!shouldHideInteractiveFilters ? (
-                  <div className="hidden lg:block lg:w-72 flex-shrink-0">
-                    <div className="sticky top-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-[0_2px_2px_rgba(0,0,0,0.1)] lg:p-6">
-                      {/* Filters Header */}
-                      <div className="mb-6 flex items-center justify-between border-b border-slate-200 px-2 pb-4 sm:mb-8 sm:px-3 md:px-4">
-                        <div>
-                          <h3 className="flex items-center gap-2 text-xl font-bold text-slate-900">
-                            Filters
-                          </h3>
-                          <p className="mt-1 text-sm text-slate-500">
-                            Narrow down by specifications
-                          </p>
-                        </div>
-                        {getActiveFiltersCount() > 0 && (
-                          <button
-                            onClick={clearFilters}
-                            className="flex items-center gap-2 rounded-lg px-3 py-1 text-sm font-semibold text-blue-600 transition-colors duration-200 hover:bg-slate-50 hover:text-blue-500"
-                          >
-                            <FaTimes />
-                            RESET
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Active Filters Badge */}
-                      {getActiveFiltersCount() > 0 && (
-                        <div className="mb-6 rounded-xl border border-slate-100 bg-white p-4 shadow-[0_2px_2px_rgba(0,0,0,0.1)] sm:mb-8">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-semibold text-slate-900">
-                              Active Filters
-                            </span>
-                            <span className="text-xs font-bold text-blue-300 bg-blue-500/20 px-2 py-1 rounded-full border border-blue-400/30">
-                              {getActiveFiltersCount()}
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-500">
-                            {filteredVariants.length} devices match
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Search Filter */}
-                      <div className="mb-8">
-                        <div className="mb-4">
-                          <h4 className="text-base font-bold text-slate-900">
-                            Search Phones
-                          </h4>
-                          <p className="mt-1 text-xs text-slate-500">
-                            Match model, name, or brand
-                          </p>
-                        </div>
-                        <div className="relative">
-                          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" />
-                          <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search smartphones..."
-                            className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-8 pr-9 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                          />
-                          {searchQuery ? (
-                            <button
-                              type="button"
-                              onClick={() => setSearchQuery("")}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
-                              aria-label="Clear smartphone search"
-                            >
-                              <FaTimes className="text-xs" />
-                            </button>
-                          ) : null}
-                        </div>
-                      </div>
-
-                      {/* Brand Filter */}
-                      <div className="mb-8">
-                        <div className="flex items-center justify-between mb-4">
-                          <div>
-                            <h4 className="text-base font-bold text-slate-900">
-                              Brands
-                            </h4>
-                            <p className="mt-1 text-xs text-slate-500">
-                              Select by manufacturer
-                            </p>
-                          </div>
-                          <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
-                            {filters.brand.length}
-                          </span>
-                        </div>
-                        <div className="relative mb-4">
-                          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
-                          <input
-                            type="text"
-                            value={brandFilterQuery}
-                            onChange={(e) =>
-                              setBrandFilterQuery(e.target.value)
-                            }
-                            placeholder="Search brand..."
-                            className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                          />
-                        </div>
-                        <div className="no-scrollbar space-y-2 max-h-60 overflow-y-auto pr-2">
-                          {filteredBrandOptions.map((brand) => (
-                            <label
-                              key={brand}
-                              className="group flex cursor-pointer items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 transition-all duration-200 hover:border-slate-200 hover:bg-slate-50"
-                            >
-                              <div className="relative">
-                                <input
-                                  type="checkbox"
-                                  checked={filters.brand.includes(brand)}
-                                  onChange={() =>
-                                    handleFilterChange("brand", brand)
-                                  }
-                                  className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white transition-all duration-200 checked:border-blue-500 checked:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1"
-                                />
-                              </div>
-                              <span className="flex-1 font-medium text-slate-700 group-hover:text-slate-900">
-                                {brand}
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3
+                                id="popular-feature-filter-title"
+                                className="text-lg font-black tracking-tight text-slate-950 sm:text-2xl"
+                              >
+                                {isUpcomingFilterPath
+                                  ? "Launch Signal Filter"
+                                  : "Popular Feature Filter"}
+                              </h3>
+                              <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-blue-700">
+                                {pendingPopularFeature
+                                  ? "1 selected"
+                                  : "None selected"}
                               </span>
-                              <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-500">
-                                {
-                                  devices.filter((d) => d.brand === brand)
-                                    .length
-                                }
-                              </div>
-                            </label>
-                          ))}
-                          {filteredBrandOptions.length === 0 && (
-                            <div className="px-2 py-1 text-sm text-slate-400">
-                              No brands found
                             </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Price Range Filter */}
-                      <div className="mb-8">
-                        <div className="flex items-center justify-between mb-4">
-                          <div>
-                            <h4 className="text-base font-bold text-slate-900">
-                              Price Range
-                            </h4>
-                            <p className="mt-1 text-xs text-slate-500">
-                              Set your budget
+                            <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">
+                              Select one feature, review the selection, and
+                              apply it to the smartphone catalogue.
                             </p>
                           </div>
-                          <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
-                            ₹ {filters.priceRange.min?.toLocaleString()}
-                          </span>
                         </div>
-
-                        {renderPriceRangeControl()}
+                        <button
+                          type="button"
+                          onClick={() => setShowPopularFeaturePicker(false)}
+                          className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-slate-200 hover:text-slate-950"
+                          aria-label="Close popular feature filter"
+                        >
+                          <FaTimes />
+                        </button>
                       </div>
 
-                      {/* RAM Filter */}
-                      <div className="mb-8">
-                        <div className="flex items-center justify-between mb-4">
-                          <div>
-                            <h4 className="text-base font-bold text-slate-900">
-                              Memory (RAM)
+                      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
+                        <div className="grid gap-5 lg:grid-cols-[15rem_minmax(0,1fr)]">
+                          <aside className="rounded-3xl bg-slate-50 p-4 lg:sticky lg:top-0 lg:self-start">
+                            <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-blue-700">
+                              Feature filter
+                            </span>
+                            <h4 className="mt-2 text-lg font-black tracking-tight text-slate-950">
+                              Choose one priority
                             </h4>
-                            <p className="mt-1 text-xs text-slate-500">
-                              Multitasking performance
+                            <p className="mt-2 text-xs leading-5 text-slate-500">
+                              The catalogue supports one popular-feature route
+                              at a time. Your choice is applied only after
+                              pressing the Apply button.
                             </p>
-                          </div>
-                          <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
-                            {filters.ram.length}
-                          </span>
-                        </div>
-                        <div className="relative mb-3">
-                          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" />
-                          <input
-                            type="text"
-                            value={ramFilterQuery}
-                            onChange={(e) => setRamFilterQuery(e.target.value)}
-                            placeholder="Search RAM..."
-                            className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                          />
-                        </div>
-                        <div className="no-scrollbar max-h-44 space-y-1 overflow-y-auto rounded-xl bg-white p-1">
-                          {filteredRamOptions.map((ram) => {
-                            const isSelected = filters.ram.some(
-                              (value) =>
-                                normalizeMemoryFilterLabel(value, "GB") === ram,
-                            );
-                            return (
-                              <label
-                                key={ram}
-                                className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                                  isSelected
-                                    ? "bg-blue-50 text-blue-700"
-                                    : "text-slate-700 hover:bg-slate-50"
-                                }`}
+
+                            <div className="mt-4 rounded-2xl bg-white p-3">
+                              <span className="block text-[10px] font-extrabold uppercase tracking-[0.12em] text-slate-400">
+                                Pending selection
+                              </span>
+                              <span className="mt-1 block text-sm font-bold text-slate-800">
+                                {popularFeatures.find(
+                                  (item) => item.id === pendingPopularFeature,
+                                )?.name || "All popular features"}
+                              </span>
+                            </div>
+                          </aside>
+
+                          <div className="min-w-0">
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                              <div>
+                                <h4 className="text-sm font-black text-slate-950 sm:text-base">
+                                  Available features
+                                </h4>
+                                <p className="mt-0.5 text-[11px] text-slate-400 sm:text-xs">
+                                  Tap an option to stage it for filtering.
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setPendingPopularFeature("")}
+                                className="inline-flex min-h-9 items-center gap-2 rounded-xl bg-slate-100 px-3 text-xs font-bold text-slate-700 transition hover:bg-slate-200"
                               >
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={() =>
-                                    handleFilterChange("ram", ram)
-                                  }
-                                  className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white checked:border-blue-600 checked:bg-blue-600"
-                                />
-                                <span>{ram}</span>
-                              </label>
-                            );
-                          })}
-                          {filteredRamOptions.length === 0 && (
-                            <div className="px-3 py-2 text-sm text-slate-400">
-                              No RAM options found
+                                <FaSyncAlt className="text-[10px]" />
+                                Clear
+                              </button>
                             </div>
-                          )}
+
+                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                              {popularFeatures.map((pf) => {
+                                const isSelected =
+                                  pendingPopularFeature === pf.id;
+                                const Icon = pf.icon;
+                                return (
+                                  <button
+                                    key={pf.id}
+                                    type="button"
+                                    aria-pressed={isSelected}
+                                    onClick={() =>
+                                      setPendingPopularFeature(
+                                        isSelected ? "" : pf.id,
+                                      )
+                                    }
+                                    className={`group flex min-h-[72px] min-w-0 items-center gap-3 rounded-2xl px-3.5 py-3 text-left transition-colors ${
+                                      isSelected
+                                        ? "bg-blue-600 text-white"
+                                        : "bg-slate-50 text-slate-700 hover:bg-blue-50 hover:text-blue-800"
+                                    }`}
+                                  >
+                                    <span
+                                      className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl text-sm transition-colors ${
+                                        isSelected
+                                          ? "bg-white/15 text-white"
+                                          : "bg-white text-blue-600 group-hover:bg-blue-100"
+                                      }`}
+                                    >
+                                      {Icon ? <Icon /> : <FaStar />}
+                                    </span>
+                                    <span className="min-w-0 flex-1">
+                                      <span className="block text-sm font-bold leading-5">
+                                        {pf.name}
+                                      </span>
+                                      <span
+                                        className={`mt-0.5 block text-[10px] font-medium ${
+                                          isSelected
+                                            ? "text-blue-100"
+                                            : "text-slate-400"
+                                        }`}
+                                      >
+                                        {isSelected
+                                          ? "Ready to apply"
+                                          : "Select feature"}
+                                      </span>
+                                    </span>
+                                    <span
+                                      className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-[10px] ${
+                                        isSelected
+                                          ? "bg-white text-blue-600"
+                                          : "bg-slate-100 text-slate-400 group-hover:bg-blue-100 group-hover:text-blue-600"
+                                      }`}
+                                    >
+                                      {isSelected ? "✓" : <FaPlus />}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
                         </div>
                       </div>
 
-                      {/* Storage Filter */}
-                      <div className="mb-8">
-                        <div className="flex items-center justify-between mb-4">
-                          <div>
-                            <h4 className="text-base font-bold text-slate-900">
-                              Storage Capacity
-                            </h4>
-                            <p className="mt-1 text-xs text-slate-500">
-                              Apps and media space
-                            </p>
-                          </div>
-                          <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
-                            {filters.storage.length}
-                          </span>
-                        </div>
-                        <div className="relative mb-3">
-                          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" />
-                          <input
-                            type="text"
-                            value={storageFilterQuery}
-                            onChange={(e) =>
-                              setStorageFilterQuery(e.target.value)
-                            }
-                            placeholder="Search storage..."
-                            className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                          />
-                        </div>
-                        <div className="no-scrollbar max-h-44 space-y-1 overflow-y-auto rounded-xl bg-white p-1">
-                          {filteredStorageOptions.map((storage) => {
-                            const isSelected = filters.storage.some(
-                              (value) =>
-                                normalizeMemoryFilterLabel(value, "GB") ===
-                                storage,
-                            );
-                            return (
-                              <label
-                                key={storage}
-                                className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                                  isSelected
-                                    ? "bg-blue-50 text-blue-700"
-                                    : "text-slate-700 hover:bg-slate-50"
-                                }`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={() =>
-                                    handleFilterChange("storage", storage)
-                                  }
-                                  className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white checked:border-blue-600 checked:bg-blue-600"
-                                />
-                                <span>{storage}</span>
-                              </label>
-                            );
-                          })}
-                          {filteredStorageOptions.length === 0 && (
-                            <div className="px-3 py-2 text-sm text-slate-400">
-                              No storage options found
-                            </div>
-                          )}
-                        </div>
+                      <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-100 bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 sm:flex-row sm:justify-end sm:px-6 sm:py-4">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPendingPopularFeature(normalizedFeature || "");
+                            setShowPopularFeaturePicker(false);
+                          }}
+                          className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-100 px-5 text-sm font-extrabold text-slate-700 transition hover:bg-slate-200"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFeatureParam(pendingPopularFeature || null);
+                            setShowPopularFeaturePicker(false);
+                          }}
+                          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 text-sm font-extrabold text-white transition hover:bg-blue-700"
+                        >
+                          <FaFilter className="text-xs" />
+                          {pendingPopularFeature
+                            ? "Apply feature filter"
+                            : "Show all features"}
+                        </button>
                       </div>
-
-                      {/* Battery Filter */}
-                      <div className="mb-8">
-                        <div className="flex items-center justify-between mb-4">
-                          <div>
-                            <h4 className="text-base font-bold text-slate-900">
-                              Battery Features
-                            </h4>
-                            <p className="mt-1 text-xs text-slate-500">
-                              Capacity and charging
-                            </p>
-                          </div>
-                          <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
-                            {filters.battery.length}
-                          </span>
-                        </div>
-                        <div className="relative mb-3">
-                          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" />
-                          <input
-                            type="text"
-                            value={batteryFilterQuery}
-                            onChange={(e) =>
-                              setBatteryFilterQuery(e.target.value)
-                            }
-                            placeholder="Search battery..."
-                            className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                          />
-                        </div>
-                        <div className="no-scrollbar max-h-44 space-y-1 overflow-y-auto rounded-xl bg-white p-1">
-                          {filteredBatteryFeatures.map((r) => {
-                            const isSelected = filters.battery.includes(r.id);
-                            return (
-                              <label
-                                key={r.id}
-                                className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                                  isSelected
-                                    ? "bg-blue-50 text-blue-700"
-                                    : "text-slate-700 hover:bg-slate-50"
-                                }`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={() =>
-                                    handleFilterChange("battery", r.id)
-                                  }
-                                  className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white checked:border-blue-600 checked:bg-blue-600"
-                                />
-                                <span>{r.label}</span>
-                              </label>
-                            );
-                          })}
-                          {filteredBatteryFeatures.length === 0 && (
-                            <div className="px-3 py-2 text-sm text-slate-400">
-                              No battery options found
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Processor Filter */}
-                      {processorOptions.length > 0 && (
-                        <div className="mb-8">
-                          <div className="mb-4 flex items-center justify-between">
-                            <div>
-                              <h4 className="text-base font-bold text-slate-900">
-                                Processor
-                              </h4>
-                              <p className="mt-1 text-xs text-slate-500">
-                                Chipset family
-                              </p>
-                            </div>
-                            <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
-                              {filters.processor.length}
-                            </span>
-                          </div>
-                          <div className="relative mb-3">
-                            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" />
-                            <input
-                              type="text"
-                              value={processorFilterQuery}
-                              onChange={(e) =>
-                                setProcessorFilterQuery(e.target.value)
-                              }
-                              placeholder="Search processor..."
-                              className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                            />
-                          </div>
-                          <div className="no-scrollbar max-h-44 space-y-1 overflow-y-auto rounded-xl bg-white p-1">
-                            {filteredProcessorOptions.map((processor) => {
-                              const isSelected =
-                                filters.processor.includes(processor);
-                              return (
-                                <label
-                                  key={processor}
-                                  className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                                    isSelected
-                                      ? "bg-blue-50 text-blue-700"
-                                      : "text-slate-700 hover:bg-slate-50"
-                                  }`}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={isSelected}
-                                    onChange={() =>
-                                      handleFilterChange("processor", processor)
-                                    }
-                                    className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white checked:border-blue-600 checked:bg-blue-600"
-                                  />
-                                  <span>{processor}</span>
-                                </label>
-                              );
-                            })}
-                            {filteredProcessorOptions.length === 0 && (
-                              <div className="px-3 py-2 text-sm text-slate-400">
-                                No processor options found
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Network Filter */}
-                      {networkOptions.length > 0 && (
-                        <div className="mb-8">
-                          <div className="mb-4 flex items-center justify-between">
-                            <div>
-                              <h4 className="text-base font-bold text-slate-900">
-                                Network
-                              </h4>
-                              <p className="mt-1 text-xs text-slate-500">
-                                Cellular support
-                              </p>
-                            </div>
-                            <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
-                              {filters.network.length}
-                            </span>
-                          </div>
-                          <div className="relative mb-3">
-                            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" />
-                            <input
-                              type="text"
-                              value={networkFilterQuery}
-                              onChange={(e) =>
-                                setNetworkFilterQuery(e.target.value)
-                              }
-                              placeholder="Search network..."
-                              className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                            />
-                          </div>
-                          <div className="no-scrollbar max-h-44 space-y-1 overflow-y-auto rounded-xl bg-white p-1">
-                            {filteredNetworkOptions.map((network) => {
-                              const isSelected =
-                                filters.network.includes(network);
-                              return (
-                                <label
-                                  key={network}
-                                  className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                                    isSelected
-                                      ? "bg-blue-50 text-blue-700"
-                                      : "text-slate-700 hover:bg-slate-50"
-                                  }`}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={isSelected}
-                                    onChange={() =>
-                                      handleFilterChange("network", network)
-                                    }
-                                    className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white checked:border-blue-600 checked:bg-blue-600"
-                                  />
-                                  <span>{network}</span>
-                                </label>
-                              );
-                            })}
-                            {filteredNetworkOptions.length === 0 && (
-                              <div className="px-3 py-2 text-sm text-slate-400">
-                                No network options found
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Refresh Rate Filter */}
-                      {refreshRateOptions.length > 0 && (
-                        <div className="mb-8">
-                          <div className="mb-4 flex items-center justify-between">
-                            <div>
-                              <h4 className="text-base font-bold text-slate-900">
-                                Refresh Rate
-                              </h4>
-                              <p className="mt-1 text-xs text-slate-500">
-                                Display smoothness
-                              </p>
-                            </div>
-                            <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
-                              {filters.refreshRate.length}
-                            </span>
-                          </div>
-                          <div className="relative mb-3">
-                            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" />
-                            <input
-                              type="text"
-                              value={refreshRateFilterQuery}
-                              onChange={(e) =>
-                                setRefreshRateFilterQuery(e.target.value)
-                              }
-                              placeholder="Search refresh rate..."
-                              className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                            />
-                          </div>
-                          <div className="no-scrollbar max-h-44 space-y-1 overflow-y-auto rounded-xl bg-white p-1">
-                            {filteredRefreshRateOptions.map((rate) => {
-                              const isSelected =
-                                filters.refreshRate.includes(rate);
-                              return (
-                                <label
-                                  key={rate}
-                                  className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                                    isSelected
-                                      ? "bg-blue-50 text-blue-700"
-                                      : "text-slate-700 hover:bg-slate-50"
-                                  }`}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={isSelected}
-                                    onChange={() =>
-                                      handleFilterChange("refreshRate", rate)
-                                    }
-                                    className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white checked:border-blue-600 checked:bg-blue-600"
-                                  />
-                                  <span>{rate}</span>
-                                </label>
-                              );
-                            })}
-                            {filteredRefreshRateOptions.length === 0 && (
-                              <div className="px-3 py-2 text-sm text-slate-400">
-                                No refresh rate options found
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Rear Camera Filter */}
-                      {rearCameraOptions.length > 0 && (
-                        <div className="mb-8">
-                          <div className="mb-4 flex items-center justify-between">
-                            <div>
-                              <h4 className="text-base font-bold text-slate-900">
-                                Rear Camera
-                              </h4>
-                              <p className="mt-1 text-xs text-slate-500">
-                                Main camera resolution
-                              </p>
-                            </div>
-                            <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
-                              {filters.rearCamera.length}
-                            </span>
-                          </div>
-                          <div className="relative mb-3">
-                            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" />
-                            <input
-                              type="text"
-                              value={rearCameraFilterQuery}
-                              onChange={(e) =>
-                                setRearCameraFilterQuery(e.target.value)
-                              }
-                              placeholder="Search rear camera..."
-                              className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                            />
-                          </div>
-                          <div className="no-scrollbar max-h-44 space-y-1 overflow-y-auto rounded-xl bg-white p-1">
-                            {filteredRearCameraOptions.map((camera) => {
-                              const isSelected =
-                                filters.rearCamera.includes(camera);
-                              return (
-                                <label
-                                  key={camera}
-                                  className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                                    isSelected
-                                      ? "bg-blue-50 text-blue-700"
-                                      : "text-slate-700 hover:bg-slate-50"
-                                  }`}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={isSelected}
-                                    onChange={() =>
-                                      handleFilterChange("rearCamera", camera)
-                                    }
-                                    className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white checked:border-blue-600 checked:bg-blue-600"
-                                  />
-                                  <span>{camera}</span>
-                                </label>
-                              );
-                            })}
-                            {filteredRearCameraOptions.length === 0 && (
-                              <div className="px-3 py-2 text-sm text-slate-400">
-                                No rear camera options found
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Front Camera Filter */}
-                      {frontCameraOptions.length > 0 && (
-                        <div className="mb-8">
-                          <div className="mb-4 flex items-center justify-between">
-                            <div>
-                              <h4 className="text-base font-bold text-slate-900">
-                                Front Camera
-                              </h4>
-                              <p className="mt-1 text-xs text-slate-500">
-                                Selfie camera resolution
-                              </p>
-                            </div>
-                            <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
-                              {filters.frontCamera.length}
-                            </span>
-                          </div>
-                          <div className="relative mb-3">
-                            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" />
-                            <input
-                              type="text"
-                              value={frontCameraFilterQuery}
-                              onChange={(e) =>
-                                setFrontCameraFilterQuery(e.target.value)
-                              }
-                              placeholder="Search front camera..."
-                              className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                            />
-                          </div>
-                          <div className="no-scrollbar max-h-44 space-y-1 overflow-y-auto rounded-xl bg-white p-1">
-                            {filteredFrontCameraOptions.map((camera) => {
-                              const isSelected =
-                                filters.frontCamera.includes(camera);
-                              return (
-                                <label
-                                  key={camera}
-                                  className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                                    isSelected
-                                      ? "bg-blue-50 text-blue-700"
-                                      : "text-slate-700 hover:bg-slate-50"
-                                  }`}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={isSelected}
-                                    onChange={() =>
-                                      handleFilterChange("frontCamera", camera)
-                                    }
-                                    className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white checked:border-blue-600 checked:bg-blue-600"
-                                  />
-                                  <span>{camera}</span>
-                                </label>
-                              );
-                            })}
-                            {filteredFrontCameraOptions.length === 0 && (
-                              <div className="px-3 py-2 text-sm text-slate-400">
-                                No front camera options found
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Additional filters button */}
-                      <button
-                        onClick={() => setShowFilters(true)}
-                        className="mt-6 w-full rounded-xl bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 py-3 font-semibold text-white transition-all duration-300 hover:from-blue-700 hover:to-blue-600 hover:shadow-lg lg:hidden"
-                      >
-                        Show More Filters
-                      </button>
                     </div>
                   </div>
                 ) : null}
+              </>
+            ) : null}
+            <section className="smartphones-toolbar space-y-4">
+              <div className="hidden items-center gap-3 py-2 lg:flex">
+                <button
+                  type="button"
+                  onClick={() => setShowFilters(true)}
+                  className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-[#e2e8f0] bg-transparent text-blue-600 transition-colors hover:border-blue-300 hover:bg-blue-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:border-[#2a3d58] dark:text-[#8eb0ff] dark:hover:border-[#4c6f9f] dark:hover:bg-[#132640] dark:focus-visible:ring-[#6f9cff] dark:focus-visible:ring-offset-[#07111f]"
+                  aria-label="Open smartphone search"
+                >
+                  <FaSearch className="text-sm" />
+                </button>
 
-                {/* Products List - Right */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPendingPopularFeature(normalizedFeature || "");
+                    setShowPopularFeaturePicker(true);
+                  }}
+                  className="group flex min-h-12 min-w-[13.5rem] items-center gap-3 rounded-2xl border border-[#e2e8f0] bg-transparent px-4 text-left transition-colors hover:border-blue-300 hover:bg-blue-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:border-[#2a3d58] dark:hover:border-[#4c6f9f] dark:hover:bg-[#132640] dark:focus-visible:ring-[#6f9cff] dark:focus-visible:ring-offset-[#07111f]"
+                >
+                  <FaStar className="shrink-0 text-sm text-blue-600" />
+                  <span className="min-w-0 flex-1 truncate text-sm font-bold text-[#0f172a] dark:text-[#eaf1ff]">
+                    {currentFeatureMeta?.name || "Popular Features"}
+                  </span>
+                  {normalizedFeature ? (
+                    <span className="grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-blue-600 px-1 text-[10px] font-black text-white">
+                      1
+                    </span>
+                  ) : null}
+                  <FaChevronDown className="shrink-0 text-[10px] text-slate-500 transition-transform group-hover:text-blue-600" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowFilters(true)}
+                  className="group flex min-h-12 min-w-[11.5rem] items-center gap-3 rounded-2xl border border-[#e2e8f0] bg-transparent px-4 text-left transition-colors hover:border-blue-300 hover:bg-blue-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:border-[#2a3d58] dark:hover:border-[#4c6f9f] dark:hover:bg-[#132640] dark:focus-visible:ring-[#6f9cff] dark:focus-visible:ring-offset-[#07111f]"
+                >
+                  <FaFilter className="shrink-0 text-sm text-blue-600" />
+                  <span className="min-w-0 flex-1 truncate text-sm font-bold text-[#0f172a] dark:text-[#eaf1ff]">
+                    All Filters
+                  </span>
+                  {getActiveFiltersCount() > 0 ? (
+                    <span className="grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-blue-600 px-1 text-[10px] font-black text-white">
+                      {getActiveFiltersCount()}
+                    </span>
+                  ) : null}
+                  <FaChevronDown className="shrink-0 text-[10px] text-slate-500 transition-transform group-hover:text-blue-600" />
+                </button>
+
+                <label className="ml-auto flex min-h-12 min-w-[15.5rem] items-center gap-3 rounded-2xl border border-[#e2e8f0] bg-transparent px-4 transition-colors hover:border-blue-300 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-500/20 dark:border-[#2a3d58] dark:hover:border-[#4c6f9f] dark:focus-within:border-[#6f9cff] dark:focus-within:ring-[#6f9cff]/20">
+                  <FaSyncAlt className="shrink-0 text-sm text-blue-600" />
+                  <span className="min-w-0 flex-1">
+                    <span className="mr-2 text-sm font-medium text-[#64748b] dark:text-[#94a4bd]">
+                      Sort by:
+                    </span>
+                    <select
+                      value={sortBy}
+                      onChange={(event) => setSortBy(event.target.value)}
+                      aria-label="Sort smartphones"
+                      className="max-w-[10rem] cursor-pointer appearance-none bg-transparent pr-6 text-sm font-bold text-[#0f172a] outline-none dark:text-[#eaf1ff] dark:[&>option]:bg-[#0f1c2d]"
+                    >
+                      {SMARTPHONE_MOBILE_SORT_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </span>
+                  <FaChevronDown className="pointer-events-none shrink-0 text-[10px] text-slate-500" />
+                </label>
+              </div>
+              <div className="mt-4 flex flex-col gap-5 md:gap-6 lg:flex-row">
+                {/* Products List */}
                 <div className={productColumnWidthClass}>
                   {/* Products Grid */}
-                  <div className="grid grid-cols-1 gap-4 sm:gap-5 md:gap-6 auto-rows-max">
+                  <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 md:items-stretch md:gap-5 md:auto-rows-fr xl:grid-cols-3 xl:gap-6">
                     {visibleVariants.map((device, _idx) => {
                       const devicePolicy = resolveDevicePolicy(device);
                       const availabilityState = getAvailabilityState(
@@ -5618,13 +5761,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                         : device.display_status ||
                           device.displayStatus ||
                           (renderType === "available" ? "Available now" : null);
-                      const cardBadgeLabel =
-                        (isUpcomingCard ? "Upcoming" : null) ||
-                        statusLabel ||
-                        (listFilter === "trending"
-                          ? device.trendBadge || "Trending"
-                          : null) ||
-                        (isAiDevice ? "AI Phone" : null);
+                      const marketStatusLabel = isUpcomingCard
+                        ? "Upcoming"
+                        : statusLabel || "Available now";
+                      const cardBadgeLabel = isAiDevice ? "AI Phone" : null;
                       const deviceCompareLimit = Number.isFinite(
                         devicePolicy.compareLimit,
                       )
@@ -5819,15 +5959,28 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                         "256 GB",
                       );
                       const memorySummary = `${ramValue} | ${storageValue}`;
-                      const compactSpecLine = [
-                        memorySummary,
-                        cameraSummary,
-                        batterySummary,
-                        displaySummary,
-                        processorSummary,
-                      ]
-                        .filter(Boolean)
-                        .join(" | ");
+                      const specHighlights = [
+                        {
+                          label: "Memory",
+                          value: memorySummary,
+                          Icon: FaMemory,
+                        },
+                        {
+                          label: "Camera",
+                          value: cameraSummary,
+                          Icon: FaMobileAlt,
+                        },
+                        {
+                          label: "Battery",
+                          value: batterySummary,
+                          Icon: FaBatteryFull,
+                        },
+                        {
+                          label: "Chipset",
+                          value: processorSummary,
+                          Icon: FaRobot,
+                        },
+                      ];
                       const formatStorePrice = (price) => {
                         if (price == null || price === "" || price === "NaN") {
                           return "";
@@ -5846,87 +5999,285 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                       const selectedVariantId = String(
                         device.selectedVariantId ?? "",
                       );
-                      const renderVariantSelector = (className = "") =>
-                        variantOptions.length > 1 ? (
+                      const renderVariantSelector = (
+                        mode = "desktop",
+                        className = "",
+                      ) => {
+                        if (variantOptions.length <= 1) return null;
+
+                        const isCompact = mode === "compact";
+                        const isMobile = mode === "mobile";
+                        const wrapperSpacing = isCompact
+                          ? "mt-2"
+                          : isMobile
+                            ? "mt-3"
+                            : "mt-5";
+                        const labelClass =
+                          isCompact || isMobile
+                            ? "mb-2 block text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-500 sm:text-xs"
+                            : "mb-2 block text-xs font-extrabold uppercase tracking-[0.14em] text-slate-500";
+                        const gridClass =
+                          isCompact || isMobile
+                            ? "grid grid-cols-2 gap-1.5"
+                            : "grid gap-2 sm:grid-cols-2";
+
+                        return (
                           <div
-                            className={`flex flex-wrap items-center gap-2 ${className}`}
+                            className={`${wrapperSpacing} ${className}`}
                             onClick={(event) => event.stopPropagation()}
                           >
-                            {variantOptions.map((option) => {
-                              const isSelected =
-                                String(option.variantId) ===
-                                  selectedVariantId ||
-                                option.variantIndex ===
-                                  device.selectedVariantIndex;
-                              return (
-                                <button
-                                  key={`${device.id}-variant-${option.variantId}`}
-                                  type="button"
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    const productKey =
-                                      getSmartphoneProductKey(device);
-                                    if (!productKey) return;
-                                    setSelectedVariantByProduct((prev) => ({
-                                      ...prev,
-                                      [productKey]: option.variantId,
-                                    }));
-                                  }}
-                                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
-                                    isSelected
-                                      ? "border-blue-600 bg-blue-600 text-white shadow-sm"
-                                      : "border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:text-blue-700"
-                                  }`}
-                                >
-                                  {option.label}
-                                </button>
-                              );
-                            })}
+                            <span className={labelClass}>Select variant</span>
+                            <div className={gridClass}>
+                              {variantOptions.map((option) => {
+                                const isSelected =
+                                  String(option.variantId) ===
+                                    selectedVariantId ||
+                                  option.variantIndex ===
+                                    device.selectedVariantIndex;
+                                const baseClass = isCompact
+                                  ? "flex min-h-11 min-w-0 items-center justify-between gap-1 rounded-lg px-3 text-left text-xs font-extrabold transition"
+                                  : isMobile
+                                    ? "flex min-h-11 min-w-0 items-center justify-between gap-1 rounded-lg px-3 text-left text-[11px] font-bold transition sm:text-xs"
+                                    : "flex min-h-11 items-center justify-between rounded-xl px-4 text-left text-sm font-bold transition";
+                                const selectedClass = isCompact
+                                  ? "bg-blue-100 text-blue-700"
+                                  : "bg-blue-600 text-white";
+                                const idleClass = isCompact
+                                  ? "bg-slate-100 text-slate-600 hover:bg-slate-100"
+                                  : "bg-slate-100 text-slate-700 hover:bg-slate-100";
+
+                                return (
+                                  <button
+                                    key={`${device.id}-variant-${option.variantId}`}
+                                    type="button"
+                                    aria-pressed={isSelected}
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      const productKey =
+                                        getSmartphoneProductKey(device);
+                                      if (!productKey) return;
+                                      setSelectedVariantByProduct((prev) => ({
+                                        ...prev,
+                                        [productKey]: option.variantId,
+                                      }));
+                                    }}
+                                    className={`${baseClass} ${
+                                      isSelected ? selectedClass : idleClass
+                                    }`}
+                                  >
+                                    <span className="min-w-0 truncate">
+                                      {option.label}
+                                    </span>
+                                    {isSelected ? (
+                                      <span
+                                        className={`grid shrink-0 place-items-center rounded-full text-[8px] ${
+                                          isCompact
+                                            ? "h-5 w-5 bg-blue-600 text-white"
+                                            : "h-6 w-6 bg-white/20 text-white"
+                                        }`}
+                                        aria-hidden="true"
+                                      >
+                                        ✓
+                                      </span>
+                                    ) : null}
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
-                        ) : null;
-                      const renderSpecScore = () =>
+                        );
+                      };
+                      const renderSpecScore = (compact = false) =>
                         scoreValue != null ? (
                           <div
-                            className="flex items-end gap-1.5 leading-none"
+                            className={
+                              compact
+                                ? "inline-flex h-9 max-w-full items-center gap-1.5 rounded-lg bg-blue-50 px-2.5 text-blue-700"
+                                : "inline-flex items-center gap-2 rounded-xl bg-blue-50 px-3 py-2 text-blue-700"
+                            }
                             aria-label={`Spec score ${scoreValue} out of 100`}
                           >
-                            <div className="flex items-baseline leading-none">
-                              <span className="text-3xl font-semibold leading-none text-blue-600">
+                            <HookLogo
+                              aria-label="Hooks"
+                              className={`shrink-0 object-cover ${
+                                compact
+                                  ? "h-7 w-7 rounded-md"
+                                  : "h-9 w-9 rounded-lg"
+                              }`}
+                            />
+                            <span className="flex min-w-0 items-baseline">
+                              <strong
+                                className={
+                                  compact
+                                    ? "text-xl font-black leading-none"
+                                    : "text-2xl font-black leading-none"
+                                }
+                              >
                                 {scoreValue}
-                              </span>
-                              <span className="text-xs font-semibold text-blue-500">
+                              </strong>
+                              <small
+                                className={
+                                  compact
+                                    ? "ml-0.5 text-[9px] font-bold text-blue-500"
+                                    : "ml-0.5 text-[10px] font-bold text-blue-500"
+                                }
+                              >
                                 /100
-                              </span>
-                            </div>
-                            <div className="flex flex-col items-start leading-none">
-                              <span className="text-[8px] font-semibold uppercase tracking-[0.32em] text-blue-400">
-                                Spec
-                              </span>
-                              <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-blue-500">
-                                Score
-                              </span>
-                            </div>
+                              </small>
+                            </span>
+                            <span
+                              className={
+                                compact
+                                  ? "truncate border-l border-blue-200 pl-2 text-[7px] font-extrabold uppercase tracking-[0.09em] text-blue-700"
+                                  : "border-l border-blue-200 pl-2 text-[9px] font-extrabold uppercase tracking-[0.12em] text-blue-700"
+                              }
+                            >
+                              Spec score
+                            </span>
                           </div>
                         ) : null;
+
+                      const renderStoreRows = (compact = false) => (
+                        <div className={compact ? "space-y-1.5" : "space-y-2"}>
+                          {priceRowsForDisplay.map((storePrice, i) => {
+                            const storeObj =
+                              storePrice.storeObj ||
+                              (getStore
+                                ? getStore(
+                                    storePrice.store ||
+                                      storePrice.store_name ||
+                                      storePrice.storeName ||
+                                      "",
+                                  )
+                                : null);
+                            const storeNameCandidate =
+                              storePrice.display_store_name ||
+                              storePrice.store ||
+                              storePrice.store_name ||
+                              storePrice.storeName ||
+                              storeObj?.name ||
+                              "";
+                            const ctaText = storePrice.cta_label || "Buy Now";
+                            const rawLogoSrc =
+                              storePrice.logo ||
+                              (storeNameCandidate
+                                ? getStoreLogo
+                                  ? getStoreLogo(storeNameCandidate)
+                                  : getLogo(storeNameCandidate)
+                                : null) ||
+                              device.brandLogo ||
+                              null;
+                            const logoSrc = normalizeAssetUrl(rawLogoSrc);
+                            const priceLabel = formatStorePrice(
+                              storePrice.price,
+                            );
+
+                            return (
+                              <div
+                                key={`${
+                                  device.id ?? device.model ?? ""
+                                }-${compact ? "mobile-" : ""}price-${i}`}
+                                className={`flex items-center justify-between gap-2 bg-white ${
+                                  compact
+                                    ? "min-h-12 rounded-lg px-2.5 py-2"
+                                    : "min-h-14 rounded-lg px-3 py-2"
+                                }`}
+                              >
+                                <div className="flex min-w-0 items-center gap-2">
+                                  {logoSrc ? (
+                                    <div
+                                      className={`flex shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white ${
+                                        compact ? "h-8 w-8" : "h-9 w-9"
+                                      }`}
+                                    >
+                                      <img
+                                        src={logoSrc}
+                                        alt={
+                                          storeObj?.name || storeNameCandidate
+                                        }
+                                        className="h-full w-full object-contain"
+                                      />
+                                    </div>
+                                  ) : (
+                                    <div
+                                      className={`flex shrink-0 items-center justify-center rounded-lg bg-blue-50 ${
+                                        compact ? "h-8 w-8" : "h-9 w-9"
+                                      }`}
+                                    >
+                                      <FaStore className="text-[9px] text-slate-400" />
+                                    </div>
+                                  )}
+                                  <span
+                                    className={`truncate font-semibold text-slate-700 ${
+                                      compact
+                                        ? "max-w-28 text-[11px] sm:text-xs"
+                                        : "text-xs sm:text-sm"
+                                    }`}
+                                  >
+                                    {storeNameCandidate || "Online Store"}
+                                  </span>
+                                </div>
+                                <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+                                  <span
+                                    className={`whitespace-nowrap font-extrabold text-emerald-600 ${
+                                      compact
+                                        ? "text-[11px] sm:text-xs"
+                                        : "text-sm"
+                                    }`}
+                                  >
+                                    {priceLabel}
+                                  </span>
+                                  {storePrice.url ? (
+                                    <a
+                                      href={storePrice.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(event) =>
+                                        event.stopPropagation()
+                                      }
+                                      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-md bg-blue-600 font-bold text-white transition hover:bg-blue-700 ${
+                                        compact
+                                          ? "min-h-9 px-3 text-[10px] sm:text-[11px]"
+                                          : "min-h-9 px-3 py-2 text-[10px] sm:text-xs"
+                                      }`}
+                                    >
+                                      {ctaText || "Buy Now"}
+                                      <FaExternalLinkAlt className="text-[8px]" />
+                                    </a>
+                                  ) : (
+                                    <span
+                                      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-md bg-slate-200 font-bold text-slate-500 ${
+                                        compact
+                                          ? "min-h-9 px-3 text-[10px] sm:text-[11px]"
+                                          : "min-h-9 px-3 py-2 text-[10px] sm:text-xs"
+                                      }`}
+                                    >
+                                      {ctaText || "Unavailable"}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
                       return (
                         <div
                           key={`${device.id ?? device.model ?? ""}-${_idx}`}
                           onClick={(e) => handleView(device, e)}
-                          className={`h-full w-full mx-auto smooth-transition fade-in-up overflow-hidden rounded-lg border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)] cursor-pointer transition-all duration-300 ${
-                            isCompareSelected(device)
-                              ? "ring-2 ring-blue-400 bg-blue-50"
-                              : "hover:"
+                          className={`smartphone-catalog-card mx-auto h-auto w-full cursor-pointer overflow-hidden rounded-2xl bg-[#ffffff] transition duration-200 md:h-full dark:bg-[#0e1a2b] dark:[&_.bg-white]:bg-[#0f1c2d] dark:[&_.bg-slate-50]:bg-[#132238] dark:[&_.bg-slate-100]:bg-[#162941] dark:[&_.bg-blue-50]:bg-[#142b52] dark:[&_.bg-blue-100]:bg-[#1b3967] dark:[&_.smartphone-card-media_.bg-white]:bg-[#11213d] dark:[&_.text-slate-950]:text-[#f3f7ff] dark:[&_.text-slate-900]:text-[#eaf1ff] dark:[&_.text-slate-800]:text-[#d8e2f0] dark:[&_.text-slate-700]:text-[#c7d2e5] dark:[&_.text-slate-600]:text-[#aebbd0] dark:[&_.text-slate-500]:text-[#94a4bd] dark:[&_.border-slate-200]:border-[#263750] dark:[&_.divide-slate-200]:divide-[#263750] dark:hover:bg-[#102038] ${
+                            isCompareSelected(device) ? "bg-blue-50/50" : ""
                           }`}
                         >
-                          <div className="p-5 sm:p-6 transition-all duration-300">
-                            <div className="hidden flex-col gap-4 lg:flex lg:flex-row lg:items-start lg:justify-between">
+                          <div className="flex h-auto flex-col p-0 md:h-full">
+                            <div className="hidden">
                               <div className="min-w-0 flex-1">
-                                <h3 className="max-w-3xl text-[1.45rem] font-semibold tracking-tight text-[#14255e] sm:text-[1.8rem]">
+                                <h3 className="text-2xl font-black text-slate-950">
                                   {device.name || device.model}
                                 </h3>
                               </div>
 
-                              <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+                              <div className="shrink-0">
                                 {cardPriceLabel ? (
                                   <div className="text-right">
                                     {isUpcomingCard ? (
@@ -5934,7 +6285,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                                         {upcomingPriceEyebrow}
                                       </div>
                                     ) : null}
-                                    <div className="text-xl font-semibold tracking-tight text-[#14255e] sm:text-2xl">
+                                    <div className="text-2xl font-black text-slate-950">
                                       {cardPriceLabel}
                                     </div>
                                   </div>
@@ -5942,8 +6293,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                               </div>
                             </div>
 
-                            <div className="mt-4 hidden flex-col gap-3 lg:flex lg:flex-row lg:items-center lg:justify-between">
-                              <div className="flex flex-wrap items-center gap-4">
+                            <div className="hidden">
+                              <div className="flex items-center">
                                 {renderSpecScore()}
                               </div>
 
@@ -5960,67 +6311,101 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                               ) : null}
                             </div>
 
-                            <div className="mt-5 grid grid-cols-[128px_minmax(0,1fr)] gap-3 sm:grid-cols-[120px_minmax(0,1fr)] lg:grid-cols-[180px_minmax(0,1fr)] sm:gap-4 lg:gap-5">
-                              {" "}
-                              <div className="relative flex items-start justify-start sm:justify-center">
+                            <div className="hidden">
+                              <div className="smartphone-card-media relative flex min-h-[560px] items-center justify-center overflow-hidden border-r border-slate-200/70 bg-gradient-to-b from-blue-50 to-slate-50 p-8">
                                 {cardBadgeLabel ? (
-                                  <span className="absolute left-0 top-0 z-10 inline-flex items-center rounded-full bg-gradient-to-r from-[#0B66F6] via-[#2563EB] to-[#38BDF8] px-3 py-1 text-xs font-semibold text-white shadow-[0_8px_18px_rgba(11,102,246,0.24)]">
+                                  <span className="absolute left-6 top-6 z-10 inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-xs font-bold text-white">
                                     {cardBadgeLabel}
                                   </span>
                                 ) : null}
-                                <div className="flex w-full justify-start sm:justify-center">
-                                  <ImageCarousel
-                                    images={device.images}
-                                    fallbackTitle={
-                                      isUpcomingCard ? "" : "No image"
-                                    }
-                                    fallbackSubtitle={
-                                      isUpcomingCard
-                                        ? device.brand || "Launch image coming"
-                                        : "Image coming soon"
-                                    }
-                                    fallbackLogo={brandLogoSrc}
-                                    className="shadow-md"
-                                  />
-                                </div>
+                                <ImageCarousel
+                                  images={device.images}
+                                  fallbackTitle={
+                                    isUpcomingCard ? "" : "No image"
+                                  }
+                                  fallbackSubtitle={
+                                    isUpcomingCard
+                                      ? device.brand || "Launch image coming"
+                                      : "Image coming soon"
+                                  }
+                                  fallbackLogo={brandLogoSrc}
+                                  altText={
+                                    device.name || device.model || "Smartphone"
+                                  }
+                                />
                               </div>
-                              <div className="space-y-3 pt-1">
-                                <div className="space-y-1 lg:hidden">
-                                  {device.brand ? (
-                                    <p className="text-sm font-semibold text-blue-600">
-                                      {device.brand}
-                                    </p>
-                                  ) : null}
-                                  <h3 className="max-w-3xl text-[1.05rem] font-semibold tracking-tight text-[#14255e] sm:text-[1.2rem]">
-                                    {device.name || device.model}
-                                  </h3>
 
-                                  {renderSpecScore()}
-                                </div>
-
-                                <div className="hidden lg:block text-[13px] leading-6 text-slate-700 sm:text-sm sm:leading-7 sm:text-base">
-                                  {compactSpecLine}
-                                </div>
-
-                                {renderVariantSelector("hidden lg:flex")}
-
-                                {cardPriceLabel ? (
-                                  <div className="flex items-center gap-2 lg:hidden">
-                                    <div>
-                                      {isUpcomingCard ? (
-                                        <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                                          {upcomingPriceEyebrow}
-                                        </div>
-                                      ) : null}
-                                      <div className="text-lg font-semibold tracking-tight text-[#14255e] sm:text-xl">
-                                        {cardPriceLabel}
+                              <div className="min-w-0 p-6 xl:p-8">
+                                <div className="flex items-start justify-between gap-6 border-b border-slate-200/80 pb-5">
+                                  <div className="min-w-0">
+                                    {device.brand ? (
+                                      <p className="mb-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-blue-700">
+                                        {device.brand}
+                                      </p>
+                                    ) : null}
+                                    <h3 className="text-3xl font-black tracking-[-0.045em] text-slate-950 xl:text-4xl">
+                                      {device.name || device.model}
+                                    </h3>
+                                    {hasLaunchDate ? (
+                                      <div className="mt-2 flex items-center gap-2 text-xs text-slate-500 [&_svg]:text-slate-400 [&_strong]:font-bold [&_strong]:text-slate-700">
+                                        <FaCalendarAlt />
+                                        <span>
+                                          {launchDateLabel}:{" "}
+                                          <strong>{launchDateText}</strong>
+                                        </span>
                                       </div>
+                                    ) : null}
+                                    <div className="mt-2 text-xs text-slate-500">
+                                      Market status:{" "}
+                                      <span className="font-bold text-slate-700">
+                                        {marketStatusLabel}
+                                      </span>
                                     </div>
                                   </div>
-                                ) : null}
+                                  {cardPriceLabel ? (
+                                    <div className="shrink-0 text-right">
+                                      <strong className="block text-2xl font-black tracking-tight text-slate-950">
+                                        {cardPriceLabel}
+                                      </strong>
+                                      <span className="mt-1 block text-[10px] font-semibold text-slate-500">
+                                        {isUpcomingCard
+                                          ? upcomingPriceEyebrow
+                                          : "Starting price"}
+                                      </span>
+                                    </div>
+                                  ) : null}
+                                </div>
+
+                                <div className="mt-4 grid grid-cols-[150px_minmax(0,1fr)] gap-3">
+                                  <div className="flex items-center justify-center rounded-xl bg-blue-50 p-3">
+                                    {renderSpecScore()}
+                                  </div>
+                                  <div className="grid min-w-0 grid-cols-4 gap-2">
+                                    {specHighlights.map(
+                                      ({ label, value, Icon }) => (
+                                        <div
+                                          className="flex min-w-0 flex-col items-center justify-center rounded-xl bg-slate-50 px-2 py-3 text-center"
+                                          key={`desktop-${label}`}
+                                        >
+                                          <span className="mb-2 grid h-8 w-8 place-items-center rounded-xl bg-blue-50 text-xs text-blue-600">
+                                            <Icon />
+                                          </span>
+                                          <strong className="w-full break-words text-xs font-bold leading-4 text-slate-800">
+                                            {value}
+                                          </strong>
+                                          <small className="mt-1 text-[9px] font-bold uppercase tracking-wide text-slate-400">
+                                            {label}
+                                          </small>
+                                        </div>
+                                      ),
+                                    )}
+                                  </div>
+                                </div>
+
+                                {renderVariantSelector("desktop")}
 
                                 {availableOnText ? (
-                                  <div className="hidden items-center gap-1.5 text-sm text-slate-700 lg:flex">
+                                  <div className="mt-4 flex items-center gap-1.5 text-sm text-slate-700">
                                     <FaCalendarAlt className="text-slate-400" />
                                     <span>
                                       Available on:{" "}
@@ -6032,113 +6417,142 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                                 ) : null}
 
                                 {priceRowsForDisplay.length > 0 ? (
-                                  <div className="hidden rounded-[14px] border border-slate-200 bg-white p-2.5 sm:p-4 lg:block">
-                                    <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900 border-b-1 border-slate-200 pb-2">
-                                      <FaStore className="text-emerald-500" />
-                                      {pricePanelTitle}
+                                  <div className="mt-5 rounded-xl bg-slate-50 p-3">
+                                    <div className="mb-2 flex items-center justify-between gap-3 px-1">
+                                      <span className="inline-flex items-center gap-2 text-xs font-bold text-slate-800 [&_svg]:text-emerald-500">
+                                        <FaStore />
+                                        {pricePanelTitle}
+                                      </span>
+                                      <span className="text-[9px] font-semibold text-slate-400">
+                                        Best prices · Trusted stores
+                                      </span>
                                     </div>
-                                    <div className="space-y-2">
-                                      {priceRowsForDisplay.map(
-                                        (storePrice, i) => {
-                                          const storeObj =
-                                            storePrice.storeObj ||
-                                            (getStore
-                                              ? getStore(
-                                                  storePrice.store ||
-                                                    storePrice.store_name ||
-                                                    storePrice.storeName ||
-                                                    "",
-                                                )
-                                              : null);
-                                          const storeNameCandidate =
-                                            storePrice.display_store_name ||
-                                            storePrice.store ||
-                                            storePrice.store_name ||
-                                            storePrice.storeName ||
-                                            storeObj?.name ||
-                                            "";
-                                          const ctaText =
-                                            storePrice.cta_label || "Buy Now";
-                                          const rawLogoSrc =
-                                            storePrice.logo ||
-                                            (storeNameCandidate
-                                              ? getStoreLogo
-                                                ? getStoreLogo(
-                                                    storeNameCandidate,
-                                                  )
-                                                : getLogo(storeNameCandidate)
-                                              : null) ||
-                                            device.brandLogo ||
-                                            null;
-                                          const logoSrc =
-                                            normalizeAssetUrl(rawLogoSrc);
-                                          const priceLabel = formatStorePrice(
-                                            storePrice.price,
-                                          );
-
-                                          return (
-                                            <div
-                                              key={`${
-                                                device.id ?? device.model ?? ""
-                                              }-price-${i}`}
-                                              className="flex items-center justify-between gap-3 rounded-lg px-2.5 py-2.5 sm:px-3 sm:py-3"
-                                            >
-                                              <div className="flex min-w-0 items-center gap-3">
-                                                {logoSrc ? (
-                                                  <div className="flex h-8 w-8 shrink-0 items-center justify-center">
-                                                    <img
-                                                      src={logoSrc}
-                                                      alt={
-                                                        storeObj?.name ||
-                                                        storeNameCandidate
-                                                      }
-                                                      className="h-full w-full object-contain"
-                                                    />
-                                                  </div>
-                                                ) : (
-                                                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f7fbff] ring-1 ring-[#dbe7f7]">
-                                                    <FaStore className="text-slate-400 text-xs" />
-                                                  </div>
-                                                )}
-                                                <span className="truncate text-sm font-medium text-slate-800">
-                                                  {storeNameCandidate ||
-                                                    "Online Store"}
-                                                </span>
-                                              </div>
-                                              <div className="flex items-center gap-3">
-                                                <span className="whitespace-nowrap text-sm font-semibold text-emerald-600">
-                                                  {priceLabel}
-                                                </span>
-                                                {storePrice.url ? (
-                                                  <a
-                                                    href={storePrice.url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    onClick={(e) =>
-                                                      e.stopPropagation()
-                                                    }
-                                                    className="inline-flex items-center gap-1 whitespace-nowrap text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700"
-                                                  >
-                                                    {ctaText || "Buy Now"}
-                                                    <FaExternalLinkAlt className="text-xs" />
-                                                  </a>
-                                                ) : (
-                                                  <span className="inline-flex items-center gap-1 whitespace-nowrap text-sm font-semibold text-slate-400">
-                                                    {ctaText || "Unavailable"}
-                                                  </span>
-                                                )}
-                                              </div>
-                                            </div>
-                                          );
-                                        },
-                                      )}
-                                    </div>
+                                    {renderStoreRows(false)}
                                   </div>
                                 ) : null}
                               </div>
                             </div>
 
-                            <div className="mt-4 flex items-center justify-between gap-3">
+                            <div className="flex-1">
+                              <div className="grid grid-cols-[116px_minmax(0,1fr)] gap-3 p-3 sm:grid-cols-[136px_minmax(0,1fr)] sm:gap-4 sm:p-4 xl:grid-cols-[148px_minmax(0,1fr)]">
+                                <div className="smartphone-card-media relative flex min-h-[190px] items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-blue-50 via-white to-slate-50 p-2 sm:min-h-[210px] xl:min-h-[226px] dark:bg-gradient-to-b dark:from-[#0e1930] dark:via-[#11213d] dark:to-[#0a1529]">
+                                  {cardBadgeLabel ? (
+                                    <span className="absolute left-2 top-2 z-10 max-w-[88px] truncate rounded-md bg-blue-600 px-2.5 py-1 text-[8px] font-bold text-white sm:max-w-[104px] sm:text-[9px]">
+                                      {cardBadgeLabel}
+                                    </span>
+                                  ) : null}
+                                  <ImageCarousel
+                                    images={device.images}
+                                    fallbackTitle=""
+                                    fallbackSubtitle=""
+                                    fallbackLogo={brandLogoSrc}
+                                    compact
+                                    altText={
+                                      device.name ||
+                                      device.model ||
+                                      "Smartphone"
+                                    }
+                                  />
+                                </div>
+
+                                <div className="min-w-0 pt-0.5">
+                                  {device.brand ? (
+                                    <p className="truncate text-[10px] font-extrabold uppercase tracking-[0.14em] text-blue-700 sm:text-[11px]">
+                                      {device.brand}
+                                    </p>
+                                  ) : null}
+                                  <h3 className="mt-1 line-clamp-2 text-base font-black leading-5 tracking-tight text-slate-950 sm:text-lg sm:leading-6 xl:text-xl xl:leading-7">
+                                    {device.name || device.model}
+                                  </h3>
+
+                                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                                    {renderSpecScore(true)}
+                                  </div>
+
+                                  <div className="mt-2 space-y-1 text-[11px] font-semibold text-slate-500 sm:text-xs">
+                                    <div>
+                                      Market status:{" "}
+                                      <span className="font-bold text-slate-700">
+                                        {marketStatusLabel}
+                                      </span>
+                                    </div>
+                                    {hasLaunchDate ? (
+                                      <div className="flex items-center gap-1.5">
+                                        <FaCalendarAlt className="text-slate-400" />
+                                        <span>
+                                          {launchDateLabel}:{" "}
+                                          <span className="font-bold text-slate-700">
+                                            {launchDateText}
+                                          </span>
+                                        </span>
+                                      </div>
+                                    ) : null}
+                                  </div>
+
+                                  {renderVariantSelector("compact")}
+
+                                  {cardPriceLabel ? (
+                                    <div className="mt-3 text-xl font-black leading-none tracking-tight text-slate-950 sm:text-2xl">
+                                      {cardPriceLabel}
+                                    </div>
+                                  ) : null}
+                                </div>
+                              </div>
+
+                              <div className="mx-2.5 grid grid-cols-4 divide-x divide-slate-200/70 overflow-hidden rounded-xl bg-slate-50 sm:mx-3">
+                                {specHighlights.map(
+                                  ({ label, value, Icon }) => (
+                                    <div
+                                      className="flex min-w-0 flex-col items-center px-1 py-2 text-center sm:px-2 sm:py-2.5"
+                                      key={`mobile-${label}`}
+                                    >
+                                      <span className="mb-1 grid h-7 w-7 place-items-center rounded-lg bg-blue-50 text-[9px] text-blue-600 sm:h-8 sm:w-8 sm:text-[10px]">
+                                        <Icon />
+                                      </span>
+                                      <small className="text-[8px] font-bold uppercase tracking-[0.04em] text-slate-500 sm:text-[9px]">
+                                        {label}
+                                      </small>
+                                      <strong className="mt-1 line-clamp-3 w-full break-words text-[9px] font-bold leading-[11px] text-slate-800 sm:text-[10px] sm:leading-[12px]">
+                                        {value}
+                                      </strong>
+                                    </div>
+                                  ),
+                                )}
+                              </div>
+
+                              <div className="px-2.5 pb-2.5 sm:px-3 sm:pb-3">
+                                {renderVariantSelector("mobile")}
+
+                                {availableOnText ? (
+                                  <div className="mt-3 flex items-center gap-1.5 text-[10px] text-slate-600">
+                                    <FaCalendarAlt className="text-slate-400" />
+                                    <span>
+                                      Available on:{" "}
+                                      <span className="font-semibold text-slate-900">
+                                        {availableOnText}
+                                      </span>
+                                    </span>
+                                  </div>
+                                ) : null}
+
+                                {priceRowsForDisplay.length > 0 ? (
+                                  <div className="mt-3 rounded-xl bg-slate-50 p-2">
+                                    <div className="mb-1.5 flex items-center justify-between gap-2 px-1">
+                                      <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-800 sm:text-xs [&_svg]:text-emerald-500">
+                                        <FaStore />
+                                        {pricePanelTitle}
+                                      </span>
+                                      <span className="text-[9px] font-semibold text-slate-400 sm:text-[10px]">
+                                        Best prices
+                                      </span>
+                                    </div>
+                                    {renderStoreRows(true)}
+                                  </div>
+                                ) : null}
+                              </div>
+                            </div>
+
+                            <div className="mt-1 flex min-h-10 items-center justify-between gap-2 px-3 py-2 md:mt-auto xl:min-h-12 xl:px-4 xl:py-3">
                               <label
                                 className={`flex cursor-pointer items-center gap-2 ${compareDisabled ? "cursor-not-allowed opacity-50" : ""}`}
                                 onClick={(e) => e.stopPropagation()}
@@ -6162,139 +6576,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                                   Compare
                                 </span>
                               </label>
-                              {hasLaunchDate ? (
-                                <div className="flex items-center gap-1.5 text-sm text-slate-700 lg:hidden">
-                                  <FaCalendarAlt className="text-slate-400" />
-                                  <span>
-                                    {launchDateLabel}:{" "}
-                                    <span className="font-semibold text-slate-900">
-                                      {launchDateText}
-                                    </span>
-                                  </span>
-                                </div>
-                              ) : null}
-                            </div>
-                            <div className="mt-4 space-y-3 lg:hidden">
-                              <div className="text-[13px] leading-6 text-slate-700 sm:text-sm sm:leading-7 sm:text-base">
-                                {compactSpecLine}
-                              </div>
-
-                              {renderVariantSelector("lg:hidden")}
-
-                              {availableOnText ? (
-                                <div className="flex items-center gap-1.5 text-sm text-slate-700">
-                                  <FaCalendarAlt className="text-slate-400" />
-                                  <span>
-                                    Available on:{" "}
-                                    <span className="font-semibold text-slate-900">
-                                      {availableOnText}
-                                    </span>
-                                  </span>
-                                </div>
-                              ) : null}
-
-                              {priceRowsForDisplay.length > 0 ? (
-                                <div className="rounded-[20px] border border-slate-200 bg-white p-3  sm:p-4">
-                                  <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
-                                    <FaStore className="text-emerald-500" />
-                                    {pricePanelTitle}
-                                  </div>
-                                  <div className="space-y-2">
-                                    {priceRowsForDisplay.map(
-                                      (storePrice, i) => {
-                                        const storeObj =
-                                          storePrice.storeObj ||
-                                          (getStore
-                                            ? getStore(
-                                                storePrice.store ||
-                                                  storePrice.store_name ||
-                                                  storePrice.storeName ||
-                                                  "",
-                                              )
-                                            : null);
-                                        const storeNameCandidate =
-                                          storePrice.display_store_name ||
-                                          storePrice.store ||
-                                          storePrice.store_name ||
-                                          storePrice.storeName ||
-                                          storeObj?.name ||
-                                          "";
-                                        const ctaText =
-                                          storePrice.cta_label || "Buy Now";
-                                        const rawLogoSrc =
-                                          storePrice.logo ||
-                                          (storeNameCandidate
-                                            ? getStoreLogo
-                                              ? getStoreLogo(storeNameCandidate)
-                                              : getLogo(storeNameCandidate)
-                                            : null) ||
-                                          device.brandLogo ||
-                                          null;
-                                        const logoSrc =
-                                          normalizeAssetUrl(rawLogoSrc);
-                                        const priceLabel = formatStorePrice(
-                                          storePrice.price,
-                                        );
-
-                                        return (
-                                          <div
-                                            key={`${
-                                              device.id ?? device.model ?? ""
-                                            }-mobile-price-${i}`}
-                                            className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-white px-3 py-2.5"
-                                          >
-                                            <div className="flex min-w-0 items-center gap-3">
-                                              {logoSrc ? (
-                                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white">
-                                                  <img
-                                                    src={logoSrc}
-                                                    alt={
-                                                      storeObj?.name ||
-                                                      storeNameCandidate
-                                                    }
-                                                    className="h-full w-full object-contain"
-                                                  />
-                                                </div>
-                                              ) : (
-                                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f7fbff] ring-1 ring-[#dbe7f7]">
-                                                  <FaStore className="text-slate-400 text-xs" />
-                                                </div>
-                                              )}
-                                              <span className="truncate text-sm font-medium text-slate-800">
-                                                {storeNameCandidate ||
-                                                  "Online Store"}
-                                              </span>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                              <span className="whitespace-nowrap text-sm font-semibold text-emerald-600">
-                                                {priceLabel}
-                                              </span>
-                                              {storePrice.url ? (
-                                                <a
-                                                  href={storePrice.url}
-                                                  target="_blank"
-                                                  rel="noopener noreferrer"
-                                                  onClick={(e) =>
-                                                    e.stopPropagation()
-                                                  }
-                                                  className="inline-flex items-center gap-1 whitespace-nowrap text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700"
-                                                >
-                                                  {ctaText || "Buy Now"}
-                                                  <FaExternalLinkAlt className="text-xs" />
-                                                </a>
-                                              ) : (
-                                                <span className="inline-flex items-center gap-1 whitespace-nowrap text-sm font-semibold text-slate-400">
-                                                  {ctaText || "Unavailable"}
-                                                </span>
-                                              )}
-                                            </div>
-                                          </div>
-                                        );
-                                      },
-                                    )}
-                                  </div>
-                                </div>
-                              ) : null}
+                              <span className="inline-flex items-center gap-1 text-sm font-bold text-blue-700">
+                                View full details <FaChevronRight />
+                              </span>
                             </div>
                           </div>
                           <div className="hidden" />
@@ -6305,7 +6589,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
                   {/* Floating Compare Bar - Appears when 2+ items selected */}
                   {compareItems.length >= 2 && (
-                    <div className="fixed bottom-6 left-4 right-4 z-40 max-w-sm rounded-xl border border-slate-100 bg-white p-4 shadow-[0_2px_2px_rgba(0,0,0,0.1)] animate-slide-up md:bottom-8 md:left-auto md:right-8">
+                    <div className="fixed bottom-6 left-4 right-4 z-40 max-w-sm rounded-2xl bg-white p-4 md:bottom-8 md:left-auto md:right-8">
                       <div className="flex items-center justify-between gap-3">
                         <div>
                           <p className="text-sm font-semibold text-slate-900">
@@ -6327,7 +6611,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
                   {/* No Results State */}
                   {sortedVariants.length === 0 && (
-                    <div className="rounded-xl border border-slate-100 bg-white py-16 text-center shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-all duration-300">
+                    <div className="rounded-3xl bg-white py-16 text-center transition-all duration-300">
                       <div className="max-w-md mx-auto">
                         <FaSearch className="mx-auto mb-4 text-5xl text-slate-300" />
                         <h3 className="mb-3 text-2xl font-semibold text-slate-900">
@@ -6465,363 +6749,149 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                 subtitle="Arrange smartphones by preference"
               />
 
-              {/* Filter Overlay */}
+              {/* Responsive filter workspace */}
               {showFilters && (
-                <div className="fixed inset-0 z-50 lg:hidden">
-                  <div
-                    className="absolute inset-0 bg-slate-950/50 transition-opacity duration-300"
+                <div className="fixed inset-0 z-[80] flex items-center justify-center p-0 lg:p-6">
+                  <button
+                    type="button"
+                    className="absolute inset-0 cursor-default bg-slate-950/45 backdrop-blur-[2px]"
                     onClick={() => setShowFilters(false)}
-                  ></div>
+                    aria-label="Close filters"
+                  />
 
-                  <div className="absolute bottom-0 left-0 right-0 mx-auto flex max-h-[92vh] w-full max-w-lg transform flex-col overflow-hidden rounded-t-2xl border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-transform duration-300 sm:bottom-4 sm:rounded-2xl">
-                    <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-6">
-                      <div className="min-w-0">
-                        <h3 className="text-xl font-bold text-slate-900">
-                          {isUpcomingFilterPath
-                            ? "Refine Launch Tracker"
-                            : "Refine Search"}
+                  {/* Desktop filter modal */}
+                  <section
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Smartphone filters"
+                    className="relative hidden h-[min(820px,calc(100vh-3rem))] w-[min(1180px,calc(100vw-3rem))] flex-col overflow-hidden rounded-[32px] bg-white lg:flex"
+                  >
+                    <header className="flex shrink-0 items-center justify-between gap-6 border-b border-slate-100 px-7 py-5">
+                      <div className="flex min-w-0 items-center gap-4">
+                        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-slate-100 text-slate-600">
+                          <FaFilter />
+                        </span>
+                        <div className="min-w-0">
+                          <h3 className="text-2xl font-black tracking-tight text-slate-950">
+                            Filters
+                          </h3>
+                          <p className="mt-1 text-sm text-slate-500">
+                            Refine smartphones by specifications
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={clearFilters}
+                          disabled={getActiveFiltersCount() === 0}
+                          className="rounded-xl px-3 py-2 text-sm font-bold text-blue-600 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          Clear all
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowFilters(false)}
+                          className="grid h-11 w-11 place-items-center rounded-2xl bg-slate-100 text-slate-600 transition hover:bg-slate-200"
+                          aria-label="Close filters"
+                        >
+                          <FaTimes />
+                        </button>
+                      </div>
+                    </header>
+
+                    <div className="grid min-h-0 flex-1 grid-cols-[18rem_minmax(0,1fr)]">
+                      <nav className="min-h-0 overflow-y-auto border-r border-slate-100 p-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                        <div className="space-y-1.5">
+                          {renderFilterSections(renderDesktopFilterNavItem)}
+                        </div>
+                      </nav>
+
+                      <div className="flex min-h-0 min-w-0 flex-col">
+                        <div className="min-h-0 flex-1 overflow-y-auto px-7 py-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                          {renderFilterSections(renderDesktopFilterPanel)}
+                          <div className="mt-8">
+                            {renderSelectedFiltersSummary()}
+                          </div>
+                        </div>
+
+                        <footer className="grid shrink-0 grid-cols-[0.9fr_1.1fr] gap-3 border-t border-slate-100 bg-white px-7 py-5">
+                          <button
+                            type="button"
+                            onClick={clearFilters}
+                            disabled={getActiveFiltersCount() === 0}
+                            className="rounded-2xl bg-slate-100 px-5 py-3.5 text-sm font-bold text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-45"
+                          >
+                            Reset all
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowFilters(false)}
+                            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3.5 text-sm font-bold text-white transition hover:bg-blue-700"
+                          >
+                            <FaFilter className="text-xs" />
+                            Apply filters ({filteredVariants.length})
+                          </button>
+                        </footer>
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* Mobile filter drawer */}
+                  <aside
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Smartphone filters"
+                    className="relative ml-auto flex h-full w-full max-w-md flex-col overflow-hidden bg-white sm:my-3 sm:mr-3 sm:h-[calc(100%-1.5rem)] sm:rounded-[30px] lg:hidden"
+                  >
+                    <header className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-5 pb-4 pt-5">
+                      <div>
+                        <h3 className="text-2xl font-black tracking-tight text-slate-950">
+                          Filters
                         </h3>
                         <p className="mt-1 text-sm text-slate-500">
                           {isUpcomingFilterPath
                             ? "Filter upcoming phones by launch signals"
-                            : "Filter smartphones by specifications"}
+                            : "Refine smartphones by specifications"}
                         </p>
                       </div>
-                      <div className="flex shrink-0 items-center gap-2">
-                        {getActiveFiltersCount() > 0 ? (
-                          <button
-                            type="button"
-                            onClick={clearFilters}
-                            className="rounded-lg px-3 py-1.5 text-xs font-semibold text-blue-600 transition-colors duration-200 hover:bg-slate-50 hover:text-blue-500"
-                          >
-                            RESET
-                          </button>
-                        ) : null}
-                        <button
-                          type="button"
-                          onClick={() => setShowFilters(false)}
-                          className="rounded-lg p-2 text-slate-500 transition-colors duration-200 hover:bg-slate-100 hover:text-slate-800"
-                          aria-label="Close filters"
-                        >
-                          <FaTimes className="text-base" />
-                        </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowFilters(false)}
+                        className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-slate-100 text-slate-600 transition hover:bg-slate-200"
+                        aria-label="Close filters"
+                      >
+                        <FaTimes />
+                      </button>
+                    </header>
+
+                    <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                      {renderFilterSections(renderMobileFilterBlock)}
+                      <div className="pt-2">
+                        {renderSelectedFiltersSummary({ compact: true })}
                       </div>
                     </div>
 
-                    <div className="no-scrollbar flex-1 overflow-y-auto px-5 py-5 sm:px-6">
-                      {getActiveFiltersCount() > 0 ? (
-                        <div className="mb-6 rounded-xl border border-slate-100 bg-white p-4 shadow-[0_2px_2px_rgba(0,0,0,0.1)]">
-                          <div className="mb-2 flex items-center justify-between">
-                            <span className="text-sm font-semibold text-slate-900">
-                              Active Filters
-                            </span>
-                            <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-600">
-                              {getActiveFiltersCount()}
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-500">
-                            {filteredVariants.length} devices match
-                          </p>
-                        </div>
-                      ) : null}
-
-                      {renderMobileFilterBlock({
-                        title: "Search Phones",
-                        subtitle: "Match model, name, or brand",
-                        children: (
-                          <div className="relative">
-                            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" />
-                            <input
-                              type="text"
-                              value={searchQuery}
-                              onChange={(event) =>
-                                setSearchQuery(event.target.value)
-                              }
-                              placeholder="Search smartphones..."
-                              className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-8 pr-9 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                            />
-                            {searchQuery ? (
-                              <button
-                                type="button"
-                                onClick={() => setSearchQuery("")}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
-                                aria-label="Clear smartphone search"
-                              >
-                                <FaTimes className="text-xs" />
-                              </button>
-                            ) : null}
-                          </div>
-                        ),
-                      })}
-
-                      {renderMobileFilterBlock({
-                        title: "Brands",
-                        subtitle: "Select by manufacturer",
-                        badge: filters.brand.length,
-                        children: (
-                          <>
-                            {renderMobileSearchInput({
-                              value: brandFilterQuery,
-                              onChange: setBrandFilterQuery,
-                              placeholder: "Search brand...",
-                              clearLabel: "Clear brand search",
-                            })}
-                            {renderMobileOptionList({
-                              items: filteredBrandOptions,
-                              emptyText: "No brands found",
-                              isSelected: (brand) =>
-                                filters.brand.includes(brand),
-                              onChange: (brand) =>
-                                handleFilterChange("brand", brand),
-                              getMeta: (brand) =>
-                                devices.filter(
-                                  (device) => device.brand === brand,
-                                ).length,
-                              maxHeightClass: "max-h-60",
-                            })}
-                          </>
-                        ),
-                      })}
-
-                      {renderMobileFilterBlock({
-                        title: "Price Range",
-                        subtitle: "Set your budget",
-                        badge: `₹ ${filters.priceRange.min?.toLocaleString()}`,
-                        children: renderPriceRangeControl(),
-                      })}
-
-                      {renderMobileFilterBlock({
-                        title: "Memory (RAM)",
-                        subtitle: "Multitasking performance",
-                        badge: filters.ram.length,
-                        children: (
-                          <>
-                            {renderMobileSearchInput({
-                              value: ramFilterQuery,
-                              onChange: setRamFilterQuery,
-                              placeholder: "Search RAM...",
-                              clearLabel: "Clear RAM search",
-                            })}
-                            {renderMobileOptionList({
-                              items: filteredRamOptions,
-                              emptyText: "No RAM options found",
-                              isSelected: (ram) =>
-                                filters.ram.some(
-                                  (value) =>
-                                    normalizeMemoryFilterLabel(value, "GB") ===
-                                    ram,
-                                ),
-                              onChange: (ram) => handleFilterChange("ram", ram),
-                            })}
-                          </>
-                        ),
-                      })}
-
-                      {renderMobileFilterBlock({
-                        title: "Storage Capacity",
-                        subtitle: "Apps and media space",
-                        badge: filters.storage.length,
-                        children: (
-                          <>
-                            {renderMobileSearchInput({
-                              value: storageFilterQuery,
-                              onChange: setStorageFilterQuery,
-                              placeholder: "Search storage...",
-                              clearLabel: "Clear storage search",
-                            })}
-                            {renderMobileOptionList({
-                              items: filteredStorageOptions,
-                              emptyText: "No storage options found",
-                              isSelected: (storage) =>
-                                filters.storage.some(
-                                  (value) =>
-                                    normalizeMemoryFilterLabel(value, "GB") ===
-                                    storage,
-                                ),
-                              onChange: (storage) =>
-                                handleFilterChange("storage", storage),
-                            })}
-                          </>
-                        ),
-                      })}
-
-                      {renderMobileFilterBlock({
-                        title: "Battery Features",
-                        subtitle: "Capacity and charging",
-                        badge: filters.battery.length,
-                        children: (
-                          <>
-                            {renderMobileSearchInput({
-                              value: batteryFilterQuery,
-                              onChange: setBatteryFilterQuery,
-                              placeholder: "Search battery...",
-                              clearLabel: "Clear battery search",
-                            })}
-                            {renderMobileOptionList({
-                              items: filteredBatteryFeatures,
-                              emptyText: "No battery options found",
-                              isSelected: (item) =>
-                                filters.battery.includes(item.id),
-                              onChange: (item) =>
-                                handleFilterChange("battery", item.id),
-                              getLabel: (item) => item.label,
-                              getKey: (item) => item.id,
-                            })}
-                          </>
-                        ),
-                      })}
-
-                      {processorOptions.length > 0
-                        ? renderMobileFilterBlock({
-                            title: "Processor",
-                            subtitle: "Chipset family",
-                            badge: filters.processor.length,
-                            children: (
-                              <>
-                                {renderMobileSearchInput({
-                                  value: processorFilterQuery,
-                                  onChange: setProcessorFilterQuery,
-                                  placeholder: "Search processor...",
-                                  clearLabel: "Clear processor search",
-                                })}
-                                {renderMobileOptionList({
-                                  items: filteredProcessorOptions,
-                                  emptyText: "No processor options found",
-                                  isSelected: (processor) =>
-                                    filters.processor.includes(processor),
-                                  onChange: (processor) =>
-                                    handleFilterChange("processor", processor),
-                                })}
-                              </>
-                            ),
-                          })
-                        : null}
-
-                      {networkOptions.length > 0
-                        ? renderMobileFilterBlock({
-                            title: "Network",
-                            subtitle: "Cellular support",
-                            badge: filters.network.length,
-                            children: (
-                              <>
-                                {renderMobileSearchInput({
-                                  value: networkFilterQuery,
-                                  onChange: setNetworkFilterQuery,
-                                  placeholder: "Search network...",
-                                  clearLabel: "Clear network search",
-                                })}
-                                {renderMobileOptionList({
-                                  items: filteredNetworkOptions,
-                                  emptyText: "No network options found",
-                                  isSelected: (network) =>
-                                    filters.network.includes(network),
-                                  onChange: (network) =>
-                                    handleFilterChange("network", network),
-                                })}
-                              </>
-                            ),
-                          })
-                        : null}
-
-                      {refreshRateOptions.length > 0
-                        ? renderMobileFilterBlock({
-                            title: "Refresh Rate",
-                            subtitle: "Display smoothness",
-                            badge: filters.refreshRate.length,
-                            children: (
-                              <>
-                                {renderMobileSearchInput({
-                                  value: refreshRateFilterQuery,
-                                  onChange: setRefreshRateFilterQuery,
-                                  placeholder: "Search refresh rate...",
-                                  clearLabel: "Clear refresh rate search",
-                                })}
-                                {renderMobileOptionList({
-                                  items: filteredRefreshRateOptions,
-                                  emptyText: "No refresh rate options found",
-                                  isSelected: (rate) =>
-                                    filters.refreshRate.includes(rate),
-                                  onChange: (rate) =>
-                                    handleFilterChange("refreshRate", rate),
-                                })}
-                              </>
-                            ),
-                          })
-                        : null}
-
-                      {rearCameraOptions.length > 0
-                        ? renderMobileFilterBlock({
-                            title: "Rear Camera",
-                            subtitle: "Main camera resolution",
-                            badge: filters.rearCamera.length,
-                            children: (
-                              <>
-                                {renderMobileSearchInput({
-                                  value: rearCameraFilterQuery,
-                                  onChange: setRearCameraFilterQuery,
-                                  placeholder: "Search rear camera...",
-                                  clearLabel: "Clear rear camera search",
-                                })}
-                                {renderMobileOptionList({
-                                  items: filteredRearCameraOptions,
-                                  emptyText: "No rear camera options found",
-                                  isSelected: (camera) =>
-                                    filters.rearCamera.includes(camera),
-                                  onChange: (camera) =>
-                                    handleFilterChange("rearCamera", camera),
-                                })}
-                              </>
-                            ),
-                          })
-                        : null}
-
-                      {frontCameraOptions.length > 0
-                        ? renderMobileFilterBlock({
-                            title: "Front Camera",
-                            subtitle: "Selfie camera resolution",
-                            badge: filters.frontCamera.length,
-                            className: "mb-2",
-                            children: (
-                              <>
-                                {renderMobileSearchInput({
-                                  value: frontCameraFilterQuery,
-                                  onChange: setFrontCameraFilterQuery,
-                                  placeholder: "Search front camera...",
-                                  clearLabel: "Clear front camera search",
-                                })}
-                                {renderMobileOptionList({
-                                  items: filteredFrontCameraOptions,
-                                  emptyText: "No front camera options found",
-                                  isSelected: (camera) =>
-                                    filters.frontCamera.includes(camera),
-                                  onChange: (camera) =>
-                                    handleFilterChange("frontCamera", camera),
-                                })}
-                              </>
-                            ),
-                          })
-                        : null}
-                    </div>
-
-                    <div className="mt-auto shrink-0 border-t border-slate-200 bg-white px-5 py-4 sm:px-6">
-                      <div className="flex gap-3">
+                    <footer className="shrink-0 border-t border-slate-100 bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+                      <div className="space-y-2">
                         <button
                           type="button"
                           onClick={() => setShowFilters(false)}
-                          className="flex-1 rounded-xl bg-slate-100 py-3.5 font-semibold text-slate-700 transition-colors duration-200 hover:bg-slate-200"
+                          className="w-full rounded-2xl bg-blue-600 px-4 py-3.5 text-sm font-bold text-white transition hover:bg-blue-700"
                         >
-                          Cancel
+                          Apply filters ({filteredVariants.length})
                         </button>
                         <button
                           type="button"
-                          onClick={() => setShowFilters(false)}
-                          className="flex-1 rounded-xl bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 py-3.5 font-semibold text-white transition-all duration-200 hover:from-blue-700 hover:to-blue-600"
+                          onClick={clearFilters}
+                          disabled={getActiveFiltersCount() === 0}
+                          className="w-full rounded-2xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-45"
                         >
-                          Apply Filters
+                          Reset all
                         </button>
                       </div>
-                    </div>
-                  </div>
+                    </footer>
+                  </aside>
                 </div>
               )}
             </section>
@@ -6830,7 +6900,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       </div>
 
       {!isUpcomingFilterPath && featuredDiscoveryProduct ? (
-        <section className="mx-auto mt-8 max-w-7xl px-4 pb-8 sm:mt-10 sm:px-6 sm:pb-12 md:pb-16 lg:px-8 lg:pb-20">
+        <section className="mx-auto mt-8 w-full max-w-[1440px] px-3 pb-8 sm:mt-10 sm:px-6 sm:pb-12 md:pb-16 lg:px-8 lg:pb-20">
           <ProductDiscoverySections
             productId={featuredDiscoveryProduct.productId}
             currentBrand={

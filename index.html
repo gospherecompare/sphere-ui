@@ -1,11 +1,28 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-IN">
   <head>
     <!-- Basic -->
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0f172a" />
+    <meta name="theme-color" content="#f6f8fc" />
+    <script>
+      (() => {
+        try {
+          const storedTheme = localStorage.getItem("hooks-theme");
+          const theme = storedTheme === "dark" || storedTheme === "light"
+            ? storedTheme
+            : window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.classList.toggle("dark", theme === "dark");
+          document.documentElement.style.colorScheme = theme;
+        } catch {
+          document.documentElement.dataset.theme = "light";
+        }
+      })();
+    </script>
     <meta name="msvalidate.01" content="2AB44FEC3733D53A656A26E293337C41" />
 
     <!-- Favicon -->
@@ -13,16 +30,24 @@
     <link rel="shortcut icon" href="/hook-logo.png?v=2" type="image/png" />
     <link rel="apple-touch-icon" href="/hook-logo.png?v=2" />
 
-    <title>Hooks - Device Comparison Platform</title>
+    <title>Hooks – Compare Phones, TVs and Networking Devices</title>
+    <link rel="canonical" href="https://tryhook.shop/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Hooks" />
+    <meta property="og:locale" content="en_IN" />
+    <meta property="og:title" content="Hooks – Compare Phones, TVs and Networking Devices" />
+    <meta property="og:description" content="Compare products with clear specifications, prices and practical buying context." />
+    <meta property="og:url" content="https://tryhook.shop/" />
+    <meta property="og:image" content="https://tryhook.shop/hook-logo.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Hooks – Compare Phones, TVs and Networking Devices" />
+    <meta name="twitter:description" content="Compare products with clear specifications, prices and practical buying context." />
+    <meta name="twitter:image" content="https://tryhook.shop/hook-logo.png" />
 
     <!-- Meta Description - Critical for CTR -->
     <meta
       name="description"
-      content="Compare smartphones, laptops, TVs & networking devices side-by-side on Hooks. Get detailed specs, pricing, reviews, and make informed tech purchasing decisions."
-    />
-    <meta
-      name="keywords"
-      content="device comparison, phone comparison, laptop comparison, TV comparison, tech specs, pricing comparison"
+      content="Compare smartphones, TVs and networking devices with clear specifications, prices, feature differences and practical technology news on Hooks."
     />
     <meta
       name="google-site-verification"
@@ -106,7 +131,7 @@
         "@context": "https://schema.org",
         "@type": "Organization",
         "name": "Hooks",
-        "url": "https://tryhook.shop",
+        "url": "https://tryhook.shop/",
         "logo": "https://tryhook.shop/hook-logo.png",
         "sameAs": [
           "https://instagram.com/tryHooks",
@@ -119,7 +144,9 @@
         "@context": "https://schema.org",
         "@type": "WebSite",
         "name": "Hooks",
-        "url": "https://tryhook.shop"
+        "alternateName": "TryHook",
+        "url": "https://tryhook.shop/",
+        "inLanguage": "en-IN"
       }
     </script>
   </head>

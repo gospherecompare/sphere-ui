@@ -952,7 +952,7 @@ const Networking = () => {
   const seoDescription =
     currentBrandObj?.description ||
     "Discover routers, modems, switches, mesh systems and extenders on SmartArena.";
-  const seoKeywords = useMemo(
+  const _seoKeywords = useMemo(
     () =>
       buildListSeoKeywords({
         devices: sortedVariants,
@@ -1059,12 +1059,11 @@ const Networking = () => {
   );
 
   return (
-    <div className="min-h-screen ">
+    <div className="hooks-product-listing hooks-networking-listing min-h-screen">
       <style>{animationStyles}</style>
       <Helmet prioritizeSeoTags>
         <title>{seoTitle}</title>
         <meta name="description" content={seoDescription} />
-        <meta name="keywords" content={seoKeywords} />
 
         {/* Canonical URL - CRITICAL for SEO per route */}
         <link rel="canonical" href={listSchemaUrl} />
@@ -1100,9 +1099,9 @@ const Networking = () => {
 
       </Helmet>
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8 lg:p-10 bg-white">
+      <div className="hooks-product-listing__inner max-w-7xl mx-auto p-4 sm:p-6 md:p-8 lg:p-10">
         {/* Hero Section - Professional Styling */}
-        <div className="mb-6 sm:mb-8 md:mb-10 lg:mb-12">
+        <section className="hooks-category-hero hooks-networking-hero mb-6 sm:mb-8 md:mb-10 lg:mb-12">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 bg-purple-50 backdrop-blur-sm px-3 py-1.5 rounded-full border border-purple-100 mb-4 sm:mb-6">
             <FaWifi className="text-purple-600 text-sm" />
@@ -1112,7 +1111,7 @@ const Networking = () => {
           </div>
 
           {/* Heading with Gradient Text */}
-          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl xl:text-5xl font-bold mb-2 sm:mb-3 md:mb-4 lg:mb-6 leading-tight">
+          <h1 className="hooks-category-hero__title">
             Explore Premium{" "}
             <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
               Networking Devices
@@ -1120,12 +1119,12 @@ const Networking = () => {
           </h1>
 
           {/* Subtitle */}
-          <h4 className="text-base sm:text-lg md:text-lg lg:text-xl mb-4 sm:mb-6 md:mb-8 text-gray-700 leading-relaxed max-w-3xl">
+          <p className="hooks-category-hero__copy">
             Discover detailed specifications, compare models, and find the best
             deals on the latest networking devices. Use our advanced filters to
             narrow down your search from our curated collection.
-          </h4>
-        </div>
+          </p>
+        </section>
 
         {/* Control Bar */}
         <div className="mb-6 sm:mb-7 md:mb-8">
@@ -1658,7 +1657,7 @@ const Networking = () => {
                 <div
                   key={`${device.id}-${idx}`}
                   onClick={(e) => handleView(device, e)}
-                  className="h-full transition-all duration-300 overflow-hidden rounded-md cursor-pointer hover:shadow-lg hover:scale-105"
+                  className="hooks-product-card h-full transition-all duration-300 overflow-hidden rounded-md cursor-pointer hover:shadow-lg"
                 >
                   <div className="p-3 sm:p-4 md:p-5 lg:p-6 pt-4 sm:pt-5 md:pt-6">
                     {/* Top Row: Image and Basic Info */}

@@ -1,4 +1,4 @@
-// src/components/MobileCompare.jsx
+// src/components/compare.jsx
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
   FaBatteryFull,
@@ -9,6 +9,7 @@ import {
   FaChartBar,
   FaChevronLeft,
   FaChevronRight,
+  FaChevronDown,
   FaCube,
   FaDesktop,
   FaFilter,
@@ -28,6 +29,8 @@ import {
   FaSignal,
   FaShieldAlt,
   FaStar,
+  FaStore,
+  FaTrophy,
   FaSun,
   FaTachometerAlt,
   FaTimes,
@@ -36,6 +39,7 @@ import {
   FaWeightHanging,
 } from "react-icons/fa";
 import "../styles/hideScrollbar.css";
+import "../styles/compare-studio.css";
 import useDevice from "../hooks/useDevice";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import normalizeProduct from "../utils/normalizeProduct";
@@ -63,6 +67,7 @@ const Monitor = FaDesktop;
 const Zap = FaBolt;
 const Headphones = FaHeadphones;
 const ChevronRight = FaChevronRight;
+const ChevronDown = FaChevronDown;
 const Plus = FaPlus;
 const Trash2 = FaTrash;
 const BarChart3 = FaChartBar;
@@ -264,6 +269,20 @@ const SPEC_ROW_ICONS = Object.freeze({
   ai_features: Bot,
   sensors: Smartphone,
 });
+
+const COMPARE_VIEW_TABS = [
+  { id: "performance", label: "Performance", icon: Cpu, target: "processor" },
+  { id: "display", label: "Display", icon: Monitor, target: "display" },
+  { id: "camera", label: "Camera", icon: Camera, target: "camera" },
+  { id: "battery", label: "Battery", icon: Battery, target: "battery" },
+  {
+    id: "connectivity",
+    label: "Connectivity",
+    icon: Signal,
+    target: "network",
+  },
+  { id: "all", label: "All Specs", icon: BarChart3, target: "key" },
+];
 
 const MAX_DEVICES = 4;
 const MIN_DEVICES = 2;
@@ -796,6 +815,19 @@ const EMPTY_COMPARE_INSIGHTS = Object.freeze({
   warnings: [],
 });
 
+const EMPTY_COMPARE_DECISION = Object.freeze({
+  generatedAt: "",
+  overallVerdict: null,
+  categoryVerdicts: [],
+  keyDifferences: [],
+  commonFeatures: [],
+  upgradeStory: null,
+  useCasePicks: [],
+  priceVerdict: null,
+  tradeoffs: [],
+  confidence: null,
+});
+
 const CATEGORY_WINNER_LABELS = Object.freeze({
   performance: "Performance Lead",
   display: "Display Lead",
@@ -871,6 +903,32 @@ const MobileCompare = () => {
     EMPTY_COMPARE_INSIGHTS,
   );
   const [compareInsightsLoading, setCompareInsightsLoading] = useState(false);
+  const [compareDecision, setCompareDecision] = useState(
+    EMPTY_COMPARE_DECISION,
+  );
+  const [activeDecisionQuestion, setActiveDecisionQuestion] =
+    useState("overall");
+  const [activeStudioView, setActiveStudioView] = useState("performance");
+  const [activeMobilePair, setActiveMobilePair] = useState("0-1");
+  const [expandedStudioSections, setExpandedStudioSections] = useState(() =>
+    Object.fromEntries(
+      [
+        "key",
+        "general",
+        "display",
+        "body",
+        "processor",
+        "battery",
+        "camera",
+        "network",
+        "features",
+        "audio",
+      ].map((sectionId) => [
+        sectionId,
+        ["key", "processor", "battery", "camera"].includes(sectionId),
+      ]),
+    ),
+  );
   const [expandedSections, setExpandedSections] = useState(() =>
     Object.fromEntries(SECTIONS.map((section) => [section.id, true])),
   );
@@ -884,6 +942,7 @@ const MobileCompare = () => {
   const [catalogVisibleCount, setCatalogVisibleCount] = useState(6);
   const [isComparing, setIsComparing] = useState(false);
   const [showCatalogModal, setShowCatalogModal] = useState(false);
+  const [activeCatalogSlot, setActiveCatalogSlot] = useState(0);
   const [sharedDescription, setSharedDescription] = useState("");
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [modalDevice, setModalDevice] = useState(null);
@@ -894,10 +953,17 @@ const MobileCompare = () => {
   );
   const [signalsFetched, setSignalsFetched] = useState(false);
   const [activeQuickFilter, setActiveQuickFilter] = useState("all");
+  const [hideCommonSpecs, setHideCommonSpecs] = useState(false);
+  const [showStickyCompareBar, setShowStickyCompareBar] = useState(false);
   const searchResultsRef = useRef(null);
   const catalogSearchInputRef = useRef(null);
+  const comparisonHeroRef = useRef(null);
 
-  const { devices: availableDevices = [], loading, getDevice } = useDevice({
+  const {
+    devices: availableDevices = [],
+    loading,
+    getDevice,
+  } = useDevice({
     resources: ["smartphones", "networking", "laptops", "tvs"],
   });
   const location = useLocation();
@@ -924,6 +990,30 @@ const MobileCompare = () => {
   const isSeoCompareRoute = Boolean(normalizedCompareSlug);
 
   const activeDevices = isComparing ? comparedDevices : selectedDevices;
+
+  useEffect(() => {
+    if (
+      !isComparing ||
+      activeDevices.length < MIN_DEVICES ||
+      typeof IntersectionObserver === "undefined" ||
+      !comparisonHeroRef.current
+    ) {
+      setShowStickyCompareBar(false);
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowStickyCompareBar(!entry.isIntersecting),
+      {
+        threshold: 0.04,
+        rootMargin: "-96px 0px 0px 0px",
+      },
+    );
+
+    observer.observe(comparisonHeroRef.current);
+    return () => observer.disconnect();
+  }, [isComparing, activeDevices.length]);
+
   const maxDevices = useMemo(() => {
     const typeSource = isComparing ? comparedDevices : selectedDevices;
     const compareType = getResolvedProductType(typeSource?.[0]);
@@ -958,7 +1048,13 @@ const MobileCompare = () => {
     [activeDevices],
   );
 
-  const openCatalogPanel = () => {
+  const openCatalogPanel = (_slotIndex = activeDevices.length) => {
+    const safeSlot = Math.max(
+      0,
+      Math.min(activeDevices.length, maxDevices - 1),
+    );
+    setActiveCatalogSlot(safeSlot);
+    setSearchQuery("");
     setShowCatalogModal(true);
     requestAnimationFrame(() => {
       catalogSearchInputRef.current?.focus();
@@ -967,22 +1063,26 @@ const MobileCompare = () => {
 
   const closeCatalogModal = () => {
     setShowCatalogModal(false);
+    setSearchQuery("");
   };
 
-  useEffect(() => {
-    if (isComparing || selectedDevices.length < MIN_DEVICES) return;
+  const startComparison = () => {
+    if (activeDevices.length < MIN_DEVICES) return;
 
-    setShowCatalogModal(false);
-    setComparedDevices(selectedDevices);
-    setSelectedDevices([]);
-    setIsComparing(true);
+    if (!isComparing) {
+      setComparedDevices(selectedDevices.slice(0, maxDevices));
+      setSelectedDevices([]);
+      setIsComparing(true);
+    }
+
+    closeCatalogModal();
     if (typeof document === "undefined") return;
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       document
-        .getElementById("comparison-section")
-        ?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
-  }, [isComparing, selectedDevices]);
+        .getElementById("compare-spec-workspace")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
 
   const getDeviceRankingKeys = (device) =>
     [
@@ -1020,14 +1120,19 @@ const MobileCompare = () => {
   useEffect(() => {
     if (!showCatalogModal || typeof document === "undefined") return undefined;
 
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {
         setShowCatalogModal(false);
+        setSearchQuery("");
       }
     };
 
     document.addEventListener("keydown", handleKeyDown);
     return () => {
+      document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [showCatalogModal]);
@@ -1594,7 +1699,7 @@ const MobileCompare = () => {
       // Post the normalized comparison to backend
       (async () => {
         try {
-          await fetch(`https://api.apisphere.in/api/public/compare`, {
+          await fetch(`${API_BASE}/public/compare`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -3318,6 +3423,7 @@ const MobileCompare = () => {
     if (!isComparing || comparedDevices.length < MIN_DEVICES) {
       setRankingByDeviceId({});
       setCompareInsights(EMPTY_COMPARE_INSIGHTS);
+      setCompareDecision(EMPTY_COMPARE_DECISION);
       setCompareInsightsLoading(false);
       return;
     }
@@ -3355,6 +3461,7 @@ const MobileCompare = () => {
     if (payloadDevices.length < MIN_DEVICES) {
       setRankingByDeviceId({});
       setCompareInsights(EMPTY_COMPARE_INSIGHTS);
+      setCompareDecision(EMPTY_COMPARE_DECISION);
       setCompareInsightsLoading(false);
       return;
     }
@@ -3362,19 +3469,17 @@ const MobileCompare = () => {
     const controller = new AbortController();
     setRankingByDeviceId({});
     setCompareInsights(EMPTY_COMPARE_INSIGHTS);
+    setCompareDecision(EMPTY_COMPARE_DECISION);
     setCompareInsightsLoading(true);
 
     (async () => {
       try {
-        const response = await fetch(
-          "https://api.apisphere.in/api/public/compare/scores",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ devices: payloadDevices }),
-            signal: controller.signal,
-          },
-        );
+        const response = await fetch(`${API_BASE}/public/compare/scores`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ devices: payloadDevices }),
+          signal: controller.signal,
+        });
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
@@ -3424,6 +3529,38 @@ const MobileCompare = () => {
                 : {},
             warnings: Array.isArray(data?.warnings) ? data.warnings : [],
           });
+          setCompareDecision({
+            generatedAt: String(data?.generated_at || "").trim(),
+            overallVerdict:
+              data?.overall_verdict && typeof data.overall_verdict === "object"
+                ? data.overall_verdict
+                : null,
+            categoryVerdicts: Array.isArray(data?.category_verdicts)
+              ? data.category_verdicts
+              : [],
+            keyDifferences: Array.isArray(data?.key_differences)
+              ? data.key_differences
+              : [],
+            commonFeatures: Array.isArray(data?.common_features)
+              ? data.common_features
+              : [],
+            upgradeStory:
+              data?.upgrade_story && typeof data.upgrade_story === "object"
+                ? data.upgrade_story
+                : null,
+            useCasePicks: Array.isArray(data?.use_case_picks)
+              ? data.use_case_picks
+              : [],
+            priceVerdict:
+              data?.price_verdict && typeof data.price_verdict === "object"
+                ? data.price_verdict
+                : null,
+            tradeoffs: Array.isArray(data?.tradeoffs) ? data.tradeoffs : [],
+            confidence:
+              data?.confidence && typeof data.confidence === "object"
+                ? data.confidence
+                : null,
+          });
           setCompareInsightsLoading(false);
         }
       } catch (error) {
@@ -3431,6 +3568,7 @@ const MobileCompare = () => {
         console.error("Failed to fetch compare scores:", error);
         setRankingByDeviceId({});
         setCompareInsights(EMPTY_COMPARE_INSIGHTS);
+        setCompareDecision(EMPTY_COMPARE_DECISION);
         setCompareInsightsLoading(false);
       }
     })();
@@ -4138,285 +4276,6 @@ const MobileCompare = () => {
     return parts.join(" | ");
   };
 
-  const renderSelectedDeviceCard = (device, comparing = false) => {
-    const selectedVariant = getSelectedVariant(device);
-    const price = getCardPrice(device, selectedVariant);
-    const serverScoreEntry = comparing ? getServerScoreEntry(device) : null;
-    const isOverallWinner =
-      comparing &&
-      overallWinnerId &&
-      getDeviceRankingKeys(device).includes(overallWinnerId);
-    const liveRank =
-      serverScoreEntry?.rank || (isOverallWinner ? 1 : null) || null;
-
-    return (
-      <div
-        key={device.id}
-        className="relative flex h-full min-h-[27rem] flex-col rounded-[24px] border border-slate-200 bg-white px-6 py-6 transition-colors hover:border-blue-200"
-      >
-        <button
-          type="button"
-          onClick={() =>
-            comparing
-              ? removeComparedDevice(device.id)
-              : removeDevice(device.id)
-          }
-          className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
-          aria-label="Remove device"
-          title="Remove device"
-        >
-          <X className="h-4 w-4" />
-        </button>
-
-        <div className="flex flex-1 flex-col">
-          <div className="flex h-[170px] items-center justify-center">
-            <div className="relative flex h-full w-full items-center justify-center">
-              <img
-                src={getPrimaryImage(device) || null}
-                alt={device.name}
-                className="h-full max-h-[168px] w-full max-w-[86%] object-contain"
-                onError={(event) => {
-                  event.target.src = `/api/placeholder/320/240?text=${encodeURIComponent(
-                    (device.brand || "D").slice(0, 1),
-                  )}`;
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="mt-5 text-left">
-            <p className="text-sm font-bold uppercase tracking-wide text-blue-600">
-              {device.brand || "Brand"}
-            </p>
-            <h3 className="mt-3 text-[1.65rem] font-semibold leading-tight tracking-tight text-slate-950">
-              {device.name || device.model || device.title || "Device"}
-            </h3>
-          </div>
-
-          <div className="mt-9 text-left">
-            <p
-              className={`text-[2.15rem] font-semibold tracking-tight ${
-                price ? "text-slate-900" : "text-slate-400"
-              }`}
-              title={price ? "Price" : "Price not available"}
-            >
-              {price ? formatPrice(price) : "N/A"}
-            </p>
-            {comparing ? (
-              <p className="mt-5 text-sm leading-7 text-slate-500">
-                Live compare score{" "}
-                <span className="font-medium text-slate-700">
-                  {serverScoreEntry?.totalScore != null
-                    ? formatSpecScoreLabel(serverScoreEntry.totalScore)
-                    : "N/A"}
-                </span>
-                {liveRank ? (
-                  <>
-                    , currently ranked{" "}
-                    <span className="font-semibold text-blue-600">
-                      #{liveRank}
-                    </span>{" "}
-                    overall.
-                  </>
-                ) : (
-                  "."
-                )}
-              </p>
-            ) : (
-              <div className="mt-5 flex items-center gap-1.5 text-sm text-slate-500">
-                <span>Score available after comparison</span>
-                <Info className="h-3.5 w-3.5" />
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderCompactMobileDeviceCard = (device, comparing = false) => {
-    const selectedVariant = getSelectedVariant(device);
-    const price = getCardPrice(device, selectedVariant);
-    const serverScoreEntry = comparing ? getServerScoreEntry(device) : null;
-    const isOverallWinner =
-      comparing &&
-      overallWinnerId &&
-      getDeviceRankingKeys(device).includes(overallWinnerId);
-    const liveRank =
-      serverScoreEntry?.rank || (isOverallWinner ? 1 : null) || null;
-    const mobileLabel = comparing
-      ? serverScoreEntry?.totalScore != null
-        ? formatSpecScoreLabel(serverScoreEntry.totalScore)
-        : "N/A"
-      : "Score available after comparison";
-
-    return (
-      <div className="relative flex h-full min-h-[14rem] flex-col rounded-[22px] border border-slate-300 bg-white p-3 sm:min-h-[19rem] sm:rounded-[28px] sm:p-4">
-        <button
-          type="button"
-          onClick={() =>
-            comparing
-              ? removeComparedDevice(device.id)
-              : removeDevice(device.id)
-          }
-          className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-500"
-          aria-label="Remove device"
-          title="Remove device"
-        >
-          <X className="h-4 w-4" />
-        </button>
-
-        <div className="flex justify-center pt-1 sm:pt-2">
-          <div className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-[18px] border border-slate-300 bg-slate-50 p-2 sm:h-[132px] sm:w-[132px] sm:rounded-[24px] sm:p-3">
-            <img
-              src={getPrimaryImage(device) || null}
-              alt={device.name}
-              className="h-full w-full object-contain"
-              onError={(event) => {
-                event.target.src = `/api/placeholder/320/240?text=${encodeURIComponent(
-                  (device.brand || "D").slice(0, 1),
-                )}`;
-              }}
-            />
-          </div>
-        </div>
-
-        <div className="mt-3 text-center sm:mt-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-            {device.brand || "Brand"}
-          </p>
-          <h3 className="mt-1.5 line-clamp-2 text-sm font-semibold leading-tight tracking-tight text-slate-900 sm:text-[1.15rem]">
-            {device.name || device.model || device.title || "Device"}
-          </h3>
-        </div>
-
-        <div className="mt-auto pt-4 text-center sm:mt-5 sm:pt-0">
-          <p className="text-lg font-semibold tracking-tight text-slate-900 sm:text-[1.6rem]">
-            {price ? formatPrice(price) : "N/A"}
-          </p>
-          <p className="mt-1.5 text-[11px] text-slate-500 sm:mt-2 sm:text-sm">
-            {comparing ? (
-              <>
-                Live compare score{" "}
-                <span className="font-medium text-slate-700">
-                  {mobileLabel}
-                </span>
-                {liveRank ? (
-                  <>
-                    , ranked{" "}
-                    <span className="font-semibold text-blue-600">
-                      #{liveRank}
-                    </span>
-                  </>
-                ) : null}
-              </>
-            ) : (
-              <>
-                <span>{mobileLabel}</span>
-              </>
-            )}
-          </p>
-        </div>
-      </div>
-    );
-  };
-
-  const renderEmptyCompareSlot = (slotIndex) => (
-    <button
-      key={`empty-compare-slot-${slotIndex}`}
-      type="button"
-      onClick={openCatalogPanel}
-      className="group flex h-full min-h-[27rem] flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-slate-300 bg-white px-5 py-6 text-center transition-colors hover:border-blue-300 hover:bg-blue-50/40"
-    >
-      <div className="flex h-20 w-20 items-center justify-center rounded-full border border-slate-200 bg-white text-blue-600 transition-colors group-hover:border-blue-300 group-hover:bg-blue-50">
-        <Plus className="h-9 w-9" />
-      </div>
-      <p className="mt-7 text-2xl font-semibold tracking-tight text-slate-950">
-        Add Device
-      </p>
-      <p className="mt-3 text-base text-slate-500">
-        Slot {activeDevices.length + slotIndex + 1} of {compareSlotCount}
-      </p>
-    </button>
-  );
-
-  const renderCompareBenefitStrip = () => {
-    const benefits = [
-      {
-        icon: BarChart3,
-        title: "Compare side by side",
-        description: "View detailed specifications",
-      },
-      {
-        icon: Star,
-        title: "Find the best match",
-        description: "Choose what suits you",
-      },
-      {
-        icon: Share2,
-        title: "Share your comparison",
-        description: "Get opinions from others",
-      },
-    ];
-
-    return (
-      <div className="border-t border-slate-200 bg-white px-6 py-6">
-        <div className="grid gap-5 md:grid-cols-3">
-          {benefits.map((item, index) => {
-            const Icon = item.icon;
-            return (
-              <div
-                key={item.title}
-                className={`flex items-center gap-4 ${
-                  index > 0 ? "md:border-l md:border-slate-200 md:pl-8" : ""
-                }`}
-              >
-                <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600">
-                  <Icon className="h-7 w-7" />
-                </div>
-                <div>
-                  <p className="text-base font-semibold text-slate-950">
-                    {item.title}
-                  </p>
-                  <p className="mt-1 text-sm text-slate-500">
-                    {item.description}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
-  // Start comparison
-  const startComparison = () => {
-    const scrollToComparison = () => {
-      setTimeout(() => {
-        document.getElementById("comparison-section")?.scrollIntoView({
-          behavior: "smooth",
-        });
-      }, 100);
-    };
-
-    if (!isComparing) {
-      if (selectedDevices.length < MIN_DEVICES) {
-        alert(`Please select at least ${MIN_DEVICES} devices to compare`);
-        return;
-      }
-      closeCatalogModal();
-      setComparedDevices(selectedDevices);
-      setSelectedDevices([]);
-      setIsComparing(true);
-      scrollToComparison();
-      return;
-    }
-
-    scrollToComparison();
-  };
-
-  // Clear all
   const clearAll = () => {
     setSelectedDevices([]);
     setComparedDevices([]);
@@ -4576,8 +4435,8 @@ const MobileCompare = () => {
           publishedTitle: publishedComparePage?.title || "",
         })
       : canonicalCompareEntries.length > 0
-        ? `Compare Selected Devices: Price, Specs & Comparison (${getCurrentMonthLongYear()}) | Hooks`
-        : `Compare Smartphones, Laptops & TVs Side-by-Side (${getCurrentMonthLongYear()}) | Hooks`;
+        ? `Compare Selected Devices: Specs, Prices & Differences | Hooks`
+        : `Compare Technology Products Side by Side | Hooks`;
   const normalizedMetaTitle = normalizeSeoTitle(metaTitle);
 
   const metaDescription =
@@ -4590,7 +4449,7 @@ const MobileCompare = () => {
       : canonicalCompareEntries.length > 0
         ? "Compare selected devices with detailed specifications, price, camera, display, battery, performance, software, benchmarks, and key differences on Hooks."
         : "Compare devices with detailed specifications, price, camera, display, battery, performance, software, benchmarks, and key differences on Hooks.";
-  const metaKeywords = useMemo(
+  const _metaKeywords = useMemo(
     () =>
       buildListSeoKeywords({
         devices: activeDevices,
@@ -4682,10 +4541,6 @@ const MobileCompare = () => {
       name: "description",
       content: metaDescription,
     });
-    upsertMetaTag('meta[name="keywords"]', {
-      name: "keywords",
-      content: metaKeywords,
-    });
     upsertMetaTag('meta[property="og:title"]', {
       property: "og:title",
       content: normalizedMetaTitle,
@@ -4711,7 +4566,7 @@ const MobileCompare = () => {
       content: canonicalCompareUrl,
     });
     upsertCanonicalLink(canonicalCompareUrl);
-  }, [canonicalCompareUrl, metaDescription, metaKeywords, normalizedMetaTitle]);
+  }, [canonicalCompareUrl, metaDescription, normalizedMetaTitle]);
 
   const effectiveCatalogCategoryValue =
     catalogLockedType || catalogCategoryFilter;
@@ -4730,326 +4585,1723 @@ const MobileCompare = () => {
     });
   };
 
-  const catalogSidebar = (
-    <aside className="w-full">
-      <div className="overflow-hidden rounded-none border-0 bg-white sm:rounded-2xl sm:border sm:border-slate-300">
-        <div className="p-3 sm:p-5">
-          <h2 className="text-xl font-semibold tracking-tight text-slate-900">
-            Add a product
-          </h2>
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            Search and select a product to add to your comparison.
-          </p>
+  const compareNavItems = [
+    { id: "overview", label: "Overview", icon: BarChart3 },
+    { id: "differences", label: "Key Differences", icon: Sparkles },
+    { id: "specifications", label: "All Specs", icon: Cpu },
+    { id: "prices", label: "Prices", icon: FaStore },
+    { id: "faqs", label: "FAQs", icon: Info },
+  ];
 
-          <div className="relative mt-4">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
-              <Search className="h-4 w-4" />
-            </div>
-            <input
-              ref={catalogSearchInputRef}
-              type="text"
-              placeholder="Search for phones, laptops..."
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-11 pr-4 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 placeholder:text-slate-400"
-            />
-          </div>
+  const getDeviceName = (device) =>
+    device?.name || device?.model || device?.title || "Device";
 
-          <div className="mt-5 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-900">Filters</h3>
-            <button
-              type="button"
-              onClick={resetCatalogFilters}
-              className="text-sm font-medium text-slate-500 transition-colors hover:text-blue-600"
-            >
-              Reset
-            </button>
-          </div>
+  const getDeviceKey = (device) =>
+    String(getResolvedProductId(device) ?? device?.id ?? "");
 
-          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                Category
-              </span>
-              <select
-                value={effectiveCatalogCategoryValue || "all"}
-                onChange={(event) =>
-                  setCatalogCategoryFilter(event.target.value)
-                }
-                disabled={Boolean(catalogLockedType)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-50"
-              >
-                {catalogCategoryOptions.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+  const updateVariantSelection = (device, nextIndex) => {
+    const variantIndex = normalizeVariantIndex(nextIndex);
+    setVariantSelection((previous) => ({
+      ...previous,
+      [device.id]: variantIndex,
+    }));
 
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                Brand
-              </span>
-              <select
-                value={catalogBrandFilter}
-                onChange={(event) => setCatalogBrandFilter(event.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-              >
-                {catalogBrandOptions.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+    const updateEntry = (entry) =>
+      String(entry.id) === String(device.id)
+        ? { ...entry, selectedVariantIndex: variantIndex }
+        : entry;
 
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                Price range
-              </span>
-              <select
-                value={catalogPriceFilter}
-                onChange={(event) => setCatalogPriceFilter(event.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-              >
-                {SEARCH_PRICE_RANGE_OPTIONS.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+    if (isComparing) {
+      setComparedDevices((previous) => previous.map(updateEntry));
+    } else {
+      setSelectedDevices((previous) => previous.map(updateEntry));
+    }
+  };
 
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                Release year
-              </span>
-              <select
-                value={catalogReleaseYearFilter}
-                onChange={(event) =>
-                  setCatalogReleaseYearFilter(event.target.value)
-                }
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-              >
-                {catalogReleaseYearOptions.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+  const getQuickChargingText = (device) => {
+    const battery = mergeSpecObjects(device?.battery, device?.battery_json);
+    return (
+      extractMeasurementText(
+        pickFirstRenderable(
+          battery?.wired_charging,
+          battery?.charging,
+          battery?.charging_speed,
+          battery?.fast_charging,
+          battery?.charging_tech,
+          battery?.charging_speed_watt,
+          battery?.fast_charging_watt,
+        ),
+        "W",
+      ) || "N/A"
+    );
+  };
 
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                Sort by
-              </span>
-              <select
-                value={searchSort}
-                onChange={(event) => setSearchSort(event.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-              >
-                {SEARCH_SORT_OPTIONS.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
+  const getQuickMemoryText = (device) => {
+    const variant = getSelectedVariant(device);
+    const direct = [variant?.ram, variant?.storage].filter(Boolean).join(" / ");
+    if (direct) return direct;
 
-          <div className="mt-4 flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
-            {QUICK_FILTER_CHIPS.map((chip) => {
-              const Icon = chip.icon;
-              const active = activeQuickFilter === chip.id;
-              return (
-                <button
-                  key={chip.id}
-                  type="button"
-                  onClick={() => setActiveQuickFilter(chip.id)}
-                  className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                    active
-                      ? "border-blue-300 bg-blue-50 text-blue-700"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700"
-                  }`}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  <span>{chip.label}</span>
-                </button>
-              );
-            })}
-          </div>
+    const performance = mergeSpecObjects(
+      device?.performance,
+      device?.performance_json,
+    );
+    return (
+      [performance?.ram || performance?.memory, performance?.storage]
+        .filter(Boolean)
+        .join(" / ") || "N/A"
+    );
+  };
 
-          <p className="mt-4 text-xs font-medium text-slate-500">
-            {filteredDevices.length.toLocaleString("en-IN")} results found
-          </p>
-        </div>
+  const getWinnerForCategory = (categoryKey) => {
+    const winner = compareInsights?.categoryWinners?.[categoryKey];
+    return winner?.product_id != null ? String(winner.product_id) : "";
+  };
 
-        <div
-          ref={searchResultsRef}
-          className="max-h-none space-y-3 overflow-visible border-t border-slate-200 px-3 py-3 sm:max-h-[560px] sm:overflow-y-auto sm:px-5 sm:py-4"
-        >
-          {visibleCatalogDevices.map((item) => {
-            const base = item.base;
-            const variant = item.variant;
-            const variantIndex = item.variantIndex ?? 0;
-            const productId = getResolvedProductId(base);
-            const isSelected =
-              productId != null && activeDeviceIdSet.has(String(productId));
-            const canAdd = isSelected || visibleRemainingSlots > 0;
-            const price = getCardPrice(base, variant);
+  const isCategoryWinner = (device, categoryKey) => {
+    const winnerId = getWinnerForCategory(categoryKey);
+    return winnerId && getDeviceRankingKeys(device).includes(winnerId);
+  };
 
-            return (
-              <div
-                key={`catalog-${productId ?? base?.model ?? variantIndex}`}
-                className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-3 rounded-xl border border-slate-200 bg-white p-3 sm:flex sm:items-center"
-              >
-                <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-1.5">
-                  <img
-                    src={getPrimaryImage(base) || null}
-                    alt={base.name}
-                    className="h-full w-full object-contain"
-                    onError={(event) => {
-                      event.target.src = `/api/placeholder/160/160?text=${encodeURIComponent(
-                        (base.brand || "D").slice(0, 1),
-                      )}`;
-                    }}
-                  />
-                </div>
+  const quickDifferenceRows = [
+    {
+      key: "processor",
+      label: "Processor",
+      category: "performance",
+      getValue: getQuickProcessorText,
+    },
+    {
+      key: "display",
+      label: "Display",
+      category: "display",
+      getValue: getQuickDisplayText,
+    },
+    {
+      key: "battery",
+      label: "Battery",
+      category: "battery",
+      getValue: getQuickBatteryText,
+    },
+    {
+      key: "charging",
+      label: "Charging",
+      category: "battery",
+      getValue: getQuickChargingText,
+    },
+    {
+      key: "camera",
+      label: "Rear Camera",
+      category: "camera",
+      getValue: getQuickCameraText,
+    },
+    {
+      key: "memory",
+      label: "RAM / Storage",
+      category: "memory",
+      getValue: getQuickMemoryText,
+    },
+    {
+      key: "price",
+      label: "Starting Price",
+      category: "priceValue",
+      getValue: (device) => {
+        const price = getCardPrice(device, getSelectedVariant(device));
+        return price ? formatPrice(price) : "N/A";
+      },
+    },
+  ];
 
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-slate-900">
-                    {base.name || base.model || "Device"}
-                  </p>
-                  <p className="mt-1 truncate text-xs text-slate-500">
-                    {formatVariantCompactLabel(variant, variantIndex)}
-                  </p>
-                  <p className="mt-1 text-sm font-medium text-slate-700">
-                    {price ? formatPrice(price) : "N/A"}
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => addDevice(base, variantIndex)}
-                  disabled={!canAdd}
-                  className={`col-span-2 inline-flex h-10 w-full items-center justify-center rounded-lg px-3 text-sm font-semibold transition-colors sm:col-span-1 sm:w-auto ${
-                    isSelected
-                      ? "border border-blue-200 bg-blue-50 text-blue-700"
-                      : canAdd
-                        ? "bg-blue-600 text-white hover:bg-blue-700"
-                        : "cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400"
-                  }`}
-                >
-                  {isSelected ? "Added" : canAdd ? "Add" : "Full"}
-                </button>
-              </div>
-            );
-          })}
-
-          {filteredDevices.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
-              No products matched these filters.
-            </div>
-          ) : null}
-        </div>
-
-        {filteredDevices.length > visibleCatalogDevices.length ? (
-          <div className="border-t border-slate-200 px-4 py-3 sm:px-5">
-            <button
-              type="button"
-              onClick={() =>
-                setCatalogVisibleCount((count) =>
-                  Math.min(count + 6, filteredDevices.length),
-                )
-              }
-              className="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-            >
-              Load more
-            </button>
-          </div>
-        ) : null}
-      </div>
-    </aside>
+  const overallWinnerDevice = activeDevices.find((device) =>
+    overallWinnerId
+      ? getDeviceRankingKeys(device).includes(overallWinnerId)
+      : false,
   );
 
-  const setupPanel =
-    activeDevices.length === 0 ? (
-      <div className="  px-4 py-10 text-center sm:px-6 sm:py-16">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 sm:h-16 sm:w-16">
-          <BarChart3 className="h-7 w-7 sm:h-8 sm:w-8" />
-        </div>
-        <h2 className="mt-5 text-xl font-semibold text-slate-900 sm:text-2xl">
-          Start your comparison
-        </h2>
-        <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-slate-500 sm:text-base">
-          Open Add product to choose up to {maxDevices} devices. Once you have
-          at least {MIN_DEVICES}, you can compare them side by side here.
-        </p>
-        <button
-          type="button"
-          onClick={openCatalogPanel}
-          className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800 sm:w-auto"
-        >
-          <Plus className="h-4 w-4" />
-          Add product
-        </button>
-      </div>
-    ) : isComparing ? null : (
-      <>
-        <div className="overflow-hidden rounded-2xl border border-slate-300 bg-white lg:hidden">
-          <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto p-3 pb-4 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-4 sm:p-4 sm:pb-5 [&::-webkit-scrollbar]:hidden">
-            {activeDevices.map((device) => (
-              <div
-                key={`mobile-selected-${device.id}`}
-                className="min-w-[64vw] max-w-[260px] snap-start sm:min-w-[360px] sm:max-w-[340px]"
-              >
-                {renderCompactMobileDeviceCard(device, false)}
-              </div>
-            ))}
-            {visibleRemainingSlots > 0 ? (
-              <button
-                type="button"
-                onClick={openCatalogPanel}
-                className="group flex min-w-[56vw] max-w-[220px] snap-start flex-col items-center justify-center rounded-[22px] border-2 border-dashed border-slate-200 bg-white px-5 py-7 text-center transition-colors hover:border-slate-300 hover:bg-slate-50/50 sm:min-w-[68vw] sm:max-w-[260px] sm:rounded-[28px] sm:px-6 sm:py-8"
-              >
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-900 transition-colors group-hover:bg-slate-200">
-                  <Plus className="h-7 w-7" />
-                </div>
-                <p className="mt-6 text-2xl font-semibold tracking-tight text-slate-900">
-                  Add Device
-                </p>
-                <p className="mt-2 text-sm text-slate-500">
-                  {visibleRemainingSlots} slot
-                  {visibleRemainingSlots !== 1 ? "s" : ""} left
-                </p>
-              </button>
-            ) : null}
-          </div>
-        </div>
+  const fallbackOverallWinner = [...activeDevices]
+    .map((device) => ({
+      device,
+      score: getDeviceSpecScore(device) || 0,
+    }))
+    .sort((left, right) => right.score - left.score)[0]?.device;
 
-        <div className="hidden overflow-hidden rounded-[28px] border border-slate-200 bg-white lg:block">
-          <div
-            className="grid gap-5 p-5 lg:p-6"
-            style={{
-              gridTemplateColumns: `repeat(${compareSlotCount}, minmax(0, 1fr))`,
-            }}
-          >
-            {activeDevices.map((device) =>
-              renderSelectedDeviceCard(device, false),
-            )}
-            {Array.from({ length: emptyCompareSlotCount }, (_, index) =>
-              renderEmptyCompareSlot(index),
-            )}
-          </div>
+  const resolvedOverallWinner = overallWinnerDevice || fallbackOverallWinner;
 
-          {renderCompareBenefitStrip()}
-        </div>
-      </>
+  const getDeviceCategoryLabels = (device) =>
+    categoryWinnerEntries
+      .filter(({ winner }) =>
+        getDeviceRankingKeys(device).includes(String(winner?.product_id ?? "")),
+      )
+      .map((entry) => entry.summaryLabel)
+      .filter(Boolean);
+
+  const getVerdictLabel = (device) => {
+    if (
+      resolvedOverallWinner &&
+      String(getDeviceKey(resolvedOverallWinner)) ===
+        String(getDeviceKey(device))
+    ) {
+      return "Best overall choice";
+    }
+
+    const categories = getDeviceCategoryLabels(device);
+    if (categories.length) {
+      return `Best for ${categories[0].replace(/ lead| highlight/i, "")}`;
+    }
+
+    const prices = activeDevices
+      .map((item) => getCardPrice(item, getSelectedVariant(item)))
+      .filter((price) => Number.isFinite(price) && price > 0);
+    const price = getCardPrice(device, getSelectedVariant(device));
+    if (prices.length && price === Math.min(...prices)) return "Lowest price";
+    return "Balanced alternative";
+  };
+
+  const buildDeviceInsights = (device) => {
+    const ranking = getServerScoreEntry(device);
+    const positive = [];
+    const negative = [];
+
+    (Array.isArray(ranking?.reasons) ? ranking.reasons : []).forEach(
+      (reason) => {
+        const text = String(reason || "").trim();
+        if (!text) return;
+        if (
+          /lower|less|slower|smaller|heavier|weaker|behind|limited/i.test(text)
+        ) {
+          negative.push(text);
+        } else {
+          positive.push(text);
+        }
+      },
     );
 
+    getDeviceCategoryLabels(device).forEach((category) => {
+      positive.push(`Leads this comparison in ${category.toLowerCase()}`);
+    });
+
+    if (!positive.length) {
+      const score = getDeviceSpecScore(device);
+      if (score) positive.push(`${score}/100 Hooks specification score`);
+      const price = getCardPrice(device, getSelectedVariant(device));
+      if (price) positive.push(`Available from ${formatPrice(price)}`);
+    }
+
+    if (!negative.length) {
+      const otherLeader = categoryWinnerEntries.find(
+        ({ winner }) =>
+          !getDeviceRankingKeys(device).includes(
+            String(winner?.product_id ?? ""),
+          ),
+      );
+      if (otherLeader?.summaryLabel) {
+        negative.push(
+          `Another phone leads in ${otherLeader.summaryLabel.toLowerCase()}`,
+        );
+      }
+    }
+
+    const firstDevice = activeDevices[0];
+    const similarities = [];
+    if (firstDevice && String(firstDevice.id) !== String(device.id)) {
+      [
+        ["Processor", getQuickProcessorText],
+        ["Display", getQuickDisplayText],
+        ["Battery", getQuickBatteryText],
+        ["Camera", getQuickCameraText],
+      ].forEach(([label, resolver]) => {
+        const left = String(resolver(firstDevice) || "").toLowerCase();
+        const right = String(resolver(device) || "").toLowerCase();
+        if (left && right && left !== "n/a" && left === right) {
+          similarities.push(
+            `Same ${String(label).toLowerCase()} specification`,
+          );
+        }
+      });
+    }
+
+    return {
+      positive: Array.from(new Set(positive)).slice(0, 3),
+      negative: Array.from(new Set(negative)).slice(0, 3),
+      similarities: Array.from(new Set(similarities)).slice(0, 2),
+    };
+  };
+
+  const getStoreRowsForDevice = (device) => {
+    const selectedVariant = getSelectedVariant(device);
+    const selectedVariantRows = [
+      ...(Array.isArray(selectedVariant?.store_prices)
+        ? selectedVariant.store_prices
+        : []),
+      ...(Array.isArray(selectedVariant?.storePrices)
+        ? selectedVariant.storePrices
+        : []),
+    ];
+    const sourceRows = selectedVariantRows.length
+      ? selectedVariantRows
+      : collectStoreRows(device);
+    const seen = new Set();
+
+    return sourceRows
+      .map((store) => {
+        const price = Number(store?.price);
+        const storeName = String(
+          store?.display_store_name ||
+            store?.store_name ||
+            store?.storeName ||
+            store?.store ||
+            "Store",
+        ).trim();
+        const url = store?.url || store?.affiliate_url || store?.link || "";
+        return {
+          storeName,
+          price: Number.isFinite(price) && price > 0 ? price : null,
+          url,
+        };
+      })
+      .filter((row) => {
+        const key = `${row.storeName.toLowerCase()}-${row.price || "na"}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return row.price || row.url;
+      })
+      .slice(0, 3);
+  };
+
+  const renderSelectorDeviceCard = (device, index) => {
+    const variant = getSelectedVariant(device);
+    const selectedIndex = normalizeVariantIndex(
+      variantSelection[device.id] ?? device.selectedVariantIndex ?? 0,
+    );
+    const price = getCardPrice(device, variant);
+    const variants = Array.isArray(device?.variants) ? device.variants : [];
+
+    return (
+      <article
+        key={`selector-${device.id}`}
+        className="relative min-w-[250px] snap-start rounded-[16px] border border-slate-200 bg-white p-3 sm:min-w-0"
+      >
+        <span className="absolute left-3 top-3 z-10 inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-[11px] font-black text-white">
+          {index + 1}
+        </span>
+        <button
+          type="button"
+          onClick={() =>
+            isComparing
+              ? removeComparedDevice(device.id)
+              : removeDevice(device.id)
+          }
+          className="absolute right-3 top-3 z-10 inline-flex h-7 w-7 items-center justify-center rounded-full text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
+          aria-label={`Remove ${getDeviceName(device)}`}
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+
+        <div className="grid grid-cols-[88px_minmax(0,1fr)] gap-3 pt-5">
+          <div className="flex h-32 items-center justify-center rounded-[12px] bg-slate-50 p-2">
+            <img
+              src={getPrimaryImage(device) || null}
+              alt={getDeviceName(device)}
+              className="h-full w-full object-contain"
+            />
+          </div>
+          <div className="min-w-0 pt-1">
+            <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-[10px] font-black text-blue-700">
+              <span className="text-blue-600">✓</span> Selected
+            </span>
+            <h2 className="mt-2 line-clamp-2 text-sm font-black leading-snug text-slate-950">
+              {getDeviceName(device)}
+            </h2>
+            <p className="mt-1 truncate text-[11px] font-medium text-slate-500">
+              {variant
+                ? formatVariantCompactLabel(variant, selectedIndex)
+                : getQuickMemoryText(device)}
+            </p>
+            <p className="mt-3 text-base font-black tracking-tight text-slate-950">
+              {price ? formatPrice(price) : "Price unavailable"}
+            </p>
+          </div>
+        </div>
+
+        {variants.length > 1 ? (
+          <label className="mt-3 block">
+            <span className="sr-only">Choose variant</span>
+            <select
+              value={selectedIndex}
+              onChange={(event) =>
+                updateVariantSelection(device, event.target.value)
+              }
+              className="h-9 w-full rounded-[9px] border border-slate-200 bg-white px-3 text-[11px] font-bold text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            >
+              {variants.map((item, variantIndex) => (
+                <option
+                  key={`${device.id}-variant-${variantIndex}`}
+                  value={variantIndex}
+                >
+                  {formatVariantCompactLabel(item, variantIndex)}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+      </article>
+    );
+  };
+
+  const categoryCounts = (availableDevices || []).reduce((acc, device) => {
+    const type = getResolvedProductType(device) || "other";
+    acc[type] = (acc[type] || 0) + 1;
+    return acc;
+  }, {});
+
+  const brandCounts = (availableDevices || []).reduce((acc, device) => {
+    const brand = String(device?.brand || "")
+      .trim()
+      .toLowerCase();
+    if (brand) acc[brand] = (acc[brand] || 0) + 1;
+    return acc;
+  }, {});
+
+  const getSectionRowKeys = (sectionId) => {
+    const keys = Array.from(
+      new Set(
+        activeDevices.flatMap((device) =>
+          Object.keys(getDeviceSpecs(device, sectionId) || {}),
+        ),
+      ),
+    ).filter((key) =>
+      activeDevices.some((device) =>
+        hasRenderableValue(getDeviceSpecs(device, sectionId)?.[key]),
+      ),
+    );
+
+    return keys.sort((left, right) => {
+      const leftIndex = getOrderedSpecIndex(sectionId, left);
+      const rightIndex = getOrderedSpecIndex(sectionId, right);
+      if (leftIndex === -1 && rightIndex === -1) {
+        return toNormalCase(left).localeCompare(toNormalCase(right));
+      }
+      if (leftIndex === -1) return 1;
+      if (rightIndex === -1) return -1;
+      return leftIndex - rightIndex;
+    });
+  };
+
+  const hasModalSearchQuery = searchQuery.trim().length > 0;
+  const modalSearchResults = hasModalSearchQuery
+    ? filteredDevices
+        .filter((item) => {
+          const productId = getResolvedProductId(item?.base);
+          return productId == null || !activeDeviceIdSet.has(String(productId));
+        })
+        .slice(0, 6)
+    : [];
+
+  const handleCatalogSelection = (item) => {
+    if (!item?.base) return;
+    addDevice(item.base, item.variantIndex ?? 0);
+    setSearchQuery("");
+    setActiveCatalogSlot((slot) =>
+      Math.min(maxDevices - 1, Math.max(slot + 1, activeDevices.length + 1)),
+    );
+    requestAnimationFrame(() => {
+      catalogSearchInputRef.current?.focus();
+    });
+  };
+
+  const getResolvedComparisonScore = (device) => {
+    const serverScore = Number(getServerScoreEntry(device)?.totalScore);
+    if (Number.isFinite(serverScore)) return serverScore;
+    const hooksScore = Number(getDeviceSpecScore(device));
+    return Number.isFinite(hooksScore) ? hooksScore : null;
+  };
+
+  const formatComparisonScore = (score) => {
+    if (!Number.isFinite(Number(score))) return "—";
+    const numeric = Number(score);
+    if (numeric <= 10) return `${numeric.toFixed(1)}/10`;
+    return `${(numeric / 10).toFixed(1)}/10`;
+  };
+
+  const normalizeComparableSpecValue = (value) => {
+    if (value == null || value === "" || value === "N/A") return "__na__";
+    if (typeof value === "number") return String(value);
+    if (typeof value === "string") {
+      return value.replace(/\s+/g, " ").trim().toLowerCase();
+    }
+    try {
+      return JSON.stringify(value);
+    } catch (error) {
+      return String(value);
+    }
+  };
+
+  const extractFirstNumber = (value) => {
+    const match = String(value ?? "")
+      .replace(/,/g, "")
+      .match(/-?\d+(?:\.\d+)?/);
+    return match ? Number(match[0]) : null;
+  };
+
+  const clampMetricScore = (value) =>
+    Math.max(
+      0,
+      Math.min(100, Number.isFinite(Number(value)) ? Number(value) : 0),
+    );
+
+  const getBreakdownScore = (device, keys = []) => {
+    const ranking = getServerScoreEntry(device);
+    const breakdown = ranking?.breakdown || {};
+    const details = ranking?.details || {};
+
+    for (const key of keys) {
+      const direct = Number(breakdown?.[key]);
+      if (Number.isFinite(direct)) return clampMetricScore(direct);
+
+      const detailValue = Number(details?.[key]?.score ?? details?.[key]);
+      if (Number.isFinite(detailValue)) return clampMetricScore(detailValue);
+    }
+
+    return null;
+  };
+
+  const getFallbackMetricScore = (device, category) => {
+    const overall = Number(getResolvedComparisonScore(device));
+
+    if (category === "performance") {
+      return Number.isFinite(overall) ? clampMetricScore(overall) : 0;
+    }
+
+    if (category === "display") {
+      const displayText = getQuickDisplayText(device);
+      const refreshRate = extractFirstNumber(
+        String(displayText).match(/\d+(?:\.\d+)?\s*hz/i)?.[0] || "",
+      );
+      const displaySize = extractFirstNumber(displayText);
+      return clampMetricScore(
+        (Number.isFinite(refreshRate) ? (refreshRate / 165) * 70 : 35) +
+          (Number.isFinite(displaySize) ? (displaySize / 7.2) * 30 : 15),
+      );
+    }
+
+    if (category === "camera") {
+      const megapixels = extractFirstNumber(getQuickCameraText(device));
+      return clampMetricScore(
+        Number.isFinite(megapixels) ? megapixels / 2 : overall,
+      );
+    }
+
+    if (category === "battery") {
+      const capacity = extractFirstNumber(getQuickBatteryText(device));
+      return clampMetricScore(
+        Number.isFinite(capacity) ? capacity / 70 : overall,
+      );
+    }
+
+    if (category === "body") {
+      const overview = getDeviceSpecs(device, "overview");
+      const weight = extractFirstNumber(overview?.weight);
+      if (Number.isFinite(weight)) {
+        return clampMetricScore(100 - Math.max(0, weight - 150) * 0.65);
+      }
+      return Number.isFinite(overall) ? clampMetricScore(overall) : 0;
+    }
+
+    return Number.isFinite(overall) ? clampMetricScore(overall) : 0;
+  };
+
+  const comparisonReasonDefinitions = [
+    {
+      id: "performance",
+      label: "Performance",
+      icon: Cpu,
+      scoreKeys: ["performance", "gaming", "memory"],
+      winnerKeys: ["performance", "gaming", "memory"],
+    },
+    {
+      id: "camera",
+      label: "Camera",
+      icon: Camera,
+      scoreKeys: ["camera"],
+      winnerKeys: ["camera"],
+    },
+    {
+      id: "display",
+      label: "Display",
+      icon: Monitor,
+      scoreKeys: ["display"],
+      winnerKeys: ["display"],
+    },
+    {
+      id: "battery",
+      label: "Battery",
+      icon: Battery,
+      scoreKeys: ["battery"],
+      winnerKeys: ["battery"],
+    },
+    {
+      id: "body",
+      label: "Body",
+      icon: Cube,
+      scoreKeys: ["portability", "body", "design"],
+      winnerKeys: ["portability", "body", "design"],
+    },
+  ];
+
+  const findWinnerDeviceForKeys = (keys = []) => {
+    for (const key of keys) {
+      const winner = compareInsights?.categoryWinners?.[key];
+      if (!winner) continue;
+      const winnerId = String(winner?.product_id ?? "");
+      const matched = activeDevices.find((device) =>
+        getDeviceRankingKeys(device).includes(winnerId),
+      );
+      if (matched) return matched;
+    }
+    return null;
+  };
+
+  const comparisonReasonCards = comparisonReasonDefinitions.map(
+    (definition) => {
+      const serverWinner = findWinnerDeviceForKeys(definition.winnerKeys);
+      const rows = activeDevices
+        .map((device) => {
+          const serverScore = getBreakdownScore(device, definition.scoreKeys);
+          const value =
+            serverScore == null
+              ? getFallbackMetricScore(device, definition.id)
+              : serverScore;
+          return {
+            id: getDeviceKey(device),
+            device,
+            name: getDeviceName(device),
+            value: clampMetricScore(value),
+            isServerScore: serverScore != null,
+          };
+        })
+        .sort((left, right) => right.value - left.value);
+
+      const fallbackWinner = rows[0]?.device || null;
+      const winnerDevice = serverWinner || fallbackWinner;
+
+      return {
+        ...definition,
+        winnerDevice,
+        rows: rows.map((row) => ({
+          ...row,
+          isWinner:
+            winnerDevice &&
+            String(getDeviceKey(winnerDevice)) ===
+              String(getDeviceKey(row.device)),
+        })),
+      };
+    },
+  );
+
+  const comparisonTableDefinitions = [
+    {
+      id: "general",
+      label: "General",
+      winnerKeys: ["priceValue"],
+      sources: [
+        {
+          sectionId: "overview",
+          include: (key) => !["body", "dimensions", "weight"].includes(key),
+        },
+      ],
+    },
+    {
+      id: "display",
+      label: "Display",
+      winnerKeys: ["display"],
+      sources: [{ sectionId: "display" }],
+    },
+    {
+      id: "body",
+      label: "Body",
+      winnerKeys: ["portability", "body", "design"],
+      sources: [
+        {
+          sectionId: "overview",
+          include: (key) => ["body", "dimensions", "weight"].includes(key),
+        },
+        { sectionId: "build_design" },
+      ],
+    },
+    {
+      id: "processor",
+      label: "Processor",
+      winnerKeys: ["performance", "gaming", "memory"],
+      sources: [{ sectionId: "performance" }],
+    },
+    {
+      id: "battery",
+      label: "Battery",
+      winnerKeys: ["battery"],
+      sources: [{ sectionId: "battery" }],
+    },
+    {
+      id: "camera",
+      label: "Main Camera",
+      winnerKeys: ["camera"],
+      sources: [{ sectionId: "camera" }],
+    },
+    {
+      id: "network",
+      label: "Network",
+      winnerKeys: ["connectivity", "coverage", "network"],
+      sources: [{ sectionId: "network" }],
+    },
+    {
+      id: "features",
+      label: "Features",
+      winnerKeys: ["features", "security", "smart"],
+      sources: [{ sectionId: "features" }],
+    },
+    {
+      id: "audio",
+      label: "Audio",
+      winnerKeys: ["audio"],
+      sources: [{ sectionId: "audio" }],
+    },
+  ];
+
+  const getComparisonTableRows = (definition) => {
+    const seen = new Set();
+    const rows = [];
+
+    definition.sources.forEach((source) => {
+      getSectionRowKeys(source.sectionId).forEach((specKey) => {
+        if (source.include && !source.include(specKey)) return;
+        const rowKey = `${source.sectionId}:${specKey}`;
+        if (seen.has(rowKey)) return;
+        seen.add(rowKey);
+
+        const normalizedValues = activeDevices.map((device) =>
+          normalizeComparableSpecValue(
+            getDeviceSpecs(device, source.sectionId)?.[specKey],
+          ),
+        );
+        const isCommon =
+          normalizedValues.length > 1 &&
+          normalizedValues.every((value) => value === normalizedValues[0]);
+        if (hideCommonSpecs && isCommon) return;
+
+        rows.push({
+          rowKey,
+          sectionId: source.sectionId,
+          specKey,
+          label: SPEC_LABEL_OVERRIDES[specKey] || toNormalCase(specKey),
+        });
+      });
+    });
+
+    return rows;
+  };
+
+  const comparisonTables = comparisonTableDefinitions
+    .map((definition) => ({
+      ...definition,
+      rows: getComparisonTableRows(definition),
+      winnerDevice: findWinnerDeviceForKeys(definition.winnerKeys),
+    }))
+    .filter((definition) => definition.rows.length > 0);
+
+  const keySpecificationRows = quickDifferenceRows
+    .filter((row) =>
+      ["processor", "display", "camera", "battery", "memory", "price"].includes(
+        row.key,
+      ),
+    )
+    .filter((row) => {
+      if (!hideCommonSpecs || activeDevices.length < 2) return true;
+      const values = activeDevices.map((device) =>
+        normalizeComparableSpecValue(row.getValue(device)),
+      );
+      return !values.every((value) => value === values[0]);
+    });
+
+  const compareSummaryCards = activeDevices.map((device) => {
+    const selectedVariant = getSelectedVariant(device);
+    const price = getCardPrice(device, selectedVariant);
+    const comparisonScore = getResolvedComparisonScore(device);
+    const verdict = getVerdictLabel(device);
+    const isOverallWinner = resolvedOverallWinner
+      ? String(getDeviceKey(resolvedOverallWinner)) ===
+        String(getDeviceKey(device))
+      : false;
+
+    return {
+      device,
+      price,
+      selectedVariant,
+      comparisonScore,
+      verdict,
+      isOverallWinner,
+    };
+  });
+
+  const STUDIO_CATEGORY_META = {
+    performance: { label: "Performance", icon: Cpu },
+    camera: { label: "Camera", icon: Camera },
+    display: { label: "Display", icon: Monitor },
+    battery: { label: "Battery", icon: Battery },
+    software: { label: "Software longevity", icon: Shield },
+    portability: { label: "Design & portability", icon: Cube },
+    connectivity: { label: "Connectivity", icon: Signal },
+    value: { label: "Value", icon: FaStore },
+  };
+
+  const findActiveDeviceByProductId = (productId) =>
+    activeDevices.find((device) =>
+      getDeviceRankingKeys(device).includes(String(productId ?? "")),
+    ) || null;
+
+  const getCategoryWinnerFromVerdict = (verdict) =>
+    verdict?.winner_product_id != null
+      ? findActiveDeviceByProductId(verdict.winner_product_id)
+      : null;
+
+  const fallbackCategoryVerdicts = comparisonReasonCards.map((card) => {
+    const category = card.id === "body" ? "portability" : card.id;
+    return {
+      category,
+      label: STUDIO_CATEGORY_META[category]?.label || card.label,
+      winner_product_id: card.winnerDevice
+        ? Number(getResolvedProductId(card.winnerDevice))
+        : null,
+      winner_name: card.winnerDevice ? getDeviceName(card.winnerDevice) : null,
+      is_tie: false,
+      gap:
+        card.rows.length > 1
+          ? Math.max(
+              0,
+              Number(card.rows[0]?.value || 0) -
+                Number(card.rows[1]?.value || 0),
+            )
+          : 0,
+      confidence: 0.58,
+      scores: Object.fromEntries(
+        card.rows.map((row) => [
+          String(getResolvedProductId(row.device)),
+          Math.round(row.value),
+        ]),
+      ),
+      reason: card.winnerDevice
+        ? `${getDeviceName(card.winnerDevice)} has the strongest available ${card.label.toLowerCase()} profile in this comparison.`
+        : `${card.label} is closely matched with the available data.`,
+    };
+  });
+
+  const priceFallbackRows = activeDevices
+    .map((device) => ({
+      device,
+      id: String(getResolvedProductId(device)),
+      price: getCardPrice(device, getSelectedVariant(device)),
+      quality: Number(getResolvedComparisonScore(device)) || 55,
+    }))
+    .filter((row) => Number.isFinite(row.price) && row.price > 0);
+
+  const fallbackValueVerdict = (() => {
+    if (!priceFallbackRows.length) return null;
+    const minPrice = Math.min(...priceFallbackRows.map((row) => row.price));
+    const maxPrice = Math.max(...priceFallbackRows.map((row) => row.price));
+    const scored = priceFallbackRows
+      .map((row) => {
+        const priceAdvantage =
+          maxPrice === minPrice
+            ? 50
+            : ((maxPrice - row.price) / (maxPrice - minPrice)) * 100;
+        return { ...row, score: row.quality * 0.72 + priceAdvantage * 0.28 };
+      })
+      .sort((left, right) => right.score - left.score);
+    const winner = scored[0];
+    return {
+      category: "value",
+      label: "Value",
+      winner_product_id: Number(winner.id),
+      winner_name: getDeviceName(winner.device),
+      is_tie:
+        scored.length > 1 && Math.abs(scored[0].score - scored[1].score) < 1.5,
+      gap: scored.length > 1 ? Math.abs(scored[0].score - scored[1].score) : 0,
+      confidence: 0.56,
+      scores: Object.fromEntries(
+        scored.map((row) => [row.id, Math.round(row.score)]),
+      ),
+      reason: `${getDeviceName(winner.device)} gives the strongest available score-to-price balance for the selected variant.`,
+    };
+  })();
+
+  const resolvedCategoryVerdicts = (
+    compareDecision.categoryVerdicts.length
+      ? compareDecision.categoryVerdicts
+      : [
+          ...fallbackCategoryVerdicts,
+          ...(fallbackValueVerdict ? [fallbackValueVerdict] : []),
+        ]
+  )
+    .filter((verdict) => verdict?.category)
+    .filter(
+      (verdict, index, list) =>
+        list.findIndex((item) => item.category === verdict.category) === index,
+    );
+
+  const fallbackKeyDifferences = quickDifferenceRows
+    .map((row) => {
+      const values = activeDevices.map((device) => row.getValue(device));
+      const normalized = values.map(normalizeComparableSpecValue);
+      if (
+        normalized.length < 2 ||
+        normalized.every((value) => value === normalized[0])
+      ) {
+        return null;
+      }
+
+      const numericValues = values.map(extractFirstNumber);
+      let winnerDevice = null;
+      if (
+        row.key === "price" &&
+        numericValues.filter(Number.isFinite).length >= 2
+      ) {
+        const best = Math.min(...numericValues.filter(Number.isFinite));
+        winnerDevice =
+          activeDevices[numericValues.findIndex((value) => value === best)] ||
+          null;
+      } else {
+        const verdict = resolvedCategoryVerdicts.find(
+          (item) =>
+            item.category === row.category ||
+            (row.category === "priceValue" && item.category === "value") ||
+            (row.category === "memory" && item.category === "performance"),
+        );
+        winnerDevice = getCategoryWinnerFromVerdict(verdict);
+        if (
+          !winnerDevice &&
+          numericValues.filter(Number.isFinite).length >= 2
+        ) {
+          const best = Math.max(...numericValues.filter(Number.isFinite));
+          winnerDevice =
+            activeDevices[numericValues.findIndex((value) => value === best)] ||
+            null;
+        }
+      }
+
+      const finiteValues = numericValues.filter(Number.isFinite);
+      const deltaRatio =
+        finiteValues.length >= 2
+          ? Math.abs(Math.max(...finiteValues) - Math.min(...finiteValues)) /
+            Math.max(
+              1,
+              Math.min(...finiteValues.map((value) => Math.abs(value))),
+            )
+          : 0.12;
+
+      return {
+        id: `fallback-${row.key}`,
+        category:
+          row.category === "priceValue"
+            ? "value"
+            : row.category === "memory"
+              ? "performance"
+              : row.category,
+        property: row.label,
+        values: Object.fromEntries(
+          activeDevices.map((device, index) => [
+            String(getResolvedProductId(device)),
+            values[index],
+          ]),
+        ),
+        winner_product_id: winnerDevice
+          ? Number(getResolvedProductId(winnerDevice))
+          : null,
+        winner_name: winnerDevice ? getDeviceName(winnerDevice) : null,
+        importance:
+          deltaRatio >= 0.3 ? "high" : deltaRatio >= 0.1 ? "medium" : "low",
+        difference_type: row.key === "price" ? "price" : "specification",
+        explanation: winnerDevice
+          ? `${getDeviceName(winnerDevice)} has the clearer ${row.label.toLowerCase()} advantage in the available data.`
+          : `${row.label} differs between the selected phones.`,
+      };
+    })
+    .filter(Boolean);
+
+  const fallbackCommonFeatures = quickDifferenceRows
+    .map((row) => {
+      const values = activeDevices.map((device) => row.getValue(device));
+      const normalized = values.map(normalizeComparableSpecValue);
+      if (
+        normalized.length < 2 ||
+        !normalized.every((value) => value === normalized[0]) ||
+        normalized[0] === "__na__"
+      ) {
+        return null;
+      }
+      return {
+        id: `common-${row.key}`,
+        category: row.category,
+        property: row.label,
+        value: values[0],
+      };
+    })
+    .filter(Boolean);
+
+  const resolvedKeyDifferences = compareDecision.keyDifferences.length
+    ? compareDecision.keyDifferences
+    : fallbackKeyDifferences;
+  const resolvedCommonFeatures = compareDecision.commonFeatures.length
+    ? compareDecision.commonFeatures
+    : fallbackCommonFeatures;
+
+  const fallbackTradeoffs = activeDevices.map((device) => {
+    const productId = Number(getResolvedProductId(device));
+    const categoryWins = resolvedCategoryVerdicts
+      .filter((verdict) => Number(verdict.winner_product_id) === productId)
+      .map((verdict) => verdict.label);
+    const categoryLosses = resolvedCategoryVerdicts
+      .filter(
+        (verdict) =>
+          verdict.winner_product_id != null &&
+          Number(verdict.winner_product_id) !== productId,
+      )
+      .map((verdict) => verdict.label);
+    const differenceWins = resolvedKeyDifferences
+      .filter(
+        (difference) => Number(difference.winner_product_id) === productId,
+      )
+      .map((difference) => difference.property);
+    const differenceLosses = resolvedKeyDifferences
+      .filter(
+        (difference) =>
+          difference.winner_product_id != null &&
+          Number(difference.winner_product_id) !== productId,
+      )
+      .map((difference) => difference.property);
+    return {
+      product_id: productId,
+      product_name: getDeviceName(device),
+      gain: Array.from(new Set([...differenceWins, ...categoryWins])).slice(
+        0,
+        5,
+      ),
+      give_up: Array.from(
+        new Set([...differenceLosses, ...categoryLosses]),
+      ).slice(0, 5),
+    };
+  });
+
+  const resolvedTradeoffs = compareDecision.tradeoffs.length
+    ? compareDecision.tradeoffs
+    : fallbackTradeoffs;
+
+  const fallbackUseCaseDefinitions = [
+    ["gaming", "Best for gaming", "performance"],
+    ["photography", "Best for photography", "camera"],
+    ["battery", "Best for battery life", "battery"],
+    ["long_term", "Best for long-term use", "software"],
+    ["compact", "Best for portability", "portability"],
+    ["value", "Best value", "value"],
+  ];
+  const fallbackUseCasePicks = fallbackUseCaseDefinitions
+    .map(([useCase, label, category]) => {
+      const verdict = resolvedCategoryVerdicts.find(
+        (item) => item.category === category,
+      );
+      const winner = getCategoryWinnerFromVerdict(verdict);
+      if (!winner) return null;
+      return {
+        use_case: useCase,
+        label,
+        winner_product_id: Number(getResolvedProductId(winner)),
+        winner_name: getDeviceName(winner),
+        score:
+          Number(verdict?.scores?.[String(getResolvedProductId(winner))]) ||
+          null,
+        confidence: Number(verdict?.confidence) || 0.55,
+        reason:
+          verdict?.reason ||
+          `${getDeviceName(winner)} has the strongest ${category} profile.`,
+      };
+    })
+    .filter(Boolean);
+
+  const resolvedUseCasePicks = compareDecision.useCasePicks.length
+    ? compareDecision.useCasePicks
+    : fallbackUseCasePicks;
+
+  const fallbackPriceVerdict = (() => {
+    if (priceFallbackRows.length < 2) {
+      return {
+        available: false,
+        label: "Insufficient current-price data",
+        summary:
+          "Selected-variant prices are required to judge whether the premium is worth paying.",
+      };
+    }
+    const ordered = [...priceFallbackRows].sort(
+      (left, right) => left.price - right.price,
+    );
+    const cheaper = ordered[0];
+    const premium = ordered[ordered.length - 1];
+    const difference = premium.price - cheaper.price;
+    const premiumWins = resolvedCategoryVerdicts
+      .filter(
+        (verdict) => Number(verdict.winner_product_id) === Number(premium.id),
+      )
+      .map((verdict) => verdict.label);
+    const cheaperWins = resolvedCategoryVerdicts
+      .filter(
+        (verdict) => Number(verdict.winner_product_id) === Number(cheaper.id),
+      )
+      .map((verdict) => verdict.label);
+    return {
+      available: true,
+      label:
+        premiumWins.length >= 3
+          ? "Premium is supported by several advantages"
+          : cheaperWins.length >= premiumWins.length
+            ? "Better value at the lower price"
+            : "Premium is partly justified",
+      summary: `${getDeviceName(premium.device)} costs ${formatPrice(difference)} more than ${getDeviceName(cheaper.device)}. ${
+        premiumWins.length
+          ? `The extra cost mainly supports ${formatNaturalList(premiumWins.slice(0, 3)).toLowerCase()}.`
+          : "The available data does not show a clear major improvement for the extra cost."
+      }`,
+      difference,
+      percentage: (difference / cheaper.price) * 100,
+      premium_product_id: Number(premium.id),
+      premium_product_name: getDeviceName(premium.device),
+      cheaper_product_id: Number(cheaper.id),
+      cheaper_product_name: getDeviceName(cheaper.device),
+      extra_cost_provides: premiumWins.slice(0, 5),
+      cheaper_phone_keeps: cheaperWins.slice(0, 5),
+    };
+  })();
+  const resolvedPriceVerdict =
+    compareDecision.priceVerdict || fallbackPriceVerdict;
+
+  const fallbackUpgradeStory = (() => {
+    const dated = activeDevices
+      .map((device) => ({
+        device,
+        time: new Date(
+          device?.launch_date ?? device?.launchDate ?? "",
+        ).getTime(),
+      }))
+      .filter((entry) => Number.isFinite(entry.time))
+      .sort((left, right) => left.time - right.time);
+    if (dated.length < 2) {
+      return {
+        available: false,
+        title: "What changes when you switch?",
+        summary:
+          "Launch dates are incomplete, so the newer phone cannot be identified reliably.",
+        major_gains: resolvedKeyDifferences
+          .filter((item) => item.importance === "high")
+          .slice(0, 4)
+          .map((item) => item.property),
+        minor_gains: resolvedKeyDifferences
+          .filter((item) => item.importance !== "high")
+          .slice(0, 4)
+          .map((item) => item.property),
+        mostly_unchanged: resolvedCommonFeatures
+          .slice(0, 4)
+          .map((item) => item.property),
+        tradeoffs: [],
+      };
+    }
+    const older = dated[0];
+    const newer = dated[dated.length - 1];
+    const gapMonths =
+      Math.round(((newer.time - older.time) / 2629800000) * 10) / 10;
+    const newerId = Number(getResolvedProductId(newer.device));
+    const olderId = Number(getResolvedProductId(older.device));
+    return {
+      available: true,
+      title: `What changes with ${getDeviceName(newer.device)}?`,
+      summary: `${getDeviceName(newer.device)} launched about ${gapMonths} months after ${getDeviceName(older.device)}. Newer does not automatically mean better in every area.`,
+      older_product_id: olderId,
+      older_product_name: getDeviceName(older.device),
+      newer_product_id: newerId,
+      newer_product_name: getDeviceName(newer.device),
+      launch_gap_months: gapMonths,
+      major_gains: resolvedKeyDifferences
+        .filter(
+          (item) =>
+            Number(item.winner_product_id) === newerId &&
+            item.importance === "high",
+        )
+        .slice(0, 5)
+        .map((item) => item.property),
+      minor_gains: resolvedKeyDifferences
+        .filter(
+          (item) =>
+            Number(item.winner_product_id) === newerId &&
+            item.importance !== "high",
+        )
+        .slice(0, 5)
+        .map((item) => item.property),
+      mostly_unchanged: resolvedCommonFeatures
+        .slice(0, 5)
+        .map((item) => item.property),
+      tradeoffs: resolvedKeyDifferences
+        .filter((item) => Number(item.winner_product_id) === olderId)
+        .slice(0, 5)
+        .map((item) => item.property),
+    };
+  })();
+  const resolvedUpgradeStory =
+    compareDecision.upgradeStory || fallbackUpgradeStory;
+
+  const fallbackConfidence = {
+    score: compareInsights.overallWinner ? 0.68 : 0.52,
+    level: compareInsights.overallWinner ? "medium" : "low",
+    comparable_fields: comparisonTables.reduce(
+      (sum, section) => sum + section.rows.length,
+      0,
+    ),
+    explanation: compareInsights.overallWinner
+      ? "Based on available specification scores and selected-variant prices."
+      : "The server verdict is unavailable, so Hooks is showing a directional specification-based comparison.",
+  };
+  const resolvedConfidence = compareDecision.confidence || fallbackConfidence;
+
+  const resolvedOverallVerdict = compareDecision.overallVerdict || {
+    winner_product_id: resolvedOverallWinner
+      ? Number(getResolvedProductId(resolvedOverallWinner))
+      : null,
+    winner_name: resolvedOverallWinner
+      ? getDeviceName(resolvedOverallWinner)
+      : null,
+    confidence: resolvedConfidence.score,
+    confidence_level: resolvedConfidence.level,
+    is_close_comparison: false,
+    reason:
+      comparisonRecommendationText ||
+      (resolvedOverallWinner
+        ? `${getDeviceName(resolvedOverallWinner)} has the strongest available overall specification balance.`
+        : "The available data does not support a confident overall winner."),
+  };
+
+  const decisionQuestions = [
+    { id: "overall", label: "Best overall" },
+    { id: "price", label: "Worth the extra price?" },
+    { id: "latest", label: "Which is newer?" },
+  ];
+
+  const activeDecisionAnswer = (() => {
+    if (activeDecisionQuestion === "price") {
+      return {
+        title: resolvedPriceVerdict?.label || "Price decision",
+        copy:
+          resolvedPriceVerdict?.summary ||
+          "Current selected-variant prices are incomplete.",
+      };
+    }
+    if (activeDecisionQuestion === "latest") {
+      return {
+        title: resolvedUpgradeStory?.title || "Which phone is newer?",
+        copy:
+          resolvedUpgradeStory?.summary ||
+          "Launch-date information is incomplete.",
+      };
+    }
+    return {
+      title: resolvedOverallVerdict?.winner_name
+        ? `${resolvedOverallVerdict.winner_name} has the overall edge`
+        : "This comparison is closely matched",
+      copy:
+        resolvedOverallVerdict?.reason ||
+        "Choose based on the categories that matter most to you.",
+    };
+  })();
+
+  const devicePairs = [];
+  for (let left = 0; left < activeDevices.length; left += 1) {
+    for (let right = left + 1; right < activeDevices.length; right += 1) {
+      devicePairs.push({ key: `${left}-${right}`, left, right });
+    }
+  }
+  const selectedPair =
+    devicePairs.find((pair) => pair.key === activeMobilePair) ||
+    devicePairs[0] ||
+    null;
+  const focusedMobileDevices = selectedPair
+    ? [
+        activeDevices[selectedPair.left],
+        activeDevices[selectedPair.right],
+      ].filter(Boolean)
+    : activeDevices.slice(0, 2);
+
+  const getDifferenceValue = (difference, device) => {
+    const productId = String(getResolvedProductId(device));
+    const value = difference?.values?.[productId];
+    return value == null || value === "" ? "—" : value;
+  };
+
+  const getStudioSectionCategory = (definitionId) => {
+    const map = {
+      general: "value",
+      display: "display",
+      body: "portability",
+      processor: "performance",
+      battery: "battery",
+      camera: "camera",
+      network: "connectivity",
+      features: "software",
+      audio: "connectivity",
+      key: "performance",
+    };
+    return map[definitionId] || definitionId;
+  };
+
+  const getStudioSectionWinner = (definition) => {
+    const category = getStudioSectionCategory(definition.id);
+    const verdict = resolvedCategoryVerdicts.find(
+      (item) => item.category === category,
+    );
+    return (
+      getCategoryWinnerFromVerdict(verdict) || definition.winnerDevice || null
+    );
+  };
+
+  const flattenStudioPropertyPairs = (value, prefix = "", depth = 0) => {
+    if (value == null || value === "" || depth > 4) return [];
+    if (Array.isArray(value)) {
+      if (value.every((item) => item == null || typeof item !== "object")) {
+        return [
+          [prefix || "Details", value.map((item) => String(item)).join(", ")],
+        ];
+      }
+      return value.flatMap((item, index) =>
+        flattenStudioPropertyPairs(
+          item,
+          `${prefix || "Item"} ${index + 1}`,
+          depth + 1,
+        ),
+      );
+    }
+    if (typeof value !== "object") {
+      const formatted = formatSpecValue(value, prefix || "value");
+      return [[prefix || "Details", formatted || String(value)]];
+    }
+    return Object.entries(value).flatMap(([key, item]) => {
+      const label = toNormalCase(key);
+      if (item && typeof item === "object") {
+        return flattenStudioPropertyPairs(
+          item,
+          prefix ? `${prefix} · ${label}` : label,
+          depth + 1,
+        );
+      }
+      const formatted = formatSpecValue(item, key);
+      return formatted && formatted !== "N/A"
+        ? [[prefix ? `${prefix} · ${label}` : label, formatted]]
+        : [];
+    });
+  };
+
+  const getCameraStudioGroups = (device) => {
+    const camera = getDeviceSpecs(device, "camera");
+    const groupOrder = [
+      "main_camera",
+      "rear_camera",
+      "wide_camera",
+      "telephoto_camera",
+      "periscope_camera",
+      "ultra_wide_camera",
+      "ultrawide_camera",
+      "macro_camera",
+      "depth_camera",
+      "front_camera",
+      "video_recording",
+      "rear_video",
+      "features",
+      "camera_features",
+      "ai_features",
+    ];
+    const entries = Object.entries(camera || {}).filter(([, value]) =>
+      hasRenderableValue(value),
+    );
+    entries.sort(([left], [right]) => {
+      const leftIndex = groupOrder.indexOf(left);
+      const rightIndex = groupOrder.indexOf(right);
+      if (leftIndex === -1 && rightIndex === -1)
+        return left.localeCompare(right);
+      if (leftIndex === -1) return 1;
+      if (rightIndex === -1) return -1;
+      return leftIndex - rightIndex;
+    });
+    return entries.map(([key, value]) => {
+      const pairs = flattenStudioPropertyPairs(value, "").slice(0, 16);
+      return {
+        key,
+        label: toNormalCase(key),
+        pairs: pairs.length
+          ? pairs
+          : [["Details", formatSpecValue(value, key)]],
+      };
+    });
+  };
+
+  const sensorRows = (() => {
+    const sensorsByDevice = activeDevices.map((device) =>
+      flattenStudioPropertyPairs(device?.sensors || {}, "")
+        .map(([label, value]) => ({ label, value }))
+        .filter((item) => item.label && hasRenderableValue(item.value)),
+    );
+    const labels = Array.from(
+      new Set(
+        sensorsByDevice.flatMap((rows) => rows.map((item) => item.label)),
+      ),
+    );
+    return labels
+      .map((label) => {
+        const values = sensorsByDevice.map(
+          (rows) => rows.find((item) => item.label === label)?.value ?? null,
+        );
+        const normalized = values.map(normalizeComparableSpecValue);
+        if (
+          hideCommonSpecs &&
+          normalized.length > 1 &&
+          normalized.every((value) => value === normalized[0])
+        ) {
+          return null;
+        }
+        return {
+          rowKey: `sensor:${label}`,
+          sectionId: "features",
+          specKey: `sensor_${label}`,
+          label,
+          customValues: Object.fromEntries(
+            activeDevices.map((device, index) => [
+              String(getResolvedProductId(device)),
+              values[index],
+            ]),
+          ),
+          groupLabel: "Sensors",
+        };
+      })
+      .filter(Boolean);
+  })();
+
+  const studioComparisonTables = [
+    {
+      id: "key",
+      label: "Key specifications",
+      rows: keySpecificationRows.map((row) => ({
+        rowKey: `key:${row.key}`,
+        sectionId: "key",
+        specKey: row.key,
+        label: row.label,
+        customResolver: row.getValue,
+        category: row.category,
+      })),
+      winnerDevice: resolvedOverallWinner,
+    },
+    ...comparisonTables.map((definition) => ({
+      ...definition,
+      rows:
+        definition.id === "features"
+          ? [
+              ...definition.rows.filter((row) => row.specKey !== "sensors"),
+              ...sensorRows,
+            ]
+          : definition.rows,
+      winnerDevice: getStudioSectionWinner(definition),
+    })),
+  ].filter(
+    (definition) => definition.rows.length > 0 || definition.id === "camera",
+  );
+
+  const studioViewTargets = {
+    performance: ["processor"],
+    display: ["display"],
+    camera: ["camera"],
+    battery: ["battery"],
+    connectivity: ["network"],
+    all: studioComparisonTables.map((definition) => definition.id),
+  };
+
+  const visibleStudioComparisonTables =
+    activeStudioView === "all"
+      ? studioComparisonTables
+      : studioComparisonTables.filter((definition) =>
+          (studioViewTargets[activeStudioView] || []).includes(definition.id),
+        );
+
+  const selectStudioView = (viewId, shouldScroll = true) => {
+    setActiveStudioView(viewId);
+    const sectionIds = studioViewTargets[viewId] || [];
+    if (sectionIds.length) {
+      setExpandedStudioSections((previous) => ({
+        ...previous,
+        ...Object.fromEntries(sectionIds.map((sectionId) => [sectionId, true])),
+      }));
+    }
+    if (!shouldScroll || typeof document === "undefined") return;
+    requestAnimationFrame(() => {
+      document
+        .getElementById("compare-specifications")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
+  const getStudioRowValue = (row, device) => {
+    if (row.customValues) {
+      const value = row.customValues[String(getResolvedProductId(device))];
+      return { missingValue: !hasRenderableValue(value), renderedValue: value };
+    }
+    if (row.customResolver) {
+      const value = row.customResolver(device);
+      return { missingValue: !hasRenderableValue(value), renderedValue: value };
+    }
+    return getRenderedCompareSpecValue(device, row.sectionId, row.specKey);
+  };
+
+  const suggestedDevices = (availableDevices || [])
+    .filter((candidate) => {
+      const candidateId = String(getResolvedProductId(candidate) ?? "");
+      if (!candidateId || activeDeviceIdSet.has(candidateId)) return false;
+      const activeType = getResolvedProductType(activeDevices[0]);
+      const candidateType = getResolvedProductType(candidate);
+      return !activeType || !candidateType || activeType === candidateType;
+    })
+    .slice(0, 4);
+
+  const applySuggestedComparison = (candidate) => {
+    const firstDevice = activeDevices[0];
+    const nextCandidate = toCompareSelectedEntry(candidate, 0);
+    if (!firstDevice || !nextCandidate) return;
+    setComparedDevices([firstDevice, nextCandidate]);
+    setSelectedDevices([]);
+    setIsComparing(true);
+    setVariantSelection((previous) => ({
+      ...previous,
+      [nextCandidate.id]: 0,
+    }));
+    requestAnimationFrame(() => {
+      comparisonHeroRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  };
+
+  const meaningfulDifferenceCount = resolvedKeyDifferences.length;
+  const commonFeatureCount = resolvedCommonFeatures.length;
+  const uncertainResultCount = Math.max(
+    0,
+    resolvedCategoryVerdicts.filter(
+      (verdict) => verdict.is_tie || Number(verdict.confidence || 0) < 0.55,
+    ).length + (compareInsights.warnings?.length || 0),
+  );
+
+  const comparisonPickerModal = showCatalogModal ? (
+    <div
+      className="hc-picker-backdrop fixed inset-0 z-[1000] flex items-end justify-center p-0 sm:items-center sm:p-5"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) closeCatalogModal();
+      }}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="compare-picker-title"
+        className="hc-picker-modal flex max-h-[100dvh] w-full flex-col overflow-hidden shadow-2xl sm:max-h-[min(820px,calc(100vh-40px))] sm:max-w-[700px] sm:rounded-[22px]"
+      >
+        <header className="hc-picker-header flex items-start justify-between gap-4 border-b px-4 py-4 sm:px-6 sm:py-5">
+          <div>
+            <h2
+              id="compare-picker-title"
+              className="bg-gradient-to-r from-blue-600 via-violet-500 to-orange-500 bg-clip-text text-2xl font-black tracking-[-0.03em] text-transparent sm:text-3xl"
+            >
+              Comparison
+            </h2>
+            <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">
+              Select two to {maxDevices} phones, then start the side-by-side
+              comparison.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={closeCatalogModal}
+            className="inline-flex h-11 w-11 flex-none items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-900"
+            aria-label="Close comparison picker"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </header>
+
+        <div className="hc-picker-body min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+          {Array.from({ length: maxDevices }, (_, slotIndex) => {
+            const device = activeDevices[slotIndex];
+            const variant = device ? getSelectedVariant(device) : null;
+            const selectedIndex = device
+              ? normalizeVariantIndex(
+                  variantSelection[device.id] ??
+                    device.selectedVariantIndex ??
+                    0,
+                )
+              : 0;
+            const isActiveEmptySlot =
+              !device && activeCatalogSlot === slotIndex;
+
+            return (
+              <React.Fragment key={`picker-slot-${slotIndex}`}>
+                <div className="relative">
+                  {device ? (
+                    <div className="flex min-h-[66px] items-center gap-3 rounded-[12px] border border-slate-200 bg-white px-3 py-2.5 shadow-[0_6px_20px_rgba(15,23,42,0.05)]">
+                      <div className="flex h-11 w-10 flex-none items-center justify-center rounded-[8px] bg-slate-50 p-1">
+                        <img
+                          src={getPrimaryImage(device) || null}
+                          alt={getDeviceName(device)}
+                          className="h-full w-full object-contain"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-black text-slate-950 sm:text-base">
+                          {getDeviceName(device)}
+                        </p>
+                        <p className="mt-0.5 truncate text-[11px] font-medium text-slate-500">
+                          {variant
+                            ? formatVariantCompactLabel(variant, selectedIndex)
+                            : getQuickMemoryText(device)}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          isComparing
+                            ? removeComparedDevice(device.id)
+                            : removeDevice(device.id)
+                        }
+                        className="inline-flex h-9 w-9 flex-none items-center justify-center rounded-full text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
+                        aria-label={`Remove ${getDeviceName(device)}`}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <input
+                        ref={isActiveEmptySlot ? catalogSearchInputRef : null}
+                        type="search"
+                        value={isActiveEmptySlot ? searchQuery : ""}
+                        onFocus={() => {
+                          setActiveCatalogSlot(slotIndex);
+                          setSearchQuery("");
+                        }}
+                        onChange={(event) => {
+                          setActiveCatalogSlot(slotIndex);
+                          setSearchQuery(event.target.value);
+                        }}
+                        placeholder="Search phones for compare..."
+                        autoComplete="off"
+                        aria-expanded={isActiveEmptySlot && hasModalSearchQuery}
+                        className={`h-14 w-full rounded-[12px] border bg-white pl-11 pr-4 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-medium placeholder:text-slate-400 ${
+                          isActiveEmptySlot
+                            ? "border-blue-400 ring-4 ring-blue-50"
+                            : "border-slate-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+                        }`}
+                      />
+
+                      {isActiveEmptySlot && hasModalSearchQuery ? (
+                        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-40 max-h-[270px] overflow-y-auto rounded-[12px] border border-slate-200 bg-white p-1.5 shadow-[0_20px_55px_rgba(15,23,42,0.18)]">
+                          <p className="px-3 pb-1.5 pt-1 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
+                            Search results
+                          </p>
+                          {modalSearchResults.map((item) => {
+                            const base = item.base;
+                            const variantItem = item.variant;
+                            const variantIndex = item.variantIndex ?? 0;
+                            const productId = getResolvedProductId(base);
+                            const price = getCardPrice(base, variantItem);
+                            return (
+                              <button
+                                key={`picker-result-${productId ?? getDeviceName(base)}-${variantIndex}`}
+                                type="button"
+                                onClick={() => handleCatalogSelection(item)}
+                                className="flex w-full items-center gap-3 rounded-[9px] px-3 py-2.5 text-left transition hover:bg-blue-50"
+                              >
+                                <div className="flex h-10 w-9 flex-none items-center justify-center rounded-[7px] bg-slate-50 p-1">
+                                  <img
+                                    src={getPrimaryImage(base) || null}
+                                    alt=""
+                                    className="h-full w-full object-contain"
+                                  />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-bold text-slate-900">
+                                    {getDeviceName(base)}
+                                  </p>
+                                  <p className="mt-0.5 truncate text-[10px] font-medium text-slate-500">
+                                    {formatVariantCompactLabel(
+                                      variantItem,
+                                      variantIndex,
+                                    )}
+                                  </p>
+                                </div>
+                                <span className="flex-none text-xs font-black text-slate-700">
+                                  {price ? formatPrice(price) : ""}
+                                </span>
+                              </button>
+                            );
+                          })}
+                          {modalSearchResults.length === 0 ? (
+                            <div className="px-4 py-8 text-center">
+                              <p className="text-sm font-bold text-slate-700">
+                                No phones found
+                              </p>
+                              <p className="mt-1 text-xs text-slate-500">
+                                Try another phone or brand name.
+                              </p>
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+
+                {slotIndex < maxDevices - 1 ? (
+                  <div className="flex h-9 items-center justify-center">
+                    <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-slate-300 bg-white px-1 text-[10px] font-black text-slate-950">
+                      VS
+                    </span>
+                  </div>
+                ) : null}
+              </React.Fragment>
+            );
+          })}
+        </div>
+
+        <footer className="hc-picker-footer border-t px-4 py-4 sm:px-6">
+          <button
+            type="button"
+            onClick={startComparison}
+            disabled={activeDevices.length < MIN_DEVICES}
+            className={`inline-flex h-12 w-full items-center justify-center rounded-[10px] text-sm font-black transition ${
+              activeDevices.length >= MIN_DEVICES
+                ? "bg-blue-600 text-white hover:bg-blue-700"
+                : "cursor-not-allowed bg-slate-300 text-white"
+            }`}
+          >
+            {activeDevices.length >= MIN_DEVICES
+              ? `Compare ${activeDevices.length} Phones`
+              : "Select at least 2 phones"}
+          </button>
+          <p className="mt-2 text-center text-[11px] font-medium text-slate-500">
+            {activeDevices.length >= MIN_DEVICES
+              ? `You can add ${Math.max(0, maxDevices - activeDevices.length)} more phone${maxDevices - activeDevices.length === 1 ? "" : "s"}.`
+              : `${MIN_DEVICES - activeDevices.length} more phone${MIN_DEVICES - activeDevices.length === 1 ? "" : "s"} needed to compare.`}
+          </p>
+        </footer>
+      </section>
+    </div>
+  ) : null;
+
   return (
-    <div className="min-h-screen overflow-x-hidden bg-slate-50 text-slate-900">
+    <main className="hooks-compare-page pb-16">
       <Helmet prioritizeSeoTags>
         <title key="compare-title">{normalizedMetaTitle}</title>
         <meta
@@ -5057,7 +6309,6 @@ const MobileCompare = () => {
           name="description"
           content={metaDescription}
         />
-        <meta key="compare-keywords" name="keywords" content={metaKeywords} />
         <link
           key="compare-canonical"
           rel="canonical"
@@ -5099,14 +6350,14 @@ const MobileCompare = () => {
           name="twitter:url"
           content={canonicalCompareUrl}
         />
-        {compareSchemaJson && (
+        {compareSchemaJson ? (
           <script type="application/ld+json">{compareSchemaJson}</script>
-        )}
-        {compareItemListSchemaJson && (
+        ) : null}
+        {compareItemListSchemaJson ? (
           <script type="application/ld+json">
             {compareItemListSchemaJson}
           </script>
-        )}
+        ) : null}
         {compareProductSchemasJson.map((json, index) => (
           <script
             key={`compare-product-schema-${index}`}
@@ -5116,1845 +6367,1317 @@ const MobileCompare = () => {
           </script>
         ))}
       </Helmet>
-      {/* Page Header */}
-      <div className="sticky top-0 z-40 w-full  px-4 py-4 sm:px-6 lg:px-8">
-        <div className="mx-auto flex max-w-[1560px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 items-center gap-3">
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center border border-slate-300 text-slate-600 md:hidden"
-              aria-label="Go back"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            <div className="min-w-0">
-              <h1 className="text-[15px] font-bold uppercase tracking-[0.32em] text-purple-600 sm:text-xs">
-                Compare
-              </h1>
-              <p className="mt-1 text-[10px] text-slate-600">
-                Up to {maxDevices} products
-              </p>
-            </div>
+
+      <div className="hc-shell pt-5 lg:pt-7">
+        <nav className="flex items-center gap-2 overflow-x-auto whitespace-nowrap text-xs font-semibold text-slate-500 hide-scrollbar">
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="hover:text-blue-600"
+          >
+            Home
+          </button>
+          <ChevronRight className="h-3 w-3 text-slate-300" />
+          <span className="text-blue-600">Compare</span>
+        </nav>
+
+        <header className="hc-section flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="hc-eyebrow">Hooks comparison intelligence</p>
+            <h1 className="hc-heading">Compare smartphones side by side</h1>
+            <p className="hc-copy">
+              {isComparing && activeDevices.length >= MIN_DEVICES
+                ? `${activeDevices.map((device) => getDeviceName(device)).join(" vs ")} — compare price, performance, camera, battery, launch timing and complete specifications in one decision-focused view.`
+                : "Select two to four phones. Hooks will explain meaningful differences, the newer choice, category leaders, price value and the trade-offs you make."}
+            </p>
           </div>
 
-          {(activeDevices.length > 0 || selectedDevices.length > 0) && (
-            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-              {visibleRemainingSlots > 0 ? (
-                <button
-                  type="button"
-                  onClick={openCatalogPanel}
-                  className="inline-flex items-center gap-2 border border-blue-500 px-4 py-2 text-sm font-semibold text-blue-600"
-                  title={`${visibleRemainingSlots} compare slot${
-                    visibleRemainingSlots !== 1 ? "s" : ""
-                  } available`}
-                >
-                  <Plus className="h-4 w-4" />
-                  Add product
-                </button>
-              ) : null}
-              {activeDevices.length > 0 ? (
-                <button
-                  type="button"
-                  onClick={shareComparison}
-                  className="inline-flex items-center gap-2 border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700"
-                  title="Share comparison"
-                >
-                  <Share2 className="h-4 w-4" />
-                  Share
-                </button>
-              ) : null}
+          <div className="hc-top-actions">
+            {isComparing && activeDevices.length < maxDevices ? (
               <button
                 type="button"
-                onClick={clearAll}
-                className="inline-flex items-center gap-2 border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700"
+                onClick={() => openCatalogPanel(activeDevices.length)}
+                className="hc-action hc-action--primary"
               >
-                <Trash2 className="h-4 w-4" />
-                Clear all
+                <Plus className="h-3.5 w-3.5" /> Add phone
               </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {showCatalogModal && (
-        <div
-          className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/45 p-0 backdrop-blur-md sm:p-6"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="compare-add-product-title"
-          onMouseDown={closeCatalogModal}
-        >
-          <div className="flex min-h-full items-stretch justify-center sm:items-center">
-            <div
-              className="flex h-full max-h-none w-full max-w-[1120px] flex-col overflow-hidden rounded-none border-0 bg-white sm:h-auto sm:max-h-[92vh] sm:rounded-[28px] sm:border sm:border-slate-300"
-              onMouseDown={(event) => event.stopPropagation()}
-            >
-              <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-6">
-                <div>
-                  <h2
-                    id="compare-add-product-title"
-                    className="text-lg font-semibold text-slate-900"
-                  >
-                    Add product
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Search and select devices to compare.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={closeCatalogModal}
-                  className="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-500 transition-colors hover:bg-slate-50"
-                  aria-label="Close add product modal"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              <div className="overflow-y-auto p-3 sm:p-6">{catalogSidebar}</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="mx-auto max-w-[1560px] px-3 pb-8 pt-3 sm:px-6 sm:pb-10 sm:pt-6 lg:px-8">
-        <div>
-          <div className="space-y-6">
-            {setupPanel}
-            {false ? (
-              <>
-                {/* Hero Section */}
-                {usedSlots === 0 && (
-                  <div className="mb-6 px-4 py-4 text-center sm:px-6">
-                    <div className="mx-auto max-w-5xl border border-slate-200 bg-white p-6 sm:p-7">
-                      <div className="flex items-center justify-center gap-3 mb-4">
-                        <Sparkles className="h-8 w-8 text-blue-600" />
-                        <h2 className="text-lg font-semibold text-slate-900">
-                          How to Compare
-                        </h2>
-                      </div>
-                      <p className="mx-auto mb-5 max-w-2xl text-sm text-slate-500">
-                        Add 2 to 4 devices, pick the categories you care about,
-                        and compare price, specs, and features side by side.
-                      </p>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div className="rounded-[24px] border border-slate-300 bg-slate-50 p-4">
-                          <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-[16px] bg-blue-50">
-                            <span className="font-bold text-blue-600">1</span>
-                          </div>
-                          <p className="text-sm text-slate-700">
-                            {maxDevices === 2
-                              ? "Add 2 devices"
-                              : `Add 2-${maxDevices} devices`}
-                          </p>
-                        </div>
-                        <div className="rounded-[24px] border border-slate-300 bg-slate-50 p-4">
-                          <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-[16px] bg-sky-50">
-                            <span className="font-bold text-blue-600">2</span>
-                          </div>
-                          <p className="text-sm text-slate-700">
-                            Select categories
-                          </p>
-                        </div>
-                        <div className="rounded-[24px] border border-slate-300 bg-slate-50 p-4">
-                          <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-[16px] bg-blue-50">
-                            <span className="font-bold text-blue-600">3</span>
-                          </div>
-                          <p className="text-sm text-slate-700">
-                            Compare & decide
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {/* Selected Devices Section */}
-                {isComparing ? (
-                  <div className="mb-8 overflow-hidden ">
-                    <div className="xl:grid xl:grid-cols-[220px_minmax(0,1fr)]">
-                      <aside className="flex flex-col justify-between gap-6 border-b border-slate-200 bg-white p-5 xl:border-b-0 xl:border-r xl:p-6">
-                        <div>
-                          <h2 className="text-xl font-semibold tracking-tight text-slate-900">
-                            Add or remove products
-                          </h2>
-                          <p className="mt-3 text-sm leading-6 text-slate-500">
-                            You can compare up to {maxDevices} devices at a
-                            time.
-                          </p>
-                        </div>
-
-                        {visibleRemainingSlots > 0 ? (
-                          <button
-                            type="button"
-                            onClick={openCatalogPanel}
-                            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-blue-300 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 transition-colors hover:border-blue-400 hover:bg-blue-100"
-                          >
-                            <Plus className="h-4 w-4" />
-                            Add product
-                          </button>
-                        ) : null}
-                      </aside>
-
-                      <div
-                        className="grid min-h-full divide-y divide-slate-200 xl:divide-x xl:divide-y-0"
-                        style={{
-                          gridTemplateColumns: `repeat(${compareSlotCount}, minmax(0, 1fr))`,
-                        }}
-                      >
-                        {activeDevices.map((device) =>
-                          renderSelectedDeviceCard(device, true),
-                        )}
-                        {Array.from(
-                          { length: emptyCompareSlotCount },
-                          (_, index) => renderEmptyCompareSlot(index),
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ) : activeDevices.length > 0 ? (
-                  <div className="mb-8 overflow-hidden rounded-[32px] border border-slate-300 bg-white">
-                    <div className="xl:grid xl:grid-cols-[250px_minmax(0,1fr)]">
-                      <aside className="border-b border-slate-200 bg-white p-8 xl:border-b-0 xl:border-r">
-                        <div className="flex h-full flex-col gap-8">
-                          <div className="space-y-8">
-                            <div>
-                              <h2 className="text-[2rem] font-semibold tracking-tight text-slate-900">
-                                Selected devices
-                              </h2>
-                              <p className="mt-4 max-w-[15rem] text-lg leading-8 text-slate-600">
-                                Compare 2 to {maxDevices} products side by side.
-                              </p>
-                            </div>
-
-                            <div className="space-y-3">
-                              <div className="flex items-center gap-3 text-sm font-medium text-slate-700">
-                                <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
-                                  <Smartphone className="h-4 w-4" />
-                                </div>
-                                <span>
-                                  {activeDevices.length} of {maxDevices}{" "}
-                                  selected
-                                </span>
-                              </div>
-                              <div className="h-2 overflow-hidden rounded-full bg-slate-200">
-                                <div
-                                  className="h-full rounded-full bg-blue-600 transition-all duration-300"
-                                  style={{ width: `${selectedSetupProgress}%` }}
-                                />
-                              </div>
-                            </div>
-
-                            {visibleRemainingSlots > 0 ? (
-                              <button
-                                type="button"
-                                onClick={openCatalogPanel}
-                                className="inline-flex w-full items-center justify-center gap-3 rounded-2xl border border-blue-500 bg-white px-5 py-4 text-base font-semibold text-blue-600 transition-colors hover:bg-blue-50"
-                              >
-                                <Plus className="h-5 w-5" />
-                                Add Device
-                              </button>
-                            ) : null}
-                          </div>
-
-                          <div className="mt-auto rounded-[26px] border border-slate-200 bg-slate-50/80 p-5">
-                            <div className="flex items-start gap-3">
-                              <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-blue-200 bg-white text-blue-600">
-                                <Info className="h-5 w-5" />
-                              </div>
-                              <div>
-                                <h3 className="text-lg font-semibold text-slate-900">
-                                  Variant matters
-                                </h3>
-                                <p className="mt-2 text-sm leading-7 text-slate-500">
-                                  Different variants can affect specs, features,
-                                  and price.
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </aside>
-
-                      <div className="p-5 sm:p-6">
-                        <div className="grid auto-rows-fr grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
-                          {activeDevices.map((device) => {
-                            const selectedVariant = getSelectedVariant(device);
-                            const price = getCardPrice(device, selectedVariant);
-                            return (
-                              <div
-                                key={device.id}
-                                className="relative flex h-full min-h-[24rem] flex-col rounded-[28px] border border-slate-300 bg-white p-5 transition-colors hover:border-slate-400"
-                              >
-                                <button
-                                  type="button"
-                                  onClick={() => removeDevice(device.id)}
-                                  className="absolute right-4 top-4 inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-500 transition-colors hover:border-slate-400 hover:text-slate-700"
-                                  aria-label="Remove device"
-                                  title="Remove device"
-                                >
-                                  <X className="h-4 w-4" />
-                                </button>
-
-                                <div className="flex justify-center">
-                                  <div className="relative flex h-[200px] w-full max-w-[250px] items-center justify-center overflow-hidden rounded-[24px] border border-slate-300 bg-slate-50 px-4">
-                                    <img
-                                      src={getPrimaryImage(device) || null}
-                                      alt={device.name}
-                                      className="h-full w-full object-contain py-4"
-                                      onError={(event) => {
-                                        event.target.src = `/api/placeholder/320/240?text=${encodeURIComponent(
-                                          (device.brand || "D").slice(0, 1),
-                                        )}`;
-                                      }}
-                                    />
-                                  </div>
-                                </div>
-
-                                <div className="mt-5 flex flex-1 flex-col">
-                                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                                    {device.brand || "Brand"}
-                                  </p>
-                                  <h3 className="mt-2 text-[2rem] font-semibold leading-tight tracking-tight text-slate-900">
-                                    {device.name || device.model || "Device"}
-                                  </h3>
-                                  <div className="mt-7">
-                                    <p
-                                      className={`text-[2rem] font-semibold tracking-tight ${
-                                        price
-                                          ? "text-slate-900"
-                                          : "text-slate-400"
-                                      }`}
-                                      title={
-                                        price ? "Price" : "Price not available"
-                                      }
-                                    >
-                                      {price ? formatPrice(price) : "N/A"}
-                                    </p>
-                                    <div className="mt-2 flex items-center gap-1.5 text-sm text-slate-500">
-                                      <span>
-                                        Score available after comparison
-                                      </span>
-                                      <Info className="h-3.5 w-3.5" />
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-
-                          {visibleRemainingSlots > 0 ? (
-                            <button
-                              type="button"
-                              onClick={openCatalogPanel}
-                              className="group flex h-full min-h-[24rem] flex-col items-center justify-center rounded-[28px] border-2 border-dashed border-slate-200 bg-white px-6 py-8 text-center transition-colors hover:border-slate-300 hover:bg-slate-50/50"
-                            >
-                              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 text-slate-900 transition-colors group-hover:bg-slate-200">
-                                <Plus className="h-8 w-8" />
-                              </div>
-                              <p className="mt-8 text-[2.2rem] font-semibold tracking-tight text-slate-900">
-                                Add Device
-                              </p>
-                              <p className="mt-3 text-lg text-slate-500">
-                                {visibleRemainingSlots} slot
-                                {visibleRemainingSlots !== 1 ? "s" : ""} left
-                              </p>
-                            </button>
-                          ) : null}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="border-t border-slate-200 bg-slate-50/60 px-5 py-6 sm:px-6">
-                      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                        <div className="flex items-start gap-3">
-                          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-300 bg-white text-slate-700">
-                            <Shield className="h-5 w-5" />
-                          </div>
-                          <div>
-                            <p className="text-base font-medium text-slate-900">
-                              Your comparison is private and saved
-                            </p>
-                            <p className="mt-1 text-sm text-slate-500">
-                              You can come back anytime and continue.
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col gap-2 lg:items-end">
-                          <button
-                            type="button"
-                            onClick={startComparison}
-                            disabled={activeDevices.length < MIN_DEVICES}
-                            className="inline-flex items-center justify-center gap-3 rounded-2xl bg-slate-900 px-8 py-4 text-base font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
-                          >
-                            Start Comparing
-                            <ChevronRight className="h-4 w-4" />
-                          </button>
-                          <p className="text-sm text-slate-500">
-                            {activeDevices.length >= MIN_DEVICES
-                              ? "Ready to continue with your selected devices."
-                              : `Select at least ${MIN_DEVICES} devices to continue.`}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
-                {/* Search Modal */}
-                {false && (
-                  <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/45 p-4 backdrop-blur-md sm:p-6 lg:p-10">
-                    <div className="mx-auto flex min-h-full items-center justify-center">
-                      <div className="flex max-h-[94vh] w-full max-w-[1180px] flex-col overflow-hidden rounded-[32px] border border-slate-300 bg-white">
-                        <div className="border-b border-slate-200 px-5 py-4 sm:px-7 sm:py-5">
-                          <div className="flex items-start justify-between gap-5">
-                            <div className="flex min-w-0 items-start gap-4 sm:gap-5">
-                              <div className="inline-flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-[20px] border border-blue-200 bg-blue-50 text-blue-600">
-                                <Sparkles className="h-6 w-6" />
-                              </div>
-                              <div className="min-w-0">
-                                <h3 className="text-[1.9rem] font-semibold tracking-tight text-slate-900 sm:text-[2.25rem]">
-                                  Add Devices
-                                </h3>
-                                <p className="mt-1.5 text-sm leading-6 text-slate-500 sm:text-base">
-                                  Select devices to add to your comparison.
-                                </p>
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                  <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700">
-                                    {activeDevices.length} selected
-                                  </span>
-                                  <span className="inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700">
-                                    {visibleRemainingSlots} slot
-                                    {visibleRemainingSlots !== 1
-                                      ? "s"
-                                      : ""}{" "}
-                                    left
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => setShowSearch(false)}
-                              className="inline-flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 sm:h-14 sm:w-14"
-                              aria-label="Close add devices modal"
-                            >
-                              <X className="h-5 w-5 sm:h-6 sm:w-6" />
-                            </button>
-                          </div>
-
-                          <div className="mt-5 space-y-3">
-                            <div className="relative max-w-4xl">
-                              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-5 text-slate-400">
-                                <Search className="h-5 w-5" />
-                              </div>
-                              <input
-                                type="text"
-                                placeholder="Search by brand, model, or feature..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full rounded-2xl border-2 border-blue-500 bg-white py-4 pl-14 pr-5 text-base text-slate-700 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100 placeholder:text-slate-400 sm:py-5 sm:text-lg"
-                                autoFocus
-                              />
-                            </div>
-
-                            <div className="rounded-2xl border border-slate-300 bg-slate-50/80 px-4 py-3.5">
-                              <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                                <div className="flex min-w-0 items-start gap-3">
-                                  <div className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
-                                    <Filter className="h-4 w-4" />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <h4 className="text-sm font-semibold text-slate-900">
-                                      Quick filters
-                                    </h4>
-                                    <p className="mt-1 text-sm text-slate-500">
-                                      Popular features users are comparing right
-                                      now
-                                    </p>
-                                  </div>
-                                </div>
-
-                                <div className="flex gap-2 overflow-x-auto pb-1 xl:max-w-[68%]">
-                                  {QUICK_FILTER_CHIPS.map((chip) => {
-                                    const Icon = chip.icon;
-                                    const active =
-                                      activeQuickFilter === chip.id;
-                                    return (
-                                      <button
-                                        key={chip.id}
-                                        type="button"
-                                        onClick={() =>
-                                          setActiveQuickFilter(chip.id)
-                                        }
-                                        className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
-                                          active
-                                            ? "border-blue-300 bg-blue-50 text-blue-700"
-                                            : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-slate-50"
-                                        }`}
-                                      >
-                                        <Icon className="h-4 w-4" />
-                                        <span>{chip.label}</span>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div
-                          ref={searchResultsRef}
-                          className="flex-1 overflow-y-auto bg-white"
-                        >
-                          <div className="sticky top-0 z-10 border-b border-slate-200 bg-white px-5 py-3.5 sm:px-7">
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                              <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600 sm:text-base">
-                                <span className="font-medium text-slate-900">
-                                  {filteredDevices.length}
-                                </span>
-                                <span>results found</span>
-                              </div>
-                              <label className="inline-flex items-center gap-3 text-sm text-slate-500 sm:text-base">
-                                <span>Sort by</span>
-                                <select
-                                  value={searchSort}
-                                  onChange={(event) =>
-                                    setSearchSort(event.target.value)
-                                  }
-                                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100 sm:text-base"
-                                >
-                                  {SEARCH_SORT_OPTIONS.map((option) => (
-                                    <option key={option.id} value={option.id}>
-                                      {option.label}
-                                    </option>
-                                  ))}
-                                </select>
-                              </label>
-                            </div>
-                          </div>
-
-                          {filteredDevices.length === 0 ? (
-                            <div className="px-5 py-16 sm:px-7 sm:py-20">
-                              <div className="rounded-[28px] border border-dashed border-slate-400 bg-white px-6 py-14 text-center">
-                                <Search className="mx-auto mb-5 h-14 w-14 text-slate-300" />
-                                <h4 className="text-2xl font-semibold text-slate-900">
-                                  No devices found
-                                </h4>
-                                <p className="mt-3 text-base text-slate-500">
-                                  Try a different search term or adjust your
-                                  filters.
-                                </p>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="grid grid-cols-1 gap-4 px-5 py-4 md:grid-cols-2 sm:px-7 sm:py-5">
-                              {filteredDevices.map((it, _idx) => {
-                                const base = it.base;
-                                const variant = it.variant;
-                                const vi = it.variantIndex ?? 0;
-                                const showAiTag = hasAiFeatures(base);
-                                const specScore = getDeviceSpecScore(base);
-                                const summaryText = getCardSummary(
-                                  base,
-                                  variant,
-                                );
-                                const signalLabel = getCardSignalLabel(base);
-                                const trendText = signalLabel
-                                  ? signalLabel.includes("|")
-                                    ? String(signalLabel)
-                                        .split("|")
-                                        .map((part) => part.trim())
-                                        .find((part) =>
-                                          /most compared/i.test(part),
-                                        ) ||
-                                      String(signalLabel).split("|")[0].trim()
-                                    : signalLabel
-                                  : "";
-                                const baseId =
-                                  base?.id ||
-                                  base?.product_id ||
-                                  base?.productId ||
-                                  base?.smartphoneId ||
-                                  base?.model ||
-                                  null;
-                                const key = `${baseId ?? "unknown"}-${vi}-${_idx}`;
-                                const displayVariant =
-                                  variant ||
-                                  (base.variants && base.variants[vi]) ||
-                                  null;
-                                const displayPrice = getCardPrice(
-                                  base,
-                                  displayVariant,
-                                );
-                                const variantMeta = getVariantSecondaryMeta(
-                                  displayVariant,
-                                  base,
-                                );
-                                const isAlreadySelected =
-                                  baseId != null &&
-                                  activeDeviceIdSet.has(String(baseId));
-
-                                return (
-                                  <button
-                                    key={key}
-                                    type="button"
-                                    onClick={() => addDevice(base, vi)}
-                                    className={`group h-full rounded-[26px] border p-5 text-left transition duration-200 hover:border-blue-300 ${
-                                      isAlreadySelected
-                                        ? "border-blue-200 bg-blue-50/40"
-                                        : "border-slate-200 bg-white hover:bg-slate-50"
-                                    }`}
-                                  >
-                                    <div className="grid h-full gap-4 sm:grid-cols-[112px_minmax(0,1fr)]">
-                                      <div className="relative flex h-28 w-28 items-center justify-center overflow-hidden rounded-[22px] border border-slate-300 bg-slate-50">
-                                        {specScore != null ? (
-                                          <div className="absolute left-3 top-3 z-10 inline-flex flex-col items-center justify-center rounded-[18px] border border-blue-300 bg-blue-50/95 px-2.5 py-2 leading-none text-blue-700">
-                                            <span className="text-sm font-semibold">
-                                              {formatSpecScoreLabel(specScore)}
-                                            </span>
-                                            <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em]">
-                                              SPEC
-                                            </span>
-                                          </div>
-                                        ) : null}
-                                        <img
-                                          src={getPrimaryImage(base) || null}
-                                          alt={base.name}
-                                          className="h-full w-full object-contain p-2.5"
-                                          onError={(event) => {
-                                            event.target.src = `/api/placeholder/320/240?text=${encodeURIComponent(
-                                              (base.brand || "D").slice(0, 1),
-                                            )}`;
-                                          }}
-                                        />
-                                      </div>
-
-                                      <div className="flex min-w-0 flex-1 flex-col">
-                                        <div className="flex flex-wrap items-center gap-2">
-                                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
-                                            {base.brand}
-                                          </p>
-                                          {isAlreadySelected ? (
-                                            <span className="rounded-full border border-blue-200 bg-white px-2.5 py-1 text-xs font-medium text-blue-700">
-                                              Selected
-                                            </span>
-                                          ) : null}
-                                          {showAiTag ? (
-                                            <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
-                                              AI Phone
-                                            </span>
-                                          ) : null}
-                                        </div>
-
-                                        <h4 className="mt-2.5 text-[1.45rem] font-semibold leading-tight tracking-tight text-slate-900 sm:text-[1.6rem]">
-                                          {base.name}
-                                        </h4>
-
-                                        <p className="mt-2 text-sm font-medium text-slate-700">
-                                          {formatVariantPrimaryLabel(
-                                            displayVariant,
-                                            vi,
-                                          )}
-                                          {variantMeta.color
-                                            ? ` | ${variantMeta.color}`
-                                            : ""}
-                                        </p>
-
-                                        <p className="mt-2.5 text-sm leading-6 text-slate-500 line-clamp-2">
-                                          {summaryText}
-                                        </p>
-
-                                        {trendText ? (
-                                          <div className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-blue-600">
-                                            <BarChart3 className="h-4 w-4" />
-                                            <span>{trendText}</span>
-                                          </div>
-                                        ) : null}
-
-                                        <div className="mt-auto flex flex-wrap items-end justify-between gap-4 pt-4">
-                                          <div>
-                                            <p className="text-[1.7rem] font-semibold tracking-tight text-slate-900">
-                                              {displayPrice
-                                                ? formatPrice(displayPrice)
-                                                : "N/A"}
-                                            </p>
-                                            <p
-                                              className={`mt-1 text-sm ${getVariantAvailabilityTone(
-                                                variantMeta.availability,
-                                              )}`}
-                                            >
-                                              {variantMeta.availability}
-                                            </p>
-                                          </div>
-
-                                          <span
-                                            className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] ${
-                                              isAlreadySelected
-                                                ? "border-blue-200 bg-white text-blue-700"
-                                                : "border-slate-200 bg-slate-50 text-slate-600 group-hover:border-blue-200 group-hover:text-blue-700"
-                                            }`}
-                                          >
-                                            {isAlreadySelected
-                                              ? "Update Variant"
-                                              : "Compare"}
-                                          </span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="border-t border-slate-200 bg-white px-5 py-3.5 sm:px-7 sm:py-4">
-                          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="flex items-start gap-4">
-                              <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-300 bg-white text-blue-600">
-                                <Shield className="h-5 w-5" />
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium text-slate-900 sm:text-base">
-                                  Your comparison stays private while you build
-                                  it
-                                </p>
-                                <p className="mt-1 text-sm text-slate-500">
-                                  {filteredDevices.length} results available and{" "}
-                                  {visibleRemainingSlots} slot
-                                  {visibleRemainingSlots !== 1 ? "s" : ""} left
-                                  to fill.
-                                </p>
-                              </div>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => setShowSearch(false)}
-                              className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-6 py-3.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 sm:px-7 sm:text-base"
-                            >
-                              Close
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </>
             ) : null}
-            {/* Comparison Section */}
-            {isComparing && comparedDevices.length >= MIN_DEVICES && (
-              <div
-                id="comparison-section"
-                className="scroll-mt-32 space-y-6 animate-in fade-in duration-500"
+            {activeDevices.length > 0 ? (
+              <button
+                type="button"
+                onClick={shareComparison}
+                className="hc-action"
               >
-                {compareInsightsLoading ? (
-                  <div className="rounded-sm border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-800">
-                    Refreshing the live comparison recommendation from the
-                    server...
-                  </div>
-                ) : null}
-
-                {Array.isArray(compareInsights?.warnings) &&
-                compareInsights.warnings.length > 0 ? (
-                  <div className="rounded-sm border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                    {compareInsights.warnings[0]}
-                  </div>
-                ) : null}
-
-                <div className="grid gap-3 sm:gap-4">
-                  <div className="space-y-3 sm:space-y-4">
-                    {visibleCompareSections.map((section, sectionIndex) => {
-                      const specKeys = sectionSpecKeys[section.id] || [];
-                      if (specKeys.length === 0) return null;
-
-                      const Icon = section.icon;
-                      const isExpanded = expandedSections[section.id] ?? false;
-                      const fixedCompareSlots = Array.from(
-                        { length: MAX_DEVICES },
-                        (_, slotIndex) => comparedDevices[slotIndex] || null,
-                      );
-                      const fixedProductSlotCount = fixedCompareSlots.length;
-                      const labelColumnWidth = 220;
-                      const productColumnWidth = 240;
-                      const tableMinWidth = Math.max(
-                        520,
-                        labelColumnWidth +
-                          fixedProductSlotCount * productColumnWidth,
-                      );
-
-                      return (
-                        <section
-                          key={`section-${section.id}`}
-                          id={`spec-${section.id}`}
-                          className="scroll-mt-32 overflow-hidden rounded-sm border border-slate-200/70 bg-white"
-                        >
-                          <button
-                            type="button"
-                            onClick={() => toggleCompareSection(section.id)}
-                            className="flex w-full items-center justify-between gap-3 bg-slate-100 px-4 py-3.5 text-left sm:px-6 sm:py-4"
-                          >
-                            <div className="flex items-center gap-3">
-                              <Icon
-                                className={`h-4 w-4 ${
-                                  SECTION_COLOR_CLASSES[section.id] ||
-                                  "text-blue-600"
-                                }`}
-                              />
-                              <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-700 sm:text-sm">
-                                {section.label}
-                              </h3>
-                            </div>
-                            <ChevronRight
-                              className={`h-4 w-4 text-slate-400 transition-transform ${
-                                isExpanded ? "rotate-90" : "rotate-0"
-                              }`}
-                            />
-                          </button>
-
-                          {isExpanded ? (
-                            <div className="border-t border-slate-100">
-                              <div className="hidden">
-                                <div
-                                  className="grid"
-                                  style={{
-                                    gridTemplateColumns: `${labelColumnWidth}px repeat(${fixedProductSlotCount}, ${productColumnWidth}px)`,
-                                    minWidth: `${tableMinWidth}px`,
-                                  }}
-                                >
-                                  <>
-                                    <div className="sticky left-0 z-30 border-b border-r border-slate-200 bg-slate-100 px-2 py-3 text-left align-top text-[9px] font-semibold uppercase tracking-[0.08em] text-slate-700">
-                                      {section.label}
-                                    </div>
-                                    {fixedCompareSlots.map(
-                                      (device, deviceIndex) => {
-                                        if (!device) {
-                                          return (
-                                            <button
-                                              key={`${section.id}-mobile-head-empty-${deviceIndex}`}
-                                              type="button"
-                                              onClick={openCatalogPanel}
-                                              className={`flex ${
-                                                section.id === "overview"
-                                                  ? "min-h-[8.5rem]"
-                                                  : "min-h-[5rem]"
-                                              } flex-col items-center justify-center border-b border-slate-100 bg-slate-100 px-2.5 py-3 text-center text-slate-400 ${
-                                                deviceIndex <
-                                                fixedCompareSlots.length - 1
-                                                  ? "border-r"
-                                                  : ""
-                                              }`}
-                                            >
-                                              <Plus className="h-5 w-5" />
-                                              <span className="mt-2 text-xs font-semibold">
-                                                Add product
-                                              </span>
-                                              <span className="mt-1 text-[10px]">
-                                                Slot {deviceIndex + 1} of{" "}
-                                                {MAX_DEVICES}
-                                              </span>
-                                            </button>
-                                          );
-                                        }
-
-                                        const selectedVariant =
-                                          getSelectedVariant(device);
-                                        const name =
-                                          device.name ||
-                                          device.model ||
-                                          device.title ||
-                                          "Device";
-                                        const price = getCardPrice(
-                                          device,
-                                          selectedVariant,
-                                        );
-                                        const specScoreRaw =
-                                          getDeviceSpecScore(device);
-                                        const specScoreValue =
-                                          specScoreRaw == null
-                                            ? null
-                                            : Number(specScoreRaw);
-                                        const hasSpecScore =
-                                          Number.isFinite(specScoreValue);
-                                        const serverScoreEntry =
-                                          getServerScoreEntry(device);
-                                        const overallScoreValue = Number(
-                                          serverScoreEntry?.totalScore,
-                                        );
-                                        const hasOverallScore =
-                                          Number.isFinite(overallScoreValue);
-
-                                        return (
-                                          <div
-                                            key={`${section.id}-mobile-head-${device.id}`}
-                                            className={`border-b border-slate-100 bg-slate-100 px-2.5 py-3 text-left align-top ${
-                                              deviceIndex <
-                                              fixedCompareSlots.length - 1
-                                                ? "border-r"
-                                                : ""
-                                            }`}
-                                          >
-                                            <div className="flex flex-col items-start gap-2">
-                                              <div className="flex h-14 w-full items-center justify-center overflow-hidden rounded-sm border border-slate-200 bg-white p-1.5">
-                                                <img
-                                                  src={
-                                                    getPrimaryImage(device) ||
-                                                    null
-                                                  }
-                                                  alt={name}
-                                                  className="h-full w-full object-contain"
-                                                  onError={(event) => {
-                                                    event.target.src = `/api/placeholder/160/160?text=${encodeURIComponent(
-                                                      (
-                                                        device.brand || "D"
-                                                      ).slice(0, 1),
-                                                    )}`;
-                                                  }}
-                                                />
-                                              </div>
-                                              <div className="min-w-0 space-y-1">
-                                                <div className="line-clamp-2 min-h-[2rem] text-[11px] font-bold leading-4 tracking-tight text-slate-950">
-                                                  {name}
-                                                </div>
-                                                {selectedVariant ? (
-                                                  <div className="text-[10px] font-medium leading-4 text-slate-500">
-                                                    {formatVariantCompactLabel(
-                                                      selectedVariant,
-                                                      0,
-                                                    )}
-                                                  </div>
-                                                ) : null}
-                                                {section.id === "overview" ? (
-                                                  <div className="text-xs font-bold text-slate-950">
-                                                    {price
-                                                      ? formatPrice(price)
-                                                      : "N/A"}
-                                                  </div>
-                                                ) : null}
-                                                {section.id === "overview" &&
-                                                hasSpecScore ? (
-                                                  <div
-                                                    className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-white px-2 py-0.5 text-blue-700"
-                                                    title="Spec score"
-                                                  >
-                                                    <span className="text-xs font-bold leading-none">
-                                                      {Math.round(
-                                                        specScoreValue,
-                                                      )}
-                                                    </span>
-                                                    <span className="text-[6px] font-bold uppercase leading-none tracking-[0.18em]">
-                                                      Spec
-                                                    </span>
-                                                  </div>
-                                                ) : null}
-                                                {section.id === "overview" &&
-                                                hasOverallScore ? (
-                                                  <div className="max-w-[7rem]">
-                                                    <div className="flex items-center justify-between gap-2">
-                                                      <span className="text-[8px] font-bold uppercase tracking-[0.12em] text-slate-500">
-                                                        Compare
-                                                      </span>
-                                                      <span className="text-[10px] font-bold text-blue-700">
-                                                        {formatSpecScoreLabel(
-                                                          overallScoreValue,
-                                                        )}
-                                                      </span>
-                                                    </div>
-                                                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-blue-100">
-                                                      <div
-                                                        className="h-full rounded-full bg-blue-600"
-                                                        style={{
-                                                          width: `${Math.max(
-                                                            0,
-                                                            Math.min(
-                                                              100,
-                                                              overallScoreValue,
-                                                            ),
-                                                          )}%`,
-                                                        }}
-                                                      />
-                                                    </div>
-                                                  </div>
-                                                ) : null}
-                                              </div>
-                                            </div>
-                                          </div>
-                                        );
-                                      },
-                                    )}
-                                  </>
-
-                                  {specKeys.map((specKey, index) => {
-                                    const specHint = getSpecHint(
-                                      section.id,
-                                      specKey,
-                                    );
-                                    const RowIcon = getSpecRowIcon(
-                                      section.id,
-                                      specKey,
-                                    );
-
-                                    return (
-                                      <React.Fragment
-                                        key={`${section.id}-mobile-grid-${specKey}`}
-                                      >
-                                        <div
-                                          className={`sticky left-0 z-20 border-r border-t border-slate-200 px-2 py-3 align-top text-[9px] font-semibold text-slate-700 ${
-                                            index % 2 === 0
-                                              ? "bg-white"
-                                              : "bg-slate-50"
-                                          }`}
-                                        >
-                                          <div className="flex items-start gap-1.5">
-                                            <RowIcon className="mt-0.5 h-3 w-3 flex-shrink-0 text-slate-400" />
-                                            <div className="min-w-0">
-                                              <div className="inline-flex items-center gap-1.5">
-                                                <span>
-                                                  {toNormalCase(specKey)}
-                                                </span>
-                                                {specHint ? (
-                                                  <span
-                                                    className="inline-flex cursor-help text-slate-400"
-                                                    title={specHint}
-                                                  >
-                                                    <Info className="h-3.5 w-3.5" />
-                                                  </span>
-                                                ) : null}
-                                              </div>
-                                            </div>
-                                          </div>
-                                        </div>
-                                        {fixedCompareSlots.map(
-                                          (device, deviceIndex) => {
-                                            if (!device) {
-                                              return (
-                                                <div
-                                                  key={`${section.id}-mobile-empty-${deviceIndex}-${specKey}`}
-                                                  className={`border-t border-slate-100 px-2.5 py-3 text-center text-[11px] leading-5 text-slate-300 ${
-                                                    deviceIndex <
-                                                    fixedCompareSlots.length - 1
-                                                      ? "border-r"
-                                                      : ""
-                                                  }`}
-                                                >
-                                                  -
-                                                </div>
-                                              );
-                                            }
-
-                                            const {
-                                              missingValue,
-                                              renderedValue,
-                                            } = getRenderedCompareSpecValue(
-                                              device,
-                                              section.id,
-                                              specKey,
-                                            );
-
-                                            return (
-                                              <div
-                                                key={`${section.id}-mobile-${device.id}-${specKey}`}
-                                                className={`border-t border-slate-100 px-2.5 py-3 text-[11px] leading-5 text-slate-700 ${
-                                                  deviceIndex <
-                                                  fixedCompareSlots.length - 1
-                                                    ? "border-r"
-                                                    : ""
-                                                }`}
-                                              >
-                                                {missingValue ? (
-                                                  <span className="text-slate-400">
-                                                    Not available
-                                                  </span>
-                                                ) : (
-                                                  renderedValue
-                                                )}
-                                              </div>
-                                            );
-                                          },
-                                        )}
-                                      </React.Fragment>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-
-                              <div className="overflow-x-auto">
-                                <table
-                                  className="w-full table-fixed border-collapse"
-                                  style={{
-                                    minWidth: `${tableMinWidth}px`,
-                                  }}
-                                >
-                                  <colgroup>
-                                    <col
-                                      style={{ width: `${labelColumnWidth}px` }}
-                                    />
-                                    {fixedCompareSlots.map(
-                                      (device, slotIndex) => (
-                                        <col
-                                          key={`${section.id}-col-slot-${slotIndex}-${device?.id || "empty"}`}
-                                          style={{
-                                            width: `${productColumnWidth}px`,
-                                          }}
-                                        />
-                                      ),
-                                    )}
-                                  </colgroup>
-                                  {section.id === "overview" ? (
-                                    <thead>
-                                      <tr className="bg-slate-100">
-                                        <th className="sticky left-0 z-30 min-w-[92px] border-b border-r border-slate-200 bg-slate-100 px-2 py-3 text-left align-top text-[9px] font-semibold uppercase tracking-[0.08em] text-slate-700 sm:min-w-[180px] sm:px-5 sm:py-4 sm:text-sm sm:tracking-[0.12em]">
-                                          {section.label}
-                                        </th>
-                                        {fixedCompareSlots.map(
-                                          (device, deviceIndex) => {
-                                            if (!device) {
-                                              return (
-                                                <th
-                                                  key={`${section.id}-head-empty-${deviceIndex}`}
-                                                  className={`border-b border-slate-100 bg-slate-100 px-2.5 py-3 text-left align-top sm:px-5 sm:py-4 ${
-                                                    deviceIndex <
-                                                    fixedCompareSlots.length - 1
-                                                      ? "border-r"
-                                                      : ""
-                                                  }`}
-                                                >
-                                                  <button
-                                                    type="button"
-                                                    onClick={openCatalogPanel}
-                                                    className="flex min-h-[9rem] w-full flex-col items-center justify-center rounded-sm border border-dashed border-slate-300 bg-white/60 px-3 py-4 text-center text-slate-400 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
-                                                  >
-                                                    <Plus className="h-5 w-5" />
-                                                    <span className="mt-2 text-xs font-semibold">
-                                                      Add product
-                                                    </span>
-                                                    <span className="mt-1 text-[10px]">
-                                                      Slot {deviceIndex + 1} of{" "}
-                                                      {MAX_DEVICES}
-                                                    </span>
-                                                  </button>
-                                                </th>
-                                              );
-                                            }
-
-                                            const selectedVariant =
-                                              getSelectedVariant(device);
-                                            const name =
-                                              device.name ||
-                                              device.model ||
-                                              device.title ||
-                                              "Device";
-                                            const price = getCardPrice(
-                                              device,
-                                              selectedVariant,
-                                            );
-                                            const specScoreRaw =
-                                              getDeviceSpecScore(device);
-                                            const specScoreValue =
-                                              specScoreRaw == null
-                                                ? null
-                                                : Number(specScoreRaw);
-                                            const hasSpecScore =
-                                              Number.isFinite(specScoreValue);
-                                            const serverScoreEntry =
-                                              getServerScoreEntry(device);
-                                            const overallScoreValue = Number(
-                                              serverScoreEntry?.totalScore,
-                                            );
-                                            const hasOverallScore =
-                                              Number.isFinite(
-                                                overallScoreValue,
-                                              );
-                                            const overallScorePercent =
-                                              hasOverallScore
-                                                ? Math.max(
-                                                    0,
-                                                    Math.min(
-                                                      100,
-                                                      overallScoreValue,
-                                                    ),
-                                                  )
-                                                : null;
-
-                                            return (
-                                              <th
-                                                key={`${section.id}-head-${device.id}`}
-                                                className={`relative border-b border-slate-100 bg-slate-100 px-2.5 py-3 pr-10 text-left align-top sm:px-5 sm:py-4 sm:pr-24 md:sticky md:top-0 md:z-10 ${
-                                                  deviceIndex <
-                                                  fixedCompareSlots.length - 1
-                                                    ? "border-r"
-                                                    : ""
-                                                }`}
-                                              >
-                                                {hasSpecScore ? (
-                                                  <div
-                                                    className="absolute right-2 top-2 inline-flex items-end gap-0.5 text-blue-600 sm:right-5 sm:top-4 sm:gap-1.5"
-                                                    title="Spec score"
-                                                  >
-                                                    <span className="text-base font-semibold leading-none tracking-tight sm:text-[2rem]">
-                                                      {Math.round(
-                                                        specScoreValue,
-                                                      )}
-                                                    </span>
-                                                    <span className="mb-0.5 flex flex-col text-[5px] font-bold uppercase leading-[0.9] tracking-[0.16em] sm:text-[8px] sm:tracking-[0.28em]">
-                                                      <span>Spec</span>
-                                                      <span>Score</span>
-                                                    </span>
-                                                  </div>
-                                                ) : null}
-                                                <div className="flex flex-col items-start gap-2.5">
-                                                  <div className="min-w-0">
-                                                    <div className="line-clamp-2 text-xs font-semibold tracking-tight text-slate-900 sm:text-base">
-                                                      {name}
-                                                    </div>
-                                                    {selectedVariant ? (
-                                                      <div className="mt-1 text-[10px] font-medium text-slate-500 sm:text-sm">
-                                                        {formatVariantCompactLabel(
-                                                          selectedVariant,
-                                                          0,
-                                                        )}
-                                                      </div>
-                                                    ) : null}
-                                                    <div className="mt-1.5 text-xs font-semibold text-slate-900 sm:mt-2 sm:text-sm">
-                                                      {price
-                                                        ? formatPrice(price)
-                                                        : "N/A"}
-                                                    </div>
-                                                    {hasOverallScore ? (
-                                                      <div className="mt-2 max-w-[7rem] sm:mt-3 sm:max-w-[11rem]">
-                                                        <div className="flex items-center justify-between gap-3">
-                                                          <span className="text-[8px] font-semibold uppercase tracking-[0.12em] text-slate-500 sm:text-[11px] sm:tracking-[0.14em]">
-                                                            Compare
-                                                          </span>
-                                                          <span className="text-[10px] font-semibold text-blue-700 sm:text-sm">
-                                                            {formatSpecScoreLabel(
-                                                              overallScoreValue,
-                                                            )}
-                                                          </span>
-                                                        </div>
-                                                        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-200">
-                                                          <div
-                                                            className="h-full rounded-full bg-blue-600"
-                                                            style={{
-                                                              width: `${overallScorePercent}%`,
-                                                            }}
-                                                          />
-                                                        </div>
-                                                      </div>
-                                                    ) : null}
-                                                  </div>
-                                                </div>
-                                              </th>
-                                            );
-                                          },
-                                        )}
-                                      </tr>
-                                    </thead>
-                                  ) : null}
-                                  <tbody>
-                                    {specKeys.map((specKey, index) => {
-                                      const specHint = getSpecHint(
-                                        section.id,
-                                        specKey,
-                                      );
-                                      const RowIcon = getSpecRowIcon(
-                                        section.id,
-                                        specKey,
-                                      );
-
-                                      return (
-                                        <tr
-                                          key={`${section.id}-${specKey}`}
-                                          className={
-                                            index % 2 === 0
-                                              ? "bg-white"
-                                              : "bg-slate-50/30"
-                                          }
-                                        >
-                                          <td
-                                            className={`sticky left-0 z-20 border-r border-t border-slate-200 px-2 py-3 align-top text-[9px] font-semibold text-slate-700 sm:px-5 sm:py-4 sm:text-sm ${
-                                              index % 2 === 0
-                                                ? "bg-white"
-                                                : "bg-slate-50"
-                                            }`}
-                                          >
-                                            <div className="flex items-start gap-1.5 sm:gap-3">
-                                              <RowIcon className="mt-0.5 h-3 w-3 flex-shrink-0 text-slate-400 sm:h-4 sm:w-4" />
-                                              <div className="min-w-0">
-                                                <div className="inline-flex items-center gap-1.5">
-                                                  <span>
-                                                    {toNormalCase(specKey)}
-                                                  </span>
-                                                  {specHint ? (
-                                                    <span
-                                                      className="inline-flex cursor-help text-slate-400 hover:text-blue-500"
-                                                      title={specHint}
-                                                    >
-                                                      <Info className="h-3.5 w-3.5" />
-                                                    </span>
-                                                  ) : null}
-                                                </div>
-                                              </div>
-                                            </div>
-                                          </td>
-                                          {fixedCompareSlots.map(
-                                            (device, deviceIndex) => {
-                                              if (!device) {
-                                                return (
-                                                  <td
-                                                    key={`${section.id}-empty-${deviceIndex}-${specKey}`}
-                                                    className={`border-t border-slate-100 px-2.5 py-3 align-top text-center text-[11px] leading-5 text-slate-300 sm:px-5 sm:py-4 sm:text-sm sm:leading-7 ${
-                                                      deviceIndex <
-                                                      fixedCompareSlots.length -
-                                                        1
-                                                        ? "border-r"
-                                                        : ""
-                                                    }`}
-                                                  >
-                                                    -
-                                                  </td>
-                                                );
-                                              }
-
-                                              const {
-                                                missingValue,
-                                                renderedValue,
-                                              } = getRenderedCompareSpecValue(
-                                                device,
-                                                section.id,
-                                                specKey,
-                                              );
-
-                                              return (
-                                                <td
-                                                  key={`${section.id}-${device.id}-${specKey}`}
-                                                  className={`border-t border-slate-100 px-2.5 py-3 align-top text-[11px] leading-5 text-slate-700 sm:px-5 sm:py-4 sm:text-sm sm:leading-7 ${
-                                                    deviceIndex <
-                                                    fixedCompareSlots.length - 1
-                                                      ? "border-r"
-                                                      : ""
-                                                  }`}
-                                                >
-                                                  {missingValue ? (
-                                                    <span className="text-slate-400">
-                                                      Not available
-                                                    </span>
-                                                  ) : (
-                                                    renderedValue
-                                                  )}
-                                                </td>
-                                              );
-                                            },
-                                          )}
-                                        </tr>
-                                      );
-                                    })}
-                                  </tbody>
-                                </table>
-                              </div>
-                            </div>
-                          ) : null}
-                        </section>
-                      );
-                    })}
-                  </div>
-                </div>
-                {compareInsights?.overallWinner &&
-                comparisonRecommendationText ? (
-                  <div className="rounded-sm p-5">
-                    <h3 className="text-base font-semibold text-slate-900">
-                      Recommendation
-                    </h3>
-                    <p className="mt-3 text-sm leading-7 text-slate-700 sm:text-base">
-                      {comparisonRecommendationText}
-                    </p>
-                    {comparisonRecommendationPoints.length > 0 ? (
-                      <ul className="mt-4 space-y-2 text-sm text-slate-700">
-                        {comparisonRecommendationPoints.map((point, index) => (
-                          <li
-                            key={`recommendation-point-${index}`}
-                            className="flex items-start gap-2"
-                          >
-                            <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-blue-600" />
-                            <span>{point}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : null}
-                  </div>
-                ) : null}
-              </div>
-            )}
+                <Share2 className="h-3.5 w-3.5" /> Share
+              </button>
+            ) : null}
+            {activeDevices.length > 0 ? (
+              <button type="button" onClick={clearAll} className="hc-action">
+                <Trash2 className="h-3.5 w-3.5" /> Clear
+              </button>
+            ) : null}
           </div>
-        </div>
-        {/* Empty State */}
-        {false && usedSlots === 0 && (
-          <div className="py-8 text-center">
-            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center   bg-blue-50">
-              <BarChart3 className="h-10 w-10 text-blue-600" />
-            </div>
-            <h3 className="mb-2 text-lg font-semibold text-slate-900">
-              Start Comparing
-            </h3>
-            <p className="mx-auto mb-4 max-w-md text-slate-600">
-              Add 2-4 devices to see detailed specifications side by side
-            </p>
-            <button
-              onClick={openCatalogPanel}
-              className="inline-flex items-center gap-2   bg-blue-600 px-6 py-2.5 font-semibold text-white transition-colors hover:bg-blue-700"
-            >
-              <Plus className="h-4 w-4" />
-              Add Your First Device
-            </button>
-          </div>
-        )}
-        {/* Details Modal */}
-        {showDetailsModal && modalDevice && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white   max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom-4 duration-300">
-              {/* Modal Header */}
-              <div className="sticky top-0 z-20 bg-white px-6 py-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 flex-shrink-0 overflow-hidden rounded-[18px] border border-blue-200 bg-blue-50 p-1">
+        </header>
+
+        {!isComparing ? (
+          <section className="hc-section hc-card hc-setup">
+            <div className="hc-setup-grid">
+              {Array.from({ length: maxDevices }, (_, slotIndex) => {
+                const device = activeDevices[slotIndex];
+                if (!device) {
+                  return (
+                    <div key={`setup-slot-${slotIndex}`} className="hc-slot">
+                      <button
+                        type="button"
+                        onClick={() => openCatalogPanel(slotIndex)}
+                        className="hc-slot-add"
+                      >
+                        <span>
+                          <span className="hc-slot-add__icon">
+                            <Plus className="h-6 w-6" />
+                          </span>
+                          <strong className="block text-sm font-black text-slate-900">
+                            Add phone {slotIndex + 1}
+                          </strong>
+                          <span className="mt-1 block text-xs text-slate-500">
+                            Search by phone or brand
+                          </span>
+                        </span>
+                      </button>
+                    </div>
+                  );
+                }
+
+                const variant = getSelectedVariant(device);
+                const selectedIndex = normalizeVariantIndex(
+                  variantSelection[device.id] ??
+                    device.selectedVariantIndex ??
+                    0,
+                );
+                const variants = Array.isArray(device?.variants)
+                  ? device.variants
+                  : [];
+                const price = getCardPrice(device, variant);
+                return (
+                  <article
+                    key={`setup-device-${device.id}`}
+                    className="hc-slot hc-slot--filled"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => removeDevice(device.id)}
+                      className="hc-device__remove"
+                      aria-label={`Remove ${getDeviceName(device)}`}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                    <div className="hc-device__image !h-[122px] !pt-2">
                       <img
-                        src={getPrimaryImage(modalDevice)}
-                        alt={modalDevice.name}
-                        className="w-full h-full object-contain"
+                        src={getPrimaryImage(device) || null}
+                        alt={getDeviceName(device)}
                       />
                     </div>
-                    <div>
-                      <h2 className="text-lg font-bold text-gray-900">
-                        {modalDevice.name}
-                      </h2>
-                      <p className="text-sm text-gray-600">
-                        {modalDevice.brand}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setShowDetailsModal(false)}
-                    className="rounded-[18px] p-2 transition-colors hover:bg-gray-100"
-                  >
-                    <X className="h-5 w-5 text-gray-600" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Modal Content - Single View */}
-              <div className="p-6 space-y-6 overflow-y-auto">
-                {/* Specifications Section */}
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3 mb-6">
-                    {[
-                      {
-                        label: "Brand",
-                        value: modalDevice.brand,
-                        icon: "🏷️",
-                      },
-                      {
-                        label: "Model",
-                        value: modalDevice.model || modalDevice.name,
-                        icon: "📱",
-                      },
-                      {
-                        label: "Price",
-                        value: formatPrice(
-                          getSelectedVariant(modalDevice)?.base_price ||
-                            modalDevice.price ||
-                            0,
-                        ),
-                        icon: "💰",
-                        color: "green",
-                      },
-                      {
-                        label: "Variant",
-                        value: getSelectedVariant(modalDevice)
-                          ? `${getSelectedVariant(modalDevice).ram}/${getSelectedVariant(modalDevice).storage}`
-                          : "N/A",
-                        icon: "📦",
-                      },
-                    ].map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="  border border-slate-200 bg-slate-50 p-4"
+                    <h2 className="hc-device__name !min-h-0 !text-sm">
+                      {getDeviceName(device)}
+                    </h2>
+                    <p className="hc-device__price !text-base">
+                      {price ? formatPrice(price) : "Price unavailable"}
+                    </p>
+                    {variants.length > 1 ? (
+                      <select
+                        value={selectedIndex}
+                        onChange={(event) =>
+                          updateVariantSelection(device, event.target.value)
+                        }
                       >
-                        <div className="mb-2 text-2xl">{item.icon}</div>
-                        <div className="mb-1 text-xs font-medium text-slate-600">
-                          {item.label}
+                        {variants.map((item, index) => (
+                          <option
+                            key={`${device.id}-setup-variant-${index}`}
+                            value={index}
+                          >
+                            {formatVariantCompactLabel(item, index)}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <p className="mt-2 text-[11px] font-semibold text-slate-500">
+                        {variant
+                          ? formatVariantCompactLabel(variant, selectedIndex)
+                          : getQuickMemoryText(device)}
+                      </p>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+
+            <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                <Info className="h-3.5 w-3.5 text-blue-600" /> Select at least
+                two phones. Every result updates when the selected variant
+                changes.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {activeDevices.length < maxDevices ? (
+                  <button
+                    type="button"
+                    onClick={() => openCatalogPanel(activeDevices.length)}
+                    className="hc-action"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Add phone
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={startComparison}
+                  disabled={activeDevices.length < MIN_DEVICES}
+                  className={`hc-action hc-action--primary ${activeDevices.length < MIN_DEVICES ? "cursor-not-allowed opacity-45" : ""}`}
+                >
+                  Compare {Math.max(MIN_DEVICES, activeDevices.length)} phones
+                </button>
+              </div>
+            </div>
+          </section>
+        ) : null}
+      </div>
+
+      {isComparing && activeDevices.length >= MIN_DEVICES ? (
+        <>
+          <section
+            ref={comparisonHeroRef}
+            className="hc-shell hc-section hc-stage"
+            id="compare-spec-workspace"
+          >
+            <div
+              className="hc-stage-grid"
+              style={{ "--hc-device-count": Math.max(2, activeDevices.length) }}
+            >
+              {compareSummaryCards.map(
+                (
+                  {
+                    device,
+                    price,
+                    selectedVariant,
+                    comparisonScore,
+                    isOverallWinner,
+                  },
+                  deviceIndex,
+                ) => {
+                  const selectedIndex = normalizeVariantIndex(
+                    variantSelection[device.id] ??
+                      device.selectedVariantIndex ??
+                      0,
+                  );
+                  const variants = Array.isArray(device?.variants)
+                    ? device.variants
+                    : [];
+                  return (
+                    <article
+                      key={`studio-device-${device.id}`}
+                      className={`hc-device ${isOverallWinner ? "hc-device--winner" : ""} ${deviceIndex < compareSummaryCards.length - 1 ? "hc-device--with-vs" : ""}`}
+                    >
+                      <span className="hc-device__index">
+                        {deviceIndex + 1}
+                      </span>
+                      {isOverallWinner ? (
+                        <span className="hc-device__badge">
+                          <FaTrophy className="h-3 w-3" /> Best overall
+                        </span>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => removeComparedDevice(device.id)}
+                        className="hc-device__remove"
+                        aria-label={`Remove ${getDeviceName(device)}`}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                      <div className="hc-device__main">
+                        <div className="hc-device__image">
+                          <img
+                            src={getPrimaryImage(device) || null}
+                            alt={getDeviceName(device)}
+                          />
                         </div>
-                        <div
-                          className={`font-bold text-sm ${
-                            item.color === "green"
-                              ? "text-green-600"
-                              : "text-slate-900"
-                          }`}
-                        >
-                          {item.value}
+                        <div className="hc-device__details">
+                          <p className="hc-device__brand">
+                            {String(
+                              device?.brand ||
+                                device?.manufacturer ||
+                                "Smartphone",
+                            )}
+                          </p>
+                          <h3 className="hc-device__name">
+                            {getDeviceName(device)}
+                          </h3>
+                          <p className="hc-device__variant">
+                            {selectedVariant
+                              ? formatVariantCompactLabel(
+                                  selectedVariant,
+                                  selectedIndex,
+                                )
+                              : getQuickMemoryText(device)}
+                          </p>
+                          <p className="hc-device__price">
+                            {price ? formatPrice(price) : "Price unavailable"}
+                          </p>
+                          <div className="hc-device__score">
+                            <strong>
+                              {formatComparisonScore(comparisonScore)}
+                            </strong>
+                            <span>Hooks score</span>
+                          </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
-
-                  <div className="overflow-hidden   border border-slate-200 bg-white">
-                    <table className="w-full">
-                      <tbody className="divide-y divide-slate-100">
-                        {[
-                          {
-                            label: "Operating System",
-                            value: modalDevice.performance?.os || "N/A",
-                          },
-                          {
-                            label: "Processor",
-                            value: modalDevice.performance?.processor || "N/A",
-                          },
-                          {
-                            label: "RAM",
-                            value:
-                              getSelectedVariant(modalDevice)?.ram ||
-                              modalDevice.performance?.ram ||
-                              "N/A",
-                          },
-                          {
-                            label: "Storage",
-                            value:
-                              getSelectedVariant(modalDevice)?.storage ||
-                              modalDevice.performance?.storage ||
-                              "N/A",
-                          },
-                          {
-                            label: "Launch Date",
-                            value: modalDevice.launch_date
-                              ? new Date(
-                                  modalDevice.launch_date,
-                                ).toLocaleDateString()
-                              : "N/A",
-                          },
-                        ].map((item, idx) => (
-                          <tr
-                            key={idx}
-                            className={
-                              idx % 2 === 0 ? "bg-white" : "bg-slate-50"
-                            }
-                          >
-                            <td className="w-1/3 px-6 py-3 text-sm font-medium text-slate-600">
-                              {item.label}
-                            </td>
-                            <td className="w-2/3 px-6 py-3 text-sm font-semibold text-slate-900">
-                              {item.value}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-
-              {/* Performance Section */}
-              <div className="space-y-3">
-                <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-900">
-                  <div className="rounded-[16px] bg-amber-500 p-2">
-                    <Cpu className="h-5 w-5 text-white" />
-                  </div>
-                  Performance
-                </h3>
-                <div className="overflow-hidden   border border-slate-200 bg-white">
-                  <table className="w-full">
-                    <tbody className="divide-y divide-slate-100">
-                      {modalDevice.performance &&
-                        Object.entries(modalDevice.performance)
-                          .filter(
-                            ([k, v]) =>
-                              v &&
-                              !["ai_features", "sphere_rating"].includes(k),
-                          )
-                          .map(([key, value], idx) => (
-                            <tr
-                              key={key}
-                              className={
-                                idx % 2 === 0 ? "bg-white" : "bg-slate-50"
-                              }
+                      {variants.length > 1 ? (
+                        <select
+                          value={selectedIndex}
+                          onChange={(event) =>
+                            updateVariantSelection(device, event.target.value)
+                          }
+                          aria-label={`Change ${getDeviceName(device)} variant`}
+                        >
+                          {variants.map((item, index) => (
+                            <option
+                              key={`${device.id}-studio-variant-${index}`}
+                              value={index}
                             >
-                              <td className="w-1/3 px-6 py-3 text-sm font-medium text-slate-600">
-                                {toNormalCase(key)}
-                              </td>
-                              <td className="w-2/3 px-6 py-3 text-sm font-semibold text-slate-900">
-                                {formatSpecValue(value, key)}
-                              </td>
-                            </tr>
+                              {formatVariantCompactLabel(item, index)}
+                            </option>
                           ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Display Section */}
-              <div className="space-y-3">
-                <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-900">
-                  <div className="rounded-[16px] bg-sky-500 p-2">
-                    <Monitor className="h-5 w-5 text-white" />
-                  </div>
-                  Display
-                </h3>
-                <div className="overflow-hidden   border border-slate-200 bg-white">
-                  <table className="w-full">
-                    <tbody className="divide-y divide-slate-100">
-                      {modalDevice.display &&
-                        Object.entries(modalDevice.display)
-                          .filter(([k, v]) => v && !["ai_features"].includes(k))
-                          .map(([key, value], idx) => (
-                            <tr
-                              key={key}
-                              className={
-                                idx % 2 === 0 ? "bg-white" : "bg-slate-50"
-                              }
-                            >
-                              <td className="w-1/3 px-6 py-3 text-sm font-medium text-slate-600">
-                                {toNormalCase(key)}
-                              </td>
-                              <td className="w-2/3 px-6 py-3 text-sm font-semibold text-slate-900">
-                                {formatSpecValue(value, key)}
-                              </td>
-                            </tr>
-                          ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Camera Section */}
-              <div className="space-y-3">
-                <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-900">
-                  <div className="rounded-[16px] bg-blue-500 p-2">
-                    <Camera className="h-5 w-5 text-white" />
-                  </div>
-                  Camera
-                </h3>
-                <div className="overflow-hidden   border border-slate-200 bg-white">
-                  <table className="w-full">
-                    <tbody className="divide-y divide-slate-100">
-                      {[
-                        {
-                          label: "Main Camera",
-                          value: (() => {
-                            const cam = modalDevice.camera || {};
-                            if (cam.main_camera_megapixels) {
-                              return `${cam.main_camera_megapixels} MP`;
-                            }
-                            const rearMain =
-                              cam.rear_camera?.main_camera ||
-                              cam.rear_camera?.main ||
-                              cam.main_camera ||
-                              cam.main ||
-                              null;
-                            if (!rearMain) return "N/A";
-                            if (typeof rearMain === "object") {
-                              return (
-                                rearMain.resolution ||
-                                rearMain.megapixels ||
-                                formatSpecValue(rearMain, "main_camera")
-                              );
-                            }
-                            return formatSpecValue(rearMain, "main_camera");
-                          })(),
-                        },
-                        {
-                          label: "Front Camera",
-                          value: modalDevice.camera?.front_camera
-                            ? formatSpecValue(
-                                modalDevice.camera.front_camera,
-                                "front_camera",
-                              )
-                            : "N/A",
-                        },
-                        {
-                          label: "Recording",
-                          value:
-                            modalDevice.camera?.video_recording ||
-                            modalDevice.camera?.recording ||
-                            "N/A",
-                        },
-                        {
-                          label: "Features",
-                          value:
-                            modalDevice.camera
-                              ?.rear_camera_photography_features ||
-                            modalDevice.camera?.features ||
-                            modalDevice.camera?.ai_features ||
-                            "N/A",
-                        },
-                      ].map((item, idx) => (
-                        <tr
-                          key={idx}
-                          className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}
+                        </select>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => openCatalogPanel(deviceIndex)}
+                          className="hc-device__change"
                         >
-                          <td className="w-1/3 px-6 py-3 text-sm font-medium text-slate-600">
-                            {item.label}
-                          </td>
-                          <td className="w-2/3 px-6 py-3 text-sm font-semibold text-slate-900">
-                            {formatSpecValue(item.value, item.label)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Battery Section */}
-              <div className="space-y-3">
-                <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-900">
-                  <div className="rounded-[16px] bg-emerald-500 p-2">
-                    <Battery className="h-5 w-5 text-white" />
-                  </div>
-                  Battery
-                </h3>
-                <div className="overflow-hidden   border border-slate-200 bg-white">
-                  <table className="w-full">
-                    <tbody className="divide-y divide-slate-100">
-                      {[
-                        {
-                          label: "Capacity",
-                          value: (() => {
-                            const b = modalDevice.battery || {};
-                            const cap =
-                              b.battery_capacity_mah ||
-                              b.battery_capacity ||
-                              b.capacity_mah ||
-                              b.capacity ||
-                              b.battery ||
-                              null;
-                            if (!cap) return "N/A";
-                            const capText = String(cap);
-                            return /mah/i.test(capText)
-                              ? capText
-                              : `${capText} mAh`;
-                          })(),
-                        },
-                        {
-                          label: "Type",
-                          value:
-                            modalDevice.battery?.type ||
-                            modalDevice.battery?.battery_type ||
-                            "N/A",
-                        },
-                        {
-                          label: "Fast Charging",
-                          value:
-                            modalDevice.battery?.fast_charging ||
-                            modalDevice.battery?.charging_power ||
-                            modalDevice.battery?.charging ||
-                            "N/A",
-                        },
-                        {
-                          label: "Wireless Charging",
-                          value:
-                            modalDevice.battery?.wireless_charging ||
-                            modalDevice.battery?.wireless_reverse_charging ||
-                            "N/A",
-                        },
-                      ].map((item, idx) => (
-                        <tr
-                          key={idx}
-                          className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}
-                        >
-                          <td className="w-1/3 px-6 py-3 text-sm font-medium text-slate-600">
-                            {item.label}
-                          </td>
-                          <td className="w-2/3 px-6 py-3 text-sm font-semibold text-slate-900">
-                            {formatSpecValue(item.value, item.label)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Network Section */}
-              <div className="space-y-3">
-                <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-900">
-                  <div className="rounded-[16px] bg-cyan-500 p-2">
-                    <Wifi className="h-5 w-5 text-white" />
-                  </div>
-                  Network
-                </h3>
-                <div className="overflow-hidden   border border-slate-200 bg-white">
-                  <table className="w-full">
-                    <tbody className="divide-y divide-slate-100">
-                      {[
-                        {
-                          label: "5G",
-                          value:
-                            modalDevice.network?.["5g"] ||
-                            modalDevice.network?.["5g_bands"] ||
-                            modalDevice.network?.five_g ||
-                            modalDevice.connectivity?.["5g_bands"] ||
-                            modalDevice.connectivity?.network_type ||
-                            "N/A",
-                        },
-                        {
-                          label: "WiFi",
-                          value:
-                            modalDevice.connectivity?.wifi ||
-                            modalDevice.network?.wifi ||
-                            "N/A",
-                        },
-                        {
-                          label: "Bluetooth",
-                          value:
-                            modalDevice.connectivity?.bluetooth ||
-                            modalDevice.network?.bluetooth ||
-                            "N/A",
-                        },
-                        {
-                          label: "GPS",
-                          value:
-                            modalDevice.network?.gps ||
-                            modalDevice.connectivity?.gps ||
-                            "N/A",
-                        },
-                        {
-                          label: "NFC",
-                          value:
-                            modalDevice.connectivity?.nfc ||
-                            modalDevice.network?.nfc ||
-                            "N/A",
-                        },
-                      ].map((item, idx) => (
-                        <tr
-                          key={idx}
-                          className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}
-                        >
-                          <td className="w-1/3 px-6 py-3 text-sm font-medium text-slate-600">
-                            {item.label}
-                          </td>
-                          <td className="w-2/3 px-6 py-3 text-sm font-semibold text-slate-900">
-                            {formatSpecValue(item.value, item.label)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+                          Change phone
+                        </button>
+                      )}
+                    </article>
+                  );
+                },
+              )}
             </div>
+          </section>
 
-            {/* Modal Footer */}
-            <div className="sticky bottom-0 flex gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4">
-              <button
-                onClick={() => setShowDetailsModal(false)}
-                className="flex-1 rounded-[18px] px-4 py-2 font-medium text-slate-700 transition-colors hover:bg-white hover:text-slate-900"
+          <div
+            className={`hc-compare-toolbar ${showStickyCompareBar ? "is-condensed" : ""}`}
+          >
+            <div className="hc-shell hc-compare-toolbar__inner">
+              <label className="hc-toggle hc-toolbar-toggle">
+                <input
+                  type="checkbox"
+                  checked={hideCommonSpecs}
+                  onChange={(event) => setHideCommonSpecs(event.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                />
+                Hide common features
+              </label>
+              <nav className="hc-view-tabs" aria-label="Comparison categories">
+                {COMPARE_VIEW_TABS.map((tab) => {
+                  const TabIcon = tab.icon;
+                  const active = activeStudioView === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => selectStudioView(tab.id)}
+                      className={`hc-view-tab ${active ? "is-active" : ""}`}
+                    >
+                      <TabIcon className="h-4 w-4" /> {tab.label}
+                    </button>
+                  );
+                })}
+              </nav>
+              <div
+                className="hc-toolbar-devices"
+                aria-hidden={!showStickyCompareBar}
               >
-                Close
-              </button>
+                {showStickyCompareBar
+                  ? activeDevices.map((device) => (
+                      <span
+                        key={`toolbar-device-${device.id}`}
+                        className="hc-toolbar-device"
+                      >
+                        <img src={getPrimaryImage(device) || null} alt="" />
+                        <span>{getDeviceName(device)}</span>
+                      </span>
+                    ))
+                  : null}
+              </div>
             </div>
           </div>
-        )}
-      </div>
-    </div>
+
+          <section
+            className="hc-shell hc-section hc-analysis-grid"
+            id="compare-overview"
+          >
+            <article className="hc-verdict-card">
+              <div className="hc-verdict-card__art">
+                <FaTrophy className="h-16 w-16" />
+              </div>
+              <div className="hc-verdict-card__content">
+                <p className="hc-eyebrow">Hooks comparison verdict</p>
+                <span className="hc-verdict-badge">Best overall</span>
+                <h2>
+                  {resolvedOverallWinner
+                    ? getDeviceName(resolvedOverallWinner)
+                    : activeDecisionAnswer.title}
+                </h2>
+                <p>{activeDecisionAnswer.copy}</p>
+                <div className="hc-question-tabs">
+                  {decisionQuestions.map((question) => (
+                    <button
+                      key={question.id}
+                      type="button"
+                      onClick={() => setActiveDecisionQuestion(question.id)}
+                      className={`hc-question-tab ${activeDecisionQuestion === question.id ? "hc-question-tab--active" : ""}`}
+                    >
+                      {question.label}
+                    </button>
+                  ))}
+                </div>
+                {compareInsightsLoading ? (
+                  <p className="hc-recalculating">
+                    Recalculating with the selected variants…
+                  </p>
+                ) : null}
+              </div>
+            </article>
+
+            <article className="hc-reasons-panel">
+              <div className="hc-section-title hc-section-title--compact">
+                <div>
+                  <p className="hc-eyebrow">Reasons to consider</p>
+                  <h2>Category leaders at a glance</h2>
+                </div>
+              </div>
+              <div className="hc-reason-grid">
+                {comparisonReasonCards.slice(0, 5).map((card) => {
+                  const CardIcon = card.icon || Info;
+                  const leadingRow = card.rows[0];
+                  const leader = card.winnerDevice || leadingRow?.device;
+                  const leaderScore =
+                    card.rows.find(
+                      (row) =>
+                        leader &&
+                        String(getDeviceKey(row.device)) ===
+                          String(getDeviceKey(leader)),
+                    )?.value ??
+                    leadingRow?.value ??
+                    0;
+                  return (
+                    <div
+                      key={`reason-card-${card.id}`}
+                      className="hc-reason-card"
+                    >
+                      <div className="hc-reason-card__icon">
+                        <CardIcon className="h-4 w-4" />
+                      </div>
+                      <p className="hc-reason-card__label">{card.label}</p>
+                      <strong>
+                        {(leaderScore <= 10
+                          ? leaderScore
+                          : leaderScore / 10
+                        ).toFixed(1)}
+                        <span>/10</span>
+                      </strong>
+                      <p className="hc-reason-card__winner">
+                        {leader ? getDeviceName(leader) : "Closely matched"}
+                      </p>
+                      <span className="hc-reason-card__track">
+                        <i
+                          style={{
+                            width: `${Math.max(4, Math.min(100, leaderScore))}%`,
+                          }}
+                        />
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </article>
+          </section>
+
+          <section
+            className="hc-shell hc-section hc-card hc-key-specs"
+            id="compare-key-specifications"
+          >
+            <div className="hc-key-specs__head">
+              <div>
+                <p className="hc-eyebrow">Key specifications</p>
+                <h2>Important differences in one scan</h2>
+              </div>
+              <div className="hc-stage-metrics">
+                <span>
+                  <strong>{meaningfulDifferenceCount}</strong> differences
+                </span>
+                <span>
+                  <strong>{commonFeatureCount}</strong> shared
+                </span>
+                <span>
+                  <strong>{uncertainResultCount}</strong> uncertain
+                </span>
+              </div>
+            </div>
+            <div className="hc-key-table-wrap">
+              <table className="hc-key-table">
+                <thead>
+                  <tr>
+                    <th colSpan="2">Specification</th>
+                    {activeDevices.map((device) => (
+                      <th key={`key-head-${device.id}`}>
+                        <div className="hc-key-phone">
+                          <img src={getPrimaryImage(device) || null} alt="" />
+                          <span>
+                            <strong>{getDeviceName(device)}</strong>
+                            <small>{getQuickMemoryText(device)}</small>
+                          </span>
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {keySpecificationRows.map((row, rowIndex) => {
+                    const category =
+                      row.category === "priceValue"
+                        ? "value"
+                        : row.category === "memory"
+                          ? "performance"
+                          : row.category;
+                    const categoryMeta = STUDIO_CATEGORY_META[category] || {
+                      label: toNormalCase(category),
+                      icon: Info,
+                    };
+                    const CategoryIcon = categoryMeta.icon || Info;
+                    const previousCategoryRaw =
+                      keySpecificationRows[rowIndex - 1]?.category;
+                    const previousCategory =
+                      previousCategoryRaw === "priceValue"
+                        ? "value"
+                        : previousCategoryRaw === "memory"
+                          ? "performance"
+                          : previousCategoryRaw;
+                    const showCategory =
+                      rowIndex === 0 || previousCategory !== category;
+                    const categoryRowCount = keySpecificationRows.filter(
+                      (candidate) => {
+                        const candidateCategory =
+                          candidate.category === "priceValue"
+                            ? "value"
+                            : candidate.category === "memory"
+                              ? "performance"
+                              : candidate.category;
+                        return candidateCategory === category;
+                      },
+                    ).length;
+                    const verdict = resolvedCategoryVerdicts.find(
+                      (item) => item.category === category,
+                    );
+                    const winnerDevice = getCategoryWinnerFromVerdict(verdict);
+                    return (
+                      <tr key={`key-row-${row.key}`}>
+                        {showCategory ? (
+                          <th
+                            rowSpan={categoryRowCount}
+                            className="hc-key-category"
+                          >
+                            <CategoryIcon className="h-4 w-4" />
+                            <span>{categoryMeta.label}</span>
+                          </th>
+                        ) : null}
+                        <th className="hc-key-property">{row.label}</th>
+                        {activeDevices.map((device) => {
+                          const value = row.getValue(device);
+                          const isWinner =
+                            winnerDevice &&
+                            String(getDeviceKey(winnerDevice)) ===
+                              String(getDeviceKey(device));
+                          return (
+                            <td
+                              key={`key-value-${row.key}-${device.id}`}
+                              className={isWinner ? "is-winner" : ""}
+                            >
+                              {hasRenderableValue(value) ? (
+                                value
+                              ) : (
+                                <span className="text-slate-300">—</span>
+                              )}
+                              {isWinner ? (
+                                <span
+                                  className="hc-key-win-dot"
+                                  title="Category leader"
+                                >
+                                  ✓
+                                </span>
+                              ) : null}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <p className="hc-key-legend">
+              <span>✓</span> marks the category leader based on the current
+              compare response and selected variants.
+            </p>
+          </section>
+
+          {resolvedKeyDifferences.length ? (
+            <section className="hc-shell hc-section hc-card rounded-[20px] p-4 sm:p-5">
+              <div className="hc-section-title">
+                <div>
+                  <p className="hc-eyebrow">Meaningful differences</p>
+                  <h2>What actually changes</h2>
+                  <p>
+                    High-impact differences appear first. Camera megapixels are
+                    described as listed resolution, not treated as complete
+                    image-quality proof.
+                  </p>
+                </div>
+              </div>
+              <div className="grid gap-3 lg:grid-cols-2">
+                {resolvedKeyDifferences.slice(0, 10).map((difference) => {
+                  const winner = findActiveDeviceByProductId(
+                    difference.winner_product_id,
+                  );
+                  return (
+                    <article
+                      key={
+                        difference.id ||
+                        `${difference.category}-${difference.property}`
+                      }
+                      className="rounded-[14px] border border-slate-200 bg-slate-50/70 p-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.13em] text-blue-600">
+                            {difference.importance || "medium"} impact
+                          </p>
+                          <h3 className="mt-1 text-sm font-black text-slate-950">
+                            {difference.property}
+                          </h3>
+                        </div>
+                        {winner ? (
+                          <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-black text-blue-700">
+                            {getDeviceName(winner)} leads
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                        {activeDevices.slice(0, 4).map((device) => (
+                          <div
+                            key={`${difference.id}-${getResolvedProductId(device)}`}
+                            className="rounded-[9px] bg-white px-3 py-2"
+                          >
+                            <p className="truncate text-[9px] font-black uppercase tracking-[0.08em] text-slate-400">
+                              {getDeviceName(device)}
+                            </p>
+                            <p className="mt-1 text-xs font-bold text-slate-800">
+                              {getDifferenceValue(difference, device)}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="mt-3 text-xs leading-5 text-slate-600">
+                        {difference.explanation}
+                      </p>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
+
+          {resolvedUseCasePicks.length ? (
+            <section className="hc-shell hc-section">
+              <div className="hc-section-title">
+                <div>
+                  <p className="hc-eyebrow">User-fit picks</p>
+                  <h2>Choose by the way you use your phone</h2>
+                  <p>
+                    Hooks translates category scores into common buying goals
+                    and only shows recommendations supported by available data.
+                  </p>
+                </div>
+              </div>
+              <div className="hc-goal-grid">
+                {resolvedUseCasePicks.slice(0, 7).map((pick) => (
+                  <article
+                    key={pick.use_case || pick.label}
+                    className="hc-goal"
+                  >
+                    <p className="hc-goal__label">{pick.label}</p>
+                    <h3>
+                      {pick.winner_name ||
+                        getDeviceName(
+                          findActiveDeviceByProductId(pick.winner_product_id),
+                        )}
+                    </h3>
+                    <p>{pick.reason}</p>
+                    {Number.isFinite(Number(pick.score)) ? (
+                      <p className="!mt-3 font-black text-blue-600">
+                        Hooks fit score {Math.round(Number(pick.score))}
+                      </p>
+                    ) : null}
+                  </article>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          <section className="hc-shell hc-section hc-story-grid">
+            <article className="hc-card hc-story">
+              <p className="hc-eyebrow">Upgrade / switch story</p>
+              <h2 className="mt-2 text-2xl font-black tracking-[-0.035em] text-slate-950">
+                {resolvedUpgradeStory?.title || "What changes when you switch?"}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                {resolvedUpgradeStory?.summary}
+              </p>
+              {resolvedUpgradeStory?.older_product_name &&
+              resolvedUpgradeStory?.newer_product_name ? (
+                <div className="hc-timeline">
+                  <span className="hc-timeline__node">
+                    {resolvedUpgradeStory.older_product_name}
+                  </span>
+                  <span className="hc-timeline__gap">
+                    {resolvedUpgradeStory.launch_gap_months || "—"} months
+                  </span>
+                  <span className="hc-timeline__node">
+                    {resolvedUpgradeStory.newer_product_name}
+                  </span>
+                </div>
+              ) : null}
+              <div className="hc-story-columns">
+                <div className="hc-story-list">
+                  <h4>Major gains</h4>
+                  <ul>
+                    {(resolvedUpgradeStory?.major_gains?.length
+                      ? resolvedUpgradeStory.major_gains
+                      : ["No major gain is confirmed with current data"]
+                    ).map((item) => (
+                      <li key={`major-${item}`}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="hc-story-list">
+                  <h4>Smaller gains</h4>
+                  <ul>
+                    {(resolvedUpgradeStory?.minor_gains?.length
+                      ? resolvedUpgradeStory.minor_gains
+                      : ["No smaller gain identified"]
+                    ).map((item) => (
+                      <li key={`minor-${item}`}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="hc-story-list">
+                  <h4>Mostly unchanged</h4>
+                  <ul>
+                    {(resolvedUpgradeStory?.mostly_unchanged?.length
+                      ? resolvedUpgradeStory.mostly_unchanged
+                      : ["No fully matched key feature identified"]
+                    ).map((item) => (
+                      <li key={`same-${item}`}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="hc-story-list">
+                  <h4>Trade-offs</h4>
+                  <ul>
+                    {(resolvedUpgradeStory?.tradeoffs?.length
+                      ? resolvedUpgradeStory.tradeoffs
+                      : ["No clear regression identified"]
+                    ).map((item) => (
+                      <li key={`trade-${item}`}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </article>
+
+            <article className="hc-card hc-price-card">
+              <p className="hc-eyebrow">Price decision</p>
+              <p className="hc-price-number">
+                {resolvedPriceVerdict?.available &&
+                Number.isFinite(Number(resolvedPriceVerdict.difference))
+                  ? formatPrice(resolvedPriceVerdict.difference)
+                  : "Price data needed"}
+              </p>
+              <span className="hc-price-label">
+                {resolvedPriceVerdict?.label || "Selected-variant comparison"}
+              </span>
+              <p className="mt-4">{resolvedPriceVerdict?.summary}</p>
+              {resolvedPriceVerdict?.extra_cost_provides?.length ? (
+                <div className="mt-4 border-t border-slate-200 pt-4">
+                  <h4 className="text-xs font-black text-slate-900">
+                    What the extra cost provides
+                  </h4>
+                  <ul className="mt-2 space-y-1.5 text-xs text-slate-600">
+                    {resolvedPriceVerdict.extra_cost_provides.map((item) => (
+                      <li key={`premium-${item}`}>+ {item}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </article>
+          </section>
+
+          <section className="hc-shell hc-section">
+            <div className="hc-section-title">
+              <div>
+                <p className="hc-eyebrow">Gain / give up</p>
+                <h2>The trade-off behind each choice</h2>
+                <p>
+                  Instead of generic pros and cons, Hooks explains what you gain
+                  and what you leave behind compared with these exact phones.
+                </p>
+              </div>
+            </div>
+            <div className="hc-tradeoff-grid">
+              {resolvedTradeoffs.map((tradeoff) => {
+                const device = findActiveDeviceByProductId(tradeoff.product_id);
+                if (!device) return null;
+                return (
+                  <article
+                    key={`tradeoff-${tradeoff.product_id}`}
+                    className="hc-tradeoff"
+                  >
+                    <div className="hc-tradeoff__head">
+                      <img src={getPrimaryImage(device) || null} alt="" />
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.13em] text-blue-600">
+                          Choose this phone
+                        </p>
+                        <h3 className="mt-1 text-base font-black text-slate-950">
+                          {getDeviceName(device)}
+                        </h3>
+                      </div>
+                    </div>
+                    <div className="hc-tradeoff__body">
+                      <div className="hc-tradeoff__column hc-gain">
+                        <h4>You gain</h4>
+                        <ul>
+                          {(tradeoff.gain?.length
+                            ? tradeoff.gain
+                            : ["A balanced overall package"]
+                          ).map((item) => (
+                            <li key={`gain-${tradeoff.product_id}-${item}`}>
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div className="hc-tradeoff__column hc-giveup">
+                        <h4>You give up</h4>
+                        <ul>
+                          {(tradeoff.give_up?.length
+                            ? tradeoff.give_up
+                            : ["No major verified trade-off"]
+                          ).map((item) => (
+                            <li key={`give-${tradeoff.product_id}-${item}`}>
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="hc-shell hc-section hc-confidence">
+            <div className="hc-confidence__signal" aria-hidden="true">
+              {Array.from({ length: 5 }, (_, index) => (
+                <i
+                  key={`confidence-dot-${index}`}
+                  className={
+                    index <
+                    Math.round(Number(resolvedConfidence?.score || 0.5) * 5)
+                      ? "is-active"
+                      : ""
+                  }
+                />
+              ))}
+            </div>
+            <div>
+              <p className="hc-eyebrow">
+                {String(resolvedConfidence?.level || "medium").toUpperCase()}
+                -confidence verdict
+              </p>
+              <h2 className="mt-1 text-lg font-black text-slate-950">
+                Based on {resolvedConfidence?.comparable_fields || 0} comparable
+                fields
+              </h2>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                {resolvedConfidence?.explanation}
+              </p>
+              {compareInsights.warnings?.length ? (
+                <p className="mt-2 text-xs font-semibold text-amber-700">
+                  {compareInsights.warnings.join(" ")}
+                </p>
+              ) : null}
+            </div>
+          </section>
+
+          <section
+            className="hc-shell hc-section hc-card hc-spec"
+            id="compare-specifications"
+          >
+            <div className="hc-spec__toolbar">
+              <div>
+                <p className="hc-eyebrow">Full comparison explorer</p>
+                <h2 className="mt-1 text-2xl font-black tracking-[-0.035em] text-slate-950">
+                  Inspect every available detail
+                </h2>
+              </div>
+              <label className="hc-toggle">
+                <input
+                  type="checkbox"
+                  checked={hideCommonSpecs}
+                  onChange={(event) => setHideCommonSpecs(event.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                />{" "}
+                Hide shared
+              </label>
+            </div>
+            <div className="hc-spec-view-tabs">
+              {COMPARE_VIEW_TABS.map((tab) => {
+                const TabIcon = tab.icon;
+                return (
+                  <button
+                    key={`spec-tab-${tab.id}`}
+                    type="button"
+                    onClick={() => selectStudioView(tab.id, false)}
+                    className={`hc-spec-view-tab ${activeStudioView === tab.id ? "is-active" : ""}`}
+                  >
+                    <TabIcon className="h-3.5 w-3.5" /> {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {devicePairs.length > 1 ? (
+              <div className="hc-mobile-pairs">
+                {devicePairs.map((pair) => (
+                  <button
+                    key={pair.key}
+                    type="button"
+                    onClick={() => setActiveMobilePair(pair.key)}
+                    className={`hc-mobile-pair ${(selectedPair?.key || devicePairs[0]?.key) === pair.key ? "is-active" : ""}`}
+                  >
+                    {getDeviceName(activeDevices[pair.left])} vs{" "}
+                    {getDeviceName(activeDevices[pair.right])}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+
+            <div>
+              {visibleStudioComparisonTables.map((definition) => {
+                const isExpanded = Boolean(
+                  expandedStudioSections[definition.id],
+                );
+                const winner =
+                  definition.winnerDevice || getStudioSectionWinner(definition);
+                return (
+                  <article
+                    key={`studio-spec-${definition.id}`}
+                    className="hc-spec-section"
+                    id={`compare-${definition.id}`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setExpandedStudioSections((previous) => ({
+                          ...previous,
+                          [definition.id]: !previous[definition.id],
+                        }))
+                      }
+                      className="hc-spec-section__button"
+                    >
+                      <div>
+                        <h3>{definition.label}</h3>
+                        {winner ? (
+                          <span className="hc-spec-section__winner">
+                            Hooks lead · {getDeviceName(winner)}
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-semibold text-slate-500">
+                            No confident standalone winner
+                          </span>
+                        )}
+                      </div>
+                      <ChevronDown
+                        className={`h-4 w-4 text-slate-500 transition ${isExpanded ? "rotate-180" : ""}`}
+                      />
+                    </button>
+
+                    {isExpanded && definition.id === "camera" ? (
+                      <>
+                        <div
+                          className="hc-camera-grid"
+                          style={{
+                            "--hc-device-count": Math.max(
+                              2,
+                              activeDevices.length,
+                            ),
+                          }}
+                        >
+                          {activeDevices.map((device) => (
+                            <article
+                              key={`camera-card-${device.id}`}
+                              className="hc-camera-card"
+                            >
+                              <div className="hc-camera-card__phone">
+                                <img
+                                  src={getPrimaryImage(device) || null}
+                                  alt=""
+                                />
+                                <div>
+                                  <p className="text-xs font-black text-slate-950">
+                                    {getDeviceName(device)}
+                                  </p>
+                                  <p className="mt-0.5 text-[10px] font-semibold text-slate-500">
+                                    Camera system details
+                                  </p>
+                                </div>
+                              </div>
+                              {getCameraStudioGroups(device).map((group) => (
+                                <section
+                                  key={`${device.id}-${group.key}`}
+                                  className="hc-camera-group"
+                                >
+                                  <h4>{group.label}</h4>
+                                  <dl className="hc-property-list">
+                                    {group.pairs.map(
+                                      ([label, value], index) => (
+                                        <div
+                                          key={`${group.key}-${label}-${index}`}
+                                          className="hc-property"
+                                        >
+                                          <dt>{label}</dt>
+                                          <dd>{value}</dd>
+                                        </div>
+                                      ),
+                                    )}
+                                  </dl>
+                                </section>
+                              ))}
+                              {!getCameraStudioGroups(device).length ? (
+                                <p className="text-xs text-slate-500">
+                                  No structured camera data available.
+                                </p>
+                              ) : null}
+                            </article>
+                          ))}
+                        </div>
+                        <div className="hc-mobile-specs">
+                          {focusedMobileDevices.map((device) => (
+                            <article
+                              key={`mobile-camera-${device.id}`}
+                              className="hc-camera-card"
+                            >
+                              <div className="hc-camera-card__phone">
+                                <img
+                                  src={getPrimaryImage(device) || null}
+                                  alt=""
+                                />
+                                <strong className="text-xs">
+                                  {getDeviceName(device)}
+                                </strong>
+                              </div>
+                              {getCameraStudioGroups(device).map((group) => (
+                                <section
+                                  key={`mobile-${device.id}-${group.key}`}
+                                  className="hc-camera-group"
+                                >
+                                  <h4>{group.label}</h4>
+                                  <dl className="hc-property-list">
+                                    {group.pairs.map(
+                                      ([label, value], index) => (
+                                        <div
+                                          key={`${group.key}-${label}-${index}`}
+                                          className="hc-property"
+                                        >
+                                          <dt>{label}</dt>
+                                          <dd>{value}</dd>
+                                        </div>
+                                      ),
+                                    )}
+                                  </dl>
+                                </section>
+                              ))}
+                            </article>
+                          ))}
+                        </div>
+                      </>
+                    ) : isExpanded ? (
+                      <>
+                        <div className="hc-spec-table-wrap">
+                          <table className="hc-spec-table">
+                            <tbody>
+                              {definition.rows.map((row, rowIndex) => (
+                                <React.Fragment key={row.rowKey}>
+                                  {row.groupLabel &&
+                                  (rowIndex === 0 ||
+                                    definition.rows[rowIndex - 1]
+                                      ?.groupLabel !== row.groupLabel) ? (
+                                    <tr className="hc-subheading-row">
+                                      <th colSpan={activeDevices.length + 1}>
+                                        {row.groupLabel}
+                                      </th>
+                                    </tr>
+                                  ) : null}
+                                  <tr>
+                                    <th>{row.label}</th>
+                                    {activeDevices.map((device) => {
+                                      const { missingValue, renderedValue } =
+                                        getStudioRowValue(row, device);
+                                      const isWinner =
+                                        winner &&
+                                        String(getDeviceKey(winner)) ===
+                                          String(getDeviceKey(device));
+                                      return (
+                                        <td key={`${row.rowKey}-${device.id}`}>
+                                          {missingValue ? (
+                                            <span className="text-slate-300">
+                                              —
+                                            </span>
+                                          ) : (
+                                            renderedValue
+                                          )}
+                                          {isWinner && !missingValue ? (
+                                            <span className="hc-lead">
+                                              Leads
+                                            </span>
+                                          ) : null}
+                                        </td>
+                                      );
+                                    })}
+                                  </tr>
+                                </React.Fragment>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        <div className="hc-mobile-specs">
+                          {definition.rows.map((row) => (
+                            <article
+                              key={`mobile-${definition.id}-${row.rowKey}`}
+                              className="hc-mobile-property"
+                            >
+                              <h4>
+                                {row.groupLabel
+                                  ? `${row.groupLabel} · ${row.label}`
+                                  : row.label}
+                              </h4>
+                              <div className="hc-mobile-property__values">
+                                {focusedMobileDevices.map((device) => {
+                                  const { missingValue, renderedValue } =
+                                    getStudioRowValue(row, device);
+                                  const isWinner =
+                                    winner &&
+                                    String(getDeviceKey(winner)) ===
+                                      String(getDeviceKey(device));
+                                  return (
+                                    <div
+                                      key={`${row.rowKey}-mobile-${device.id}`}
+                                      className="hc-mobile-value"
+                                    >
+                                      <strong>{getDeviceName(device)}</strong>
+                                      <div>
+                                        {missingValue ? (
+                                          <span className="text-slate-300">
+                                            —
+                                          </span>
+                                        ) : (
+                                          renderedValue
+                                        )}
+                                        {isWinner && !missingValue ? (
+                                          <span className="hc-lead">Leads</span>
+                                        ) : null}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </article>
+                          ))}
+                        </div>
+                      </>
+                    ) : null}
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+
+          <section
+            className="hc-shell hc-section hc-card rounded-[20px] p-4 sm:p-5"
+            id="compare-prices"
+          >
+            <div className="hc-section-title">
+              <div>
+                <p className="hc-eyebrow">Current store prices</p>
+                <h2>Check the selected variant before buying</h2>
+                <p>
+                  Store rows remain tied to each selected variant so a cheaper
+                  unrelated configuration does not distort the comparison.
+                </p>
+              </div>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              {activeDevices.map((device) => {
+                const stores = getStoreRowsForDevice(device);
+                const price = getCardPrice(device, getSelectedVariant(device));
+                return (
+                  <article
+                    key={`stores-${device.id}`}
+                    className="rounded-[14px] border border-slate-200 bg-slate-50/60 p-4"
+                  >
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={getPrimaryImage(device) || null}
+                        alt=""
+                        className="h-14 w-11 object-contain"
+                      />
+                      <div>
+                        <h3 className="text-sm font-black text-slate-950">
+                          {getDeviceName(device)}
+                        </h3>
+                        <p className="mt-1 text-sm font-black text-blue-600">
+                          {price ? formatPrice(price) : "Price unavailable"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-4 space-y-2">
+                      {(stores.length
+                        ? stores
+                        : [{ storeName: "Selected variant", price, url: "" }]
+                      ).map((store, index) => (
+                        <div
+                          key={`${device.id}-store-${store.storeName}-${index}`}
+                          className="flex items-center justify-between gap-3 rounded-[9px] bg-white px-3 py-2.5"
+                        >
+                          <span className="text-xs font-bold text-slate-700">
+                            {store.storeName}
+                          </span>
+                          {store.url ? (
+                            <a
+                              href={store.url}
+                              target="_blank"
+                              rel="nofollow sponsored noopener noreferrer"
+                              className="text-xs font-black text-blue-600"
+                            >
+                              {store.price ? formatPrice(store.price) : "View"}
+                            </a>
+                          ) : (
+                            <span className="text-xs font-black text-slate-900">
+                              {store.price ? formatPrice(store.price) : "—"}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+
+          {suggestedDevices.length ? (
+            <section className="hc-shell hc-section">
+              <div className="hc-section-title">
+                <div>
+                  <p className="hc-eyebrow">Try another match</p>
+                  <h2>Continue your research</h2>
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {suggestedDevices.map((candidate) => (
+                  <button
+                    key={`suggestion-${getResolvedProductId(candidate)}`}
+                    type="button"
+                    onClick={() => applySuggestedComparison(candidate)}
+                    className="flex items-center gap-3 rounded-[14px] border border-slate-200 bg-white p-3 text-left transition hover:border-blue-300"
+                  >
+                    <img
+                      src={getPrimaryImage(candidate) || null}
+                      alt=""
+                      className="h-16 w-12 object-contain"
+                    />
+                    <div className="min-w-0">
+                      <p className="line-clamp-2 text-xs font-black text-slate-900">
+                        {getDeviceName(candidate)}
+                      </p>
+                      <p className="mt-1 text-[10px] font-bold text-blue-600">
+                        Compare with first phone
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          <section
+            className="hc-shell hc-section hc-card rounded-[20px] p-4 sm:p-5"
+            id="compare-faqs"
+          >
+            <div className="hc-section-title">
+              <div>
+                <p className="hc-eyebrow">Comparison FAQs</p>
+                <h2>Understand the Hooks verdict</h2>
+              </div>
+            </div>
+            <div className="grid gap-3 lg:grid-cols-3">
+              <article className="rounded-[13px] bg-slate-50 p-4">
+                <h3 className="text-sm font-black text-slate-950">
+                  Does the highest score always mean best?
+                </h3>
+                <p className="mt-2 text-xs leading-5 text-slate-600">
+                  No. The overall score balances categories, while user-fit
+                  picks show which phone is better for gaming, camera, battery,
+                  value or long-term use.
+                </p>
+              </article>
+              <article className="rounded-[13px] bg-slate-50 p-4">
+                <h3 className="text-sm font-black text-slate-950">
+                  Why can a category have no winner?
+                </h3>
+                <p className="mt-2 text-xs leading-5 text-slate-600">
+                  Hooks avoids false certainty when the score gap is very small
+                  or important fields are missing. Check the confidence section
+                  for data-quality warnings.
+                </p>
+              </article>
+              <article className="rounded-[13px] bg-slate-50 p-4">
+                <h3 className="text-sm font-black text-slate-950">
+                  Are prices variant-specific?
+                </h3>
+                <p className="mt-2 text-xs leading-5 text-slate-600">
+                  Yes. Changing RAM or storage updates the selected-variant
+                  price, value result and price-premium verdict whenever server
+                  data is available.
+                </p>
+              </article>
+            </div>
+          </section>
+        </>
+      ) : null}
+
+      {comparisonPickerModal}
+    </main>
   );
 };
 

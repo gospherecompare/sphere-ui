@@ -70,9 +70,9 @@ export const toCanonicalPageUrl = (
 ) => {
   const parsed = parseUrlLike(value, siteOrigin);
   const origin = String(parsed.origin || siteOrigin).replace(/\/+$/g, "");
-  const path = toCanonicalPagePath(
-    `${parsed.pathname || "/"}${parsed.search || ""}${parsed.hash || ""}`,
-  );
+  // Canonical URLs identify the preferred document URL, so tracking/filter
+  // parameters and fragments are intentionally removed.
+  const path = toCanonicalPagePath(parsed.pathname || "/");
   return `${origin}${path}`;
 };
 

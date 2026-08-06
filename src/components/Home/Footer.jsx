@@ -1,170 +1,129 @@
-// src/components/Footer.jsx
 import React from "react";
-import {
-  FaFacebook,
-  FaTwitter,
-  FaInstagram,
-  FaLinkedin,
-  FaYoutube,
-  FaMobileAlt,
-  FaTv,
-  FaInfoCircle,
-} from "react-icons/fa";
 import { Link } from "react-router-dom";
+import {
+  FaBalanceScale,
+  FaCheckCircle,
+  FaEnvelope,
+  FaShieldAlt,
+} from "react-icons/fa";
 import { toCanonicalPagePath } from "../../utils/publicUrl";
+import HookLogo from "../ui/HookLogo";
 
 const footerSections = [
   {
-    title: "Smartphones",
-    icon: FaMobileAlt,
+    title: "Discover",
     links: [
-      { label: "All Smartphones", href: "/smartphones" },
-      { label: "Latest Smartphones", href: "/smartphones/filter/new" },
-      { label: "Upcoming Smartphones", href: "/smartphones/upcoming" },
-      { label: "Trending Smartphones", href: "/trending/smartphones" },
-      { label: "5G Smartphones", href: "/smartphones/feature/5g" },
-      { label: "Phones Under ₹20,000", href: "/smartphones/filter/under-20000" },
+      { label: "All smartphones", href: "/smartphones" },
+      { label: "Latest smartphones", href: "/smartphones/filter/new" },
+      { label: "Upcoming smartphones", href: "/smartphones/upcoming" },
+      { label: "TV buying discovery", href: "/tvs" },
+      { label: "Trending technology", href: "/trending/smartphones" },
     ],
   },
   {
-    title: "TVs",
-    icon: FaTv,
+    title: "Research",
     links: [
-      { label: "Best TVs", href: "/tvs" },
-      { label: "4K Ultra HD TVs", href: "/tvs/features/ultra-hd-4k" },
-      { label: "OLED/QLED TVs", href: "/tvs/features/oled-qled" },
-      { label: "Gaming TVs", href: "/tvs/features/gaming" },
+      { label: "Compare devices", href: "/compare" },
+      { label: "Popular comparisons", href: "/popular-comparisons" },
+      { label: "Phones under ₹15,000", href: "/smartphones/filter/under-15000" },
+      { label: "Phones under ₹25,000", href: "/smartphones/filter/under-25000" },
+      { label: "5G smartphones", href: "/smartphones/feature/5g" },
     ],
   },
   {
-    title: "Quick Links",
-    icon: FaInfoCircle,
+    title: "Editorial",
     links: [
-      { label: "Home", href: "/" },
-      { label: "About Us", href: "/about" },
-      { label: "Compare Devices", href: "/compare" },
-      { label: "News", href: "/news" },
+      { label: "Latest tech news", href: "/news" },
+      { label: "Product launches", href: "/news" },
+      { label: "Buying context", href: "/news" },
+      { label: "About Hooks", href: "/about" },
+      { label: "Careers", href: "/careers" },
+    ],
+  },
+  {
+    title: "Trust & support",
+    links: [
+      { label: "Contact the team", href: "/contact" },
+      { label: "Privacy policy", href: "/privacy-policy" },
+      { label: "Terms and conditions", href: "/terms" },
+      { label: "Report incorrect data", href: "/contact" },
+      { label: "Business enquiries", href: "/contact" },
     ],
   },
 ];
 
-const socialLinks = [
-  {
-    icon: FaFacebook,
-    label: "Facebook",
-    url: "https://facebook.com",
-  },
-  { icon: FaTwitter, label: "Twitter", url: "https://twitter.com" },
-  {
-    icon: FaInstagram,
-    label: "Instagram",
-    url: "https://instagram.com",
-  },
-  {
-    icon: FaLinkedin,
-    label: "LinkedIn",
-    url: "https://linkedin.com",
-  },
-  { icon: FaYoutube, label: "YouTube", url: "https://youtube.com" },
-];
+const Footer = () => (
+  <footer className="hooks-footer text-slate-300">
+    <div className="relative z-10 mx-auto max-w-[1440px] px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
+      <div className="grid gap-10 lg:grid-cols-[1.05fr_2fr]">
+        <div>
+          <Link to="/" className="inline-flex items-center gap-3 text-white">
+            <HookLogo
+              aria-label="Hooks"
+              className="h-12 w-12 shrink-0 rounded-2xl object-cover shadow-[0_14px_34px_rgba(37,99,235,.34)]"
+            />
+            <span>
+              <strong className="block text-2xl font-black tracking-[-0.04em]">Hooks</strong>
+              <small className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-200/70">
+                Technology decisions, simplified
+              </small>
+            </span>
+          </Link>
 
-const FooterSectionCard = ({ section }) => {
-  const Icon = section.icon;
+          <div className="mt-6 space-y-3 text-sm text-slate-300">
+            <p className="flex items-center gap-2">
+              <FaCheckCircle className="text-emerald-300" /> Structured product research
+            </p>
+            <p className="flex items-center gap-2">
+              <FaShieldAlt className="text-blue-300" /> Clear editorial context
+            </p>
+            <p className="flex items-center gap-2">
+              <FaBalanceScale className="text-violet-300" /> Practical comparison tools
+            </p>
+          </div>
 
-  return (
-    <div className="  p-5 ">
-      <div className="flex items-center gap-2">
-        <Icon className="h-4 w-4 text-cyan-300" />
-        <h3 className="text-sm font-semibold uppercase tracking-[0.22em] text-white">
-          {section.title}
-        </h3>
-      </div>
-      <ul className="mt-4 space-y-2">
-        {section.links.map((link) => (
-          <li
-            key={link.label}
-            className={link.hideOnMobile ? "hidden sm:list-item" : ""}
+          <a
+            href="mailto:contact@tryhook.shop"
+            className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-white transition hover:text-blue-200"
           >
-            <Link
-              to={toCanonicalPagePath(link.href)}
-              className="group inline-flex items-center gap-2 text-sm text-sky-100/75 transition-colors duration-200 hover:text-white"
-            >
-              <span>{link.label}</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-};
+            <FaEnvelope className="text-blue-300" />
+            contact@tryhook.shop
+          </a>
+        </div>
 
-const Footer = () => {
-  return (
-    <footer className="border-t border-sky-900/60 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-300">
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="grid gap-10 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
           {footerSections.map((section) => (
-            <FooterSectionCard key={section.title} section={section} />
+            <section key={section.title}>
+              <h3 className="text-xs font-black uppercase tracking-[0.18em] text-white">
+                {section.title}
+              </h3>
+              <ul className="mt-4 space-y-3">
+                {section.links.map((link) => (
+                  <li key={`${section.title}-${link.label}`}>
+                    <Link
+                      to={toCanonicalPagePath(link.href)}
+                      className="text-sm leading-6 text-slate-400 transition hover:text-white"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
           ))}
         </div>
+      </div>
 
-        <div className="mt-10 border-t border-white/10 pt-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-300">
-                Hooks
-              </p>
-              <p className="mt-2 max-w-2xl text-sm text-sky-100/70">
-                Compare smarter. Discover faster.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              {socialLinks.map((social) => (
-                <a
-                  key={social.label}
-                  href={social.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={social.label}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 text-sky-100/70 transition-colors duration-200 hover:border-cyan-300/40 hover:bg-blue-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-                >
-                  <social.icon className="text-base" />
-                </a>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6 flex flex-col gap-3 border-t border-white/10 pt-5 text-center md:flex-row md:items-center md:justify-between md:text-left">
-          <p className="text-xs text-sky-100/55 sm:text-sm">
-            &copy; {new Date().getFullYear()} Hooks. All rights reserved.
-          </p>
-
-          <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-sky-100/55 sm:text-sm">
-            <Link
-              to="/privacy-policy"
-              className="transition-colors duration-200 hover:text-white"
-            >
-              Privacy Policy
-            </Link>
-            <Link
-              to="/terms"
-              className="transition-colors duration-200 hover:text-white"
-            >
-              Terms &amp; Conditions
-            </Link>
-            <Link
-              to="/contact"
-              className="transition-colors duration-200 hover:text-white"
-            >
-              Contact
-            </Link>
-          </div>
+      <div className="mt-12 flex flex-col gap-4 border-t border-white/10 pt-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+        <p>© {new Date().getFullYear()} Hooks. Product information may change; verify important details before purchase.</p>
+        <div className="flex flex-wrap gap-x-5 gap-y-2">
+          <Link to="/privacy-policy" className="transition hover:text-white">Privacy</Link>
+          <Link to="/terms" className="transition hover:text-white">Terms</Link>
+          <Link to="/contact" className="transition hover:text-white">Corrections & support</Link>
         </div>
       </div>
-    </footer>
-  );
-};
+    </div>
+  </footer>
+);
 
 export default Footer;

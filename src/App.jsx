@@ -16,6 +16,7 @@ import {
 import { Helmet } from "react-helmet-async";
 import MobileBottomNavigation from "./components/ui/MobileBottomNavigation";
 import AppPushOptInPrompt from "./components/ui/AppPushOptInPrompt";
+import RouteExperience from "./components/ui/RouteExperience";
 import { useDevice } from "./hooks/useDevice";
 import {
   createOrganizationSchema,
@@ -28,6 +29,20 @@ import {
 } from "./utils/smartphoneListingRoutes";
 import { getTvRouteFeatureMeta } from "./utils/tvPopularFeatures";
 import { toCanonicalPagePath, toCanonicalPageUrl } from "./utils/publicUrl";
+
+const RouteBreadcrumbs = () => {
+  const { pathname } = useLocation();
+  const isSmartphoneDetailRoute =
+    /^\/smartphones\/[^/]+-price-in-indi(?:a)?\/?$/i.test(pathname);
+  const isSmartphonesCatalogRoute = /^\/smartphones\/?$/i.test(pathname);
+  const isNewsRoute = /^\/news(?:\/|$)/i.test(pathname);
+
+  if (isSmartphoneDetailRoute || isSmartphonesCatalogRoute || isNewsRoute) {
+    return null;
+  }
+
+  return <Breadcrumbs />;
+};
 
 const SITE_ORIGIN = "https://tryhook.shop";
 const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/hook-logo.png`;
@@ -267,7 +282,7 @@ const resolveSeoMeta = (pathname) => {
   const rules = [
     {
       test: (p) => p.startsWith("/news"),
-      title: "News - Mobile Coverage, Gadget Guides & Launch Updates - Hooks",
+      title: "Technology News, Reviews & Buying Guides | Hooks",
       description:
         "Browse the latest mobile coverage, gadget updates, launch coverage, and editorial guides on Hooks.",
       keywords:
@@ -276,20 +291,20 @@ const resolveSeoMeta = (pathname) => {
     {
       test: (p) => p === "/",
       title:
-        "Compare Smartphones, Laptops & TVs in India - Specs, Prices & Reviews - Hooks",
+        "Compare Phones, TVs & Networking Devices | Hooks",
       description:
-        "Stay updated with the latest technology news, smartphone launches, AI updates, laptops, tablets, wearables, reviews, comparisons, prices, specifications, and buying guides on TryHook.",
+        "Compare smartphones, TVs and networking devices with clear specifications, price context, popular matchups and practical technology news on Hooks.",
       keywords: `hooks, best gadget comparison site, mobile price comparison india, compare laptops smartphones tvs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, latest laptops in india ${CURRENT_YEAR}, latest smart tvs in india ${CURRENT_YEAR}, new launch and trending gadgets, top selling gadgets india, compare specs`,
     },
     {
       test: () => Boolean(smartphoneDetailName),
-      title: `${smartphoneDetailName} Price, Specs & Comparison in India (${CURRENT_MONTH_YEAR}) - Hooks`,
+      title: `${smartphoneDetailName} Price, Specs & Comparison in India | Hooks`,
       description: `Compare ${smartphoneDetailName} price in India, full specifications, variants, and launch details on Hooks.`,
       keywords: `${smartphoneDetailName.toLowerCase()}, ${smartphoneDetailName.toLowerCase()} price in india, ${smartphoneDetailName.toLowerCase()} specifications, ${smartphoneDetailName.toLowerCase()} launch date, compare smartphones, mobile price comparison india`,
     },
     {
       test: () => Boolean(tvDetailName),
-      title: `${tvDetailName} Price, Specs & TV Comparison in India (${CURRENT_MONTH_YEAR}) - Hooks`,
+      title: `${tvDetailName} Price, Specs & Comparison in India | Hooks`,
       description: `Compare ${tvDetailName} TV price in India, size variants, display specs, smart features, and store offers on Hooks.`,
       keywords: `${tvDetailName.toLowerCase()}, ${tvDetailName.toLowerCase()} tv price in india, ${tvDetailName.toLowerCase()} specifications, smart tv comparison india, tv prices list ${CURRENT_YEAR}`,
     },
@@ -297,8 +312,8 @@ const resolveSeoMeta = (pathname) => {
       test: () => Boolean(smartphoneFilterMeta),
       title:
         smartphoneFilterSlug === "new"
-          ? `Latest Smartphones (${CURRENT_MONTH_YEAR}) - New Launches & Prices - Hooks`
-          : `Best Smartphones ${smartphoneFilterSeoLabel} (${CURRENT_MONTH_YEAR}) - Reviews Specs & Deals - Hooks`,
+          ? `Latest Smartphones in India: Prices & Specs | Hooks`
+          : `Best Smartphones ${smartphoneFilterSeoLabel}: Prices & Specs | Hooks`,
       description:
         smartphoneFilterSlug === "new"
           ? "Discover newly launched smartphones with updated prices, full specifications, and reviews. Stay updated with the latest mobile releases on Hooks."
@@ -316,21 +331,21 @@ const resolveSeoMeta = (pathname) => {
     },
     {
       test: (p) => p.startsWith("/smartphones") || p === "/mobiles",
-      title: `Best Smartphones (${CURRENT_MONTH_YEAR}) - Compare Prices, Specs & Variants - Hooks`,
+      title: `Smartphones in India: Prices, Specs & Comparisons | Hooks`,
       description:
         "Compare smartphones by price, RAM/ROM variants, camera, battery, and performance. Find trending and latest mobile launches on Hooks.",
       keywords: `smartphones, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch mobiles, trending phone in india, most popular mobiles, mobile price comparison india, moblie price comparison india, compare smartphone specs, compare smartphone prices, 5g phones in india, ai phone, ai budget phone, ${BUDGET_PHONE_KEYWORDS}`,
     },
     {
       test: () => tvListingRoute?.type === "latest",
-      title: `Latest Smart TVs in India (${CURRENT_FULL_DATE}) - Hooks`,
+      title: `Latest Smart TVs in India: Prices & Specs | Hooks`,
       description:
         "Browse newly launched smart TVs in India with updated prices, display specifications, screen sizes, and store availability on Hooks.",
       keywords: `latest smart tvs in india ${CURRENT_YEAR}, new tv launches india, latest tv prices, compare smart tv specs`,
     },
     {
       test: () => tvListingRoute?.type === "feature",
-      title: `Best ${tvListingRoute?.feature?.seoName || ""} TVs in India (${CURRENT_FULL_DATE}) - Hooks`,
+      title: `Best ${tvListingRoute?.feature?.seoName || ""} TVs in India | Hooks`,
       description: `Browse the best ${tvListingRoute?.feature?.seoName || ""} TVs in India with updated prices, display specifications, screen sizes, smart features, and store availability on Hooks.`,
       keywords: `best ${String(
         tvListingRoute?.feature?.seoName || "",
@@ -340,14 +355,14 @@ const resolveSeoMeta = (pathname) => {
     },
     {
       test: (p) => p.startsWith("/tvs") || p.startsWith("/appliances"),
-      title: `Latest Smart TVs in India (${CURRENT_FULL_DATE}) - Hooks`,
+      title: `Latest Smart TVs in India: Prices & Specs | Hooks`,
       description:
         "Compare TVs across 43, 55, 65, and larger screen sizes with full specifications, variant pricing, and store availability on Hooks.",
       keywords: `tvs, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, smart tv comparison india, compare tv prices india, compare tv specs, 43 inch tv, 55 inch tv, 65 inch tv, 75 inch tv, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000`,
     },
     {
       test: (p) => p.startsWith("/networking"),
-      title: `Networking Devices (${CURRENT_MONTH_YEAR}) - Compare Routers & More - Hooks`,
+      title: `Networking Devices: Compare Routers & Wi-Fi Gear | Hooks`,
       description:
         "Compare routers and networking products with speed, band, and connectivity specs to choose the right setup for your needs.",
       keywords:
@@ -355,7 +370,7 @@ const resolveSeoMeta = (pathname) => {
     },
     {
       test: (p) => p.startsWith("/compare"),
-      title: "Device Comparison - Side by Side Specs & Prices - Hooks",
+      title: "Compare Devices Side by Side: Specs & Prices | Hooks",
       description:
         "Compare devices side by side with full specs, pricing, and feature differences to make faster buying decisions.",
       keywords:
@@ -363,14 +378,14 @@ const resolveSeoMeta = (pathname) => {
     },
     {
       test: (p) => p.startsWith("/trending"),
-      title: `Trending Devices (${CURRENT_MONTH_YEAR}) - Smartphones, Laptops & TVs - Hooks`,
+      title: `Trending Technology Products in India | Hooks`,
       description:
         "Track trending smartphones, laptops, and TVs based on momentum and user interest to spot what is hot right now.",
       keywords: `trending smartphones india, trending laptops india, trending tvs india, trending phone in india, most popular mobiles, top selling gadgets india, new launch and trending devices, latest smartphones in india ${CURRENT_YEAR}`,
     },
     {
       test: (p) => p.startsWith("/careers") || p.startsWith("/career"),
-      title: "Careers at Hooks - Join Hooks Team",
+      title: "Careers at Hooks | Build Better Buying Tools",
       description:
         "Apply for frontend, backend, content developer, and fullstack opportunities at Hooks through a simple step-by-step application form.",
       keywords:
@@ -378,7 +393,7 @@ const resolveSeoMeta = (pathname) => {
     },
     {
       test: (p) => p.startsWith("/about"),
-      title: "About Hooks - Independent Tech Comparison Platform",
+      title: "About Hooks | Clearer Technology Decisions",
       description:
         "Learn how Hooks helps people compare smartphones, laptops, TVs, and networking products with structured, neutral, and variant-aware information.",
       keywords:
@@ -386,7 +401,7 @@ const resolveSeoMeta = (pathname) => {
     },
     {
       test: (p) => p.startsWith("/contact"),
-      title: "Contact Hooks - Support, Partnerships & Press",
+      title: "Contact Hooks | Support, Corrections & Partnerships",
       description:
         "Contact Hooks for product support, partnerships, and press queries. Reach the team through verified contact channels.",
       keywords:
@@ -394,7 +409,7 @@ const resolveSeoMeta = (pathname) => {
     },
     {
       test: (p) => p.startsWith("/privacy-policy"),
-      title: "Privacy Policy - Hooks",
+      title: "Privacy Policy | Hooks",
       description:
         "Read Hooks privacy policy to understand what data we collect, why we collect it, and how you can control your information.",
       keywords:
@@ -402,7 +417,7 @@ const resolveSeoMeta = (pathname) => {
     },
     {
       test: (p) => p.startsWith("/terms"),
-      title: "Terms of Use - Hooks",
+      title: "Terms of Use | Hooks",
       description:
         "Read Hooks terms of use covering platform usage, content accuracy, and service limitations.",
       keywords: "terms of use, hooks terms, website terms, usage policy",
@@ -414,10 +429,10 @@ const resolveSeoMeta = (pathname) => {
   return {
     path,
     canonicalPath,
-    title: matched?.title || "Hooks - Smart Device Comparison Platform",
+    title: matched?.title || "Hooks | Compare Technology with Clarity",
     description: matched?.description || DEFAULT_SEO_DESCRIPTION,
     keywords: matched?.keywords || DEFAULT_SEO_KEYWORDS,
-    robots: matched?.robots || "index, follow",
+    robots: matched?.robots || "index, follow, max-image-preview:large",
   };
 };
 
@@ -460,7 +475,6 @@ const RouteSeoFallback = () => {
     <Helmet prioritizeSeoTags>
       <title>{normalizedTitle}</title>
       <meta name="description" content={seo.description} />
-      <meta name="keywords" content={seo.keywords} />
       <meta name="robots" content={seo.robots} />
       <link key="canonical" rel="canonical" href={canonicalUrl} />
       <meta property="og:type" content="website" />
@@ -616,9 +630,10 @@ function App() {
 
   return (
     <Router>
+      <RouteExperience />
       <RouteSeoFallback />
       <AppPushOptInPrompt />
-      <div className="min-h-screen w-full overflow-x-hidden pb-[calc(58px+env(safe-area-inset-bottom))] lg:pb-0">
+      <div className="hooks-app-shell min-h-screen w-full overflow-x-hidden pb-[calc(58px+env(safe-area-inset-bottom))] lg:pb-0">
         <Header />
 
         <ScrollToTop />
@@ -626,7 +641,7 @@ function App() {
           {/* BannerSlot disabled (incomplete). */}
         </aside>
         <React.Suspense fallback={null}>
-          <Breadcrumbs />
+          <RouteBreadcrumbs />
           <Routes>
             {/* Home */}
             <Route path="/" element={<Home />} />

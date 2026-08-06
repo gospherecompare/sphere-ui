@@ -1570,7 +1570,7 @@ const Laptops = () => {
 
   const seoTitle = seoLandingMeta.title;
   const seoDescription = sanitizeDescription(seoLandingMeta.description);
-  const seoKeywords = useMemo(
+  const _seoKeywords = useMemo(
     () =>
       buildListSeoKeywords({
         devices: sortedVariants,
@@ -1708,14 +1708,13 @@ const Laptops = () => {
 
   return (
     <div
-      className="min-h-screen bg-[#eef2ff] text-slate-900"
+      className="hooks-product-listing hooks-laptop-listing min-h-screen bg-[#eef2ff] text-slate-900"
       data-page-label={headerLabel}
     >
       <style>{animationStyles}</style>
       <Helmet prioritizeSeoTags>
         <title>{seoTitle}</title>
         <meta name="description" content={seoDescription} />
-        <meta name="keywords" content={seoKeywords} />
         <meta name="robots" content={listRobots} />
 
         {/* Canonical URL - CRITICAL for SEO per route */}

@@ -95,7 +95,6 @@ const hasMatchingPrerenderSchema = (canonicalUrl) => {
 const SEO = ({
   title,
   description = "",
-  keywords = "",
   image = null,
   imageWidth = 1200,
   imageHeight = 630,
@@ -225,7 +224,6 @@ const SEO = ({
       {description && (
         <meta key="description" name="description" content={description} />
       )}
-      {keywords ? <meta name="keywords" content={keywords} /> : null}
       <meta name="robots" content={robots} />
       <meta
         name="viewport"
@@ -248,6 +246,7 @@ const SEO = ({
       <meta property="og:type" content={ogType} />
       <meta key="og:url" property="og:url" content={canonicalUrl} />
       <meta property="og:site_name" content="Hooks" />
+      <meta property="og:locale" content="en_IN" />
       {imageMeta && <meta property="og:image" content={imageMeta.url} />}
       {imageMeta && (
         <meta property="og:image:secure_url" content={imageMeta.url} />
@@ -287,7 +286,6 @@ const SEO = ({
       ) : null}
 
       {/* ===== ADDITIONAL OPTIMIZATION ===== */}
-      <meta name="theme-color" content="#ffffff" />
       <meta name="color-scheme" content="light dark" />
       <meta name="apple-mobile-web-app-capable" content="yes" />
       <meta

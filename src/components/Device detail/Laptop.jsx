@@ -1718,7 +1718,7 @@ const LaptopDetailCard = () => {
     storage: metaStorage,
     brand: metaBrand,
   });
-  const metaKeywords = buildDeviceSeoKeywords({
+  const _metaKeywords = buildDeviceSeoKeywords({
     device: laptopData,
     productName: metaNameWithBrand || metaBaseName || "",
     brand: metaBrand,
@@ -1767,11 +1767,10 @@ const LaptopDetailCard = () => {
   const showHiddenLaptopSections = false;
 
   return (
-    <div className="w-full">
+    <div className="hooks-product-detail hooks-laptop-detail w-full">
       <Helmet prioritizeSeoTags>
         <title>{metaTitleWithMonthYear}</title>
         <meta name="description" content={metaDescription} />
-        <meta name="keywords" content={metaKeywords} />
         <link rel="canonical" href={canonicalUrl} />
         <meta property="og:type" content="product" />
         <meta property="og:title" content={metaTitle} />
