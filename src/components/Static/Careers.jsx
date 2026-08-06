@@ -1395,20 +1395,16 @@ const Careers = () => {
   };
 
   return (
-    <main className="min-h-screen bg-white">
+    <main className="hooks-company-page hooks-careers-page min-h-screen bg-white">
       <Helmet>
-        <title>Careers at Hooks - Join Hooks Team</title>
+        <title>Careers at Hooks | Build Better Buying Tools</title>
         <meta
           name="description"
-          content="Join Hooks Team. Apply for Frontend, Backend, Content Developer, and Fullstack roles through a simple 4-step career application process."
-        />
-        <meta
-          name="keywords"
-          content="Hooks careers, jobs at Hooks, frontend developer jobs, backend developer jobs, fullstack developer jobs, content developer jobs, apply jobs India"
+          content="Explore opportunities at Hooks and help build clearer product discovery, comparison, editorial and shopping experiences for technology buyers."
         />
         <meta
           property="og:title"
-          content="Careers at Hooks - Join Hooks Team"
+          content="Careers at Hooks | Build Better Buying Tools"
         />
         <meta
           property="og:description"
@@ -1422,7 +1418,7 @@ const Careers = () => {
         <meta property="og:image:alt" content="Careers at Hooks preview image" />
         <meta
           name="twitter:title"
-          content="Careers at Hooks - Join Hooks Team"
+          content="Careers at Hooks | Build Better Buying Tools"
         />
         <meta
           name="twitter:description"
@@ -1445,7 +1441,7 @@ const Careers = () => {
               Hiring Process
             </p>
             <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
-              Join Hooks Team
+              Build clearer technology experiences with Hooks
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
               Build your career with us. Complete the 4-step application form to

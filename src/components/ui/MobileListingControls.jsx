@@ -1,40 +1,90 @@
 import React from "react";
-import { FaChevronDown, FaTimes } from "react-icons/fa";
+import {
+  FaChevronDown,
+  FaFilter,
+  FaSearch,
+  FaStar,
+  FaSyncAlt,
+  FaTimes,
+} from "react-icons/fa";
 
 const MobileListingControls = ({
   activeFilterCount = 0,
+  activeFeatureCount = 0,
   onOpenFilters,
-  onOpenSort,
+  onOpenPopularFeatures,
+  currentFeatureLabel = "Popular Features",
+  sortBy = "featured",
+  sortOptions = [],
+  onSortChange,
   className = "",
 }) => (
   <div
-    className={`sticky top-[var(--mobile-listing-controls-top,52px)] z-40 -mx-4 mb-3  bg-white px-4 py-2 lg:hidden ${className}`}
+    className={`smartphones-mobile-toolbar sticky top-[var(--mobile-listing-controls-top,52px)] z-40 -mx-3 mb-3 bg-transparent px-3 py-2 lg:hidden dark:text-[#f3f7ff] ${className}`}
   >
-    <div className="grid grid-cols-2 gap-2">
+    <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <button
         type="button"
         onClick={onOpenFilters}
-        className="flex h-9 items-center justify-between rounded-lg border border-slate-100 bg-white px-3 text-xs font-semibold text-slate-800 shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-colors hover:border-blue-200 hover:text-blue-700"
+        className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-[#e2e8f0] bg-transparent text-blue-600 active:border-blue-300 active:bg-blue-50/60 dark:border-[#2a3d58] dark:text-[#8eb0ff] dark:active:border-[#4c6f9f] dark:active:bg-[#132640]"
+        aria-label="Open smartphone search"
       >
-        <span className="flex items-center gap-2">
-          Filters
-          {activeFilterCount > 0 ? (
-            <span className="flex h-5 min-w-5 items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-1 text-[10px] font-bold text-blue-700">
-              {activeFilterCount}
-            </span>
-          ) : null}
-        </span>
-        <FaChevronDown className="text-[10px] text-slate-400" />
+        <FaSearch className="text-xs" />
       </button>
 
       <button
         type="button"
-        onClick={onOpenSort}
-        className="flex h-9 items-center justify-between rounded-lg border border-slate-100 bg-white px-3 text-xs font-semibold text-slate-800 shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-colors hover:border-blue-200 hover:text-blue-700"
+        onClick={onOpenPopularFeatures}
+        className="flex h-11 min-w-[11.5rem] items-center gap-2.5 rounded-xl border border-[#e2e8f0] bg-transparent px-3 text-left active:border-blue-300 active:bg-blue-50/60 dark:border-[#2a3d58] dark:active:border-[#4c6f9f] dark:active:bg-[#132640]"
       >
-        <span className="flex items-center gap-2">Sort</span>
-        <FaChevronDown className="text-[10px] text-slate-400" />
+        <FaStar className="shrink-0 text-xs text-blue-600" />
+        <span className="min-w-0 flex-1 truncate text-[11px] font-extrabold text-[#0f172a] dark:text-[#eaf1ff]">
+          {activeFeatureCount > 0 ? currentFeatureLabel : "Popular Features"}
+        </span>
+        {activeFeatureCount > 0 ? (
+          <span className="grid h-4 min-w-4 shrink-0 place-items-center rounded-full bg-blue-600 px-1 text-[8px] font-black text-white">
+            {activeFeatureCount}
+          </span>
+        ) : null}
+        <FaChevronDown className="shrink-0 text-[8px] text-slate-500" />
       </button>
+
+      <button
+        type="button"
+        onClick={onOpenFilters}
+        className="flex h-11 min-w-[9.5rem] items-center gap-2.5 rounded-xl border border-[#e2e8f0] bg-transparent px-3 text-left active:border-blue-300 active:bg-blue-50/60 dark:border-[#2a3d58] dark:active:border-[#4c6f9f] dark:active:bg-[#132640]"
+      >
+        <FaFilter className="shrink-0 text-xs text-blue-600" />
+        <span className="min-w-0 flex-1 truncate text-[11px] font-extrabold text-[#0f172a] dark:text-[#eaf1ff]">
+          All Filters
+        </span>
+        {activeFilterCount > 0 ? (
+          <span className="grid h-4 min-w-4 shrink-0 place-items-center rounded-full bg-blue-600 px-1 text-[8px] font-black text-white">
+            {activeFilterCount}
+          </span>
+        ) : null}
+        <FaChevronDown className="shrink-0 text-[8px] text-slate-500" />
+      </button>
+
+      <label className="flex h-11 min-w-[12rem] items-center gap-2.5 rounded-xl border border-[#e2e8f0] bg-transparent px-3 active:border-blue-300 dark:border-[#2a3d58] dark:active:border-[#4c6f9f]">
+        <FaSyncAlt className="shrink-0 text-xs text-blue-600" />
+        <span className="min-w-0 flex-1 whitespace-nowrap text-[10px] font-medium text-[#64748b] dark:text-[#94a4bd]">
+          Sort by:
+          <select
+            value={sortBy}
+            onChange={(event) => onSortChange?.(event.target.value)}
+            aria-label="Sort smartphones"
+            className="ml-1 max-w-[7.5rem] cursor-pointer appearance-none bg-transparent pr-4 text-[11px] font-extrabold text-[#0f172a] outline-none dark:text-[#eaf1ff] dark:[&>option]:bg-[#0f1c2d]"
+          >
+            {sortOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </span>
+        <FaChevronDown className="pointer-events-none shrink-0 text-[8px] text-slate-500" />
+      </label>
     </div>
   </div>
 );
@@ -56,18 +106,18 @@ export const MobileSortSheet = ({
         onClick={onClose}
       />
 
-      <div className="absolute bottom-0 left-0 right-0 mx-auto flex max-h-[75vh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)] sm:bottom-4 sm:rounded-2xl">
-        <div className="flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4 sm:px-6">
+      <div className="absolute bottom-0 left-0 right-0 mx-auto flex max-h-[75vh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl border border-[#e2e8f0] bg-[#ffffff] sm:bottom-4 sm:rounded-2xl dark:border-[#2a3d58] dark:bg-[#0f1c2d]">
+        <div className="flex items-center justify-between gap-4 border-b border-[#e2e8f0] bg-[#ffffff] px-5 py-4 sm:px-6 dark:border-[#263750] dark:bg-[#0f1c2d]">
           <div className="min-w-0">
-            <h3 className="text-xl font-bold text-slate-900">Sort Options</h3>
+            <h3 className="text-xl font-bold text-[#0f172a] dark:text-[#f3f7ff]">Sort Options</h3>
             {subtitle ? (
-              <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
+              <p className="mt-1 text-sm text-[#64748b] dark:text-[#94a4bd]">{subtitle}</p>
             ) : null}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-2 text-slate-500 transition-colors duration-200 hover:bg-slate-100 hover:text-slate-800"
+            className="rounded-lg p-2 text-[#64748b] transition-colors duration-200 hover:bg-slate-100 hover:text-slate-800 dark:text-[#94a4bd] dark:hover:bg-[#132238] dark:hover:text-[#eaf1ff]"
             aria-label="Close sort options"
           >
             <FaTimes className="text-base" />
@@ -85,8 +135,8 @@ export const MobileSortSheet = ({
               }}
               className={`flex w-full items-start gap-3 rounded-xl border px-3 py-3 text-left transition-colors duration-200 ${
                 sortBy === option.value
-                  ? "border-blue-200 bg-blue-50 text-blue-700"
-                  : "border-slate-100 bg-white text-slate-700 shadow-[0_2px_2px_rgba(0,0,0,0.1)] hover:border-blue-200 hover:text-blue-700"
+                  ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-[#3d67a7] dark:bg-[#142b52] dark:text-[#a9c2ff]"
+                  : "border-slate-100 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700 dark:border-[#263750] dark:bg-[#0f1c2d] dark:text-[#c7d2e5] dark:hover:border-[#4c6f9f] dark:hover:text-[#a9c2ff]"
               }`}
             >
               <span

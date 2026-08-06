@@ -157,6 +157,62 @@ const resolveBlogAuthorRole = (blog = {}) =>
     .map(safeText)
     .find(Boolean) || "";
 
+const isLikelyImageSource = (value) => {
+  const source = safeText(value);
+  if (!source) return false;
+  return (
+    /^(?:https?:|data:image\/|blob:|\/)/i.test(source) ||
+    /\.(?:avif|gif|jpe?g|png|svg|webp)(?:[?#].*)?$/i.test(source) ||
+    source.includes("/")
+  );
+};
+
+const readAuthorImage = (value) => {
+  if (!value) return "";
+  if (typeof value === "string") {
+    const source = safeText(value);
+    return isLikelyImageSource(source) ? source : "";
+  }
+  if (typeof value !== "object") return "";
+
+  const source =
+    safeText(value.profile_image) ||
+    safeText(value.profileImage) ||
+    safeText(value.profile_photo) ||
+    safeText(value.profilePhoto) ||
+    safeText(value.avatar_url) ||
+    safeText(value.avatarUrl) ||
+    safeText(value.avatar) ||
+    safeText(value.photo_url) ||
+    safeText(value.photoUrl) ||
+    safeText(value.photo) ||
+    safeText(value.image_url) ||
+    safeText(value.imageUrl) ||
+    safeText(value.image);
+
+  return isLikelyImageSource(source) ? source : "";
+};
+
+const resolveBlogAuthorImage = (blog = {}) =>
+  [
+    blog.author_profile_image,
+    blog.authorProfileImage,
+    blog.author_image,
+    blog.authorImage,
+    blog.author_avatar,
+    blog.authorAvatar,
+    blog.author_photo,
+    blog.authorPhoto,
+    blog.assigned_author_profile_image,
+    blog.assignedAuthorProfileImage,
+    blog.assigned_author,
+    blog.assignedAuthor,
+    blog.author,
+    blog.user,
+  ]
+    .map(readAuthorImage)
+    .find(Boolean) || "";
+
 const decodeHtmlEntitiesOnce = (value) => {
   let text = String(value || "");
   const replacements = [
@@ -868,6 +924,7 @@ const normalizeBlogStory = (blog) => {
     null;
   const authorName = resolveBlogAuthorName(blog);
   const authorRole = resolveBlogAuthorRole(blog);
+  const authorImage = resolveBlogAuthorImage(blog);
   const fallbackSummaryByCategory = {
     news: `${title} is the latest news update from Hooks.`,
     technology: `${title} is part of the latest technology coverage from Hooks.`,
@@ -957,6 +1014,8 @@ const normalizeBlogStory = (blog) => {
     readTime: estimateReadTime(articleHtml || summarySource),
     author: author.name,
     authorRole: author.role,
+    authorImage,
+    hasAuthorProfile: Boolean(authorName && authorImage),
     highlights,
     takeaways: buildTakeaways({
       blog: brandedBlog,

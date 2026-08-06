@@ -1,6 +1,23 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
-import { FaChevronRight, FaFire } from "react-icons/fa";
+import {
+  FaArrowRight,
+  FaBolt,
+  FaBookOpen,
+  FaBookmark,
+  FaChartLine,
+  FaChevronRight,
+  FaClock,
+  FaFire,
+  FaInstagram,
+  FaMobileAlt,
+  FaNewspaper,
+  FaRocket,
+  FaRss,
+  FaSignal,
+  FaTwitter,
+  FaYoutube,
+} from "react-icons/fa";
 import SEO from "../SEO";
 import NewsStoryArticlePage from "./NewsStoryArticlePage";
 import {
@@ -16,7 +33,9 @@ import {
   useStoryListSchemaItems,
 } from "../../hooks/usePublicNews";
 import GooglePreferredSourceButton from "../News/GooglePreferredSourceButton";
+import HookLogo from "../ui/HookLogo";
 import { NEWS_LISTING_SEO } from "../../utils/newsSeo";
+import "./news-listing.css";
 
 const NEWS_GRID_LIMIT = 50;
 const NEWS_MOBILE_QUERY = "(max-width: 639px)";
@@ -378,9 +397,6 @@ const parseStoryTime = (story) => {
 
 const formatStoryDate = (story) => story?.publishedAt || "Latest";
 
-const formatStoryAuthorDate = (story) =>
-  [story?.author, formatStoryDate(story)].filter(Boolean).join(" | ");
-
 const formatStoryLabel = (story) => {
   if (!story) return "News";
   return story.label || "News";
@@ -474,14 +490,10 @@ const filterStoriesForTaxonomyRoute = (stories = [], route = null) =>
     : stories;
 
 const getNewsPageTitle = (route = null) =>
-  route
-    ? `${route.title} - TryHook News`
-    : NEWS_LISTING_SEO.title;
+  route ? `${route.title} - TryHook News` : NEWS_LISTING_SEO.title;
 
 const getNewsPageDescription = (route = null) =>
-  route
-    ? route.description
-    : NEWS_LISTING_SEO.description;
+  route ? route.description : NEWS_LISTING_SEO.description;
 
 const scoreStory = (story, index) => {
   const ageHours = Math.max(0, (Date.now() - parseStoryTime(story)) / 36e5);
@@ -657,7 +669,7 @@ const useIsNewsMobileLayout = () => {
 };
 
 const StoryImage = ({ story, className = "" }) => (
-  <div className={`overflow-hidden bg-[#eaf0f8] ${className}`}>
+  <div className={`hooks-news-image overflow-hidden bg-[#eaf0f8] ${className}`}>
     <img
       src={story?.image}
       alt={story?.heroImageAlt || story?.title || "Story image"}
@@ -669,14 +681,257 @@ const StoryImage = ({ story, className = "" }) => (
 
 const StoryMeta = ({ story, light = false }) => (
   <div
-    className={`mt-3 flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.12em] ${
-      light ? "text-white/72" : "text-[#7d8898]"
+    className={`hooks-news-meta mt-3 flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.12em] ${
+      light ? "is-light text-white/72" : "text-[#7d8898]"
     }`}
   >
     <span>{formatStoryLabel(story)}</span>
     <span className={light ? "text-white/35" : "text-[#c7d0dd]"}>|</span>
     <span>{formatStoryDate(story)}</span>
   </div>
+);
+
+const StoryAuthorLine = ({ story, light = false, compact = false }) => (
+  <div
+    className={`hooks-news-author ${light ? "is-light" : ""} ${
+      compact ? "is-compact" : ""
+    }`}
+  >
+    <span className="hooks-news-author__avatar" aria-hidden="true">
+      {story?.authorImage ? (
+        <img
+          src={story.authorImage}
+          alt=""
+          loading="lazy"
+          onError={(event) => {
+            event.currentTarget.onerror = null;
+            event.currentTarget.src = "/hook-logo.png";
+          }}
+        />
+      ) : (
+        <HookLogo className="hooks-news-author__logo" aria-label="Hooks" />
+      )}
+    </span>
+    <span className="hooks-news-author__copy">
+      <strong>{story?.author || "Hooks Newsroom"}</strong>
+      <i aria-hidden="true" />
+      <span>
+        {compact
+          ? formatStoryDate(story)
+          : story?.readTime || formatStoryDate(story)}
+      </span>
+    </span>
+  </div>
+);
+
+const NewsHero = ({ title, description, leadStory }) => (
+  <section className="hooks-news-hero">
+    <div className="hooks-news-hero__mesh" aria-hidden="true" />
+    <div className="mx-auto max-w-[1280px] px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
+      <div className="hooks-news-hero__grid">
+        <div className="hooks-news-hero__copy">
+          <p className="hooks-eyebrow">Hooks Newsroom</p>
+          <h1>{title}</h1>
+          <p>{description}</p>
+
+          <div className="hooks-news-hero__actions">
+            <a href="#latest" className="hooks-news-hero__primary-action">
+              <FaNewspaper aria-hidden="true" />
+              Read latest news
+            </a>
+            <a href="#guides" className="hooks-news-hero__secondary-action">
+              <FaBookOpen aria-hidden="true" />
+              Explore guides
+            </a>
+          </div>
+
+          <div className="hooks-news-hero__signals">
+            <span>
+              <FaSignal /> Live newsroom
+            </span>
+            <span>
+              <FaClock /> Updated continuously
+            </span>
+            <span>
+              <FaChartLine /> Buying context included
+            </span>
+          </div>
+        </div>
+
+        <div className="hooks-news-hero__visual" aria-hidden="true">
+          <div className="hooks-news-hero__orbit hooks-news-hero__orbit--one" />
+          <div className="hooks-news-hero__orbit hooks-news-hero__orbit--two" />
+
+          <div className="hooks-news-hero__news-card">
+            <span className="hooks-news-hero__card-kicker">
+              Hooks intelligence
+            </span>
+            <strong>NEWS</strong>
+            <p>
+              Smarter insights.
+              <br />
+              Better decisions.
+            </p>
+            <span className="hooks-news-hero__card-badge">
+              <FaBolt /> Hooks newsroom
+            </span>
+          </div>
+
+          <div className="hooks-news-hero__device-card">
+            {leadStory?.image ? (
+              <img src={leadStory.image} alt="" loading="eager" />
+            ) : (
+              <FaMobileAlt />
+            )}
+            <span>Product intelligence</span>
+          </div>
+
+          <div className="hooks-news-hero__brief-card">
+            <span>Today</span>
+            <i />
+            <i />
+            <i />
+          </div>
+
+          <FaRocket className="hooks-news-hero__spark" />
+        </div>
+      </div>
+    </div>
+  </section>
+);
+
+const NewsNavigationBar = ({ stories = [], storyCount = 0 }) => {
+  const railStories = uniqueStoriesBySlug(stories).slice(0, 5);
+
+  return (
+    <section className="hooks-news-command" aria-label="Live newsroom topics">
+      <div className="hooks-news-command__inner">
+        <div className="hooks-news-command__status">
+          <span className="hooks-news-command__pulse" aria-hidden="true" />
+          <strong>Live newsroom</strong>
+          <span>{storyCount} stories</span>
+        </div>
+
+        <div className="hooks-news-command__topics" aria-label="Trending news">
+          {railStories.map((story, index) => (
+            <Link key={story.slug} to={createNewsStoryPath(story.slug)}>
+              {index === 0 ? (
+                <FaRocket />
+              ) : index === 1 ? (
+                <FaFire />
+              ) : (
+                <FaBolt />
+              )}
+              <span>{story.title}</span>
+            </Link>
+          ))}
+        </div>
+
+        <nav
+          className="hooks-news-command__links"
+          aria-label="Jump to news section"
+        >
+          <a href="#latest" className="hooks-news-command__all">
+            View all trends <FaChevronRight />
+          </a>
+        </nav>
+      </div>
+    </section>
+  );
+};
+
+const TrendingNowPanel = ({ stories = [] }) => {
+  if (!stories.length) return null;
+
+  return (
+    <section className="hooks-news-utility hooks-news-trending-now">
+      <div className="hooks-news-utility__heading">
+        <span>
+          <FaChartLine /> Trending now
+        </span>
+        <FaChevronRight />
+      </div>
+      <div className="hooks-news-trending-now__list">
+        {stories.slice(0, 3).map((story, index) => (
+          <Link
+            key={story.slug}
+            to={createNewsStoryPath(story.slug)}
+            className="hooks-news-trending-now__item group"
+          >
+            <span>{index + 1}</span>
+            <div>
+              <h3>{story.title}</h3>
+              <p>{story.brandName || story.label || formatStoryDate(story)}</p>
+            </div>
+          </Link>
+        ))}
+      </div>
+      <a className="hooks-news-utility__footer" href="#top-news">
+        View all trending <FaChevronRight />
+      </a>
+    </section>
+  );
+};
+
+const FollowHooksPanel = () => (
+  <section className="hooks-news-follow-panel">
+    <div>
+      <span>
+        <FaSignal /> Follow Hooks
+      </span>
+      <p>
+        Trusted technology news and buying intelligence, straight to your feed.
+      </p>
+    </div>
+    <div
+      className="hooks-news-follow-panel__icons"
+      aria-label="Hooks social channels"
+    >
+      <span aria-label="X">
+        <FaTwitter />
+      </span>
+      <span aria-label="YouTube">
+        <FaYoutube />
+      </span>
+      <span aria-label="Instagram">
+        <FaInstagram />
+      </span>
+      <span aria-label="RSS">
+        <FaRss />
+      </span>
+    </div>
+  </section>
+);
+
+const QuickBriefsPanel = ({ stories = [] }) => {
+  if (!stories.length) return null;
+
+  return (
+    <section className="hooks-news-utility hooks-news-quick-briefs">
+      <div className="hooks-news-utility__heading">
+        <span>
+          <FaBolt /> Quick briefs
+        </span>
+        <small>60-sec reads</small>
+      </div>
+      <div>
+        {stories.slice(0, 1).map((story) => (
+          <Link key={story.slug} to={createNewsStoryPath(story.slug)}>
+            <span>{formatStoryDate(story)}</span>
+            <h3>{story.title}</h3>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+};
+
+const NewsUtilityRail = ({ trending = [], briefs = [] }) => (
+  <aside className="hooks-news-feature-utility">
+    <TrendingNowPanel stories={trending} />
+    <FollowHooksPanel />
+    {/* Quick briefs removed for a cleaner frontpage utility rail. */}
+  </aside>
 );
 
 const HeroStoryCarousel = ({ stories = [] }) => {
@@ -710,7 +965,7 @@ const HeroStoryCarousel = ({ stories = [] }) => {
 
   return (
     <div
-      className="group relative isolate min-h-[20rem] w-full max-w-full overflow-hidden rounded-[22px] bg-[#111827] text-white shadow-[0_24px_70px_rgba(15,23,42,0.16)] sm:min-h-[30rem] sm:rounded-[24px] lg:min-h-[34rem]"
+      className="hooks-news-lead group relative isolate min-h-[20rem] w-full max-w-full overflow-hidden rounded-[22px] bg-[#111827] text-white shadow-[0_24px_70px_rgba(15,23,42,0.16)] sm:min-h-[30rem] sm:rounded-[24px] lg:min-h-[34rem]"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onFocusCapture={() => setIsPaused(true)}
@@ -730,7 +985,7 @@ const HeroStoryCarousel = ({ stories = [] }) => {
         className="absolute inset-0 z-10"
       />
 
-      <div className="pointer-events-none relative z-20 flex h-full min-h-[20rem] flex-col justify-end p-4 sm:min-h-[30rem] sm:p-7 lg:min-h-[34rem] lg:p-8">
+      <div className="hooks-news-lead__content pointer-events-none relative z-20 flex h-full min-h-[20rem] flex-col justify-end p-4 sm:min-h-[30rem] sm:p-7 lg:min-h-[34rem] lg:p-8">
         <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-full bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-[#2563eb]">
           <FaFire className="h-3 w-3 text-[#7c3aed]" />
           Top Story
@@ -738,14 +993,19 @@ const HeroStoryCarousel = ({ stories = [] }) => {
         <h1 className="line-clamp-3 max-w-4xl break-words text-[23px] font-black leading-[1.08] tracking-[-0.04em] sm:text-[42px] lg:text-[52px]">
           {activeStory.title}
         </h1>
-        <p className="mt-3 line-clamp-3 max-w-2xl break-words text-[14px] leading-6 text-white/82 sm:mt-4 sm:text-[17px] sm:leading-7">
+        <p className="mt-3 line-clamp-2 max-w-2xl break-words text-[14px] leading-6 text-white/82 sm:mt-4 sm:text-[15px] sm:leading-7">
           {activeStory.summary}
         </p>
-        <StoryMeta story={activeStory} light />
+        <div className="hooks-news-lead__footer">
+          <StoryAuthorLine story={activeStory} light />
+          <span className="hooks-news-lead__cta" aria-hidden="true">
+            <FaArrowRight />
+          </span>
+        </div>
       </div>
 
       {carouselStories.length > 1 ? (
-        <div className="absolute bottom-4 right-4 z-30 flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-2.5 py-2 backdrop-blur-md sm:bottom-6 sm:right-6">
+        <div className="hooks-news-lead__dots absolute bottom-4 right-4 z-30 flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-2.5 py-2 backdrop-blur-md sm:bottom-6 sm:right-6">
           {carouselStories.map((story, index) => (
             <button
               key={story.slug}
@@ -774,7 +1034,7 @@ const NewsGridCard = ({
 }) => (
   <Link
     to={createNewsStoryPath(story.slug)}
-    className={`group block overflow-hidden rounded-2xl bg-white transition-all hover:border-[#bfdbfe] ${
+    className={`hooks-news-card group block overflow-hidden rounded-2xl bg-white transition-all hover:border-[#bfdbfe] ${
       rowCard && compact
         ? desktopRow
           ? "min-w-[76%] snap-start border border-white/15 bg-[#1f2631] sm:min-w-[15.5rem] sm:border-[#e5e7eb] sm:bg-white lg:min-w-[17rem] xl:min-w-[18rem]"
@@ -822,10 +1082,103 @@ const NewsGridCard = ({
   </Link>
 );
 
+const TopNewsSection = ({ stories = [] }) => {
+  const topStories = uniqueStoriesBySlug(stories).slice(0, 5);
+  const [leadStory, ...supportingStories] = topStories;
+
+  if (!leadStory) return null;
+
+  return (
+    <section
+      id="top-news"
+      className="hooks-news-top"
+      aria-labelledby="hooks-top-news-title"
+    >
+      <SectionHeader
+        title="Top News"
+        eyebrow="Editor selection"
+        actionLabel="View all news"
+      />
+
+      <div className="hooks-news-top__layout">
+        <Link
+          to={createNewsStoryPath(leadStory.slug)}
+          className="hooks-news-top__lead group"
+        >
+          <StoryImage
+            story={leadStory}
+            className="hooks-news-top__lead-image"
+          />
+          <div className="hooks-news-top__lead-overlay" aria-hidden="true" />
+          <div className="hooks-news-top__lead-content">
+            <div className="hooks-news-top__lead-meta">
+              <span className="hooks-news-top__badge">
+                <FaBolt aria-hidden="true" />
+                Lead story
+              </span>
+              <time>{formatStoryDate(leadStory)}</time>
+            </div>
+            <h3>{leadStory.title}</h3>
+            <p>{leadStory.summary}</p>
+            <div className="hooks-news-top__lead-footer">
+              <StoryAuthorLine story={leadStory} light />
+              <span className="hooks-news-top__read" aria-hidden="true">
+                Read full story
+                <span className="hooks-news-top__arrow">
+                  <FaArrowRight />
+                </span>
+              </span>
+            </div>
+          </div>
+        </Link>
+
+        <div className="hooks-news-top__supporting">
+          {supportingStories.map((story, index) => (
+            <Link
+              key={story.slug}
+              to={createNewsStoryPath(story.slug)}
+              className="hooks-news-top__support-card group"
+            >
+              <StoryImage
+                story={story}
+                className="hooks-news-top__support-image"
+              />
+              <div className="hooks-news-top__support-copy">
+                <div className="hooks-news-top__support-meta">
+                  <span>{formatStoryLabel(story)}</span>
+                  <time>{formatStoryDate(story)}</time>
+                </div>
+                <h3>{story.title}</h3>
+                {story.summary ? (
+                  <p className="hooks-news-top__support-summary">
+                    {story.summary}
+                  </p>
+                ) : null}
+                <div className="hooks-news-top__support-footer">
+                  <StoryAuthorLine story={story} />
+                  <span
+                    className="hooks-news-top__support-arrow"
+                    aria-hidden="true"
+                  >
+                    <FaArrowRight />
+                  </span>
+                </div>
+              </div>
+              <span className="hooks-news-top__index" aria-hidden="true">
+                {String(index + 2).padStart(2, "0")}
+              </span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
 const RecentStoryCard = ({ story, desktopRow = false }) => (
   <Link
     to={createNewsStoryPath(story.slug)}
-    className={`group grid grid-cols-[92px_minmax(0,1fr)] gap-3 bg-white py-3 first:pt-0 last:pb-0 sm:block sm:overflow-hidden sm:rounded-xl sm:p-3 sm:transition-colors sm:hover:bg-[#f8fbff] ${
+    className={`hooks-news-recent-card group grid grid-cols-[92px_minmax(0,1fr)] gap-3 bg-white py-3 first:pt-0 last:pb-0 sm:block sm:overflow-hidden sm:rounded-xl sm:p-3 sm:transition-colors sm:hover:bg-[#f8fbff] ${
       desktopRow ? "sm:min-w-[15.5rem] lg:min-w-[17rem] xl:min-w-[18rem]" : ""
     }`}
   >
@@ -846,28 +1199,30 @@ const RecentStoryCard = ({ story, desktopRow = false }) => (
 );
 
 const SpotlightList = ({ stories = [] }) => (
-  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-    {stories.map((story) => (
-      <Link
-        key={story.slug}
-        to={createNewsStoryPath(story.slug)}
-        className="group grid grid-cols-[88px_minmax(0,1fr)] items-center gap-3 rounded-xl bg-white p-2 transition-colors hover:bg-[#f8fbff] sm:grid-cols-[92px_minmax(0,1fr)]"
-      >
-        <StoryImage story={story} className="aspect-square w-full rounded-xl" />
-        <div className="min-w-0">
-          <p className="mb-1 text-[11px] font-semibold leading-none text-[#7d8898]">
-            {story.brandName || story.label || "News"}
-          </p>
-          <h3 className="line-clamp-3 text-[14px] font-semibold leading-[1.28] text-[#20242b] group-hover:text-[#2563eb]">
-            {story.title}
-          </h3>
-          <p className="mt-1 text-[11px] leading-none text-[#7d8898]">
-            {formatStoryAuthorDate(story)}
-          </p>
-        </div>
-      </Link>
-    ))}
-  </div>
+  <section className="hooks-news-spotlight" aria-label="Editor picks">
+    <div className="hooks-news-spotlight__list">
+      {stories.slice(0, 1).map((story) => (
+        <Link
+          key={story.slug}
+          to={createNewsStoryPath(story.slug)}
+          className="hooks-news-spotlight__item group"
+        >
+          <StoryImage story={story} className="hooks-news-spotlight__image" />
+          <div className="hooks-news-spotlight__content">
+            <p className="hooks-news-spotlight__label">
+              {story.brandName || story.label || "Launch"}
+            </p>
+            <h3>{story.title}</h3>
+            <StoryAuthorLine story={story} compact />
+          </div>
+          <FaBookmark
+            className="hooks-news-spotlight__bookmark"
+            aria-hidden="true"
+          />
+        </Link>
+      ))}
+    </div>
+  </section>
 );
 
 const getLatestStoryPill = (story) =>
@@ -877,50 +1232,47 @@ const LatestNewsTimeline = ({ stories = [] }) => {
   if (!stories.length) return null;
 
   return (
-    <section className="min-w-0">
-      <div className="mb-6 border-b border-[#d9dee7] pb-4 sm:mb-8">
-        <h2 className="text-[28px] font-black leading-none tracking-[-0.04em] text-[#06133a] sm:text-[34px]">
-          Latest News
-        </h2>
-      </div>
+    <section
+      id="latest"
+      className="hooks-news-latest hooks-news-latest--stream min-w-0"
+    >
+      <SectionHeader
+        title="Latest News"
+        eyebrow="Just published"
+        actionLabel="Browse newsroom"
+      />
 
-      <div className="ml-1 space-y-8 border-l border-dashed border-[#d7deeb] pl-5 sm:ml-0 sm:space-y-10 sm:pl-7">
-        {stories.map((story) => (
-          <article key={story.slug} className="relative">
-            <div className="relative mb-4 flex items-center gap-3 sm:mb-5">
-              <span className="absolute -left-[21px] h-6 border-l-2 border-[#0066ff] sm:-left-[29px]" />
-              <time className="text-[14px] font-black text-[#0066ff] sm:text-[15px]">
-                {formatStoryDate(story)}
-              </time>
+      <div className="hooks-news-latest__list">
+        {stories.map((story, index) => (
+          <Link
+            key={story.slug}
+            to={createNewsStoryPath(story.slug)}
+            className="hooks-news-latest__item group"
+          >
+            <span className="hooks-news-latest__number" aria-hidden="true">
+              <b>{String(index + 1).padStart(2, "0")}</b>
+            </span>
+
+            <div className="hooks-news-latest__copy">
+              <div className="hooks-news-latest__meta">
+                <span>{getLatestStoryPill(story)}</span>
+                <time>
+                  <FaClock aria-hidden="true" />
+                  {formatStoryDate(story)}
+                </time>
+              </div>
+              <h3>{story.title}</h3>
+              <p>{story.summary}</p>
+              <StoryAuthorLine story={story} compact />
             </div>
 
-            <Link
-              to={createNewsStoryPath(story.slug)}
-              className="group block rounded-2xl transition-transform duration-300 hover:-translate-y-0.5"
-            >
-              <div className="grid gap-4 rounded-2xl border border-slate-100 bg-white p-4 shadow-[0_2px_2px_rgba(0,0,0,0.1)] sm:grid-cols-[minmax(0,1fr)_220px] sm:items-center sm:gap-7 sm:p-5">
-                <div className="min-w-0">
-                  <span className="mb-3 inline-flex w-fit rounded-md bg-[#eef3fb] px-3 py-1 text-[10px] font-bold text-[#06133a] sm:mb-4 sm:text-[11px]">
-                    {getLatestStoryPill(story)}
-                  </span>
-                  <h3 className="line-clamp-3 text-[17px] font-black leading-[1.32] tracking-[-0.02em] text-[#06133a] transition-colors group-hover:text-[#005dff] sm:line-clamp-2 sm:text-[20px]">
-                    {story.title}
-                  </h3>
-                  <p className="mt-3 line-clamp-3 max-w-2xl text-[12px] leading-6 text-[#6b7890] sm:line-clamp-2 sm:text-[13px]">
-                    {story.summary}
-                  </p>
-                  <p className="mt-4 text-[12px] font-semibold text-[#0050b8] sm:text-[13px]">
-                    {story.author || "Hooks news"}
-                  </p>
-                </div>
+            <StoryImage story={story} className="hooks-news-latest__image" />
 
-                <StoryImage
-                  story={story}
-                  className="aspect-[16/9] w-full rounded-xl sm:h-[160px] sm:w-[220px]"
-                />
-              </div>
-            </Link>
-          </article>
+            <span className="hooks-news-latest__arrow" aria-hidden="true">
+              <span>Read</span>
+              <FaArrowRight />
+            </span>
+          </Link>
         ))}
       </div>
     </section>
@@ -935,49 +1287,30 @@ const SectionHeader = ({
   dark = false,
   singleRow = false,
 }) => (
-  <div
-    className={`mb-4 flex items-end justify-between gap-4 border-b pb-3 ${
-      dark ? "border-white/15" : "border-[#d9dee7]"
-    }`}
-  >
-    <div>
-      {eyebrow ? (
-        <p
-          className={`text-[11px] font-black uppercase tracking-[0.16em] ${
-            dark ? "text-[#c4b5fd]" : "text-[#7c3aed]"
-          }`}
-        >
-          {eyebrow}
-        </p>
-      ) : null}
-      <h2
-        className={`mt-1 text-[20px] font-black uppercase tracking-[-0.02em] ${
-          dark ? "text-white" : "text-[#18212f]"
-        }`}
-      >
+  <div className={`hooks-news-section-head ${dark ? "is-dark" : ""}`}>
+    <div className="hooks-news-section-head__copy">
+      {eyebrow ? <p>{eyebrow}</p> : null}
+      <h2 id={title === "Top News" ? "hooks-top-news-title" : undefined}>
         {title}
       </h2>
     </div>
-    <div className="flex items-center gap-2 sm:gap-3">
-      {showAction ? (
-        <Link
-          to="/news"
-          className="hidden items-center gap-1 text-[12px] font-semibold text-[#2563eb] sm:inline-flex"
-        >
-          {actionLabel}
-          <FaChevronRight className="h-2.5 w-2.5" />
-        </Link>
-      ) : null}
+
+    <div className="hooks-news-section-head__actions">
       {singleRow ? (
-        <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#94a3b8] sm:hidden">
-          Swipe
-        </span>
+        <span className="hooks-news-section-head__swipe">Swipe</span>
+      ) : null}
+      {showAction ? (
+        <Link to="/news" className="hooks-news-section-head__link">
+          {actionLabel}
+          <FaArrowRight aria-hidden="true" />
+        </Link>
       ) : null}
     </div>
   </div>
 );
 
 const StorySection = ({
+  sectionId,
   title,
   eyebrow,
   stories = [],
@@ -1047,7 +1380,8 @@ const StorySection = ({
 
   return (
     <section
-      className={`${hideOnMobile ? "hidden sm:block" : ""} ${
+      id={sectionId}
+      className={`hooks-news-story-section ${hideOnMobile ? "hidden sm:block" : ""} ${
         dark ? "rounded-[24px] bg-[#2b3038] p-3 sm:p-5" : ""
       }`}
     >
@@ -1123,24 +1457,23 @@ const BrandRailCard = ({ brand }) => {
   return (
     <Link
       to={`/brand/${encodeURIComponent(brand?.slug || brand?.name || "")}`}
-      className="group block w-[5.75rem] min-w-[5.75rem] shrink-0 sm:w-[6.25rem] sm:min-w-[6.25rem] lg:w-[6.5rem] lg:min-w-[6.5rem]"
+      className="hooks-news-brand-card group"
       title={brand?.name || "Brand"}
     >
-      <div className="flex aspect-square w-full items-center justify-center rounded-2xl bg-[#edf3fb] p-3 transition-colors group-hover:bg-[#e6f0ff] sm:p-4">
+      <span className="hooks-news-brand-card__logo">
         {showLogo ? (
           <img
             src={brand.logo}
             alt={brand.name}
             loading="lazy"
-            className="max-h-8 w-auto max-w-full object-contain sm:max-h-10"
             onError={() => setImageFailed(true)}
           />
         ) : (
-          <span className="text-sm font-black uppercase tracking-[0.08em] text-[#f97316] sm:text-base">
-            {shortLabel}
-          </span>
+          <span>{shortLabel}</span>
         )}
-      </div>
+      </span>
+      <strong>{brand?.name || "Brand"}</strong>
+      <FaChevronRight aria-hidden="true" />
     </Link>
   );
 };
@@ -1200,13 +1533,12 @@ const BrandRailSection = ({ brands = [] }) => {
   if (!brands.length) return null;
 
   return (
-    <section>
-      <div className="mb-8">
-        <h2 className="text-[24px] font-black leading-none tracking-[-0.04em] text-[#06133a] sm:text-[34px]">
-          Popular Brands
-        </h2>
-        <div className="mt-4 h-[2px] w-full border-t border-[#d9dee7]" />
-      </div>
+    <section id="brands" className="hooks-news-brands">
+      <SectionHeader
+        title="Popular Brands"
+        eyebrow="Browse by maker"
+        actionLabel="Explore brands"
+      />
 
       <div className="relative">
         <div
@@ -1241,32 +1573,44 @@ const SideList = ({ title, stories = [] }) => {
   if (!stories.length) return null;
 
   return (
-    <section className="overflow-hidden bg-white">
-      <div className="bg-gradient-to-r from-[#2563eb] to-[#7c3aed] px-4 py-2 text-[12px] font-black uppercase tracking-[0.12em] text-white">
-        {title}
+    <section className="hooks-news-side-panel hooks-news-side-panel--recent">
+      <div className="hooks-news-side-panel__head">
+        <div>
+          <span className="hooks-news-side-panel__eyebrow">News desk</span>
+          <h2>{title}</h2>
+        </div>
+        <FaChartLine aria-hidden="true" />
       </div>
-      <div className="divide-y divide-[#eceff3] p-3">
-        {stories.map((story) => (
+
+      <div className="hooks-news-side-panel__list">
+        {stories.slice(0, 6).map((story, index) => (
           <Link
             key={story.slug}
             to={createNewsStoryPath(story.slug)}
-            className="group grid grid-cols-[72px_minmax(0,1fr)] gap-3 py-3 first:pt-0 last:pb-0"
+            className="hooks-news-side-story group"
           >
-            <StoryImage
-              story={story}
-              className="aspect-[4/3] w-full rounded-md"
-            />
-            <div className="min-w-0">
-              <h3 className="line-clamp-3 text-[13px] font-semibold leading-5 text-[#20242b] group-hover:text-[#2563eb]">
-                {story.title}
-              </h3>
-              <p className="mt-1 text-[11px] text-[#7d8898]">
-                {formatStoryDate(story)}
+            <span className="hooks-news-side-story__number">
+              {String(index + 1).padStart(2, "0")}
+            </span>
+            <div className="hooks-news-side-story__copy">
+              <h3>{story.title}</h3>
+              <p>
+                <span>{story.brandName || formatStoryLabel(story)}</span>
+                <time>{formatStoryDate(story)}</time>
               </p>
             </div>
+            <StoryImage
+              story={story}
+              className="hooks-news-side-story__image"
+            />
           </Link>
         ))}
       </div>
+
+      <Link to="/news" className="hooks-news-side-panel__footer">
+        View all stories
+        <FaArrowRight aria-hidden="true" />
+      </Link>
     </section>
   );
 };
@@ -1275,30 +1619,32 @@ const LatestLaunches = ({ stories = [] }) => {
   if (!stories.length) return null;
 
   return (
-    <section className="overflow-hidden bg-white">
-      <div className="bg-gradient-to-r from-[#2563eb] to-[#7c3aed] px-4 py-2 text-[12px] font-black uppercase tracking-[0.12em] text-white">
-        Latest Launches
+    <section className="hooks-news-side-panel hooks-news-side-panel--launches">
+      <div className="hooks-news-side-panel__head">
+        <div>
+          <span className="hooks-news-side-panel__eyebrow">Product radar</span>
+          <h2>Latest Launches</h2>
+        </div>
+        <FaRocket aria-hidden="true" />
       </div>
-      <div className="divide-y divide-[#edf0f4] p-3">
+
+      <div className="hooks-news-launch-list">
         {stories.slice(0, 6).map((story) => (
           <Link
             key={story.slug}
             to={createNewsStoryPath(story.slug)}
-            className="group flex items-start gap-3 py-3 first:pt-0 last:pb-0"
+            className="hooks-news-launch-item group"
           >
             <StoryImage
               story={story}
-              className="h-16 w-16 shrink-0 rounded-md"
+              className="hooks-news-launch-item__image"
             />
-            <div className="min-w-0">
-              <h3 className="line-clamp-2 text-[13px] font-semibold leading-5 text-[#20242b] group-hover:text-[#2563eb]">
-                {story.productName || story.title}
-              </h3>
-              <p className="mt-1 text-[11px] text-[#7d8898]">
-                {story.brandName || story.label || "Launch"} |{" "}
-                {formatStoryDate(story)}
-              </p>
+            <div className="hooks-news-launch-item__copy">
+              <span>{story.brandName || story.label || "Launch"}</span>
+              <h3>{story.productName || story.title}</h3>
+              <time>{formatStoryDate(story)}</time>
             </div>
+            <FaChevronRight aria-hidden="true" />
           </Link>
         ))}
       </div>
@@ -1371,7 +1717,7 @@ const NewsArticlesPage = () => {
   const isMobileLayout = useIsNewsMobileLayout();
   const display = useMemo(
     () => ({
-      spotlight: layout.spotlight.slice(0, isMobileLayout ? 2 : 4),
+      spotlight: layout.spotlight.slice(0, 2),
       topNews: layout.topNews.slice(0, isMobileLayout ? 3 : 9),
       reviews: layout.reviews.slice(0, isMobileLayout ? 2 : 4),
       guides: layout.guides.slice(0, isMobileLayout ? 2 : 6),
@@ -1441,41 +1787,17 @@ const NewsArticlesPage = () => {
         schema={pageSchema}
       />
 
-      <main className="overflow-x-hidden bg-white text-[#111827]">
-        <section>
-          <div className="mx-auto max-w-[1280px] px-4 pb-1 pt-3 sm:px-6 sm:pt-3 lg:px-8">
-            <nav
-              aria-label="Breadcrumb"
-              className="flex flex-wrap items-center gap-2 text-[12px] text-[#7d8898]"
-            >
-              <Link to="/" className="hover:text-[#2563eb]">
-                Home
-              </Link>
-              <span className="text-[12px] font-medium text-[#b6c2cf]">
-                /
-              </span>
-              {taxonomyRoute ? (
-                <Link to="/news" className="hover:text-[#2563eb]">
-                  News
-                </Link>
-              ) : (
-                <span className="font-semibold text-[#1f2937]">News</span>
-              )}
-              {taxonomyRoute ? (
-                <>
-                  <span className="text-[12px] font-medium text-[#b6c2cf]">
-                    /
-                  </span>
-                  <span className="font-semibold text-[#1f2937]">
-                    {taxonomyRoute.title}
-                  </span>
-                </>
-              ) : null}
-            </nav>
-          </div>
-        </section>
+      <main className="hooks-news-page overflow-x-hidden bg-white text-[#111827]">
+        <NewsHero
+          title={taxonomyRoute?.title || "Technology news with buying context"}
+          description={
+            taxonomyRoute?.description ||
+            "Expert analysis on product launches, industry moves, and innovations that help you buy smarter."
+          }
+          leadStory={heroCarouselStories[0]}
+        />
 
-        <div className="mx-auto max-w-[1280px] px-4 pb-5 pt-2 sm:px-6 sm:pb-8 sm:pt-3 lg:px-8">
+        <div className="hooks-news-shell mx-auto max-w-[1280px] px-4 pb-5 sm:px-6 sm:pb-10 lg:px-8">
           {error ? (
             <div className="mb-6 rounded-2xl border border-[#bfdbfe] bg-[#eff6ff] p-4 text-sm text-[#1d4ed8]">
               {error}
@@ -1504,36 +1826,58 @@ const NewsArticlesPage = () => {
               </Link>
             </div>
           ) : (
-            <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_300px] xl:items-start">
-              <div className="min-w-0 space-y-7 sm:space-y-9">
-                <section className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-                  <HeroStoryCarousel stories={heroCarouselStories} />
-                  <SpotlightList stories={display.spotlight} />
-                </section>
-
-                <StorySection
-                  title="Reviews"
-                  eyebrow="Hands-on"
-                  stories={display.reviews}
+            <div className="min-w-0 space-y-8 sm:space-y-10">
+              <section
+                className="hooks-news-frontpage"
+                aria-label="Featured news"
+              >
+                <NewsNavigationBar
+                  stories={heroCarouselStories}
+                  storyCount={routedStories.length}
                 />
+                <div className="hooks-news-editorial-board">
+                  <div className="hooks-news-feature-grid">
+                    <HeroStoryCarousel stories={heroCarouselStories} />
+                    <SpotlightList stories={display.spotlight} />
+                    <NewsUtilityRail
+                      trending={display.trendingSide}
+                      briefs={display.recentSide}
+                    />
+                  </div>
+                </div>
+              </section>
 
-                <StorySection
-                  title="Guides & Features"
-                  eyebrow="Guides & Context"
-                  stories={display.guides}
-                />
+              <div className="hooks-news-content-layout grid min-w-0 gap-7 xl:grid-cols-[minmax(0,1fr)_310px] xl:items-start">
+                <div className="min-w-0 space-y-7 sm:space-y-9">
+                  <TopNewsSection stories={display.topNews} />
 
-                <BrandRailSection brands={featuredBrands} />
+                  <StorySection
+                    sectionId="reviews"
+                    title="Reviews"
+                    eyebrow="Hands-on"
+                    stories={display.reviews}
+                  />
 
-                <LatestNewsTimeline stories={display.latest} />
+                  <StorySection
+                    sectionId="guides"
+                    title="Guides & Features"
+                    eyebrow="Guides & Context"
+                    stories={display.guides}
+                  />
+
+                  <BrandRailSection brands={featuredBrands} />
+
+                  <LatestNewsTimeline stories={display.latest} />
+                </div>
+
+                <aside className="hooks-news-sidebar min-w-0 space-y-5 xl:sticky xl:top-6">
+                  <div className="hooks-news-preferred-source">
+                    <GooglePreferredSourceButton panel compact />
+                  </div>
+                  <SideList title="Recent" stories={display.recentSide} />
+                  <LatestLaunches stories={display.launchSide} />
+                </aside>
               </div>
-
-              <aside className="min-w-0 space-y-5 xl:sticky xl:top-6">
-                <GooglePreferredSourceButton panel compact />
-                <SideList title="Trending" stories={display.trendingSide} />
-                <SideList title="Recent" stories={display.recentSide} />
-                <LatestLaunches stories={display.launchSide} />
-              </aside>
             </div>
           )}
         </div>

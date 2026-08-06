@@ -23,6 +23,28 @@ import {
   usePublicNewsStory,
 } from "../../hooks/usePublicNews";
 import { NEWS_BRAND_STYLES } from "../Home/newsBrandStyles";
+import HookLogo from "../ui/HookLogo";
+
+const NewsAuthorAvatar = ({ story, className = "" }) => (
+  <span
+    className={`inline-grid shrink-0 place-items-center overflow-hidden bg-[#1263f6] ${className}`}
+    aria-hidden="true"
+  >
+    {story?.authorImage ? (
+      <img
+        src={story.authorImage}
+        alt=""
+        onError={(event) => {
+          event.currentTarget.onerror = null;
+          event.currentTarget.src = "/hook-logo.png";
+        }}
+        className="h-full w-full object-cover"
+      />
+    ) : (
+      <HookLogo className="h-full w-full object-cover" aria-label="Hooks" />
+    )}
+  </span>
+);
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -88,13 +110,6 @@ const formatUpdatedLabel = (story) => {
   }
 
   return `Updated ${updatedLabel}`;
-};
-
-const getInitials = (name = "") => {
-  const parts = String(name).trim().split(/\s+/).filter(Boolean);
-  if (!parts.length) return "HK";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 };
 
 const NewsStoryMedia = ({ story, className = "" }) => {
@@ -524,9 +539,10 @@ const NewsStoryPage = () => {
 
               <div className="mt-7 flex flex-wrap items-center justify-between gap-5">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full border border-white/30 bg-white/10 text-sm font-black uppercase tracking-wide">
-                    {getInitials(story.author)}
-                  </div>
+                  <NewsAuthorAvatar
+                    story={story}
+                    className="h-12 w-12 rounded-xl border border-white/30"
+                  />
                   <div>
                     <p className="text-sm text-white/80">
                       by{" "}
@@ -610,9 +626,10 @@ const NewsStoryPage = () => {
 
                 <div className="overflow-hidden rounded-[26px] border border-slate-200 bg-[#222531] text-white">
                   <div className="grid gap-4 p-5 sm:grid-cols-[5.5rem_minmax(0,1fr)] sm:items-center sm:p-6">
-                    <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-xl font-black uppercase">
-                      {getInitials(story.author)}
-                    </div>
+                    <NewsAuthorAvatar
+                      story={story}
+                      className="h-20 w-20 rounded-2xl border border-white/10"
+                    />
                     <div className="min-w-0">
                       <p className="text-2xl font-black tracking-[-0.03em]">
                         {story.author}

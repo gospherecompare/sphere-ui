@@ -1,1 +1,1 @@
-export { default } from "./smartphones/SmartphonesPage";
+export { default } from "../Product/Smartphones";

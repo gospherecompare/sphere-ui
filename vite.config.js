@@ -4,7 +4,6 @@ import tailwindcss from "@tailwindcss/vite";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createRequire } from "node:module";
 import {
   createAboutPageSchema,
   createBreadcrumbSchema,
@@ -40,10 +39,6 @@ import {
   stripNewsMarkup,
 } from "./src/utils/newsSeo.js";
 
-const require = createRequire(import.meta.url);
-const vitePrerender = require("vite-plugin-prerender");
-const Renderer = vitePrerender.PuppeteerRenderer;
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const SITE_ORIGIN = "https://tryhook.shop";
@@ -76,15 +71,14 @@ const API_ORIGIN = (() => {
     return new URL(DEFAULT_REMOTE_API_BASE_URL).origin;
   }
 })();
-const ENABLE_PUPPETEER_PRERENDER =
-  String(process.env.HOOKS_ENABLE_PUPPETEER_PRERENDER || "")
-    .trim()
-    .toLowerCase() === "true";
 const MAX_DETAIL_ROUTES_PER_CATEGORY = 1000;
 const MAX_COMPARE_ROUTES = 380;
 const MAX_COMPARE_EXPANSION_PRODUCTS = 24;
 const MAX_COMPARE_EXPANDED_ROUTES = 240;
 const MAX_COMPARE_EXPANDED_CANDIDATES = 360;
+const KNOWN_DISCOVERED_COMPARE_ROUTES = [
+  "/compare/oneplus-15r-and-realme-p4-5g-and-realme-gt-7-comparison",
+];
 const MAX_NEWS_ROUTES = 1000;
 const POPULAR_COMPARISON_PRELOAD_ROWS = 12;
 const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
@@ -514,6 +508,11 @@ const buildCompareRoutePathFromSlugParts = (parts = []) => {
   return `/compare/${cleanParts.join("-and-")}-comparison`;
 };
 
+const buildCompareResolveEndpoint = (slug = "") =>
+  `${API_BASE_URL}/public/compare-pages/resolve?slug=${encodeURIComponent(
+    String(slug || "").trim(),
+  )}`;
+
 const createCompareRouteMetaFromPage = (page = {}, fallback = {}) => ({
   title: String(page?.title || fallback?.title || "").trim(),
   description: String(
@@ -676,7 +675,7 @@ const resolveCompareRouteFromApi = async (routePath = "", fallbackMeta = {}) => 
   const slug = getSingleSegmentRouteTail(routePath, "/compare");
   if (!slug) return "";
 
-  const endpoint = `${API_BASE_URL}/public/compare-pages/resolve?slug=${encodeURIComponent(slug)}`;
+  const endpoint = buildCompareResolveEndpoint(slug);
   const body = await fetchApiBody(endpoint);
   const page = body?.page || null;
   const items = Array.isArray(page?.items) ? page.items : [];
@@ -883,20 +882,29 @@ const fetchApiRows = async (endpoint, preferredKeys = []) => {
   }
 };
 
+const apiBodyCache = new Map();
+
 const fetchApiBody = async (endpoint) => {
   if (typeof fetch !== "function") return null;
-  try {
-    const response = await fetch(endpoint);
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+  if (apiBodyCache.has(endpoint)) return apiBodyCache.get(endpoint);
+
+  const request = (async () => {
+    try {
+      const response = await fetch(endpoint);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.warn(
+        `[prerender] Failed to fetch preloaded payload from ${endpoint}: ${error?.message || error}`,
+      );
+      return null;
     }
-    return await response.json();
-  } catch (error) {
-    console.warn(
-      `[prerender] Failed to fetch preloaded payload from ${endpoint}: ${error?.message || error}`,
-    );
-    return null;
-  }
+  })();
+
+  apiBodyCache.set(endpoint, request);
+  return request;
 };
 
 const doesApiEndpointExist = async (endpoint) => {
@@ -1106,9 +1114,7 @@ const fetchRouteSpecificPreloadedPayload = async (
   const canonicalPath = toCanonicalPath(normalizePath(routePath || "/"));
   const compareSlug = getSingleSegmentRouteTail(canonicalPath, "/compare");
   if (compareSlug) {
-    return fetchPayloadForEndpoints([
-      `${API_BASE_URL}/public/compare-pages/resolve?slug=${encodeURIComponent(compareSlug)}`,
-    ]);
+    return fetchPayloadForEndpoints([buildCompareResolveEndpoint(compareSlug)]);
   }
 
   const smartphoneContext = detailWidgetContextMap.get(canonicalPath);
@@ -1286,13 +1292,40 @@ const fetchDetailRoutesFromApi = async () => {
   return [...new Set(routes)];
 };
 
-const fetchCompareRoutesFromApi = async () => {
+const fetchCompareRoutesFromApi = async (existingRoutes = []) => {
   publishedCompareRouteMeta = new Map();
   const body = await fetchApiBody(
     `${API_BASE_URL}/public/compare-pages/routes`,
   );
   const rows = Array.isArray(body?.routes) ? body.routes : [];
   const routes = [];
+
+  // Published comparison URLs are intentionally sticky. Popularity rankings
+  // can change between builds, but a valid URL already exposed in the sitemap
+  // must not disappear just because a different expansion candidate ranks
+  // higher today. Re-resolve each prior URL and retain it when its products are
+  // still available; invalid/self-comparison routes are omitted.
+  const retainedRoutes = [
+    ...KNOWN_DISCOVERED_COMPARE_ROUTES,
+    ...existingRoutes,
+  ];
+  for (const existingRoute of retainedRoutes) {
+    if (routes.length >= MAX_COMPARE_ROUTES) break;
+    const routePath = normalizePath(existingRoute);
+    if (
+      !routePath ||
+      routePath === "/compare" ||
+      !routePath.startsWith("/compare/") ||
+      routes.includes(routePath)
+    ) {
+      continue;
+    }
+
+    const resolvedRoute = await resolveCompareRouteFromApi(routePath);
+    if (resolvedRoute && !routes.includes(resolvedRoute)) {
+      routes.push(resolvedRoute);
+    }
+  }
 
   for (const row of rows) {
     if (routes.length >= MAX_COMPARE_ROUTES) break;
@@ -1307,13 +1340,17 @@ const fetchCompareRoutesFromApi = async () => {
       continue;
     }
 
-    const normalizedRoute = addCompareRouteMeta(routePath, {
+    if (routes.includes(routePath)) continue;
+
+    const resolvedRoute = await resolveCompareRouteFromApi(routePath, {
       title: String(row?.title || "").trim(),
       description: String(row?.meta_description || row?.description || "").trim(),
       updatedAt: row?.updated_at || null,
       compareCount: row?.compare_count || 0,
     });
-    if (normalizedRoute) routes.push(normalizedRoute);
+    if (resolvedRoute && !routes.includes(resolvedRoute)) {
+      routes.push(resolvedRoute);
+    }
   }
 
   const expandedCandidates = buildExpandedCompareRouteCandidates(
@@ -1756,7 +1793,7 @@ const filterValidPrerenderRoutes = async (routes = []) => {
 const getPrerenderRoutes = async () => {
   const sitemapRoutes = routesFromSitemap();
   const detailRoutes = await fetchDetailRoutesFromApi();
-  const compareRoutes = await fetchCompareRoutesFromApi();
+  const compareRoutes = await fetchCompareRoutesFromApi(sitemapRoutes);
   const newsRoutes = await fetchNewsRoutesFromApi();
   const smartphoneListingRoutes = await fetchSmartphoneListingRoutesFromApi();
   const tvListingRoutes = await fetchTvListingRoutesFromApi();
@@ -2287,6 +2324,25 @@ const getRouteSitemapLastmod = (routePath = "/", fallbackDate = "") => {
   return fallbackDate;
 };
 
+const getComparePageFromPayload = (
+  canonicalPath = "",
+  preloadedApiPayload,
+) => {
+  const slug = getSingleSegmentRouteTail(canonicalPath, "/compare");
+  if (!slug) return null;
+
+  const page =
+    preloadedApiPayload?.byUrl?.[buildCompareResolveEndpoint(slug)]?.page ||
+    null;
+  const items = Array.isArray(page?.items) ? page.items.filter(Boolean) : [];
+  if (!page || items.length < 2 || items.length > 3) return null;
+
+  const resolvedPath = normalizePath(page.route_path || `/compare/${slug}`);
+  if (resolvedPath !== normalizePath(canonicalPath)) return null;
+
+  return { ...page, items };
+};
+
 const getNewsArticleFromPayload = (canonicalPath = "", preloadedApiPayload) => {
   const slug = getNewsSlugFromPath(canonicalPath);
   if (!slug) return null;
@@ -2484,7 +2540,22 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
   }
 
   if (canonicalPath.startsWith("/compare")) {
+    const comparePage = getComparePageFromPayload(
+      canonicalPath,
+      preloadedApiPayload,
+    );
+    const compareLabel =
+      comparePage?.title ||
+      extractCompareRouteNames(canonicalPath).join(" vs ") ||
+      "Compare Devices";
     const schemas = [
+      createBreadcrumbSchema([
+        { label: "Home", url: toCanonicalPageUrl("/", SITE_ORIGIN) },
+        { label: "Compare", url: toCanonicalPageUrl("/compare", SITE_ORIGIN) },
+        ...(canonicalPath === "/compare"
+          ? []
+          : [{ label: compareLabel, url: canonicalUrl }]),
+      ]),
       createWebApplicationSchema({
         name: seo.title,
         description: seo.description,
@@ -2493,14 +2564,22 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
       }),
     ];
 
-    const compareNamesForSchema = extractCompareRouteNames(canonicalPath);
-    if (compareNamesForSchema.length >= 2) {
+    const compareItemsForSchema = comparePage?.items?.length
+      ? comparePage.items.map((item) => ({
+          name: item.product_name || item.name || "Compared product",
+          url: item.detail_path
+            ? toCanonicalPageUrl(item.detail_path, SITE_ORIGIN)
+            : undefined,
+          image: item.image_url || undefined,
+        }))
+      : extractCompareRouteNames(canonicalPath).map((name) => ({ name }));
+    if (compareItemsForSchema.length >= 2) {
       schemas.push(
         createItemListSchema({
           name: seo.title,
           url: canonicalUrl,
           description: seo.description,
-          items: compareNamesForSchema.map((name) => ({ name })),
+          items: compareItemsForSchema,
         }),
       );
     }
@@ -2750,6 +2829,111 @@ const injectStructuredData = (html, routePath, preloadedApiPayload) => {
     )
     .join("\n");
   return html.replace("</head>", `${scripts}\n</head>`);
+};
+
+const comparePriceFormatter = new Intl.NumberFormat("en-IN", {
+  style: "currency",
+  currency: "INR",
+  maximumFractionDigits: 0,
+});
+
+const formatComparePrerenderPrice = (value) => {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric > 0
+    ? comparePriceFormatter.format(numeric)
+    : "Price unavailable";
+};
+
+const buildCompareDetailPrerenderMarkup = (
+  canonicalPath,
+  preloadedApiPayload,
+) => {
+  const page = getComparePageFromPayload(canonicalPath, preloadedApiPayload);
+  if (!page) {
+    throw new Error(
+      `[compare-prerender] Missing a valid 2-3 product payload for ${canonicalPath}.`,
+    );
+  }
+
+  const seo = resolveSeo(canonicalPath);
+  const names = page.items.map(
+    (item) => item.product_name || item.name || "Compared product",
+  );
+  const heading = stripMarkupForSeo(page.title || seo.title);
+  const description = stripMarkupForSeo(
+    page.meta_description || seo.description,
+  );
+  const productCards = page.items
+    .map((item, index) => {
+      const name = stripMarkupForSeo(
+        item.product_name || item.name || `Product ${index + 1}`,
+      );
+      const brand = stripMarkupForSeo(item.brand_name || "");
+      const productType = stripMarkupForSeo(item.product_type || "device");
+      const detailUrl = item.detail_path
+        ? toCanonicalPageUrl(item.detail_path, SITE_ORIGIN)
+        : toCanonicalPageUrl("/smartphones", SITE_ORIGIN);
+      const image = item.image_url
+        ? `<img src="${escapeHtml(toAbsoluteAssetUrl(item.image_url))}" alt="${escapeHtml(name)}" loading="${index === 0 ? "eager" : "lazy"}" class="mx-auto h-44 w-full object-contain" />`
+        : "";
+
+      return `<article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+  <a href="${escapeHtml(detailUrl)}" class="block text-slate-950 hover:text-blue-700">
+    ${image}
+    <h2 class="mt-4 text-xl font-bold">${escapeHtml(name)}</h2>
+    <p class="mt-2 text-sm text-slate-600">${escapeHtml(
+      [brand, productType].filter(Boolean).join(" · "),
+    )}</p>
+    <p class="mt-3 font-semibold text-slate-900">${escapeHtml(
+      formatComparePrerenderPrice(item.best_price),
+    )}</p>
+  </a>
+</article>`;
+    })
+    .join("\n");
+
+  return `<main data-compare-prerendered="detail" class="min-h-screen bg-slate-50 text-slate-950">
+  <section class="mx-auto max-w-[1200px] px-4 py-8 sm:px-6 lg:px-8">
+    <nav aria-label="Breadcrumb" class="text-sm text-slate-500">
+      <a href="/" class="hover:text-blue-700">Home</a>
+      <span aria-hidden="true"> / </span>
+      <a href="/compare/" class="hover:text-blue-700">Compare</a>
+      <span aria-hidden="true"> / </span>
+      <span aria-current="page">${escapeHtml(names.join(" vs "))}</span>
+    </nav>
+    <header class="mt-6 max-w-5xl">
+      <p class="text-xs font-bold uppercase tracking-wider text-blue-700">Device comparison</p>
+      <h1 class="mt-3 text-4xl font-black leading-tight tracking-tight">${escapeHtml(heading)}</h1>
+      <p class="mt-4 text-lg leading-8 text-slate-600">${escapeHtml(description)}</p>
+    </header>
+    <section aria-label="Products in this comparison" class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      ${productCards}
+    </section>
+    <section class="mt-8 rounded-2xl border border-slate-200 bg-white p-6">
+      <h2 class="text-2xl font-bold">${escapeHtml(names.join(" vs "))}</h2>
+      <p class="mt-3 leading-7 text-slate-700">Compare current prices and product details for ${escapeHtml(
+        names.join(", "),
+      )}. The interactive comparison below adds the complete side-by-side specifications, differences, and available buying information.</p>
+    </section>
+  </section>
+</main>`;
+};
+
+const injectCompareRouteContent = (html, routePath, preloadedApiPayload) => {
+  const canonicalPath = toCanonicalPath(normalizePath(routePath || "/"));
+  if (!canonicalPath.startsWith("/compare/")) return html;
+
+  const emptyRootPattern = /<div\s+id=["']root["'][^>]*>\s*<\/div>/i;
+  if (!emptyRootPattern.test(html)) return html;
+
+  const markup = buildCompareDetailPrerenderMarkup(
+    canonicalPath,
+    preloadedApiPayload,
+  );
+  return html.replace(
+    emptyRootPattern,
+    `<div id="root">${markup}</div>`,
+  );
 };
 
 const formatNewsPrerenderDate = (value = "") => {
@@ -3147,6 +3331,12 @@ const processRouteHtml = (html, routePath, preloadedApiPayload) => {
     nextHtml = injectPreloadedPayload(nextHtml, preloadedApiPayload);
   }
 
+  nextHtml = injectCompareRouteContent(
+    nextHtml,
+    normalizedRoute,
+    preloadedApiPayload,
+  );
+
   nextHtml = injectNewsRouteContent(
     nextHtml,
     normalizedRoute,
@@ -3175,8 +3365,7 @@ const usesSharedPreloadedPayload = (canonicalPath = "/") =>
     parseSmartphoneListingPath(canonicalPath)?.canonicalPath &&
     canonicalPath !== "/smartphones",
   ) ||
-  canonicalPath === "/compare" ||
-  canonicalPath.startsWith("/compare/");
+  canonicalPath === "/compare";
 
 export default defineConfig(async () => {
   const prerenderRoutes = await getPrerenderRoutes();
@@ -3206,6 +3395,15 @@ export default defineConfig(async () => {
       routeSpecificPayload,
     );
 
+    if (
+      canonicalPath.startsWith("/compare/") &&
+      !getComparePageFromPayload(canonicalPath, mergedPayload)
+    ) {
+      throw new Error(
+        `[compare-prerender] Refusing to emit ${canonicalPath} because its canonical comparison payload is unavailable.`,
+      );
+    }
+
     routePayloadCache.set(canonicalPath, mergedPayload);
     return mergedPayload;
   };
@@ -3227,36 +3425,6 @@ export default defineConfig(async () => {
           return processHtml(html, rawPath || "/", payload);
         },
       },
-      ...(ENABLE_PUPPETEER_PRERENDER
-        ? [
-            vitePrerender({
-              staticDir: path.join(__dirname, "dist"),
-              routes: prerenderRoutes,
-              renderer: new Renderer({
-                renderAfterTime: 1500,
-                maxConcurrentRoutes: 4,
-                consoleHandler(route, message) {
-                  const type = message?.type?.() || "log";
-                  const text = message?.text?.() || "";
-                  if (type === "error" || text.includes("Error")) {
-                    console.log(`[prerender:${route}] ${type}: ${text}`);
-                  }
-                },
-              }),
-              async postProcess(renderedRoute) {
-                const routePath = resolvePrerenderRoutePath(renderedRoute);
-                renderedRoute.route = routePath;
-                const payload = await getPreloadedPayloadForRoute(routePath);
-                renderedRoute.html = processHtml(
-                  renderedRoute.html || "",
-                  routePath,
-                  payload,
-                );
-                return renderedRoute;
-              },
-            }),
-          ]
-        : []),
       createStaticRouteHtmlPlugin({
         routes: prerenderRoutes,
         getPreloadedPayloadForRoute,

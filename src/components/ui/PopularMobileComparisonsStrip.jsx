@@ -1,15 +1,17 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { FaChevronLeft, FaChevronRight, FaMobileAlt } from "react-icons/fa";
+import {
+  FaArrowRight,
+  FaChevronLeft,
+  FaChevronRight,
+  FaMobileAlt,
+} from "react-icons/fa";
 import {
   buildCanonicalComparePath,
   toCanonicalCompareSlug,
 } from "../../utils/compareRoutes";
 import { readPreloadedApiResponse } from "../../utils/preloadedApi";
-import {
-  API_ORIGIN_URL,
-  buildApiUrl,
-} from "../../utils/apiUrl";
+import { API_ORIGIN_URL, buildApiUrl } from "../../utils/apiUrl";
 import { fetchPublicJson } from "../../utils/publicJsonRequest";
 
 const normalizeText = (value) => String(value || "").trim();
@@ -51,15 +53,14 @@ const getDeviceImage = (device) =>
       device?.product_image,
   );
 
-const buildComparePath = (item) => {
-  return buildCanonicalComparePath({
+const buildComparePath = (item) =>
+  buildCanonicalComparePath({
     leftName: item.leftName,
     rightName: item.rightName,
     leftId: item.leftId,
     rightId: item.rightId,
     type: "smartphone",
   });
-};
 
 const makeComparisonKey = (item) => {
   const idPair =
@@ -72,9 +73,7 @@ const makeComparisonKey = (item) => {
   return idPair.join("|");
 };
 
-const MOST_COMPARED_ENDPOINT = buildApiUrl(
-  "/public/trending/most-compared",
-);
+const MOST_COMPARED_ENDPOINT = buildApiUrl("/public/trending/most-compared");
 
 const mapRemoteComparisonsPayload = (json) => {
   const rows = Array.isArray(json?.mostCompared) ? json.mostCompared : [];
@@ -133,34 +132,42 @@ const buildLocalComparisons = (devices = []) => {
     });
   };
 
-  for (let i = 0; i < candidates.length - 1; i += 2) {
-    addPair(candidates[i], candidates[i + 1]);
+  for (let index = 0; index < candidates.length - 1; index += 2) {
+    addPair(candidates[index], candidates[index + 1]);
   }
 
-  for (let i = 0; pairs.length < 8 && i < candidates.length - 1; i += 1) {
-    addPair(candidates[i], candidates[i + 1]);
+  for (
+    let index = 0;
+    pairs.length < 8 && index < candidates.length - 1;
+    index += 1
+  ) {
+    addPair(candidates[index], candidates[index + 1]);
   }
 
   return pairs;
 };
 
-const ComparisonPhoneVisual = ({ src = "", label = "" }) => {
+const PhoneVisual = ({ src = "", label = "" }) => {
   const [failed, setFailed] = useState(false);
   const imageSrc = normalizeAssetUrl(src);
 
+  useEffect(() => {
+    setFailed(false);
+  }, [imageSrc]);
+
   return (
-    <div className="flex h-[118px] w-full items-center justify-center rounded-lg border border-blue-100 bg-blue-50/40 p-2 sm:h-[132px]">
+    <div className="flex h-36 min-w-0 items-center justify-center sm:h-40 xl:h-44">
       {imageSrc && !failed ? (
         <img
           src={imageSrc}
-          alt={label || "Phone"}
+          alt={label || "Smartphone"}
           loading="lazy"
-          className="h-full w-full object-contain"
+          className="h-full w-full scale-[1.06] object-contain transition-transform duration-300 group-hover:scale-[1.1]"
           onError={() => setFailed(true)}
         />
       ) : (
-        <div className="flex h-full w-full items-center justify-center rounded-md bg-white text-blue-300">
-          <FaMobileAlt className="text-2xl" />
+        <div className="grid h-20 w-14 place-items-center rounded-lg bg-white/80 text-blue-300">
+          <FaMobileAlt className="text-3xl" />
         </div>
       )}
     </div>
@@ -169,10 +176,9 @@ const ComparisonPhoneVisual = ({ src = "", label = "" }) => {
 
 const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
   const scrollerRef = useRef(null);
+  const [activeIndex, setActiveIndex] = useState(0);
   const [remoteComparisons, setRemoteComparisons] = useState(() =>
-    mapRemoteComparisonsPayload(
-      readPreloadedApiResponse(MOST_COMPARED_ENDPOINT),
-    ),
+    mapRemoteComparisonsPayload(readPreloadedApiResponse(MOST_COMPARED_ENDPOINT)),
   );
 
   useEffect(() => {
@@ -191,10 +197,11 @@ const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
         const json = await fetchPublicJson(MOST_COMPARED_ENDPOINT, {
           signal: controller?.signal,
         });
-        if (cancelled) return;
-        setRemoteComparisons(mapRemoteComparisonsPayload(json));
-      } catch (err) {
-        if (err?.name !== "AbortError" && !cancelled) {
+        if (!cancelled) {
+          setRemoteComparisons(mapRemoteComparisonsPayload(json));
+        }
+      } catch (error) {
+        if (error?.name !== "AbortError" && !cancelled) {
           setRemoteComparisons([]);
         }
       }
@@ -224,124 +231,197 @@ const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
       .slice(0, 12);
   }, [localComparisons, remoteComparisons]);
 
+  useEffect(() => {
+    setActiveIndex((current) =>
+      Math.min(current, Math.max(0, comparisons.length - 1)),
+    );
+  }, [comparisons.length]);
+
   if (comparisons.length === 0) return null;
 
-  const scrollComparisons = (direction) => {
-    scrollerRef.current?.scrollBy({
-      left: direction * 340,
+  const getCards = () =>
+    Array.from(
+      scrollerRef.current?.querySelectorAll("[data-matchup-card]") || [],
+    );
+
+  const scrollToComparison = (index) => {
+    const cards = getCards();
+    const targetIndex = Math.min(Math.max(index, 0), cards.length - 1);
+    const target = cards[targetIndex];
+    if (!target) return;
+
+    target.scrollIntoView({
       behavior: "smooth",
+      block: "nearest",
+      inline: "start",
     });
+    setActiveIndex(targetIndex);
   };
+
+  const handleScrollerScroll = () => {
+    const viewport = scrollerRef.current;
+    if (!viewport) return;
+    const cards = getCards();
+    if (!cards.length) return;
+
+    const viewportLeft = viewport.getBoundingClientRect().left;
+    let closestIndex = 0;
+    let closestDistance = Number.POSITIVE_INFINITY;
+
+    cards.forEach((card, index) => {
+      const distance = Math.abs(card.getBoundingClientRect().left - viewportLeft);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = index;
+      }
+    });
+
+    setActiveIndex(closestIndex);
+  };
+
+  const dotCount = Math.min(comparisons.length, 5);
+  const activeDot =
+    dotCount <= 1
+      ? 0
+      : Math.round(
+          (activeIndex / Math.max(1, comparisons.length - 1)) * (dotCount - 1),
+        );
 
   return (
     <section
-      className={`mx-auto w-full max-w-7xl overflow-hidden rounded-2xl bg-purple-100  shadow-[0_2px_4px_rgba(0,0,0,0.1)]  px-4 py-5 sm:px-5 sm:py-6 ${className}`}
+      className={`smartphones-matchups-section mx-auto w-full max-w-7xl bg-transparent py-6 text-slate-950 sm:py-8 dark:text-slate-100 ${className}`}
+      aria-labelledby="popular-phone-comparisons-title"
     >
-      <div className="mb-5 flex items-start justify-between gap-4 border-b border-blue-100 pb-4 border-b-1 border-blue-500">
+      <div className="mb-5 flex items-end justify-between gap-3 px-1 sm:mb-6">
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-blue-600">
-            Popular Matchups
-          </p>
-          <h2 className="mt-3 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
-            Compare Popular Mobile Phones in India
+          <span className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-blue-600 sm:text-xs dark:text-blue-400">
+            Popular matchups
+          </span>
+          <h2
+            id="popular-phone-comparisons-title"
+            className="mt-1.5 max-w-3xl text-2xl font-black tracking-[-0.035em] text-slate-950 sm:text-3xl dark:text-white"
+          >
+            Compare popular mobile phones
           </h2>
-          <p className="mt-2 text-[13px] leading-relaxed text-slate-500 sm:text-sm">
-            Explore popular phone matchups and compare key choices side by side.
+          <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base dark:text-slate-400">
+            Pick a matchup and compare the details that matter.
           </p>
         </div>
+
         <div className="flex shrink-0 items-center gap-2">
           <Link
             to="/popular-comparisons"
-            className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white px-3.5 py-2 text-xs font-semibold text-blue-700 transition-colors hover:border-blue-200 hover:bg-blue-50 sm:text-sm"
+            className="hidden min-h-10 items-center gap-2 rounded-lg bg-blue-50 px-4 text-sm font-bold text-blue-700 transition-colors hover:bg-blue-100 sm:inline-flex dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20"
           >
             View all
-            <FaChevronRight className="text-[10px]" />
+            <FaArrowRight className="text-[11px]" />
           </Link>
           <button
             type="button"
-            onClick={() => scrollComparisons(-1)}
-            aria-label="Scroll comparisons left"
-            className="hidden h-9 w-9 items-center justify-center rounded-full border border-blue-100 bg-white text-blue-600 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 sm:flex"
+            onClick={() => scrollToComparison(activeIndex - 1)}
+            disabled={activeIndex === 0}
+            aria-label="Previous phone comparison"
+            className="grid h-10 w-10 place-items-center rounded-lg bg-white text-blue-600 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-30 dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700"
           >
-            <FaChevronLeft className="text-sm" />
+            <FaChevronLeft className="text-xs" />
           </button>
           <button
             type="button"
-            onClick={() => scrollComparisons(1)}
-            aria-label="Scroll comparisons right"
-            className="hidden h-9 w-9 items-center justify-center rounded-full border border-blue-100 bg-white text-blue-600 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 sm:flex"
+            onClick={() => scrollToComparison(activeIndex + 1)}
+            disabled={activeIndex >= comparisons.length - 1}
+            aria-label="Next phone comparison"
+            className="grid h-10 w-10 place-items-center rounded-lg bg-white text-blue-600 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-30 dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700"
           >
-            <FaChevronRight className="text-sm" />
+            <FaChevronRight className="text-xs" />
           </button>
         </div>
       </div>
 
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => scrollComparisons(-1)}
-          aria-label="Scroll comparisons left"
-          className="absolute left-0 top-1/2 z-10 hidden h-11 w-11 -translate-x-3 -translate-y-1/2 items-center justify-center rounded-full border border-blue-100 bg-white text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-700 md:flex"
-        >
-          <FaChevronLeft className="text-sm" />
-        </button>
+      <div
+        ref={scrollerRef}
+        onScroll={handleScrollerScroll}
+        className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-4 [&::-webkit-scrollbar]:hidden"
+      >
+        {comparisons.map((item, index) => {
+          const compareTitle = `${item.leftName} vs ${item.rightName}`;
 
-        <div
-          ref={scrollerRef}
-          className="flex gap-4 overflow-x-auto scroll-smooth pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
-          {comparisons.map((item, index) => {
-            const compareTitle = `${item.leftName} vs ${item.rightName}`;
+          return (
+            <Link
+              key={`${makeComparisonKey(item)}-${index}`}
+              data-matchup-card
+              to={buildComparePath(item)}
+              aria-label={`Compare ${item.leftName} with ${item.rightName}`}
+              className="group w-[86vw] max-w-[390px] shrink-0 snap-start rounded-xl border border-slate-200/80 bg-white p-3 transition-colors hover:bg-blue-50/40 sm:w-[390px] sm:p-4 lg:w-[calc((100%_-_2rem)/3)] lg:min-w-[340px] dark:border-slate-700/70 dark:bg-[#0f1c2d] dark:hover:bg-[#13243b]"
+            >
+              <div className="smartphones-product-stage relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 via-white to-slate-50 px-3 pb-3 pt-4 dark:from-[#e7effb] dark:via-[#f8fbff] dark:to-[#dce7f5]">
+                <span className="absolute left-4 top-3 text-[9px] font-extrabold uppercase tracking-[0.15em] text-blue-600 dark:text-blue-700">
+                  Matchup {index + 1}
+                </span>
+                <span className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-blue-100/50 dark:bg-blue-200/60" />
+                <span className="absolute -bottom-14 -left-10 h-32 w-32 rounded-full bg-indigo-100/40 dark:bg-indigo-200/50" />
 
-            return (
-              <Link
-                key={`${makeComparisonKey(item)}-${index}`}
-                to={buildComparePath(item)}
-                className="group w-[292px] shrink-0 rounded-lg  bg-white p-3 text-slate-900 transition-colors duration-200 hover:border-blue-200 hover:bg-blue-50 sm:w-[315px]"
-              >
-                <div className="grid grid-cols-[minmax(0,1fr)_38px_minmax(0,1fr)] items-center gap-2">
-                  <ComparisonPhoneVisual
-                    src={item.leftImage}
-                    label={item.leftName}
-                  />
-                  <div className="flex justify-center">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-xs font-bold text-blue-700">
-                      VS
-                    </span>
-                  </div>
-                  <ComparisonPhoneVisual
-                    src={item.rightImage}
-                    label={item.rightName}
-                  />
+                <div className="relative mt-4 grid grid-cols-[minmax(0,1fr)_44px_minmax(0,1fr)] items-center gap-1 sm:grid-cols-[minmax(0,1fr)_48px_minmax(0,1fr)] sm:gap-2">
+                  <PhoneVisual src={item.leftImage} label={item.leftName} />
+
+                  <span className="grid h-10 w-10 place-items-center justify-self-center rounded-full bg-blue-600 text-[10px] font-black text-white sm:h-11 sm:w-11 sm:text-xs">
+                    VS
+                  </span>
+
+                  <PhoneVisual src={item.rightImage} label={item.rightName} />
                 </div>
+              </div>
 
-                <div className="mt-3 grid grid-cols-[minmax(0,1fr)_38px_minmax(0,1fr)] gap-2">
-                  <p className="min-h-[40px] text-[13px] font-medium leading-5 text-slate-700 line-clamp-2">
-                    {item.leftName}
-                  </p>
-                  <span aria-hidden="true" />
-                  <p className="min-h-[40px] text-[13px] font-medium leading-5 text-slate-700 line-clamp-2">
-                    {item.rightName}
-                  </p>
-                </div>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <p className="truncate text-sm font-extrabold text-slate-900 sm:text-base dark:text-slate-100">
+                  {item.leftName}
+                </p>
+                <p className="truncate text-right text-sm font-extrabold text-slate-900 sm:text-base dark:text-slate-100">
+                  {item.rightName}
+                </p>
+              </div>
 
-                <div className="mt-3 flex items-center justify-center rounded-md border border-blue-600 px-3 py-2 text-center text-[12px] font-semibold leading-5 text-blue-700 transition-colors group-hover:bg-blue-600 group-hover:text-white">
-                  <span className="truncate">{compareTitle}</span>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+              <div className="mt-4 flex min-h-11 items-center justify-between gap-3 rounded-lg bg-blue-600 px-4 text-sm font-bold text-white transition-colors group-hover:bg-blue-700 dark:bg-blue-500 dark:group-hover:bg-blue-400">
+                <span className="min-w-0 truncate">Compare this matchup</span>
+                <FaArrowRight className="shrink-0 text-[11px] transition-transform group-hover:translate-x-0.5" />
+              </div>
 
-        <button
-          type="button"
-          onClick={() => scrollComparisons(1)}
-          aria-label="Scroll comparisons right"
-          className="absolute right-0 top-1/2 z-10 hidden h-11 w-11 translate-x-3 -translate-y-1/2 items-center justify-center rounded-full border border-blue-100 bg-white text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-700 md:flex"
-        >
-          <FaChevronRight className="text-sm" />
-        </button>
+              <p className="sr-only">{compareTitle}</p>
+            </Link>
+          );
+        })}
       </div>
+
+      <div className="mt-4 flex items-center justify-center gap-2">
+        {Array.from({ length: dotCount }, (_, index) => (
+          <button
+            key={`matchup-dot-${index}`}
+            type="button"
+            onClick={() => {
+              const targetIndex =
+                dotCount <= 1
+                  ? 0
+                  : Math.round(
+                      (index / (dotCount - 1)) * (comparisons.length - 1),
+                    );
+              scrollToComparison(targetIndex);
+            }}
+            aria-label={`Go to comparison group ${index + 1}`}
+            className={`h-2 rounded-full transition-all ${
+              index === activeDot
+                ? "w-6 bg-blue-600 dark:bg-blue-400"
+                : "w-2 bg-slate-300 dark:bg-slate-600"
+            }`}
+          />
+        ))}
+      </div>
+
+      <Link
+        to="/popular-comparisons"
+        className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg bg-blue-50 px-4 text-sm font-bold text-blue-700 sm:hidden dark:bg-blue-500/10 dark:text-blue-300"
+      >
+        View all comparisons
+        <FaArrowRight className="text-[11px]" />
+      </Link>
     </section>
   );
 };

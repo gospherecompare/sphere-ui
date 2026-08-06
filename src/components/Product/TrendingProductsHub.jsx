@@ -1457,7 +1457,7 @@ const TrendingProductsHub = () => {
   };
 
   return (
-    <div className="min-h-screen text-slate-900" data-page-label={config.badge}>
+    <div className="hooks-product-listing hooks-trending-listing min-h-screen text-slate-900" data-page-label={config.badge}>
       <SEO
         title={seoTitle}
         description={seoDescription}

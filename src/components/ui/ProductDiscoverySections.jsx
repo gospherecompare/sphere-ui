@@ -1,6 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-// Icons removed - removed from headings
+import {
+  FaArrowRight,
+  FaBalanceScale,
+  FaChevronRight,
+  FaFire,
+  FaSearch,
+  FaStar,
+  FaThLarge,
+  FaWallet,
+} from "react-icons/fa";
 import { createProductPath } from "../../utils/slugGenerator";
 import { readPreloadedApiResponse } from "../../utils/preloadedApi";
 import {
@@ -480,23 +489,29 @@ const RowVisual = ({ src = "", label = "" }) => {
   );
 };
 
-const BrandLogo = ({ src = "", label = "" }) => {
+const BrandLogo = ({ src = "", label = "", flat = false }) => {
   const [failed, setFailed] = useState(false);
   const imageSrc = normalizeText(src);
   const initial = normalizeText(label).charAt(0).toUpperCase() || "?";
 
   return (
-    <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-md sm:h-14 sm:w-14">
+    <span
+      className={`flex h-11 w-11 items-center justify-center rounded-xl sm:h-14 sm:w-14 ${
+        flat
+          ? "bg-slate-50 dark:bg-[#172941] dark:ring-1 dark:ring-slate-700/60"
+          : "bg-white  dark:bg-[#172941]  dark:ring-1 dark:ring-slate-700/60"
+      }`}
+    >
       {imageSrc && !failed ? (
         <img
           src={imageSrc}
           alt={label || "Brand"}
           loading="lazy"
-          className="h-8 w-8 object-contain sm:h-9 sm:w-9"
+          className="h-8 w-8 object-contain dark:brightness-110 dark:contrast-110 sm:h-9 sm:w-9"
           onError={() => setFailed(true)}
         />
       ) : (
-        <span className="text-sm font-semibold text-slate-500">{initial}</span>
+        <span className="text-sm font-semibold text-slate-500 dark:text-slate-300">{initial}</span>
       )}
     </span>
   );
@@ -611,7 +626,7 @@ const LinkListBlock = ({
     <div
       className={
         isPlainSurface
-          ? "overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)]"
+          ? "overflow-hidden rounded-2xl border border-slate-200/80 bg-white dark:border-slate-700 dark:bg-slate-900"
           : "overflow-hidden rounded-lg bg-white"
       }
     >
@@ -752,6 +767,306 @@ const toCompactPriceLabel = (label = "") => {
   return cleaned || fixCurrencyText(label) || "Explore";
 };
 
+
+const SmartphoneDiscoveryPanelHeader = ({
+  icon: Icon,
+  title,
+  subtitle,
+  tone = "blue",
+}) => {
+  const tones = {
+    blue: {
+      line: "bg-blue-600 dark:bg-blue-400",
+      icon:
+        "bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300",
+    },
+    green: {
+      line: "bg-emerald-500 dark:bg-emerald-400",
+      icon:
+        "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300",
+    },
+    violet: {
+      line: "bg-violet-600 dark:bg-violet-400",
+      icon:
+        "bg-violet-50 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300",
+    },
+  };
+  const palette = tones[tone] || tones.blue;
+
+  return (
+    <div className="relative flex min-h-[92px] items-start gap-3 border-b border-slate-200 px-4 py-4 dark:border-slate-700/70 sm:px-5">
+      <span className={`absolute inset-y-0 left-0 w-1 ${palette.line}`} />
+      <span
+        className={`grid h-11 w-11 shrink-0 place-items-center rounded-md text-lg ${palette.icon}`}
+        aria-hidden="true"
+      >
+        <Icon />
+      </span>
+      <span className="min-w-0 pt-0.5">
+        <strong className="block text-base font-black tracking-tight text-slate-950 dark:text-white sm:text-lg">
+          {title}
+        </strong>
+        <span className="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400 sm:text-sm">
+          {subtitle}
+        </span>
+      </span>
+    </div>
+  );
+};
+
+const SmartphoneDiscoveryPricePanel = ({ items = [], entityType }) => (
+  <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white dark:border-slate-700/70 dark:bg-[#101e31]">
+    <SmartphoneDiscoveryPanelHeader
+      icon={FaWallet}
+      title="Discover by Price"
+      subtitle="Find phones that fit your budget"
+      tone="blue"
+    />
+
+    <div className="grid flex-1 grid-cols-2 gap-px bg-slate-200 dark:bg-slate-700/60 sm:grid-cols-3 lg:grid-cols-1">
+      {items.slice(0, 6).map((item, index) => (
+        <Link
+          key={`${item.path || item.label || "price"}-${index}`}
+          to={normalizeDiscoveryPath(item.path || "", entityType)}
+          className="group flex min-h-14 items-center gap-3 bg-white px-3 py-3 text-slate-800 no-underline transition-colors hover:bg-blue-50/70 hover:no-underline dark:bg-[#101e31] dark:text-slate-200 dark:hover:bg-blue-500/10 sm:px-4 lg:min-h-[58px]"
+        >
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-blue-50 text-sm font-black text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
+            ₹
+          </span>
+          <span className="min-w-0 flex-1 truncate text-[11px] font-bold sm:text-xs lg:text-sm">
+            {toCompactPriceLabel(item.label)}
+          </span>
+          <FaChevronRight className="hidden shrink-0 text-[10px] text-blue-500 dark:text-blue-300 sm:block" />
+        </Link>
+      ))}
+    </div>
+
+    <Link
+      to="/compare"
+      className="group flex min-h-12 items-center justify-center gap-2 border-t border-blue-100 bg-blue-50/70 px-4 text-xs font-extrabold text-blue-700 no-underline transition-colors hover:bg-blue-100 hover:no-underline dark:border-blue-400/20 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/15 sm:text-sm"
+    >
+      <FaBalanceScale />
+      Compare phones side by side
+      <FaArrowRight className="text-[10px] transition-transform group-hover:translate-x-0.5" />
+    </Link>
+  </article>
+);
+
+const SmartphoneDiscoveryBrandPanel = ({ items = [], entityType }) => (
+  <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white dark:border-slate-700/70 dark:bg-[#101e31]">
+    <SmartphoneDiscoveryPanelHeader
+      icon={FaStar}
+      title="Discover by Brand"
+      subtitle="Explore phones by top brands"
+      tone="green"
+    />
+
+    <div className="grid flex-1 grid-cols-3 gap-px bg-slate-200 p-px dark:bg-slate-700/60 sm:grid-cols-5 lg:grid-cols-3">
+      {items.slice(0, 5).map((item, index) => {
+        const rawBrandName = normalizeText(item?.name || item?.label);
+        const brandName = rawBrandName.replace(/\s+Mobiles$/i, "");
+        return (
+          <Link
+            key={`${item.path || brandName || "brand"}-${index}`}
+            to={normalizeDiscoveryPath(item.path || "", entityType)}
+            className="group flex min-h-[106px] min-w-0 flex-col items-center justify-center bg-white px-2 py-3 text-center no-underline transition-colors hover:bg-emerald-50/70 hover:no-underline dark:bg-[#101e31] dark:hover:bg-emerald-500/10 sm:min-h-[112px] lg:min-h-[142px]"
+          >
+            <BrandLogo
+              src={item.logo_url || item.image_url || ""}
+              label={brandName || "Brand"}
+              flat
+            />
+            <span className="mt-2 w-full truncate text-[10px] font-bold text-slate-700 group-hover:text-emerald-700 dark:text-slate-300 dark:group-hover:text-emerald-300 sm:text-[11px] lg:text-xs">
+              {brandName || "Brand"}
+            </span>
+          </Link>
+        );
+      })}
+
+      <Link
+        to="/smartphones"
+        className="group flex min-h-[106px] min-w-0 flex-col items-center justify-center bg-white px-2 py-3 text-center no-underline transition-colors hover:bg-emerald-50/70 hover:no-underline dark:bg-[#101e31] dark:hover:bg-emerald-500/10 sm:min-h-[112px] lg:min-h-[142px]"
+      >
+        <span className="grid h-11 w-11 place-items-center rounded-md bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300">
+          <FaThLarge />
+        </span>
+        <span className="mt-2 text-[10px] font-bold text-slate-700 group-hover:text-emerald-700 dark:text-slate-300 dark:group-hover:text-emerald-300 sm:text-[11px] lg:text-xs">
+          More Brands
+        </span>
+      </Link>
+    </div>
+
+    <Link
+      to="/smartphones"
+      className="group flex min-h-12 items-center justify-center gap-2 border-t border-emerald-100 bg-emerald-50/70 px-4 text-xs font-extrabold text-emerald-700 no-underline transition-colors hover:bg-emerald-100 hover:no-underline dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/15 sm:text-sm"
+    >
+      <FaThLarge />
+      View all brands
+      <FaArrowRight className="text-[10px] transition-transform group-hover:translate-x-0.5" />
+    </Link>
+  </article>
+);
+
+const SmartphoneDiscoverySearchPanel = ({ items = [], entityType }) => (
+  <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white dark:border-slate-700/70 dark:bg-[#101e31]">
+    <SmartphoneDiscoveryPanelHeader
+      icon={FaSearch}
+      title="Popular Searches"
+      subtitle="What people are searching for"
+      tone="violet"
+    />
+
+    <div className="flex flex-1 flex-col divide-y divide-slate-200 dark:divide-slate-700/70">
+      {items.slice(0, 5).map((item, index) => (
+        <Link
+          key={`${item.path || item.label || "popular"}-${index}`}
+          to={normalizeDiscoveryPath(item.path || "", entityType)}
+          className="group flex min-h-[58px] items-center gap-3 px-3 py-3 text-slate-800 no-underline transition-colors hover:bg-violet-50/70 hover:no-underline dark:text-slate-200 dark:hover:bg-violet-500/10 sm:px-4"
+        >
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-violet-50 text-[11px] text-violet-600 dark:bg-violet-500/15 dark:text-violet-300">
+            <FaFire />
+          </span>
+          <span className="min-w-0 flex-1 truncate text-xs font-bold sm:text-sm">
+            {item.label || "Explore"}
+          </span>
+          <FaChevronRight className="shrink-0 text-[10px] text-violet-500 dark:text-violet-300" />
+        </Link>
+      ))}
+    </div>
+
+    <Link
+      to="/smartphones"
+      className="group flex min-h-12 items-center justify-center gap-2 border-t border-violet-100 bg-violet-50/70 px-4 text-xs font-extrabold text-violet-700 no-underline transition-colors hover:bg-violet-100 hover:no-underline dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-300 dark:hover:bg-violet-500/15 sm:text-sm"
+    >
+      <FaFire />
+      Explore all searches
+      <FaArrowRight className="text-[10px] transition-transform group-hover:translate-x-0.5" />
+    </Link>
+  </article>
+);
+
+const SmartphoneDiscoveryHero = ({ latestItems = [] }) => {
+  const images = latestItems
+    .map((item) => normalizeText(item?.image_url))
+    .filter(Boolean)
+    .slice(0, 3);
+
+  return (
+    <header className="relative overflow-hidden bg-white px-1 py-1 dark:bg-transparent sm:px-0 sm:py-0">
+      <div className="relative z-10 max-w-2xl pr-24 sm:pr-40 lg:pr-0">
+        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-blue-600 sm:text-xs">
+          Explore smartphones
+        </p>
+        <h2 className="mt-2 text-2xl font-black tracking-[-0.04em] text-slate-950 dark:text-white sm:text-3xl lg:text-4xl">
+          Find your next smartphone
+        </h2>
+        <p className="mt-2 max-w-xl text-xs leading-5 text-slate-500 dark:text-slate-400 sm:text-sm lg:text-base">
+          Browse by price, brand, or see what everyone is searching for.
+        </p>
+      </div>
+
+      <div className="pointer-events-none absolute -right-4 bottom-0 top-0 hidden w-72 overflow-hidden sm:block lg:w-[360px]">
+        <div className="absolute inset-0 bg-[linear-gradient(135deg,transparent_0%,rgba(37,99,235,0.05)_45%,rgba(124,58,237,0.09)_100%)] dark:bg-[radial-gradient(circle_at_70%_45%,rgba(59,130,246,0.24),transparent_55%)]" />
+        <div className="absolute right-8 top-1/2 h-36 w-36 -translate-y-1/2 rotate-12 border border-blue-100 bg-blue-50/50 dark:border-blue-400/15 dark:bg-blue-500/10" />
+        {images.map((src, index) => (
+          <img
+            key={`${src}-${index}`}
+            src={src}
+            alt=""
+            aria-hidden="true"
+            className={`absolute bottom-[-18px] h-36 w-24 object-contain dark:mix-blend-multiply dark:brightness-125 dark:contrast-125  lg:h-44 lg:w-28 ${
+              index === 0
+                ? "right-24 -rotate-12"
+                : index === 1
+                  ? "right-10 rotate-6"
+                  : "right-0 rotate-12 opacity-80"
+            }`}
+          />
+        ))}
+      </div>
+    </header>
+  );
+};
+
+const SmartphoneCompareBanner = ({ latestItems = [] }) => {
+  const images = latestItems
+    .map((item) => normalizeText(item?.image_url))
+    .filter(Boolean)
+    .slice(0, 3);
+
+  return (
+    <aside className="relative mt-4 overflow-hidden rounded-xl border border-blue-200 bg-blue-50/40 px-4 py-4 dark:border-blue-400/20 dark:bg-gradient-to-r dark:from-[#10213a] dark:via-[#122947] dark:to-[#18264a] sm:px-6 sm:py-5 lg:flex lg:min-h-[132px] lg:items-center lg:justify-between lg:gap-6 lg:px-8">
+      <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-80 overflow-hidden dark:bg-[radial-gradient(circle_at_24%_65%,rgba(59,130,246,0.22),transparent_58%)] sm:block">
+        {images.map((src, index) => (
+          <img
+            key={`compare-${src}-${index}`}
+            src={src}
+            alt=""
+            aria-hidden="true"
+            className={`absolute bottom-[-28px] h-32 w-24 object-contain dark:mix-blend-multiply dark:brightness-125 dark:contrast-125  lg:h-40 lg:w-28 ${
+              index === 0
+                ? "left-2 -rotate-12"
+                : index === 1
+                  ? "left-16 rotate-3"
+                  : "left-28 rotate-12"
+            }`}
+          />
+        ))}
+      </div>
+
+      <div className="relative z-10 sm:pl-48 lg:pl-72">
+        <p className="text-[9px] font-black uppercase tracking-[0.22em] text-blue-600 sm:text-[10px]">
+          Smart comparison
+        </p>
+        <h3 className="mt-1 text-lg font-black tracking-tight text-slate-950 dark:text-white sm:text-xl">
+          Compare phones side by side
+        </h3>
+        <p className="mt-1 max-w-xl text-xs leading-5 text-slate-500 dark:text-slate-300 sm:text-sm">
+          Compare specs, cameras, battery, and features to find the right phone.
+        </p>
+      </div>
+
+      <Link
+        to="/compare"
+        className="relative z-10 mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 bg-blue-600 px-5 text-sm font-extrabold text-white no-underline transition-colors hover:bg-blue-700 hover:no-underline sm:ml-48 sm:w-auto lg:ml-0 lg:mt-0"
+      >
+        <FaBalanceScale />
+        Start Comparing
+        <FaArrowRight className="text-xs" />
+      </Link>
+    </aside>
+  );
+};
+
+const AdvancedSmartphoneDiscovery = ({
+  priceItems = [],
+  brandItems = [],
+  popularItems = [],
+  latestItems = [],
+  entityType = "smartphones",
+}) => (
+  <div className="smartphones-discovery-section overflow-hidden rounded-2xl bg-white px-3 py-5 text-slate-950 dark:bg-[#0b1728] dark:text-slate-100 sm:px-6 sm:py-7">
+    <SmartphoneDiscoveryHero latestItems={latestItems} />
+    <div className="mt-5 grid grid-cols-1 gap-3 bg-transparent sm:gap-4 lg:grid-cols-3">
+      <SmartphoneDiscoveryPricePanel
+        items={priceItems}
+        entityType={entityType}
+      />
+      <SmartphoneDiscoveryBrandPanel
+        items={brandItems}
+        entityType={entityType}
+      />
+      <SmartphoneDiscoverySearchPanel
+        items={popularItems}
+        entityType={entityType}
+      />
+    </div>
+    <div className="mt-4 bg-transparent">
+      <SmartphoneCompareBanner latestItems={latestItems} />
+    </div>
+  </div>
+);
+
 const PriceDiscoveryBlock = ({
   items = [],
   entityType = "smartphones",
@@ -759,7 +1074,7 @@ const PriceDiscoveryBlock = ({
   if (!Array.isArray(items) || items.length === 0) return null;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)]">
+    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white dark:border-slate-700 dark:bg-slate-900">
       <DiscoveryCardHeader title="Discover by Price" />
       <div className="grid grid-cols-2 gap-2 px-3.5 py-3.5 sm:flex sm:flex-wrap sm:px-5 sm:py-4">
         {items.slice(0, 8).map((item, index) => (
@@ -783,7 +1098,7 @@ const PopularSearchesBlock = ({
   if (!Array.isArray(items) || items.length === 0) return null;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)]">
+    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white dark:border-slate-700 dark:bg-slate-900">
       <DiscoveryCardHeader title="Popular Searches" />
       <div className="grid grid-cols-2 gap-2 px-3.5 py-3.5 sm:flex sm:flex-wrap sm:px-5 sm:py-4">
         {items.slice(0, 10).map((item, index) => (
@@ -818,8 +1133,8 @@ const TopBrandsBlock = ({
     <div
       className={
         isPlainSurface
-          ? "overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)]"
-          : "overflow-hidden rounded-lg bg-white "
+          ? "overflow-hidden rounded-2xl border border-slate-200/80 bg-white dark:border-slate-700 dark:bg-slate-900"
+          : "overflow-hidden rounded-xl border border-slate-200/80 bg-white dark:border-slate-700 dark:bg-slate-900 "
       }
     >
       <div
@@ -919,7 +1234,7 @@ const BudgetSidebarBlock = ({ items = [], entityType = "smartphones" }) => {
           <Link
             key={`${item.path || item.label || "sidebar"}-${index}`}
             to={normalizeDiscoveryPath(item.path || "", entityType)}
-            className="group flex items-center gap-4 rounded-[24px] border border-[#cfdcf6] bg-white/90 px-4 py-3 text-slate-800 shadow-[0_10px_28px_rgba(148,163,184,0.10)] transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_14px_36px_rgba(59,130,246,0.12)]"
+            className="group flex items-center gap-4 rounded-[24px] border border-[#cfdcf6] bg-white/90 px-4 py-3 text-slate-800  transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-200 "
           >
             <SidebarTileVisual
               src={item.image_url || item.logo_url || ""}
@@ -1257,10 +1572,10 @@ const ProductDiscoverySections = ({
 
   return (
     <section
-      className={`mx-auto w-full max-w-7xl ${
+      className={`mx-auto w-full max-w-7xl dark:text-slate-100 dark:[&_.text-slate-900]:text-white dark:[&_.text-slate-700]:text-slate-200 dark:[&_.text-slate-600]:text-slate-300 dark:[&_.text-slate-500]:text-slate-400 ${
         isLatestPhonesLayout
           ? "overflow-visible"
-          : "overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)]"
+          : "overflow-hidden rounded-2xl border border-slate-200/80 bg-white dark:border-slate-700 dark:bg-slate-900"
       } ${className}`}
     >
       <div className="mx-auto max-w-7xl ">
@@ -1303,45 +1618,55 @@ const ProductDiscoverySections = ({
             />
           </div>
         ) : isLatestPhonesLayout ? (
-          <div
-            className={
-              isSidebarVariant
-                ? "grid grid-cols-1 gap-4 sm:gap-5"
-                : "grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2 xl:grid-cols-3"
-            }
-          >
-            <div className="min-w-0">
-              <PriceDiscoveryBlock
-                items={byPriceLinks}
-                entityType={entityConfig.type}
-              />
-            </div>
-            <div className="min-w-0">
-              <TopBrandsBlock
-                items={topBrandLinks}
-                entityType={entityConfig.type}
-                titleText="Brand"
-                subtitleText={`Explore ${entityConfig.pluralTitle} by key features`}
-                trimMobilesSuffix={entityConfig.type === "smartphones"}
-                surface="plain"
-                headingPrefix="Discover by"
-              />
-            </div>
-            {popularLinks.length > 0 ? (
-              <div
-                className={
-                  isSidebarVariant
-                    ? "min-w-0"
-                    : "min-w-0 lg:col-span-2 xl:col-span-1"
-                }
-              >
-                <PopularSearchesBlock
-                  items={popularLinks}
+          entityConfig.type === "smartphones" && !isSidebarVariant ? (
+            <AdvancedSmartphoneDiscovery
+              priceItems={byPriceLinks}
+              brandItems={topBrandLinks}
+              popularItems={popularLinks}
+              latestItems={latestLaunchLinks}
+              entityType={entityConfig.type}
+            />
+          ) : (
+            <div
+              className={
+                isSidebarVariant
+                  ? "grid grid-cols-1 gap-4 sm:gap-5"
+                  : "grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2 xl:grid-cols-3"
+              }
+            >
+              <div className="min-w-0">
+                <PriceDiscoveryBlock
+                  items={byPriceLinks}
                   entityType={entityConfig.type}
                 />
               </div>
-            ) : null}
-          </div>
+              <div className="min-w-0">
+                <TopBrandsBlock
+                  items={topBrandLinks}
+                  entityType={entityConfig.type}
+                  titleText="Brand"
+                  subtitleText={`Explore ${entityConfig.pluralTitle} by key features`}
+                  trimMobilesSuffix={entityConfig.type === "smartphones"}
+                  surface="plain"
+                  headingPrefix="Discover by"
+                />
+              </div>
+              {popularLinks.length > 0 ? (
+                <div
+                  className={
+                    isSidebarVariant
+                      ? "min-w-0"
+                      : "min-w-0 lg:col-span-2 xl:col-span-1"
+                  }
+                >
+                  <PopularSearchesBlock
+                    items={popularLinks}
+                    entityType={entityConfig.type}
+                  />
+                </div>
+              ) : null}
+            </div>
+          )
         ) : (
           <div className="grid grid-cols-1 gap-3 p-3 sm:gap-4 sm:p-5 md:grid-cols-2 md:gap-4">
             <div className="space-y-3 sm:space-y-4 md:pr-1">

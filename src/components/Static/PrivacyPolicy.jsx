@@ -1,294 +1,156 @@
 import React from "react";
-import { Link } from "react-router-dom";
 import {
-  FaAd,
-  FaArrowRight,
   FaCookieBite,
-  FaEnvelope,
-  FaExternalLinkAlt,
+  FaDatabase,
+  FaEye,
   FaLock,
-  FaServer,
   FaShieldAlt,
   FaUserCheck,
 } from "react-icons/fa";
 import useTitle from "../../hooks/useTitle";
 import SEO from "../SEO";
+import CompanyPageShell from "../ui/CompanyPageShell";
 import { createWebPageSchema } from "../../utils/schemaGenerators";
 
 const SITE_ORIGIN = "https://tryhook.shop";
-const CONTACT_EMAIL = "contact@tryhook.shop";
-const updatedOn = "June 2026";
+const EFFECTIVE_DATE = "August 1, 2026";
 
-const policySections = [
+const highlights = [
   {
-    id: "overview",
-    number: "1",
-    title: "Overview",
-    icon: FaShieldAlt,
-    paragraphs: [
-      "At TryHook, we respect the privacy of our visitors and are committed to protecting the information that is shared with us. This Privacy Policy explains how information is collected, used, stored, and protected when you access and use the TryHook website. By visiting or using our platform, you agree to the practices described in this policy.",
-      "TryHook is a technology discovery, comparison, and news platform that provides information related to consumer electronics, technology, artificial intelligence, science, internet services, and digital innovation. As part of operating and improving our services, certain information may be collected when users interact with the website.",
-    ],
+    icon: FaEye,
+    title: "Clear purpose",
+    text: "Information is used to operate, secure and improve the Hooks experience.",
   },
   {
-    id: "information-collected-automatically",
-    number: "2",
-    title: "Information Collected Automatically",
-    icon: FaServer,
-    paragraphs: [
-      "When you visit TryHook, some information is collected automatically through standard web technologies. This may include details such as your device type, browser information, operating system, IP address, pages visited, time spent on the website, referral sources, and general usage patterns.",
-      "This information helps us understand how visitors use the platform, identify technical issues, improve performance, and enhance the overall user experience. Information collected for analytics purposes is generally used in an aggregated form and is not intended to personally identify individual users.",
-    ],
-  },
-  {
-    id: "information-you-provide",
-    number: "3",
-    title: "Information You Provide",
-    icon: FaUserCheck,
-    paragraphs: [
-      "In certain situations, you may voluntarily provide information to us. For example, you may contact us by email, submit feedback, report an issue, request support, or communicate with us regarding partnerships and business inquiries.",
-      "In such cases, the information you provide may include your name, email address, and any details included in your communication. We use this information solely for responding to inquiries, improving our services, and maintaining communication where necessary.",
-    ],
-  },
-  {
-    id: "cookies",
-    number: "4",
-    title: "Cookies and Similar Technologies",
-    icon: FaCookieBite,
-    paragraphs: [
-      "Like most modern websites, TryHook may use cookies and similar technologies to improve functionality and provide a better browsing experience. Cookies help us understand user preferences, analyze website traffic, remember certain settings, and measure the effectiveness of content and services.",
-      "Cookies do not generally provide us with sensitive personal information, but they may help us improve how the website functions and how content is delivered to visitors. Users can choose to disable cookies through their browser settings, although certain features of the website may not function as intended if cookies are disabled.",
-    ],
-  },
-  {
-    id: "third-party-providers",
-    number: "5",
-    title: "Third-Party Providers",
-    icon: FaExternalLinkAlt,
-    paragraphs: [
-      "To improve our services and maintain the website, TryHook may use trusted third-party providers for analytics, security, hosting, content delivery, communication, and advertising. These providers may process information according to their own privacy policies and legal obligations.",
-      "Services such as website analytics platforms, hosting providers, content delivery networks, and advertising partners may collect limited technical information necessary for their services to function properly.",
-    ],
-  },
-  {
-    id: "advertising",
-    number: "6",
-    title: "Advertising Partners",
-    icon: FaAd,
-    paragraphs: [
-      "As TryHook continues to grow, advertisements may be displayed through advertising partners such as Google AdSense and other advertising networks. These partners may use cookies, device identifiers, and similar technologies to deliver relevant advertisements and measure advertising performance.",
-      "Advertising providers operate under their own privacy policies, and users are encouraged to review those policies for additional information regarding data collection and advertising preferences.",
-    ],
-  },
-  {
-    id: "security",
-    number: "7",
-    title: "Data Security",
     icon: FaLock,
+    title: "Reasonable safeguards",
+    text: "Administrative and technical measures are used to protect information handled by the platform.",
+  },
+  {
+    icon: FaUserCheck,
+    title: "Choices and requests",
+    text: "Users can contact Hooks about privacy questions, corrections or deletion requests where applicable.",
+  },
+];
+
+const sections = [
+  {
+    id: "scope",
+    title: "Scope of this policy",
     paragraphs: [
-      "Protecting user information is important to us. We implement reasonable technical and organizational measures designed to safeguard information from unauthorized access, misuse, alteration, disclosure, or destruction.",
-      "While we strive to maintain a secure environment, no method of electronic transmission or storage can guarantee absolute security. As a result, we cannot guarantee complete protection against every potential security risk.",
+      "This Privacy Policy explains how Hooks handles information when you visit tryhook.shop, use product discovery and comparison features, read editorial content, submit a contact request or interact with related services.",
+      "This policy applies to information handled by Hooks. Third-party retailers, analytics providers, advertising platforms and external websites operate under their own privacy policies.",
     ],
   },
   {
-    id: "external-links",
-    number: "8",
-    title: "External Links",
-    icon: FaExternalLinkAlt,
+    id: "information-collected",
+    title: "Information we may collect",
+    description: "The information available to Hooks depends on how you use the platform.",
+    bullets: [
+      "Information you provide directly, such as your name, email address and message when contacting the team",
+      "Technical information such as browser type, device type, operating system, approximate region, referring page and IP-related security signals",
+      "Usage information such as pages viewed, searches, comparison interactions, clicks and session timing",
+      "Notification preferences and permission status when you choose to enable browser or app notifications",
+      "Diagnostic information used to detect errors, abuse, performance issues and security incidents",
+    ],
+  },
+  {
+    id: "how-information-is-used",
+    title: "How information may be used",
+    bullets: [
+      "Provide and maintain product discovery, comparison, news and support features",
+      "Respond to enquiries, corrections, editorial tips and business requests",
+      "Improve search relevance, navigation, page performance and product data quality",
+      "Measure aggregated engagement and understand which content is useful",
+      "Protect the platform against spam, fraud, misuse and technical threats",
+      "Comply with valid legal obligations and enforce platform terms",
+    ],
+  },
+  {
+    id: "cookies-and-measurement",
+    title: "Cookies, analytics and similar technologies",
     paragraphs: [
-      "TryHook may contain links to third-party websites, products, services, or resources that are not controlled or operated by us. Once you leave our website, the privacy practices of those external websites are governed by their own policies.",
-      "We encourage users to review the privacy policies of any third-party websites they visit, as we are not responsible for their content, security practices, or data handling procedures.",
+      "Hooks may use cookies, local storage, analytics tools and similar technologies to remember preferences, understand usage, measure performance and support advertising or affiliate attribution. Some technologies may be provided by third parties.",
+      "You can control many cookies through your browser settings. Blocking some technologies may affect preferences, analytics, notifications or parts of the site experience.",
+    ],
+  },
+  {
+    id: "sharing",
+    title: "When information may be shared",
+    paragraphs: [
+      "Hooks does not sell personal information as a standalone data product. Information may be shared with service providers that support hosting, analytics, communications, security, advertising, affiliate measurement or other platform operations, subject to appropriate contractual or technical controls where applicable.",
+      "Information may also be disclosed when required by law, necessary to protect rights or safety, or connected with a legitimate business reorganisation, acquisition or transfer of assets.",
+    ],
+  },
+  {
+    id: "retention-and-security",
+    title: "Retention and security",
+    paragraphs: [
+      "Information is retained only for as long as reasonably necessary for the purposes described in this policy, including support, security, analytics, dispute resolution and legal requirements. Retention periods can vary by information type and service provider.",
+      "No online system can guarantee absolute security. Hooks uses reasonable safeguards, but users should avoid sending sensitive personal, financial or authentication information through general contact channels.",
+    ],
+  },
+  {
+    id: "your-choices",
+    title: "Your choices and privacy requests",
+    bullets: [
+      "Adjust cookies and site data through your browser settings",
+      "Disable notifications through browser or device settings",
+      "Request correction or deletion of information you submitted, where applicable",
+      "Ask how a privacy request will be verified and processed",
+      "Contact Hooks with questions about this policy or the handling of your information",
     ],
   },
   {
     id: "children",
-    number: "9",
-    title: "Children's Privacy",
-    icon: FaUserCheck,
+    title: "Children's privacy",
     paragraphs: [
-      "Our website is intended for a general audience and is not specifically directed toward children under the age of 13. We do not knowingly collect personal information from children.",
-      "If we become aware that information from a child has been collected without appropriate consent, we will take reasonable steps to remove that information.",
+      "Hooks is a general-audience technology platform and is not designed to knowingly collect personal information from children below the age required for independent consent in their jurisdiction. A parent or guardian who believes a child provided personal information may contact Hooks for review.",
     ],
   },
   {
-    id: "updates-and-contact",
-    number: "10",
-    title: "Policy Updates and Contact",
-    icon: FaEnvelope,
+    id: "changes",
+    title: "Changes to this policy",
     paragraphs: [
-      "We may update this Privacy Policy from time to time to reflect changes in our services, legal requirements, technologies, or business practices. Any updates will be published on this page along with the revised effective date.",
-      "Continued use of the website after changes have been posted constitutes acceptance of the updated policy. If you have any questions regarding this Privacy Policy, your privacy rights, or the way information is handled on TryHook, please contact us at contact@tryhook.shop. We will make reasonable efforts to respond to inquiries and address concerns in a timely manner.",
-      "Thank you for trusting TryHook as your destination for technology discovery, comparisons, and technology news.",
+      "This policy may be updated as the platform, service providers or legal requirements change. The effective date at the top of the page will be revised when material changes are published.",
+    ],
+  },
+  {
+    id: "contact",
+    title: "Privacy contact",
+    paragraphs: [
+      "Privacy questions and requests can be sent to contact@tryhook.shop. Include enough information to understand the request, but do not send passwords, payment details or government identification unless specifically required through a secure process.",
     ],
   },
 ];
 
 const PrivacyPolicy = () => {
   useTitle({ page: "Privacy Policy" });
-
-  const canonical = `${SITE_ORIGIN}/privacy-policy`;
-  const privacySchema = createWebPageSchema({
-    name: "Privacy Policy",
+  const canonical = `${SITE_ORIGIN}/privacy-policy/`;
+  const schema = createWebPageSchema({
+    name: "Hooks Privacy Policy",
     description:
-      "Privacy Policy for TryHook, explaining how information is collected, used, stored, protected, and handled across the technology discovery and comparison platform.",
+      "Learn how Hooks may collect, use, protect and share information across its product comparison, discovery, news and support experiences.",
     url: canonical,
   });
 
   return (
     <>
       <SEO
-        title="Privacy Policy - TryHook"
-        description="Read the TryHook Privacy Policy to understand how information is collected, used, stored, protected, and handled when you use the website."
+        title="Privacy Policy | How Hooks Handles Information"
+        description="Read the Hooks Privacy Policy covering information collection, cookies, analytics, security, retention, service providers and privacy choices."
         url={canonical}
-        robots="index, follow"
-        ogType="website"
-        schema={privacySchema}
+        schema={schema}
       />
-
-      <main className="min-h-screen bg-white text-slate-950">
-        <section className="bg-white">
-          <div className="mx-auto grid max-w-6xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-[1fr_0.4fr] lg:px-8 lg:py-16">
-            <div>
-              <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
-                <Link
-                  to="/"
-                  className="font-medium transition-colors hover:text-slate-900"
-                >
-                  Home
-                </Link>
-                <span className="text-slate-300">/</span>
-                <span className="font-medium text-slate-700">
-                  Privacy Policy
-                </span>
-              </div>
-
-              <p className="mt-8 text-xs font-semibold uppercase tracking-[0.24em] text-blue-700">
-                Privacy Policy
-              </p>
-              <h1 className="mt-4 text-4xl font-black leading-tight tracking-tight text-slate-950 sm:text-5xl">
-                Privacy Policy
-              </h1>
-              <p className="mt-4 text-sm font-semibold text-slate-500">
-                Last Updated: {updatedOn}
-              </p>
-              <p className="mt-6 max-w-3xl text-base leading-8 text-slate-600 sm:text-lg">
-                This policy explains how TryHook collects, uses, stores, and
-                protects information when visitors use our technology discovery,
-                comparison, and news platform.
-              </p>
-            </div>
-
-            <div className="rounded-lg border border-blue-100 bg-white p-6">
-              <div className="flex h-12 w-12 items-center justify-center rounded-md border border-blue-100 bg-white text-blue-700">
-                <FaShieldAlt className="h-5 w-5" />
-              </div>
-              <h2 className="mt-5 text-xl font-black text-slate-950">
-                Your privacy matters.
-              </h2>
-              <p className="mt-3 text-sm leading-7 text-slate-600">
-                TryHook uses information to improve reliability, answer
-                inquiries, support analytics, and maintain a better browsing
-                experience.
-              </p>
-              <a
-                href={`mailto:${CONTACT_EMAIL}`}
-                className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-blue-700 hover:text-blue-800"
-              >
-                {CONTACT_EMAIL}
-                <FaArrowRight className="h-3.5 w-3.5" />
-              </a>
-            </div>
-          </div>
-        </section>
-
-        <section className="bg-white">
-          <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[16rem_1fr] lg:px-8 lg:py-14">
-            <aside className="hidden lg:block">
-              <div className="sticky top-24 rounded-lg border border-slate-200 bg-white p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-700">
-                  Contents
-                </p>
-                <nav className="mt-4 space-y-1">
-                  {policySections.map((section) => (
-                    <a
-                      key={section.id}
-                      href={`#${section.id}`}
-                      className="flex items-start gap-3 rounded-md px-3 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700"
-                    >
-                      <span className="text-blue-700">{section.number}</span>
-                      <span>{section.title}</span>
-                    </a>
-                  ))}
-                </nav>
-              </div>
-            </aside>
-
-            <div className="space-y-4">
-              {policySections.map((section) => {
-                const Icon = section.icon;
-
-                return (
-                  <article
-                    key={section.id}
-                    id={section.id}
-                    className="scroll-mt-28 rounded-lg border border-slate-200 bg-white p-6 sm:p-8"
-                  >
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-blue-100 bg-white text-blue-700">
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-700">
-                          Section {section.number}
-                        </p>
-                        <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
-                          {section.title}
-                        </h2>
-                        <div className="mt-5 space-y-4 text-base leading-8 text-slate-700">
-                          {section.paragraphs.map((paragraph) => (
-                            <p key={paragraph}>{paragraph}</p>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        <section className="bg-white">
-          <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
-            <div className="rounded-lg border border-blue-100 bg-white p-6 sm:p-8">
-              <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-700">
-                    Contact
-                  </p>
-                  <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-950">
-                    Questions about this policy?
-                  </h2>
-                  <a
-                    href={`mailto:${CONTACT_EMAIL}`}
-                    className="mt-3 inline-flex break-all text-lg font-black text-blue-700 hover:text-blue-800"
-                  >
-                    {CONTACT_EMAIL}
-                  </a>
-                </div>
-
-                <a
-                  href={`mailto:${CONTACT_EMAIL}`}
-                  className="inline-flex items-center justify-center gap-2 rounded-md bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
-                >
-                  <FaEnvelope className="h-4 w-4" />
-                  Contact TryHook
-                </a>
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
+      <CompanyPageShell
+        eyebrow="Privacy Policy"
+        title="Privacy information in plain language."
+        intro="This policy explains what information Hooks may handle, why it is used, when service providers may receive it and which choices are available to users."
+        updated={EFFECTIVE_DATE}
+        icon={FaShieldAlt}
+        highlights={highlights}
+        sections={sections}
+      />
     </>
   );
 };
