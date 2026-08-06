@@ -9,10 +9,10 @@ import {
 import {
   buildCanonicalComparePath,
   toCanonicalCompareSlug,
-} from "../../utils/compareRoutes";
-import { readPreloadedApiResponse } from "../../utils/preloadedApi";
-import { API_ORIGIN_URL, buildApiUrl } from "../../utils/apiUrl";
-import { fetchPublicJson } from "../../utils/publicJsonRequest";
+} from "../utils/compareRoutes";
+import { readPreloadedApiResponse } from "../utils/preloadedApi";
+import { API_ORIGIN_URL, buildApiUrl } from "../utils/apiUrl";
+import { fetchPublicJson } from "../utils/publicJsonRequest";
 
 const normalizeText = (value) => String(value || "").trim();
 
