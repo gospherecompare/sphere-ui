@@ -1,30 +1,15 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { normalizeApiBaseUrl } from "../utils/apiUrl";
+import {
+  DEFAULT_LOCAL_API_BASE_URL,
+  DEFAULT_REMOTE_API_BASE_URL,
+  resolveApiBaseUrl,
+} from "../utils/apiUrl";
 
-const REMOTE_API_BASE_URL = "https://api.apisphere.in/api";
-const LOCAL_API_BASE_URL = "http://localhost:5000/api";
 const WINDOW_PAYLOAD_KEY = "__HOOKS_PRERENDER_DATA__";
-
-const resolveApiBaseUrl = () => {
-  const configuredValue = String(import.meta.env.VITE_API_BASE_URL || "").trim();
-  const configured = configuredValue
-    ? normalizeApiBaseUrl(configuredValue)
-    : "";
-  if (configured) return configured;
-
-  if (typeof window !== "undefined") {
-    const hostname = window.location?.hostname;
-    if (hostname === "localhost" || hostname === "127.0.0.1") {
-      return LOCAL_API_BASE_URL;
-    }
-  }
-
-  return REMOTE_API_BASE_URL;
-};
 
 const API_BASE_URL = resolveApiBaseUrl();
 const API_BASE_URL_ALIASES = Array.from(
-  new Set([API_BASE_URL, REMOTE_API_BASE_URL]),
+  new Set([API_BASE_URL, DEFAULT_REMOTE_API_BASE_URL]),
 );
 
 // Normalization helpers (copied from previous DeviceContext)
@@ -299,7 +284,9 @@ const normalizeSmartphoneCollection = (body, preferredKeys = []) => {
       saleStatus: d.saleStatus ?? d.sale_status ?? null,
       store_stage: d.store_stage ?? d.storeStage ?? null,
       storeStage: d.storeStage ?? d.store_stage ?? null,
-      available_date: normalizeDate(d.available_date ?? d.availableDate ?? null),
+      available_date: normalizeDate(
+        d.available_date ?? d.availableDate ?? null,
+      ),
       availableDate: normalizeDate(d.availableDate ?? d.available_date ?? null),
       available_date_label:
         d.available_date_label ?? d.availableDateLabel ?? null,
@@ -947,9 +934,7 @@ export const fetchSmartphone = createAsyncThunk(
       if (!Number.isNaN(numericId) && String(identifier).trim() !== "") {
         // try fetch by id using public endpoint
         const res = await fetch(
-          `https://api.apisphere.in/api/public/product/${encodeURIComponent(
-            identifier,
-          )}`,
+          `${API_BASE_URL}/public/product/${encodeURIComponent(identifier)}`,
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const body = await res.json();
