@@ -4168,6 +4168,62 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     return m ? parseInt(m[1], 10) : null;
   };
 
+  const hasAiPhoneSignal = (card) => {
+    const aiKeyPattern =
+      /(?:^|[_-])ai(?:$|[_-])|ai(?:features?|phone)|isai|artificial/i;
+    const aiTextPattern =
+      /\bai\b|artificial intelligence|ai[-\s]?powered|ai[-\s]?phone/i;
+    const visit = (value, key = "") => {
+      if (value == null) return false;
+      if (aiKeyPattern.test(String(key))) {
+        if (typeof value === "boolean") return value;
+        const normalized = String(value).trim().toLowerCase();
+        if (["", "0", "false", "no", "none", "null"].includes(normalized)) {
+          return false;
+        }
+        return Array.isArray(value) ? value.length > 0 : Boolean(value);
+      }
+      if (typeof value === "string") return aiTextPattern.test(value);
+      if (Array.isArray(value)) return value.some((item) => visit(item));
+      if (typeof value === "object") {
+        return Object.entries(value).some(([entryKey, entryValue]) =>
+          visit(entryValue, entryKey),
+        );
+      }
+      return false;
+    };
+    const explicitSignals = [
+      card?.isAiPhone,
+      card?.is_ai,
+      card?.ai_phone,
+      card?.aiPhone,
+      card?.isAi,
+      card?.ai,
+      card?.ai_features,
+      card?.aiFeatures,
+      card?.specs?.isAiPhone,
+      card?.specs?.ai_features,
+      card?.specs?.ai,
+      card?.specs?.aiFeatures,
+      card?.specifications?.ai_features,
+      card?.key_specs_json?.ai_features,
+      card?.software?.ai_features,
+      card?.performance?.ai_features,
+      card?.camera?.ai,
+      card?.camera?.ai_features,
+      card?.multimedia?.ai_features,
+    ];
+    if (explicitSignals.some((value) => visit(value, "ai"))) return true;
+    return [
+      card?.features,
+      card?.tags,
+      card?.keywords,
+      card?.description,
+      card?.summary,
+      card?.name,
+      card?.model,
+    ].some((value) => visit(value));
+  };
   const getAiFeatureCount = (card) => {
     const buckets = [
       card?.ai_features,
@@ -5324,99 +5380,101 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
             <div className="px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
               <div className="relative mx-auto max-w-7xl">
-              <div className="grid items-center gap-4 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-8">
-                <div className={`${heroContentWidthClass} min-w-0`}>
-                  <div className="mb-2 inline-flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.18em] text-blue-700 dark:text-[#8eb0ff]">
-                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-100" />
-                    Live smartphone catalogue
-                  </div>
-                  <h1
-                    className={`${heroTitleWidthClass} max-w-4xl text-4xl font-black leading-[0.98] tracking-[-0.055em] text-[#0f172a] sm:text-5xl lg:text-7xl dark:text-[#f7faff]`}
-                  >
-                    {heroTitleText}
-                  </h1>
-
-                  <p
-                    className={`${heroSubtitleWidthClass} mt-3 max-w-3xl text-sm leading-6 text-[#64748b] sm:text-base dark:text-[#afbdd2]`}
-                    style={heroSubtitleStyle}
-                  >
-                    {heroSubtitleText}
-                  </p>
-
-                  <div className="mt-4 flex flex-wrap items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setShowFilters(true)}
-                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700"
+                <div className="grid items-center gap-4 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-8">
+                  <div className={`${heroContentWidthClass} min-w-0`}>
+                    <div className="mb-2 inline-flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.18em] text-blue-700 dark:text-[#8eb0ff]">
+                      <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-100" />
+                      Live smartphone catalogue
+                    </div>
+                    <h1
+                      className={`${heroTitleWidthClass} max-w-4xl text-4xl font-black leading-[0.98] tracking-[-0.055em] text-[#0f172a] sm:text-5xl lg:text-7xl dark:text-[#f7faff]`}
                     >
-                      <FaFilter /> Refine phones
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowSort(true)}
-                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#ffffff] px-5 py-2.5 text-sm font-bold text-[#1e293b] ring-1 ring-[#e2e8f0] transition hover:bg-[#f8fafc] lg:hidden dark:bg-[#0e1b2d] dark:text-[#eaf1ff] dark:ring-[#2a3d58] dark:hover:bg-[#132640]"
+                      {heroTitleText}
+                    </h1>
+
+                    <p
+                      className={`${heroSubtitleWidthClass} mt-3 max-w-3xl text-sm leading-6 text-[#64748b] sm:text-base dark:text-[#afbdd2]`}
+                      style={heroSubtitleStyle}
                     >
-                      <FaSyncAlt /> Sort results
-                    </button>
-                    {isExpandedHeroDescriptionPath ? (
+                      {heroSubtitleText}
+                    </p>
+
+                    <div className="mt-4 flex flex-wrap items-center gap-3">
                       <button
                         type="button"
-                        onClick={() => setShowHeroDescription((prev) => !prev)}
-                        className="inline-flex min-h-11 items-center gap-2 px-2 text-sm font-bold text-blue-700 transition hover:text-blue-900 dark:text-[#8eb0ff] dark:hover:text-[#b6ccff]"
-                        aria-expanded={showHeroDescription}
+                        onClick={() => setShowFilters(true)}
+                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700"
                       >
-                        {showHeroDescription
-                          ? "Show less"
-                          : "Read buying context"}
-                        <FaChevronRight />
+                        <FaFilter /> Refine phones
                       </button>
-                    ) : null}
+                      <button
+                        type="button"
+                        onClick={() => setShowSort(true)}
+                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#ffffff] px-5 py-2.5 text-sm font-bold text-[#1e293b] ring-1 ring-[#e2e8f0] transition hover:bg-[#f8fafc] lg:hidden dark:bg-[#0e1b2d] dark:text-[#eaf1ff] dark:ring-[#2a3d58] dark:hover:bg-[#132640]"
+                      >
+                        <FaSyncAlt /> Sort results
+                      </button>
+                      {isExpandedHeroDescriptionPath ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowHeroDescription((prev) => !prev)
+                          }
+                          className="inline-flex min-h-11 items-center gap-2 px-2 text-sm font-bold text-blue-700 transition hover:text-blue-900 dark:text-[#8eb0ff] dark:hover:text-[#b6ccff]"
+                          aria-expanded={showHeroDescription}
+                        >
+                          {showHeroDescription
+                            ? "Show less"
+                            : "Read buying context"}
+                          <FaChevronRight />
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
 
-                <div
-                  className="relative mx-auto hidden h-[190px] w-full max-w-[350px] sm:h-[220px] lg:block lg:h-[230px]"
-                  aria-label="Smartphone technology illustration"
-                  role="img"
-                >
-                  <div className="absolute inset-x-10 top-7 h-36 rounded-full bg-blue-500/15 blur-3xl" />
-                  <div className="absolute left-1/2 top-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full border border-blue-200/70" />
-                  <div className="absolute left-1/2 top-1/2 h-28 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full border border-indigo-200/60 -rotate-12" />
-                  <div className="absolute left-[17%] top-[18%] h-[152px] w-[78px] -rotate-12 rounded-[22px] bg-slate-950 p-1.5 sm:h-[174px] sm:w-[88px]">
-                    <div className="relative h-full w-full overflow-hidden rounded-[18px] bg-gradient-to-br from-slate-700 via-blue-700 to-indigo-700">
-                      <div className="absolute left-2 top-2 grid h-9 w-9 grid-cols-2 gap-1 rounded-xl bg-slate-950/65 p-1.5">
-                        <span className="rounded-full bg-blue-200" />
-                        <span className="rounded-full bg-slate-400" />
-                        <span className="rounded-full bg-indigo-300" />
-                        <span className="rounded-full bg-slate-700" />
+                  <div
+                    className="relative mx-auto hidden h-[190px] w-full max-w-[350px] sm:h-[220px] lg:block lg:h-[230px]"
+                    aria-label="Smartphone technology illustration"
+                    role="img"
+                  >
+                    <div className="absolute inset-x-10 top-7 h-36 rounded-full bg-blue-500/15 blur-3xl" />
+                    <div className="absolute left-1/2 top-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full border border-blue-200/70" />
+                    <div className="absolute left-1/2 top-1/2 h-28 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full border border-indigo-200/60 -rotate-12" />
+                    <div className="absolute left-[17%] top-[18%] h-[152px] w-[78px] -rotate-12 rounded-[22px] bg-slate-950 p-1.5 sm:h-[174px] sm:w-[88px]">
+                      <div className="relative h-full w-full overflow-hidden rounded-[18px] bg-gradient-to-br from-slate-700 via-blue-700 to-indigo-700">
+                        <div className="absolute left-2 top-2 grid h-9 w-9 grid-cols-2 gap-1 rounded-xl bg-slate-950/65 p-1.5">
+                          <span className="rounded-full bg-blue-200" />
+                          <span className="rounded-full bg-slate-400" />
+                          <span className="rounded-full bg-indigo-300" />
+                          <span className="rounded-full bg-slate-700" />
+                        </div>
+                        <span className="absolute bottom-4 left-1/2 h-1 w-8 -translate-x-1/2 rounded-full bg-white/35" />
                       </div>
-                      <span className="absolute bottom-4 left-1/2 h-1 w-8 -translate-x-1/2 rounded-full bg-white/35" />
                     </div>
-                  </div>
-                  <div className="absolute left-[46%] top-[4%] h-[174px] w-[86px] rotate-6 rounded-[24px] bg-slate-950 p-1.5 sm:h-[198px] sm:w-[98px]">
-                    <div className="relative h-full w-full overflow-hidden rounded-[20px] bg-gradient-to-br from-cyan-300 via-blue-500 to-indigo-700">
-                      <span className="absolute left-1/2 top-2 h-2 w-2 -translate-x-1/2 rounded-full bg-slate-950/80" />
-                      <span className="absolute -left-10 top-12 h-28 w-28 rounded-full border-[16px] border-white/25" />
-                      <span className="absolute -right-10 bottom-5 h-24 w-24 rounded-full border-[14px] border-cyan-100/25" />
+                    <div className="absolute left-[46%] top-[4%] h-[174px] w-[86px] rotate-6 rounded-[24px] bg-slate-950 p-1.5 sm:h-[198px] sm:w-[98px]">
+                      <div className="relative h-full w-full overflow-hidden rounded-[20px] bg-gradient-to-br from-cyan-300 via-blue-500 to-indigo-700">
+                        <span className="absolute left-1/2 top-2 h-2 w-2 -translate-x-1/2 rounded-full bg-slate-950/80" />
+                        <span className="absolute -left-10 top-12 h-28 w-28 rounded-full border-[16px] border-white/25" />
+                        <span className="absolute -right-10 bottom-5 h-24 w-24 rounded-full border-[14px] border-cyan-100/25" />
+                      </div>
                     </div>
+                    <div className="absolute left-1 top-3 grid h-11 w-11 place-items-center rounded-xl bg-white/75 text-blue-600 ring-1 ring-blue-100 backdrop-blur-sm dark:bg-[#0e1d31]/90 dark:text-[#8fb4ff] dark:ring-[#2a456c]">
+                      <FaRobot />
+                    </div>
+                    <div className="absolute bottom-4 left-4 grid h-10 w-10 place-items-center rounded-xl bg-white/75 text-blue-600 ring-1 ring-blue-100 backdrop-blur-sm dark:bg-[#0e1d31]/90 dark:text-[#8fb4ff] dark:ring-[#2a456c]">
+                      <FaWifi />
+                    </div>
+                    <div className="absolute right-3 top-8 grid h-11 w-11 place-items-center rounded-xl bg-white/75 text-blue-600 ring-1 ring-blue-100 backdrop-blur-sm dark:bg-[#0e1d31]/90 dark:text-[#8fb4ff] dark:ring-[#2a456c]">
+                      <FaBatteryFull />
+                    </div>
+                    <div className="absolute bottom-3 right-8 grid h-10 w-10 place-items-center rounded-xl bg-white/75 text-blue-600 ring-1 ring-blue-100 backdrop-blur-sm dark:bg-[#0e1d31]/90 dark:text-[#8fb4ff] dark:ring-[#2a456c]">
+                      <FaMobileAlt />
+                    </div>
+                    <span className="absolute right-2 top-1/2 h-2.5 w-2.5 rounded-full bg-cyan-400" />
+                    <span className="absolute bottom-8 left-1/3 h-2 w-2 rounded-full bg-indigo-400" />
                   </div>
-                  <div className="absolute left-1 top-3 grid h-11 w-11 place-items-center rounded-xl bg-white/75 text-blue-600 ring-1 ring-blue-100 backdrop-blur-sm dark:bg-[#0e1d31]/90 dark:text-[#8fb4ff] dark:ring-[#2a456c]">
-                    <FaRobot />
-                  </div>
-                  <div className="absolute bottom-4 left-4 grid h-10 w-10 place-items-center rounded-xl bg-white/75 text-blue-600 ring-1 ring-blue-100 backdrop-blur-sm dark:bg-[#0e1d31]/90 dark:text-[#8fb4ff] dark:ring-[#2a456c]">
-                    <FaWifi />
-                  </div>
-                  <div className="absolute right-3 top-8 grid h-11 w-11 place-items-center rounded-xl bg-white/75 text-blue-600 ring-1 ring-blue-100 backdrop-blur-sm dark:bg-[#0e1d31]/90 dark:text-[#8fb4ff] dark:ring-[#2a456c]">
-                    <FaBatteryFull />
-                  </div>
-                  <div className="absolute bottom-3 right-8 grid h-10 w-10 place-items-center rounded-xl bg-white/75 text-blue-600 ring-1 ring-blue-100 backdrop-blur-sm dark:bg-[#0e1d31]/90 dark:text-[#8fb4ff] dark:ring-[#2a456c]">
-                    <FaMobileAlt />
-                  </div>
-                  <span className="absolute right-2 top-1/2 h-2.5 w-2.5 rounded-full bg-cyan-400" />
-                  <span className="absolute bottom-8 left-1/3 h-2 w-2 rounded-full bg-indigo-400" />
                 </div>
               </div>
-            </div>
             </div>
           </section>
 
@@ -5752,10 +5810,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                       const scoreValue = Number.isFinite(scoreValueRaw)
                         ? formatSmartphoneBadgeScore(scoreValueRaw)
                         : null;
-                      const isAiDevice = Boolean(
-                        device.specs?.isAiPhone ||
-                        getAiFeatureCount(device) > 0,
-                      );
+                      const isAiDevice = hasAiPhoneSignal(device);
                       const statusLabel = isUpcomingCard
                         ? null
                         : device.display_status ||
@@ -6265,7 +6320,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                         <div
                           key={`${device.id ?? device.model ?? ""}-${_idx}`}
                           onClick={(e) => handleView(device, e)}
-                          className={`smartphone-catalog-card mx-auto h-auto w-full cursor-pointer overflow-hidden rounded-2xl bg-[#ffffff] transition duration-200 md:h-full dark:bg-[#0e1a2b] dark:[&_.bg-white]:bg-[#0f1c2d] dark:[&_.bg-slate-50]:bg-[#132238] dark:[&_.bg-slate-100]:bg-[#162941] dark:[&_.bg-blue-50]:bg-[#142b52] dark:[&_.bg-blue-100]:bg-[#1b3967] dark:[&_.smartphone-card-media_.bg-white]:bg-[#11213d] dark:[&_.text-slate-950]:text-[#f3f7ff] dark:[&_.text-slate-900]:text-[#eaf1ff] dark:[&_.text-slate-800]:text-[#d8e2f0] dark:[&_.text-slate-700]:text-[#c7d2e5] dark:[&_.text-slate-600]:text-[#aebbd0] dark:[&_.text-slate-500]:text-[#94a4bd] dark:[&_.border-slate-200]:border-[#263750] dark:[&_.divide-slate-200]:divide-[#263750] dark:hover:bg-[#102038] ${
+                          className={` mx-auto h-auto w-full cursor-pointer overflow-hidden rounded-2xl bg-transparent transition duration-200 md:h-full dark:bg-[#0e1a2b] dark:[&_.bg-white]:bg-[#0f1c2d] dark:[&_.bg-slate-50]:bg-[#132238] dark:[&_.bg-slate-100]:bg-[#162941] dark:[&_.bg-blue-50]:bg-[#142b52] dark:[&_.bg-blue-100]:bg-[#1b3967] dark:[&_.smartphone-card-media_.bg-white]:bg-[#11213d] dark:[&_.text-slate-950]:text-[#f3f7ff] dark:[&_.text-slate-900]:text-[#eaf1ff] dark:[&_.text-slate-800]:text-[#d8e2f0] dark:[&_.text-slate-700]:text-[#c7d2e5] dark:[&_.text-slate-600]:text-[#aebbd0] dark:[&_.text-slate-500]:text-[#94a4bd] dark:[&_.border-slate-200]:border-[#263750] dark:[&_.divide-slate-200]:divide-[#263750] dark:hover:bg-[#102038] ${
                             isCompareSelected(device) ? "bg-blue-50/50" : ""
                           }`}
                         >
@@ -6314,7 +6369,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                             <div className="hidden">
                               <div className="smartphone-card-media relative flex min-h-[560px] items-center justify-center overflow-hidden border-r border-slate-200/70 bg-gradient-to-b from-blue-50 to-slate-50 p-8">
                                 {cardBadgeLabel ? (
-                                  <span className="absolute left-6 top-6 z-10 inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-xs font-bold text-white">
+                                  <span className="smartphone-card-ai-badge absolute left-6 top-6 z-10 inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-3 py-1.5 text-xs font-bold text-white">
+                                    <FaRobot aria-hidden="true" />
                                     {cardBadgeLabel}
                                   </span>
                                 ) : null}
@@ -6437,7 +6493,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                               <div className="grid grid-cols-[116px_minmax(0,1fr)] gap-3 p-3 sm:grid-cols-[136px_minmax(0,1fr)] sm:gap-4 sm:p-4 xl:grid-cols-[148px_minmax(0,1fr)]">
                                 <div className="smartphone-card-media relative flex min-h-[190px] items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-blue-50 via-white to-slate-50 p-2 sm:min-h-[210px] xl:min-h-[226px] dark:bg-gradient-to-b dark:from-[#0e1930] dark:via-[#11213d] dark:to-[#0a1529]">
                                   {cardBadgeLabel ? (
-                                    <span className="absolute left-2 top-2 z-10 max-w-[88px] truncate rounded-md bg-blue-600 px-2.5 py-1 text-[8px] font-bold text-white sm:max-w-[104px] sm:text-[9px]">
+                                    <span className="smartphone-card-ai-badge absolute left-2 top-2 z-10 inline-flex max-w-[110px] items-center gap-1 truncate rounded-full bg-blue-600 px-2.5 py-1 text-[8px] font-bold text-white sm:max-w-[124px] sm:text-[9px]">
+                                      <FaRobot aria-hidden="true" />
                                       {cardBadgeLabel}
                                     </span>
                                   ) : null}
@@ -6488,8 +6545,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                                       </div>
                                     ) : null}
                                   </div>
-
-                                  {renderVariantSelector("compact")}
 
                                   {cardPriceLabel ? (
                                     <div className="mt-3 text-xl font-black leading-none tracking-tight text-slate-950 sm:text-2xl">
@@ -6552,7 +6607,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                               </div>
                             </div>
 
-                            <div className="mt-1 flex min-h-10 items-center justify-between gap-2 px-3 py-2 md:mt-auto xl:min-h-12 xl:px-4 xl:py-3">
+                            <div className="smartphone-card-footer mt-1 flex min-h-10 items-center justify-between gap-2 px-3 py-2 md:mt-auto xl:min-h-12 xl:px-4 xl:py-3">
                               <label
                                 className={`flex cursor-pointer items-center gap-2 ${compareDisabled ? "cursor-not-allowed opacity-50" : ""}`}
                                 onClick={(e) => e.stopPropagation()}

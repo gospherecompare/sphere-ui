@@ -47,6 +47,7 @@
 .hooks-mobile-header__action {
   width: 40px;
   height: 40px;
+  border: 0;
   border-radius: 14px;
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.62);
 }
@@ -96,6 +97,7 @@
 .hooks-mobile-theme-toggle {
   width: 40px !important;
   height: 40px !important;
+  border: 0 !important;
   border-radius: 14px !important;
   background: var(--hooks-surface-soft) !important;
   box-shadow: none !important;
@@ -127,7 +129,7 @@
   align-items: center;
   gap: 0.4rem;
   padding: 0.42rem 0.72rem;
-  border: 1px solid var(--hooks-line);
+  border: 0;
   border-radius: 999px;
   background: var(--hooks-surface);
   color: var(--hooks-text-soft);
@@ -2375,4 +2377,211 @@ html[data-theme="dark"] .hooks-nav-more-v2__group {
 .hooks-desktop-header {
   border-bottom: 0 !important;
   box-shadow: none !important;
+}
+
+/* Apple-inspired mobile drawer refinement. */
+.hooks-mobile-drawer-layer__backdrop {
+  background: rgba(16, 20, 28, 0.2);
+  backdrop-filter: blur(18px) saturate(145%);
+}
+
+.hooks-mobile-drawer {
+  width: min(92vw, 392px);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--hooks-surface) 90%, transparent), color-mix(in srgb, var(--hooks-canvas) 96%, white 2%));
+  box-shadow: 28px 0 80px rgba(20, 25, 34, 0.18);
+}
+
+.hooks-mobile-drawer__header {
+  padding: max(1rem, env(safe-area-inset-top)) 0.95rem 1rem;
+  border-bottom: 0;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--hooks-surface) 94%, transparent), color-mix(in srgb, var(--hooks-canvas) 82%, transparent));
+  backdrop-filter: blur(24px) saturate(155%);
+}
+
+.hooks-mobile-drawer__header-actions > button,
+.hooks-mobile-drawer__theme {
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: color-mix(in srgb, var(--hooks-surface-soft) 86%, transparent) !important;
+  box-shadow:
+    0 8px 18px rgba(24, 35, 54, 0.08),
+    inset 0 1px rgba(255, 255, 255, 0.78) !important;
+}
+
+.hooks-mobile-drawer__welcome {
+  margin-top: 1rem;
+}
+
+.hooks-mobile-drawer__welcome > span,
+.hooks-mobile-drawer__section-label span,
+.hooks-mobile-drawer__section-label > b {
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.hooks-mobile-drawer__welcome > span {
+  font-size: 0.62rem;
+  font-weight: 760;
+}
+
+.hooks-mobile-drawer__welcome h2 {
+  margin-top: 0.42rem;
+  font-size: 1.28rem;
+  font-weight: 840;
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.hooks-mobile-drawer__welcome p {
+  color: color-mix(in srgb, var(--hooks-muted) 92%, var(--hooks-text));
+  font-size: 0.7rem;
+}
+
+.hooks-mobile-drawer__search {
+  min-height: 48px;
+  margin-top: 0.9rem;
+  border: 0;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--hooks-brand-soft) 66%, var(--hooks-surface));
+  box-shadow:
+    0 12px 26px color-mix(in srgb, var(--hooks-brand) 8%, transparent),
+    inset 0 1px rgba(255, 255, 255, 0.72);
+}
+
+.hooks-mobile-drawer__quick-actions {
+  gap: 0.62rem;
+  margin-top: 0.82rem;
+}
+
+.hooks-mobile-drawer__quick-actions a {
+  min-height: 64px;
+  flex-basis: 170px;
+  border: 0;
+  border-radius: 17px;
+  background: color-mix(in srgb, var(--hooks-surface) 86%, transparent);
+  box-shadow:
+    0 12px 28px rgba(19, 31, 52, 0.07),
+    inset 0 1px rgba(255, 255, 255, 0.72);
+}
+
+.hooks-mobile-drawer__quick-actions a > span,
+.hooks-mobile-drawer__group-icon {
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--hooks-brand-soft) 84%, var(--hooks-surface));
+}
+
+.hooks-mobile-drawer__body {
+  padding: 0.9rem 0.78rem calc(1.15rem + env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--hooks-canvas) 92%, #f5f5f7 8%);
+}
+
+.hooks-mobile-drawer__section-label {
+  padding-bottom: 0.72rem;
+}
+
+.hooks-mobile-drawer__section-label span {
+  font-size: 0.66rem;
+  font-weight: 820;
+}
+
+.hooks-mobile-drawer__section-label small {
+  font-size: 0.55rem;
+}
+
+.hooks-mobile-drawer__nav {
+  gap: 0.62rem;
+}
+
+.hooks-mobile-drawer__group,
+.hooks-mobile-drawer__direct-link {
+  border: 0;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--hooks-surface) 94%, transparent);
+  box-shadow:
+    0 13px 32px rgba(18, 29, 48, 0.075),
+    inset 0 1px rgba(255, 255, 255, 0.74);
+}
+
+.hooks-mobile-drawer__group.is-open {
+  border-color: transparent;
+  box-shadow:
+    0 16px 36px color-mix(in srgb, var(--hooks-brand) 9%, transparent),
+    inset 0 1px rgba(255, 255, 255, 0.72);
+}
+
+.hooks-mobile-drawer__group > button,
+.hooks-mobile-drawer__direct-link {
+  min-height: 66px;
+  background: transparent;
+}
+
+.hooks-mobile-drawer__group.is-open > button {
+  background: color-mix(in srgb, var(--hooks-brand-soft) 40%, transparent);
+}
+
+.hooks-mobile-drawer__group-index {
+  font-weight: 760;
+  letter-spacing: 0;
+}
+
+.hooks-mobile-drawer__group-copy b,
+.hooks-mobile-drawer__direct-link .hooks-mobile-drawer__group-copy b {
+  font-size: 0.73rem;
+  font-weight: 820;
+}
+
+.hooks-mobile-drawer__group-copy small,
+.hooks-mobile-drawer__quick-actions a small {
+  font-weight: 620;
+}
+
+.hooks-mobile-drawer__subnav {
+  gap: 0.48rem;
+  padding: 0.2rem 0.7rem 0.75rem;
+  background: color-mix(in srgb, var(--hooks-brand-soft) 24%, transparent);
+}
+
+.hooks-mobile-drawer__subnav a,
+.hooks-mobile-drawer__subnav a:first-child {
+  border: 0;
+}
+
+.hooks-mobile-drawer__subnav a {
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--hooks-surface) 82%, transparent);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.62);
+}
+
+.hooks-mobile-drawer__subnav a.is-footer-link {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--hooks-brand-soft) 82%, var(--hooks-surface));
+}
+
+.hooks-mobile-drawer__footer {
+  border-top: 0;
+}
+
+html[data-theme="dark"] .hooks-mobile-drawer-layer__backdrop {
+  background: rgba(1, 6, 15, 0.58);
+}
+
+html[data-theme="dark"] .hooks-mobile-drawer {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--hooks-surface) 82%, transparent), color-mix(in srgb, var(--hooks-canvas) 94%, black 6%));
+  box-shadow: 28px 0 86px rgba(0, 0, 0, 0.42);
+}
+
+html[data-theme="dark"] .hooks-mobile-drawer__header {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--hooks-surface) 88%, transparent), color-mix(in srgb, var(--hooks-canvas) 88%, transparent));
+}
+
+html[data-theme="dark"] .hooks-mobile-drawer__header-actions > button,
+html[data-theme="dark"] .hooks-mobile-drawer__theme,
+html[data-theme="dark"] .hooks-mobile-drawer__quick-actions a,
+html[data-theme="dark"] .hooks-mobile-drawer__group,
+html[data-theme="dark"] .hooks-mobile-drawer__direct-link {
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.05) !important;
 }
