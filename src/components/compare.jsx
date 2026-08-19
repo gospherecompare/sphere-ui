@@ -5836,6 +5836,43 @@ const MobileCompare = () => {
     return value == null || value === "" ? "—" : value;
   };
 
+  const formatTradeoffItem = (item, tone = "gain") => {
+    const value = String(item || "").trim();
+    const key = value.toLowerCase();
+    const readableLabels = {
+      "current selected-variant price": {
+        gain: "Better selected-variant price",
+        giveup: "Higher selected-variant price",
+      },
+      "display refresh rate": {
+        gain: "Smoother display refresh",
+        giveup: "Lower refresh rate",
+      },
+      "peak brightness": { gain: "Brighter display", giveup: "Lower brightness" },
+      "main-camera resolution": {
+        gain: "Higher main-camera resolution",
+        giveup: "Lower main-camera resolution",
+      },
+      "battery capacity": { gain: "Larger battery", giveup: "Smaller battery" },
+      "wired charging": { gain: "Faster wired charging", giveup: "Slower wired charging" },
+      "selected ram": { gain: "More selected RAM", giveup: "Less selected RAM" },
+      "selected storage": { gain: "More selected storage", giveup: "Less selected storage" },
+      weight: { gain: "Better weight balance", giveup: "Less favorable weight" },
+      thickness: { gain: "Slimmer body", giveup: "Thicker body" },
+      performance: { gain: "Stronger performance", giveup: "Lower performance" },
+      value: { gain: "Better value score", giveup: "Lower value score" },
+      "software longevity": {
+        gain: "Longer software support",
+        giveup: "Shorter software support",
+      },
+    };
+    return readableLabels[key]?.[tone] || value.replace(/-/g, " ");
+  };
+
+  const getTradeoffItems = (items, fallback, tone) =>
+    (Array.isArray(items) && items.length ? items : [fallback])
+      .map((item) => formatTradeoffItem(item, tone))
+      .filter(Boolean);
   const getStudioSectionCategory = (definitionId) => {
     const map = {
       general: "value",
@@ -6879,7 +6916,7 @@ const MobileCompare = () => {
                     );
                     const winnerDevice = getCategoryWinnerFromVerdict(verdict);
                     return (
-                      <tr key={`key-row-${row.key}`}>
+                      <tr key={`key-row-${row.key}`} data-category={categoryMeta.label}>
                         {showCategory ? (
                           <th
                             rowSpan={categoryRowCount}
@@ -6899,6 +6936,7 @@ const MobileCompare = () => {
                           return (
                             <td
                               key={`key-value-${row.key}-${device.id}`}
+                              data-device={getDeviceName(device)}
                               className={isWinner ? "is-winner" : ""}
                             >
                               {hasRenderableValue(value) ? (
@@ -7130,14 +7168,14 @@ const MobileCompare = () => {
             </article>
           </section>
 
-          <section className="hc-shell hc-section">
+          <section className="hc-shell hc-section hc-tradeoffs-section">
             <div className="hc-section-title">
               <div>
                 <p className="hc-eyebrow">Gain / give up</p>
                 <h2>The trade-off behind each choice</h2>
                 <p>
-                  Instead of generic pros and cons, Hooks explains what you gain
-                  and what you leave behind compared with these exact phones.
+                  Clear wins and compromises for each selected phone, based on
+                  the current variants in this comparison.
                 </p>
               </div>
             </div>
@@ -7145,45 +7183,61 @@ const MobileCompare = () => {
               {resolvedTradeoffs.map((tradeoff) => {
                 const device = findActiveDeviceByProductId(tradeoff.product_id);
                 if (!device) return null;
+                const gainItems = getTradeoffItems(
+                  tradeoff.gain,
+                  "Balanced everyday experience",
+                  "gain",
+                );
+                const giveUpItems = getTradeoffItems(
+                  tradeoff.give_up,
+                  "No major verified compromise",
+                  "giveup",
+                );
                 return (
                   <article
                     key={`tradeoff-${tradeoff.product_id}`}
                     className="hc-tradeoff"
                   >
                     <div className="hc-tradeoff__head">
-                      <img src={getPrimaryImage(device) || null} alt="" />
-                      <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.13em] text-blue-600">
+                      <span className="hc-tradeoff__thumb">
+                        <img src={getPrimaryImage(device) || null} alt="" />
+                      </span>
+                      <div className="hc-tradeoff__title">
+                        <p className="hc-tradeoff__eyebrow">
                           Choose this phone
                         </p>
-                        <h3 className="mt-1 text-base font-black text-slate-950">
-                          {getDeviceName(device)}
-                        </h3>
+                        <h3>{getDeviceName(device)}</h3>
+                        <p>
+                          {gainItems.length} gain{gainItems.length === 1 ? "" : "s"}
+                          {" / "}
+                          {giveUpItems.length} give-up
+                          {giveUpItems.length === 1 ? "" : "s"}
+                        </p>
                       </div>
                     </div>
                     <div className="hc-tradeoff__body">
                       <div className="hc-tradeoff__column hc-gain">
-                        <h4>You gain</h4>
+                        <h4>
+                          <span>You gain</span>
+                          <small>{gainItems.length}</small>
+                        </h4>
                         <ul>
-                          {(tradeoff.gain?.length
-                            ? tradeoff.gain
-                            : ["A balanced overall package"]
-                          ).map((item) => (
+                          {gainItems.map((item) => (
                             <li key={`gain-${tradeoff.product_id}-${item}`}>
-                              {item}
+                              <span>{item}</span>
                             </li>
                           ))}
                         </ul>
                       </div>
                       <div className="hc-tradeoff__column hc-giveup">
-                        <h4>You give up</h4>
+                        <h4>
+                          <span>You give up</span>
+                          <small>{giveUpItems.length}</small>
+                        </h4>
                         <ul>
-                          {(tradeoff.give_up?.length
-                            ? tradeoff.give_up
-                            : ["No major verified trade-off"]
-                          ).map((item) => (
+                          {giveUpItems.map((item) => (
                             <li key={`give-${tradeoff.product_id}-${item}`}>
-                              {item}
+                              <span>{item}</span>
                             </li>
                           ))}
                         </ul>
