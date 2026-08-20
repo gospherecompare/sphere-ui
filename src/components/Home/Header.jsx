@@ -50,13 +50,12 @@ import {
   buildPublicSmartphoneFilterPath as buildSmartphoneFilterPath,
 } from "../../utils/smartphoneListingRoutes";
 import { toCanonicalPagePath } from "../../utils/publicUrl";
-import ThemeToggle from "../ThemeToggle";
-import "./header-redesign.css";
 import { isPublishedProduct } from "../../utils/publishedProducts";
 import {
   MOBILE_OPEN_EXPLORE_EVENT,
   MOBILE_OPEN_SEARCH_EVENT,
 } from "../../utils/mobileNavigation";
+import "./header-redesign.css";
 
 // Icons - matching Vijay Sales style
 import {
@@ -119,7 +118,7 @@ const BrandIdentity = ({ variant = "desktop" }) => {
   return (
     <span className={`inline-flex items-center min-w-0 ${wrapperClass} group`}>
       <span
-        className={`hooks-brand-wordmark luckiest-guy-regular inline-block ${brandClass} ${brandTone} ${brandShadow} font-semibold leading-[1.02] pt-1 transition-all`}
+        className={`luckiest-guy-regular inline-block ${brandClass} ${brandTone} ${brandShadow} font-semibold leading-[1.02] pt-1 transition-all`}
       >
         Hooks
       </span>
@@ -217,7 +216,8 @@ const Header = () => {
       const doc = document.documentElement;
       const maxScroll = Math.max(0, doc.scrollHeight - window.innerHeight);
       const nearTop = currentY <= MOBILE_HEADER_SHOW_TOP_OFFSET;
-      const nearBottom = maxScroll - currentY <= MOBILE_HEADER_SHOW_BOTTOM_OFFSET;
+      const nearBottom =
+        maxScroll - currentY <= MOBILE_HEADER_SHOW_BOTTOM_OFFSET;
       const delta = currentY - mobileHeaderLastScrollYRef.current;
 
       if (nearTop || nearBottom) {
@@ -421,8 +421,10 @@ const Header = () => {
     const updateVisibleHeaderOffset = () => {
       const isDesktop = window.innerWidth >= 1024;
       const measuredHeight = Math.ceil(
-        (isDesktop ? headerRef.current : mobileHeaderRef.current)
-          ?.getBoundingClientRect().height || 0,
+        (isDesktop
+          ? headerRef.current
+          : mobileHeaderRef.current
+        )?.getBoundingClientRect().height || 0,
       );
       const isVisible = isDesktop
         ? isDesktopHeaderVisible
@@ -1252,9 +1254,9 @@ const Header = () => {
   const desktopBrandMenuItems = Array.from(
     new Set(
       [
-        ...(categoriesWithBrands
-          .find((category) => String(category.id || "") === "smartphones")
-          ?.topBrands || []),
+        ...(categoriesWithBrands.find(
+          (category) => String(category.id || "") === "smartphones",
+        )?.topBrands || []),
         "Samsung",
         "OnePlus",
         "Vivo",
@@ -1294,71 +1296,95 @@ const Header = () => {
       title: "By Price",
       accent: "emerald",
       items: [
-        { label: "Under 10000", href: buildSmartphoneFilterPath("under-10000") },
-        { label: "10000 to 15000", href: buildSmartphoneFilterPath("under-15000") },
-        { label: "15000 to 25000", href: buildSmartphoneFilterPath("under-25000") },
-        { label: "25000 to 40000", href: buildSmartphoneFilterPath("under-40000") },
-        { label: "Above 40000", href: buildSmartphoneFilterPath("above-40000") },
+        {
+          label: "Under 10000",
+          href: buildSmartphoneFilterPath("under-10000"),
+        },
+        {
+          label: "10000 to 15000",
+          href: buildSmartphoneFilterPath("under-15000"),
+        },
+        {
+          label: "15000 to 25000",
+          href: buildSmartphoneFilterPath("under-25000"),
+        },
+        {
+          label: "25000 to 40000",
+          href: buildSmartphoneFilterPath("under-40000"),
+        },
+        {
+          label: "Above 40000",
+          href: buildSmartphoneFilterPath("above-40000"),
+        },
       ],
     },
   ];
 
   const desktopNavLinkClass = (active = false) =>
-    `hooks-desktop-nav__link ${active ? "is-active" : ""}`;
+    `relative inline-flex min-h-[42px] items-center justify-center gap-[0.38rem] rounded-[10px] border-0 bg-transparent px-[0.72rem] py-[0.55rem] font-[900] text-[0.8rem] tracking-[0.015em] text-[var(--hooks-text-soft)] no-underline whitespace-nowrap transition-colors duration-[170ms] after:absolute after:bottom-[0.15rem] after:left-[0.7rem] after:right-[0.7rem] after:h-0.5 after:origin-center after:scale-x-50 after:rounded-full after:bg-[var(--hooks-brand)] after:opacity-0 after:transition-all after:duration-[160ms] hover:bg-[var(--hooks-surface-soft)] hover:text-[var(--hooks-brand)] hover:after:scale-x-100 hover:after:opacity-100 [&>svg:first-child]:h-3 [&>svg:first-child]:w-3 [&>svg:first-child]:text-[var(--hooks-brand)] [&>svg:last-child]:h-[9px] [&>svg:last-child]:w-[9px] ${active ? "bg-[var(--hooks-surface-soft)] text-[var(--hooks-brand)] after:scale-x-100 after:opacity-100" : ""}`;
 
-  const MegaPanel = ({ children, variant = "explore" }) => (
-    <div className={`hooks-nav-mega hooks-nav-mega--${variant}`}>
-      <div className="hooks-nav-mega__surface">{children}</div>
+  const MegaPanel = ({ children }) => (
+    <div className="absolute left-1/2 top-[calc(100%-1px)] z-[80] w-[min(1260px,calc(100vw-2rem))] -translate-x-1/2 pt-[0.6rem]">
+      <div className="overflow-hidden  border border-[color-mix(in_srgb,var(--hooks-line)_88%,transparent)] bg-[var(--hooks-surface)] shadow-[0_30px_85px_rgba(8,23,48,0.23)]">
+        {children}
+      </div>
     </div>
   );
 
   const ExploreMegaMenu = () => (
     <MegaPanel variant="explore">
-      <div className="hooks-nav-mega-v2">
-        <header className="hooks-nav-mega-v2__head">
-          <div className="hooks-nav-mega-v2__intro">
-            <span className="hooks-nav-mega-v2__eyebrow">
+      <div className="bg-[var(--hooks-surface)]">
+        <header className="relative grid min-h-[172px] grid-cols-[minmax(0,1fr)_220px_auto] items-center gap-6 overflow-hidden px-[1.7rem] py-[1.55rem] bg-[radial-gradient(circle_at_74%_8%,rgba(112,171,255,0.2),transparent_12rem),radial-gradient(circle_at_92%_90%,rgba(130,104,255,0.24),transparent_14rem),linear-gradient(125deg,#071529_0%,#0b2340_54%,#172a5a_100%)] text-white">
+          <div className="relative z-[2]">
+            <span className="inline-flex items-center gap-[0.45rem] text-[0.6rem] font-[900] uppercase tracking-[0.11em] text-[#9fc3ff] [&_svg]:h-3 [&_svg]:w-3">
               <FaCompass aria-hidden="true" /> Device discovery
             </span>
-            <h2>Find the right device without digging through endless menus.</h2>
+            <h2>
+              Find the right device without digging through endless menus.
+            </h2>
             <p>
               Start from what matters: a fresh launch, a clear budget, a trusted
               brand or a direct comparison.
             </p>
           </div>
 
-          <div className="hooks-nav-mega-v2__spotlight" aria-hidden="true">
-            <span className="hooks-nav-mega-v2__orb is-one" />
-            <span className="hooks-nav-mega-v2__orb is-two" />
-            <span className="hooks-nav-mega-v2__device is-back" />
-            <span className="hooks-nav-mega-v2__device is-front">
-              <i />
-              <b />
+          <div
+            className="relative z-[2] h-[126px] w-[190px] justify-self-center"
+            aria-hidden="true"
+          >
+            <span className="absolute block rounded-full blur-[1px] top-2 left-3 h-[82px] w-[82px] bg-[rgba(55,192,255,0.16)]" />
+            <span className="absolute block rounded-full blur-[1px] right-0 bottom-0 h-[106px] w-[106px] bg-[rgba(139,98,255,0.16)]" />
+            <span className="absolute block h-[104px] w-[54px] rounded-[15px] border border-[rgba(255,255,255,0.28)] bg-[linear-gradient(155deg,rgba(117,194,255,0.34),rgba(125,96,255,0.13))] shadow-[inset_0_0_0_4px_rgba(4,15,32,0.58),0_18px_36px_rgba(0,0,0,0.28)] top-[13px] left-[52px] rotate-[-12deg]" />
+            <span className="absolute block h-[104px] w-[54px] rounded-[15px] border border-[rgba(255,255,255,0.28)] bg-[linear-gradient(155deg,rgba(117,194,255,0.34),rgba(125,96,255,0.13))] shadow-[inset_0_0_0_4px_rgba(4,15,32,0.58),0_18px_36px_rgba(0,0,0,0.28)] top-1.5 right-[34px] rotate-[8deg]">
+              <i className="absolute left-1/2 top-2 h-[3px] w-4 -translate-x-1/2 rounded-full bg-[rgba(255,255,255,0.32)]" />
+              <b className="absolute bottom-[9px] left-2 right-2 h-[30px] rounded-[9px] bg-[linear-gradient(135deg,rgba(75,225,190,0.5),rgba(55,138,255,0.3))]" />
             </span>
-            <span className="hooks-nav-mega-v2__signal">5G</span>
+            <span className="absolute top-1 right-0 grid h-[37px] w-[37px] place-items-center rounded-full border border-[rgba(255,255,255,0.18)] bg-[rgba(4,16,34,0.72)] text-[0.54rem] font-[950] text-[#71ebc7]">
+              5G
+            </span>
           </div>
 
-          <div className="hooks-nav-mega-v2__head-actions">
+          <div className="relative z-[2] grid min-w-[170px] justify-items-stretch gap-[0.65rem]">
             <Link
               to="/smartphones"
               onClick={() => setActiveDesktopMenu("")}
-              className="hooks-nav-mega-v2__primary"
+              className="relative z-[2] inline-flex min-h-10 items-center justify-center gap-2 rounded-[11px] bg-white px-[0.85rem] py-[0.64rem] text-[0.68rem] font-[900] text-[#0c2a53] no-underline shadow-[0_13px_30px_rgba(0,0,0,0.18)] [&_svg]:h-2.5 [&_svg]:w-2.5"
             >
               Browse all phones <FaArrowRight aria-hidden="true" />
             </Link>
             <Link
               to="/compare"
               onClick={() => setActiveDesktopMenu("")}
-              className="hooks-nav-mega-v2__text-link"
+              className="inline-flex min-h-0 items-center justify-center gap-2 rounded-[11px] px-[0.85rem] py-1 text-[0.68rem] font-[900] text-[#c6d9fb] no-underline [&_svg]:h-2.5 [&_svg]:w-2.5"
             >
               Open compare
             </Link>
           </div>
         </header>
 
-        <div className="hooks-nav-mega-v2__body">
-          <section className="hooks-nav-mega-v2__start">
-            <div className="hooks-nav-mega-v2__section-title">
+        <div className="grid grid-cols-[minmax(0,1.35fr)_minmax(250px,0.82fr)_minmax(250px,0.78fr)] gap-4 bg-[var(--hooks-canvas-strong)] p-[1.1rem]">
+          <section className="min-w-0  bg-[var(--hooks-surface)] p-4">
+            <div className="mb-3 flex min-h-[38px] items-start justify-between gap-4 [&_small]:block [&_small]:text-[0.54rem] [&_small]:font-[900] [&_small]:uppercase [&_small]:tracking-[0.1em] [&_small]:text-[var(--hooks-muted)] [&_h3]:mt-[0.16rem] [&_h3]:text-[0.88rem] [&_h3]:font-[920] [&_h3]:tracking-[-0.02em] [&>span]:text-[0.56rem] [&>span]:font-[850] [&>span]:text-[var(--hooks-success)]">
               <div>
                 <small>Start here</small>
                 <h3>Popular research paths</h3>
@@ -1366,7 +1392,7 @@ const Header = () => {
               <span>Updated daily</span>
             </div>
 
-            <div className="hooks-nav-mega-v2__start-grid">
+            <div className="grid grid-cols-2 gap-[0.55rem]">
               {[
                 {
                   label: "Latest mobiles",
@@ -1403,52 +1429,55 @@ const Header = () => {
                     key={item.label}
                     to={toCanonicalPagePath(item.href)}
                     onClick={() => setActiveDesktopMenu("")}
-                    className={`hooks-nav-mega-v2__start-card is-${item.tone}`}
+                    className={`grid min-h-[78px] min-w-0 grid-cols-[36px_minmax(0,1fr)_12px] items-center gap-[0.65rem] rounded-[14px] border border-transparent p-[0.7rem] text-[var(--hooks-text)] no-underline transition-all duration-[160ms] hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--hooks-brand)_24%,var(--hooks-line))] hover:shadow-[var(--hooks-shadow-sm)] ${item.tone === "blue" ? "bg-[color-mix(in_srgb,#2f78ff_8%,var(--hooks-surface))]" : item.tone === "violet" ? "bg-[color-mix(in_srgb,#7758ff_8%,var(--hooks-surface))]" : item.tone === "amber" ? "bg-[color-mix(in_srgb,#f1a21a_9%,var(--hooks-surface))]" : "bg-[color-mix(in_srgb,#06a9c8_8%,var(--hooks-surface))]"}`}
                   >
-                    <span className="hooks-nav-mega-v2__start-icon">
+                    <span className="grid h-9 w-9 place-items-center rounded-[11px] bg-[var(--hooks-surface)] text-[var(--hooks-brand)] shadow-[0_8px_20px_rgba(22,44,83,0.08)] [&_svg]:h-[13px] [&_svg]:w-[13px]">
                       <ItemIcon aria-hidden="true" />
                     </span>
-                    <span className="hooks-nav-mega-v2__start-copy">
+                    <span className="grid min-w-0 gap-[0.15rem] [&_b]:text-[0.7rem] [&_b]:font-[900] [&_b]:text-[var(--hooks-text)] [&_small]:overflow-hidden [&_small]:text-ellipsis [&_small]:text-[0.56rem] [&_small]:leading-[1.35] [&_small]:text-[var(--hooks-muted)]">
                       <b>{item.label}</b>
                       <small>{item.copy}</small>
                     </span>
-                    <FaArrowRight aria-hidden="true" />
                   </Link>
                 );
               })}
             </div>
           </section>
 
-          <section className="hooks-nav-mega-v2__brands">
-            <div className="hooks-nav-mega-v2__section-title">
+          <section className="min-w-0  bg-[var(--hooks-surface)] p-4">
+            <div className="mb-3 flex min-h-[38px] items-start justify-between gap-4 [&_small]:block [&_small]:text-[0.54rem] [&_small]:font-[900] [&_small]:uppercase [&_small]:tracking-[0.1em] [&_small]:text-[var(--hooks-muted)] [&_h3]:mt-[0.16rem] [&_h3]:text-[0.88rem] [&_h3]:font-[920] [&_h3]:tracking-[-0.02em] [&>span]:text-[0.56rem] [&>span]:font-[850] [&>span]:text-[var(--hooks-success)]">
               <div>
                 <small>Brand directory</small>
                 <h3>Popular phone makers</h3>
               </div>
             </div>
-            <nav className="hooks-nav-mega-v2__brand-grid" aria-label="Popular brands">
+            <nav
+              className="grid grid-cols-2 gap-[0.45rem] [&_a]:grid [&_a]:min-h-10 [&_a]:grid-cols-[24px_minmax(0,1fr)_10px] [&_a]:items-center [&_a]:gap-2 [&_a]:rounded-[9px] [&_a]:px-[0.45rem] [&_a]:py-[0.42rem] [&_a]:text-[0.62rem] [&_a]:font-[800] [&_a]:text-[var(--hooks-text-soft)] [&_a]:no-underline [&_a:hover]:bg-[var(--hooks-brand-soft)] [&_a:hover]:text-[var(--hooks-brand)] [&_a>span]:text-[0.52rem] [&_a>span]:font-[900] [&_a>span]:text-[var(--hooks-muted)] [&_a>svg]:h-[9px] [&_a>svg]:w-[9px]"
+              aria-label="Popular brands"
+            >
               {desktopBrandMenuItems.map((item, index) => (
                 <Link
                   key={item.label}
                   to={toCanonicalPagePath(item.href)}
                   onClick={() => setActiveDesktopMenu("")}
                 >
-                  <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
-                  <b>{item.label}</b>
-                  <FaChevronRight aria-hidden="true" />
+                  <strong>{item.label}</strong>
                 </Link>
               ))}
             </nav>
           </section>
 
-          <aside className="hooks-nav-mega-v2__budget">
-            <div className="hooks-nav-mega-v2__section-title">
+          <aside className="min-w-0 ,transparent)] bg-[var(--hooks-surface)] p-4">
+            <div className="mb-3 flex min-h-[38px] items-start justify-between gap-4 [&_small]:block [&_small]:text-[0.54rem] [&_small]:font-[900] [&_small]:uppercase [&_small]:tracking-[0.1em] [&_small]:text-[var(--hooks-muted)] [&_h3]:mt-[0.16rem] [&_h3]:text-[0.88rem] [&_h3]:font-[920] [&_h3]:tracking-[-0.02em] [&>span]:text-[0.56rem] [&>span]:font-[850] [&>span]:text-[var(--hooks-success)]">
               <div>
                 <small>Budget shortcuts</small>
                 <h3>Shop by price</h3>
               </div>
             </div>
-            <nav className="hooks-nav-mega-v2__budget-list" aria-label="Shop by price">
+            <nav
+              className="grid gap-[0.4rem] [&_a]:flex [&_a]:min-h-[34px] [&_a]:items-center [&_a]:justify-between [&_a]:gap-[0.7rem] [&_a]:rounded-[9px] [&_a]:bg-[var(--hooks-surface-soft)] [&_a]:px-[0.55rem] [&_a]:py-[0.42rem] [&_a]:text-[0.62rem] [&_a]:font-[820] [&_a]:text-[var(--hooks-text-soft)] [&_a]:no-underline [&_a:hover]:bg-[var(--hooks-brand-soft)] [&_a:hover]:text-[var(--hooks-brand)] [&_a>svg]:h-[9px] [&_a>svg]:w-[9px]"
+              aria-label="Shop by price"
+            >
               {exploreMenuSections[2].items.map((item) => (
                 <Link
                   key={item.label}
@@ -1456,93 +1485,15 @@ const Header = () => {
                   onClick={() => setActiveDesktopMenu("")}
                 >
                   <span>{item.label}</span>
-                  <FaArrowRight aria-hidden="true" />
                 </Link>
               ))}
             </nav>
-            <Link
-              to="/compare"
-              onClick={() => setActiveDesktopMenu("")}
-              className="hooks-nav-mega-v2__compare-card"
-            >
-              <span><FaAlignJustify aria-hidden="true" /></span>
-              <div>
-                <small>Decision tool</small>
-                <b>Compare two phones side by side</b>
-              </div>
-              <FaArrowRight aria-hidden="true" />
-            </Link>
           </aside>
         </div>
       </div>
     </MegaPanel>
   );
 
-  const MoreMegaMenu = () => (
-    <MegaPanel variant="more">
-      <div className="hooks-nav-more-v2">
-        <section className="hooks-nav-more-v2__lead">
-          <span className="hooks-nav-mega-v2__eyebrow">
-            <FaInfoCircle aria-hidden="true" /> Hooks directory
-          </span>
-          <h2>Useful pages, editorial tools and support in one place.</h2>
-          <p>
-            Learn how Hooks works, reach the team or continue researching beyond
-            the main device catalogue.
-          </p>
-          <Link
-            to="/about"
-            onClick={() => setActiveDesktopMenu("")}
-            className="hooks-nav-mega-v2__primary"
-          >
-            About Hooks <FaArrowRight aria-hidden="true" />
-          </Link>
-        </section>
-
-        <div className="hooks-nav-more-v2__directory">
-          {moreMenuSections.map((section) => {
-            const SectionIcon = section.icon || FaInfoCircle;
-            return (
-              <section key={section.title} className="hooks-nav-more-v2__group">
-                <div className="hooks-nav-more-v2__group-head">
-                  <span><SectionIcon aria-hidden="true" /></span>
-                  <div>
-                    <small>Directory</small>
-                    <h3>{section.title}</h3>
-                  </div>
-                </div>
-                <nav aria-label={section.title}>
-                  {section.items.map((item) => (
-                    <Link
-                      key={`${section.title}-${item.label}`}
-                      to={toCanonicalPagePath(item.href)}
-                      onClick={() => setActiveDesktopMenu("")}
-                    >
-                      <span>{item.label}</span>
-                      <FaArrowRight aria-hidden="true" />
-                    </Link>
-                  ))}
-                </nav>
-              </section>
-            );
-          })}
-        </div>
-
-        <Link
-          to="/news"
-          onClick={() => setActiveDesktopMenu("")}
-          className="hooks-nav-more-v2__news"
-        >
-          <span><FaInfoCircle aria-hidden="true" /></span>
-          <div>
-            <small>Hooks newsroom</small>
-            <b>Latest launches, updates and practical buying context</b>
-          </div>
-          <FaArrowRight aria-hidden="true" />
-        </Link>
-      </div>
-    </MegaPanel>
-  );
   // Handle search
   const handleSearch = (e) => {
     e.preventDefault();
@@ -1641,7 +1592,7 @@ const Header = () => {
         }
         .animate-marquee {
           animation: marquee 30s linear infinite;
-        }
+        } 
       `}</style>
     </div>
   );
@@ -1650,7 +1601,7 @@ const Header = () => {
 
   // Advanced Category Mega Menu Component
   const AdvancedMegaMenu = ({ category }) => (
-    <div className="absolute top-full left-0 w-[900px] bg-white text-gray-800 z-50 advanced-mega-menu rounded-b-lg shadow-2xl border border-gray-200 border-t-0 animate-in fade-in slide-in-from-top-2 duration-200">
+    <div className="absolute top-full left-0 w-[900px]  text-gray-800 z-50  animate-in fade-in slide-in-from-top-2 duration-200">
       <div className="p-8">
         <div className="grid grid-cols-4 gap-8">
           {/* Column 1: Subcategories */}
@@ -1982,7 +1933,10 @@ const Header = () => {
   };
 
   const DesktopSearchSuggestionPanel = () => {
-    if (!isDesktopSearchOpen || !(showSearchSuggestions || searchQuery.trim())) {
+    if (
+      !isDesktopSearchOpen ||
+      !(showSearchSuggestions || searchQuery.trim())
+    ) {
       return null;
     }
 
@@ -1994,7 +1948,9 @@ const Header = () => {
               <>
                 {isSearching &&
                   [...Array(3)].map((_, index) => (
-                    <SkeletonSuggestion key={`desktop-inline-skeleton-${index}`} />
+                    <SkeletonSuggestion
+                      key={`desktop-inline-skeleton-${index}`}
+                    />
                   ))}
                 {!isSearching &&
                   searchSuggestions &&
@@ -2215,11 +2171,14 @@ const Header = () => {
   // Responsive application header: dedicated mobile/tablet and desktop systems.
   const MainHeader = () => (
     <>
-      <div ref={mobileHeaderRef} className="hooks-mobile-header lg:hidden">
-        <div className="hooks-mobile-header__main">
+      <div
+        ref={mobileHeaderRef}
+        className="text-[var(--hooks-text)] border-b border-[color-mix(in_srgb,var(--hooks-line)_82%,transparent)] bg-[color-mix(in_srgb,var(--hooks-surface)_92%,transparent)] shadow-[0_14px_38px_rgba(14,29,55,0.09)] backdrop-blur-[24px] backdrop-saturate-[145%] lg:hidden"
+      >
+        <div className="grid min-h-[58px] grid-cols-[42px_minmax(0,1fr)_auto] items-center gap-[0.7rem] px-[0.8rem] pb-2 pt-[max(0.55rem,env(safe-area-inset-top))]">
           <button
             type="button"
-            className="hooks-mobile-header__menu"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-[14px] border-0  text-[var(--hooks-text-soft)] shadow-[inset_0_1px_rgba(255,255,255,0.62)] transition-all duration-[170ms] hover:-translate-y-px hover:text-[var(--hooks-brand)]"
             onClick={() => setIsMenuOpen(true)}
             aria-label="Open navigation"
             aria-expanded={isMenuOpen}
@@ -2227,31 +2186,36 @@ const Header = () => {
             <FaBars aria-hidden="true" />
           </button>
 
-          <Link to="/" className="hooks-mobile-header__brand" aria-label="Hooks home">
+          <Link
+            to="/"
+            className="inline-grid min-w-0 w-max gap-[0.05rem] text-[var(--hooks-text)] no-underline [&_small]:overflow-hidden [&_small]:text-ellipsis [&_small]:whitespace-nowrap [&_small]:text-[0.55rem] [&_small]:font-[800] [&_small]:uppercase [&_small]:tracking-[0.12em] [&_small]:text-[var(--hooks-muted)]"
+            aria-label="Hooks home"
+          >
             <BrandIdentity variant="mobile" />
-            <small>Device intelligence</small>
+            <small className="hidden md:block">Device intelligence</small>{" "}
           </Link>
 
-          <div className="hooks-mobile-header__actions">
+          <div className="flex items-center gap-[0.45rem]">
             <button
               type="button"
               onClick={() => setIsSearchOpen(true)}
-              className="hooks-mobile-header__action"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-[14px]   text-[var(--hooks-text-soft)] transition-all duration-[170ms] hover:-translate-y-px hover:border-[color-mix(in_srgb,var(--hooks-brand)_40%,var(--hooks-line))] hover:text-[var(--hooks-brand)]"
               aria-label="Search Hooks"
             >
               <FaSearch aria-hidden="true" />
             </button>
-            <ThemeToggle className="hooks-mobile-theme-toggle" />
           </div>
         </div>
 
-        <nav className="hooks-mobile-header__rail" aria-label="Quick navigation">
+        <nav
+          className="flex min-w-0 gap-[0.42rem] overflow-x-auto px-[0.8rem] pb-[0.62rem] [scrollbar-width:none] snap-x snap-proximity [&::-webkit-scrollbar]:hidden"
+          aria-label="Quick navigation"
+        >
           <button
             type="button"
-            className="hooks-mobile-quick-link is-explore"
+            className="inline-flex min-h-[34px] shrink-0 snap-start items-center gap-[0.4rem] rounded-full border-0 bg-[var(--hooks-surface)] px-[0.72rem] py-[0.42rem] text-[0.69rem] font-[850] text-[var(--hooks-text-soft)] no-underline transition-colors duration-[170ms] hover:bg-[var(--hooks-brand-soft)] hover:text-[var(--hooks-brand)] [&_svg]:h-[11px] [&_svg]:w-[11px] is-explore"
             onClick={() => setIsMenuOpen(true)}
           >
-            <FaCompass aria-hidden="true" />
             <span>Explore</span>
           </button>
           {mobileQuickLinks.map((item) => {
@@ -2260,9 +2224,8 @@ const Header = () => {
               <Link
                 key={item.href}
                 to={toCanonicalPagePath(item.href)}
-                className={`hooks-mobile-quick-link ${isActiveNavLink(item.href) ? "is-active" : ""}`}
+                className={`inline-flex min-h-[34px] shrink-0 snap-start items-center gap-[0.4rem] rounded-full border-0 bg-[var(--hooks-surface)] px-[0.72rem] py-[0.42rem] text-[0.69rem] font-[850] text-[var(--hooks-text-soft)] no-underline transition-colors duration-[170ms] hover:bg-[var(--hooks-brand-soft)] hover:text-[var(--hooks-brand)] [&_svg]:h-[11px] [&_svg]:w-[11px] ${isActiveNavLink(item.href) ? "bg-[var(--hooks-brand-soft)] text-[var(--hooks-brand)]" : ""}`}
               >
-                <ItemIcon aria-hidden="true" />
                 <span>{item.label}</span>
               </Link>
             );
@@ -2271,11 +2234,15 @@ const Header = () => {
       </div>
 
       <div
-        className="hooks-desktop-header hidden lg:block"
+        className="relative border-b border-[color-mix(in_srgb,var(--hooks-line)_88%,transparent)] bg-[color-mix(in_srgb,var(--hooks-surface)_96%,transparent)] text-[var(--hooks-text)] shadow-[0_9px_30px_rgba(17,31,59,0.07)] backdrop-blur-[24px] backdrop-saturate-[145%] hidden lg:block"
         onMouseLeave={() => setActiveDesktopMenu("")}
       >
-        <div className="hooks-desktop-header__bar">
-          <Link to="/" className="hooks-desktop-header__brand" aria-label="Hooks home">
+        <div className="mx-auto grid min-h-[70px] w-[min(calc(100%-2rem),92rem)] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-[clamp(1rem,2vw,2.2rem)]">
+          <Link
+            to="/"
+            className="flex items-center gap-[0.9rem] text-inherit no-underline [&>span:last-child]:grid [&>span:last-child]:gap-[0.08rem] [&>span:last-child]:border-l [&>span:last-child]:border-[var(--hooks-line)] [&>span:last-child]:pl-[0.9rem] [&_small]:text-[0.56rem] [&_small]:font-[850] [&_small]:uppercase [&_small]:tracking-[0.13em] [&_small]:text-[var(--hooks-muted)] [&_b]:whitespace-nowrap [&_b]:text-[0.7rem] [&_b]:font-[850] [&_b]:text-[var(--hooks-text-soft)]"
+            aria-label="Hooks home"
+          >
             <BrandIdentity variant="desktop" />
             <span>
               <small>Research smarter</small>
@@ -2283,20 +2250,25 @@ const Header = () => {
             </span>
           </Link>
 
-          <nav className="hooks-desktop-nav" aria-label="Primary navigation">
+          <nav
+            className="flex min-w-0 items-center justify-center gap-[0.08rem] border-0  p-0"
+            aria-label="Primary navigation"
+          >
             <button
               type="button"
               className={desktopNavLinkClass(
-                activeDesktopMenu === "explore" || currentPath.startsWith("/smartphones"),
+                activeDesktopMenu === "explore" ||
+                  currentPath.startsWith("/smartphones"),
               )}
               onMouseEnter={() => setActiveDesktopMenu("explore")}
               onFocus={() => setActiveDesktopMenu("explore")}
               onClick={() =>
-                setActiveDesktopMenu((menu) => (menu === "explore" ? "" : "explore"))
+                setActiveDesktopMenu((menu) =>
+                  menu === "explore" ? "" : "explore",
+                )
               }
               aria-expanded={activeDesktopMenu === "explore"}
             >
-              <FaCompass aria-hidden="true" />
               <span>Explore</span>
               <FaChevronDown aria-hidden="true" />
             </button>
@@ -2313,32 +2285,22 @@ const Header = () => {
                 <span>{link.name}</span>
               </Link>
             ))}
-
-            <button
-              type="button"
-              className={desktopNavLinkClass(activeDesktopMenu === "more")}
-              onMouseEnter={() => setActiveDesktopMenu("more")}
-              onFocus={() => setActiveDesktopMenu("more")}
-              onClick={() =>
-                setActiveDesktopMenu((menu) => (menu === "more" ? "" : "more"))
-              }
-              aria-expanded={activeDesktopMenu === "more"}
-            >
-              <span>More</span>
-              <FaChevronDown aria-hidden="true" />
-            </button>
           </nav>
 
           <div
-            className="hooks-desktop-header__actions"
+            className="flex items-center gap-[0.55rem]"
             onMouseEnter={() => setActiveDesktopMenu("")}
           >
             {isDesktopSearchOpen ? (
-              <form ref={searchRef} onSubmit={handleSearch} className="hooks-desktop-search">
+              <form
+                ref={searchRef}
+                onSubmit={handleSearch}
+                className="relative grid w-[min(36vw,430px)] min-w-[300px] grid-cols-[42px_minmax(0,1fr)_42px] items-center rounded-[15px] border border-[color-mix(in_srgb,var(--hooks-brand)_34%,var(--hooks-line))] bg-[var(--hooks-surface)] shadow-[0_12px_35px_rgba(25,103,255,0.11)]"
+              >
                 <button
                   type="button"
                   onClick={closeDesktopSearch}
-                  className="hooks-desktop-search__close"
+                  className="inline-flex h-[42px] w-[42px] items-center justify-center border-0 bg-transparent text-[var(--hooks-text-soft)] transition-all hover:-translate-y-px hover:text-[var(--hooks-brand)]"
                   aria-label="Close search"
                 >
                   <FaTimes aria-hidden="true" />
@@ -2347,7 +2309,9 @@ const Header = () => {
                   ref={searchInputRef}
                   type="search"
                   value={searchQuery}
-                  onChange={(event) => handleSearchInputChange(event.target.value)}
+                  onChange={(event) =>
+                    handleSearchInputChange(event.target.value)
+                  }
                   onFocus={() => {
                     if (searchQuery.trim()) setShowSearchSuggestions(true);
                   }}
@@ -2355,7 +2319,11 @@ const Header = () => {
                   placeholder="Search devices, brands or specifications"
                   aria-label="Search Hooks"
                 />
-                <button type="submit" className="hooks-desktop-search__submit" aria-label="Search">
+                <button
+                  type="submit"
+                  className="inline-flex h-[42px] w-[42px] items-center justify-center border-0 bg-transparent text-[var(--hooks-text-soft)] transition-all hover:-translate-y-px hover:text-[var(--hooks-brand)]"
+                  aria-label="Search"
+                >
                   <FaSearch aria-hidden="true" />
                 </button>
                 <DesktopSearchSuggestionPanel />
@@ -2364,19 +2332,17 @@ const Header = () => {
               <button
                 type="button"
                 onClick={openDesktopSearch}
-                className="hooks-desktop-header__action"
+                className="inline-flex min-h-[42px] items-center justify-center gap-[0.48rem] rounded-[14px] border border-[var(--hooks-line)] bg-[var(--hooks-surface-soft)] px-[0.9rem] text-[0.72rem] font-[850] text-[var(--hooks-text-soft)] transition-all duration-[170ms] hover:-translate-y-px hover:text-[var(--hooks-brand)]"
                 aria-label="Open search"
               >
                 <FaSearch aria-hidden="true" />
                 <span>Search</span>
               </button>
             )}
-            <ThemeToggle className="hooks-desktop-theme-toggle" />
           </div>
         </div>
 
         {activeDesktopMenu === "explore" ? <ExploreMegaMenu /> : null}
-        {activeDesktopMenu === "more" ? <MoreMegaMenu /> : null}
       </div>
     </>
   );
@@ -2557,27 +2523,26 @@ const Header = () => {
     return (
       <>
         {isMenuOpen ? (
-          <div className="hooks-mobile-drawer-layer lg:hidden">
+          <div className="fixed inset-0 z-[120] lg:hidden">
             <button
               type="button"
-              className="hooks-mobile-drawer-layer__backdrop"
+              className="absolute inset-0 h-full w-full border-0 bg-[rgba(4,10,20,0.68)] backdrop-blur-[10px]"
               onClick={() => setIsMenuOpen(false)}
               aria-label="Close navigation"
             />
 
             <aside
-              className="hooks-mobile-drawer"
+              className="absolute inset-y-0 left-0 flex w-[min(94vw,410px)] max-w-full flex-col overflow-hidden bg-[var(--hooks-canvas)] shadow-[26px_0_90px_rgba(0,0,0,0.34)]"
               role="dialog"
               aria-modal="true"
               aria-label="Hooks navigation"
             >
-              <header className="hooks-mobile-drawer__header">
-                <div className="hooks-mobile-drawer__brand-row">
+              <header className="relative overflow-visible border-b border-[var(--hooks-line)] bg-[var(--hooks-surface)] px-[0.9rem] pb-[0.95rem] pt-[max(0.9rem,env(safe-area-inset-top))] text-[var(--hooks-text)]">
+                <div className="relative z-[2] flex items-center justify-between gap-4">
                   <Link to="/" onClick={() => setIsMenuOpen(false)}>
                     <BrandIdentity variant="drawer" />
                   </Link>
-                  <div className="hooks-mobile-drawer__header-actions">
-                    <ThemeToggle className="hooks-mobile-drawer__theme" />
+                  <div className="flex items-center gap-[0.4rem]">
                     <button
                       type="button"
                       onClick={() => setIsMenuOpen(false)}
@@ -2587,14 +2552,13 @@ const Header = () => {
                     </button>
                   </div>
                 </div>
-                <div className="hooks-mobile-drawer__welcome">
-                  <span><i aria-hidden="true" /> Live device guide</span>
+                <div className="relative z-[2] mt-[0.85rem] [&>span]:inline-flex [&>span]:items-center [&>span]:gap-[0.42rem] [&>span]:text-[0.56rem] [&>span]:font-[900] [&>span]:uppercase [&>span]:tracking-[0.1em] [&>span]:text-[var(--hooks-success)] [&_h2]:mt-[0.38rem] [&_h2]:text-[1.22rem] [&_h2]:font-[930] [&_h2]:leading-[1.08] [&_h2]:tracking-[-0.035em] [&_p]:mt-[0.32rem] [&_p]:text-[0.68rem] [&_p]:leading-[1.45] [&_p]:text-[var(--hooks-muted)]">
                   <h2>What are you researching today?</h2>
                   <p>Jump to a device, budget, brand or buying guide.</p>
                 </div>
                 <button
                   type="button"
-                  className="hooks-mobile-drawer__search"
+                  className="relative z-[2] mt-[0.8rem] grid min-h-[46px] w-full grid-cols-[20px_minmax(0,1fr)_16px] items-center gap-[0.65rem] rounded-[13px] border border-[color-mix(in_srgb,var(--hooks-brand)_28%,var(--hooks-line))] bg-[var(--hooks-brand-soft)] px-[0.85rem] text-left text-[var(--hooks-brand)] [&_span]:text-[0.68rem] [&_span]:text-[var(--hooks-text-soft)] [&_svg]:h-[13px] [&_svg]:w-[13px]"
                   onClick={() => {
                     setIsMenuOpen(false);
                     setIsSearchOpen(true);
@@ -2602,46 +2566,47 @@ const Header = () => {
                 >
                   <FaSearch aria-hidden="true" />
                   <span>Search phones, brands or specifications</span>
-                  <FaArrowRight aria-hidden="true" />
                 </button>
-                <div className="hooks-mobile-drawer__quick-actions">
+                <div className="relative z-[2] mt-[0.7rem] flex gap-[0.55rem] overflow-x-auto pb-[0.15rem] [scrollbar-width:none] snap-x snap-proximity [&::-webkit-scrollbar]:hidden [&_a]:grid [&_a]:min-h-[62px] [&_a]:shrink-0 [&_a]:grow-0 [&_a]:basis-[165px] [&_a]:grid-cols-[34px_minmax(0,1fr)_10px] [&_a]:items-center [&_a]:gap-[0.55rem] [&_a] [&_a]:p-[0.62rem] [&_a]:text-[var(--hooks-text)] [&_a]:no-underline [&_a]:snap-start [&_a>span]:grid [&_a>span]:h-[34px] [&_a>span]:w-[34px] [&_a>span]:place-items-center [&_a>span]:rounded-[10px] [&_a>span]:bg-[var(--hooks-brand-soft)] [&_a>span]:text-[var(--hooks-brand)] [&_a_b]:text-[0.66rem] [&_a_b]:font-[900] [&_a_b]:text-[var(--hooks-text)] [&_a_small]:overflow-hidden [&_a_small]:text-ellipsis [&_a_small]:whitespace-nowrap [&_a_small]:text-[0.53rem] [&_a_small]:text-[var(--hooks-muted)] [&_a>svg]:h-[9px] [&_a>svg]:w-[9px] [&_a>svg]:text-[var(--hooks-muted)]">
                   <Link to="/smartphones" onClick={() => setIsMenuOpen(false)}>
-                    <span><FaMobileAlt aria-hidden="true" /></span>
+                    <span>
+                      <FaMobileAlt aria-hidden="true" />
+                    </span>
                     <div>
                       <b>Phone finder</b>
-                      <small>Browse every model</small>
                     </div>
-                    <FaArrowRight aria-hidden="true" />
                   </Link>
                   <Link to="/compare" onClick={() => setIsMenuOpen(false)}>
-                    <span><FaAlignJustify aria-hidden="true" /></span>
+                    <span>
+                      <FaAlignJustify aria-hidden="true" />
+                    </span>
                     <div>
                       <b>Compare</b>
-                      <small>See differences</small>
                     </div>
-                    <FaArrowRight aria-hidden="true" />
                   </Link>
                   <Link to="/news" onClick={() => setIsMenuOpen(false)}>
-                    <span><FaInfoCircle aria-hidden="true" /></span>
+                    <span>
+                      <FaInfoCircle aria-hidden="true" />
+                    </span>
                     <div>
                       <b>Newsroom</b>
-                      <small>Launches and updates</small>
                     </div>
-                    <FaArrowRight aria-hidden="true" />
                   </Link>
                 </div>
               </header>
 
-              <div className="hooks-mobile-drawer__body">
-                <div className="hooks-mobile-drawer__section-label">
+              <div className="flex-1 overflow-y-auto bg-[var(--hooks-canvas)]  pb-[calc(1.1rem+env(safe-area-inset-bottom))] pt-[0.85rem]">
+                <div className="flex items-center justify-between gap-4 px-[0.2rem] pb-[0.65rem] [&>div]:grid [&>div]:gap-[0.12rem] [&_span]:text-[0.64rem] [&_span]:font-[920] [&_span]:uppercase [&_span]:tracking-[0.09em] [&_small]:text-[0.58rem] [&_small]:font-[850] [&_small]:text-[var(--hooks-muted)] [&>b]:text-[0.58rem] [&>b]:font-[850] [&>b]:text-[var(--hooks-success)]">
                   <div>
                     <span>Browse Hooks</span>
                     <small>Choose a section to reveal its links</small>
                   </div>
-                  <b>Live</b>
                 </div>
 
-                <nav className="hooks-mobile-drawer__nav" aria-label="Mobile navigation">
+                <nav
+                  className="overflow-hidden bg-[var(--hooks-surface)] "
+                  aria-label="Mobile navigation"
+                >
                   {drawerItems.map((item, itemIndex) => {
                     const isOpen = openSection === item.id;
                     const ItemIcon = item.icon || FaChevronRight;
@@ -2661,28 +2626,29 @@ const Header = () => {
                       return (
                         <section
                           key={item.id}
-                          className={`hooks-mobile-drawer__group is-${item.id} ${isOpen ? "is-open" : ""}`}
+                          className={`border-b border-[var(--hooks-line)] is-${item.id} ${isOpen ? "is-open" : ""}`}
                         >
                           <button
                             type="button"
-                            onClick={() => setOpenSection(isOpen ? "" : item.id)}
+                            onClick={() =>
+                              setOpenSection(isOpen ? "" : item.id)
+                            }
                             aria-expanded={isOpen}
+                            className={`grid min-h-[62px] w-full grid-cols-[42px_minmax(0,2fr)_42px_16px] items-center gap-3 border-0 bg-[var(--hooks-surface)] px-[0.8rem] py-[0.55rem] text-left text-[var(--hooks-text)] ${isOpen ? "bg-[var(--hooks-surface-soft)]" : ""}`}
                           >
-                            <span className="hooks-mobile-drawer__group-index">
-                              {String(itemIndex + 1).padStart(2, "0")}
-                            </span>
-                            <span className="hooks-mobile-drawer__group-copy">
+                            <span></span>
+                            <span className="grid min-w-0 gap-[0.12rem] [&_b]:text-[0.76rem] [&_b]:font-[880] [&_b]:text-[var(--hooks-text)] [&_small]:text-[0.58rem] [&_small]:font-bold [&_small]:text-[var(--hooks-muted)]">
                               <b>{item.title}</b>
                               <small>{itemDescription}</small>
                             </span>
-                            <span className="hooks-mobile-drawer__group-icon">
-                              <ItemIcon aria-hidden="true" />
-                            </span>
-                            <FaChevronDown className="hooks-mobile-drawer__chevron" aria-hidden="true" />
+                            <FaChevronDown
+                              className={`h-[11px] w-[11px] text-[var(--hooks-muted)] transition-transform duration-[170ms] ${isOpen ? "rotate-180" : ""}`}
+                              aria-hidden="true"
+                            />
                           </button>
 
                           {isOpen ? (
-                            <div className="hooks-mobile-drawer__subnav">
+                            <div className="grid bg-[var(--hooks-surface-soft)] px-[0.8rem] pb-[0.7rem] pl-[3.95rem] pt-1 [&_a]:flex [&_a]:min-h-[39px] [&_a]:items-center [&_a]:justify-between [&_a]:gap-[0.7rem] [&_a]:border-t [&_a]:border-[color-mix(in_srgb,var(--hooks-line)_76%,transparent)] [&_a]:py-[0.45rem] [&_a]:text-[0.68rem] [&_a]:font-[760] [&_a]:text-[var(--hooks-text-soft)] [&_a]:no-underline [&_a>svg]:h-[9px] [&_a>svg]:w-[9px] [&_a>svg]:text-[var(--hooks-muted)]">
                               {item.items.map((subItem) => (
                                 <Link
                                   key={`${item.id}-${subItem.label}`}
@@ -2714,36 +2680,21 @@ const Header = () => {
                         key={item.id}
                         to={toCanonicalPagePath(item.href)}
                         onClick={() => setIsMenuOpen(false)}
-                        className="hooks-mobile-drawer__direct-link"
+                        className="grid min-h-[62px] w-full grid-cols-[42px_minmax(0,1fr)_42px_16px] items-center gap-3 border-b border-[var(--hooks-line)] bg-[var(--hooks-surface)] px-[0.8rem] py-[0.55rem] text-left text-[var(--hooks-text)] no-underline [&_b]:text-[0.76rem] [&_b]:font-[880] [&_b]:text-[var(--hooks-text)] [&_small]:text-[0.58rem] [&_small]:font-bold [&_small]:text-[var(--hooks-muted)]"
                       >
-                        <span className="hooks-mobile-drawer__group-index">
-                          {String(itemIndex + 1).padStart(2, "0")}
-                        </span>
-                        <span className="hooks-mobile-drawer__group-copy">
+                        <span></span>
+                        <span className="grid min-w-0 gap-[0.12rem] [&_b]:text-[0.76rem] [&_b]:font-[880] [&_b]:text-[var(--hooks-text)] [&_small]:text-[0.58rem] [&_small]:font-bold [&_small]:text-[var(--hooks-muted)]">
                           <b>{item.title}</b>
                           <small>{itemDescription}</small>
                         </span>
-                        <span className="hooks-mobile-drawer__group-icon">
-                          <ItemIcon aria-hidden="true" />
-                        </span>
-                        <FaArrowRight aria-hidden="true" />
+                        <FaChevronDown
+                          className={`h-[11px] w-[11px] text-[var(--hooks-muted)] transition-transform duration-[170ms] ${isOpen ? "rotate-180" : ""}`}
+                          aria-hidden="true"
+                        />
                       </Link>
                     );
                   })}
                 </nav>
-
-                <footer className="hooks-mobile-drawer__footer">
-                  <div>
-                    <span>Hooks</span>
-                    <small>Independent device research and buying context.</small>
-                  </div>
-                  <nav aria-label="Company links">
-                    <Link to="/about" onClick={() => setIsMenuOpen(false)}>About</Link>
-                    <Link to="/contact" onClick={() => setIsMenuOpen(false)}>Contact</Link>
-                    <Link to="/privacy-policy" onClick={() => setIsMenuOpen(false)}>Privacy</Link>
-                    <Link to="/terms" onClick={() => setIsMenuOpen(false)}>Terms</Link>
-                  </nav>
-                </footer>
               </div>
             </aside>
           </div>
@@ -2758,7 +2709,7 @@ const Header = () => {
 
       <header
         ref={headerRef}
-        className={`hooks-site-header fixed left-0 right-0 top-0 isolate z-[60] w-full transition-transform duration-300 ease-out will-change-transform ${
+        className={`fixed inset-x-0 top-0 z-[60] isolate w-full border-0 bg-transparent shadow-none backdrop-blur-0 transition-transform duration-300 ease-out will-change-transform fixed left-0 right-0 top-0 isolate z-[60] w-full transition-transform duration-300 ease-out will-change-transform ${
           isMobileHeaderVisible
             ? "translate-y-0"
             : "pointer-events-none -translate-y-full"
@@ -2769,7 +2720,6 @@ const Header = () => {
         }`}
       >
         <MainHeader />
-
       </header>
       <div
         aria-hidden="true"
