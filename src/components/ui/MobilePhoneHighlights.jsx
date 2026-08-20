@@ -135,7 +135,8 @@ const hasStoreRows = (device) => {
   for (const variant of Array.isArray(device?.variants)
     ? device.variants
     : []) {
-    if (Array.isArray(variant?.store_prices)) rows.push(...variant.store_prices);
+    if (Array.isArray(variant?.store_prices))
+      rows.push(...variant.store_prices);
     if (Array.isArray(variant?.storePrices)) rows.push(...variant.storePrices);
   }
   return rows.some((row) =>
@@ -163,7 +164,8 @@ const getSaleStartDate = (device) => {
   if (normalizeDateOnlyString(direct)) return direct;
 
   const storeRows = [];
-  if (Array.isArray(device?.store_prices)) storeRows.push(...device.store_prices);
+  if (Array.isArray(device?.store_prices))
+    storeRows.push(...device.store_prices);
   if (Array.isArray(device?.storePrices)) storeRows.push(...device.storePrices);
   for (const store of storeRows) {
     const storeDate =
@@ -250,7 +252,8 @@ const HIGHLIGHT_ROWS = {
     Icon: FaCalendarAlt,
     accentClass: "bg-blue-600",
     surfaceClass: "bg-blue-50/80 dark:bg-blue-500/10",
-    iconClass: "bg-blue-100 text-blue-600 dark:bg-blue-400/15 dark:text-blue-300",
+    iconClass:
+      "bg-blue-100 text-blue-600 dark:bg-blue-400/15 dark:text-blue-300",
     textClass: "text-blue-700 dark:text-blue-300",
     viewAllPath: buildSmartphoneFilterPath("upcoming"),
   },
@@ -260,7 +263,8 @@ const HIGHLIGHT_ROWS = {
     Icon: FaFireAlt,
     accentClass: "bg-emerald-500",
     surfaceClass: "bg-emerald-50/80 dark:bg-emerald-500/10",
-    iconClass: "bg-emerald-100 text-emerald-600 dark:bg-emerald-400/15 dark:text-emerald-300",
+    iconClass:
+      "bg-emerald-100 text-emerald-600 dark:bg-emerald-400/15 dark:text-emerald-300",
     textClass: "text-emerald-700 dark:text-emerald-300",
     viewAllPath: buildSmartphoneFilterPath("trending"),
   },
@@ -270,7 +274,8 @@ const HIGHLIGHT_ROWS = {
     Icon: FaStar,
     accentClass: "bg-amber-500",
     surfaceClass: "bg-amber-50/80 dark:bg-amber-500/10",
-    iconClass: "bg-amber-100 text-amber-600 dark:bg-amber-400/15 dark:text-amber-300",
+    iconClass:
+      "bg-amber-100 text-amber-600 dark:bg-amber-400/15 dark:text-amber-300",
     textClass: "text-amber-700 dark:text-amber-300",
     viewAllPath: buildSmartphoneFilterPath("new"),
   },
@@ -280,7 +285,8 @@ const HIGHLIGHT_ROWS = {
     Icon: FaMobileAlt,
     accentClass: "bg-violet-500",
     surfaceClass: "bg-violet-50/80 dark:bg-violet-500/10",
-    iconClass: "bg-violet-100 text-violet-600 dark:bg-violet-400/15 dark:text-violet-300",
+    iconClass:
+      "bg-violet-100 text-violet-600 dark:bg-violet-400/15 dark:text-violet-300",
     textClass: "text-violet-700 dark:text-violet-300",
     viewAllPath: "/smartphones",
   },
@@ -292,35 +298,40 @@ const POPULAR_PICKS = [
     copy: "Highly scored phones",
     Icon: FaTrophy,
     path: "/smartphones",
-    iconClass: "bg-violet-100 text-violet-600 dark:bg-violet-400/15 dark:text-violet-300",
+    iconClass:
+      "bg-violet-100 text-violet-600 dark:bg-violet-400/15 dark:text-violet-300",
   },
   {
     label: "Best Value",
     copy: "Strong features for less",
     Icon: FaTag,
     path: buildSmartphoneFeaturePath("high-ram"),
-    iconClass: "bg-rose-100 text-rose-600 dark:bg-rose-400/15 dark:text-rose-300",
+    iconClass:
+      "bg-rose-100 text-rose-600 dark:bg-rose-400/15 dark:text-rose-300",
   },
   {
     label: "Best Camera",
     copy: "Camera-focused models",
     Icon: FaCamera,
     path: buildSmartphoneFeaturePath("high-camera"),
-    iconClass: "bg-blue-100 text-blue-600 dark:bg-blue-400/15 dark:text-blue-300",
+    iconClass:
+      "bg-blue-100 text-blue-600 dark:bg-blue-400/15 dark:text-blue-300",
   },
   {
     label: "Best Battery",
     copy: "Long-lasting performance",
     Icon: FaBatteryFull,
     path: buildSmartphoneFeaturePath("long-battery"),
-    iconClass: "bg-emerald-100 text-emerald-600 dark:bg-emerald-400/15 dark:text-emerald-300",
+    iconClass:
+      "bg-emerald-100 text-emerald-600 dark:bg-emerald-400/15 dark:text-emerald-300",
   },
   {
     label: "Best for Gaming",
     copy: "Performance for gamers",
     Icon: FaGamepad,
     path: buildSmartphoneFeaturePath("gaming"),
-    iconClass: "bg-orange-100 text-orange-600 dark:bg-orange-400/15 dark:text-orange-300",
+    iconClass:
+      "bg-orange-100 text-orange-600 dark:bg-orange-400/15 dark:text-orange-300",
   },
 ];
 
@@ -394,7 +405,10 @@ const PhoneImage = ({ phone, className = "", imageClassName = "" }) => {
           className={`h-full w-full object-contain p-2 ${imageClassName}`}
         />
       ) : (
-        <FaMobileAlt className="text-xl text-slate-300 dark:text-slate-600" aria-hidden="true" />
+        <FaMobileAlt
+          className="text-xl text-slate-300 dark:text-slate-600"
+          aria-hidden="true"
+        />
       )}
     </span>
   );
@@ -406,42 +420,26 @@ const ViewAllLink = ({ to, className = "" }) => (
     className={`inline-flex min-h-9 shrink-0 items-center gap-1 whitespace-nowrap text-xs font-extrabold text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-200 ${className}`}
   >
     View all
-    <FaChevronRight className="text-[9px]" />
   </Link>
 );
 
-const CategoryPanel = ({ meta, mobile = false }) => {
+const CategoryCell = ({ meta }) => {
   const Icon = meta.Icon;
+
   return (
-    <div
-      className={`relative flex min-w-0 items-center gap-3 overflow-hidden ${meta.surfaceClass} ${
-        mobile ? "px-4 py-3" : "h-full min-h-[132px] px-5 py-5"
-      }`}
-    >
+    <div className="relative flex min-w-[190px] items-center gap-3 py-2">
       <span
-        className={`absolute inset-y-0 left-0 w-1 ${meta.accentClass}`}
+        className={`absolute inset-y-0 left-0 w-1 rounded-full ${meta.accentClass}`}
         aria-hidden="true"
       />
       <span
-        className={`grid shrink-0 place-items-center rounded-full ${meta.iconClass} ${
-          mobile ? "h-10 w-10" : "h-12 w-12"
-        }`}
-      >
-        <Icon className={mobile ? "text-sm" : "text-base"} />
-      </span>
+        className={`grid h-11 w-1 shrink-0 place-items-center rounded-xl`}
+      ></span>
       <span className="min-w-0">
-        <strong
-          className={`block truncate whitespace-nowrap font-black ${meta.textClass} ${
-            mobile ? "text-sm" : "text-base"
-          }`}
-        >
+        <strong className={`block text-sm font-black ${meta.textClass}`}>
           {meta.title}
         </strong>
-        <span
-          className={`mt-0.5 block truncate whitespace-nowrap font-medium text-slate-600 opacity-80 dark:text-slate-300 ${
-            mobile ? "text-[10px]" : "text-xs"
-          }`}
-        >
+        <span className="mt-0.5 block text-[10px] font-medium leading-4 text-slate-500 dark:text-slate-400">
           {meta.subtitle}
         </span>
       </span>
@@ -449,83 +447,7 @@ const CategoryPanel = ({ meta, mobile = false }) => {
   );
 };
 
-const UpcomingDesktop = ({ phone }) => {
-  if (!phone) return null;
-  const name = getPhoneName(phone);
-  const path = createProductPath("smartphones", name);
-  const launchDate = getSaleStartDate(phone) || getLaunchDateValue(phone);
-
-  return (
-    <Link
-      to={path}
-      className="group grid min-h-[132px] min-w-0 grid-cols-[180px_minmax(0,1fr)_42px] items-center gap-5 px-5 py-4 transition-colors hover:bg-blue-50/40 dark:hover:bg-white/[0.035]"
-    >
-      <div className="relative grid h-28 place-items-center overflow-hidden rounded-2xl bg-gradient-to-br from-blue-50 via-white to-slate-100 dark:from-slate-800 dark:via-slate-800/80 dark:to-blue-950/50">
-        <span className="absolute h-32 w-32 rounded-full bg-blue-100/70 blur-sm dark:bg-blue-500/10" />
-        <PhoneImage
-          phone={phone}
-          className="relative h-28 w-36 bg-transparent"
-          imageClassName="p-1"
-        />
-      </div>
-      <span className="min-w-0">
-        <span className="inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[0.12em] text-blue-700 dark:bg-blue-400/15 dark:text-blue-300">
-          Next launch
-        </span>
-        <strong className="mt-2 block truncate whitespace-nowrap text-lg font-black tracking-tight text-slate-950 transition-colors group-hover:text-blue-700 dark:text-slate-100 dark:group-hover:text-blue-300">
-          {name}
-        </strong>
-        <span className="mt-1 block truncate whitespace-nowrap text-xs font-medium text-slate-500 dark:text-slate-400">
-          Expected launch: {formatMonthYear(launchDate)}
-        </span>
-      </span>
-      <span className="grid h-9 w-9 place-items-center rounded-full bg-blue-50 text-blue-600 transition-colors group-hover:bg-blue-600 group-hover:text-white dark:bg-blue-400/15 dark:text-blue-300 dark:group-hover:bg-blue-500">
-        <FaChevronRight className="text-[10px]" />
-      </span>
-    </Link>
-  );
-};
-
-const UpcomingMobile = ({ phone }) => {
-  if (!phone) return null;
-  const name = getPhoneName(phone);
-  const path = createProductPath("smartphones", name);
-  const launchDate = getSaleStartDate(phone) || getLaunchDateValue(phone);
-
-  return (
-    <Link
-      to={path}
-      className="group grid grid-cols-[96px_minmax(0,1fr)] items-center gap-3 rounded-2xl bg-slate-50 p-3 transition-colors hover:bg-blue-50 dark:bg-slate-800/70 dark:hover:bg-slate-800"
-    >
-      <div className="relative grid h-28 place-items-center overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 via-white to-slate-100 dark:from-slate-800 dark:via-slate-800/80 dark:to-blue-950/50">
-        <PhoneImage
-          phone={phone}
-          className="h-28 w-24 bg-transparent"
-          imageClassName="p-1"
-        />
-      </div>
-      <span className="min-w-0">
-        <span className="inline-flex rounded-full bg-blue-100 px-2 py-1 text-[8px] font-extrabold uppercase tracking-[0.1em] text-blue-700 dark:bg-blue-400/15 dark:text-blue-300">
-          Next launch
-        </span>
-        <strong
-          className="mt-2 block truncate whitespace-nowrap text-base font-black text-slate-950 group-hover:text-blue-700 dark:text-slate-100 dark:group-hover:text-blue-300"
-          title={name}
-        >
-          {name}
-        </strong>
-        <span className="mt-1 block truncate whitespace-nowrap text-[10px] font-medium text-slate-500 dark:text-slate-400">
-          Expected launch: {formatMonthYear(launchDate)}
-        </span>
-        <span className="mt-3 inline-flex items-center gap-1 text-[10px] font-extrabold text-blue-600 dark:text-blue-300">
-          View phone <FaChevronRight className="text-[8px]" />
-        </span>
-      </span>
-    </Link>
-  );
-};
-
-const DesktopPhoneItem = ({ phone, mode }) => {
+const ArtPhoneTile = ({ phone, mode = "latest", featured = false }) => {
   const name = getPhoneName(phone);
   const path = createProductPath("smartphones", name);
   const launchDate = getLaunchDateValue(phone);
@@ -533,63 +455,55 @@ const DesktopPhoneItem = ({ phone, mode }) => {
   return (
     <Link
       to={path}
-      className="group flex min-w-[172px] flex-1 items-center gap-3 border-r border-slate-200/70 px-4 py-4 last:border-r-0 hover:bg-blue-50/40 dark:border-slate-700/60 dark:hover:bg-white/[0.035]"
+      className={`group relative flex min-w-0 items-center overflow-hidden   transition-all duration-200  dark:border-slate-700/60 dark:bg-slate-900/70 dark:hover:border-blue-500/30 ${
+        featured ? "gap-4 p-3" : "gap-2.5 p-2.5"
+      }`}
     >
-      <PhoneImage phone={phone} className="h-20 w-14 rounded-xl" />
+      <div
+        className={`relative shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 via-white to-violet-50 dark:from-slate-800 dark:via-slate-900 dark:to-blue-950/50 ${
+          featured ? "h-24 w-20" : "h-16 w-14"
+        }`}
+      >
+        <span
+          className={`absolute -right-3 -top-3 rounded-full bg-blue-400/20 blur-xl ${
+            featured ? "h-14 w-14" : "h-10 w-10"
+          }`}
+        />
+        <span
+          className={`absolute -bottom-4 -left-3 rounded-full bg-violet-400/15 blur-xl ${
+            featured ? "h-16 w-16" : "h-10 w-10"
+          }`}
+        />
+        <PhoneImage
+          phone={phone}
+          className="relative h-full w-full bg-transparent"
+          imageClassName={featured ? "p-1" : "p-0.5"}
+        />
+      </div>
+
       <span className="min-w-0 flex-1">
         <strong
-          className="block max-w-full truncate whitespace-nowrap text-sm font-extrabold text-slate-900 group-hover:text-blue-700 dark:text-slate-100 dark:group-hover:text-blue-300"
+          className={`block truncate text-slate-950 group-hover:text-blue-700 dark:text-slate-100 dark:group-hover:text-blue-300 ${
+            featured ? "text-sm font-black" : "text-xs font-extrabold"
+          }`}
           title={name}
         >
           {name}
         </strong>
+
         <span
-          className={`mt-1 inline-flex max-w-full items-center gap-1 truncate whitespace-nowrap text-[10px] font-bold ${
-            mode === "trending" ? "text-emerald-600 dark:text-emerald-300" : "text-slate-400 dark:text-slate-500"
+          className={`mt-1 flex items-center gap-1 truncate font-bold ${
+            featured ? "text-[10px]" : "text-[9px]"
+          } ${
+            mode === "trending"
+              ? "text-emerald-600 dark:text-emerald-300"
+              : "text-slate-500 dark:text-slate-400"
           }`}
         >
           {mode === "trending" ? (
             <>
-              <FaArrowRight className="-rotate-45 text-[8px]" /> Trending now
-            </>
-          ) : launchDate ? (
-            formatMonthYear(launchDate)
-          ) : (
-            "View details"
-          )}
-        </span>
-      </span>
-      <FaChevronRight className="shrink-0 text-[9px] text-slate-300 group-hover:text-blue-600 dark:text-slate-600 dark:group-hover:text-blue-300" />
-    </Link>
-  );
-};
-
-const MobilePhoneCard = ({ phone, mode }) => {
-  const name = getPhoneName(phone);
-  const path = createProductPath("smartphones", name);
-  const launchDate = getLaunchDateValue(phone);
-
-  return (
-    <Link
-      to={path}
-      className="group grid min-w-[82%] snap-start grid-cols-[82px_minmax(0,1fr)] items-center gap-3 rounded-2xl bg-slate-50 p-3 transition-colors hover:bg-blue-50 sm:min-w-[48%] dark:bg-slate-800/70 dark:hover:bg-slate-800"
-    >
-      <PhoneImage phone={phone} className="h-24 w-[82px] rounded-xl bg-white dark:bg-slate-900" />
-      <span className="min-w-0">
-        <strong
-          className="block truncate whitespace-nowrap text-sm font-black text-slate-950 group-hover:text-blue-700 dark:text-slate-100 dark:group-hover:text-blue-300"
-          title={name}
-        >
-          {name}
-        </strong>
-        <span
-          className={`mt-1 inline-flex max-w-full items-center gap-1 truncate whitespace-nowrap text-[10px] font-bold ${
-            mode === "trending" ? "text-emerald-600 dark:text-emerald-300" : "text-slate-500 dark:text-slate-400"
-          }`}
-        >
-          {mode === "trending" ? (
-            <>
-              <FaArrowRight className="-rotate-45 text-[8px]" /> Trending now
+              <FaArrowRight className="-rotate-45 text-[8px]" />
+              Trending now
             </>
           ) : launchDate ? (
             formatMonthYear(launchDate)
@@ -597,52 +511,141 @@ const MobilePhoneCard = ({ phone, mode }) => {
             "Recently added"
           )}
         </span>
-        <span className="mt-3 inline-flex items-center gap-1 text-[10px] font-extrabold text-blue-600 dark:text-blue-300">
-          View details <FaChevronRight className="text-[8px]" />
+      </span>
+    </Link>
+  );
+};
+
+const UpcomingArt = ({ phone }) => {
+  if (!phone) return null;
+
+  const name = getPhoneName(phone);
+  const path = createProductPath("smartphones", name);
+  const launchDate = getSaleStartDate(phone) || getLaunchDateValue(phone);
+
+  return (
+    <Link
+      to={path}
+      className="group relative flex min-w-0 items-center gap-4 overflow-hidden bg-white  dark:border-blue-500/20 dark:from-blue-500/10 dark:via-slate-900/70 dark:to-violet-500/10"
+    >
+      <div className="relative grid h-24 w-24 shrink-0 place-items-center overflow-hidden rounded-xl bg-white/80 dark:bg-slate-900/70">
+        <span className="absolute h-24 w-24 rounded-full bg-blue-300/20 blur-2xl" />
+        <span className="absolute -bottom-5 -right-5 h-20 w-20 bg-violet-300/20 blur-xl" />
+        <PhoneImage
+          phone={phone}
+          className="relative h-24 w-24"
+          imageClassName="p-2"
+        />
+      </div>
+
+      <span className="min-w-0 flex-1">
+        <span className="inline-flex rounded-full bg-blue-100 px-2 py-1 text-[8px] font-black uppercase tracking-[0.12em] text-blue-700 dark:bg-blue-400/15 dark:text-blue-300">
+          Next launch
+        </span>
+        <strong className="mt-2 block truncate text-base font-black tracking-tight text-slate-950 group-hover:text-blue-700 dark:text-slate-100 dark:group-hover:text-blue-300">
+          {name}
+        </strong>
+        <span className="mt-1 block truncate text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+          Expected launch: {formatMonthYear(launchDate)}
         </span>
       </span>
     </Link>
   );
 };
 
-const PopularPickDesktop = ({ item }) => {
-  const Icon = item.Icon;
+const MobileTextPhoneTile = ({ phone, mode = "latest" }) => {
+  const name = getPhoneName(phone);
+  const path = createProductPath("smartphones", name);
+  const launchDate = getLaunchDateValue(phone);
+
   return (
     <Link
-      to={item.path}
-      className="group flex min-w-[170px] flex-1 items-center gap-3 border-r border-slate-200/70 px-4 py-4 last:border-r-0 hover:bg-blue-50/40 dark:border-slate-700/60 dark:hover:bg-white/[0.035]"
+      to={path}
+      className="group flex min-w-[190px] flex-1 items-center gap-3 px-2.5 py-2.5"
     >
-      <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-full ${item.iconClass}`}>
-        <Icon className="text-sm" />
+      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+        <FaMobileAlt className="text-xs" />
       </span>
       <span className="min-w-0 flex-1">
-        <strong className="block truncate whitespace-nowrap text-sm font-extrabold text-slate-900 group-hover:text-blue-700 dark:text-slate-100 dark:group-hover:text-blue-300">
-          {item.label}
+        <strong
+          className="block truncate text-xs font-extrabold text-slate-900 group-hover:text-blue-700 dark:text-slate-100 dark:group-hover:text-blue-300"
+          title={name}
+        >
+          {name}
         </strong>
-        <span className="mt-0.5 block truncate whitespace-nowrap text-[10px] font-medium text-slate-500 dark:text-slate-400">
-          {item.copy}
+        <span
+          className={`mt-0.5 flex items-center gap-1 truncate text-[9px] font-bold ${
+            mode === "trending"
+              ? "text-emerald-600 dark:text-emerald-300"
+              : "text-slate-500 dark:text-slate-400"
+          }`}
+        >
+          {mode === "trending" ? (
+            <>
+              <FaArrowRight className="-rotate-45 text-[7px]" />
+              Trending now
+            </>
+          ) : launchDate ? (
+            formatMonthYear(launchDate)
+          ) : (
+            "Recently added"
+          )}
         </span>
       </span>
-      <FaChevronRight className="text-[9px] text-blue-500" />
+      <FaChevronRight className="shrink-0 text-[8px] text-slate-300 group-hover:text-blue-600 dark:text-slate-600 dark:group-hover:text-blue-300" />
     </Link>
   );
 };
 
-const PopularPickMobile = ({ item }) => {
+const MobileUpcomingText = ({ phone }) => {
+  if (!phone) return null;
+
+  const name = getPhoneName(phone);
+  const path = createProductPath("smartphones", name);
+  const launchDate = getSaleStartDate(phone) || getLaunchDateValue(phone);
+
+  return (
+    <Link
+      to={path}
+      className="group flex min-w-0 items-center gap-3 px-2.5 py-2.5"
+    >
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+        <FaRocket className="text-sm" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="inline-flex text-[8px] font-black uppercase tracking-[0.12em] text-blue-600 dark:text-blue-300">
+          Next launch
+        </span>
+        <strong className="mt-0.5 block truncate text-sm font-black tracking-tight text-slate-950 group-hover:text-blue-700 dark:text-slate-100 dark:group-hover:text-blue-300">
+          {name}
+        </strong>
+        <span className="mt-0.5 block truncate text-[9px] font-semibold text-slate-500 dark:text-slate-400">
+          Expected launch: {formatMonthYear(launchDate)}
+        </span>
+      </span>
+      <FaChevronRight className="shrink-0 text-[8px] text-slate-300 group-hover:text-blue-600 dark:text-slate-600 dark:group-hover:text-blue-300" />
+    </Link>
+  );
+};
+
+const PopularArtTile = ({ item }) => {
   const Icon = item.Icon;
+
   return (
     <Link
       to={item.path}
-      className="group flex min-w-0 items-center gap-2.5 rounded-xl bg-slate-50 p-3 hover:bg-blue-50 dark:bg-slate-800/70 dark:hover:bg-slate-800"
+      className="group flex min-w-0 items-center gap-2.5 rounded-xl  bg-slate-50/70 p-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50/60 dark:border-slate-700/60 dark:bg-slate-800/50 dark:hover:border-blue-500/30 dark:hover:bg-blue-500/10"
     >
-      <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${item.iconClass}`}>
+      <span
+        className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${item.iconClass}`}
+      >
         <Icon className="text-xs" />
       </span>
       <span className="min-w-0 flex-1">
-        <strong className="block truncate whitespace-nowrap text-[11px] font-extrabold text-slate-900 group-hover:text-blue-700 dark:text-slate-100 dark:group-hover:text-blue-300">
+        <strong className="block truncate text-[12px] font-black text-slate-900 group-hover:text-blue-700 dark:text-slate-100 dark:group-hover:text-blue-300">
           {item.label}
         </strong>
-        <span className="mt-0.5 block truncate whitespace-nowrap text-[9px] font-medium text-slate-500 dark:text-slate-400">
+        <span className="mt-0.5 block truncate text-[10px] font-medium text-slate-500 dark:text-slate-400">
           {item.copy}
         </span>
       </span>
@@ -650,25 +653,27 @@ const PopularPickMobile = ({ item }) => {
   );
 };
 
-const DesktopHighlightRow = ({ meta, children, viewAllPath }) => (
-  <article className="grid min-h-[132px] grid-cols-[230px_minmax(0,1fr)_90px] overflow-hidden rounded-2xl border border-slate-200/80 bg-white dark:border-slate-700/60 dark:bg-slate-900/45">
-    <CategoryPanel meta={meta} />
-    <div className="min-w-0 overflow-hidden">{children}</div>
-    <div className="flex items-center justify-center">
-      <ViewAllLink to={viewAllPath} />
-    </div>
-  </article>
+const DesktopHighlightTableRow = ({ meta, children, viewAllPath }) => (
+  <tr className="group border-t border-slate-200/80 align-middle transition-colors hover:bg-slate-50/50 dark:border-slate-700/60 dark:hover:bg-white/[0.02]">
+    <td className="w-[220px] px-4 py-3 align-middle">
+      <CategoryCell meta={meta} />
+    </td>
+    <td className="min-w-0 px-4 py-3">
+      <div className="min-w-0">{children}</div>
+    </td>
+    <td className="w-[92px] px-4 py-3 text-right">
+      <ViewAllLink to={viewAllPath} className="justify-end" />
+    </td>
+  </tr>
 );
 
-const MobileHighlightSection = ({ meta, children, viewAllPath }) => (
-  <article className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white dark:border-slate-700/60 dark:bg-slate-900/45">
-    <div className="flex items-center justify-between gap-3">
-      <div className="min-w-0 flex-1">
-        <CategoryPanel meta={meta} mobile />
-      </div>
-      <ViewAllLink to={viewAllPath} className="pr-3" />
+const MobileTableRow = ({ meta, children, viewAllPath }) => (
+  <article className="overflow-hidden rounded-2xl bg-transparent">
+    <div className="flex items-center justify-between gap-3 px-3">
+      <CategoryCell meta={meta} />
+      <ViewAllLink to={viewAllPath} />
     </div>
-    <div className="p-3 pt-0">{children}</div>
+    <div className="p-3">{children}</div>
   </article>
 );
 
@@ -823,8 +828,8 @@ const MobilePhoneHighlights = ({
   if (!allPhones.length) return null;
 
   return (
-    <div className={`smartphones-highlights-section mx-auto w-full max-w-7xl ${className}`}>
-      <section className="overflow-hidden rounded-2xl bg-white px-3 py-5 sm:px-6 sm:py-7 dark:bg-[#0b1727]">
+    <div className={` mx-auto w-full max-w-7xl`}>
+      <section className="overflow-hidden bg-transparent px-1 py-5 sm:px-6 sm:py-7">
         <header className="max-w-3xl">
           <p className="text-[10px] font-extrabold uppercase tracking-[0.3em] text-blue-600 sm:text-[11px]">
             Key highlights
@@ -837,116 +842,122 @@ const MobilePhoneHighlights = ({
           </p>
         </header>
 
-        <div className="mt-5 hidden space-y-3 lg:block">
-          {upcomingPhones[0] ? (
-            <DesktopHighlightRow
-              meta={HIGHLIGHT_ROWS.upcoming}
-              viewAllPath={HIGHLIGHT_ROWS.upcoming.viewAllPath}
-            >
-              <UpcomingDesktop phone={upcomingPhones[0]} />
-            </DesktopHighlightRow>
-          ) : null}
+        <div className="mt-6 hidden overflow-hidden rounded-2xl lg:block dark:border-slate-700/60 dark:bg-slate-900/40">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[820px] table-fixed border-collapse">
+              <tbody>
+                {upcomingPhones[0] ? (
+                  <DesktopHighlightTableRow
+                    meta={HIGHLIGHT_ROWS.upcoming}
+                    viewAllPath={HIGHLIGHT_ROWS.upcoming.viewAllPath}
+                  >
+                    <UpcomingArt phone={upcomingPhones[0]} />
+                  </DesktopHighlightTableRow>
+                ) : null}
 
-          {trendingPhones.length ? (
-            <DesktopHighlightRow
-              meta={HIGHLIGHT_ROWS.trending}
-              viewAllPath={HIGHLIGHT_ROWS.trending.viewAllPath}
-            >
-              <div className="flex h-full min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {trendingPhones.map((phone) => (
-                  <DesktopPhoneItem
-                    key={`trending-${getPhoneKey(phone)}`}
-                    phone={phone}
-                    mode="trending"
-                  />
-                ))}
-              </div>
-            </DesktopHighlightRow>
-          ) : null}
+                {trendingPhones.length ? (
+                  <DesktopHighlightTableRow
+                    meta={HIGHLIGHT_ROWS.trending}
+                    viewAllPath={HIGHLIGHT_ROWS.trending.viewAllPath}
+                  >
+                    <div className="grid grid-flow-col auto-cols-fr gap-2">
+                      {trendingPhones.map((phone) => (
+                        <ArtPhoneTile
+                          key={`trending-${getPhoneKey(phone)}`}
+                          phone={phone}
+                          mode="trending"
+                        />
+                      ))}
+                    </div>
+                  </DesktopHighlightTableRow>
+                ) : null}
 
-          {latestPhones.length ? (
-            <DesktopHighlightRow
-              meta={HIGHLIGHT_ROWS.latest}
-              viewAllPath={HIGHLIGHT_ROWS.latest.viewAllPath}
-            >
-              <div className="flex h-full min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {latestPhones.map((phone) => (
-                  <DesktopPhoneItem
-                    key={`latest-${getPhoneKey(phone)}`}
-                    phone={phone}
-                    mode="latest"
-                  />
-                ))}
-              </div>
-            </DesktopHighlightRow>
-          ) : null}
+                {latestPhones.length ? (
+                  <DesktopHighlightTableRow
+                    meta={HIGHLIGHT_ROWS.latest}
+                    viewAllPath={HIGHLIGHT_ROWS.latest.viewAllPath}
+                  >
+                    <div className="grid grid-flow-col auto-cols-fr gap-2">
+                      {latestPhones.map((phone) => (
+                        <ArtPhoneTile
+                          key={`latest-${getPhoneKey(phone)}`}
+                          phone={phone}
+                          mode="latest"
+                        />
+                      ))}
+                    </div>
+                  </DesktopHighlightTableRow>
+                ) : null}
 
-          <DesktopHighlightRow
-            meta={HIGHLIGHT_ROWS.popular}
-            viewAllPath={HIGHLIGHT_ROWS.popular.viewAllPath}
-          >
-            <div className="flex h-full min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {POPULAR_PICKS.map((item) => (
-                <PopularPickDesktop key={item.label} item={item} />
-              ))}
-            </div>
-          </DesktopHighlightRow>
+                <DesktopHighlightTableRow
+                  meta={HIGHLIGHT_ROWS.popular}
+                  viewAllPath={HIGHLIGHT_ROWS.popular.viewAllPath}
+                >
+                  <div className="grid grid-flow-col auto-cols-fr gap-2">
+                    {POPULAR_PICKS.map((item) => (
+                      <PopularArtTile key={item.label} item={item} />
+                    ))}
+                  </div>
+                </DesktopHighlightTableRow>
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div className="mt-4 space-y-3 lg:hidden">
           {upcomingPhones[0] ? (
-            <MobileHighlightSection
+            <MobileTableRow
               meta={HIGHLIGHT_ROWS.upcoming}
               viewAllPath={HIGHLIGHT_ROWS.upcoming.viewAllPath}
             >
-              <UpcomingMobile phone={upcomingPhones[0]} />
-            </MobileHighlightSection>
+              <MobileUpcomingText phone={upcomingPhones[0]} />
+            </MobileTableRow>
           ) : null}
 
           {trendingPhones.length ? (
-            <MobileHighlightSection
+            <MobileTableRow
               meta={HIGHLIGHT_ROWS.trending}
               viewAllPath={HIGHLIGHT_ROWS.trending.viewAllPath}
             >
-              <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {trendingPhones.map((phone) => (
-                  <MobilePhoneCard
+                  <MobileTextPhoneTile
                     key={`mobile-trending-${getPhoneKey(phone)}`}
                     phone={phone}
                     mode="trending"
                   />
                 ))}
               </div>
-            </MobileHighlightSection>
+            </MobileTableRow>
           ) : null}
 
           {latestPhones.length ? (
-            <MobileHighlightSection
+            <MobileTableRow
               meta={HIGHLIGHT_ROWS.latest}
               viewAllPath={HIGHLIGHT_ROWS.latest.viewAllPath}
             >
-              <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {latestPhones.map((phone) => (
-                  <MobilePhoneCard
+                  <MobileTextPhoneTile
                     key={`mobile-latest-${getPhoneKey(phone)}`}
                     phone={phone}
                     mode="latest"
                   />
                 ))}
               </div>
-            </MobileHighlightSection>
+            </MobileTableRow>
           ) : null}
 
-          <MobileHighlightSection
+          <MobileTableRow
             meta={HIGHLIGHT_ROWS.popular}
             viewAllPath={HIGHLIGHT_ROWS.popular.viewAllPath}
           >
-            <div className="grid grid-cols-2 gap-2">
+            <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {POPULAR_PICKS.map((item) => (
-                <PopularPickMobile key={item.label} item={item} />
+                <PopularArtTile key={item.label} item={item} />
               ))}
             </div>
-          </MobileHighlightSection>
+          </MobileTableRow>
         </div>
 
         <Link
