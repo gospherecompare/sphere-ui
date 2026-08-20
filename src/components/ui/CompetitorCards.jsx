@@ -540,7 +540,10 @@ const scoreSpecSimilarity = (currentSignals, competitorSignals) => {
     );
   }
   if (currentSignals.displayType && competitorSignals.displayType) {
-    add(currentSignals.displayType === competitorSignals.displayType ? 1 : 0, 4);
+    add(
+      currentSignals.displayType === competitorSignals.displayType ? 1 : 0,
+      4,
+    );
   }
 
   const totalWeight = weighted.reduce((sum, item) => sum + item.weight, 0);
@@ -605,7 +608,9 @@ const buildComparableSpecBullets = ({
     bullets.push(`Battery: ${Math.round(competitorSignals.batteryMah)} mAh`);
   }
   if (competitorSignals.rearCameraMp) {
-    bullets.push(`Rear camera: ${Math.round(competitorSignals.rearCameraMp)} MP`);
+    bullets.push(
+      `Rear camera: ${Math.round(competitorSignals.rearCameraMp)} MP`,
+    );
   }
   return bullets.filter(Boolean).slice(0, 5);
 };
@@ -804,8 +809,10 @@ const buildFallbackCompetitorRows = ({
         (b.overall_score_display ?? b.spec_score_display ?? 0) -
         (a.overall_score_display ?? a.spec_score_display ?? 0);
       if (scoreDiff !== 0) return scoreDiff;
-      return (a.price ?? Number.MAX_SAFE_INTEGER) -
-        (b.price ?? Number.MAX_SAFE_INTEGER);
+      return (
+        (a.price ?? Number.MAX_SAFE_INTEGER) -
+        (b.price ?? Number.MAX_SAFE_INTEGER)
+      );
     });
 };
 
@@ -880,8 +887,7 @@ const insightSectionMeta = (type) => {
       title: "Pros over this phone",
       Icon: FaThumbsUp,
       itemIcon: FaCheck,
-      shellClass:
-        "border-slate-200 bg-transparent dark:border-slate-700",
+      shellClass: "border-blue-100 bg-transparent dark:border-slate-700",
       titleClass: "text-emerald-700 dark:text-emerald-300",
       iconClass:
         "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300",
@@ -894,8 +900,7 @@ const insightSectionMeta = (type) => {
       title: "Cons vs this phone",
       Icon: FaThumbsDown,
       itemIcon: FaTimesCircle,
-      shellClass:
-        "border-slate-200 bg-transparent dark:border-slate-700",
+      shellClass: "border-blue-100 bg-transparent dark:border-slate-700",
       titleClass: "text-rose-700 dark:text-rose-300",
       iconClass:
         "bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-300",
@@ -907,8 +912,7 @@ const insightSectionMeta = (type) => {
     title: "Similarities",
     Icon: FaBalanceScale,
     itemIcon: FaCheckCircle,
-    shellClass:
-      "border-slate-200 bg-transparent dark:border-slate-700",
+    shellClass: "border-blue-100 bg-transparent dark:border-slate-700",
     titleClass: "text-blue-700 dark:text-blue-300",
     iconClass:
       "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300",
@@ -1008,7 +1012,7 @@ const CompetitorCard = ({
   const compareLabel = `Compare ${baseProductName || "this device"} vs ${displayName}`;
 
   return (
-    <article className="group relative w-[86vw] max-w-[340px] shrink-0 self-stretch snap-start overflow-hidden rounded-2xl bg-[#ffffff] shadow-sm dark:bg-[#0d1b2e] sm:w-[320px] xl:w-[308px]">
+    <article className="group relative w-[86vw] max-w-[340px] shrink-0 self-stretch snap-start overflow-hidden rounded-2xl  border border-blue-200 dark:bg-[#0d1b2e] sm:w-[320px] xl:w-[308px]">
       <div className="flex h-full flex-col">
         <div className="p-4 sm:p-5">
           <div className="flex items-center justify-between gap-2">
@@ -1054,7 +1058,10 @@ const CompetitorCard = ({
                 </Link>
               </h3>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                By <span className="font-semibold text-slate-700 dark:text-slate-200">{buyFrom}</span>
+                By{" "}
+                <span className="font-semibold text-slate-700 dark:text-slate-200">
+                  {buyFrom}
+                </span>
               </p>
               <div className="mt-3">
                 <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
@@ -1086,9 +1093,7 @@ const CompetitorCard = ({
               onClick={() => setLocalExpanded((current) => !current)}
               className="inline-flex items-center gap-1.5 px-1 pt-1 text-xs font-bold text-blue-600 transition hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
             >
-              {isExpanded
-                ? "Show less"
-                : `Show ${hiddenInsightCount} more`}
+              {isExpanded ? "Show less" : `Show ${hiddenInsightCount} more`}
               <FaChevronRight
                 className={`text-[9px] transition-transform ${isExpanded ? "-rotate-90" : "rotate-90"}`}
               />
@@ -1096,7 +1101,7 @@ const CompetitorCard = ({
           ) : null}
         </div>
 
-        <div className="mt-auto border-t border-slate-100 bg-[#ffffff] p-4 dark:border-slate-700 dark:bg-[#0d1b2e] sm:p-5">
+        <div className="mt-auto border-t border-slate-100  p-4 dark:border-slate-700 dark:bg-[#0d1b2e] sm:p-5">
           <div className="mb-3 flex min-w-0 items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
             <span className="min-w-0 truncate">
               {baseProductName || `This ${productLabel}`}
@@ -1113,7 +1118,7 @@ const CompetitorCard = ({
             <Link
               to={cardProductPath}
               aria-label={`View ${displayName} details`}
-              className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-[#ffffff] px-3 py-3 text-xs font-bold text-slate-700 transition hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-blue-500 dark:hover:text-blue-300"
+              className="inline-flex items-center justify-center rounded-xl border border-blue-200  px-3 py-3 text-xs font-bold text-slate-700 transition hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-blue-500 dark:hover:text-blue-300"
             >
               View details
             </Link>

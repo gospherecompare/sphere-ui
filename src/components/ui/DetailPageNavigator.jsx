@@ -81,10 +81,7 @@ const DetailPageNavigator = ({
       const slot = slotRef.current;
       if (!slot) return;
 
-      const headerOffset = readRootPixelValue(
-        "--site-sticky-header-offset",
-        0,
-      );
+      const headerOffset = readRootPixelValue("--site-sticky-header-offset", 0);
       const reservedHeaderOffset = Math.max(
         readRootPixelValue("--mobile-header-height", 0),
         readRootPixelValue("--desktop-header-height", 0),
@@ -107,9 +104,7 @@ const DetailPageNavigator = ({
       }
 
       const anticipatedHeaderOffset =
-        scrollDirectionRef.current < 0
-          ? reservedHeaderOffset
-          : headerOffset;
+        scrollDirectionRef.current < 0 ? reservedHeaderOffset : headerOffset;
       const nextStickyTopOffset = Math.max(
         anticipatedHeaderOffset,
         safeAreaTop,
@@ -209,10 +204,7 @@ const DetailPageNavigator = ({
     const target = document.getElementById(id);
     if (!target) return;
 
-    const headerOffset = readRootPixelValue(
-      "--site-sticky-header-offset",
-      0,
-    );
+    const headerOffset = readRootPixelValue("--site-sticky-header-offset", 0);
     const measuredNavigatorHeight = readRootPixelValue(
       "--detail-page-nav-height",
       navigatorHeight || 54,
@@ -243,9 +235,9 @@ const DetailPageNavigator = ({
         style={isPinned ? { top: stickyTopOffset } : undefined}
         className={`${
           isPinned ? "fixed left-0 right-0" : "relative"
-        } z-[55] w-full border-b border-slate-200/60 bg-white backdrop-blur-xl transition-[top] duration-300 ease-out dark:border-slate-800/70 dark:bg-[#07111f]/98 ${className}`}
+        } z-[55] w-full  bg-white shadow-md  transition-[top] duration-300 ease-out dark:border-slate-800/70 dark:bg-[#07111f]/98 ${className}`}
       >
-        <div className="mx-auto w-full max-w-[1440px] px-2 py-1 sm:px-5 sm:py-1.5 lg:px-8">
+        <div className="mx-auto w-full max-w-[1440px] px-2 py-1 sm:px-5 sm:py-1.5 lg:px-8 ">
           <nav
             ref={scrollRef}
             aria-label="Smartphone detail page sections"
@@ -268,7 +260,7 @@ const DetailPageNavigator = ({
                   className={`inline-flex min-h-9 shrink-0 snap-center items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-colors sm:min-h-10 sm:gap-2 sm:px-4 sm:text-[13px] ${
                     isActive
                       ? "bg-blue-600 text-white dark:bg-blue-500"
-                      : "bg-white/95 text-slate-600 hover:bg-blue-50 hover:text-blue-700 dark:bg-slate-900/95 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-blue-300"
+                      : "text-slate-600 hover:bg-blue-50 hover:text-blue-700 dark:bg-slate-900/95 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-blue-300"
                   }`}
                 >
                   {Icon ? (

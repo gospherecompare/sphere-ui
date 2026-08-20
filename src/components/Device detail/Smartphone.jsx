@@ -468,7 +468,7 @@ const LinkedNewsStoryCard = ({ story }) => {
     story?.publishedIso || story?.updatedIso || story?.publishedAt,
   );
   const baseCardClass =
-    "group flex h-full w-full flex-col overflow-hidden rounded-2xl bg-[#ffffff] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 dark:bg-slate-900 dark:shadow-none";
+    "group flex h-full w-full flex-col overflow-hidden rounded-2xl bg-yellow-200 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 dark:bg-slate-900 dark:shadow-none";
   const imageWrapClass =
     "relative aspect-[16/9] overflow-hidden bg-slate-100 dark:bg-slate-800";
   const titleClass =
@@ -3398,11 +3398,7 @@ Price: ${price}
     );
   };
 
-  const renderCameraTable = (
-    camera,
-    limit = 5,
-    sectionId = "spec-camera",
-  ) => {
+  const renderCameraTable = (camera, limit = 5, sectionId = "spec-camera") => {
     if (!camera || !hasContent(camera))
       return (
         <div className="text-center py-4 text-gray-500">
@@ -4023,7 +4019,7 @@ Price: ${price}
             "N/A",
         };
         const sectionCardClass =
-          "scroll-mt-[136px] sm:scroll-mt-[148px] flex flex-col overflow-hidden rounded-2xl bg-[#ffffff] shadow-sm dark:bg-slate-900";
+          "scroll-mt-[136px] sm:scroll-mt-[148px] flex flex-col overflow-hidden rounded-2xl border border-blue-200 dark:bg-slate-900";
         const fullSpecHighlightFormatter = new Intl.ListFormat("en", {
           style: "long",
           type: "conjunction",
@@ -4044,20 +4040,25 @@ Price: ${price}
             id={sectionId}
             className={`${sectionCardClass} lg:min-h-[22rem]`}
           >
-            <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50/60 px-4 py-4 dark:border-slate-800 dark:bg-slate-800/40 sm:px-5 sm:py-3.5">
-              <span className="h-6 w-1 rounded-full bg-blue-600" aria-hidden="true" />
+            <div className="flex items-center gap-3  bg-blue-50/60 px-4 py-4 dark:border-slate-800 dark:bg-slate-800/40 sm:px-5 sm:py-3.5">
+              <span
+                className="h-6 w-1 rounded-full bg-blue-600"
+                aria-hidden="true"
+              />
               <h4 className="text-[17px] font-bold tracking-tight text-slate-950 dark:text-white sm:text-base">
                 {title}
               </h4>
             </div>
-            <div className="flex flex-1 flex-col px-4 py-4 sm:px-5 sm:py-4">{content}</div>
+            <div className="flex flex-1 flex-col px-4 py-4 sm:px-5 sm:py-4">
+              {content}
+            </div>
           </section>
         );
 
         return (
           <div
             id="spec-specifications"
-            className={`scroll-mt-[136px] sm:scroll-mt-[148px] w-full px-3 pb-2 sm:px-0 ${combineResponsiveClasses(RESPONSIVE_SPACING.contentMarginY)}`}
+            className={`scroll-mt-[136px] sm:scroll-mt-[148px] w-full px-1 pb-2 sm:px-0 ${combineResponsiveClasses(RESPONSIVE_SPACING.contentMarginY)}`}
           >
             <section className="rounded-[20px] bg-transparent px-0 py-2 dark:bg-transparent sm:py-3">
               <div className="max-w-4xl pb-2">
@@ -4145,11 +4146,7 @@ Price: ${price}
                       {renderSectionCard(
                         "spec-performance",
                         "Processor",
-                        renderSpecTable(
-                          processorData,
-                          5,
-                          "spec-performance",
-                        ),
+                        renderSpecTable(processorData, 5, "spec-performance"),
                       )}
                     </div>
                   ) : null}
@@ -5336,7 +5333,7 @@ Price: ${price}
         </div>
       )}
 
-      <main className="w-full bg-transparent">
+      <main className="w-full ">
         <DetailPageNavigator
           sections={detailPageSections}
           activeId={activePageSection}
@@ -5380,7 +5377,7 @@ Price: ${price}
                     ) : null}
 
                     <div className="order-1 sm:order-2">
-                      <div className="relative flex min-h-[330px] items-center justify-center overflow-hidden rounded-[22px] bg-[#ffffff] p-6 shadow-sm dark:bg-[#0f1f34] dark:shadow-none sm:min-h-[430px] sm:p-8">
+                      <div className="relative flex min-h-[330px] items-center justify-center overflow-hidden rounded-[22px] bg-[#ffffff] p-6 dark:bg-[#0f1f34] dark:shadow-none sm:min-h-[430px] sm:p-8">
                         <SmartphoneOrbitArtwork />
                         {carouselImages.length > 1 ? (
                           <>
@@ -5533,7 +5530,7 @@ Price: ${price}
 
                   <div className="relative z-[1] mt-5 grid gap-3 sm:grid-cols-2">
                     {headerSpecScoreValue != null ? (
-                      <div className="flex items-center gap-3 rounded-2xl bg-[#ffffff] p-4 shadow-sm backdrop-blur-md dark:bg-[#111f34]/80 dark:shadow-none">
+                      <div className="flex items-center gap-3 rounded-2xl  p-4   dark:bg-[#111f34]/80 dark:shadow-none">
                         <HookLogo
                           aria-label="Hooks"
                           className="h-11 w-11 shrink-0 rounded-xl object-cover"
@@ -5557,7 +5554,7 @@ Price: ${price}
                       </div>
                     ) : null}
 
-                    <div className="rounded-2xl bg-[#ffffff] p-4 shadow-sm backdrop-blur-md dark:bg-[#111f34]/80 dark:shadow-none">
+                    <div className=" p-4  dark:bg-[#111f34]/80 dark:shadow-none">
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
@@ -5594,7 +5591,7 @@ Price: ${price}
 
                   <div
                     id="detail-highlights"
-                    className="relative z-[1] scroll-mt-[136px] mt-5 grid grid-cols-2 gap-1 rounded-2xl bg-[#ffffff] p-1 shadow-sm backdrop-blur-md dark:bg-[#111f34]/80 dark:shadow-none sm:scroll-mt-[148px] sm:grid-cols-3"
+                    className="relative z-[1] scroll-mt-[136px] mt-5 grid grid-cols-2 gap-1   p-1  backdrop-blur-md dark:bg-[#111f34]/80 dark:shadow-none sm:scroll-mt-[148px] sm:grid-cols-3"
                   >
                     {heroQuickSpecs.slice(0, 6).map((item, index) => (
                       <button
@@ -5645,7 +5642,7 @@ Price: ${price}
                 </div>
               </div>
 
-              <div className="mx-0 mb-4 mt-5 rounded-[22px] bg-[#ffffff] backdrop-blur-md dark:bg-[#111f34]/75 sm:mb-6">
+              <div className="mx-0 mb-4 mt-5  dark:bg-[#111f34]/75 sm:mb-6">
                 <div className="grid min-w-0 lg:grid-cols-[minmax(0,1.12fr)_minmax(330px,0.88fr)] lg:divide-x lg:divide-slate-200/80 dark:lg:divide-slate-700/70">
                   <div className="min-w-0 p-4 sm:p-6">
                     <div className="flex flex-wrap items-end justify-between gap-3">
@@ -5657,7 +5654,7 @@ Price: ${price}
                           Choose RAM and storage
                         </h2>
                       </div>
-                      <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                      <span className="shrink-0  px-2.5 py-1 text-[11px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-300">
                         {variants.length} option
                         {variants.length === 1 ? "" : "s"}
                       </span>
@@ -5673,10 +5670,10 @@ Price: ${price}
                               type="button"
                               onClick={() => setSelectedVariant(index)}
                               aria-pressed={selected}
-                              className={`relative min-h-[88px] min-w-0 snap-start rounded-xl border p-3 text-left shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-2 dark:shadow-none dark:focus-visible:ring-offset-[#111f34] sm:min-w-[190px] sm:p-4 ${
+                              className={`relative min-h-[88px] min-w-0 snap-start rounded-xl border-2 p-3 text-left  transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-2 dark:shadow-none dark:focus-visible:ring-offset-[#111f34] sm:min-w-[190px] sm:p-4 ${
                                 selected
                                   ? "border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-500/10"
-                                  : "border-slate-200 bg-[#ffffff] hover:border-blue-300 hover:bg-blue-50/60 dark:border-slate-700 dark:bg-[#0f1d31] dark:hover:border-blue-500 dark:hover:bg-slate-800"
+                                  : "border-slate-200  hover:border-blue-300 hover:bg-blue-50/60 dark:border-slate-700 dark:bg-[#0f1d31] dark:hover:border-blue-500 dark:hover:bg-slate-800"
                               }`}
                             >
                               {selected ? (
@@ -5763,10 +5760,10 @@ Price: ${price}
                             return (
                               <div
                                 key={`${storePrice.id || storeName || index}`}
-                                className="flex min-h-[68px] min-w-0 items-center justify-between gap-2 rounded-xl border border-slate-200 bg-[#f8fafc] px-3 py-3 shadow-sm dark:border-slate-700 dark:bg-[#0f1d31] sm:gap-4 sm:px-4"
+                                className="flex min-h-[68px] min-w-0 items-center justify-between gap-2 rounded-xl border border-slate-100 bg-[#f8fafc] px-3 py-3 shadow-md dark:border-slate-700 dark:bg-[#0f1d31] sm:gap-4 sm:px-4"
                               >
                                 <div className="flex min-w-0 items-center gap-3">
-                                  <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-[#ffffff] p-1.5 dark:border-slate-700 dark:bg-slate-900">
+                                  <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg  bg-[#ffffff] p-1.5 dark:border-slate-700 dark:bg-slate-900">
                                     {logoSrc ? (
                                       <img
                                         src={logoSrc}

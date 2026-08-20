@@ -800,46 +800,6 @@ const NewsHero = ({ title, description, leadStory }) => (
   </section>
 );
 
-const NewsNavigationBar = ({ stories = [], storyCount = 0 }) => {
-  const railStories = uniqueStoriesBySlug(stories).slice(0, 5);
-
-  return (
-    <section className="hooks-news-command" aria-label="Live newsroom topics">
-      <div className="hooks-news-command__inner">
-        <div className="hooks-news-command__status">
-          <span className="hooks-news-command__pulse" aria-hidden="true" />
-          <strong>Live newsroom</strong>
-          <span>{storyCount} stories</span>
-        </div>
-
-        <div className="hooks-news-command__topics" aria-label="Trending news">
-          {railStories.map((story, index) => (
-            <Link key={story.slug} to={createNewsStoryPath(story.slug)}>
-              {index === 0 ? (
-                <FaRocket />
-              ) : index === 1 ? (
-                <FaFire />
-              ) : (
-                <FaBolt />
-              )}
-              <span>{story.title}</span>
-            </Link>
-          ))}
-        </div>
-
-        <nav
-          className="hooks-news-command__links"
-          aria-label="Jump to news section"
-        >
-          <a href="#latest" className="hooks-news-command__all">
-            View all trends <FaChevronRight />
-          </a>
-        </nav>
-      </div>
-    </section>
-  );
-};
-
 const TrendingNowPanel = ({ stories = [] }) => {
   if (!stories.length) return null;
 
@@ -1831,10 +1791,6 @@ const NewsArticlesPage = () => {
                 className="hooks-news-frontpage"
                 aria-label="Featured news"
               >
-                <NewsNavigationBar
-                  stories={heroCarouselStories}
-                  storyCount={routedStories.length}
-                />
                 <div className="hooks-news-editorial-board">
                   <div className="hooks-news-feature-grid">
                     <HeroStoryCarousel stories={heroCarouselStories} />
