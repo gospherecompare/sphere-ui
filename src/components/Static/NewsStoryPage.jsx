@@ -7,6 +7,7 @@ import {
   FaLink,
   FaRegNewspaper,
   FaTwitter,
+  FaUser,
   FaWhatsapp,
 } from "react-icons/fa";
 import SEO from "../SEO";
@@ -23,26 +24,24 @@ import {
   usePublicNewsStory,
 } from "../../hooks/usePublicNews";
 import { NEWS_BRAND_STYLES } from "../Home/newsBrandStyles";
-import HookLogo from "../ui/HookLogo";
 
 const NewsAuthorAvatar = ({ story, className = "" }) => (
   <span
-    className={`inline-grid shrink-0 place-items-center overflow-hidden bg-[#1263f6] ${className}`}
+    className={`relative inline-grid shrink-0 place-items-center overflow-hidden bg-[#1263f6] ${className}`}
     aria-hidden="true"
   >
+    <FaUser className="absolute text-white" />
     {story?.authorImage ? (
       <img
         src={story.authorImage}
         alt=""
         onError={(event) => {
           event.currentTarget.onerror = null;
-          event.currentTarget.src = "/hook-logo.png";
+          event.currentTarget.style.display = "none";
         }}
         className="h-full w-full object-cover"
       />
-    ) : (
-      <HookLogo className="h-full w-full object-cover" aria-label="Hooks" />
-    )}
+    ) : null}
   </span>
 );
 
@@ -104,7 +103,9 @@ const formatUpdatedLabel = (story) => {
 
   const publishedDate = parseStoryDate(story);
   const updatedLabel = DATE_FORMATTER.format(updatedDate);
-  const publishedLabel = publishedDate ? DATE_FORMATTER.format(publishedDate) : "";
+  const publishedLabel = publishedDate
+    ? DATE_FORMATTER.format(publishedDate)
+    : "";
   if (publishedLabel && updatedLabel === publishedLabel) {
     return "";
   }

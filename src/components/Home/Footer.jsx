@@ -25,8 +25,14 @@ const footerSections = [
     links: [
       { label: "Compare devices", href: "/compare" },
       { label: "Popular comparisons", href: "/popular-comparisons" },
-      { label: "Phones under ₹15,000", href: "/smartphones/filter/under-15000" },
-      { label: "Phones under ₹25,000", href: "/smartphones/filter/under-25000" },
+      {
+        label: "Phones under ₹15,000",
+        href: "/smartphones/filter/under-15000",
+      },
+      {
+        label: "Phones under ₹25,000",
+        href: "/smartphones/filter/under-25000",
+      },
       { label: "5G smartphones", href: "/smartphones/feature/5g" },
     ],
   },
@@ -63,22 +69,29 @@ const Footer = () => (
               className="h-12 w-12 shrink-0 rounded-2xl object-cover shadow-[0_14px_34px_rgba(37,99,235,.34)]"
             />
             <span>
-              <strong className="block text-2xl font-black tracking-[-0.04em]">Hooks</strong>
-              <small className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-200/70">
-                Technology decisions, simplified
+              <strong className="block font-[Space_Grotesk] text-2xl font-bold tracking-[-0.04em] text-white">
+                Hooks
+              </strong>
+              <small className="block text-xs font-semibold uppercase tracking-[0.16em] text-blue-200/70">
+                Research smarter
               </small>
+              <b className="block text-[11px] font-semibold text-slate-400">
+                Device intelligence
+              </b>
             </span>
           </Link>
 
           <div className="mt-6 space-y-3 text-sm text-slate-300">
             <p className="flex items-center gap-2">
-              <FaCheckCircle className="text-emerald-300" /> Structured product research
+              <FaCheckCircle className="text-emerald-300" /> Structured product
+              research
             </p>
             <p className="flex items-center gap-2">
               <FaShieldAlt className="text-blue-300" /> Clear editorial context
             </p>
             <p className="flex items-center gap-2">
-              <FaBalanceScale className="text-violet-300" /> Practical comparison tools
+              <FaBalanceScale className="text-violet-300" /> Practical
+              comparison tools
             </p>
           </div>
 
@@ -115,11 +128,20 @@ const Footer = () => (
       </div>
 
       <div className="mt-12 flex flex-col gap-4 border-t border-white/10 pt-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-        <p>© {new Date().getFullYear()} Hooks. Product information may change; verify important details before purchase.</p>
+        <p>
+          © {new Date().getFullYear()} Hooks. Product information may change;
+          verify important details before purchase.
+        </p>
         <div className="flex flex-wrap gap-x-5 gap-y-2">
-          <Link to="/privacy-policy" className="transition hover:text-white">Privacy</Link>
-          <Link to="/terms" className="transition hover:text-white">Terms</Link>
-          <Link to="/contact" className="transition hover:text-white">Corrections & support</Link>
+          <Link to="/privacy-policy" className="transition hover:text-white">
+            Privacy
+          </Link>
+          <Link to="/terms" className="transition hover:text-white">
+            Terms
+          </Link>
+          <Link to="/contact" className="transition hover:text-white">
+            Corrections & support
+          </Link>
         </div>
       </div>
     </div>

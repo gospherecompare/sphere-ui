@@ -11,9 +11,11 @@ const FeaturedProduct = React.lazy(() => import("./FeaturedProduct"));
 const PopularBrands = React.lazy(() => import("./Popularbrand"));
 const LatestSmartphones = React.lazy(() => import("./LatestSmartphones"));
 const BestPriceSection = React.lazy(() => import("./BestPrice"));
-const RecommendedSmartphones = React.lazy(() => import("./RecommendedSmartphones"));
-const LatestNewsArticlesSection = React.lazy(() =>
-  import("./LatestNewsArticlesSection"),
+const RecommendedSmartphones = React.lazy(
+  () => import("./RecommendedSmartphones"),
+);
+const LatestNewsArticlesSection = React.lazy(
+  () => import("./LatestNewsArticlesSection"),
 );
 
 const BelowFoldSection = ({ children, height = 620 }) => (
@@ -29,7 +31,7 @@ const Home = () => {
   useTitle({ page: "home" });
   return (
     <HomeDataProvider>
-      <main className="hooks-home home-v2 min-h-screen overflow-x-hidden">
+      <main className="hooks-home home-v2 min-h-screen overflow-x-hidden [&_h1]:font-[Space_Grotesk] [&_h2]:font-[Space_Grotesk] [&_h3]:font-[Space_Grotesk]">
         <HeroSection />
         <DecisionStudio />
         <BelowFoldSection height={760}>

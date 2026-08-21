@@ -5848,18 +5848,36 @@ const MobileCompare = () => {
         gain: "Smoother display refresh",
         giveup: "Lower refresh rate",
       },
-      "peak brightness": { gain: "Brighter display", giveup: "Lower brightness" },
+      "peak brightness": {
+        gain: "Brighter display",
+        giveup: "Lower brightness",
+      },
       "main-camera resolution": {
         gain: "Higher main-camera resolution",
         giveup: "Lower main-camera resolution",
       },
       "battery capacity": { gain: "Larger battery", giveup: "Smaller battery" },
-      "wired charging": { gain: "Faster wired charging", giveup: "Slower wired charging" },
-      "selected ram": { gain: "More selected RAM", giveup: "Less selected RAM" },
-      "selected storage": { gain: "More selected storage", giveup: "Less selected storage" },
-      weight: { gain: "Better weight balance", giveup: "Less favorable weight" },
+      "wired charging": {
+        gain: "Faster wired charging",
+        giveup: "Slower wired charging",
+      },
+      "selected ram": {
+        gain: "More selected RAM",
+        giveup: "Less selected RAM",
+      },
+      "selected storage": {
+        gain: "More selected storage",
+        giveup: "Less selected storage",
+      },
+      weight: {
+        gain: "Better weight balance",
+        giveup: "Less favorable weight",
+      },
       thickness: { gain: "Slimmer body", giveup: "Thicker body" },
-      performance: { gain: "Stronger performance", giveup: "Lower performance" },
+      performance: {
+        gain: "Stronger performance",
+        giveup: "Lower performance",
+      },
       value: { gain: "Better value score", giveup: "Lower value score" },
       "software longevity": {
         gain: "Longer software support",
@@ -6338,7 +6356,7 @@ const MobileCompare = () => {
   ) : null;
 
   return (
-    <main className="hooks-compare-page pb-16">
+    <main className="hooks-compare-page pb-16 max-[720px]:pb-0">
       <Helmet prioritizeSeoTags>
         <title key="compare-title">{normalizedMetaTitle}</title>
         <meta
@@ -6421,7 +6439,9 @@ const MobileCompare = () => {
         <header className="hc-section flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p className="hc-eyebrow">Hooks comparison intelligence</p>
-            <h1 className="hc-heading">Compare smartphones side by side</h1>
+            <h1 className="hc-heading font-[Space_Grotesk]">
+              Compare smartphones side by side
+            </h1>
             <p className="hc-copy">
               {isComparing && activeDevices.length >= MIN_DEVICES
                 ? `${activeDevices.map((device) => getDeviceName(device)).join(" vs ")} — compare price, performance, camera, battery, launch timing and complete specifications in one decision-focused view.`
@@ -6916,7 +6936,10 @@ const MobileCompare = () => {
                     );
                     const winnerDevice = getCategoryWinnerFromVerdict(verdict);
                     return (
-                      <tr key={`key-row-${row.key}`} data-category={categoryMeta.label}>
+                      <tr
+                        key={`key-row-${row.key}`}
+                        data-category={categoryMeta.label}
+                      >
                         {showCategory ? (
                           <th
                             rowSpan={categoryRowCount}
@@ -7208,7 +7231,8 @@ const MobileCompare = () => {
                         </p>
                         <h3>{getDeviceName(device)}</h3>
                         <p>
-                          {gainItems.length} gain{gainItems.length === 1 ? "" : "s"}
+                          {gainItems.length} gain
+                          {gainItems.length === 1 ? "" : "s"}
                           {" / "}
                           {giveUpItems.length} give-up
                           {giveUpItems.length === 1 ? "" : "s"}

@@ -730,18 +730,7 @@ html[data-route-group="company"] h1 {
   position: relative;
   overflow: hidden;
   border-top: 1px solid rgba(255, 255, 255, 0.12);
-  background:
-    radial-gradient(
-      circle at 12% 4%,
-      rgba(59, 130, 246, 0.28),
-      transparent 28rem
-    ),
-    radial-gradient(
-      circle at 88% 20%,
-      rgba(124, 58, 237, 0.2),
-      transparent 28rem
-    ),
-    linear-gradient(145deg, #06101e, #0b1d36 55%, #111b3f) !important;
+  background: #000000 !important;
 }
 
 /* Dark mode compatibility for existing Tailwind utility-heavy pages */
