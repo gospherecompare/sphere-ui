@@ -5387,7 +5387,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                       Live smartphone catalogue
                     </div>
                     <h1
-                      className={`${heroTitleWidthClass} max-w-4xl text-4xl font-black leading-[0.98] tracking-[-0.055em] text-[#0f172a] sm:text-5xl lg:text-7xl dark:text-[#f7faff]`}
+                      className={`${heroTitleWidthClass} max-w-4xl font-[Space_Grotesk] text-4xl font-bold leading-[0.98] tracking-[-0.055em] text-[#0f172a] sm:text-5xl lg:text-7xl dark:text-[#f7faff]`}
                     >
                       {heroTitleText}
                     </h1>

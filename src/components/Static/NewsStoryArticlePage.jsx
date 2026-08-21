@@ -6,6 +6,7 @@ import {
   FaChevronRight,
   FaFacebookF,
   FaLink,
+  FaUser,
   FaWhatsapp,
 } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
@@ -67,9 +68,9 @@ const ArticleAuthorAvatar = ({ story, className = "" }) => {
       aria-hidden="true"
     >
       {useHooksLogo ? (
-        <HookLogo
-          className="hooks-article-author-avatar__logo"
-          aria-label="Hooks"
+        <FaUser
+          className="hooks-article-author-avatar__user"
+          aria-hidden="true"
         />
       ) : (
         <img
@@ -1072,12 +1073,6 @@ const NewsStoryArticlePage = () => {
         <section className="hooks-article-header">
           <div className="hooks-article-shell hooks-article-header__grid">
             <div className="hooks-article-header__headline">
-              <div className="hooks-article-tags">
-                {storyTags.slice(0, 3).map((tag) => (
-                  <span key={tag}>{tag}</span>
-                ))}
-              </div>
-
               <h1>{story.title}</h1>
               <p className="hooks-article-deck">{articleDescription}</p>
             </div>

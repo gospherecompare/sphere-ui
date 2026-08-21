@@ -16,6 +16,7 @@ import {
   FaRss,
   FaSignal,
   FaTwitter,
+  FaUser,
   FaYoutube,
 } from "react-icons/fa";
 import SEO from "../SEO";
@@ -33,7 +34,6 @@ import {
   useStoryListSchemaItems,
 } from "../../hooks/usePublicNews";
 import GooglePreferredSourceButton from "../News/GooglePreferredSourceButton";
-import HookLogo from "../ui/HookLogo";
 import { NEWS_LISTING_SEO } from "../../utils/newsSeo";
 import "./news-listing.css";
 
@@ -697,7 +697,8 @@ const StoryAuthorLine = ({ story, light = false, compact = false }) => (
       compact ? "is-compact" : ""
     }`}
   >
-    <span className="hooks-news-author__avatar" aria-hidden="true">
+    <span className="hooks-news-author__avatar relative" aria-hidden="true">
+      <FaUser className="absolute text-[#1263f6]" />
       {story?.authorImage ? (
         <img
           src={story.authorImage}
@@ -705,12 +706,10 @@ const StoryAuthorLine = ({ story, light = false, compact = false }) => (
           loading="lazy"
           onError={(event) => {
             event.currentTarget.onerror = null;
-            event.currentTarget.src = "/hook-logo.png";
+            event.currentTarget.style.display = "none";
           }}
         />
-      ) : (
-        <HookLogo className="hooks-news-author__logo" aria-label="Hooks" />
-      )}
+      ) : null}
     </span>
     <span className="hooks-news-author__copy">
       <strong>{story?.author || "Hooks Newsroom"}</strong>
@@ -767,7 +766,7 @@ const NewsHero = ({ title, description, leadStory }) => (
               Hooks intelligence
             </span>
             <strong>NEWS</strong>
-            <p>
+            <p className="!font-[Space_Grotesk] !text-white/85 !text-[0.78rem] !font-bold !leading-[1.15] !tracking-[-0.04em]">
               Smarter insights.
               <br />
               Better decisions.
@@ -800,69 +799,6 @@ const NewsHero = ({ title, description, leadStory }) => (
   </section>
 );
 
-const TrendingNowPanel = ({ stories = [] }) => {
-  if (!stories.length) return null;
-
-  return (
-    <section className="hooks-news-utility hooks-news-trending-now">
-      <div className="hooks-news-utility__heading">
-        <span>
-          <FaChartLine /> Trending now
-        </span>
-        <FaChevronRight />
-      </div>
-      <div className="hooks-news-trending-now__list">
-        {stories.slice(0, 3).map((story, index) => (
-          <Link
-            key={story.slug}
-            to={createNewsStoryPath(story.slug)}
-            className="hooks-news-trending-now__item group"
-          >
-            <span>{index + 1}</span>
-            <div>
-              <h3>{story.title}</h3>
-              <p>{story.brandName || story.label || formatStoryDate(story)}</p>
-            </div>
-          </Link>
-        ))}
-      </div>
-      <a className="hooks-news-utility__footer" href="#top-news">
-        View all trending <FaChevronRight />
-      </a>
-    </section>
-  );
-};
-
-const FollowHooksPanel = () => (
-  <section className="hooks-news-follow-panel">
-    <div>
-      <span>
-        <FaSignal /> Follow Hooks
-      </span>
-      <p>
-        Trusted technology news and buying intelligence, straight to your feed.
-      </p>
-    </div>
-    <div
-      className="hooks-news-follow-panel__icons"
-      aria-label="Hooks social channels"
-    >
-      <span aria-label="X">
-        <FaTwitter />
-      </span>
-      <span aria-label="YouTube">
-        <FaYoutube />
-      </span>
-      <span aria-label="Instagram">
-        <FaInstagram />
-      </span>
-      <span aria-label="RSS">
-        <FaRss />
-      </span>
-    </div>
-  </section>
-);
-
 const QuickBriefsPanel = ({ stories = [] }) => {
   if (!stories.length) return null;
 
@@ -885,14 +821,6 @@ const QuickBriefsPanel = ({ stories = [] }) => {
     </section>
   );
 };
-
-const NewsUtilityRail = ({ trending = [], briefs = [] }) => (
-  <aside className="hooks-news-feature-utility">
-    <TrendingNowPanel stories={trending} />
-    <FollowHooksPanel />
-    {/* Quick briefs removed for a cleaner frontpage utility rail. */}
-  </aside>
-);
 
 const HeroStoryCarousel = ({ stories = [] }) => {
   const carouselStories = useMemo(
@@ -1417,7 +1345,7 @@ const BrandRailCard = ({ brand }) => {
   return (
     <Link
       to={`/brand/${encodeURIComponent(brand?.slug || brand?.name || "")}`}
-      className="hooks-news-brand-card group"
+      className="hooks-news-brand-card group border border-blue-200"
       title={brand?.name || "Brand"}
     >
       <span className="hooks-news-brand-card__logo">
@@ -1433,7 +1361,6 @@ const BrandRailCard = ({ brand }) => {
         )}
       </span>
       <strong>{brand?.name || "Brand"}</strong>
-      <FaChevronRight aria-hidden="true" />
     </Link>
   );
 };
@@ -1533,7 +1460,7 @@ const SideList = ({ title, stories = [] }) => {
   if (!stories.length) return null;
 
   return (
-    <section className="hooks-news-side-panel hooks-news-side-panel--recent">
+    <section className="hooks-news-side-panel--recent">
       <div className="hooks-news-side-panel__head">
         <div>
           <span className="hooks-news-side-panel__eyebrow">News desk</span>
@@ -1579,7 +1506,7 @@ const LatestLaunches = ({ stories = [] }) => {
   if (!stories.length) return null;
 
   return (
-    <section className="hooks-news-side-panel hooks-news-side-panel--launches">
+    <section className=" hooks-news-side-panel--launches">
       <div className="hooks-news-side-panel__head">
         <div>
           <span className="hooks-news-side-panel__eyebrow">Product radar</span>
@@ -1787,22 +1714,6 @@ const NewsArticlesPage = () => {
             </div>
           ) : (
             <div className="min-w-0 space-y-8 sm:space-y-10">
-              <section
-                className="hooks-news-frontpage"
-                aria-label="Featured news"
-              >
-                <div className="hooks-news-editorial-board">
-                  <div className="hooks-news-feature-grid">
-                    <HeroStoryCarousel stories={heroCarouselStories} />
-                    <SpotlightList stories={display.spotlight} />
-                    <NewsUtilityRail
-                      trending={display.trendingSide}
-                      briefs={display.recentSide}
-                    />
-                  </div>
-                </div>
-              </section>
-
               <div className="hooks-news-content-layout grid min-w-0 gap-7 xl:grid-cols-[minmax(0,1fr)_310px] xl:items-start">
                 <div className="min-w-0 space-y-7 sm:space-y-9">
                   <TopNewsSection stories={display.topNews} />
@@ -1826,7 +1737,7 @@ const NewsArticlesPage = () => {
                   <LatestNewsTimeline stories={display.latest} />
                 </div>
 
-                <aside className="hooks-news-sidebar min-w-0 space-y-5 xl:sticky xl:top-6">
+                <aside className=" min-w-0 space-y-5 xl:sticky xl:top-6">
                   <div className="hooks-news-preferred-source">
                     <GooglePreferredSourceButton panel compact />
                   </div>

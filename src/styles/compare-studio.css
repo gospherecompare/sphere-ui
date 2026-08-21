@@ -2685,7 +2685,6 @@
 @media (max-width: 720px) {
   .hooks-compare-page {
     overflow-x: clip;
-    padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
   }
 
   .hooks-compare-page .hc-shell {
