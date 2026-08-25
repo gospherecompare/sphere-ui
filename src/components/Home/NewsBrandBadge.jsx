@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import HookLogo from "../ui/HookLogo";
+import HookLogo from "../ui/MoblieX";
 
 export const NewsBrandBadge = ({
-  brandName = "Hooks",
+  brandName = "MobileX",
   brandLogo = "",
   className = "",
   logoClassName = "",
@@ -47,7 +47,7 @@ export const HooksSignature = ({ variant = "dark", className = "" }) => {
           isDark ? "" : "opacity-90"
         }`}
       />
-      Hooks
+      MobileX
     </span>
   );
 };

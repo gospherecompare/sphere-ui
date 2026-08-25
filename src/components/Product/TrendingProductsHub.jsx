@@ -50,29 +50,23 @@ const TRENDING_PRODUCTS_PER_PAGE = 20;
 const MAX_COMPARE_ITEMS = 4;
 const RUPEE = "\u20B9";
 const API_BASE = "https://api.apisphere.in";
-const SITE_ORIGIN = "https://tryhook.shop";
+const SITE_ORIGIN = "https://mobilex.in";
 const CURRENT_MONTH_YEAR = new Intl.DateTimeFormat("en-US", {
-  month: "short",
+  month: "long",
   year: "numeric",
 }).format(new Date());
-const CURRENT_DAY_MONTH_YEAR = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-}).format(new Date());
-
 const CATEGORIES = {
   smartphones: {
     id: "smartphones",
     label: "Smartphones",
     badge: "TRENDING SMARTPHONES",
-    title: `Trending smartphones in India (${CURRENT_DAY_MONTH_YEAR}) - Full Specifications, Features and Price - Hooks`,
+    title: `Trending Smartphones in India (${CURRENT_MONTH_YEAR}) | MobileX`,
     description:
       "Browse trending smartphones across camera, battery, display, and performance so you can quickly spot which device truly fits your needs. Each phone can be evaluated by day-to-day photography, low-light shots, portrait quality, video stabilization, charging speed, chipset performance, RAM, storage, refresh rate, brightness, speaker quality, software experience, and long-term update support. This page brings those details together in one place, along with live prices from trusted online stores, so you do not have to jump between dozens of product pages or reviews. Whether you are searching for a flagship camera phone, a battery-focused budget pick, a gaming-ready powerhouse, or a balanced all-rounder for everyday use, the trending list helps you narrow the field quickly. Use the filters and product cards to sort by brand, price, or feature, then open the models that are gaining the most attention right now. You can also identify phones with fast charging, 5G support, AMOLED or OLED displays, high refresh rates, and generous storage options. The goal is simple: reduce confusion, highlight the strongest contenders, and help you choose a smartphone with confidence, value, and the right blend of performance and features. You can also review warranties, exchange offers, discounts, and color variants to find the best total value before you buy, and every week new launches reshuffle the lineup, so checking trends keeps you current.",
     endpoint: "/api/public/trending/smartphones?limit=120",
     detailPath: "/smartphones",
     icon: FaMobileAlt,
-    metaTitle: `Trending smartphones (${CURRENT_DAY_MONTH_YEAR}) - Full Specifications, Features and Price`,
+    metaTitle: `Trending Smartphones in India (${CURRENT_MONTH_YEAR})`,
     metaDescription:
       "Browse trending smartphones with detailed specs, latest prices, and best online deals.",
     metaKeywords:
@@ -84,13 +78,13 @@ const CATEGORIES = {
     id: "laptops",
     label: "Laptops",
     badge: "TRENDING LAPTOPS",
-    title: `Browse trending laptops in India (${CURRENT_MONTH_YEAR}): Prices, Specs, and Best Deals`,
+    title: `Trending Laptops in India (${CURRENT_MONTH_YEAR}) | MobileX`,
     description:
       "Browse trending laptops by processor, RAM, storage, display, and battery life, plus live prices from top online stores.",
     endpoint: "/api/public/trending/laptops?limit=120",
     detailPath: "/laptops",
     icon: FaLaptop,
-    metaTitle: `Browse trending laptops in India (${CURRENT_MONTH_YEAR}) - Specs, Prices, Deals`,
+    metaTitle: `Trending Laptops in India (${CURRENT_MONTH_YEAR})`,
     metaDescription:
       "Browse trending laptops by processor, RAM, storage, display, and latest offers.",
     metaKeywords:
@@ -102,13 +96,13 @@ const CATEGORIES = {
     id: "tvs",
     label: "TVs",
     badge: "TRENDING TVS",
-    title: `Browse trending TVs in India (${CURRENT_MONTH_YEAR}): Prices, Specs, and Best Deals`,
+    title: `Trending TVs in India (${CURRENT_MONTH_YEAR}) | MobileX`,
     description:
       "Browse trending TVs by screen size, resolution, refresh rate, panel type, and smart features, plus live prices from top online stores.",
     endpoint: "/api/public/trending/tvs?limit=120",
     detailPath: "/tvs",
     icon: FaTv,
-    metaTitle: `Browse trending TVs in India (${CURRENT_MONTH_YEAR}) - Specs, Prices, Deals`,
+    metaTitle: `Trending TVs in India (${CURRENT_MONTH_YEAR})`,
     metaDescription:
       "Browse trending TVs with detailed specifications, latest prices, and direct buy links.",
     metaKeywords:
@@ -650,7 +644,9 @@ const buildProduct = (row, cat, index) => {
   const lowest = stores[0]?.price ?? num(row.price ?? row.base_price);
   const images = getImages(row, cat);
   const specScore =
-    cat === "smartphones" ? resolveSmartphoneBadgeScore(row) : resolveSpecScore(row);
+    cat === "smartphones"
+      ? resolveSmartphoneBadgeScore(row)
+      : resolveSpecScore(row);
 
   if (cat === "laptops") {
     const basic = obj(row.basic_info || row.basic_info_json);
@@ -965,9 +961,7 @@ const TrendingProductsHub = () => {
       setLoading(true);
       setError("");
       try {
-        const payload = await fetchPublicJson(
-          `${API_BASE}${config.endpoint}`,
-        );
+        const payload = await fetchPublicJson(`${API_BASE}${config.endpoint}`);
         if (canceled) return;
         const rows = getRows(payload, activeCategory);
         setRawRows(rows);
@@ -988,9 +982,7 @@ const TrendingProductsHub = () => {
 
   const products = useMemo(() => {
     return mergeProducts(
-      rawRows.map((row, index) =>
-        buildProduct(row, activeCategory, index),
-      ),
+      rawRows.map((row, index) => buildProduct(row, activeCategory, index)),
     );
   }, [rawRows, activeCategory]);
 
@@ -1255,7 +1247,9 @@ const TrendingProductsHub = () => {
     navigate(detailPath);
   };
 
-  const seoTitle = `${config.metaTitle} - Hooks`;
+  const seoTitle = config.metaTitle.includes("|")
+    ? config.metaTitle
+    : `${config.metaTitle} | MobileX`;
   const seoDescription = config.metaDescription;
   const seoKeywords = useMemo(() => {
     const baseKeywords = String(config.metaKeywords || "")
@@ -1299,7 +1293,8 @@ const TrendingProductsHub = () => {
       ? product.variants.find((entry) => {
           if (!entry || typeof entry !== "object") return false;
           return (
-            (Array.isArray(entry.images) && entry.images.find((value) => text(value))) ||
+            (Array.isArray(entry.images) &&
+              entry.images.find((value) => text(value))) ||
             (Array.isArray(entry.images_json) &&
               entry.images_json.find((value) => text(value))) ||
             text(entry.image) ||
@@ -1322,10 +1317,14 @@ const TrendingProductsHub = () => {
   };
 
   const ogImage = first(
-    getTrendingProductImage(arr(visible).find((p) => text(getTrendingProductImage(p)))),
-    getTrendingProductImage(arr(products).find((p) => text(getTrendingProductImage(p)))),
+    getTrendingProductImage(
+      arr(visible).find((p) => text(getTrendingProductImage(p))),
+    ),
+    getTrendingProductImage(
+      arr(products).find((p) => text(getTrendingProductImage(p))),
+    ),
   );
-  const ogImageUrl = ogImage || `${SITE_ORIGIN}/hook-logo.png`;
+  const ogImageUrl = ogImage || `${SITE_ORIGIN}/mobilex-favicon.svg`;
   const ogImageMeta = {
     url: ogImageUrl,
     width: 1200,
@@ -1377,11 +1376,17 @@ const TrendingProductsHub = () => {
   ]);
 
   const getCompareProductId = (product) =>
-    product?.productId ?? product?.product_id ?? product?.id ?? product?.key ?? null;
+    product?.productId ??
+    product?.product_id ??
+    product?.id ??
+    product?.key ??
+    null;
 
   const getCompareVariantIndex = (product) => {
     const direct = Number(
-      product?.selectedVariantIndex ?? product?.variantIndex ?? product?.variant_id,
+      product?.selectedVariantIndex ??
+        product?.variantIndex ??
+        product?.variant_id,
     );
     return Number.isInteger(direct) && direct >= 0 ? direct : 0;
   };
@@ -1418,7 +1423,9 @@ const TrendingProductsHub = () => {
   const isCompareSelected = (product) => {
     const compareKey = getCompareDeviceKey(product);
     if (!compareKey) return false;
-    return compareItems.some((item) => getCompareDeviceKey(item) === compareKey);
+    return compareItems.some(
+      (item) => getCompareDeviceKey(item) === compareKey,
+    );
   };
 
   const handleCompareToggle = (product, event) => {
@@ -1457,7 +1464,10 @@ const TrendingProductsHub = () => {
   };
 
   return (
-    <div className="hooks-product-listing hooks-trending-listing min-h-screen text-slate-900" data-page-label={config.badge}>
+    <div
+      className="hooks-product-listing hooks-trending-listing min-h-screen text-slate-900"
+      data-page-label={config.badge}
+    >
       <SEO
         title={seoTitle}
         description={seoDescription}
@@ -2249,9 +2259,7 @@ const TrendingProductsHub = () => {
                             <div className="mt-5 grid grid-cols-[128px_minmax(0,1fr)] gap-3 sm:grid-cols-[120px_minmax(0,1fr)] lg:grid-cols-[180px_minmax(0,1fr)] sm:gap-4 lg:gap-5">
                               <div className="relative flex items-start justify-start sm:justify-center">
                                 {cardBadgeLabel ? (
-                                  <span
-                                    className="absolute left-0 top-0 z-10 inline-flex items-center rounded-full bg-gradient-to-r from-[#0B66F6] via-[#2563EB] to-[#38BDF8] px-3 py-1 text-xs font-semibold text-white shadow-[0_8px_18px_rgba(11,102,246,0.24)]"
-                                  >
+                                  <span className="absolute left-0 top-0 z-10 inline-flex items-center rounded-full bg-gradient-to-r from-[#0B66F6] via-[#2563EB] to-[#38BDF8] px-3 py-1 text-xs font-semibold text-white shadow-[0_8px_18px_rgba(11,102,246,0.24)]">
                                     {cardBadgeLabel}
                                   </span>
                                 ) : null}

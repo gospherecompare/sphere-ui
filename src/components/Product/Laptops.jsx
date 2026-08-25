@@ -1,6 +1,6 @@
 // src/components/LaptopList.jsx
 import React, { useState, useEffect, useMemo } from "react";
-import { Helmet } from "react-helmet-async";
+import SEO from "../SEO";
 import {
   FaStar,
   FaLaptop,
@@ -33,7 +33,6 @@ import {
 } from "../../store/deviceSlice";
 import useStoreLogos from "../../hooks/useStoreLogos";
 import Spinner from "../ui/Spinner";
-import useTitle from "../../hooks/useTitle";
 import { toCanonicalPageUrl } from "../../utils/publicUrl";
 import useDevice from "../../hooks/useDevice";
 // BannerSlot disabled until completed.
@@ -172,7 +171,7 @@ const ImageCarousel = ({ images = [] }) => {
   );
 };
 
-const SITE_ORIGIN = "https://tryhook.shop";
+const SITE_ORIGIN = "https://mobilex.in";
 
 const clampScore100 = (value) => {
   if (value === null || value === undefined || value === "") return null;
@@ -774,10 +773,7 @@ const Laptops = () => {
       numericWeight: weight,
       numericDisplaySize: displaySize,
       numericBattery: batteryCapacity,
-      entryDate:
-        raw.created_at ||
-        metadata.created_at ||
-        "",
+      entryDate: raw.created_at || metadata.created_at || "",
       overall_score: overallScoreRaw,
       overall_score_display: overallScoreRaw,
       trendBadge:
@@ -1042,15 +1038,12 @@ const Laptops = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
 
-  // Set page title
-  useTitle({
-    page: "laptops",
-  });
-
   const deviceContext = useDevice({ resources: ["laptops", "brands"] });
   const filterBrand =
     routeBrandSlug ||
-    (Array.isArray(filters?.brand) && filters.brand[0] ? filters.brand[0] : null);
+    (Array.isArray(filters?.brand) && filters.brand[0]
+      ? filters.brand[0]
+      : null);
   const currentBrandObj = (() => {
     const b = filterBrand;
     if (!b) return null;
@@ -1093,15 +1086,15 @@ const Laptops = () => {
     );
     const hasPathSeoIntent = Boolean(
       listingRouteMeta?.latest ||
-        listingRouteMeta?.brandSlug ||
-        listingRouteMeta?.featureSlugs?.length ||
-        listingRouteMeta?.budget,
+      listingRouteMeta?.brandSlug ||
+      listingRouteMeta?.featureSlugs?.length ||
+      listingRouteMeta?.budget,
     );
     const hasLegacySeoIntent = Boolean(
       legacyBrand ||
-        legacySeoFeature ||
-        legacyBudget ||
-        searchParams.get("filter") === "new",
+      legacySeoFeature ||
+      legacyBudget ||
+      searchParams.get("filter") === "new",
     );
     if (!hasPathSeoIntent && !hasLegacySeoIntent) return;
 
@@ -1542,14 +1535,13 @@ const Laptops = () => {
   });
   const hasSpecificSeoLanding = Boolean(
     listingRouteMeta?.latest ||
-      listingRouteMeta?.brandSlug ||
-      listingRouteMeta?.featureSlugs?.length ||
-      listingRouteMeta?.budget,
+    listingRouteMeta?.brandSlug ||
+    listingRouteMeta?.featureSlugs?.length ||
+    listingRouteMeta?.budget,
   );
   const headerLabel =
     filter === "trending" ? "TRENDING NOW" : seoLandingMeta.eyebrow;
-  const isLongHeroDescriptionPath =
-    !currentBrandObj && !hasSpecificSeoLanding;
+  const isLongHeroDescriptionPath = !currentBrandObj && !hasSpecificSeoLanding;
 
   const heroTitleText =
     filter === "trending" ? "Trending Laptops" : seoLandingMeta.heading;
@@ -1597,7 +1589,7 @@ const Laptops = () => {
   const siteOrigin =
     typeof window !== "undefined" && window.location?.origin
       ? window.location.origin
-      : "https://tryhook.shop";
+      : "https://mobilex.in";
 
   const toAbsoluteUrl = (value) => {
     if (!value) return "";
@@ -1632,7 +1624,8 @@ const Laptops = () => {
           if (!entry || typeof entry !== "object") return false;
           return (
             (Array.isArray(entry.images) && entry.images.find(Boolean)) ||
-            (Array.isArray(entry.images_json) && entry.images_json.find(Boolean)) ||
+            (Array.isArray(entry.images_json) &&
+              entry.images_json.find(Boolean)) ||
             entry.image ||
             entry.image_url ||
             entry.imageUrl
@@ -1642,7 +1635,8 @@ const Laptops = () => {
     if (!variant) return "";
     return (
       (Array.isArray(variant.images) && variant.images.find(Boolean)) ||
-      (Array.isArray(variant.images_json) && variant.images_json.find(Boolean)) ||
+      (Array.isArray(variant.images_json) &&
+        variant.images_json.find(Boolean)) ||
       variant.image ||
       variant.image_url ||
       variant.imageUrl ||
@@ -1655,11 +1649,10 @@ const Laptops = () => {
       Boolean(getListingProductImage(device)),
     );
     const raw = getListingProductImage(firstWithImage);
-    return toAbsoluteUrl(raw) || `${SITE_ORIGIN}/hook-logo.png`;
+    return toAbsoluteUrl(raw) || `${SITE_ORIGIN}/mobilex-favicon.svg`;
   }, [sortedVariants, siteOrigin]);
 
-  const listCanonicalPath =
-    listingRouteMeta?.canonicalPath || "/laptops";
+  const listCanonicalPath = listingRouteMeta?.canonicalPath || "/laptops";
   const listSchemaUrl = toCanonicalPageUrl(listCanonicalPath, SITE_ORIGIN);
   const listRobots = search
     ? "noindex, follow, max-image-preview:large"
@@ -1712,43 +1705,17 @@ const Laptops = () => {
       data-page-label={headerLabel}
     >
       <style>{animationStyles}</style>
-      <Helmet prioritizeSeoTags>
-        <title>{seoTitle}</title>
-        <meta name="description" content={seoDescription} />
-        <meta name="robots" content={listRobots} />
-
-        {/* Canonical URL - CRITICAL for SEO per route */}
-        <link rel="canonical" href={listSchemaUrl} />
-
-        {/* Open Graph */}
-        <meta property="og:type" content="website" />
-        <meta property="og:title" content={seoTitle} />
-        <meta property="og:description" content={seoDescription} />
-        <meta property="og:url" content={listSchemaUrl} />
-        {listOgImage ? (
-          <meta
-            key="laptops-og-image"
-            property="og:image"
-            content={listOgImage}
-          />
-        ) : null}
-
-        {/* Twitter Card */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={seoTitle} />
-        <meta name="twitter:description" content={seoDescription} />
-        {listOgImage ? (
-          <meta
-            key="laptops-twitter-image"
-            name="twitter:image"
-            content={listOgImage}
-          />
-        ) : null}
-
+      <SEO
+        title={seoTitle}
+        description={seoDescription}
+        url={listSchemaUrl}
+        robots={listRobots}
+        image={listOgImage || null}
+      >
         {listSchemaJson && (
           <script type="application/ld+json">{listSchemaJson}</script>
         )}
-      </Helmet>
+      </SEO>
       {/* Main Content */}
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-0 pb-8 sm:pb-12 md:pb-16 lg:pb-20">
         <div className="relative">
@@ -1791,7 +1758,6 @@ const Laptops = () => {
                     {showHeroDescription ? "Show less" : "Read more"}
                   </button>
                 ) : null}
-
               </div>
             </div>
           </section>
@@ -1875,8 +1841,8 @@ const Laptops = () => {
                           {getActiveFiltersCount() > 1 ? "s" : ""} applied
                         </span>
                         <p className="mt-0.5 text-xs text-slate-500">
-                          Found {filteredVariants.length} of {variantCards.length}{" "}
-                          options
+                          Found {filteredVariants.length} of{" "}
+                          {variantCards.length} options
                         </p>
                       </div>
                     </div>
@@ -1935,153 +1901,153 @@ const Laptops = () => {
                 )}
 
                 <div className="flex flex-col">
-                {/* Price Range Filter */}
-                <div className="order-2 mb-8">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h4 className="text-base font-bold text-slate-900">
-                        Price Range
-                      </h4>
-                      <p className="mt-1 text-xs text-slate-500">
-                        Set your budget
-                      </p>
-                    </div>
-                    <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
-                      ₹{filters.priceRange.min?.toLocaleString()}
-                    </span>
-                  </div>
-
-                  <div className="rounded-xl border border-slate-200 bg-[#f8fbff] p-4">
-                    <div className="mb-4 flex justify-between text-sm font-medium text-slate-900">
-                      <div className="text-center">
-                        <div className="text-xs text-slate-500">Minimum</div>
-                        <div className="font-bold">
-                          ₹{filters.priceRange.min?.toLocaleString()}
-                        </div>
+                  {/* Price Range Filter */}
+                  <div className="order-2 mb-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h4 className="text-base font-bold text-slate-900">
+                          Price Range
+                        </h4>
+                        <p className="mt-1 text-xs text-slate-500">
+                          Set your budget
+                        </p>
                       </div>
-                      <div className="text-center">
-                        <div className="text-xs text-slate-500">Maximum</div>
-                        <div className="font-bold">
-                          ₹{filters.priceRange.max?.toLocaleString()}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Dual Range Slider */}
-                    <div className="relative mb-8">
-                      <div className="absolute top-1/2 h-2 w-full -translate-y-1/2 rounded-full bg-slate-200"></div>
-                      <div
-                        className="absolute h-2 rounded-full top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-blue-400 to-sky-400"
-                        style={{
-                          left: `${Math.max(
-                            0,
-                            Math.min(
-                              100,
-                              ((filters.priceRange.min || 0) /
-                                (MAX_PRICE || 1)) *
-                                100,
-                            ),
-                          )}%`,
-                          width: `${Math.max(
-                            0,
-                            Math.min(
-                              100,
-                              ((filters.priceRange.max -
-                                filters.priceRange.min) /
-                                (MAX_PRICE || 1)) *
-                                100,
-                            ),
-                          )}%`,
-                        }}
-                      ></div>
-
-                      <input
-                        type="range"
-                        min={MIN_PRICE}
-                        max={MAX_PRICE}
-                        value={filters.priceRange.min}
-                        onChange={(e) =>
-                          updatePriceRange(
-                            Number(e.target.value),
-                            filters.priceRange.max,
-                          )
-                        }
-                        className="absolute w-full top-1/2 h-4 -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-400 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-blue-500/30 [&::-webkit-slider-thumb]:cursor-pointer"
-                      />
-
-                      <input
-                        type="range"
-                        min={MIN_PRICE}
-                        max={MAX_PRICE}
-                        value={filters.priceRange.max}
-                        onChange={(e) =>
-                          updatePriceRange(
-                            filters.priceRange.min,
-                            Number(e.target.value),
-                          )
-                        }
-                        className="absolute w-full top-1/2 h-4 -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-400 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-blue-500/30 [&::-webkit-slider-thumb]:cursor-pointer"
-                      />
-                    </div>
-
-                    <div className="mb-3 flex items-center justify-between text-xs">
-                      <span className="text-slate-500">
-                        ₹{MIN_PRICE.toLocaleString()}
-                      </span>
-                      <span className="text-slate-500">
-                        ₹{MAX_PRICE.toLocaleString()}
+                      <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
+                        ₹{filters.priceRange.min?.toLocaleString()}
                       </span>
                     </div>
-                  </div>
-                </div>
 
-                {/* Brand Filter */}
-                <div className="order-1 mb-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
-                      Brands
-                    </h4>
-                    <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-gray-500">
-                      {filters.brand.length} selected
-                    </span>
-                  </div>
-                  <div className="relative mb-4">
-                    <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
-                    <input
-                      type="text"
-                      value={brandFilterQuery}
-                      onChange={(e) => setBrandFilterQuery(e.target.value)}
-                      placeholder="Search brand..."
-                      className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm text-slate-900  transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    />
-                  </div>
-                  <div className="no-scrollbar space-y-2 max-h-60 overflow-y-auto pr-2">
-                    {filteredBrandOptions.map((brand) => (
-                      <label
-                        key={brand}
-                        className="group flex cursor-pointer items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 transition-all duration-200 hover:border-slate-200 hover:bg-slate-50"
-                      >
+                    <div className="rounded-xl border border-slate-200 bg-[#f8fbff] p-4">
+                      <div className="mb-4 flex justify-between text-sm font-medium text-slate-900">
+                        <div className="text-center">
+                          <div className="text-xs text-slate-500">Minimum</div>
+                          <div className="font-bold">
+                            ₹{filters.priceRange.min?.toLocaleString()}
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-xs text-slate-500">Maximum</div>
+                          <div className="font-bold">
+                            ₹{filters.priceRange.max?.toLocaleString()}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Dual Range Slider */}
+                      <div className="relative mb-8">
+                        <div className="absolute top-1/2 h-2 w-full -translate-y-1/2 rounded-full bg-slate-200"></div>
+                        <div
+                          className="absolute h-2 rounded-full top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-blue-400 to-sky-400"
+                          style={{
+                            left: `${Math.max(
+                              0,
+                              Math.min(
+                                100,
+                                ((filters.priceRange.min || 0) /
+                                  (MAX_PRICE || 1)) *
+                                  100,
+                              ),
+                            )}%`,
+                            width: `${Math.max(
+                              0,
+                              Math.min(
+                                100,
+                                ((filters.priceRange.max -
+                                  filters.priceRange.min) /
+                                  (MAX_PRICE || 1)) *
+                                  100,
+                              ),
+                            )}%`,
+                          }}
+                        ></div>
+
                         <input
-                          type="checkbox"
-                          checked={filters.brand.includes(brand)}
-                          onChange={() => handleFilterChange("brand", brand)}
-                          className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white transition-all duration-200 checked:border-blue-500 checked:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1"
+                          type="range"
+                          min={MIN_PRICE}
+                          max={MAX_PRICE}
+                          value={filters.priceRange.min}
+                          onChange={(e) =>
+                            updatePriceRange(
+                              Number(e.target.value),
+                              filters.priceRange.max,
+                            )
+                          }
+                          className="absolute w-full top-1/2 h-4 -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-400 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-blue-500/30 [&::-webkit-slider-thumb]:cursor-pointer"
                         />
-                        <span className="flex-1 font-medium text-slate-700 group-hover:text-slate-900">
-                          {brand}
-                        </span>
-                        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-500">
-                          {devices.filter((d) => d.brand === brand).length}
-                        </div>
-                      </label>
-                    ))}
-                    {filteredBrandOptions.length === 0 && (
-                      <div className="px-2 py-1 text-sm text-slate-400">
-                        No brands found
+
+                        <input
+                          type="range"
+                          min={MIN_PRICE}
+                          max={MAX_PRICE}
+                          value={filters.priceRange.max}
+                          onChange={(e) =>
+                            updatePriceRange(
+                              filters.priceRange.min,
+                              Number(e.target.value),
+                            )
+                          }
+                          className="absolute w-full top-1/2 h-4 -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-400 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-blue-500/30 [&::-webkit-slider-thumb]:cursor-pointer"
+                        />
                       </div>
-                    )}
+
+                      <div className="mb-3 flex items-center justify-between text-xs">
+                        <span className="text-slate-500">
+                          ₹{MIN_PRICE.toLocaleString()}
+                        </span>
+                        <span className="text-slate-500">
+                          ₹{MAX_PRICE.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
+
+                  {/* Brand Filter */}
+                  <div className="order-1 mb-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
+                        Brands
+                      </h4>
+                      <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-gray-500">
+                        {filters.brand.length} selected
+                      </span>
+                    </div>
+                    <div className="relative mb-4">
+                      <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
+                      <input
+                        type="text"
+                        value={brandFilterQuery}
+                        onChange={(e) => setBrandFilterQuery(e.target.value)}
+                        placeholder="Search brand..."
+                        className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm text-slate-900  transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      />
+                    </div>
+                    <div className="no-scrollbar space-y-2 max-h-60 overflow-y-auto pr-2">
+                      {filteredBrandOptions.map((brand) => (
+                        <label
+                          key={brand}
+                          className="group flex cursor-pointer items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 transition-all duration-200 hover:border-slate-200 hover:bg-slate-50"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={filters.brand.includes(brand)}
+                            onChange={() => handleFilterChange("brand", brand)}
+                            className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white transition-all duration-200 checked:border-blue-500 checked:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1"
+                          />
+                          <span className="flex-1 font-medium text-slate-700 group-hover:text-slate-900">
+                            {brand}
+                          </span>
+                          <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-500">
+                            {devices.filter((d) => d.brand === brand).length}
+                          </div>
+                        </label>
+                      ))}
+                      {filteredBrandOptions.length === 0 && (
+                        <div className="px-2 py-1 text-sm text-slate-400">
+                          No brands found
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 {/* RAM Filter */}
@@ -2389,7 +2355,6 @@ const Laptops = () => {
                               size={42}
                             />
                           </div>
-
                         </div>
 
                         <div className="mt-5 grid grid-cols-[128px_minmax(0,1fr)] gap-3 sm:grid-cols-[120px_minmax(0,1fr)] lg:grid-cols-[180px_minmax(0,1fr)] sm:gap-4 lg:gap-5">
@@ -2519,7 +2484,6 @@ const Laptops = () => {
                                 </div>
                               </div>
                             ) : null}
-
                           </div>
                         </div>
                       </div>
@@ -2680,7 +2644,7 @@ const Laptops = () => {
           <LatestNewsRouteSection
             className="mt-6"
             productType="laptop"
-            subtitle="Fresh laptop launches, processor updates, and buying context from the Hooks news desk."
+            subtitle="Fresh laptop launches, processor updates, and buying context from the MobileX news desk."
           />
 
           <ProductDiscoverySections
@@ -2730,126 +2694,128 @@ const Laptops = () => {
 
                 <div className="p-6 overflow-y-auto max-h-[70vh] pb-40 space-y-6">
                   <div className="flex flex-col gap-6">
-                  {/* Price Range */}
-                  <div className="order-2">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-semibold text-gray-900 text-lg">
-                        Price Range
-                      </h4>
-                      <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-gray-500">
-                        ₹{filters.priceRange.min?.toLocaleString()} - ₹
-                        {filters.priceRange.max?.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="bg-gradient-to-r from-blue-50 via-blue-50 to-white rounded-xl p-4 border border-gray-200">
-                      <div className="relative mb-4">
-                        <div className="absolute h-2 bg-gray-200 rounded-full w-full top-1/2 transform -translate-y-1/2"></div>
-                        <div
-                          className="absolute h-2 bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 rounded-full top-1/2 transform -translate-y-1/2"
-                          style={{
-                            left: `${Math.max(
-                              0,
-                              Math.min(
-                                100,
-                                ((filters.priceRange.min || 0) /
-                                  (MAX_PRICE || 1)) *
+                    {/* Price Range */}
+                    <div className="order-2">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-semibold text-gray-900 text-lg">
+                          Price Range
+                        </h4>
+                        <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-gray-500">
+                          ₹{filters.priceRange.min?.toLocaleString()} - ₹
+                          {filters.priceRange.max?.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="bg-gradient-to-r from-blue-50 via-blue-50 to-white rounded-xl p-4 border border-gray-200">
+                        <div className="relative mb-4">
+                          <div className="absolute h-2 bg-gray-200 rounded-full w-full top-1/2 transform -translate-y-1/2"></div>
+                          <div
+                            className="absolute h-2 bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 rounded-full top-1/2 transform -translate-y-1/2"
+                            style={{
+                              left: `${Math.max(
+                                0,
+                                Math.min(
                                   100,
-                              ),
-                            )}%`,
-                            width: `${Math.max(
-                              0,
-                              Math.min(
-                                100,
-                                ((filters.priceRange.max -
-                                  filters.priceRange.min) /
-                                  (MAX_PRICE || 1)) *
+                                  ((filters.priceRange.min || 0) /
+                                    (MAX_PRICE || 1)) *
+                                    100,
+                                ),
+                              )}%`,
+                              width: `${Math.max(
+                                0,
+                                Math.min(
                                   100,
-                              ),
-                            )}%`,
-                          }}
-                        />
+                                  ((filters.priceRange.max -
+                                    filters.priceRange.min) /
+                                    (MAX_PRICE || 1)) *
+                                    100,
+                                ),
+                              )}%`,
+                            }}
+                          />
 
-                        <input
-                          type="range"
-                          min={MIN_PRICE}
-                          max={MAX_PRICE}
-                          value={filters.priceRange.min}
-                          onChange={(e) =>
-                            updatePriceRange(
-                              Number(e.target.value),
-                              filters.priceRange.max,
-                            )
-                          }
-                          className="absolute w-full top-1/2 transform -translate-y-1/2 appearance-none h-4 bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer"
-                        />
+                          <input
+                            type="range"
+                            min={MIN_PRICE}
+                            max={MAX_PRICE}
+                            value={filters.priceRange.min}
+                            onChange={(e) =>
+                              updatePriceRange(
+                                Number(e.target.value),
+                                filters.priceRange.max,
+                              )
+                            }
+                            className="absolute w-full top-1/2 transform -translate-y-1/2 appearance-none h-4 bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer"
+                          />
 
-                        <input
-                          type="range"
-                          min={MIN_PRICE}
-                          max={MAX_PRICE}
-                          value={filters.priceRange.max}
-                          onChange={(e) =>
-                            updatePriceRange(
-                              filters.priceRange.min,
-                              Number(e.target.value),
-                            )
-                          }
-                          className="absolute w-full top-1/2 transform -translate-y-1/2 appearance-none h-4 bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer"
-                        />
+                          <input
+                            type="range"
+                            min={MIN_PRICE}
+                            max={MAX_PRICE}
+                            value={filters.priceRange.max}
+                            onChange={(e) =>
+                              updatePriceRange(
+                                filters.priceRange.min,
+                                Number(e.target.value),
+                              )
+                            }
+                            className="absolute w-full top-1/2 transform -translate-y-1/2 appearance-none h-4 bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer"
+                          />
 
-                        <div className="flex justify-between items-center text-xs mt-6">
-                          <span className="text-gray-500">
-                            ₹{MIN_PRICE.toLocaleString()}
-                          </span>
-                          <span className="text-gray-500">
-                            ₹{MAX_PRICE.toLocaleString()}
-                          </span>
+                          <div className="flex justify-between items-center text-xs mt-6">
+                            <span className="text-gray-500">
+                              ₹{MIN_PRICE.toLocaleString()}
+                            </span>
+                            <span className="text-gray-500">
+                              ₹{MAX_PRICE.toLocaleString()}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Brand */}
-                  <div className="order-1">
-                    <h4 className="font-semibold text-gray-900 text-lg mb-3">
-                      Brands
-                    </h4>
-                    <div className="relative mb-3">
-                      <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
-                      <input
-                        type="text"
-                        value={brandFilterQuery}
-                        onChange={(e) => setBrandFilterQuery(e.target.value)}
-                        placeholder="Search brand..."
-                        className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {filteredBrandOptions.map((brand) => (
-                        <label
-                          key={brand}
-                          className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium text-sm ${
-                            filters.brand.includes(brand)
-                              ? "bg-gradient-to-b from-blue-600 via-blue-500 to-blue-600 text-white shadow-lg"
-                              : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300 hover:shadow-sm"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={filters.brand.includes(brand)}
-                            onChange={() => handleFilterChange("brand", brand)}
-                            className="sr-only"
-                          />
-                          <span>{brand}</span>
-                        </label>
-                      ))}
-                    </div>
-                    {filteredBrandOptions.length === 0 && (
-                      <div className="text-sm text-gray-500 mt-2">
-                        No brands found
+                    {/* Brand */}
+                    <div className="order-1">
+                      <h4 className="font-semibold text-gray-900 text-lg mb-3">
+                        Brands
+                      </h4>
+                      <div className="relative mb-3">
+                        <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+                        <input
+                          type="text"
+                          value={brandFilterQuery}
+                          onChange={(e) => setBrandFilterQuery(e.target.value)}
+                          placeholder="Search brand..."
+                          className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
                       </div>
-                    )}
-                  </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {filteredBrandOptions.map((brand) => (
+                          <label
+                            key={brand}
+                            className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium text-sm ${
+                              filters.brand.includes(brand)
+                                ? "bg-gradient-to-b from-blue-600 via-blue-500 to-blue-600 text-white shadow-lg"
+                                : "bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300 hover:shadow-sm"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={filters.brand.includes(brand)}
+                              onChange={() =>
+                                handleFilterChange("brand", brand)
+                              }
+                              className="sr-only"
+                            />
+                            <span>{brand}</span>
+                          </label>
+                        ))}
+                      </div>
+                      {filteredBrandOptions.length === 0 && (
+                        <div className="text-sm text-gray-500 mt-2">
+                          No brands found
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* RAM */}
@@ -2987,7 +2953,6 @@ const Laptops = () => {
           )}
         </div>
       </div>
-
     </div>
   );
 };

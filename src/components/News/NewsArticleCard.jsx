@@ -4,7 +4,9 @@ import { FaClock, FaUser, FaArrowRight } from "react-icons/fa";
 import { createNewsStoryPath } from "../../hooks/usePublicNews";
 
 const normalizeDateLabel = (value = "") =>
-  String(value || "").trim().toLowerCase();
+  String(value || "")
+    .trim()
+    .toLowerCase();
 
 const NewsArticleCard = ({
   article,
@@ -17,7 +19,7 @@ const NewsArticleCard = ({
   const {
     title = "Untitled Article",
     image = "",
-    author = "Hooks News",
+    author = "MobileX News",
     publishedAt = "",
     updatedAt = "",
     label = "Update",
@@ -25,7 +27,8 @@ const NewsArticleCard = ({
   } = article;
   const storyPath = createNewsStoryPath(slug);
   const showUpdatedAt =
-    updatedAt && normalizeDateLabel(updatedAt) !== normalizeDateLabel(publishedAt);
+    updatedAt &&
+    normalizeDateLabel(updatedAt) !== normalizeDateLabel(publishedAt);
 
   if (featured) {
     return (

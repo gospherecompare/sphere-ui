@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const SITE_ORIGIN = "https://tryhook.shop";
+const SITE_ORIGIN = "https://mobilex.in";
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const clientRoot = path.resolve(scriptDir, "..");
 const distDir = path.join(clientRoot, "dist");
@@ -59,7 +59,10 @@ const inspectHead = (html, routeLabel) => {
   assert(/\bindex\b/i.test(robots), `${routeLabel} is missing index`);
   assert(/\bfollow\b/i.test(robots), `${routeLabel} is missing follow`);
   assert(canonical === ogUrl, `${routeLabel} canonical and og:url differ`);
-  assert(canonical.endsWith("/"), `${routeLabel} canonical lacks trailing slash`);
+  assert(
+    new URL(canonical).pathname === "/" || !new URL(canonical).pathname.endsWith("/"),
+    `${routeLabel} canonical has an unexpected trailing slash`,
+  );
   assert(
     !/<meta\s+http-equiv=["']refresh["']/i.test(html),
     `${routeLabel} contains a meta refresh`,
@@ -83,7 +86,10 @@ const assertTrailingNewsLinks = (html, routeLabel) => {
 
   articleLinks.forEach((href) => {
     const pathname = new URL(href, SITE_ORIGIN).pathname;
-    assert(pathname.endsWith("/"), `${routeLabel} links to ${href} without a trailing slash`);
+    assert(
+      pathname === "/" || !pathname.endsWith("/"),
+      `${routeLabel} links to ${href} with a trailing slash`,
+    );
   });
 
   return articleLinks;
@@ -179,7 +185,7 @@ const run = async () => {
       `${routeLabel} canonical is absent from dist/sitemap.xml`,
     );
     assert(
-      !head.title.includes("Hooks | Smart Device Comparison Platform"),
+      !head.title.includes("MobileX - Compare tech with clarity"),
       `${routeLabel} has the generic fallback title`,
     );
 

@@ -43,7 +43,7 @@ import "../styles/compare-studio.css";
 import useDevice from "../hooks/useDevice";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import normalizeProduct from "../utils/normalizeProduct";
-import { Helmet } from "react-helmet-async";
+import SEO from "./SEO";
 import {
   createWebApplicationSchema,
   createItemListSchema,
@@ -286,7 +286,7 @@ const COMPARE_VIEW_TABS = [
 
 const MAX_DEVICES = 4;
 const MIN_DEVICES = 2;
-const SITE_ORIGIN = "https://tryhook.shop";
+const SITE_ORIGIN = "https://mobilex.in";
 const resolveCompareApiBase = () => {
   const configured = String(import.meta.env.VITE_API_BASE_URL || "").trim();
   if (configured) return normalizeApiBaseUrl(configured);
@@ -606,31 +606,28 @@ const joinCompareNamesWithoutCommas = (names = []) => {
   return clean.join(" and ");
 };
 
-const getCurrentMonthLongYear = () =>
-  new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(
-    new Date(),
-  );
-
 const buildCompareTitleText = ({
   names = [],
-  segmentLabel = "",
   publishedTitle = "",
 } = {}) => {
   const overridden = String(publishedTitle || "").trim();
   if (overridden) return overridden;
 
-  const vsJoined = names.filter(Boolean).join(" vs ");
-  const monthYear = getCurrentMonthLongYear();
+  const cleanNames = names.filter(Boolean).map((name) => String(name).trim());
+  const vsJoined = cleanNames.join(" vs ");
 
   if (!vsJoined)
-    return `Compare Smartphones, Laptops & TVs Side-by-Side (${monthYear}) | Hooks`;
+    return "Compare Smartphones, TVs & Gadgets Side by Side | MobileX";
 
-  const segment = String(segmentLabel || "").trim();
-  if (segment) {
-    return `${vsJoined} — ${segment} Segment: Price, Specs & Comparison (${monthYear}) | Hooks`;
+  if (cleanNames.length === 2) {
+    return `${vsJoined} | MobileX`;
   }
 
-  return `${vsJoined}: Price, Specs & Comparison in India (${monthYear}) | Hooks`;
+  if (cleanNames.length === 3) {
+    return `${vsJoined} | MobileX`;
+  }
+
+  return "Compare Smartphones, TVs & Gadgets Side by Side | MobileX";
 };
 
 const buildCompareDescriptionText = ({
@@ -643,15 +640,15 @@ const buildCompareDescriptionText = ({
 
   const joined = joinCompareNamesWithoutCommas(names);
   if (!joined) {
-    return "Compare devices with latest price specifications camera battery performance and features in India. | Hooks";
+    return "Compare devices with latest price specifications camera battery performance and features in India. | MobileX";
   }
 
   const segment = String(segmentLabel || "").trim();
   if (segment) {
-    return `See how ${joined} compare in the ${segment} segment on price, specifications, camera, battery, and performance in India. | Hooks`;
+    return `See how ${joined} compare in the ${segment} segment on price, specifications, camera, battery, and performance in India. | MobileX`;
   }
 
-  return `See how ${joined} compare on price, specifications, camera, battery, and performance in India. | Hooks`;
+  return `See how ${joined} compare on price, specifications, camera, battery, and performance in India. | MobileX`;
 };
 
 const sortCompareEntries = (left, right) => {
@@ -678,30 +675,6 @@ const stringifyCompareDevicesParam = (entries = []) =>
       (entry) => `${entry.baseId}:${normalizeVariantIndex(entry.variantIndex)}`,
     )
     .join(",");
-
-const upsertMetaTag = (selector, attributes) => {
-  if (typeof document === "undefined") return;
-  let tag = document.head.querySelector(selector);
-  if (!tag) {
-    tag = document.createElement("meta");
-    document.head.appendChild(tag);
-  }
-  Object.entries(attributes || {}).forEach(([key, value]) => {
-    if (value == null) return;
-    tag.setAttribute(key, String(value));
-  });
-};
-
-const upsertCanonicalLink = (href) => {
-  if (typeof document === "undefined" || !href) return;
-  let link = document.head.querySelector('link[rel="canonical"]');
-  if (!link) {
-    link = document.createElement("link");
-    link.setAttribute("rel", "canonical");
-    document.head.appendChild(link);
-  }
-  link.setAttribute("href", href);
-};
 
 const getResolvedProductId = (device) =>
   device?.productId ||
@@ -4435,8 +4408,8 @@ const MobileCompare = () => {
           publishedTitle: publishedComparePage?.title || "",
         })
       : canonicalCompareEntries.length > 0
-        ? `Compare Selected Devices: Specs, Prices & Differences | Hooks`
-        : `Compare Technology Products Side by Side | Hooks`;
+        ? `Compare Selected Devices: Specs, Prices & Differences | MobileX`
+        : `Compare Technology Products Side by Side | MobileX`;
   const normalizedMetaTitle = normalizeSeoTitle(metaTitle);
 
   const metaDescription =
@@ -4447,8 +4420,8 @@ const MobileCompare = () => {
           publishedDescription: publishedComparePage?.meta_description || "",
         })
       : canonicalCompareEntries.length > 0
-        ? "Compare selected devices with detailed specifications, price, camera, display, battery, performance, software, benchmarks, and key differences on Hooks."
-        : "Compare devices with detailed specifications, price, camera, display, battery, performance, software, benchmarks, and key differences on Hooks.";
+        ? "Compare selected devices with detailed specifications, price, camera, display, battery, performance, software, benchmarks, and key differences on MobileX."
+        : "Compare devices with detailed specifications, price, camera, display, battery, performance, software, benchmarks, and key differences on MobileX.";
   const _metaKeywords = useMemo(
     () =>
       buildListSeoKeywords({
@@ -4519,7 +4492,7 @@ const MobileCompare = () => {
         const price = resolveLowestPriceForSeo(device);
         const schema = createProductSchema({
           name,
-          description: `${name} price, specifications, and comparison details on Hooks.`,
+          description: `${name} price, specifications, and comparison details on MobileX.`,
           image:
             device?.image ||
             (Array.isArray(device?.images) ? device.images[0] : ""),
@@ -4532,41 +4505,6 @@ const MobileCompare = () => {
       })
       .filter(Boolean);
   }, [activeDevices, canonicalCompareUrl]);
-
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-
-    document.title = normalizedMetaTitle;
-    upsertMetaTag('meta[name="description"]', {
-      name: "description",
-      content: metaDescription,
-    });
-    upsertMetaTag('meta[property="og:title"]', {
-      property: "og:title",
-      content: normalizedMetaTitle,
-    });
-    upsertMetaTag('meta[property="og:description"]', {
-      property: "og:description",
-      content: metaDescription,
-    });
-    upsertMetaTag('meta[property="og:url"]', {
-      property: "og:url",
-      content: canonicalCompareUrl,
-    });
-    upsertMetaTag('meta[name="twitter:title"]', {
-      name: "twitter:title",
-      content: normalizedMetaTitle,
-    });
-    upsertMetaTag('meta[name="twitter:description"]', {
-      name: "twitter:description",
-      content: metaDescription,
-    });
-    upsertMetaTag('meta[name="twitter:url"]', {
-      name: "twitter:url",
-      content: canonicalCompareUrl,
-    });
-    upsertCanonicalLink(canonicalCompareUrl);
-  }, [canonicalCompareUrl, metaDescription, normalizedMetaTitle]);
 
   const effectiveCatalogCategoryValue =
     catalogLockedType || catalogCategoryFilter;
@@ -4780,7 +4718,7 @@ const MobileCompare = () => {
 
     if (!positive.length) {
       const score = getDeviceSpecScore(device);
-      if (score) positive.push(`${score}/100 Hooks specification score`);
+      if (score) positive.push(`${score}/100 MobileX specification score`);
       const price = getCardPrice(device, getSelectedVariant(device));
       if (price) positive.push(`Available from ${formatPrice(price)}`);
     }
@@ -5759,7 +5697,7 @@ const MobileCompare = () => {
     ),
     explanation: compareInsights.overallWinner
       ? "Based on available specification scores and selected-variant prices."
-      : "The server verdict is unavailable, so Hooks is showing a directional specification-based comparison.",
+      : "The server verdict is unavailable, so MobileX is showing a directional specification-based comparison.",
   };
   const resolvedConfidence = compareDecision.confidence || fallbackConfidence;
 
@@ -6357,57 +6295,12 @@ const MobileCompare = () => {
 
   return (
     <main className="hooks-compare-page pb-16 max-[720px]:pb-0">
-      <Helmet prioritizeSeoTags>
-        <title key="compare-title">{normalizedMetaTitle}</title>
-        <meta
-          key="compare-description"
-          name="description"
-          content={metaDescription}
-        />
-        <link
-          key="compare-canonical"
-          rel="canonical"
-          href={canonicalCompareUrl}
-        />
-        <meta key="compare-og-type" property="og:type" content="website" />
-        <meta
-          key="compare-og-title"
-          property="og:title"
-          content={normalizedMetaTitle}
-        />
-        <meta
-          key="compare-og-description"
-          property="og:description"
-          content={metaDescription}
-        />
-        <meta
-          key="compare-og-url"
-          property="og:url"
-          content={canonicalCompareUrl}
-        />
-        <meta
-          key="compare-twitter-card"
-          name="twitter:card"
-          content="summary"
-        />
-        <meta
-          key="compare-twitter-title"
-          name="twitter:title"
-          content={normalizedMetaTitle}
-        />
-        <meta
-          key="compare-twitter-description"
-          name="twitter:description"
-          content={metaDescription}
-        />
-        <meta
-          key="compare-twitter-url"
-          name="twitter:url"
-          content={canonicalCompareUrl}
-        />
-        {compareSchemaJson ? (
-          <script type="application/ld+json">{compareSchemaJson}</script>
-        ) : null}
+      <SEO
+        title={normalizedMetaTitle}
+        description={metaDescription}
+        url={canonicalCompareUrl}
+        schema={compareSchemaJson}
+      >
         {compareItemListSchemaJson ? (
           <script type="application/ld+json">
             {compareItemListSchemaJson}
@@ -6421,7 +6314,7 @@ const MobileCompare = () => {
             {json}
           </script>
         ))}
-      </Helmet>
+      </SEO>
 
       <div className="hc-shell pt-5 lg:pt-7">
         <nav className="flex items-center gap-2 overflow-x-auto whitespace-nowrap text-xs font-semibold text-slate-500 hide-scrollbar">
@@ -6438,14 +6331,14 @@ const MobileCompare = () => {
 
         <header className="hc-section flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <p className="hc-eyebrow">Hooks comparison intelligence</p>
+            <p className="hc-eyebrow">MobileX comparison intelligence</p>
             <h1 className="hc-heading font-[Space_Grotesk]">
               Compare smartphones side by side
             </h1>
             <p className="hc-copy">
               {isComparing && activeDevices.length >= MIN_DEVICES
                 ? `${activeDevices.map((device) => getDeviceName(device)).join(" vs ")} — compare price, performance, camera, battery, launch timing and complete specifications in one decision-focused view.`
-                : "Select two to four phones. Hooks will explain meaningful differences, the newer choice, category leaders, price value and the trade-offs you make."}
+                : "Select two to four phones. MobileX will explain meaningful differences, the newer choice, category leaders, price value and the trade-offs you make."}
             </p>
           </div>
 
@@ -6682,7 +6575,7 @@ const MobileCompare = () => {
                             <strong>
                               {formatComparisonScore(comparisonScore)}
                             </strong>
-                            <span>Hooks score</span>
+                            <span>MobileX score</span>
                           </div>
                         </div>
                       </div>
@@ -6776,7 +6669,7 @@ const MobileCompare = () => {
                 <FaTrophy className="h-16 w-16" />
               </div>
               <div className="hc-verdict-card__content">
-                <p className="hc-eyebrow">Hooks comparison verdict</p>
+                <p className="hc-eyebrow">MobileX comparison verdict</p>
                 <span className="hc-verdict-badge">Best overall</span>
                 <h2>
                   {resolvedOverallWinner
@@ -7715,7 +7608,7 @@ const MobileCompare = () => {
             <div className="hc-section-title">
               <div>
                 <p className="hc-eyebrow">Comparison FAQs</p>
-                <h2>Understand the Hooks verdict</h2>
+                <h2>Understand the MobileX verdict</h2>
               </div>
             </div>
             <div className="grid gap-3 lg:grid-cols-3">

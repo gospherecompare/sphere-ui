@@ -340,7 +340,7 @@ const NewsStoryPage = () => {
   const { stories: feedStories } = usePublicNewsFeed({ limit: 18 });
   const [sidebarTab, setSidebarTab] = useState("latest");
 
-  const canonical = `https://tryhook.shop${createNewsStoryPath(slug)}`;
+  const canonical = `https://mobilex.in${createNewsStoryPath(slug)}`;
 
   const feedStoriesOrdered = useMemo(
     () =>
@@ -433,8 +433,8 @@ const NewsStoryPage = () => {
   const schema = story
     ? [
         createBreadcrumbSchema([
-          { label: "Home", url: "https://tryhook.shop/" },
-          { label: "News", url: "https://tryhook.shop/news" },
+          { label: "Home", url: "https://mobilex.in/" },
+          { label: "News", url: "https://mobilex.in/news" },
           { label: story.title, url: canonicalUrl },
         ]),
         createNewsArticleSchema({
@@ -508,7 +508,7 @@ const NewsStoryPage = () => {
   return (
     <>
       <SEO
-        title={`${story.title} - Hooks`}
+        title={`${story.title} - MobileX`}
         description={story.summary}
         url={canonicalUrl}
         robots="index, follow, max-image-preview:large"

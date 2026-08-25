@@ -1,7 +1,4 @@
-const DEFAULT_SITE_ORIGIN = "https://tryhook.shop";
-
-const hasFileExtension = (pathname = "") =>
-  /\/[^/?#]+\.[^/?#]+$/.test(String(pathname || ""));
+const DEFAULT_SITE_ORIGIN = "https://mobilex.in";
 
 const parseUrlLike = (value = "", baseOrigin = DEFAULT_SITE_ORIGIN) => {
   const raw = String(value || "").trim();
@@ -56,10 +53,6 @@ export const toCanonicalPagePath = (value = "") => {
 
   if (!pathname.startsWith("/")) pathname = `/${pathname}`;
   if (pathname.length > 1) pathname = pathname.replace(/\/+$/g, "");
-
-  if (pathname !== "/" && !hasFileExtension(pathname)) {
-    pathname = `${pathname}/`;
-  }
 
   return `${pathname}${parsed.search || ""}${parsed.hash || ""}`;
 };

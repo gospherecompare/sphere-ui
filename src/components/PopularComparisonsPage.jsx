@@ -13,6 +13,7 @@ import {
 import { readPreloadedApiResponse } from "../utils/preloadedApi";
 import { API_ORIGIN_URL, buildApiUrl } from "../utils/apiUrl";
 import { fetchPublicJson } from "../utils/publicJsonRequest";
+import SEO from "./SEO";
 
 const normalizeText = (value) => String(value || "").trim();
 
@@ -156,17 +157,17 @@ const PhoneVisual = ({ src = "", label = "" }) => {
   }, [imageSrc]);
 
   return (
-    <div className="flex h-36 min-w-0 items-center justify-center sm:h-40 xl:h-44">
+    <div className="flex h-28 min-w-0 items-center justify-center sm:h-32 xl:h-36">
       {imageSrc && !failed ? (
         <img
           src={imageSrc}
           alt={label || "Smartphone"}
           loading="lazy"
-          className="h-full w-full scale-[1.06] object-contain transition-transform duration-300 group-hover:scale-[1.1] dark:mix-blend-multiply dark:brightness-125 dark:contrast-110"
+          className="h-full w-full scale-[1.03] object-contain transition-transform duration-300 group-hover:scale-[1.07] dark:brightness-125 dark:contrast-110"
           onError={() => setFailed(true)}
         />
       ) : (
-        <div className="grid h-20 w-14 place-items-center rounded-lg bg-white/80 text-blue-300 dark:bg-[#14243a] dark:text-[#77a5ff]">
+        <div className="grid h-16 w-12 place-items-center rounded-lg bg-blue-100/60 text-blue-400 dark:bg-[#14243a] dark:text-[#77a5ff]">
           <FaMobileAlt className="text-3xl" />
         </div>
       )}
@@ -292,141 +293,147 @@ const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
         );
 
   return (
-    <section
-      className={`smartphones-matchups-section mx-auto w-full max-w-7xl bg-transparent py-6 text-slate-950 sm:py-8 dark:text-slate-100 ${className}`}
-      aria-labelledby="popular-phone-comparisons-title"
-    >
-      <div className="mb-5 flex items-end justify-between gap-3 px-1 sm:mb-6">
-        <div className="min-w-0">
-          <span className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-blue-600 sm:text-xs dark:text-blue-400">
-            Popular matchups
-          </span>
-          <h2
-            id="popular-phone-comparisons-title"
-            className="mt-1.5 max-w-3xl text-2xl font-black tracking-[-0.035em] text-slate-950 sm:text-3xl dark:text-white"
-          >
-            Compare popular mobile phones
-          </h2>
-          <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base dark:text-slate-400">
-            Pick a matchup and compare the details that matter.
-          </p>
-        </div>
-
-        <div className="flex shrink-0 items-center gap-2">
-          <Link
-            to="/popular-comparisons"
-            className="hidden min-h-10 items-center gap-2 rounded-lg bg-blue-50 px-4 text-sm font-bold text-blue-700 transition-colors hover:bg-blue-100 sm:inline-flex dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20"
-          >
-            View all
-            <FaArrowRight className="text-[11px]" />
-          </Link>
-          <button
-            type="button"
-            onClick={() => scrollToComparison(activeIndex - 1)}
-            disabled={activeIndex === 0}
-            aria-label="Previous phone comparison"
-            className="grid h-10 w-10 place-items-center rounded-lg bg-white text-blue-600 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-30 dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700"
-          >
-            <FaChevronLeft className="text-xs" />
-          </button>
-          <button
-            type="button"
-            onClick={() => scrollToComparison(activeIndex + 1)}
-            disabled={activeIndex >= comparisons.length - 1}
-            aria-label="Next phone comparison"
-            className="grid h-10 w-10 place-items-center rounded-lg bg-white text-blue-600 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-30 dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700"
-          >
-            <FaChevronRight className="text-xs" />
-          </button>
-        </div>
-      </div>
-
-      <div
-        ref={scrollerRef}
-        onScroll={handleScrollerScroll}
-        className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-4 [&::-webkit-scrollbar]:hidden"
+    <>
+      <SEO
+        title="Popular Smartphone Comparisons in India | MobileX"
+        description="Explore popular smartphone comparisons and compare specifications, features and important differences side by side."
+        url="https://mobilex.in/popular-comparisons"
+      />
+      <section
+        className={`smartphones-matchups-section mx-auto w-full max-w-6xl bg-transparent py-4 text-slate-950 sm:py-6 dark:text-slate-100 ${className}`}
+        aria-labelledby="popular-phone-comparisons-title"
       >
-        {comparisons.map((item, index) => {
-          const compareTitle = `${item.leftName} vs ${item.rightName}`;
-
-          return (
-            <Link
-              key={`${makeComparisonKey(item)}-${index}`}
-              data-matchup-card
-              to={buildComparePath(item)}
-              aria-label={`Compare ${item.leftName} with ${item.rightName}`}
-              className="group w-[86vw] max-w-[390px] shrink-0 snap-start rounded-xl border border-slate-200/80 bg-white p-3 transition-colors hover:bg-blue-50/40 sm:w-[390px] sm:p-4 lg:w-[calc((100%_-_2rem)/3)] lg:min-w-[340px] dark:border-slate-700/70 dark:bg-[#0f1c2d] dark:hover:bg-[#13243b]"
+        <div className="mb-4 flex items-end justify-between gap-3 px-1 sm:mb-5">
+          <div className="min-w-0">
+            <span className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-blue-600 sm:text-xs dark:text-blue-400">
+              Popular matchups
+            </span>
+            <h2
+              id="popular-phone-comparisons-title"
+              className="mt-1 max-w-3xl text-xl font-black tracking-[-0.035em] text-slate-950 sm:text-2xl dark:text-white"
             >
-              <div className="smartphones-product-stage relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 via-white to-slate-50 px-3 pb-3 pt-4 dark:bg-none dark:bg-[#0f1c2d] dark:ring-1 dark:ring-inset dark:ring-[#20324c]">
-                <span className="absolute left-4 top-3 text-[9px] font-extrabold uppercase tracking-[0.15em] text-blue-600 dark:text-blue-300">
-                  Matchup {index + 1}
-                </span>
-                <span className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-blue-100/50 dark:bg-blue-500/10" />
-                <span className="absolute -bottom-14 -left-10 h-32 w-32 rounded-full bg-indigo-100/40 dark:bg-indigo-400/10" />
+              Compare popular mobile phones
+            </h2>
+            <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-500 sm:text-sm dark:text-slate-400">
+              Pick a matchup and compare the details that matter.
+            </p>
+          </div>
 
-                <div className="relative mt-4 grid grid-cols-[minmax(0,1fr)_44px_minmax(0,1fr)] items-center gap-1 sm:grid-cols-[minmax(0,1fr)_48px_minmax(0,1fr)] sm:gap-2">
-                  <PhoneVisual src={item.leftImage} label={item.leftName} />
-
-                  <span className="grid h-10 w-10 place-items-center justify-self-center rounded-full bg-blue-600 text-[10px] font-black text-white sm:h-11 sm:w-11 sm:text-xs">
-                    VS
-                  </span>
-
-                  <PhoneVisual src={item.rightImage} label={item.rightName} />
-                </div>
-              </div>
-
-              <div className="mt-3 grid grid-cols-2 gap-3">
-                <p className="truncate text-sm font-extrabold text-slate-900 sm:text-base dark:text-slate-100">
-                  {item.leftName}
-                </p>
-                <p className="truncate text-right text-sm font-extrabold text-slate-900 sm:text-base dark:text-slate-100">
-                  {item.rightName}
-                </p>
-              </div>
-
-              <div className="mt-4 flex min-h-11 items-center justify-between gap-3 rounded-lg bg-blue-600 px-4 text-sm font-bold text-white transition-colors group-hover:bg-blue-700 dark:bg-blue-500 dark:group-hover:bg-blue-400">
-                <span className="min-w-0 truncate">Compare this matchup</span>
-                <FaArrowRight className="shrink-0 text-[11px] transition-transform group-hover:translate-x-0.5" />
-              </div>
-
-              <p className="sr-only">{compareTitle}</p>
+          <div className="flex shrink-0 items-center gap-2">
+            <Link
+              to="/popular-comparisons"
+              className="hidden min-h-9 items-center gap-2 rounded-lg bg-blue-50/70 px-3 text-xs font-bold text-blue-700 transition-colors hover:bg-blue-100 sm:inline-flex dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20"
+            >
+              View all
+              <FaArrowRight className="text-[11px]" />
             </Link>
-          );
-        })}
-      </div>
+            <button
+              type="button"
+              onClick={() => scrollToComparison(activeIndex - 1)}
+              disabled={activeIndex === 0}
+              aria-label="Previous phone comparison"
+              className="grid h-9 w-9 place-items-center rounded-lg bg-blue-50/70 text-blue-600 transition-colors hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-30 dark:bg-slate-800/80 dark:text-blue-300 dark:hover:bg-slate-700"
+            >
+              <FaChevronLeft className="text-xs" />
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollToComparison(activeIndex + 1)}
+              disabled={activeIndex >= comparisons.length - 1}
+              aria-label="Next phone comparison"
+              className="grid h-9 w-9 place-items-center rounded-lg bg-blue-50/70 text-blue-600 transition-colors hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-30 dark:bg-slate-800/80 dark:text-blue-300 dark:hover:bg-slate-700"
+            >
+              <FaChevronRight className="text-xs" />
+            </button>
+          </div>
+        </div>
 
-      <div className="mt-4 flex items-center justify-center gap-2">
-        {Array.from({ length: dotCount }, (_, index) => (
-          <button
-            key={`matchup-dot-${index}`}
-            type="button"
-            onClick={() => {
-              const targetIndex =
-                dotCount <= 1
-                  ? 0
-                  : Math.round(
-                      (index / (dotCount - 1)) * (comparisons.length - 1),
-                    );
-              scrollToComparison(targetIndex);
-            }}
-            aria-label={`Go to comparison group ${index + 1}`}
-            className={`h-2 rounded-full transition-all ${
-              index === activeDot
-                ? "w-6 bg-blue-600 dark:bg-blue-400"
-                : "w-2 bg-slate-300 dark:bg-slate-600"
-            }`}
-          />
-        ))}
-      </div>
+        <div
+          ref={scrollerRef}
+          onScroll={handleScrollerScroll}
+          className="flex snap-x snap-mandatory gap-2.5 overflow-x-auto scroll-smooth pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-3 [&::-webkit-scrollbar]:hidden"
+        >
+          {comparisons.map((item, index) => {
+            const compareTitle = `${item.leftName} vs ${item.rightName}`;
 
-      <Link
-        to="/popular-comparisons"
-        className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg bg-blue-50 px-4 text-sm font-bold text-blue-700 sm:hidden dark:bg-blue-500/10 dark:text-blue-300"
-      >
-        View all comparisons
-        <FaArrowRight className="text-[11px]" />
-      </Link>
-    </section>
+            return (
+              <Link
+                key={`${makeComparisonKey(item)}-${index}`}
+                to={buildComparePath(item)}
+                aria-label={`Compare ${item.leftName} with ${item.rightName}`}
+                className="group w-[75vw] max-w-[310px] shrink-0 snap-start rounded-xl bg-transparent p-1.5 transition-colors hover:bg-transparent sm:w-[310px] sm:p-2 lg:w-[calc((100%_-_1rem)/3)] lg:min-w-[270px]"
+              >
+                <div className="smartphones-product-stage relative overflow-hidden rounded-lg bg-gradient-to-br from-blue-50/80 via-slate-50/70 to-indigo-50/70 px-2 pb-2 pt-2.5 dark:bg-[#0f1c2d]/90">
+                  <span className="absolute left-3 top-2.5 text-[8px] font-extrabold uppercase tracking-[0.14em] text-blue-600 dark:text-blue-300">
+                    Matchup {index + 1}
+                  </span>
+                  <span className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-blue-100/40 dark:bg-blue-500/10" />
+                  <span className="absolute -bottom-12 -left-8 h-28 w-28 rounded-full bg-indigo-100/30 dark:bg-indigo-400/10" />
+
+                  <div className="relative mt-3 grid grid-cols-[minmax(0,1fr)_34px_minmax(0,1fr)] items-center gap-1 sm:grid-cols-[minmax(0,1fr)_38px_minmax(0,1fr)] sm:gap-1.5">
+                    <PhoneVisual src={item.leftImage} label={item.leftName} />
+
+                    <span className="grid h-8 w-8 place-items-center justify-self-center rounded-full bg-blue-600 text-[9px] font-black text-white sm:h-9 sm:w-9 sm:text-[10px]">
+                      VS
+                    </span>
+
+                    <PhoneVisual src={item.rightImage} label={item.rightName} />
+                  </div>
+                </div>
+
+                <div className="mt-2.5 grid grid-cols-2 gap-2">
+                  <p className="truncate text-xs font-extrabold text-slate-900 sm:text-sm dark:text-slate-100">
+                    {item.leftName}
+                  </p>
+                  <p className="truncate text-right text-xs font-extrabold text-slate-900 sm:text-sm dark:text-slate-100">
+                    {item.rightName}
+                  </p>
+                </div>
+
+                <div className="mt-3 flex min-h-9 items-center justify-between gap-2 rounded-lg bg-blue-600 px-3 text-xs font-bold text-white transition-colors group-hover:bg-blue-700 dark:bg-blue-500 dark:group-hover:bg-blue-400">
+                  <span className="min-w-0 truncate">Compare this matchup</span>
+                  <FaArrowRight className="shrink-0 text-[11px] transition-transform group-hover:translate-x-0.5" />
+                </div>
+
+                <p className="sr-only">{compareTitle}</p>
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="mt-3 flex items-center justify-center gap-1.5">
+          {Array.from({ length: dotCount }, (_, index) => (
+            <button
+              key={`matchup-dot-${index}`}
+              type="button"
+              onClick={() => {
+                const targetIndex =
+                  dotCount <= 1
+                    ? 0
+                    : Math.round(
+                        (index / (dotCount - 1)) * (comparisons.length - 1),
+                      );
+                scrollToComparison(targetIndex);
+              }}
+              aria-label={`Go to comparison group ${index + 1}`}
+              className={`h-1.5 rounded-full transition-all ${
+                index === activeDot
+                  ? "w-6 bg-blue-600 dark:bg-blue-400"
+                  : "w-2 bg-slate-300 dark:bg-slate-600"
+              }`}
+            />
+          ))}
+        </div>
+
+        <Link
+          to="/popular-comparisons"
+          className="mt-3 inline-flex min-h-9 items-center gap-2 rounded-lg bg-blue-50/70 px-3 text-xs font-bold text-blue-700 sm:hidden dark:bg-blue-500/10 dark:text-blue-300"
+        >
+          View all comparisons
+          <FaArrowRight className="text-[11px]" />
+        </Link>
+      </section>
+    </>
   );
 };
 

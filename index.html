@@ -1,4 +1,5 @@
 <!doctype html>
+
 <html lang="en-IN">
   <head>
     <!-- Basic -->
@@ -6,15 +7,19 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#f6f8fc" />
+
     <script>
       (() => {
         try {
           const storedTheme = localStorage.getItem("hooks-theme");
-          const theme = storedTheme === "dark" || storedTheme === "light"
-            ? storedTheme
-            : window.matchMedia("(prefers-color-scheme: dark)").matches
-              ? "dark"
-              : "light";
+
+          const theme =
+            storedTheme === "dark" || storedTheme === "light"
+              ? storedTheme
+              : window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light";
+
           document.documentElement.dataset.theme = theme;
           document.documentElement.classList.toggle("dark", theme === "dark");
           document.documentElement.style.colorScheme = theme;
@@ -23,47 +28,72 @@
         }
       })();
     </script>
+
     <meta name="msvalidate.01" content="2AB44FEC3733D53A656A26E293337C41" />
 
-    <!-- Favicon -->
-    <link rel="icon" href="/hook-logo.png?v=2" type="image/png" />
-    <link rel="shortcut icon" href="/hook-logo.png?v=2" type="image/png" />
-    <link rel="apple-touch-icon" href="/hook-logo.png?v=2" />
+    <!-- MobileX Favicon -->
+    <link rel="icon" href="/mobilex-favicon.svg" type="image/svg+xml" />
 
-    <title>Hooks – Compare Phones, TVs and Networking Devices</title>
-    <link rel="canonical" href="https://tryhook.shop/" />
+    <link
+      rel="shortcut icon"
+      href="/mobilex-favicon.svg"
+      type="image/svg+xml"
+    />
+
+    <title>MobileX – Smartphones, Comparisons & Tech News</title>
+
+    <!-- Open Graph -->
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Hooks" />
+    <meta property="og:site_name" content="MobileX" />
     <meta property="og:locale" content="en_IN" />
-    <meta property="og:title" content="Hooks – Compare Phones, TVs and Networking Devices" />
-    <meta property="og:description" content="Compare products with clear specifications, prices and practical buying context." />
-    <meta property="og:url" content="https://tryhook.shop/" />
-    <meta property="og:image" content="https://tryhook.shop/hook-logo.png" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Hooks – Compare Phones, TVs and Networking Devices" />
-    <meta name="twitter:description" content="Compare products with clear specifications, prices and practical buying context." />
-    <meta name="twitter:image" content="https://tryhook.shop/hook-logo.png" />
 
-    <!-- Meta Description - Critical for CTR -->
+    <meta
+      property="og:title"
+      content="MobileX – Smartphones, Comparisons & Tech News"
+    />
+
+    <meta
+      property="og:description"
+      content="Compare smartphones with clear specifications, features and practical comparisons. Get the latest mobile news, launches and buying insights from MobileX."
+    />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <meta
+      name="twitter:title"
+      content="MobileX – Smartphones, Comparisons & Tech News"
+    />
+
+    <meta
+      name="twitter:description"
+      content="Compare smartphones with clear specifications, features and practical comparisons. Get the latest mobile news, launches and buying insights from MobileX."
+    />
+
+    <!-- Meta Description -->
     <meta
       name="description"
-      content="Compare smartphones, TVs and networking devices with clear specifications, prices, feature differences and practical technology news on Hooks."
+      content="Compare smartphones with clear specifications, features and practical comparisons. Get the latest mobile news, launches and buying insights from MobileX."
     />
+
     <meta
       name="google-site-verification"
       content="fTw8uOxdp363NuqcHL3t8lscmW1EqIBng-ck6PM33_4"
     />
 
-    <!-- Google Analytics (gtag.js) -->
+    <!-- Google Analytics -->
     <script
       async
       src="https://www.googletagmanager.com/gtag/js?id=G-QDMM8N8L1P"
     ></script>
+
     <script>
       window.dataLayer = window.dataLayer || [];
+
       function gtag() {
         dataLayer.push(arguments);
       }
+
       gtag("js", new Date());
       gtag("config", "G-QDMM8N8L1P");
     </script>
@@ -75,77 +105,24 @@
       crossorigin="anonymous"
     ></script>
 
-    <!-- Performance: Preconnect Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-
-    <!-- Fonts - Optimized with font-display:swap to prevent render-blocking -->
-    <link
-      rel="preload"
-      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
-      as="style"
-      onload="
-        this.onload = null;
-        this.rel = 'stylesheet';
-      "
-    />
-    <noscript
-      ><link
-        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet"
-    /></noscript>
-
-    <link
-      rel="preload"
-      href="https://fonts.googleapis.com/css2?family=Climate+Crisis:YEAR@1979&family=Honk:MORF@15&family=Luckiest+Guy&display=swap"
-      as="style"
-      onload="
-        this.onload = null;
-        this.rel = 'stylesheet';
-      "
-    />
-    <noscript
-      ><link
-        href="https://fonts.googleapis.com/css2?family=Climate+Crisis:YEAR@1979&family=Honk:MORF@15&family=Luckiest+Guy&display=swap"
-        rel="stylesheet"
-    /></noscript>
-
-    <link
-      rel="preload"
-      href="https://fonts.googleapis.com/css2?family=Condiment&display=swap"
-      as="style"
-      onload="
-        this.onload = null;
-        this.rel = 'stylesheet';
-      "
-    />
-    <noscript
-      ><link
-        href="https://fonts.googleapis.com/css2?family=Condiment&display=swap"
-        rel="stylesheet"
-    /></noscript>
-
-    <!-- Structured Data (Organization Schema) -->
+    <!-- Organization Schema -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "Organization",
-        "name": "Hooks",
-        "url": "https://tryhook.shop/",
-        "logo": "https://tryhook.shop/hook-logo.png",
-        "sameAs": [
-          "https://instagram.com/tryHooks",
-          "https://twitter.com/tryHooks"
-        ]
+        "name": "MobileX",
+        "url": "https://mobilex.in/",
+        "logo": "https://mobilex.in/mobilex-favicon.svg"
       }
     </script>
+
+    <!-- Website Schema -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "WebSite",
-        "name": "Hooks",
-        "alternateName": "TryHook",
-        "url": "https://tryhook.shop/",
+        "name": "MobileX",
+        "url": "https://mobilex.in/",
         "inLanguage": "en-IN"
       }
     </script>
@@ -153,6 +130,7 @@
 
   <body>
     <div id="root"></div>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

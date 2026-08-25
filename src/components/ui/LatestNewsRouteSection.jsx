@@ -45,7 +45,7 @@ const StoryMeta = ({ story, compact = false, light = false }) => (
       compact ? "text-[10px]" : "text-[11px] sm:text-xs"
     } ${light ? "text-white/75" : "text-slate-500"}`}
   >
-    <span>{story.author || "Hooks News"}</span>
+    <span>{story.author || "MobileX News"}</span>
     <span aria-hidden="true">•</span>
     <span>{story.publishedAt}</span>
     {story.readTime ? (
@@ -179,7 +179,7 @@ const LatestNewsRouteSection = ({
   className = "",
   limit = 4,
   title = "Latest News",
-  subtitle = "Fresh mobile launches, product updates, and buying context from the Hooks news desk.",
+  subtitle = "Fresh mobile launches, product updates, and buying context from the MobileX news desk.",
   productType = "",
   newsLinkLabel = "",
 }) => {

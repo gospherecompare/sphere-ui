@@ -51,7 +51,11 @@ export const toLaptopListingLabel = (value = "") => {
   if (!normalized) return "";
   return normalized
     .split(" ")
-    .map((word) => TITLE_WORDS[word.toLowerCase()] || `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
+    .map(
+      (word) =>
+        TITLE_WORDS[word.toLowerCase()] ||
+        `${word.charAt(0).toUpperCase()}${word.slice(1)}`,
+    )
     .join(" ");
 };
 
@@ -100,10 +104,7 @@ export const buildLaptopListingPath = ({
   query = null,
 } = {}) => {
   const brandSlug = normalizeLaptopListingSlug(brand);
-  const featureSlugs = [
-    ...(Array.isArray(features) ? features : []),
-    feature,
-  ]
+  const featureSlugs = [...(Array.isArray(features) ? features : []), feature]
     .map(normalizeLaptopListingSlug)
     .filter(Boolean)
     .filter((value, index, values) => values.indexOf(value) === index)
@@ -148,8 +149,9 @@ export const stripLaptopSeoQueryParams = (search = "") => {
 
 export const parseLaptopListingPath = (pathname = "") => {
   const normalizedPath =
-    String(pathname || "").trim().replace(/\/+$/g, "") ||
-    LAPTOP_LISTING_BASE_PATH;
+    String(pathname || "")
+      .trim()
+      .replace(/\/+$/g, "") || LAPTOP_LISTING_BASE_PATH;
 
   if (normalizedPath === LAPTOP_LISTING_BASE_PATH) {
     return {
@@ -232,7 +234,7 @@ export const parseLaptopListingPath = (pathname = "") => {
 
 export const buildLaptopListingSeoMeta = (
   routeMeta = {},
-  { brandName = "", monthYear = "", fullDate = "" } = {},
+  { brandName = "", monthYear = "" } = {},
 ) => {
   const brand = brandName || toLaptopListingLabel(routeMeta.brandSlug);
   const features = (routeMeta.featureSlugs || [])
@@ -244,9 +246,9 @@ export const buildLaptopListingSeoMeta = (
 
   if (routeMeta.latest) {
     return {
-      title: `Latest Laptops in India (${fullDate}) - Prices & Specs - Hooks`,
+      title: `Latest Laptops in India (${monthYear}) | MobileX`,
       description:
-        "Browse the latest laptops added in India with updated prices, processor details, RAM, storage, display specifications, and store availability on Hooks.",
+        "Browse the latest laptops added in India with updated prices, processor details, RAM, storage, display specifications, and store availability on MobileX.",
       heading: "Latest Laptops in India",
       eyebrow: "LATEST LAPTOPS",
     };
@@ -254,8 +256,8 @@ export const buildLaptopListingSeoMeta = (
 
   if (brand && firstFeature) {
     return {
-      title: `Best ${brand} ${firstFeature.name} Laptops in India - Hooks`,
-      description: `Compare the best ${brand} ${firstFeature.name} laptops in India with updated prices, detailed specifications, and store offers on Hooks.`,
+      title: `Best ${brand} ${firstFeature.name} Laptops in India (${monthYear}) | MobileX`,
+      description: `Compare the best ${brand} ${firstFeature.name} laptops in India with updated prices, detailed specifications, and store offers on MobileX.`,
       heading: `${brand} ${firstFeature.name} Laptops`,
       eyebrow: `${brand.toUpperCase()} ${firstFeature.name.toUpperCase()}`,
     };
@@ -263,8 +265,8 @@ export const buildLaptopListingSeoMeta = (
 
   if (brand && budget) {
     return {
-      title: `Best ${brand} Laptops Under ${budgetText} in India - Hooks`,
-      description: `Compare ${brand} laptops under ${budgetText} in India with updated prices, specifications, and store offers on Hooks.`,
+      title: `Best ${brand} Laptops Under ${budgetText} in India (${monthYear}) | MobileX`,
+      description: `Compare ${brand} laptops under ${budgetText} in India with updated prices, specifications, and store offers on MobileX.`,
       heading: `${brand} Laptops Under ${budgetText}`,
       eyebrow: `${brand.toUpperCase()} BUDGET LAPTOPS`,
     };
@@ -272,8 +274,8 @@ export const buildLaptopListingSeoMeta = (
 
   if (firstFeature && secondFeature) {
     return {
-      title: `Best ${firstFeature.name} Laptops with ${secondFeature.name} - Hooks`,
-      description: `Compare the best ${firstFeature.name} laptops with ${secondFeature.name}, updated prices, detailed specifications, and store offers on Hooks.`,
+      title: `Best ${firstFeature.name} Laptops with ${secondFeature.name} in India (${monthYear}) | MobileX`,
+      description: `Compare the best ${firstFeature.name} laptops with ${secondFeature.name}, updated prices, detailed specifications, and store offers on MobileX.`,
       heading: `${firstFeature.name} Laptops with ${secondFeature.name}`,
       eyebrow: "FEATURED LAPTOPS",
     };
@@ -281,8 +283,8 @@ export const buildLaptopListingSeoMeta = (
 
   if (firstFeature && budget) {
     return {
-      title: `Best ${firstFeature.name} Laptops Under ${budgetText} in India - Hooks`,
-      description: `Compare the best ${firstFeature.name} laptops under ${budgetText} in India with updated prices, specifications, and store offers on Hooks.`,
+      title: `Best ${firstFeature.name} Laptops Under ${budgetText} in India (${monthYear}) | MobileX`,
+      description: `Compare the best ${firstFeature.name} laptops under ${budgetText} in India with updated prices, specifications, and store offers on MobileX.`,
       heading: `${firstFeature.name} Laptops Under ${budgetText}`,
       eyebrow: "FEATURE BUDGET LAPTOPS",
     };
@@ -290,8 +292,8 @@ export const buildLaptopListingSeoMeta = (
 
   if (budget) {
     return {
-      title: `Best Laptops Under ${budgetText} in India - Prices & Specs - Hooks`,
-      description: `Compare the best laptops under ${budgetText} in India with updated prices, processor details, RAM, storage, display specifications, and store offers on Hooks.`,
+      title: `Best Laptops Under ${budgetText} in India (${monthYear}) | MobileX`,
+      description: `Compare the best laptops under ${budgetText} in India with updated prices, processor details, RAM, storage, display specifications, and store offers on MobileX.`,
       heading: `Best Laptops Under ${budgetText}`,
       eyebrow: "BUDGET LAPTOPS",
     };
@@ -299,8 +301,8 @@ export const buildLaptopListingSeoMeta = (
 
   if (brand) {
     return {
-      title: `${brand} Laptops in India - Latest Models Prices & Specs - Hooks`,
-      description: `Browse ${brand} laptops in India with the latest models, updated prices, detailed specifications, and store offers on Hooks.`,
+      title: `${brand} Laptops in India (${monthYear}) | MobileX`,
+      description: `Browse ${brand} laptops in India with the latest models, updated prices, detailed specifications, and store offers on MobileX.`,
       heading: `${brand} Laptops in India`,
       eyebrow: `${brand.toUpperCase()} LAPTOPS`,
     };
@@ -308,17 +310,17 @@ export const buildLaptopListingSeoMeta = (
 
   if (firstFeature) {
     return {
-      title: `Best ${firstFeature.name} Laptops in India - Prices Specs & Features - Hooks`,
-      description: `Compare the best ${firstFeature.name} laptops in India with updated prices, detailed specifications, and store offers on Hooks.`,
+      title: `Best ${firstFeature.name} Laptops in India (${monthYear}) | MobileX`,
+      description: `Compare the best ${firstFeature.name} laptops in India with updated prices, detailed specifications, and store offers on MobileX.`,
       heading: `${firstFeature.name} Laptops in India`,
       eyebrow: `${firstFeature.name.toUpperCase()} LAPTOPS`,
     };
   }
 
   return {
-    title: `Best Laptops in India (${monthYear}) - Hooks`,
+    title: `Best Laptops in India (${monthYear}) | MobileX`,
     description:
-      "Compare the best laptops in India across brands, budgets, processors, RAM, storage, displays, and store prices on Hooks.",
+      "Compare the best laptops in India across brands, budgets, processors, RAM, storage, displays, and store prices on MobileX.",
     heading: "Best Laptops in India",
     eyebrow: "LAPTOP COLLECTION",
   };

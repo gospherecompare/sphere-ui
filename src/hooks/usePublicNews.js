@@ -4,7 +4,7 @@ import { toCanonicalPagePath } from "../utils/publicUrl";
 import { buildApiUrl } from "../utils/apiUrl";
 import { fetchPublicJson } from "../utils/publicJsonRequest";
 
-const DEFAULT_STORY_IMAGE = "/hook-logo.png";
+const DEFAULT_STORY_IMAGE = "/mobilex-favicon.svg";
 
 const CATEGORY_LABELS = {
   news: "News",
@@ -36,32 +36,47 @@ const CATEGORY_LABELS = {
 };
 
 const CATEGORY_AUTHORS = {
-  news: { name: "Hooks news", role: "News desk" },
-  technology: { name: "Hooks tech", role: "Technology desk" },
-  ai: { name: "Hooks AI", role: "AI desk" },
-  smartphones: { name: "Hooks mobile", role: "Mobile editor" },
-  mobiles: { name: "Hooks mobile", role: "Mobile editor" },
-  chips: { name: "Hooks silicon", role: "Chip desk" },
-  laptops: { name: "Hooks computing", role: "Computing desk" },
-  software: { name: "Hooks software", role: "Software desk" },
-  cybersecurity: { name: "Hooks security", role: "Cybersecurity desk" },
-  "ev-tech": { name: "Hooks mobility", role: "EV technology desk" },
-  robotics: { name: "Hooks robotics", role: "Robotics desk" },
-  "consumer-tech": { name: "Hooks consumer tech", role: "Consumer tech desk" },
-  apps: { name: "Hooks apps", role: "Apps desk" },
-  internet: { name: "Hooks internet", role: "Internet desk" },
-  "cloud-services": { name: "Hooks cloud", role: "Cloud services desk" },
-  science: { name: "Hooks science", role: "Science desk" },
-  space: { name: "Hooks space", role: "Space desk" },
-  "health-tech": { name: "Hooks health tech", role: "Health technology desk" },
-  "renewable-energy": { name: "Hooks energy", role: "Renewable energy desk" },
-  "quantum-computing": { name: "Hooks quantum", role: "Quantum computing desk" },
-  "sports-technology": { name: "Hooks sports tech", role: "Sports technology desk" },
-  wearables: { name: "Hooks wearables", role: "Wearables desk" },
-  "sports-science": { name: "Hooks sports science", role: "Sports science desk" },
-  gadgets: { name: "Hooks gadgets", role: "Gadgets desk" },
-  guides: { name: "Hooks editorial", role: "Editorial guides" },
-  launches: { name: "Hooks desk", role: "Launch desk" },
+  news: { name: "MobileX news", role: "News desk" },
+  technology: { name: "MobileX tech", role: "Technology desk" },
+  ai: { name: "MobileX AI", role: "AI desk" },
+  smartphones: { name: "MobileX mobile", role: "Mobile editor" },
+  mobiles: { name: "MobileX mobile", role: "Mobile editor" },
+  chips: { name: "MobileX silicon", role: "Chip desk" },
+  laptops: { name: "MobileX computing", role: "Computing desk" },
+  software: { name: "MobileX software", role: "Software desk" },
+  cybersecurity: { name: "MobileX security", role: "Cybersecurity desk" },
+  "ev-tech": { name: "MobileX mobility", role: "EV technology desk" },
+  robotics: { name: "MobileX robotics", role: "Robotics desk" },
+  "consumer-tech": {
+    name: "MobileX consumer tech",
+    role: "Consumer tech desk",
+  },
+  apps: { name: "MobileX apps", role: "Apps desk" },
+  internet: { name: "MobileX internet", role: "Internet desk" },
+  "cloud-services": { name: "MobileX cloud", role: "Cloud services desk" },
+  science: { name: "MobileX science", role: "Science desk" },
+  space: { name: "MobileX space", role: "Space desk" },
+  "health-tech": {
+    name: "MobileX health tech",
+    role: "Health technology desk",
+  },
+  "renewable-energy": { name: "MobileX energy", role: "Renewable energy desk" },
+  "quantum-computing": {
+    name: "MobileX quantum",
+    role: "Quantum computing desk",
+  },
+  "sports-technology": {
+    name: "MobileX sports tech",
+    role: "Sports technology desk",
+  },
+  wearables: { name: "MobileX wearables", role: "Wearables desk" },
+  "sports-science": {
+    name: "MobileX sports science",
+    role: "Sports science desk",
+  },
+  gadgets: { name: "MobileX gadgets", role: "Gadgets desk" },
+  guides: { name: "MobileX editorial", role: "Editorial guides" },
+  launches: { name: "MobileX desk", role: "Launch desk" },
 };
 
 const CATEGORY_ALIASES = {
@@ -237,9 +252,15 @@ const containsArticleMarkup = (value) =>
   );
 
 const normalizeHtmlContent = (value) => {
-  let text = String(value || "").replace(/\r\n?/g, "\n").trim();
+  let text = String(value || "")
+    .replace(/\r\n?/g, "\n")
+    .trim();
 
-  for (let pass = 0; pass < 3 && text && !containsArticleMarkup(text); pass += 1) {
+  for (
+    let pass = 0;
+    pass < 3 && text && !containsArticleMarkup(text);
+    pass += 1
+  ) {
     const next = decodeHtmlEntitiesOnce(text);
     if (next === text) break;
     text = next;
@@ -296,11 +317,7 @@ const applyInlineBoldMarkers = (value) =>
 const parseBlogTags = (value) => {
   if (Array.isArray(value)) {
     return Array.from(
-      new Set(
-        value
-          .map((item) => safeText(item))
-          .filter(Boolean),
-      ),
+      new Set(value.map((item) => safeText(item)).filter(Boolean)),
     );
   }
 
@@ -512,9 +529,7 @@ const isUsefulParagraph = (value) => {
 };
 
 const splitTitleLines = (value, maxLines = 3, maxCharsPerLine = 18) => {
-  const words = stripMarkup(value)
-    .split(/\s+/)
-    .filter(Boolean);
+  const words = stripMarkup(value).split(/\s+/).filter(Boolean);
 
   if (!words.length) return ["LATEST STORY"];
 
@@ -555,12 +570,19 @@ const escapeSvgText = (value) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
 
-const createFallbackStoryArtwork = ({ category, title, brandName, productType }) => {
+const createFallbackStoryArtwork = ({
+  category,
+  title,
+  brandName,
+  productType,
+}) => {
   const theme = FALLBACK_THEME_BY_CATEGORY[category] || DEFAULT_THEME;
   const titleLines = splitTitleLines(title);
   const categoryLabel = escapeSvgText(getCategoryLabel(category));
   const brandLabel = escapeSvgText(
-    brandName || PRODUCT_TYPE_LABELS[safeText(productType).toLowerCase()] || "Hooks",
+    brandName ||
+      PRODUCT_TYPE_LABELS[safeText(productType).toLowerCase()] ||
+      "MobileX",
   );
   const descriptorLabel = escapeSvgText(
     productType ? String(productType).toUpperCase() : "EDITORIAL COVER",
@@ -635,9 +657,7 @@ const createFallbackStoryArtwork = ({ category, title, brandName, productType })
 };
 
 const clipWords = (value, maxWords = 28) => {
-  const words = stripMarkup(value)
-    .split(/\s+/)
-    .filter(Boolean);
+  const words = stripMarkup(value).split(/\s+/).filter(Boolean);
 
   if (words.length <= maxWords) return words.join(" ");
   return `${words.slice(0, maxWords).join(" ")}...`;
@@ -683,7 +703,7 @@ const shouldUseUpdatedDate = (publishedValue, updatedValue) => {
 
 const formatImageCreditLabel = (...values) => {
   const raw = values.map(safeText).find(Boolean);
-  if (!raw || /^(asset|url|hooks newsroom)$/i.test(raw)) return "";
+  if (!raw || /^(asset|url|mobilex news)$/i.test(raw)) return "";
   if (/^https?:\/\//i.test(raw)) {
     try {
       return new URL(raw).hostname.replace(/^www\./i, "");
@@ -695,9 +715,7 @@ const formatImageCreditLabel = (...values) => {
 };
 
 const estimateReadTime = (value) => {
-  const words = stripMarkup(value)
-    .split(/\s+/)
-    .filter(Boolean).length;
+  const words = stripMarkup(value).split(/\s+/).filter(Boolean).length;
   return `${Math.max(1, Math.ceil(words / 180))} min read`;
 };
 
@@ -766,7 +784,7 @@ const buildTakeaways = ({ blog, body, category }) => {
   return [
     safeText(blog.product_name)
       ? `${safeText(blog.product_name)} is the main story reference in this piece.`
-      : `${getCategoryLabel(category)} coverage from the Hooks news desk.`,
+      : `${getCategoryLabel(category)} coverage from the MobileX news desk.`,
     categoryDetail[category] || null,
     body[1]
       ? clipWords(body[1], 18)
@@ -858,8 +876,12 @@ const normalizeLinkedProductEntries = (blog) => {
 
     byId.set(productId, {
       productId,
-      productType: safeText(product?.product_type || product?.productType).toLowerCase(),
-      name: safeText(product?.name || product?.product_name || product?.productName),
+      productType: safeText(
+        product?.product_type || product?.productType,
+      ).toLowerCase(),
+      name: safeText(
+        product?.name || product?.product_name || product?.productName,
+      ),
       brandName: safeText(product?.brand_name || product?.brandName),
     });
   });
@@ -926,8 +948,8 @@ const normalizeBlogStory = (blog) => {
   const authorRole = resolveBlogAuthorRole(blog);
   const authorImage = resolveBlogAuthorImage(blog);
   const fallbackSummaryByCategory = {
-    news: `${title} is the latest news update from Hooks.`,
-    technology: `${title} is part of the latest technology coverage from Hooks.`,
+    news: `${title} is the latest news update from MobileX.`,
+    technology: `${title} is part of the latest technology coverage from MobileX.`,
     ai: `${title} tracks an AI update with practical technology context.`,
     smartphones: `${title} keeps the smartphone section focused on useful device details.`,
     mobiles: `${title} keeps the mobile section focused on the most useful device details.`,
@@ -949,12 +971,15 @@ const normalizeBlogStory = (blog) => {
       : fallbackSummaryByCategory[category] ||
           `${title} is the latest ${getCategoryLabel(
             category,
-          ).toLowerCase()} update from Hooks.`,
+          ).toLowerCase()} update from MobileX.`,
     24,
   );
   const publishedIso = safeText(blog.published_at) || safeText(blog.updated_at);
   const rawUpdatedIso = safeText(blog.updated_at) || publishedIso;
-  const hasDisplayableUpdate = shouldUseUpdatedDate(publishedIso, rawUpdatedIso);
+  const hasDisplayableUpdate = shouldUseUpdatedDate(
+    publishedIso,
+    rawUpdatedIso,
+  );
   const updatedIso = hasDisplayableUpdate ? rawUpdatedIso : publishedIso;
   const publishedDateLabel = formatDateLabel(publishedIso || updatedIso);
   const updatedDateLabel = formatDateLabel(updatedIso || publishedIso);
@@ -962,7 +987,7 @@ const normalizeBlogStory = (blog) => {
   const author = authorName
     ? {
         name: authorName,
-        role: authorRole || fallbackAuthor?.role || "Hooks news",
+        role: authorRole || fallbackAuthor?.role || "MobileX news",
       }
     : fallbackAuthor;
   const brandName = inferBlogBrandName(blog, linkedProducts);
@@ -1035,13 +1060,17 @@ const normalizeBlogStory = (blog) => {
     trending: Boolean(blog.trending),
     pinned: Boolean(blog.pinned),
     productName: safeText(primaryLinkedProduct?.name || blog.product_name),
-    productType: safeText(primaryLinkedProduct?.productType || blog.product_type).toLowerCase(),
+    productType: safeText(
+      primaryLinkedProduct?.productType || blog.product_type,
+    ).toLowerCase(),
     brandName,
     brandLogo: normalizeBrandLogoUrl(blog.brand_logo),
     tokenSnapshot,
     deviceSpecs: buildDeviceSpecs(tokenSnapshot),
     metaTitle: safeText(blog.meta_title),
     metaDescription: safeText(blog.meta_description),
+    aiSummary: safeText(blog.ai_summary),
+    aiSummaryGeneratedAt: safeText(blog.ai_summary_generated_at),
   };
 };
 
@@ -1083,7 +1112,11 @@ export const createNewsStoryPath = (slug = "") => {
     : toCanonicalPagePath("/news");
 };
 
-export const buildRelatedNewsStories = (stories = [], currentStory = null, limit = 3) => {
+export const buildRelatedNewsStories = (
+  stories = [],
+  currentStory = null,
+  limit = 3,
+) => {
   const currentSlug = safeText(currentStory?.slug);
   if (!currentSlug) return stories.slice(0, limit);
 
@@ -1115,7 +1148,9 @@ export const usePublicNewsFeed = ({
     [endpoint],
   );
   const [stories, setStories] = useState(() => preloadedStories);
-  const [loading, setLoading] = useState(Boolean(enabled && !preloadedStories.length));
+  const [loading, setLoading] = useState(
+    Boolean(enabled && !preloadedStories.length),
+  );
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -1167,10 +1202,7 @@ export const usePublicNewsFeed = ({
 };
 
 export const usePublicNewsStory = (slug = "") => {
-  const storyEndpoint = useMemo(
-    () => buildNewsStoryEndpoint(slug),
-    [slug],
-  );
+  const storyEndpoint = useMemo(() => buildNewsStoryEndpoint(slug), [slug]);
   const preloadedStory = useMemo(() => {
     const payload = readPreloadedApiResponse(storyEndpoint);
     return payload?.blog ? normalizeBlogStory(payload.blog) : null;
@@ -1208,7 +1240,9 @@ export const usePublicNewsStory = (slug = "") => {
       setNotFound(false);
 
       try {
-        const data = await fetchJson(storyEndpoint, { signal: controller.signal });
+        const data = await fetchJson(storyEndpoint, {
+          signal: controller.signal,
+        });
 
         if (!active) return;
         setStory(normalizeBlogStory(data?.blog));
@@ -1243,7 +1277,7 @@ export const useStoryListSchemaItems = (stories = []) =>
     () =>
       stories.map((story) => ({
         name: story.title,
-        url: `https://tryhook.shop${createNewsStoryPath(story.slug)}`,
+        url: `https://mobilex.in${createNewsStoryPath(story.slug)}`,
         image: story.image,
       })),
     [stories],

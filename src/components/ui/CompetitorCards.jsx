@@ -1005,7 +1005,7 @@ const CompetitorCard = ({
     resolveCandidateScore(competitor) ??
     toFiniteNumber(competitor?.competition_score);
   const buyFrom =
-    competitor?.brand_name || competitor?.best_store_name || "Hooks";
+    competitor?.brand_name || competitor?.best_store_name || "MobileX";
   const matchSummary = formatMatchSummary(competitor);
   const cardProductPath =
     productPath || createProductPath("/smartphones", displayName);

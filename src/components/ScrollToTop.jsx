@@ -1,21 +1,46 @@
 import { useEffect, useRef } from "react";
 import { useLocation, useNavigationType } from "react-router-dom";
 
-// ScrollToTop ensures the window scrolls to top (or to an anchor) on navigation.
-// Place this inside a Router so it can observe location changes.
-export default function ScrollToTop({ behavior = "smooth" }) {
-  const { pathname, hash } = useLocation();
+export default function ScrollToTop() {
+  const { pathname, search, hash, key } = useLocation();
   const navigationType = useNavigationType();
-  const previousPathRef = useRef(pathname);
+  const previousRouteRef = useRef(`${pathname}${search}`);
+  const scrollPositionsRef = useRef(new Map());
 
   useEffect(() => {
-    const previousPathname = previousPathRef.current;
-    const pathChanged = pathname !== previousPathname;
-    previousPathRef.current = pathname;
+    if (typeof window === "undefined") return undefined;
 
-    // If there's a hash (anchor), try to scroll to that element.
+    const positions = scrollPositionsRef.current;
+    const saveScrollPosition = () => {
+      positions.set(key, {
+        left: window.scrollX || 0,
+        top: window.scrollY || 0,
+      });
+    };
+
+    window.history.scrollRestoration = "manual";
+    window.addEventListener("scroll", saveScrollPosition, { passive: true });
+
+    return () => {
+      saveScrollPosition();
+      window.removeEventListener("scroll", saveScrollPosition);
+    };
+  }, [key]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const route = `${pathname}${search}`;
+    const routeChanged = route !== previousRouteRef.current;
+    previousRouteRef.current = route;
+
     if (hash) {
-      const id = hash.replace("#", "");
+      let id = hash.slice(1);
+      try {
+        id = decodeURIComponent(id);
+      } catch {
+        // Keep the raw hash when it is not valid URI encoding.
+      }
       let cancelled = false;
       let timerId = null;
 
@@ -24,12 +49,11 @@ export default function ScrollToTop({ behavior = "smooth" }) {
 
         const el = document.getElementById(id);
         if (el) {
-          el.scrollIntoView({ behavior, block: "start" });
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
           try {
-            // move focus for accessibility (best-effort)
-            el.focus && el.focus();
+            el.focus?.({ preventScroll: true });
           } catch {
-            /* ignore focus errors */
+            // Focus is best-effort for non-focusable anchors.
           }
           return;
         }
@@ -39,7 +63,7 @@ export default function ScrollToTop({ behavior = "smooth" }) {
           return;
         }
 
-        window.scrollTo({ top: 0, left: 0, behavior });
+        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
       };
 
       // allow the new route to paint before trying to find the anchor
@@ -52,14 +76,25 @@ export default function ScrollToTop({ behavior = "smooth" }) {
       };
     }
 
-    // Keep scroll position for query-only updates and browser back/forward.
-    if (!pathChanged || navigationType === "POP") {
+    if (!routeChanged) {
       return;
     }
 
-    // Default: scroll to top on actual route change.
-    window.scrollTo({ top: 0, left: 0, behavior });
-  }, [pathname, hash, behavior, navigationType]);
+    if (navigationType === "POP") {
+      const position = scrollPositionsRef.current.get(key);
+      const restore = () =>
+        window.scrollTo({
+          top: position?.top || 0,
+          left: position?.left || 0,
+          behavior: "auto",
+        });
+      window.requestAnimationFrame(() => window.requestAnimationFrame(restore));
+      return undefined;
+    }
+
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    return undefined;
+  }, [pathname, search, hash, key, navigationType]);
 
   return null;
 }

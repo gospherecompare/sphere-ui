@@ -4,7 +4,7 @@ import { useLocation } from "react-router-dom";
 import { normalizeSeoTitle } from "../utils/seoTitle";
 import { toCanonicalPageUrl } from "../utils/publicUrl";
 
-const SITE_ORIGIN = "https://tryhook.shop";
+const SITE_ORIGIN = "https://mobilex.in";
 const DEFAULT_ROBOTS = "index, follow, max-image-preview:large";
 const PRERENDER_SCHEMA_SELECTOR =
   'script[type="application/ld+json"][data-hooks-prerender-schema="true"]';
@@ -82,11 +82,11 @@ const hasMatchingPrerenderSchema = (canonicalUrl) => {
  * @param {string} url - Canonical URL (if not provided, uses window.location.href)
  * @param {string} robots - robots meta directive (default: indexable with large image previews)
  * @param {string} ogType - Open Graph type (default: "website")
- * @param {string} twitterCreator - Twitter creator handle (default: "@tryhooks")
+ * @param {string} twitterCreator - Optional verified Twitter/X creator handle
  *
  * Example - Product Page:
  * <SEO
- *   title="iPhone 15 Pro - Price & Specs - Hooks"
+ *   title="iPhone 15 Pro - Price & Specs - MobileX"
  *   description="Compare iPhone 15 Pro pricing, full specs, and variants"
  *   image="https://cdn.example.com/iphone-15.jpg"
  *   url={canonicalUrl}
@@ -103,7 +103,7 @@ const SEO = ({
   url = null,
   robots = DEFAULT_ROBOTS,
   ogType = "website",
-  twitterCreator = "@tryhooks",
+  twitterCreator = "",
   schema = null,
   schemaType = null,
   children = null,
@@ -245,7 +245,7 @@ const SEO = ({
       )}
       <meta property="og:type" content={ogType} />
       <meta key="og:url" property="og:url" content={canonicalUrl} />
-      <meta property="og:site_name" content="Hooks" />
+      <meta property="og:site_name" content="MobileX" />
       <meta property="og:locale" content="en_IN" />
       {imageMeta && <meta property="og:image" content={imageMeta.url} />}
       {imageMeta && (
@@ -264,7 +264,9 @@ const SEO = ({
 
       {/* ===== TWITTER CARD META TAGS ===== */}
       <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:site" content="@tryhooks" />
+      {twitterCreator ? (
+        <meta name="twitter:site" content={twitterCreator} />
+      ) : null}
       {twitterCreator && (
         <meta name="twitter:creator" content={twitterCreator} />
       )}
@@ -292,7 +294,7 @@ const SEO = ({
         name="apple-mobile-web-app-status-bar-style"
         content="black-translucent"
       />
-      <meta name="apple-mobile-web-app-title" content="Hooks" />
+      <meta name="apple-mobile-web-app-title" content="MobileX" />
       <meta name="format-detection" content="telephone=no" />
 
       {/* ===== STRUCTURED DATA ===== */}

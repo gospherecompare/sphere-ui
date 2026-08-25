@@ -297,6 +297,19 @@ const normalizeSmartphoneCollection = (body, preferredKeys = []) => {
   });
 };
 
+const normalizeSmartphonePage = (body) => ({
+  items: normalizeSmartphoneCollection(body, ["new", "smartphones"]),
+  pagination:
+    body && typeof body === "object" && body.page != null
+      ? {
+          page: Number(body.page) || 1,
+          limit: Number(body.limit) || 20,
+          total: Number(body.total) || 0,
+          hasNext: Boolean(body.hasNext),
+        }
+      : null,
+});
+
 const normalizeNetworkingCollection = (body, preferredKeys = []) =>
   pickArrayFromBody(body, preferredKeys);
 
@@ -497,9 +510,16 @@ const buildPreloadedDeviceState = () => {
   const next = {};
   const readBodyForPath = (path) => {
     for (const baseUrl of API_BASE_URL_ALIASES) {
-      const url = `${baseUrl}${path}`;
-      if (Object.prototype.hasOwnProperty.call(byUrl, url)) {
-        return byUrl[url];
+      const candidates = [
+        `${baseUrl}${path}`,
+        path === "/smartphones"
+          ? `${baseUrl}/smartphones?page=1&limit=20`
+          : null,
+      ].filter(Boolean);
+      for (const url of candidates) {
+        if (Object.prototype.hasOwnProperty.call(byUrl, url)) {
+          return byUrl[url];
+        }
       }
     }
     return undefined;
@@ -514,6 +534,17 @@ const buildPreloadedDeviceState = () => {
       ]);
       next.smartphone = smartphones;
       next.smartphoneAll = smartphones;
+      next.smartphonePagination =
+        smartphoneBody &&
+        typeof smartphoneBody === "object" &&
+        smartphoneBody.page != null
+          ? {
+              page: Number(smartphoneBody.page) || 1,
+              limit: Number(smartphoneBody.limit) || 20,
+              total: Number(smartphoneBody.total) || smartphones.length,
+              hasNext: Boolean(smartphoneBody.hasNext),
+            }
+          : null;
       next.loaded = true;
     }
   } catch {
@@ -582,10 +613,16 @@ export const fetchSmartphones = createAsyncThunk(
   // Accept an optional options object: { feature }
   async (opts = {}, { rejectWithValue }) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/smartphones`);
+      const params = new URLSearchParams();
+      if (opts.page != null) params.set("page", String(opts.page));
+      if (opts.limit != null) params.set("limit", String(opts.limit));
+      const query = params.toString();
+      const res = await fetch(
+        `${API_BASE_URL}/smartphones${query ? `?${query}` : ""}`,
+      );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      return normalizeSmartphoneCollection(data, ["new", "smartphones"]);
+      return normalizeSmartphonePage(data);
     } catch (err) {
       return rejectWithValue(err.message || String(err));
     }
@@ -594,6 +631,7 @@ export const fetchSmartphones = createAsyncThunk(
     condition: (opts, { getState }) => {
       if (opts && opts.force === true) return true;
       const state = getState();
+      if (opts?.page && opts.page > 1) return true;
       return !state?.device?.loading && !state?.device?.loaded;
     },
   },
@@ -962,6 +1000,7 @@ const initialState = {
   smartphone: [],
   // always keep the full list available (feature/trending/new pages can set `smartphone`)
   smartphoneAll: [],
+  smartphonePagination: null,
   networking: [],
   homeAppliances: [],
   // flat registry for quick lookups by type:id
@@ -1128,8 +1167,10 @@ const deviceSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchSmartphones.fulfilled, (state, action) => {
-        state.smartphone = action.payload || [];
-        state.smartphoneAll = action.payload || [];
+        const page = action.payload?.items || action.payload || [];
+        state.smartphone = page;
+        state.smartphoneAll = page;
+        state.smartphonePagination = action.payload?.pagination || null;
         state.loading = false;
         state.loaded = true;
         state.error = null;

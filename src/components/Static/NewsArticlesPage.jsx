@@ -62,7 +62,7 @@ const NEWS_TAXONOMY = [
     slug: "technology",
     label: "Technology",
     title: "Technology News",
-    eyebrow: "TryHook Technology Desk",
+    eyebrow: "MobileX Technology Desk",
     description:
       "AI, smartphones, chips, laptops, cybersecurity, software, robotics, and the product shifts shaping what people buy next.",
     accent: "from-[#0f172a] via-[#1d4ed8] to-[#06b6d4]",
@@ -490,7 +490,7 @@ const filterStoriesForTaxonomyRoute = (stories = [], route = null) =>
     : stories;
 
 const getNewsPageTitle = (route = null) =>
-  route ? `${route.title} - TryHook News` : NEWS_LISTING_SEO.title;
+  route ? `${route.title} - MobileX News` : NEWS_LISTING_SEO.title;
 
 const getNewsPageDescription = (route = null) =>
   route ? route.description : NEWS_LISTING_SEO.description;
@@ -712,7 +712,7 @@ const StoryAuthorLine = ({ story, light = false, compact = false }) => (
       ) : null}
     </span>
     <span className="hooks-news-author__copy">
-      <strong>{story?.author || "Hooks Newsroom"}</strong>
+      <strong>{story?.author || "MobileX News"}</strong>
       <i aria-hidden="true" />
       <span>
         {compact
@@ -726,33 +726,42 @@ const StoryAuthorLine = ({ story, light = false, compact = false }) => (
 const NewsHero = ({ title, description, leadStory }) => (
   <section className="hooks-news-hero">
     <div className="hooks-news-hero__mesh" aria-hidden="true" />
-    <div className="mx-auto max-w-[1280px] px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
+    <div className="mx-auto max-w-[1280px] px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
       <div className="hooks-news-hero__grid">
         <div className="hooks-news-hero__copy">
-          <p className="hooks-eyebrow">Hooks Newsroom</p>
+          <p className="hooks-eyebrow">MobileX News</p>
           <h1>{title}</h1>
           <p>{description}</p>
 
-          <div className="hooks-news-hero__actions">
+          <div className="hooks-news-hero__actions" aria-label="News shortcuts">
             <a href="#latest" className="hooks-news-hero__primary-action">
-              <FaNewspaper aria-hidden="true" />
-              Read latest news
+              <FaNewspaper className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>Read latest news</span>
             </a>
             <a href="#guides" className="hooks-news-hero__secondary-action">
-              <FaBookOpen aria-hidden="true" />
-              Explore guides
+              <FaBookOpen className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>Explore guides</span>
             </a>
           </div>
 
-          <div className="hooks-news-hero__signals">
+          <div
+            className="hooks-news-hero__signals"
+            aria-label="News service highlights"
+          >
             <span>
-              <FaSignal /> Live newsroom
+              <FaSignal className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />{" "}
+              Live updates
             </span>
             <span>
-              <FaClock /> Updated continuously
+              <FaClock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />{" "}
+              Updated continuously
             </span>
             <span>
-              <FaChartLine /> Buying context included
+              <FaChartLine
+                className="h-3.5 w-3.5 shrink-0"
+                aria-hidden="true"
+              />{" "}
+              Buying context
             </span>
           </div>
         </div>
@@ -763,16 +772,16 @@ const NewsHero = ({ title, description, leadStory }) => (
 
           <div className="hooks-news-hero__news-card">
             <span className="hooks-news-hero__card-kicker">
-              Hooks intelligence
+              MobileX intelligence
             </span>
             <strong>NEWS</strong>
-            <p className="!font-[Space_Grotesk] !text-white/85 !text-[0.78rem] !font-bold !leading-[1.15] !tracking-[-0.04em]">
+            <p className="!font-[Space_Grotesk] !text-white/85 !text-[0.82rem] !font-bold !leading-[1.18] !tracking-[-0.04em]">
               Smarter insights.
               <br />
               Better decisions.
             </p>
             <span className="hooks-news-hero__card-badge">
-              <FaBolt /> Hooks newsroom
+              <FaBolt className="h-3 w-3" /> MobileX news
             </span>
           </div>
 
@@ -780,7 +789,7 @@ const NewsHero = ({ title, description, leadStory }) => (
             {leadStory?.image ? (
               <img src={leadStory.image} alt="" loading="eager" />
             ) : (
-              <FaMobileAlt />
+              <FaMobileAlt className="h-8 w-8" />
             )}
             <span>Product intelligence</span>
           </div>
@@ -792,7 +801,7 @@ const NewsHero = ({ title, description, leadStory }) => (
             <i />
           </div>
 
-          <FaRocket className="hooks-news-hero__spark" />
+          <FaRocket className="hooks-news-hero__spark" aria-hidden="true" />
         </div>
       </div>
     </div>
@@ -998,22 +1007,27 @@ const TopNewsSection = ({ stories = [] }) => {
             className="hooks-news-top__lead-image"
           />
           <div className="hooks-news-top__lead-overlay" aria-hidden="true" />
+
           <div className="hooks-news-top__lead-content">
             <div className="hooks-news-top__lead-meta">
               <span className="hooks-news-top__badge">
-                <FaBolt aria-hidden="true" />
+                <FaBolt className="h-3.5 w-3.5" aria-hidden="true" />
                 Lead story
               </span>
               <time>{formatStoryDate(leadStory)}</time>
             </div>
+
             <h3>{leadStory.title}</h3>
-            <p>{leadStory.summary}</p>
+
+            {leadStory.summary ? <p>{leadStory.summary}</p> : null}
+
             <div className="hooks-news-top__lead-footer">
               <StoryAuthorLine story={leadStory} light />
+
               <span className="hooks-news-top__read" aria-hidden="true">
-                Read full story
+                <span>Read full story</span>
                 <span className="hooks-news-top__arrow">
-                  <FaArrowRight />
+                  <FaArrowRight className="h-3.5 w-3.5" />
                 </span>
               </span>
             </div>
@@ -1031,27 +1045,26 @@ const TopNewsSection = ({ stories = [] }) => {
                 story={story}
                 className="hooks-news-top__support-image"
               />
+
               <div className="hooks-news-top__support-copy">
                 <div className="hooks-news-top__support-meta">
                   <span>{formatStoryLabel(story)}</span>
                   <time>{formatStoryDate(story)}</time>
                 </div>
+
                 <h3>{story.title}</h3>
-                {story.summary ? (
-                  <p className="hooks-news-top__support-summary">
-                    {story.summary}
-                  </p>
-                ) : null}
+
                 <div className="hooks-news-top__support-footer">
-                  <StoryAuthorLine story={story} />
+                  <StoryAuthorLine story={story} compact />
                   <span
                     className="hooks-news-top__support-arrow"
                     aria-hidden="true"
                   >
-                    <FaArrowRight />
+                    <FaArrowRight className="h-3 w-3" />
                   </span>
                 </div>
               </div>
+
               <span className="hooks-news-top__index" aria-hidden="true">
                 {String(index + 2).padStart(2, "0")}
               </span>
@@ -1127,7 +1140,7 @@ const LatestNewsTimeline = ({ stories = [] }) => {
       <SectionHeader
         title="Latest News"
         eyebrow="Just published"
-        actionLabel="Browse newsroom"
+        actionLabel="Browse news"
       />
 
       <div className="hooks-news-latest__list">
@@ -1145,20 +1158,21 @@ const LatestNewsTimeline = ({ stories = [] }) => {
               <div className="hooks-news-latest__meta">
                 <span>{getLatestStoryPill(story)}</span>
                 <time>
-                  <FaClock aria-hidden="true" />
+                  <FaClock className="h-3 w-3 shrink-0" aria-hidden="true" />
                   {formatStoryDate(story)}
                 </time>
               </div>
+
               <h3>{story.title}</h3>
-              <p>{story.summary}</p>
-              <StoryAuthorLine story={story} compact />
+
+              {story.summary ? <p>{story.summary}</p> : null}
             </div>
 
             <StoryImage story={story} className="hooks-news-latest__image" />
 
             <span className="hooks-news-latest__arrow" aria-hidden="true">
               <span>Read</span>
-              <FaArrowRight />
+              <FaArrowRight className="h-3 w-3" />
             </span>
           </Link>
         ))}
@@ -1585,7 +1599,7 @@ const NewsArticlesPage = () => {
     (!taxonomyRoute || hasExtraNewsRouteSegments);
   const canonicalPath = taxonomyRoute?.path || "/news";
   const canonical = taxonomyRoute
-    ? `https://tryhook.shop${canonicalPath}`
+    ? `https://mobilex.in${canonicalPath}`
     : NEWS_LISTING_SEO.canonicalUrl;
   const { stories, loading, error } = usePublicNewsFeed({
     limit: NEWS_GRID_LIMIT,
@@ -1605,11 +1619,11 @@ const NewsArticlesPage = () => {
   const display = useMemo(
     () => ({
       spotlight: layout.spotlight.slice(0, 2),
-      topNews: layout.topNews.slice(0, isMobileLayout ? 3 : 9),
+      topNews: layout.topNews.slice(0, isMobileLayout ? 5 : 9),
       reviews: layout.reviews.slice(0, isMobileLayout ? 2 : 4),
       guides: layout.guides.slice(0, isMobileLayout ? 2 : 6),
       launches: layout.launches.slice(0, isMobileLayout ? 2 : 6),
-      latest: layout.latest.slice(0, isMobileLayout ? 3 : 12),
+      latest: layout.latest.slice(0, isMobileLayout ? 5 : 12),
       trendingSide: layout.trending.slice(0, isMobileLayout ? 3 : 5),
       recentSide: layout.latest.slice(0, isMobileLayout ? 3 : 6),
       launchSide: layout.launches.slice(0, isMobileLayout ? 3 : 6),
@@ -1638,20 +1652,20 @@ const NewsArticlesPage = () => {
 
   const pageSchema = [
     createBreadcrumbSchema([
-      { label: "Home", url: "https://tryhook.shop/" },
+      { label: "Home", url: "https://mobilex.in/" },
       { label: "News", url: NEWS_LISTING_SEO.canonicalUrl },
       ...(taxonomyRoute
         ? [{ label: taxonomyRoute.title, url: canonical }]
         : []),
     ]),
     createCollectionSchema({
-      name: taxonomyRoute?.title || "Hooks News",
+      name: taxonomyRoute?.title || "MobileX News",
       description: pageDescription,
       url: canonical,
-      image: "https://tryhook.shop/hook-logo.png",
+      image: "https://mobilex.in/mobilex-favicon.svg",
     }),
     createWebPageSchema({
-      name: taxonomyRoute?.title || "Hooks News",
+      name: taxonomyRoute?.title || "MobileX News",
       description: pageDescription,
       url: canonical,
     }),
@@ -1670,7 +1684,7 @@ const NewsArticlesPage = () => {
         url={canonical}
         robots="index, follow, max-image-preview:large"
         ogType="website"
-        image="https://tryhook.shop/hook-logo.png"
+        image="https://mobilex.in/mobilex-favicon.svg"
         schema={pageSchema}
       />
 

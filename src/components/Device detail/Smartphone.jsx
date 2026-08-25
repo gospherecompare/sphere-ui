@@ -12,7 +12,6 @@ import SmartphoneFaqSection from "../ui/SmartphoneFaqSection";
 import { useDevice } from "../../hooks/useDevice";
 import { buildClientSmartphoneFaqs } from "../../utils/smartphoneFaqs";
 
-import useTitle from "../../hooks/useTitle";
 import usePageEngagementTracker from "../../hooks/usePageEngagementTracker";
 import {
   FaShare,
@@ -53,6 +52,7 @@ import "../../styles/hideScrollbar.css";
 import Spinner from "../ui/Spinner";
 import NotFound from "../Static/NotFound";
 import Breadcrumbs from "../Breadcrumbs";
+import ProductAiSummary from "../Product/ProductAiSummary";
 import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import SEO from "../SEO";
 import { smartphoneMeta } from "../../constants/meta";
@@ -76,14 +76,33 @@ import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
 import { toCanonicalPageUrl } from "../../utils/publicUrl";
 import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
 import DetailPageNavigator from "../ui/DetailPageNavigator";
-import HookLogo from "../ui/HookLogo";
 import { SMARTPHONE_FEATURE_CATALOG } from "../../utils/smartphonePopularFeatures";
+
+const MobileXScoreLogo = ({ className }) => (
+  <svg
+    viewBox="0 0 874 420"
+    className={className}
+    preserveAspectRatio="xMidYMid meet"
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    role="img"
+    aria-label="MobileX"
+  >
+    <path
+      fill="#111318"
+      d="M0 419H99L101 142L288 327L471 145L400 75L288 185L101 0H0V419Z"
+    />
+    <path fill="#111318" d="M365 0L568 202L357 419H476L689 202L488 0H365Z" />
+    <path fill="#2563EB" d="M868 0H746L639 117L700 179L868 0Z" />
+    <path fill="#2563EB" d="M631 298L746 420H874L694 235L631 298Z" />
+  </svg>
+);
 
 const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
 const SMARTPHONE_SEO_SUFFIX_ALIAS = "-price-in-indi";
 const RECENT_STORAGE_KEY = "hooks_recent_smartphones_v1";
 const MAX_RECENT_ITEMS = 12;
-const SITE_ORIGIN = "https://tryhook.shop";
+const SITE_ORIGIN = "https://mobilex.in";
 const LINKED_NEWS_LIMIT = 3;
 const CURRENT_MONTH_YEAR = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -458,7 +477,7 @@ const LinkedNewsStoryCard = ({ story }) => {
   if (!story?.slug || !story?.title) return null;
 
   const storyPath = createNewsStoryPath(story.slug);
-  const authorLabel = story?.author || "Hooks news";
+  const authorLabel = story?.author || "MobileX news";
   const linkedProductNames = Array.isArray(story?.linkedProductNames)
     ? story.linkedProductNames.filter(Boolean)
     : [];
@@ -955,14 +974,6 @@ const MobileDetailCard = () => {
       localResolved?.id ?? localResolved?.product_id ?? routeProductId ?? null;
     if (resolvedId == null) return;
     const fetchKey = `${routeSlug}:${resolvedId}`;
-    const selectedId =
-      selectedResolvedForRoute?.id ??
-      selectedResolvedForRoute?.product_id ??
-      null;
-    if (selectedId != null && String(selectedId) === String(resolvedId)) {
-      detailFetchKeyRef.current = fetchKey;
-      return;
-    }
     if (detailFetchKeyRef.current === fetchKey) return;
     detailFetchKeyRef.current = fetchKey;
     fetchDevice(resolvedId);
@@ -2088,18 +2099,6 @@ const MobileDetailCard = () => {
     },
     [scoreSummary],
   );
-  const smartphoneTabTitle = mobileData?.name
-    ? smartphoneMeta.title({
-        name: mobileData?.name || mobileData?.model || "",
-        brand: mobileData?.brand || mobileData?.brand_name || "",
-      })
-    : `Smartphone Details - See full specifications, price & more (${CURRENT_MONTH_YEAR}) - Hooks`;
-
-  useTitle({
-    page: smartphoneTabTitle,
-    siteName: "",
-  });
-
   useEffect(() => {
     if (error) console.error("Device fetch error:", error);
   }, [error]);
@@ -5256,7 +5255,7 @@ Price: ${price}
   }
 
   return (
-    <div className="hooks-product-detail m-0 w-full bg-[#f3f6fb] text-slate-950 dark:bg-[#07111f] dark:text-slate-100">
+    <div className="hooks-product-detail m-0 w-full bg-white text-slate-950 dark:bg-[#07111f] dark:text-slate-100">
       <SEO
         title={metaTitle}
         description={metaDescription}
@@ -5342,7 +5341,7 @@ Price: ${price}
 
         <section
           id="detail-overview"
-          className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full overflow-hidden bg-[#f3f6fb] dark:bg-[#0a1628]"
+          className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full overflow-hidden bg-white dark:bg-[#0a1628]"
         >
           <Breadcrumbs variant="plain" />
 
@@ -5377,7 +5376,7 @@ Price: ${price}
                     ) : null}
 
                     <div className="order-1 sm:order-2">
-                      <div className="relative flex min-h-[330px] items-center justify-center overflow-hidden rounded-[22px] bg-[#ffffff] p-6 dark:bg-[#0f1f34] dark:shadow-none sm:min-h-[430px] sm:p-8">
+                      <div className="relative flex min-h-[330px] items-center justify-center overflow-hidden rounded-[22px] bg-[#ffffff] p-6 shadow-[0_18px_40px_rgba(15,23,42,0.10)] dark:bg-[#0f1f34] dark:shadow-none sm:min-h-[430px] sm:p-8">
                         <SmartphoneOrbitArtwork />
                         {carouselImages.length > 1 ? (
                           <>
@@ -5531,10 +5530,7 @@ Price: ${price}
                   <div className="relative z-[1] mt-5 grid gap-3 sm:grid-cols-2">
                     {headerSpecScoreValue != null ? (
                       <div className="flex items-center gap-3 rounded-2xl  p-4   dark:bg-[#111f34]/80 dark:shadow-none">
-                        <HookLogo
-                          aria-label="Hooks"
-                          className="h-11 w-11 shrink-0 rounded-xl object-cover"
-                        />
+                        <MobileXScoreLogo className="h-11 w-11 shrink-0 rounded-xl object-cover" />
                         <div>
                           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                             Spec score
@@ -5623,6 +5619,10 @@ Price: ${price}
                       </button>
                     ))}
                   </div>
+
+                  {mobileData?.aiSummary ? (
+                    <ProductAiSummary summary={mobileData.aiSummary} />
+                  ) : null}
 
                   <button
                     type="button"
@@ -5818,7 +5818,7 @@ Price: ${price}
 
         <div
           id="detail-competitors"
-          className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-[#f3f6fb] dark:bg-[#07111f]"
+          className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-white dark:bg-[#07111f]"
         >
           <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
             <div className="mx-auto w-full max-w-7xl space-y-4 sm:space-y-6">
@@ -5850,7 +5850,7 @@ Price: ${price}
           </div>
         </div>
 
-        <div className="w-full bg-[#f3f6fb] dark:bg-[#07111f]">
+        <div className="w-full bg-white dark:bg-[#07111f]">
           <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
             <div className="mx-auto w-full max-w-7xl">{renderTabContent()}</div>
           </div>
@@ -5858,7 +5858,7 @@ Price: ${price}
 
         <div
           id="detail-news"
-          className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-[#f3f6fb] dark:bg-[#07111f]"
+          className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-white dark:bg-[#07111f]"
         >
           {shouldShowLinkedNews ? (
             <div className="w-full">
@@ -5916,7 +5916,7 @@ Price: ${price}
         {smartphoneFaqItems.length > 0 ? (
           <div
             id="detail-faqs"
-            className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-[#f3f6fb] dark:bg-[#07111f]"
+            className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-white dark:bg-[#07111f]"
           >
             <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
               <div className="mx-auto w-full max-w-7xl">
@@ -5930,7 +5930,7 @@ Price: ${price}
         ) : null}
 
         {recentlyViewed.length > 0 ? (
-          <section className="w-full bg-[#f3f6fb] dark:bg-[#07111f]">
+          <section className="w-full bg-white dark:bg-[#07111f]">
             <div className="mx-auto w-full max-w-[1440px] px-3 pb-10 pt-6 sm:px-6 sm:pb-12 lg:px-8">
               <div className="mx-auto w-full max-w-7xl bg-transparent dark:bg-transparent">
                 <div className="flex items-end justify-between gap-4">

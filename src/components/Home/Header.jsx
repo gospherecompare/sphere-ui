@@ -100,32 +100,95 @@ import {
   FaCompass,
 } from "react-icons/fa";
 
-const BrandIdentity = ({ variant = "desktop" }) => {
+const BrandIdentity = ({ variant = "desktop", darkBackground = false }) => {
   const isDesktop = variant === "desktop";
-  const isMobile = variant === "mobile";
 
-  const brandClass = isDesktop
-    ? "text-[24px] tracking-[0.03em] lg:text-[26px]"
-    : isMobile
-      ? "text-[18px] tracking-[0.02em] sm:text-[19px]"
-      : "text-[18px] tracking-[0.02em]";
-  const wrapperClass = isDesktop ? "gap-2.5" : "gap-2";
-  const brandTone = "bg-blue-500 bg-clip-text text-transparent";
-  const brandShadow = isDesktop
-    ? "drop-shadow-[0_10px_22px_rgba(99,102,241,0.18)]"
-    : "drop-shadow-[0_8px_16px_rgba(99,102,241,0.14)]";
+  const logoClass = isDesktop
+    ? "h-[34px] w-[72px] lg:h-[28px] lg:w-[80px]"
+    : "h-[20px] w-[50px]";
+  // White header  -> dark M / blue X
+  // Dark favicon   -> white M / blue X
+  const primaryColor = darkBackground ? "#FFFFFF" : "#111318";
+  const accentColor = "#2563EB";
 
   return (
-    <span className={`inline-flex items-center min-w-0 ${wrapperClass} group`}>
-      <span
-        className={`luckiest-guy-regular inline-block ${brandClass} ${brandTone} ${brandShadow} font-semibold leading-[1.02] pt-1 transition-all`}
+    <span
+      className={`inline-flex shrink-0 items-center ${logoClass}`}
+      aria-label="MobileX"
+      role="img"
+    >
+      <svg
+        viewBox="0 0 874 420"
+        className="block h-full w-full"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
       >
-        Hooks
-      </span>
+        {/* =========================
+            M / LEFT GEOMETRY
+        ========================== */}
+        <path
+          fill={primaryColor}
+          d="
+            M0 419
+            H99
+            L101 142
+            L288 327
+            L471 145
+            L400 75
+            L288 185
+            L101 0
+            H0
+            Z
+          "
+        />
+
+        {/* =========================
+            CENTRAL CHEVRON / CUT
+        ========================== */}
+        <path
+          fill={primaryColor}
+          d="
+            M365 0
+            L568 202
+            L357 419
+            H476
+            L689 202
+            L488 0
+            Z
+          "
+        />
+
+        {/* =========================
+            X - TOP ARM
+        ========================== */}
+        <path
+          fill={accentColor}
+          d="
+            M868 0
+            H746
+            L639 117
+            L700 179
+            Z
+          "
+        />
+
+        {/* =========================
+            X - BOTTOM ARM
+        ========================== */}
+        <path
+          fill={accentColor}
+          d="
+            M631 298
+            L746 420
+            H874
+            L694 235
+            Z
+          "
+        />
+      </svg>
     </span>
   );
 };
-
 const SEARCH_SUGGESTION_LIMIT = 5;
 const MOBILE_HEADER_SHOW_TOP_OFFSET = 80;
 const MOBILE_HEADER_SHOW_BOTTOM_OFFSET = 160;
@@ -1796,11 +1859,11 @@ const Header = () => {
       <div
         className={`animate-pulse ${
           isMobileVariant
-            ? "group rounded-2xl border border-blue-100/70 bg-white/80 px-4 py-4 shadow-sm"
-            : "w-full flex items-center gap-3 border-b border-blue-100/70 px-4 py-4 last:border-b-0"
+            ? "group rounded-xl border border-slate-200 bg-slate-50 px-4 py-4"
+            : "w-full flex items-center gap-3 border-b border-slate-200 px-4 py-4 last:border-b-0"
         }`}
       >
-        <div className="h-12 w-12 shrink-0 rounded-md bg-gradient-to-br from-blue-100 via-indigo-100 to-cyan-100 ring-1 ring-blue-100" />
+        <div className="h-12 w-12 shrink-0 rounded-md bg-slate-200 ring-1 ring-slate-200" />
         <div className="min-w-0 flex-1">
           <div className="h-4 w-3/5 rounded-full bg-slate-200/90" />
         </div>
@@ -1817,7 +1880,7 @@ const Header = () => {
         variant === "mobile" ? "px-6 py-10" : "px-4 py-8"
       }`}
     >
-      <div className="flex h-14 w-14 items-center justify-center rounded-md bg-gradient-to-br from-blue-50 via-white to-cyan-50 text-[#345ce3] ring-1 ring-blue-100">
+      <div className="flex h-14 w-14 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-[#345ce3]">
         <FaSearch className="h-5 w-5" />
       </div>
       <p className="mt-4 text-sm font-semibold text-slate-900">
@@ -1836,6 +1899,57 @@ const Header = () => {
 
   const HighlightText = ({ text }) => text || "";
 
+  const getSuggestionBrandAndModel = (suggestion) => {
+    const rawName = readFirstText(
+      suggestion?.name,
+      suggestion?.model,
+      suggestion?.product_name,
+      suggestion?.productName,
+      suggestion?.model_name,
+      suggestion?.modelName,
+    );
+    const brand = readFirstText(
+      suggestion?.brand,
+      suggestion?.brand_name,
+      suggestion?.brandName,
+      suggestion?.manufacturer,
+    );
+
+    if (brand && rawName) {
+      const normalizedBrand = String(brand).trim();
+      const normalizedName = String(rawName).trim();
+      if (
+        normalizedName.toLowerCase().startsWith(normalizedBrand.toLowerCase())
+      ) {
+        const model = normalizedName.slice(normalizedBrand.length).trim();
+        return {
+          brand: normalizedBrand,
+          model: model || normalizedName,
+        };
+      }
+    }
+
+    return {
+      brand: brand || "",
+      model: rawName || "",
+    };
+  };
+
+  const getSuggestionTypeLabel = (suggestion) => {
+    const typeText = readFirstText(
+      suggestion?.type,
+      suggestion?.product_type,
+      suggestion?.productType,
+      suggestion?.category,
+    );
+    if (!typeText) return "Product";
+    const normalized = String(typeText).trim();
+    if (normalized.toLowerCase() === "smartphone") return "Smartphone";
+    if (normalized.toLowerCase() === "tv") return "TV";
+    if (normalized.toLowerCase() === "brand") return "Brand";
+    return normalized;
+  };
+
   const SuggestionRow = ({
     suggestion,
     query,
@@ -1849,17 +1963,18 @@ const Header = () => {
     const isMobileVariant = variant === "mobile";
     const TypeIcon = getSuggestionTypeIcon(suggestion);
     const imageUrl = getSuggestionImage(suggestion);
+    const { brand, model } = getSuggestionBrandAndModel(suggestion);
+    const typeLabel = getSuggestionTypeLabel(suggestion);
+    const modelText = model || brand || readFirstText(suggestion?.name, suggestion?.model);
 
     const buttonClasses = isMobileVariant
-      ? `group flex w-full items-center gap-2.5 overflow-hidden rounded-2xl border px-3 py-3 text-left shadow-[0_10px_24px_rgba(59,130,246,0.08)] transition-all duration-200 ${
+      ? `group flex w-full items-center gap-3 px-2 py-3 text-left transition-colors duration-200 border-b border-slate-200 bg-transparent last:border-b-0 ${
+          selected ? "bg-blue-50/40" : "hover:bg-slate-50 focus:bg-blue-50/40"
+        } focus:outline-none`
+      : `group relative flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors duration-200 border-b border-slate-200 last:border-b-0 ${
           selected
-            ? "border-blue-200 bg-blue-50/90 shadow-[0_14px_30px_rgba(59,130,246,0.12)]"
-            : "border-blue-100 bg-white/95 hover:border-blue-200 hover:shadow-[0_14px_30px_rgba(59,130,246,0.1)] active:bg-blue-50"
-        }`
-      : `group relative flex w-full items-center gap-3 px-4 py-3.5 text-left transition-all duration-200 border-b border-blue-100/70 last:border-b-0 ${
-          selected
-            ? "bg-blue-50/90"
-            : "bg-white/90 hover:bg-blue-50/60 active:bg-blue-100/70"
+            ? "border-blue-500 bg-blue-50/50"
+            : "bg-white hover:border-blue-300 hover:bg-blue-50/20 active:bg-blue-50/30"
         }`;
 
     return (
@@ -1880,28 +1995,22 @@ const Header = () => {
       >
         {!isMobileVariant ? (
           <span
-            className={`absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-[#345ce3] via-blue-500 to-cyan-400 transition-opacity duration-200 ${
+            className={`absolute inset-y-0 left-0 w-1 rounded-r-md bg-blue-500 transition-opacity duration-200 ${
               selected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
             }`}
           />
         ) : null}
 
         <div
-          className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-md ring-1 ring-blue-100 transition group-hover:ring-blue-200 ${
-            isMobileVariant ? "h-11 w-11" : "h-12 w-12"
-          } ${
-            imageUrl
-              ? "bg-white"
-              : "bg-gradient-to-br from-blue-50 via-white to-cyan-50"
+          className={`relative grid shrink-0 place-items-center overflow-hidden bg-slate-50 ${
+            isMobileVariant ? "h-11 w-11 rounded-lg" : "h-12 w-12 rounded-lg"
           }`}
         >
           {imageUrl ? (
             <img
               src={imageUrl}
               alt={suggestion.name}
-              className={`h-full w-full object-contain ${
-                isMobileVariant ? "p-1" : "p-1.5"
-              }`}
+              className="h-full w-full object-contain p-1.5"
               loading="lazy"
               onError={(e) => {
                 e.currentTarget.style.display = "none";
@@ -1913,21 +2022,19 @@ const Header = () => {
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="line-clamp-2 text-[13px] font-semibold leading-snug text-slate-900 transition group-hover:text-[#345ce3] sm:text-[15px]">
-            <HighlightText
-              text={readFirstText(suggestion?.name, suggestion?.model)}
-              query={query}
-            />
+          {brand ? (
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-blue-600">
+              <HighlightText text={brand} query={query} />
+            </p>
+          ) : null}
+          <p
+            className={`text-[15px] font-bold leading-5 text-slate-900 ${
+              isMobileVariant ? "truncate" : "truncate"
+            }`}
+          >
+            <HighlightText text={modelText} query={query} />
           </p>
         </div>
-
-        <FaChevronRight
-          className={`relative shrink-0 transition group-hover:translate-x-0.5 group-hover:text-[#345ce3] ${
-            isMobileVariant
-              ? "h-3.5 w-3.5 text-slate-400"
-              : "h-3.5 w-3.5 text-slate-300"
-          }`}
-        />
       </button>
     );
   };
@@ -1941,7 +2048,7 @@ const Header = () => {
     }
 
     return (
-      <div className="absolute right-0 top-full z-[80] mt-2 w-[min(440px,calc(100vw-48px))] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_22px_50px_rgba(15,23,42,0.18)] ring-1 ring-slate-950/5">
+      <div className="absolute right-0 top-full z-[80] mt-2 w-[min(440px,calc(100vw-48px))] overflow-hidden rounded-xl border border-slate-200 bg-white">
         <div className="max-h-[420px] overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {!searchSuggestions || searchSuggestions.length === 0 ? (
             searchQuery.trim() ? (
@@ -2002,7 +2109,7 @@ const Header = () => {
 
             {/* Search Modal - Full screen on mobile using 100dvh */}
             <div
-              className="fixed inset-0 z-[80] flex flex-col overflow-hidden bg-white lg:inset-auto lg:left-0 lg:right-0 lg:top-16 lg:shadow-lg"
+              className="fixed inset-0 z-[80] flex flex-col overflow-hidden bg-white lg:inset-auto lg:left-0 lg:right-0 lg:top-16"
               style={{
                 height: "100dvh",
                 maxHeight: "100dvh",
@@ -2011,7 +2118,7 @@ const Header = () => {
               onClick={(e) => e.stopPropagation()}
             >
               {/* Search Input Section - Sticky */}
-              <div className="w-full px-2 sm:px-4 py-3 sm:py-4 bg-white sticky top-0 z-10 border-b border-gray-100 flex-shrink-0 shadow-sm">
+              <div className="w-full px-2 sm:px-4 py-3 sm:py-4 bg-white sticky top-0 z-10 border-b border-slate-200 flex-shrink-0">
                 <div className="flex items-center gap-2 sm:gap-3">
                   {/* Back Button */}
                   <button
@@ -2020,10 +2127,10 @@ const Header = () => {
                       setSearchQuery("");
                       setShowSearchSuggestions(false);
                     }}
-                    className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+                    className="p-1.5 sm:p-2 hover:bg-slate-50 rounded-lg transition-colors flex-shrink-0 text-slate-700"
                     aria-label="Go back"
                   >
-                    <FaArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700" />
+                    <FaArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
 
                   {/* Search Input */}
@@ -2043,12 +2150,12 @@ const Header = () => {
                         }
                         handleSearchKeyDown(e);
                       }}
-                      className="w-full px-4 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base bg-gradient-to-r from-blue-50/80 via-white to-cyan-50/60 border border-blue-100 rounded-full focus:outline-none focus:border-[#345ce3] focus:ring-2 focus:ring-[#345ce3]/10 transition-all placeholder-slate-400 font-medium"
+                      className="h-11 w-full rounded-xl border border-blue-600 bg-white px-4 text-[14px] font-medium text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-600 focus:ring-0 focus:shadow-none"
                     />
 
                     {/* Suggestions Dropdown - Flipkart Style with Images & Highlighting */}
                     {(showSearchSuggestions || searchQuery.trim()) && (
-                      <div className="hidden md:block absolute top-full left-0 right-0 mt-2 max-h-96 overflow-hidden overflow-y-auto rounded-2xl border border-blue-100/80 bg-gradient-to-br from-white via-white to-blue-50/60 shadow-[0_28px_70px_rgba(15,23,42,0.16)] backdrop-blur z-50 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                      <div className="hidden md:block absolute top-full left-0 right-0 mt-2 max-h-96 overflow-hidden overflow-y-auto rounded-xl border border-slate-200 bg-white z-50 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                         {/* Loading / Empty State */}
                         {!searchSuggestions ||
                         searchSuggestions.length === 0 ? (
@@ -2126,8 +2233,8 @@ const Header = () => {
                       </>
                     ) : (
                       /* Suggestions List for Mobile */
-                      <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-white via-white to-blue-50/60 p-2 shadow-[0_18px_44px_rgba(15,23,42,0.1)] sm:rounded-[1.35rem] sm:p-3">
-                        <div className="space-y-2.5 sm:space-y-3">
+                      <div className="bg-white px-2 sm:px-3">
+                        <div className="divide-y divide-slate-200">
                           {searchSuggestions
                             .slice(0, SEARCH_SUGGESTION_LIMIT)
                             .map((sugg, index) => (
@@ -2173,23 +2280,13 @@ const Header = () => {
     <>
       <div
         ref={mobileHeaderRef}
-        className="text-[var(--hooks-text)] border-b border-[color-mix(in_srgb,var(--hooks-line)_82%,transparent)] bg-[color-mix(in_srgb,var(--hooks-surface)_92%,transparent)] shadow-[0_14px_38px_rgba(14,29,55,0.09)] backdrop-blur-[24px] backdrop-saturate-[145%] lg:hidden"
+        className="text-[var(--hooks-text)] border-0 bg-white shadow-none lg:hidden"
       >
-        <div className="grid min-h-[58px] grid-cols-[42px_minmax(0,1fr)_auto] items-center gap-[0.7rem] px-[0.8rem] pb-2 pt-[max(0.55rem,env(safe-area-inset-top))]">
-          <button
-            type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-[14px] border-0  text-[var(--hooks-text-soft)] shadow-[inset_0_1px_rgba(255,255,255,0.62)] transition-all duration-[170ms] hover:-translate-y-px hover:text-[var(--hooks-brand)]"
-            onClick={() => setIsMenuOpen(true)}
-            aria-label="Open navigation"
-            aria-expanded={isMenuOpen}
-          >
-            <FaBars aria-hidden="true" />
-          </button>
-
+        <div className="grid min-h-[58px] grid-cols-[minmax(0,1fr)_auto] items-center gap-[0.7rem] px-[0.8rem] pb-2 pt-[max(0.55rem,env(safe-area-inset-top))]">
           <Link
             to="/"
             className="inline-grid min-w-0 w-max gap-[0.05rem] text-[var(--hooks-text)] no-underline [&_small]:overflow-hidden [&_small]:text-ellipsis [&_small]:whitespace-nowrap [&_small]:text-[0.55rem] [&_small]:font-[800] [&_small]:uppercase [&_small]:tracking-[0.12em] [&_small]:text-[var(--hooks-muted)]"
-            aria-label="Hooks home"
+            aria-label="MobileX home"
           >
             <BrandIdentity variant="mobile" />
             <small className="hidden md:block">Device intelligence</small>{" "}
@@ -2199,10 +2296,19 @@ const Header = () => {
             <button
               type="button"
               onClick={() => setIsSearchOpen(true)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-[14px]   text-[var(--hooks-text-soft)] transition-all duration-[170ms] hover:-translate-y-px hover:border-[color-mix(in_srgb,var(--hooks-brand)_40%,var(--hooks-line))] hover:text-[var(--hooks-brand)]"
-              aria-label="Search Hooks"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-[14px] text-[var(--hooks-text-soft)] transition-all duration-[170ms] hover:-translate-y-px hover:border-[color-mix(in_srgb,var(--hooks-brand)_40%,var(--hooks-line))] hover:text-[var(--hooks-brand)]"
+              aria-label="Search MobileX"
             >
               <FaSearch aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-[14px] border-0 text-[var(--hooks-text-soft)] shadow-[inset_0_1px_rgba(255,255,255,0.62)] transition-all duration-[170ms] hover:-translate-y-px hover:text-[var(--hooks-brand)]"
+              onClick={() => setIsMenuOpen(true)}
+              aria-label="Open navigation"
+              aria-expanded={isMenuOpen}
+            >
+              <FaBars aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -2234,22 +2340,17 @@ const Header = () => {
       </div>
 
       <div
-        className="relative border-b border-[color-mix(in_srgb,var(--hooks-line)_88%,transparent)] bg-[color-mix(in_srgb,var(--hooks-surface)_96%,transparent)] text-[var(--hooks-text)] shadow-[0_9px_30px_rgba(17,31,59,0.07)] backdrop-blur-[24px] backdrop-saturate-[145%] hidden lg:block"
+        className="relative border-0 bg-white text-[var(--hooks-text)] shadow-none hidden lg:block"
         onMouseLeave={() => setActiveDesktopMenu("")}
       >
         <div className="mx-auto grid min-h-[70px] w-[min(calc(100%-2rem),92rem)] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-[clamp(1rem,2vw,2.2rem)]">
           <Link
             to="/"
-            className="flex items-center gap-[0.9rem] text-inherit no-underline [&>span:last-child]:grid [&>span:last-child]:gap-[0.08rem] [&>span:last-child]:border-l [&>span:last-child]:border-[var(--hooks-line)] [&>span:last-child]:pl-[0.9rem] [&_small]:text-[0.56rem] [&_small]:font-[850] [&_small]:uppercase [&_small]:tracking-[0.13em] [&_small]:text-[var(--hooks-muted)] [&_b]:whitespace-nowrap [&_b]:text-[0.7rem] [&_b]:font-[850] [&_b]:text-[var(--hooks-text-soft)]"
-            aria-label="Hooks home"
+            className="flex items-center text-inherit no-underline"
+            aria-label="MobileX home"
           >
             <BrandIdentity variant="desktop" />
-            <span>
-              <small>Research smarter</small>
-              <b>Device intelligence</b>
-            </span>
           </Link>
-
           <nav
             className="flex min-w-0 items-center justify-center gap-[0.08rem] border-0  p-0"
             aria-label="Primary navigation"
@@ -2295,7 +2396,7 @@ const Header = () => {
               <form
                 ref={searchRef}
                 onSubmit={handleSearch}
-                className="relative grid w-[min(36vw,430px)] min-w-[300px] grid-cols-[42px_minmax(0,1fr)_42px] items-center rounded-[15px] border border-[color-mix(in_srgb,var(--hooks-brand)_34%,var(--hooks-line))] bg-[var(--hooks-surface)] shadow-[0_12px_35px_rgba(25,103,255,0.11)]"
+                className="relative grid w-[min(36vw,430px)] min-w-[300px] grid-cols-[42px_minmax(0,1fr)_42px] items-center rounded-[15px] border border-slate-200 bg-white"
               >
                 <button
                   type="button"
@@ -2317,7 +2418,8 @@ const Header = () => {
                   }}
                   onKeyDown={handleSearchKeyDown}
                   placeholder="Search devices, brands or specifications"
-                  aria-label="Search Hooks"
+                  aria-label="Search MobileX"
+                  className="w-full border-0 bg-transparent px-2 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
                 />
                 <button
                   type="submit"
@@ -2532,7 +2634,7 @@ const Header = () => {
             />
 
             <aside
-              className="absolute inset-y-0 left-0 flex w-[min(94vw,410px)] max-w-full flex-col overflow-hidden bg-[var(--hooks-canvas)] shadow-[26px_0_90px_rgba(0,0,0,0.34)]"
+              className="absolute inset-y-0 right-0 flex w-[min(82vw,360px)] max-w-full flex-col overflow-hidden border-l border-[var(--hooks-line)] bg-[var(--hooks-canvas)] shadow-none"
               role="dialog"
               aria-modal="true"
               aria-label="Hooks navigation"
@@ -2634,17 +2736,18 @@ const Header = () => {
                               setOpenSection(isOpen ? "" : item.id)
                             }
                             aria-expanded={isOpen}
-                            className={`grid min-h-[62px] w-full grid-cols-[42px_minmax(0,2fr)_42px_16px] items-center gap-3 border-0 bg-[var(--hooks-surface)] px-[0.8rem] py-[0.55rem] text-left text-[var(--hooks-text)] ${isOpen ? "bg-[var(--hooks-surface-soft)]" : ""}`}
+                            className={`flex min-h-[62px] w-full items-center gap-3 border-0 bg-[var(--hooks-surface)] px-[0.8rem] py-[0.55rem] text-left text-[var(--hooks-text)] ${isOpen ? "bg-[var(--hooks-surface-soft)]" : ""}`}
                           >
-                            <span></span>
-                            <span className="grid min-w-0 gap-[0.12rem] [&_b]:text-[0.76rem] [&_b]:font-[880] [&_b]:text-[var(--hooks-text)] [&_small]:text-[0.58rem] [&_small]:font-bold [&_small]:text-[var(--hooks-muted)]">
+                            <span className="min-w-0 flex-1 [&_b]:block [&_b]:truncate [&_b]:text-[0.76rem] [&_b]:font-[880] [&_b]:text-[var(--hooks-text)] [&_small]:mt-[0.12rem] [&_small]:block [&_small]:truncate [&_small]:text-[0.58rem] [&_small]:font-bold [&_small]:text-[var(--hooks-muted)]">
                               <b>{item.title}</b>
                               <small>{itemDescription}</small>
                             </span>
-                            <FaChevronDown
-                              className={`h-[11px] w-[11px] text-[var(--hooks-muted)] transition-transform duration-[170ms] ${isOpen ? "rotate-180" : ""}`}
-                              aria-hidden="true"
-                            />
+                            <span className="ml-3 flex h-7 w-7 shrink-0 items-center justify-center">
+                              <FaChevronDown
+                                className={`h-[11px] w-[11px] text-[var(--hooks-muted)] transition-transform duration-[170ms] ${isOpen ? "rotate-180" : ""}`}
+                                aria-hidden="true"
+                              />
+                            </span>
                           </button>
 
                           {isOpen ? (
@@ -2680,17 +2783,18 @@ const Header = () => {
                         key={item.id}
                         to={toCanonicalPagePath(item.href)}
                         onClick={() => setIsMenuOpen(false)}
-                        className="grid min-h-[62px] w-full grid-cols-[42px_minmax(0,1fr)_42px_16px] items-center gap-3 border-b border-[var(--hooks-line)] bg-[var(--hooks-surface)] px-[0.8rem] py-[0.55rem] text-left text-[var(--hooks-text)] no-underline [&_b]:text-[0.76rem] [&_b]:font-[880] [&_b]:text-[var(--hooks-text)] [&_small]:text-[0.58rem] [&_small]:font-bold [&_small]:text-[var(--hooks-muted)]"
+                        className="flex min-h-[62px] w-full items-center gap-3 border-b border-[var(--hooks-line)] bg-[var(--hooks-surface)] px-[0.8rem] py-[0.55rem] text-left text-[var(--hooks-text)] no-underline [&_b]:block [&_b]:truncate [&_b]:text-[0.76rem] [&_b]:font-[880] [&_b]:text-[var(--hooks-text)] [&_small]:mt-[0.12rem] [&_small]:block [&_small]:truncate [&_small]:text-[0.58rem] [&_small]:font-bold [&_small]:text-[var(--hooks-muted)]"
                       >
-                        <span></span>
-                        <span className="grid min-w-0 gap-[0.12rem] [&_b]:text-[0.76rem] [&_b]:font-[880] [&_b]:text-[var(--hooks-text)] [&_small]:text-[0.58rem] [&_small]:font-bold [&_small]:text-[var(--hooks-muted)]">
+                        <span className="min-w-0 flex-1">
                           <b>{item.title}</b>
                           <small>{itemDescription}</small>
                         </span>
-                        <FaChevronDown
-                          className={`h-[11px] w-[11px] text-[var(--hooks-muted)] transition-transform duration-[170ms] ${isOpen ? "rotate-180" : ""}`}
-                          aria-hidden="true"
-                        />
+                        <span className="ml-3 flex h-7 w-7 shrink-0 items-center justify-center">
+                          <FaChevronDown
+                            className="h-[11px] w-[11px] text-[var(--hooks-muted)]"
+                            aria-hidden="true"
+                          />
+                        </span>
                       </Link>
                     );
                   })}

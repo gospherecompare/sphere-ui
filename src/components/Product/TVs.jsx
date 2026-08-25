@@ -1,6 +1,6 @@
 // src/components/HomeApplianceList.jsx
 import React, { useState, useEffect, useMemo } from "react";
-import { Helmet } from "react-helmet-async";
+import SEO from "../SEO";
 import {
   FaHome,
   FaFilter,
@@ -29,13 +29,17 @@ import {
   FaBed,
   FaUtensils,
   FaFan,
+  FaSyncAlt,
+  FaChevronRight,
+  FaExpand,
+  FaWifi,
+  FaStar,
 } from "react-icons/fa";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import useStoreLogos from "../../hooks/useStoreLogos";
 import Spinner from "../ui/Spinner";
 import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
 import ProductDiscoverySections from "../ui/ProductDiscoverySections";
-import useTitle from "../../hooks/useTitle";
 import { toCanonicalPageUrl } from "../../utils/publicUrl";
 import useDeviceFieldProfiles from "../../hooks/useDeviceFieldProfiles";
 import { useSearchParams } from "react-router-dom";
@@ -75,8 +79,19 @@ import "../../styles/hideScrollbar.css";
 import MobileListingControls, {
   MobileSortSheet,
 } from "../ui/MobileListingControls";
+import MobileXSpecScore from "../ui/MobileXSpecScore";
+import CategoryListingShell from "../ui/CategoryListingShell";
+import ProductListingCard from "../ui/ProductListingCard";
+import ProductHighlightStrip from "../ui/ProductHighlightStrip";
+import ProductFilterSheet from "../ui/ProductFilterSheet";
+import PopularFeatureFilterSheet from "../ui/PopularFeatureFilterSheet";
+import ProductCardMedia from "../ui/ProductCardMedia";
+import ProductCardIdentity from "../ui/ProductCardIdentity";
+import ProductCardFooter from "../ui/ProductCardFooter";
+import ProductVariantSelector from "../ui/ProductVariantSelector";
+import Breadcrumbs from "../Breadcrumbs";
 
-const SITE_ORIGIN = "https://tryhook.shop";
+const SITE_ORIGIN = "https://mobilex.in";
 const TV_MOBILE_SORT_OPTIONS = [
   {
     value: "featured",
@@ -104,8 +119,8 @@ const TV_MOBILE_SORT_OPTIONS = [
 const ImageCarousel = ({ images = [] }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const imageFrameClass =
-    "relative flex h-44 w-32 items-center justify-center overflow-hidden rounded-2xl bg-gray-100 sm:h-48 sm:w-32 lg:h-52 lg:w-36";
-  const imageClass = "h-full w-full object-contain p-0.5 sm:p-2";
+    "relative flex h-[190px] w-full items-center justify-center overflow-hidden sm:h-[210px] xl:h-[226px]";
+  const imageClass = "h-full w-full object-contain p-2";
 
   useEffect(() => {
     setCurrentIndex(0);
@@ -179,38 +194,6 @@ const ImageCarousel = ({ images = [] }) => {
   );
 };
 
-const clampScore100 = (value) => {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return null;
-  if (n <= 1) return Math.max(0, Math.min(100, n * 100));
-  if (n <= 10) return Math.max(0, Math.min(100, n * 10));
-  return Math.max(0, Math.min(100, n));
-};
-
-const CircularScoreBadge = ({ score, size = 42 }) => {
-  const normalized = clampScore100(score);
-  const value = normalized != null ? Math.round(normalized) : null;
-  if (value == null) return null;
-
-  return (
-    <div
-      className="inline-flex items-center gap-1.5 leading-none"
-      style={{ minWidth: `${Math.max(48, Math.round(size * 1.8))}px` }}
-      aria-label={
-        value != null ? `Spec score ${value} percent` : "Spec score unavailable"
-      }
-    >
-      <span className="text-[34px] font-semibold leading-none text-blue-600 sm:text-[38px]">
-        {value}
-      </span>
-      <span className="flex flex-col text-[7px] font-semibold uppercase tracking-[0.28em] text-blue-400 leading-[0.92]">
-        <span>SPEC</span>
-        <span>SCORE</span>
-      </span>
-    </div>
-  );
-};
-
 // Helper function to get appliance type icon
 const getApplianceTypeIcon = (type) => {
   switch (type?.toLowerCase()) {
@@ -268,8 +251,8 @@ const TVs = () => {
 
   const { getLogo, getStore, getStoreLogo } = useStoreLogos();
   const deviceFieldProfiles = useDeviceFieldProfiles();
-  const RUPEE_SYMBOL = "\u20B9";
   const [showHeroDescription, setShowHeroDescription] = useState(false);
+  const RUPEE_SYMBOL = "\u20B9";
 
   const formatRupeeNumber = (value) => {
     const numeric = Number(value);
@@ -1592,6 +1575,8 @@ const TVs = () => {
       // TV filters
       screenSize: new Set(),
       resolution: new Set(),
+      displayType: new Set(),
+      refreshRate: new Set(),
       tvFeatures: new Set(),
 
       // Common numeric ranges
@@ -1652,6 +1637,8 @@ const TVs = () => {
           meta.screenSize.add(p.specs.screenSize);
         }
         if (p.specs.resolution) meta.resolution.add(p.specs.resolution);
+        if (p.specs.displayType) meta.displayType.add(p.specs.displayType);
+        if (p.specs.refreshRate) meta.refreshRate.add(p.specs.refreshRate);
         if (p.features) {
           p.features.forEach((f) => meta.tvFeatures.add(f));
         }
@@ -1696,6 +1683,14 @@ const TVs = () => {
         return numA - numB;
       }),
       resolution: Array.from(meta.resolution).sort(),
+      displayType: Array.from(meta.displayType).sort(),
+      refreshRate: Array.from(meta.refreshRate).sort((a, b) => {
+        const na = Number.parseFloat(String(a).replace(/[^0-9.]/g, ""));
+        const nb = Number.parseFloat(String(b).replace(/[^0-9.]/g, ""));
+        if (Number.isFinite(na) && Number.isFinite(nb) && na !== nb)
+          return na - nb;
+        return String(a).localeCompare(String(b));
+      }),
       tvFeatures: Array.from(meta.tvFeatures).sort(),
 
       // Common
@@ -1846,6 +1841,16 @@ const TVs = () => {
           options: extractDynamicFilters.resolution,
         },
         {
+          key: "displayType",
+          label: "Display Type",
+          options: extractDynamicFilters.displayType,
+        },
+        {
+          key: "refreshRate",
+          label: "Refresh Rate",
+          options: extractDynamicFilters.refreshRate,
+        },
+        {
           key: "features",
           label: "Features",
           options: extractDynamicFilters.tvFeatures,
@@ -1877,23 +1882,35 @@ const TVs = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [brandFilterQuery, setBrandFilterQuery] = useState("");
   const [additionalFeatureQuery, setAdditionalFeatureQuery] = useState("");
+  const [screenSizeFilterQuery, setScreenSizeFilterQuery] = useState("");
+  const [resolutionFilterQuery, setResolutionFilterQuery] = useState("");
+  const [displayTypeFilterQuery, setDisplayTypeFilterQuery] = useState("");
+  const [refreshRateFilterQuery, setRefreshRateFilterQuery] = useState("");
+  const [releaseYearFilterQuery, setReleaseYearFilterQuery] = useState("");
+  const [activeTvFilterSection, setActiveTvFilterSection] =
+    useState("Search & Brands");
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
+  const [showPopularFeaturePicker, setShowPopularFeaturePicker] =
+    useState(false);
+  const [pendingPopularFeature, setPendingPopularFeature] = useState("");
   const [selectedVariantByProduct, setSelectedVariantByProduct] = useState({});
-
-  // Set page title
-  useTitle({
-    page: "tvs",
-  });
 
   const navigate = useNavigate();
   const location = useLocation();
   const { search } = location;
-  const { featureSlug: routeFeatureSlugParam } = useParams();
+  const {
+    featureSlug: routeFeatureSlugParam,
+    filterSlug: routeFilterSlugParam,
+  } = useParams();
   const [params] = useSearchParams();
   const normalizedPathname =
     String(location.pathname || "/").replace(/\/+$/g, "") || "/";
-  const isLatestPath = normalizedPathname === "/tvs/latest";
+  const routeFilterSlug = String(routeFilterSlugParam || "")
+    .trim()
+    .toLowerCase();
+  const isLatestPath =
+    normalizedPathname === "/tvs/latest" || routeFilterSlug === "new";
   const routeFeatureSlug = String(routeFeatureSlugParam || "")
     .trim()
     .toLowerCase();
@@ -1905,8 +1922,7 @@ const TVs = () => {
     : null;
   const dispatch = useDispatch();
   const [popularFeatureOrder, setPopularFeatureOrder] = useState([]);
-  const [popularFeatureOrderLoaded, setPopularFeatureOrderLoaded] =
-    useState(false);
+  const [, setPopularFeatureOrderLoaded] = useState(false);
 
   useEffect(() => {
     const legacyFeature = params.get("feature");
@@ -1922,7 +1938,7 @@ const TVs = () => {
       return;
     }
     if (isLatestPath && search) {
-      navigate("/tvs/latest", { replace: true });
+      navigate("/tvs/filter/new", { replace: true });
       return;
     }
     if (legacyFeatureMeta) {
@@ -1930,7 +1946,7 @@ const TVs = () => {
       return;
     }
     if (legacyFilter === "new" && !isLatestPath) {
-      navigate("/tvs/latest", { replace: true });
+      navigate("/tvs/filter/new", { replace: true });
     }
   }, [
     isLatestPath,
@@ -2025,6 +2041,59 @@ const TVs = () => {
         .some((value) => String(value).toLowerCase().includes(query)),
     );
   }, [additionalFeatureOptions, additionalFeatureQuery]);
+
+  const filterOptionByQuery = (options, query) => {
+    const q = String(query || "")
+      .trim()
+      .toLowerCase();
+    if (!q) return options;
+    return options.filter((option) =>
+      String(option || "")
+        .toLowerCase()
+        .includes(q),
+    );
+  };
+
+  const filteredScreenSizeOptions = useMemo(
+    () =>
+      filterOptionByQuery(
+        extractDynamicFilters.screenSize,
+        screenSizeFilterQuery,
+      ),
+    [extractDynamicFilters.screenSize, screenSizeFilterQuery],
+  );
+  const filteredResolutionOptions = useMemo(
+    () =>
+      filterOptionByQuery(
+        extractDynamicFilters.resolution,
+        resolutionFilterQuery,
+      ),
+    [extractDynamicFilters.resolution, resolutionFilterQuery],
+  );
+  const filteredDisplayTypeOptions = useMemo(
+    () =>
+      filterOptionByQuery(
+        extractDynamicFilters.displayType,
+        displayTypeFilterQuery,
+      ),
+    [extractDynamicFilters.displayType, displayTypeFilterQuery],
+  );
+  const filteredRefreshRateOptions = useMemo(
+    () =>
+      filterOptionByQuery(
+        extractDynamicFilters.refreshRate,
+        refreshRateFilterQuery,
+      ),
+    [extractDynamicFilters.refreshRate, refreshRateFilterQuery],
+  );
+  const filteredReleaseYearOptions = useMemo(
+    () =>
+      filterOptionByQuery(
+        extractDynamicFilters.releaseYears,
+        releaseYearFilterQuery,
+      ),
+    [extractDynamicFilters.releaseYears, releaseYearFilterQuery],
+  );
 
   // Get selected appliance type for specific filters
   const selectedApplianceType =
@@ -2359,6 +2428,12 @@ const TVs = () => {
             case "resolution":
               deviceValue = device.specs.resolution;
               break;
+            case "displayType":
+              deviceValue = device.specs.displayType;
+              break;
+            case "refreshRate":
+              deviceValue = device.specs.refreshRate;
+              break;
             case "features":
               deviceValue = device.features;
               break;
@@ -2428,6 +2503,12 @@ const TVs = () => {
     setSearchQuery("");
     setBrandFilterQuery("");
     setAdditionalFeatureQuery("");
+    setScreenSizeFilterQuery("");
+    setResolutionFilterQuery("");
+    setDisplayTypeFilterQuery("");
+    setRefreshRateFilterQuery("");
+    setReleaseYearFilterQuery("");
+    setActiveTvFilterSection("Search & Brands");
     try {
       const params = new URLSearchParams(search);
       params.delete("brand");
@@ -2468,11 +2549,509 @@ const TVs = () => {
 
     if (
       filters.priceRange &&
-      (filters.priceRange.min > 0 || filters.priceRange.max < MAX_PRICE)
+      (filters.priceRange.min > MIN_PRICE || filters.priceRange.max < MAX_PRICE)
     )
       count += 1;
     return count;
   };
+
+  const renderTvSearchInput = ({ value, onChange, placeholder }) => (
+    <div className="relative">
+      <FaSearch className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[11px] text-slate-400" />
+      <input
+        type="search"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="h-11 w-full rounded-xl border border-blue-200 bg-transparent pl-10 pr-4 text-[13px] font-medium text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+      />
+    </div>
+  );
+
+  const renderTvOptionGrid = ({
+    items,
+    selectedValues,
+    onToggle,
+    emptyText = "No options found",
+    metaFor,
+  }) => {
+    if (!items?.length) {
+      return (
+        <p className="rounded-xl bg-slate-50 px-3 py-3 text-xs font-medium text-slate-400">
+          {emptyText}
+        </p>
+      );
+    }
+    return (
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {items.map((item) => {
+          const value = typeof item === "object" ? item.value : item;
+          const label = typeof item === "object" ? item.label : item;
+          const selected = selectedValues.includes(value);
+          const meta = metaFor ? metaFor(item) : null;
+          return (
+            <button
+              key={String(value)}
+              type="button"
+              onClick={() => onToggle(value)}
+              className={`flex min-h-11 items-center justify-between gap-3 rounded-xl border px-3.5 text-left transition ${
+                selected
+                  ? "border-blue-500 bg-blue-50 text-blue-700"
+                  : "border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:bg-slate-50"
+              }`}
+            >
+              <span className="flex min-w-0 items-center gap-3">
+                <span
+                  className={`grid h-4 w-4 shrink-0 place-items-center rounded-md border ${selected ? "border-blue-500 bg-blue-600 text-white" : "border-slate-300 bg-white"}`}
+                >
+                  {selected ? (
+                    <span className="text-[9px] font-black">✓</span>
+                  ) : null}
+                </span>
+                <span className="truncate text-[12px] font-bold">{label}</span>
+              </span>
+              {meta != null ? (
+                <span className="text-[10px] font-bold text-slate-400">
+                  {meta}
+                </span>
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const tvFilterSections = [
+    {
+      id: "Search & Brands",
+      title: "Search & Brands",
+      badge: filters.brand.length,
+      icon: FaSearch,
+      content: (
+        <div className="space-y-5">
+          <div>
+            <h4 className="text-[18px] font-black tracking-[-0.02em] text-slate-950">
+              Search & Brands
+            </h4>
+            <p className="mt-1 text-[12px] font-medium text-slate-500">
+              Find a television or manufacturer
+            </p>
+          </div>
+          <div className="space-y-2.5">
+            <label className="block text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
+              Search TVs
+            </label>
+            {renderTvSearchInput({
+              value: searchQuery,
+              onChange: setSearchQuery,
+              placeholder: "Model, name, or brand",
+            })}
+          </div>
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between gap-3">
+              <label className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
+                Brands
+              </label>
+              <span className="text-[10px] font-bold text-slate-400">
+                {extractDynamicFilters.brands.length} available
+              </span>
+            </div>
+            {renderTvSearchInput({
+              value: brandFilterQuery,
+              onChange: setBrandFilterQuery,
+              placeholder: "Search brands",
+            })}
+            {renderTvOptionGrid({
+              items: filteredBrandOptions.map((brand) => ({
+                value: brand,
+                label: brand,
+              })),
+              selectedValues: filters.brand,
+              onToggle: (brand) => handleFilterChange("brand", brand),
+              metaFor: (item) =>
+                devices.filter((device) => device.brand === item.value).length,
+            })}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: "Price Range",
+      title: "Price Range",
+      badge:
+        filters.priceRange.min > MIN_PRICE || filters.priceRange.max < MAX_PRICE
+          ? 1
+          : 0,
+      icon: FaMoneyBill,
+      content: (
+        <div className="space-y-5">
+          <div>
+            <h4 className="text-[18px] font-black tracking-[-0.02em] text-slate-950">
+              Price Range
+            </h4>
+            <p className="mt-1 text-[12px] font-medium text-slate-500">
+              Set your TV budget
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-4">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                Budget range
+              </span>
+              <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-black text-blue-700">
+                {formatRupeeNumber(filters.priceRange.min)} –{" "}
+                {formatRupeeNumber(filters.priceRange.max)}
+              </span>
+            </div>
+            <div className="relative h-8">
+              <div className="absolute left-0 right-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-slate-200" />
+              <div
+                className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-blue-600"
+                style={{
+                  left: `${((filters.priceRange.min - MIN_PRICE) / (MAX_PRICE - MIN_PRICE)) * 100}%`,
+                  width: `${((filters.priceRange.max - filters.priceRange.min) / (MAX_PRICE - MIN_PRICE)) * 100}%`,
+                }}
+              />
+              <input
+                type="range"
+                min={MIN_PRICE}
+                max={MAX_PRICE}
+                step={TV_PRICE_STEP}
+                value={filters.priceRange.min}
+                onChange={(e) =>
+                  updatePriceRange(
+                    Number(e.target.value),
+                    filters.priceRange.max,
+                  )
+                }
+                className="absolute inset-x-0 top-1/2 h-6 w-full -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:bg-white"
+              />
+              <input
+                type="range"
+                min={MIN_PRICE}
+                max={MAX_PRICE}
+                step={TV_PRICE_STEP}
+                value={filters.priceRange.max}
+                onChange={(e) =>
+                  updatePriceRange(
+                    filters.priceRange.min,
+                    Number(e.target.value),
+                  )
+                }
+                className="absolute inset-x-0 top-1/2 h-6 w-full -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:bg-white"
+              />
+            </div>
+            <div className="mt-3 flex justify-between text-[10px] font-semibold text-slate-400">
+              <span>{formatRupeeNumber(MIN_PRICE)}</span>
+              <span>{formatRupeeNumber(MAX_PRICE)}</span>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: "Screen Size",
+      title: "Screen Size",
+      badge: filters.specific?.screenSize?.length || 0,
+      icon: FaTv,
+      content: (
+        <div className="space-y-4">
+          <div>
+            <h4 className="text-[18px] font-black text-slate-950">
+              Screen Size
+            </h4>
+            <p className="mt-1 text-[12px] font-medium text-slate-500">
+              Choose the display size you need
+            </p>
+          </div>
+          {renderTvSearchInput({
+            value: screenSizeFilterQuery,
+            onChange: setScreenSizeFilterQuery,
+            placeholder: "Search screen size",
+          })}
+          {renderTvOptionGrid({
+            items: filteredScreenSizeOptions.map((value) => ({
+              value,
+              label: value,
+            })),
+            selectedValues: filters.specific?.screenSize || [],
+            onToggle: (value) =>
+              handleSpecificFilterChange("screenSize", value),
+            metaFor: (item) =>
+              devices.filter(
+                (device) =>
+                  Array.isArray(device.variants) &&
+                  device.variants.some(
+                    (variant) =>
+                      firstNonEmpty(
+                        variant?.screen_size,
+                        variant?.size,
+                        variant?.variant_key,
+                      ) === item.value,
+                  ),
+              ).length,
+          })}
+        </div>
+      ),
+    },
+    {
+      id: "Resolution",
+      title: "Resolution",
+      badge: filters.specific?.resolution?.length || 0,
+      icon: FaExpand,
+      content: (
+        <div className="space-y-4">
+          <div>
+            <h4 className="text-[18px] font-black text-slate-950">
+              Resolution
+            </h4>
+            <p className="mt-1 text-[12px] font-medium text-slate-500">
+              Choose picture detail
+            </p>
+          </div>
+          {renderTvSearchInput({
+            value: resolutionFilterQuery,
+            onChange: setResolutionFilterQuery,
+            placeholder: "Search resolution",
+          })}
+          {renderTvOptionGrid({
+            items: filteredResolutionOptions.map((value) => ({
+              value,
+              label: value,
+            })),
+            selectedValues: filters.specific?.resolution || [],
+            onToggle: (value) =>
+              handleSpecificFilterChange("resolution", value),
+            metaFor: (item) =>
+              devices.filter(
+                (device) =>
+                  String(device.specs?.resolution || "") === item.value,
+              ).length,
+          })}
+        </div>
+      ),
+    },
+    {
+      id: "Display Type",
+      title: "Display Type",
+      badge: filters.specific?.displayType?.length || 0,
+      icon: FaTv,
+      content: (
+        <div className="space-y-4">
+          <div>
+            <h4 className="text-[18px] font-black text-slate-950">
+              Display Type
+            </h4>
+            <p className="mt-1 text-[12px] font-medium text-slate-500">
+              Panel technology and type
+            </p>
+          </div>
+          {renderTvSearchInput({
+            value: displayTypeFilterQuery,
+            onChange: setDisplayTypeFilterQuery,
+            placeholder: "Search display type",
+          })}
+          {renderTvOptionGrid({
+            items: filteredDisplayTypeOptions.map((value) => ({
+              value,
+              label: value,
+            })),
+            selectedValues: filters.specific?.displayType || [],
+            onToggle: (value) =>
+              handleSpecificFilterChange("displayType", value),
+            metaFor: (item) =>
+              devices.filter(
+                (device) =>
+                  String(device.specs?.displayType || "") === item.value,
+              ).length,
+          })}
+        </div>
+      ),
+    },
+    {
+      id: "Refresh Rate",
+      title: "Refresh Rate",
+      badge: filters.specific?.refreshRate?.length || 0,
+      icon: FaSyncAlt,
+      content: (
+        <div className="space-y-4">
+          <div>
+            <h4 className="text-[18px] font-black text-slate-950">
+              Refresh Rate
+            </h4>
+            <p className="mt-1 text-[12px] font-medium text-slate-500">
+              Choose smoother motion
+            </p>
+          </div>
+          {renderTvSearchInput({
+            value: refreshRateFilterQuery,
+            onChange: setRefreshRateFilterQuery,
+            placeholder: "Search refresh rate",
+          })}
+          {renderTvOptionGrid({
+            items: filteredRefreshRateOptions.map((value) => ({
+              value,
+              label: value,
+            })),
+            selectedValues: filters.specific?.refreshRate || [],
+            onToggle: (value) =>
+              handleSpecificFilterChange("refreshRate", value),
+            metaFor: (item) =>
+              devices.filter(
+                (device) =>
+                  String(device.specs?.refreshRate || "") === item.value,
+              ).length,
+          })}
+        </div>
+      ),
+    },
+    {
+      id: "Additional Features",
+      title: "Additional Features",
+      badge:
+        filters.additionalFeatures.length +
+        (filters.specific?.features?.length || 0),
+      icon: FaStar,
+      content: (
+        <div className="space-y-4">
+          <div>
+            <h4 className="text-[18px] font-black text-slate-950">
+              Additional Features
+            </h4>
+            <p className="mt-1 text-[12px] font-medium text-slate-500">
+              Smart features, connectivity, and extras
+            </p>
+          </div>
+          {renderTvSearchInput({
+            value: additionalFeatureQuery,
+            onChange: setAdditionalFeatureQuery,
+            placeholder: "Search features",
+          })}
+          {renderTvOptionGrid({
+            items: filteredAdditionalFeatureOptions.map((feature) => ({
+              value: feature.id,
+              label: feature.name,
+            })),
+            selectedValues: filters.additionalFeatures,
+            onToggle: (value) =>
+              handleFilterChange("additionalFeatures", value),
+            metaFor: (item) =>
+              item?.value
+                ? devices.filter((device) =>
+                    matchesTvAdditionalFeature(device, item.value),
+                  ).length
+                : 0,
+          })}
+        </div>
+      ),
+    },
+    {
+      id: "Release Year",
+      title: "Release Year",
+      badge: filters.releaseYear.length,
+      icon: FaCalendarAlt,
+      content: (
+        <div className="space-y-4">
+          <div>
+            <h4 className="text-[18px] font-black text-slate-950">
+              Release Year
+            </h4>
+            <p className="mt-1 text-[12px] font-medium text-slate-500">
+              Filter by launch year
+            </p>
+          </div>
+          {renderTvSearchInput({
+            value: releaseYearFilterQuery,
+            onChange: setReleaseYearFilterQuery,
+            placeholder: "Search year",
+          })}
+          {renderTvOptionGrid({
+            items: filteredReleaseYearOptions.map((value) => ({
+              value: String(value),
+              label: String(value),
+            })),
+            selectedValues: filters.releaseYear.map(String),
+            onToggle: (value) => handleFilterChange("releaseYear", value),
+            metaFor: (item) =>
+              devices.filter(
+                (device) =>
+                  String(device.releaseYear || "") === String(item.value),
+              ).length,
+          })}
+        </div>
+      ),
+    },
+  ];
+
+  const tvSelectedFilterSummary = (() => {
+    const chips = [];
+    filters.brand.forEach((value) =>
+      chips.push({ id: `brand-${value}`, label: value }),
+    );
+    if (
+      filters.priceRange.min > MIN_PRICE ||
+      filters.priceRange.max < MAX_PRICE
+    )
+      chips.push({
+        id: "price",
+        label: `${formatRupeeNumber(filters.priceRange.min)} – ${formatRupeeNumber(filters.priceRange.max)}`,
+      });
+    Object.entries(filters.specific || {}).forEach(([key, values]) =>
+      (values || []).forEach((value) =>
+        chips.push({ id: `${key}-${value}`, label: String(value) }),
+      ),
+    );
+    filters.additionalFeatures.forEach((value) => {
+      const feature = additionalFeatureOptions.find(
+        (item) => item.id === value,
+      );
+      chips.push({ id: `feature-${value}`, label: feature?.name || value });
+    });
+    filters.releaseYear.forEach((value) =>
+      chips.push({ id: `year-${value}`, label: String(value) }),
+    );
+    const shown = chips.slice(0, 14);
+    return (
+      <div>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h4 className="text-[12px] font-black text-slate-900">
+            Selected filters{chips.length ? ` (${chips.length})` : ""}
+          </h4>
+          {chips.length ? (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="text-[11px] font-bold text-blue-600"
+            >
+              Clear all
+            </button>
+          ) : null}
+        </div>
+        {shown.length ? (
+          <div className="flex flex-wrap gap-2">
+            {shown.map((chip) => (
+              <span
+                key={chip.id}
+                className="inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1.5 text-[10px] font-bold text-blue-700"
+              >
+                {chip.label}
+              </span>
+            ))}
+            {chips.length > shown.length ? (
+              <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1.5 text-[10px] font-bold text-slate-500">
+                +{chips.length - shown.length} more
+              </span>
+            ) : null}
+          </div>
+        ) : (
+          <p className="text-[11px] font-medium leading-5 text-slate-400">
+            Choose options to narrow the TV catalogue.
+          </p>
+        )}
+      </div>
+    );
+  })();
 
   const trackFeatureClick = (featureId) => {
     try {
@@ -2551,11 +3130,6 @@ const TVs = () => {
     month: "long",
     year: "numeric",
   }).format(new Date());
-  const currentFullDate = new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  }).format(new Date());
   const routeFeatureSeoName = routeFeatureMeta?.seoName || "";
   const sanitizeDescription = (desc = "") => {
     const text = String(desc || "")
@@ -2568,50 +3142,41 @@ const TVs = () => {
   const headerLabel = routeFeatureMeta
     ? `${String(routeFeatureSeoName).toUpperCase()} TVs`
     : currentBrandObj
-    ? `${String(currentBrandObj.name).toUpperCase()} TVs`
-    : filter === "trending"
-      ? "TRENDING NOW"
-      : filter === "new"
-        ? "LATEST COLLECTION"
-        : "BEST TVS IN INDIA";
+      ? `${String(currentBrandObj.name).toUpperCase()} TVs`
+      : filter === "trending"
+        ? "TRENDING NOW"
+        : filter === "new"
+          ? "LATEST COLLECTION"
+          : "BEST TVS IN INDIA";
 
   const heroTitleText = routeFeatureMeta
     ? `Best ${routeFeatureSeoName} TVs`
     : currentBrandObj
-    ? `${currentBrandObj.name} TVs`
-    : filter === "trending"
-      ? "Trending TVs"
-      : filter === "new"
-        ? "Latest TVs"
-        : "Best TVs in India";
+      ? `${currentBrandObj.name} TVs`
+      : filter === "trending"
+        ? "Trending TVs"
+        : filter === "new"
+          ? "Latest TVs"
+          : "Best TVs in India";
 
   const heroSubtitleText = routeFeatureMeta
     ? `Browse the best ${routeFeatureSeoName} TVs in India with updated prices, screen sizes, display details, smart features, and store availability. Compare matching models and choose the TV that fits your viewing needs.`
     : currentBrandObj
-    ? sanitizeDescription(
-        currentBrandObj.description ||
-          `Browse ${currentBrandObj.name} TVs with detailed specifications, updated prices, and store offers before you decide.`,
-      )
-    : filter === "trending"
-      ? "Browse the TVs buyers are watching most and quickly spot the models that are getting attention right now. This page brings together updated prices, display technology, panel type, resolution, refresh rate, audio features, smart features, and model variants in one place so you can compare the practical details that matter without opening multiple store pages. Whether you are looking for a budget smart TV, a 4K home-theater screen, a gaming-friendly panel, or a premium flagship display, the trending collection helps you narrow the field with confidence. Use the filters and product cards to sort by brand, price, screen size, resolution, and feature, then open the listings that look the most promising."
-      : filter === "new"
-        ? "Browse the newest TV releases and keep up with fresh launches as they arrive. This page brings together updated pricing, panel details, refresh rates, audio information, smart platform options, and screen sizes so you can track what is new in one place. If you are waiting for a newly announced model, planning a living-room upgrade, or checking how the latest releases stack up, the new-launch collection makes it easy to review the important details without jumping between many product pages. Use the filters and product cards to sort by brand, price, size, resolution, and feature, then open the TVs that are most worth watching."
-        : "Browse the best TVs in India ranked using current buyer interest, product momentum, and freshness signals from Hooks. Compare brands, prices, screen sizes, panel types, smart features, refresh rates, audio output, and model variants in one place. Whether you want a budget smart TV, a family viewing screen, a gaming display, or a premium home-theater panel, use the filters and product cards to narrow the shortlist and open the TVs that fit your needs.";
+      ? sanitizeDescription(
+          currentBrandObj.description ||
+            `Browse ${currentBrandObj.name} TVs with detailed specifications, updated prices, and store offers before you decide.`,
+        )
+      : filter === "trending"
+        ? "Browse the TVs buyers are watching most and quickly spot the models that are getting attention right now. This page brings together updated prices, display technology, panel type, resolution, refresh rate, audio features, smart features, and model variants in one place so you can compare the practical details that matter without opening multiple store pages. Whether you are looking for a budget smart TV, a 4K home-theater screen, a gaming-friendly panel, or a premium flagship display, the trending collection helps you narrow the field with confidence. Use the filters and product cards to sort by brand, price, screen size, resolution, and feature, then open the listings that look the most promising."
+        : filter === "new"
+          ? "Browse the newest TV releases and keep up with fresh launches as they arrive. This page brings together updated pricing, panel details, refresh rates, audio information, smart platform options, and screen sizes so you can track what is new in one place. If you are waiting for a newly announced model, planning a living-room upgrade, or checking how the latest releases stack up, the new-launch collection makes it easy to review the important details without jumping between many product pages. Use the filters and product cards to sort by brand, price, size, resolution, and feature, then open the TVs that are most worth watching."
+          : "Browse the best TVs in India ranked using current buyer interest, product momentum, and freshness signals from MobileX. Compare brands, prices, screen sizes, panel types, smart features, refresh rates, audio output, and model variants in one place. Whether you want a budget smart TV, a family viewing screen, a gaming display, or a premium home-theater panel, use the filters and product cards to narrow the shortlist and open the TVs that fit your needs.";
 
   const isExpandedHeroDescriptionPath =
     Boolean(routeFeatureMeta) ||
     filter === "trending" ||
     filter === "new" ||
     !currentBrandObj;
-  const heroSubtitleStyle =
-    isExpandedHeroDescriptionPath && !showHeroDescription
-      ? {
-          display: "-webkit-box",
-          WebkitBoxOrient: "vertical",
-          WebkitLineClamp: 1,
-          overflow: "hidden",
-        }
-      : undefined;
   const heroSubtitleWidthClass = "max-w-7xl";
   useEffect(() => {
     if (isExpandedHeroDescriptionPath) {
@@ -2619,30 +3184,36 @@ const TVs = () => {
     }
   }, [isExpandedHeroDescriptionPath]);
 
-  let seoTitle = `Best TVs in India (${currentMonthYear}) - Hooks`;
+  let seoTitle = `Best TVs in India (${currentMonthYear}) | MobileX`;
   let seoDescription =
-    "Browse the best TVs in India ranked using buyer interest, trend momentum, and freshness signals. Compare updated prices, screen sizes, display specifications, and smart TV features on Hooks.";
+    "Browse the best TVs in India ranked using buyer interest, trend momentum, and freshness signals. Compare updated prices, screen sizes, display specifications, and smart TV features on MobileX.";
 
   if (filter === "trending") {
-    seoTitle = `Trending TVs (${currentMonthYear}) - Most Popular Smart TVs & Prices - Hooks`;
+    seoTitle = `Trending TVs in India (${currentMonthYear}) | MobileX`;
     seoDescription =
-      "Browse trending TVs with rising demand, key specifications, and latest prices to find the right smart TV on Hooks.";
+      "Browse trending TVs with rising demand, key specifications, and latest prices to find the right smart TV on MobileX.";
   } else if (filter === "new") {
-    seoTitle = `Latest Smart TVs in India (${currentFullDate}) - Hooks`;
+    seoTitle = `Latest TVs in India (${currentMonthYear}) | MobileX`;
     seoDescription =
-      "Browse newly launched TVs with updated specifications, panel details, refresh rates, and best store prices on Hooks.";
+      "Browse newly launched TVs with updated specifications, panel details, refresh rates, and best store prices on MobileX.";
   }
 
   if (routeFeatureMeta) {
-    seoTitle = `Best ${routeFeatureSeoName} TVs in India (${currentFullDate}) - Hooks`;
-    seoDescription = `Browse the best ${routeFeatureSeoName} TVs in India with updated prices, display specifications, screen sizes, smart features, and store availability on Hooks.`;
+    const featureTitle =
+      routeFeatureSlug === "ultra-hd-4k"
+        ? "4K"
+        : routeFeatureSlug === "smart-tv"
+          ? "Smart"
+          : routeFeatureSeoName;
+    seoTitle = `Best ${featureTitle} TVs in India (${currentMonthYear}) | MobileX`;
+    seoDescription = `Browse the best ${routeFeatureSeoName} TVs in India with updated prices, display specifications, screen sizes, smart features, and store availability on MobileX.`;
   }
 
   if (currentBrandObj && !routeFeatureMeta) {
-    seoTitle = `${currentBrandObj.name} TVs (${currentMonthYear}) - Models, Prices & Specs - Hooks`;
+    seoTitle = `${currentBrandObj.name} TVs in India (${currentMonthYear}) | MobileX`;
     seoDescription = sanitizeDescription(
       currentBrandObj.description ||
-        `Browse ${currentBrandObj.name} TVs with detailed specifications, latest prices, and top store offers on Hooks.`,
+        `Browse ${currentBrandObj.name} TVs with detailed specifications, latest prices, and top store offers on MobileX.`,
     );
   }
   const _seoKeywords = useMemo(
@@ -2661,19 +3232,13 @@ const TVs = () => {
           currentBrandObj?.name ? `${currentBrandObj.name} smart tv` : "",
         ],
       }),
-    [
-      currentYear,
-      filter,
-      routeFeatureSeoName,
-      currentBrandObj,
-      sortedVariants,
-    ],
+    [currentYear, filter, routeFeatureSeoName, currentBrandObj, sortedVariants],
   );
 
   const siteOrigin =
     typeof window !== "undefined" && window.location?.origin
       ? window.location.origin
-      : "https://tryhook.shop";
+      : "https://mobilex.in";
 
   const toAbsoluteUrl = (value) => {
     if (!value) return "";
@@ -2708,7 +3273,8 @@ const TVs = () => {
           if (!entry || typeof entry !== "object") return false;
           return (
             (Array.isArray(entry.images) && entry.images.find(Boolean)) ||
-            (Array.isArray(entry.images_json) && entry.images_json.find(Boolean)) ||
+            (Array.isArray(entry.images_json) &&
+              entry.images_json.find(Boolean)) ||
             entry.image ||
             entry.image_url ||
             entry.imageUrl
@@ -2718,7 +3284,8 @@ const TVs = () => {
     if (!variant) return "";
     return (
       (Array.isArray(variant.images) && variant.images.find(Boolean)) ||
-      (Array.isArray(variant.images_json) && variant.images_json.find(Boolean)) ||
+      (Array.isArray(variant.images_json) &&
+        variant.images_json.find(Boolean)) ||
       variant.image ||
       variant.image_url ||
       variant.imageUrl ||
@@ -2731,11 +3298,11 @@ const TVs = () => {
       Boolean(getListingProductImage(device)),
     );
     const raw = getListingProductImage(firstWithImage);
-    return toAbsoluteUrl(raw) || `${SITE_ORIGIN}/hook-logo.png`;
+    return toAbsoluteUrl(raw) || `${SITE_ORIGIN}/mobilex-favicon.svg`;
   }, [sortedVariants, siteOrigin]);
 
   const listCanonicalPath = isLatestPath
-    ? "/tvs/latest"
+    ? "/tvs/filter/new"
     : routeFeatureMeta
       ? `/tvs/features/${routeFeatureMeta.id}`
       : "/tvs";
@@ -2794,124 +3361,144 @@ const TVs = () => {
   };
 
   return (
-    <div className="hooks-product-listing hooks-tv-listing min-h-screen bg-white text-slate-900">
+    <CategoryListingShell className="hooks-product-listing hooks-tv-listing">
       <style>{animationStyles}</style>
-      <Helmet prioritizeSeoTags>
-        <title>{seoTitle}</title>
-        <meta name="description" content={seoDescription} />
-
-        {/* Canonical URL - CRITICAL for SEO per route */}
-        <link rel="canonical" href={listSchemaUrl} />
-
-        {/* Open Graph */}
-        <meta property="og:type" content="website" />
-        <meta property="og:title" content={seoTitle} />
-        <meta property="og:description" content={seoDescription} />
-        <meta property="og:url" content={listSchemaUrl} />
-        {listOgImage ? (
-          <meta key="tvs-og-image" property="og:image" content={listOgImage} />
-        ) : null}
-
-        {/* Twitter Card */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={seoTitle} />
-        <meta name="twitter:description" content={seoDescription} />
-        {listOgImage ? (
-          <meta
-            key="tvs-twitter-image"
-            name="twitter:image"
-            content={listOgImage}
-          />
-        ) : null}
-
+      <SEO
+        title={seoTitle}
+        description={seoDescription}
+        url={listSchemaUrl}
+        image={listOgImage || null}
+      >
         {listSchemaJson && (
           <script type="application/ld+json">{listSchemaJson}</script>
         )}
-      </Helmet>
+      </SEO>
       {/* Main Content */}
-      <div className="hooks-product-listing__inner relative mx-auto max-w-7xl px-4 pt-0 pb-8 sm:px-6 sm:pb-12 md:pb-16 lg:px-8 lg:pb-20">
-        <section className="hooks-category-hero relative left-1/2 isolate w-screen -translate-x-1/2 overflow-hidden px-4 pb-0 pt-3 sm:px-6 sm:pt-4 lg:px-8 lg:pt-5">
-          <div className="relative mx-auto max-w-7xl">
-            <div className="max-w-7xl">
-              <h1 className="hooks-category-hero__title">
-                {heroTitleText}
-              </h1>
+      <div className="relative mx-auto max-w-[1440px] px-3 pb-10 sm:px-6 sm:pb-14 lg:px-8 lg:pb-20">
+        <div className="relative">
+          <section className="smartphones-hero relative left-1/2 isolate w-screen -translate-x-1/2 overflow-hidden bg-gradient-to-b from-white via-blue-50/70 to-[#f3f6fb]">
+            <div className="px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
+              <div className="relative mx-auto max-w-7xl">
+                <div className="grid items-center gap-4 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-8">
+                  <div className="min-w-0">
+                    <div className="mb-2 inline-flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.18em] text-blue-700">
+                      <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-100" />
+                      {headerLabel}
+                    </div>
+                    <h1 className="hooks-category-hero__title max-w-4xl font-[Space_Grotesk] text-4xl font-bold leading-[0.98] tracking-[-0.055em] sm:text-5xl lg:text-7xl">
+                      {heroTitleText}
+                    </h1>
 
-              <p
-                className={`hooks-category-hero__copy mt-3 ${heroSubtitleWidthClass}`}
-                style={heroSubtitleStyle}
-              >
-                {heroSubtitleText}
-              </p>
+                    <p
+                      className={`hooks-category-hero__copy mt-3 max-w-3xl ${heroSubtitleWidthClass} ${isExpandedHeroDescriptionPath && !showHeroDescription ? "line-clamp-3 lg:line-clamp-2" : ""}`}
+                    >
+                      {heroSubtitleText}
+                    </p>
 
-              {isExpandedHeroDescriptionPath ? (
-                <button
-                  type="button"
-                  onClick={() => setShowHeroDescription((prev) => !prev)}
-                  className="mt-2.5 inline-flex items-center gap-2 text-sm font-semibold text-blue-700 transition-colors duration-200 hover:text-blue-900"
-                  aria-expanded={showHeroDescription}
-                >
-                  {showHeroDescription ? "Read less" : "Read more"}
-                </button>
-              ) : null}
+                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setShowFilters(true)}
+                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700"
+                      >
+                        <FaFilter /> Refine TVs
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowSort(true)}
+                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-slate-800 ring-1 ring-slate-200 transition hover:bg-slate-50 lg:hidden"
+                      >
+                        <FaSyncAlt /> Sort results
+                      </button>
+                      {isExpandedHeroDescriptionPath ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowHeroDescription((previous) => !previous)
+                          }
+                          className="inline-flex min-h-11 items-center gap-2 px-2 text-sm font-bold text-blue-700 transition hover:text-blue-900"
+                          aria-expanded={showHeroDescription}
+                        >
+                          {showHeroDescription ? "Read less" : "Read more"}
+                          <FaChevronRight
+                            className={showHeroDescription ? "rotate-90" : ""}
+                          />
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
 
+                  <div
+                    className="relative mx-auto hidden h-[190px] w-full max-w-[350px] sm:h-[220px] lg:block lg:h-[230px]"
+                    aria-label="TV technology illustration"
+                    role="img"
+                  >
+                    <div className="absolute inset-x-10 top-7 h-36 rounded-full bg-blue-500/15 blur-3xl" />
+                    <div className="absolute left-1/2 top-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full border border-blue-200/70" />
+                    <div className="absolute left-1/2 top-1/2 h-28 w-64 -translate-x-1/2 -translate-y-1/2 rotate-[-12deg] rounded-full border border-indigo-200/60" />
+                    <span className="absolute left-[8%] top-[8%] inline-flex h-11 w-11 items-center justify-center rounded-xl border border-blue-100 bg-white text-blue-600 shadow-sm">
+                      <FaTv className="text-sm" />
+                    </span>
+                    <span className="absolute right-[8%] top-[12%] inline-flex h-11 w-11 items-center justify-center rounded-xl border border-blue-100 bg-white text-blue-600 shadow-sm">
+                      <FaExpand className="text-sm" />
+                    </span>
+                    <span className="absolute left-[10%] bottom-[12%] inline-flex h-11 w-11 items-center justify-center rounded-xl border border-blue-100 bg-white text-blue-600 shadow-sm">
+                      <FaWifi className="text-sm" />
+                    </span>
+                    <span className="absolute right-[9%] bottom-[10%] inline-flex h-11 w-11 items-center justify-center rounded-xl border border-blue-100 bg-white text-blue-600 shadow-sm">
+                      <FaVolumeUp className="text-sm" />
+                    </span>
+                    <div className="absolute left-1/2 top-1/2 h-28 w-56 -translate-x-1/2 -translate-y-1/2 rounded-[18px] border-[7px] border-slate-950 bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-600 shadow-xl">
+                      <div className="absolute inset-2 rounded-lg border border-white/25" />
+                    </div>
+                    <div className="absolute bottom-4 left-1/2 h-3 w-20 -translate-x-1/2 rounded-full bg-slate-950" />
+                    <div className="absolute bottom-1 left-1/2 h-1 w-32 -translate-x-1/2 rounded-full bg-slate-400/70" />
+                    <span className="absolute right-3 top-4 h-2.5 w-2.5 rounded-full bg-cyan-400" />
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </div>
 
-        <div className="mt-3 sm:mt-4">
+        <div className="mt-2 sm:mt-3">
           <MobileListingControls
+            showDesktop
             activeFilterCount={getActiveFiltersCount()}
+            activeFeatureCount={normalizedFeature ? 1 : 0}
             onOpenFilters={() => setShowFilters(true)}
             onOpenSort={() => setShowSort(true)}
+            onOpenPopularFeatures={() => {
+              setPendingPopularFeature(normalizedFeature || "");
+              setShowPopularFeaturePicker(true);
+            }}
+            currentFeatureLabel={
+              popularFeatures.find(
+                (feature) => feature.id === normalizedFeature,
+              )?.name || "Popular Features"
+            }
+            sortBy={sortBy}
+            sortOptions={TV_MOBILE_SORT_OPTIONS}
+            onSortChange={setSortBy}
           />
         </div>
 
-        <div className="overflow-hidden pt-0 pb-2 sm:pb-3">
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <FaFilter className="text-blue-600" />
-              <h3 className="text-sm font-semibold text-slate-900 sm:text-base">
-                Popular Features
-              </h3>
-            </div>
-            {normalizedFeature && (
-              <button
-                onClick={() => setFeatureParam(null)}
-                className="text-xs font-semibold text-blue-700 transition-colors duration-200 hover:text-blue-900 sm:text-sm"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-          {popularFeatureOrderLoaded && (
-            <p className="mb-2 text-xs text-slate-500">
-              Popular choices from other users (last 7 days)
-            </p>
-          )}
-          <div className="flex gap-2.5 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {popularFeatures.map((pf) => {
-              const isActive = normalizedFeature === pf.id;
-              const Icon = pf.icon;
-              return (
-                <button
-                  key={pf.id}
-                  onClick={() => setFeatureParam(pf.id)}
-                  className={`flex items-center gap-2 rounded-full px-3 py-2 text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors duration-200 ${
-                    isActive
-                      ? "bg-blue-600 text-white"
-                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                  }`}
-                >
-                  <span className={isActive ? "text-white" : "text-blue-600"}>
-                    {Icon ? <Icon className="text-base" /> : null}
-                  </span>
-                  <span>{pf.name}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <PopularFeatureFilterSheet
+          open={showPopularFeaturePicker}
+          features={popularFeatures}
+          pendingFeature={pendingPopularFeature}
+          onPendingChange={setPendingPopularFeature}
+          onCancel={() => setShowPopularFeaturePicker(false)}
+          onApply={() => {
+            setFeatureParam(pendingPopularFeature || null);
+            setShowPopularFeaturePicker(false);
+          }}
+          title="Popular Features"
+          subtitle="Choose one feature"
+          selectionLabel="All popular TV features"
+          applyLabel="Apply feature"
+        />
+
         <div className="mb-3 overflow-hidden">
           <div className="hidden items-center justify-end gap-4 lg:flex">
             {getActiveFiltersCount() > 0 && (
@@ -2952,479 +3539,14 @@ const TVs = () => {
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 lg:flex-row md:gap-6">
-          {/* Desktop Filter Sidebar */}
-          <div className="hidden lg:block lg:w-72 flex-shrink-0">
-            <div className="hooks-filter-panel sticky top-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-[0_2px_2px_rgba(0,0,0,0.1)] lg:p-6">
-              {/* Filters Header */}
-              <div className="mb-6 flex items-center justify-between border-b border-slate-200 px-2 pb-4 sm:mb-8 sm:px-3 md:px-4">
-                <div>
-                  <h3 className="flex items-center gap-2 text-xl font-bold text-slate-900">
-                    Filters
-                  </h3>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Narrow down by specifications
-                  </p>
-                </div>
-                {getActiveFiltersCount() > 0 && (
-                  <button
-                    onClick={clearFilters}
-                    className="flex items-center gap-2 rounded-lg px-3 py-1 text-sm font-semibold text-blue-600 transition-colors duration-200 hover:bg-slate-50 hover:text-blue-500"
-                  >
-                    <FaTimes />
-                    Clear all
-                  </button>
-                )}
-              </div>
-
-              {/* Active Filters Badge */}
-              {getActiveFiltersCount() > 0 && (
-                <div className="mb-6 rounded-xl border border-slate-100 bg-white p-4 shadow-[0_2px_2px_rgba(0,0,0,0.1)] sm:mb-8">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-semibold text-slate-900">
-                      Active Filters
-                    </span>
-                    <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-1 text-xs font-bold text-blue-600">
-                      {getActiveFiltersCount()}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500">
-                    Refine further or clear to see all TVs
-                  </p>
-                </div>
-              )}
-
-              {/* Brand Filter */}
-              <div className="mb-8">
-                <div className="mb-4 flex items-center justify-between">
-                  <div>
-                    <h4 className="text-base font-bold text-slate-900">
-                      Brands
-                    </h4>
-                    <p className="mt-1 text-xs text-slate-500">
-                      Select by manufacturer
-                    </p>
-                  </div>
-                  <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
-                    {filters.brand.length}
-                  </span>
-                </div>
-                <div className="relative mb-4">
-                  <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" />
-                  <input
-                    type="text"
-                    value={brandFilterQuery}
-                    onChange={(e) => setBrandFilterQuery(e.target.value)}
-                    placeholder="Search brand..."
-                    className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  />
-                </div>
-                <div className="no-scrollbar max-h-60 space-y-2 overflow-y-auto pr-2">
-                  {filteredBrandOptions.map((brand) => (
-                    <label
-                      key={brand}
-                      className="group flex cursor-pointer items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 transition-all duration-200 hover:border-slate-200 hover:bg-slate-50"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={filters.brand.includes(brand)}
-                        onChange={() => handleFilterChange("brand", brand)}
-                        className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white transition-all duration-200 checked:border-blue-500 checked:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1"
-                      />
-                      <span className="flex-1 font-medium text-slate-700 group-hover:text-slate-900">
-                        {brand}
-                      </span>
-                      <div className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-500">
-                        {devices.filter((d) => d.brand === brand).length}
-                      </div>
-                    </label>
-                  ))}
-                  {filteredBrandOptions.length === 0 && (
-                    <div className="px-2 py-1 text-sm text-slate-500">
-                      No brands found
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Appliance Type Filter */}
-              {extractDynamicFilters.applianceTypes.length > 1 && (
-                <div className="mb-8">
-                  <div className="mb-3 flex items-center justify-between">
-                    <h4 className="text-lg font-semibold text-slate-900">
-                      TV Type
-                    </h4>
-                    <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">
-                      {filters.applianceType.length} selected
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    {extractDynamicFilters.applianceTypes.map((type) => (
-                      <label
-                        key={type}
-                        className={`flex cursor-pointer items-center justify-between gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition-colors duration-200 ${
-                          filters.applianceType.includes(type)
-                            ? "border-blue-400 bg-blue-50 text-blue-700"
-                            : "border-slate-100 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={filters.applianceType.includes(type)}
-                          onChange={() =>
-                            handleFilterChange("applianceType", type)
-                          }
-                          className="sr-only"
-                        />
-                        <span>{type}</span>
-                        <span
-                          className={`h-2 w-2 rounded-full ${
-                            filters.applianceType.includes(type)
-                              ? "bg-blue-600"
-                              : "bg-slate-300"
-                          }`}
-                        />
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Price Range Filter */}
-              <div className="mb-8">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h4 className="text-base font-bold text-slate-900">
-                      Price Range
-                    </h4>
-                    <p className="mt-1 text-xs text-slate-500">
-                      Set your budget
-                    </p>
-                  </div>
-                  <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-600">
-                    {formatRupeeNumber(filters.priceRange.min)} -{" "}
-                    {formatRupeeNumber(filters.priceRange.max)}
-                  </span>
-                </div>
-                <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-[0_2px_2px_rgba(0,0,0,0.1)]">
-                  <div className="flex justify-between text-sm font-medium text-slate-700 mb-4">
-                    <div className="text-center">
-                      <div className="text-xs text-slate-500">Minimum</div>
-                      <div className="font-bold">
-                        {formatRupeeNumber(filters.priceRange.min)}
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-xs text-slate-500">Maximum</div>
-                      <div className="font-bold">
-                        {formatRupeeNumber(filters.priceRange.max)}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Dual Range Slider */}
-                  <div className="relative mb-8">
-                    <div className="absolute h-2 bg-slate-200 rounded-full w-full top-1/2 transform -translate-y-1/2"></div>
-                    <div
-                      className="absolute h-2 bg-gradient-to-r from-blue-300 via-blue-700 to-blue-900 rounded-full top-1/2 transform -translate-y-1/2"
-                      style={{
-                        left: `${Math.max(
-                          0,
-                          Math.min(
-                            100,
-                            ((filters.priceRange.min || 0) / (MAX_PRICE || 1)) *
-                              100,
-                          ),
-                        )}%`,
-                        width: `${Math.max(
-                          0,
-                          Math.min(
-                            100,
-                            ((filters.priceRange.max - filters.priceRange.min) /
-                              (MAX_PRICE || 1)) *
-                              100,
-                          ),
-                        )}%`,
-                      }}
-                    ></div>
-
-                    <input
-                      type="range"
-                      min={MIN_PRICE}
-                      max={MAX_PRICE}
-                      step={TV_PRICE_STEP}
-                      value={filters.priceRange.min}
-                      onChange={(e) =>
-                        updatePriceRange(
-                          Number(e.target.value),
-                          filters.priceRange.max,
-                        )
-                      }
-                      className="absolute w-full top-1/2 h-4 -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-400 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-blue-500/30 [&::-webkit-slider-thumb]:cursor-pointer"
-                    />
-
-                    <input
-                      type="range"
-                      min={MIN_PRICE}
-                      max={MAX_PRICE}
-                      step={TV_PRICE_STEP}
-                      value={filters.priceRange.max}
-                      onChange={(e) =>
-                        updatePriceRange(
-                          filters.priceRange.min,
-                          Number(e.target.value),
-                        )
-                      }
-                      className="absolute w-full top-1/2 h-4 -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-400 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-blue-500/30 [&::-webkit-slider-thumb]:cursor-pointer"
-                    />
-                  </div>
-
-                  <div className="flex justify-between items-center text-xs mb-2">
-                    <span className="text-slate-500">
-                      {formatRupeeNumber(MIN_PRICE)}
-                    </span>
-                    <span className="text-slate-500">
-                      {formatRupeeNumber(MAX_PRICE)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Additional Features Filter */}
-              <div className="mb-8">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-semibold text-slate-900 text-lg flex items-center gap-2">
-                    Additional Features
-                  </h4>
-                  <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
-                    {filters.additionalFeatures.length} selected
-                  </span>
-                </div>
-                <div className="relative mb-3">
-                  <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" />
-                  <input
-                    type="text"
-                    value={additionalFeatureQuery}
-                    onChange={(event) =>
-                      setAdditionalFeatureQuery(event.target.value)
-                    }
-                    placeholder="Search features..."
-                    className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  />
-                </div>
-                <div className="no-scrollbar max-h-72 space-y-1.5 overflow-y-auto pr-1">
-                  {filteredAdditionalFeatureOptions.map((feature) => {
-                    return (
-                      <label
-                        key={feature.id}
-                        className="group flex cursor-pointer items-center gap-3 rounded-lg border border-transparent px-2.5 py-2 transition-all duration-200 hover:border-slate-200 hover:bg-slate-50"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={filters.additionalFeatures.includes(
-                            feature.id,
-                          )}
-                          onChange={() =>
-                            handleFilterChange("additionalFeatures", feature.id)
-                          }
-                          className="h-4 w-4 shrink-0 appearance-none rounded border border-slate-300 bg-white transition-all duration-200 checked:border-blue-500 checked:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1"
-                        />
-                        <span className="min-w-0 flex-1 text-sm font-medium text-slate-700 group-hover:text-slate-900">
-                          {feature.name}
-                        </span>
-                        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-500">
-                          {feature.count}
-                        </span>
-                      </label>
-                    );
-                  })}
-                  {filteredAdditionalFeatureOptions.length === 0 && (
-                    <div className="px-2 py-3 text-sm text-slate-500">
-                      No matching features
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Capacity Range Filter */}
-              {extractDynamicFilters.capacityRanges.length > 0 && (
-                <div className="mb-8">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-semibold text-slate-900 text-lg flex items-center gap-2">
-                      Capacity Range
-                    </h4>
-                    <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
-                      {filters.capacityRange.length} selected
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    {extractDynamicFilters.capacityRanges.map((range) => (
-                      <label
-                        key={range.id}
-                        className={`flex items-center justify-between gap-2 cursor-pointer px-4 py-3 rounded-xl transition-all duration-200 font-medium ${
-                          filters.capacityRange.includes(range.id)
-                            ? "bg-gradient-to-r from-blue-500 to-sky-500 text-white border border-blue-400"
-                            : "border border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-slate-50"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={filters.capacityRange.includes(range.id)}
-                          onChange={() =>
-                            handleFilterChange("capacityRange", range.id)
-                          }
-                          className="sr-only"
-                        />
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm">{range.label}</span>
-                        </div>
-                        <div
-                          className={`w-2 h-2 rounded-full ${
-                            filters.capacityRange.includes(range.id)
-                              ? "bg-white"
-                              : "bg-slate-300"
-                          }`}
-                        ></div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Energy Rating Filter */}
-              {extractDynamicFilters.energyRating.length > 0 && (
-                <div className="mb-8">
-                  <div className="mb-3 flex items-center justify-between">
-                    <h4 className="text-lg font-semibold text-slate-900">
-                      Energy Rating
-                    </h4>
-                    <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">
-                      {filters.energyRating.length} selected
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {extractDynamicFilters.energyRating.map((rating) => (
-                      <label
-                        key={rating}
-                        className={`flex cursor-pointer items-center justify-center rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
-                          filters.energyRating.includes(rating)
-                            ? "border-blue-400 bg-blue-50 text-blue-700"
-                            : "border-slate-100 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={filters.energyRating.includes(rating)}
-                          onChange={() =>
-                            handleFilterChange("energyRating", rating)
-                          }
-                          className="sr-only"
-                        />
-                        <span>{rating}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Release Year Filter */}
-              {extractDynamicFilters.releaseYears.length > 0 && (
-                <div className="mb-8">
-                  <div className="mb-3 flex items-center justify-between">
-                    <h4 className="text-lg font-semibold text-slate-900">
-                      Release Year
-                    </h4>
-                    <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">
-                      {filters.releaseYear.length} selected
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {extractDynamicFilters.releaseYears.map((year) => {
-                      const value = String(year);
-                      return (
-                        <label
-                          key={value}
-                          className={`flex cursor-pointer items-center justify-center rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
-                            filters.releaseYear.includes(value)
-                              ? "border-blue-400 bg-blue-50 text-blue-700"
-                              : "border-slate-100 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={filters.releaseYear.includes(value)}
-                            onChange={() =>
-                              handleFilterChange("releaseYear", value)
-                            }
-                            className="sr-only"
-                          />
-                          <span>{value}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Specific Filters for Selected Appliance Type */}
-              {effectiveSpecificFilterType &&
-                specificFiltersConfig.length > 0 && (
-                <div className="mb-8">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-semibold text-slate-900 text-lg flex items-center gap-2">
-                      <FaCog className="text-blue-500" />
-                      {selectedApplianceType || "TV"} Filters
-                    </h4>
-                    <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
-                      {Object.values(filters.specific || {}).flat().length}{" "}
-                      selected
-                    </span>
-                  </div>
-                  <div className="space-y-4">
-                    {specificFiltersConfig.map((filter) => (
-                      <div key={filter.key}>
-                        <h5 className="font-medium text-slate-800 text-sm mb-2">
-                          {filter.label}
-                        </h5>
-                        <div className="space-y-2">
-                          {filter.options.map((option) => (
-                            <label
-                              key={option}
-                              className="flex items-center gap-3 cursor-pointer group hover:bg-slate-50 px-3 py-2 rounded-lg transition-all duration-200"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={
-                                  filters.specific[filter.key]?.includes(
-                                    option,
-                                  ) || false
-                                }
-                                onChange={() =>
-                                  handleSpecificFilterChange(filter.key, option)
-                                }
-                                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-                              />
-                              <span className="text-slate-700 text-sm group-hover:text-slate-900">
-                                {option}
-                              </span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
+        <div className="flex flex-col gap-4 md:gap-6">
           {/* Products List - Right */}
-          <div className="flex-1">
+          <div className="w-full">
             {/* Results Summary */}
             {/* BannerSlot disabled (incomplete). */}
 
             {/* Products Grid */}
-            <div className="grid grid-cols-1 gap-4 sm:gap-5 md:gap-6 auto-rows-max">
+            <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 md:gap-5 xl:grid-cols-3 xl:gap-6">
               {sortedVariants.map((device, idx) => {
                 const hasStoreSection =
                   Array.isArray(device.storePrices) &&
@@ -3433,454 +3555,186 @@ const TVs = () => {
                   ? new Date(device.launchDate)
                   : null;
                 const hasLaunchDate =
-                  launchDateParsed &&
-                  !Number.isNaN(launchDateParsed.getTime());
+                  launchDateParsed && !Number.isNaN(launchDateParsed.getTime());
+                const score = resolveTvSpecScore(device);
+                const statusLabel =
+                  device.display_status ||
+                  device.displayStatus ||
+                  "Available now";
+                const storeRows = Array.isArray(device.storePrices)
+                  ? device.storePrices.slice(0, 2)
+                  : [];
+                const primaryVariant =
+                  Array.isArray(device.variants) && device.variants.length > 0
+                    ? device.variants[0]
+                    : null;
+
+                const highlightItems = [
+                  {
+                    label: "Display",
+                    value: firstNonEmpty(device.specs?.screenSize, "—"),
+                    icon: FaTv,
+                  },
+                  {
+                    label: "Resolution",
+                    value: firstNonEmpty(device.specs?.resolution, "—"),
+                    icon: FaExpand,
+                  },
+                  {
+                    label: "Refresh rate",
+                    value: firstNonEmpty(device.specs?.refreshRate, "—"),
+                    icon: FaSyncAlt,
+                  },
+                  {
+                    label: "Smart TV",
+                    value: firstNonEmpty(device.specs?.operatingSystem, "—"),
+                    icon: FaBolt,
+                  },
+                ];
+
+                const variantItems = Array.isArray(device.variants)
+                  ? device.variants.map((variant, variantIndex) => ({
+                      id: getTvVariantIdentity(variant, variantIndex),
+                      label: firstNonEmpty(
+                        variant?.screen_size,
+                        variant?.size,
+                        variant?.variant_key,
+                        "TV size",
+                      ),
+                      source: variant,
+                    }))
+                  : [];
 
                 return (
-                  <div
+                  <ProductListingCard
                     key={`${device.id}-${idx}`}
                     onClick={(e) => handleView(device, e)}
-                    className="hooks-product-card smooth-transition fade-in-up h-full w-full mx-auto overflow-hidden rounded-lg border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)] cursor-pointer transition-all duration-300 hover:bg-slate-50"
+                    className="h-full"
                   >
-                    <div className="p-5 sm:p-6 transition-all duration-300">
-                      {/* Desktop Header Section - Hidden on mobile */}
-                      <div className="hidden flex-col gap-4 lg:flex lg:flex-row lg:items-start lg:justify-between">
-                        <div className="min-w-0 flex-1">
-                          <h3 className="max-w-3xl text-[1.45rem] font-semibold tracking-tight text-[#14255e] sm:text-[1.8rem]">
-                            {device.name || device.model || "TV"}
-                          </h3>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-3 lg:justify-end">
-                          <div className="text-xl font-semibold tracking-tight text-[#14255e] sm:text-2xl">
-                            {formatPriceDisplay(device.price)}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Desktop Score and Launch Date Section */}
-                      <div className="mt-4 hidden flex-col gap-3 lg:flex lg:flex-row lg:items-center lg:justify-between">
-                        <div className="flex flex-wrap items-center gap-4">
-                          <CircularScoreBadge
-                            score={device.spec_score}
-                            size={42}
-                          />
-                        </div>
-
-                        {hasLaunchDate ? (
-                          <div className="flex items-center gap-1.5 text-sm text-slate-700 sm:justify-end">
-                            <FaCalendarAlt className="text-slate-400" />
-                            <span>
-                              Listed:{" "}
-                              <span className="font-semibold text-slate-900">
-                                {launchDateParsed.toLocaleDateString("en-US", {
-                                  day: "2-digit",
-                                  month: "short",
-                                  year: "numeric",
-                                })}
-                              </span>
-                            </span>
-                          </div>
-                        ) : null}
-                      </div>
-
-                      {/* Main Content Grid */}
-                      <div className="mt-5 grid grid-cols-[128px_minmax(0,1fr)] gap-3 sm:grid-cols-[120px_minmax(0,1fr)] lg:grid-cols-[180px_minmax(0,1fr)] sm:gap-4 lg:gap-5">
-                        {/* Image Column */}
-                        <div className="relative flex items-start justify-start sm:justify-center">
-                          <span className="absolute left-0 top-0 z-10 inline-flex items-center rounded-full bg-yellow-600 px-3 py-1 text-xs font-semibold text-white shadow-sm">
+                    <div className="flex h-full flex-col p-0">
+                      {/* Same top arrangement as Smartphones: image left + identity right on every breakpoint */}
+                      <div className="grid grid-cols-[116px_minmax(0,1fr)] gap-3 p-3 sm:grid-cols-[136px_minmax(0,1fr)] sm:gap-4 sm:p-4 xl:grid-cols-[148px_minmax(0,1fr)]">
+                        <ProductCardMedia className="relative h-[190px] min-h-[190px] items-center justify-center rounded-xl bg-gradient-to-b from-blue-50 via-white to-slate-50 sm:h-[210px] sm:min-h-[210px] xl:h-[226px] xl:min-h-[226px]">
+                          <span className="absolute left-2 top-2 z-10 inline-flex max-w-[100px] items-center gap-1 rounded-full bg-blue-600 px-2.5 py-1 text-[8px] font-extrabold uppercase tracking-[0.08em] text-white sm:text-[9px]">
+                            <FaTv aria-hidden="true" />
                             Smart TV
                           </span>
-                          <div className="flex w-full justify-start sm:justify-center">
-                            <ImageCarousel images={device.images} />
-                          </div>
-                        </div>
+                          <ImageCarousel images={device.images} />
+                        </ProductCardMedia>
 
-                        {/* Right Column - Info */}
-                        <div className="space-y-3 pt-1">
-                          {/* Mobile Brand, Title, Score */}
-                          <div className="space-y-1 lg:hidden">
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="inline-block text-sm font-semibold text-blue-600">
-                                {device.brand}
-                              </span>
-                            </div>
-                            <h5 className="text-[1.05rem] font-semibold tracking-tight text-[#14255e] leading-6 break-words">
-                              {device.name || device.model || "TV"}
-                            </h5>
-                            <CircularScoreBadge
-                              score={device.spec_score}
-                              size={42}
-                            />
-                          </div>
-
-                          {/* Specs Summary - Desktop Only */}
-                          <div className="hidden lg:block text-[13px] leading-6 text-slate-700 sm:text-sm sm:leading-7 sm:text-base">
-                            {(() => {
-                              const activeSize = firstNonEmpty(
-                                device.variant?.screen_size,
-                                device.variant?.size,
-                                device.variant?.variant_key,
-                                device.specs?.screenSize,
-                                device.specs?.capacity,
-                              );
-                              const screenSize = String(
-                                activeSize || device.specs?.screenSize || "",
-                              ).trim();
-                              const variantSummary = firstNonEmpty(
-                                device.variant?.specification_summary,
-                              );
-                              const variantSummaryIsSize =
-                                normalizeLooseKey(variantSummary) ===
-                                normalizeLooseKey(screenSize);
-                              const resolution = String(
-                                firstNonEmpty(
-                                  device.variant?.resolution,
-                                  variantSummaryIsSize ? "" : variantSummary,
-                                  device.variant?.variant_resolution,
-                                  extractVariantSpecificValue(
-                                    device.specs?.resolution,
-                                    screenSize,
-                                  ),
-                                  device.specs?.resolution,
-                                ),
-                              ).trim();
-                              const refreshRate = String(
-                                firstNonEmpty(
-                                  device.variant?.refresh_rate,
-                                  extractVariantSpecificValue(
-                                    device.specs?.refreshRate,
-                                    screenSize,
-                                  ),
-                                  device.specs?.refreshRate,
-                                ),
-                              ).trim();
-                              const panelType = String(
-                                firstNonEmpty(
-                                  device.variant?.panel_type,
-                                  device.variant?.display_type,
-                                  extractVariantSpecificValue(
-                                    device.specs?.displayType,
-                                    screenSize,
-                                  ),
-                                  device.specs?.displayType,
-                                  device.specs?.type || "",
-                                ),
-                              ).trim();
-                              const operatingSystem = String(
-                                device.specs?.operatingSystem || "",
-                              ).trim();
-                              const tvIdentity = [
-                                screenSize,
-                                resolution,
-                                refreshRate,
-                                panelType,
-                                operatingSystem,
-                              ]
-                                .filter(Boolean)
-                                .join(" | ");
-                              return tvIdentity || "TV specifications";
-                            })()}
-                          </div>
-
-                          {/* Mobile Price */}
-                          <div className="lg:hidden text-lg font-semibold tracking-tight text-[#14255e] sm:text-xl">
-                            {formatPriceDisplay(device.price)}
-                          </div>
-
-                          {/* Mobile Specs and Details */}
-                          <div className="lg:hidden space-y-3">
-                            {(() => {
-                              const activeSize = firstNonEmpty(
-                                device.variant?.screen_size,
-                                device.variant?.size,
-                                device.variant?.variant_key,
-                                device.specs?.screenSize,
-                                device.specs?.capacity,
-                              );
-                              const screenSize = String(
-                                activeSize || device.specs?.screenSize || "",
-                              ).trim();
-                              const variantSummary = firstNonEmpty(
-                                device.variant?.specification_summary,
-                              );
-                              const variantSummaryIsSize =
-                                normalizeLooseKey(variantSummary) ===
-                                normalizeLooseKey(screenSize);
-                              const resolution = String(
-                                firstNonEmpty(
-                                  device.variant?.resolution,
-                                  variantSummaryIsSize ? "" : variantSummary,
-                                  device.variant?.variant_resolution,
-                                  extractVariantSpecificValue(
-                                    device.specs?.resolution,
-                                    screenSize,
-                                  ),
-                                  device.specs?.resolution,
-                                ),
-                              ).trim();
-                              const refreshRate = String(
-                                firstNonEmpty(
-                                  device.variant?.refresh_rate,
-                                  extractVariantSpecificValue(
-                                    device.specs?.refreshRate,
-                                    screenSize,
-                                  ),
-                                  device.specs?.refreshRate,
-                                ),
-                              ).trim();
-                              const panelType = String(
-                                firstNonEmpty(
-                                  device.variant?.panel_type,
-                                  device.variant?.display_type,
-                                  extractVariantSpecificValue(
-                                    device.specs?.displayType,
-                                    screenSize,
-                                  ),
-                                  device.specs?.displayType,
-                                  device.specs?.type || "",
-                                ),
-                              ).trim();
-                              const operatingSystem = String(
-                                device.specs?.operatingSystem || "",
-                              ).trim();
-                              const tvIdentity = [
-                                screenSize,
-                                resolution,
-                                refreshRate,
-                                panelType,
-                                operatingSystem,
-                              ]
-                                .filter(Boolean)
-                                .join(" | ");
-
-                              if (!tvIdentity) return null;
-                              return (
-                                <p className="mt-1 text-[13px] leading-6 text-slate-700 break-words">
-                                  {tvIdentity}
-                                </p>
-                              );
-                            })()}
-                          </div>
-
-                          {Array.isArray(device.variants) &&
-                            device.variants.length > 0 && (
+                        <ProductCardIdentity
+                          brand={device.brand || "Smart TV"}
+                          title={device.name || device.model || "TV"}
+                          score={score}
+                          meta={
+                            <>
                               <div>
-                                <p className="text-[11px] font-semibold text-slate-500 mb-1.5">
-                                  Available Sizes
-                                </p>
-                                <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                                  {device.variants.map(
-                                    (variant, variantIndex) => {
-                                      const label = firstNonEmpty(
-                                        variant?.screen_size,
-                                        variant?.size,
-                                        variant?.variant_key,
-                                      );
-                                      if (!label) return null;
-                                      const variantId = getTvVariantIdentity(
-                                        variant,
-                                        variantIndex,
-                                      );
-                                      const activeVariantId =
-                                        getTvVariantIdentity(device.variant, 0);
-                                      const isSelected =
-                                        activeVariantId === variantId;
-
-                                      return (
-                                        <button
-                                          key={`${device.id}-size-${variantId}`}
-                                          type="button"
-                                          onClick={(event) =>
-                                            handleSelectTvSize(
-                                              device,
-                                              variant,
-                                              event,
-                                            )
-                                          }
-                                          className={`shrink-0 px-2.5 py-1 rounded-full border text-[11px] font-semibold transition-colors ${
-                                            isSelected
-                                              ? "bg-blue-600 text-white border-blue-600"
-                                              : "bg-white text-slate-700 border-slate-200 hover:border-blue-300 hover:bg-slate-50 hover:text-blue-700"
-                                          }`}
-                                        >
-                                          {label}
-                                        </button>
-                                      );
-                                    },
-                                  )}
-                                </div>
+                                Market status:{" "}
+                                <strong className="text-slate-700">
+                                  {statusLabel}
+                                </strong>
                               </div>
-                            )}
+                              {hasLaunchDate ? (
+                                <div className="flex items-center gap-1.5">
+                                  <FaCalendarAlt className="text-slate-400" />
+                                  <span>
+                                    Launched:{" "}
+                                    <strong className="text-slate-700">
+                                      {launchDateParsed.toLocaleDateString(
+                                        "en-US",
+                                        {
+                                          day: "2-digit",
+                                          month: "short",
+                                          year: "numeric",
+                                        },
+                                      )}
+                                    </strong>
+                                  </span>
+                                </div>
+                              ) : null}
+                            </>
+                          }
+                          price={formatPriceDisplay(device.price)}
+                        />
+                      </div>
 
-                          {/* Store Prices - Desktop */}
-                          {hasStoreSection && (
-                            <div className="hidden rounded-[24px] border border-slate-100 bg-white p-2.5 shadow-[0_2px_2px_rgba(0,0,0,0.1)] sm:p-4 lg:block">
-                              <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
+                      {/* Same four-cell highlight strip as Smartphone cards */}
+                      <ProductHighlightStrip
+                        className="mx-2.5 sm:mx-3"
+                        items={highlightItems}
+                      />
+
+                      {/* Same compact variant treatment */}
+                      <div className="px-2.5 pb-2.5 sm:px-3 sm:pb-3">
+                        {variantItems.length > 0 ? (
+                          <ProductVariantSelector
+                            label="Available sizes"
+                            variants={variantItems}
+                            selectedId={
+                              primaryVariant
+                                ? getTvVariantIdentity(primaryVariant, 0)
+                                : undefined
+                            }
+                            onSelect={(variant) =>
+                              handleSelectTvSize(device, variant.source, {
+                                stopPropagation: () => {},
+                              })
+                            }
+                          />
+                        ) : null}
+
+                        {/* Same compact store panel as Smartphone cards */}
+                        {hasStoreSection ? (
+                          <div className="mt-3 rounded-xl bg-slate-50 p-2 sm:p-3">
+                            <div className="mb-1.5 flex items-center justify-between gap-2 px-1 sm:mb-2">
+                              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-800 sm:text-xs">
                                 <FaStore className="text-emerald-500" />
                                 Check Price On
-                              </div>
-                              <div className="space-y-2">
-                                {device.storePrices
-                                  .slice(0, 2)
-                                  .map((storePrice, i) => {
-                                    const storeObj =
-                                      storePrice.storeObj ||
-                                      (getStore
-                                        ? getStore(
-                                            storePrice.store ||
-                                              storePrice.store_name ||
-                                              storePrice.storeName ||
-                                              "",
-                                          )
-                                        : null);
-                                    const storeNameCandidate =
-                                      storePrice.store ||
-                                      storePrice.store_name ||
-                                      storePrice.storeName ||
-                                      storeObj?.name ||
-                                      "";
-                                    const logoSrc =
-                                      storePrice.logo ||
-                                      (getStoreLogo
-                                        ? getStoreLogo(storeNameCandidate)
-                                        : getLogo(storeNameCandidate));
-                                    return (
-                                      <div
-                                        key={`${device.id}-store-${i}`}
-                                        className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 px-2.5 py-2.5 sm:px-3 sm:py-3"
-                                      >
-                                        <div className="flex min-w-0 items-center gap-3">
-                                          {logoSrc ? (
-                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center">
-                                              <img
-                                                src={logoSrc}
-                                                alt={storePrice.store}
-                                                className="h-full w-full object-contain"
-                                              />
-                                            </div>
-                                          ) : (
-                                            <FaStore className="h-8 w-8 text-slate-300" />
-                                          )}
-                                          <span className="min-w-0 flex-1 text-sm font-medium text-slate-900">
-                                            {storePrice.store || "Online Store"}
-                                          </span>
-                                        </div>
-                                        <div className="flex flex-wrap items-center justify-end gap-3">
-                                          <div className="flex flex-col items-end">
-                                            <span className="text-sm font-bold text-emerald-600">
-                                              {formatPriceDisplay(
-                                                storePrice.price,
-                                              )}
-                                            </span>
-                                          </div>
-                                          {storePrice.url ? (
-                                            <a
-                                              href={storePrice.url}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              onClick={(e) =>
-                                                e.stopPropagation()
-                                              }
-                                              className="flex shrink-0 items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700"
-                                            >
-                                              Buy Now
-                                              <FaExternalLinkAlt className="text-xs opacity-80" />
-                                            </a>
-                                          ) : (
-                                            <span className="shrink-0 text-xs font-semibold text-slate-400">
-                                              Coming Soon
-                                            </span>
-                                          )}
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                {device.storePrices.length > 2 ? (
-                                  <div className="text-center text-xs text-slate-500 py-2">
-                                    +{device.storePrices.length - 2} more stores
-                                  </div>
-                                ) : null}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="mt-4 flex items-center justify-end gap-3">
-                        {hasLaunchDate ? (
-                          <div className="flex items-center gap-1.5 text-sm text-slate-700 lg:hidden">
-                            <FaCalendarAlt className="text-slate-400" />
-                            <span>
-                              Listed:{" "}
-                              <span className="font-semibold text-slate-900">
-                                {launchDateParsed.toLocaleDateString("en-US", {
-                                  day: "2-digit",
-                                  month: "short",
-                                  year: "numeric",
-                                })}
                               </span>
-                            </span>
-                          </div>
-                        ) : null}
-                      </div>
+                              <span className="text-[9px] font-semibold text-slate-400 sm:text-[10px]">
+                                Best prices
+                              </span>
+                            </div>
 
-                      {hasStoreSection && (
-                        <div className="mt-4 rounded-[20px] border border-slate-100 bg-white p-3 shadow-[0_2px_2px_rgba(0,0,0,0.1)] sm:p-4 lg:hidden">
-                          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
-                            <FaStore className="text-emerald-500" />
-                            Check Price On
-                          </div>
-                          <div className="space-y-2">
-                            {device.storePrices
-                              .slice(0, 2)
-                              .map((storePrice, i) => {
-                                const storeObj =
-                                  storePrice.storeObj ||
-                                  (getStore
-                                    ? getStore(
-                                        storePrice.store ||
-                                          storePrice.store_name ||
-                                          storePrice.storeName ||
-                                          "",
-                                      )
-                                    : null);
-                                const storeNameCandidate =
+                            <div className="space-y-1.5 sm:space-y-2">
+                              {storeRows.map((storePrice, storeIndex) => {
+                                const storeName =
                                   storePrice.store ||
                                   storePrice.store_name ||
                                   storePrice.storeName ||
-                                  storeObj?.name ||
-                                  "";
+                                  "Online Store";
                                 const logoSrc =
                                   storePrice.logo ||
                                   (getStoreLogo
-                                    ? getStoreLogo(storeNameCandidate)
-                                    : getLogo(storeNameCandidate));
+                                    ? getStoreLogo(storeName)
+                                    : getLogo(storeName));
+
                                 return (
                                   <div
-                                    key={`${device.id}-mobile-store-${i}`}
-                                    className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-white px-3 py-2.5"
+                                    key={`${device.id}-store-${storeIndex}`}
+                                    className="flex min-h-11 items-center justify-between gap-2 rounded-lg bg-white px-2 py-2 sm:min-h-12 sm:px-2.5"
                                   >
-                                    <div className="flex min-w-0 items-center gap-3">
+                                    <div className="flex min-w-0 items-center gap-2.5">
                                       {logoSrc ? (
-                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white">
+                                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white">
                                           <img
                                             src={logoSrc}
-                                            alt={storePrice.store}
+                                            alt={storeName}
                                             className="h-full w-full object-contain"
                                           />
                                         </div>
                                       ) : (
-                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f7fbff] ring-1 ring-[#dbe7f7]">
+                                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50">
                                           <FaStore className="text-xs text-slate-400" />
                                         </div>
                                       )}
-                                      <span className="truncate text-sm font-medium text-slate-800">
-                                        {storePrice.store || "Online Store"}
+                                      <span className="truncate text-[11px] font-semibold text-slate-800 sm:text-xs">
+                                        {storeName}
                                       </span>
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                      <span className="whitespace-nowrap text-sm font-semibold text-emerald-600">
+
+                                    <div className="flex shrink-0 items-center gap-2">
+                                      <span className="whitespace-nowrap text-[11px] font-bold text-emerald-600 sm:text-xs">
                                         {formatPriceDisplay(storePrice.price)}
                                       </span>
                                       {storePrice.url ? (
@@ -3889,13 +3743,13 @@ const TVs = () => {
                                           target="_blank"
                                           rel="noopener noreferrer"
                                           onClick={(e) => e.stopPropagation()}
-                                          className="inline-flex items-center gap-1 whitespace-nowrap text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700"
+                                          className="inline-flex min-h-8 items-center gap-1 rounded-md bg-blue-600 px-2.5 py-1.5 text-[9px] font-bold text-white transition hover:bg-blue-700 sm:px-3 sm:text-[10px]"
                                         >
                                           Buy Now
-                                          <FaExternalLinkAlt className="text-xs" />
+                                          <FaExternalLinkAlt className="text-[9px]" />
                                         </a>
                                       ) : (
-                                        <span className="inline-flex items-center gap-1 whitespace-nowrap text-sm font-semibold text-slate-400">
+                                        <span className="text-[10px] font-semibold text-slate-400">
                                           Coming Soon
                                         </span>
                                       )}
@@ -3903,11 +3757,19 @@ const TVs = () => {
                                   </div>
                                 );
                               })}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        ) : null}
+                      </div>
+
+                      <ProductCardFooter
+                        onView={(event) => {
+                          event.stopPropagation();
+                          handleView(device, event);
+                        }}
+                      />
                     </div>
-                  </div>
+                  </ProductListingCard>
                 );
               })}
             </div>
@@ -3986,7 +3848,7 @@ const TVs = () => {
         <LatestNewsRouteSection
           className="mt-6"
           productType="tv"
-          subtitle="Fresh TV launches, display technology updates, and buying context from the Hooks news desk."
+          subtitle="Fresh TV launches, display technology updates, and buying context from the MobileX news desk."
         />
 
         <ProductDiscoverySections
@@ -4007,445 +3869,30 @@ const TVs = () => {
           subtitle="Arrange televisions by preference"
         />
 
-        {/* Mobile Filter Overlay */}
         {showFilters && (
-          <div className="lg:hidden fixed inset-0 z-50">
-            <div
-              className="absolute inset-0 bg-black bg-opacity-50 transition-opacity duration-300"
-              onClick={() => setShowFilters(false)}
-            ></div>
-
-            <div className="absolute bottom-0 left-0 right-0 mx-auto flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)] transform transition-transform duration-300 sm:bottom-4 sm:rounded-2xl">
-              <div className="flex items-center justify-between border-b border-slate-200 bg-white p-6">
-                <div className="flex items-center gap-3">
-                  <div>
-                    <h3 className="text-xl font-bold text-slate-900">
-                      Refine Search
-                    </h3>
-                    <p className="text-sm text-slate-500">
-                      Filter TVs by specifications
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowFilters(false)}
-                  className="rounded-lg p-2 transition-colors duration-200 hover:bg-slate-100"
-                >
-                  <FaTimes className="text-slate-500 text-lg" />
-                </button>
-              </div>
-
-              <div className="no-scrollbar flex-1 space-y-6 overflow-y-auto p-6 pb-40">
-                {/* Brand */}
-                <div>
-                  <h4 className="font-semibold text-slate-900 text-lg mb-3">
-                    Brand
-                  </h4>
-                  <div className="relative mb-3">
-                    <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
-                    <input
-                      type="text"
-                      value={brandFilterQuery}
-                      onChange={(e) => setBrandFilterQuery(e.target.value)}
-                      placeholder="Search brand..."
-                      className="w-full rounded-lg border border-slate-200 bg-white pl-8 pr-3 py-2 text-sm shadow-[0_1px_2px_rgba(15,23,42,0.04)] focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {filteredBrandOptions.map((brand) => (
-                      <label
-                        key={brand}
-                        className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium text-sm border ${
-                          filters.brand.includes(brand)
-                            ? "bg-gradient-to-b from-blue-500 to-sky-500 text-white border-blue-400"
-                            : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-slate-50"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={filters.brand.includes(brand)}
-                          onChange={() => handleFilterChange("brand", brand)}
-                          className="sr-only"
-                        />
-                        <span>{brand}</span>
-                      </label>
-                    ))}
-                  </div>
-                  {filteredBrandOptions.length === 0 && (
-                    <div className="text-sm text-slate-500 mt-2">
-                      No brands found
-                    </div>
-                  )}
-                </div>
-
-                {/* TV Type */}
-                {extractDynamicFilters.applianceTypes.length > 0 && (
-                  <div>
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <h4 className="text-lg font-semibold text-slate-900">
-                        TV Type
-                      </h4>
-                      <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">
-                        {filters.applianceType.length} selected
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {extractDynamicFilters.applianceTypes.map((type) => (
-                        <label
-                          key={type}
-                          className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
-                            filters.applianceType.includes(type)
-                              ? "border-blue-400 bg-blue-50 text-blue-700"
-                              : "border-slate-100 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={filters.applianceType.includes(type)}
-                            onChange={() =>
-                              handleFilterChange("applianceType", type)
-                            }
-                            className="sr-only"
-                          />
-                          <span>{type}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Price Range */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-semibold text-slate-900 text-lg">
-                      Price Range
-                    </h4>
-                    <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
-                      {formatRupeeNumber(filters.priceRange.min)} -{" "}
-                      {formatRupeeNumber(filters.priceRange.max)}
-                    </span>
-                  </div>
-                  <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-[0_2px_2px_rgba(0,0,0,0.1)]">
-                    <div className="relative mb-4">
-                      <div className="absolute h-2 bg-slate-200 rounded-full w-full top-1/2 transform -translate-y-1/2"></div>
-                      <div
-                        className="absolute h-2 bg-gradient-to-r from-blue-400 to-sky-400 rounded-full top-1/2 transform -translate-y-1/2"
-                        style={{
-                          left: `${Math.max(
-                            0,
-                            Math.min(
-                              100,
-                              ((filters.priceRange.min || 0) /
-                                (MAX_PRICE || 1)) *
-                                100,
-                            ),
-                          )}%`,
-                          width: `${Math.max(
-                            0,
-                            Math.min(
-                              100,
-                              ((filters.priceRange.max -
-                                filters.priceRange.min) /
-                                (MAX_PRICE || 1)) *
-                                100,
-                            ),
-                          )}%`,
-                        }}
-                      />
-
-                      <input
-                        type="range"
-                        min={MIN_PRICE}
-                        max={MAX_PRICE}
-                        step={TV_PRICE_STEP}
-                        value={filters.priceRange.min}
-                        onChange={(e) =>
-                          updatePriceRange(
-                            Number(e.target.value),
-                            filters.priceRange.max,
-                          )
-                        }
-                        className="absolute w-full top-1/2 transform -translate-y-1/2 appearance-none h-4 bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer"
-                      />
-
-                      <input
-                        type="range"
-                        min={MIN_PRICE}
-                        max={MAX_PRICE}
-                        step={TV_PRICE_STEP}
-                        value={filters.priceRange.max}
-                        onChange={(e) =>
-                          updatePriceRange(
-                            filters.priceRange.min,
-                            Number(e.target.value),
-                          )
-                        }
-                        className="absolute w-full top-1/2 transform -translate-y-1/2 appearance-none h-4 bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer"
-                      />
-
-                      <div className="flex justify-between items-center text-xs mt-6">
-                        <span className="text-slate-500">
-                          {formatRupeeNumber(MIN_PRICE)}
-                        </span>
-                        <span className="text-slate-500">
-                          {formatRupeeNumber(MAX_PRICE)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Additional Features */}
-                <div>
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <h4 className="text-lg font-semibold text-slate-900">
-                      Additional Features
-                    </h4>
-                    <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">
-                      {filters.additionalFeatures.length} selected
-                    </span>
-                  </div>
-                  <div className="relative mb-3">
-                    <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" />
-                    <input
-                      type="text"
-                      value={additionalFeatureQuery}
-                      onChange={(event) =>
-                        setAdditionalFeatureQuery(event.target.value)
-                      }
-                      placeholder="Search TV features..."
-                      className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-8 pr-3 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
-                    {filteredAdditionalFeatureOptions.map((feature) => {
-                      return (
-                        <label
-                          key={feature.id}
-                          className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
-                            filters.additionalFeatures.includes(feature.id)
-                              ? "border-blue-400 bg-blue-50 text-blue-700"
-                              : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-slate-50"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={filters.additionalFeatures.includes(
-                              feature.id,
-                            )}
-                            onChange={() =>
-                              handleFilterChange(
-                                "additionalFeatures",
-                                feature.id,
-                              )
-                            }
-                            className="h-4 w-4 shrink-0 appearance-none rounded border border-slate-300 bg-white transition-all duration-200 checked:border-blue-500 checked:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1"
-                          />
-                          <span className="min-w-0 flex-1">{feature.name}</span>
-                          <span className="text-[11px] text-slate-400">
-                            {feature.count}
-                          </span>
-                        </label>
-                      );
-                    })}
-                    {filteredAdditionalFeatureOptions.length === 0 && (
-                      <div className="col-span-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-4 text-center text-sm text-slate-500">
-                        No matching features
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Capacity Range */}
-                {extractDynamicFilters.capacityRanges.length > 0 && (
-                  <div>
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <h4 className="text-lg font-semibold text-slate-900">
-                        Size Range
-                      </h4>
-                      <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">
-                        {filters.capacityRange.length} selected
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
-                      {extractDynamicFilters.capacityRanges.map((range) => (
-                        <label
-                          key={range.id}
-                          className={`flex cursor-pointer items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
-                            filters.capacityRange.includes(range.id)
-                              ? "border-blue-400 bg-blue-50 text-blue-700"
-                              : "border-slate-100 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={filters.capacityRange.includes(range.id)}
-                            onChange={() =>
-                              handleFilterChange("capacityRange", range.id)
-                            }
-                            className="sr-only"
-                          />
-                          <span>{range.label}</span>
-                          <span
-                            className={`h-2 w-2 rounded-full ${
-                              filters.capacityRange.includes(range.id)
-                                ? "bg-blue-600"
-                                : "bg-slate-300"
-                            }`}
-                          />
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Energy Rating */}
-                {extractDynamicFilters.energyRating.length > 0 && (
-                  <div>
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <h4 className="text-lg font-semibold text-slate-900">
-                        Energy Rating
-                      </h4>
-                      <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">
-                        {filters.energyRating.length} selected
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {extractDynamicFilters.energyRating.map((rating) => (
-                        <label
-                          key={rating}
-                          className={`flex cursor-pointer items-center justify-center rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
-                            filters.energyRating.includes(rating)
-                              ? "border-blue-400 bg-blue-50 text-blue-700"
-                              : "border-slate-100 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={filters.energyRating.includes(rating)}
-                            onChange={() =>
-                              handleFilterChange("energyRating", rating)
-                            }
-                            className="sr-only"
-                          />
-                          <span>{rating}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Release Year */}
-                {extractDynamicFilters.releaseYears.length > 0 && (
-                  <div>
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <h4 className="text-lg font-semibold text-slate-900">
-                        Release Year
-                      </h4>
-                      <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">
-                        {filters.releaseYear.length} selected
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {extractDynamicFilters.releaseYears.map((year) => {
-                        const value = String(year);
-                        return (
-                          <label
-                            key={value}
-                            className={`flex cursor-pointer items-center justify-center rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
-                              filters.releaseYear.includes(value)
-                                ? "border-blue-400 bg-blue-50 text-blue-700"
-                                : "border-slate-100 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700"
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={filters.releaseYear.includes(value)}
-                              onChange={() =>
-                                handleFilterChange("releaseYear", value)
-                              }
-                              className="sr-only"
-                            />
-                            <span>{value}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Specific Filters for Selected Appliance Type (Mobile) */}
-                {effectiveSpecificFilterType &&
-                  specificFiltersConfig.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold text-slate-900 text-lg mb-3">
-                      {selectedApplianceType || "TV"} Filters
-                    </h4>
-                    <div className="space-y-4">
-                      {specificFiltersConfig.map((filter) => (
-                        <div key={filter.key}>
-                          <h5 className="font-medium text-slate-800 text-sm mb-2">
-                            {filter.label}
-                          </h5>
-                          <div className="grid grid-cols-2 gap-2">
-                            {filter.options.map((option) => (
-                              <label
-                                key={option}
-                                className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl transition-all duration-200 font-medium text-sm border ${
-                                  filters.specific[filter.key]?.includes(option)
-                                    ? "border-blue-400 bg-blue-50 text-blue-700"
-                                    : "border-slate-100 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700"
-                                }`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={
-                                    filters.specific[filter.key]?.includes(
-                                      option,
-                                    ) || false
-                                  }
-                                  onChange={() =>
-                                    handleSpecificFilterChange(
-                                      filter.key,
-                                      option,
-                                    )
-                                  }
-                                  className="sr-only"
-                                />
-                                <span className="text-xs">{option}</span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Apply Button */}
-              <div className="absolute bottom-0 left-0 right-0 border-t border-slate-200 bg-white p-6">
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setShowFilters(false)}
-                    className="flex-1 rounded-xl bg-slate-100 py-4 font-semibold text-slate-700 transition-colors duration-200 hover:bg-slate-200"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => setShowFilters(false)}
-                    className="flex-1 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 py-4 font-semibold text-white shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-blue-600"
-                  >
-                    Apply Filters
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <ProductFilterSheet
+            open={showFilters}
+            onClose={() => setShowFilters(false)}
+            onReset={clearFilters}
+            onApply={() => setShowFilters(false)}
+            title="Filters"
+            subtitle="Refine TVs by specifications and features"
+            applyLabel="Apply filters"
+            resultCount={filteredVariants.length}
+            sections={tvFilterSections}
+            activeSection={activeTvFilterSection}
+            onSectionChange={setActiveTvFilterSection}
+            desktopContent={
+              tvFilterSections.find(
+                (section) => section.id === activeTvFilterSection,
+              )?.content || tvFilterSections[0]?.content
+            }
+            mobileSections={tvFilterSections}
+            selectedSummary={tvSelectedFilterSummary}
+          />
         )}
       </div>
-
-    </div>
+    </CategoryListingShell>
   );
 };
 

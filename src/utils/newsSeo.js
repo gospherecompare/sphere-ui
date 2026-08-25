@@ -1,13 +1,13 @@
 import { toCanonicalPagePath, toCanonicalPageUrl } from "./publicUrl";
 
-export const NEWS_SITE_ORIGIN = "https://tryhook.shop";
+export const NEWS_SITE_ORIGIN = "https://mobilex.in";
 
 export const NEWS_LISTING_SEO = Object.freeze({
-  title: "News & Articles | Hooks",
+  title: "Latest Technology News & Product Updates | MobileX",
   description:
-    "Technology news, product launches, science updates, consumer tech, sports technology, and practical guides from the Hooks newsroom.",
+    "Technology news, product launches, science updates, consumer tech, sports technology, and practical guides from MobileX News.",
   keywords:
-    "technology news, latest mobile news, science news, consumer tech news, sports technology, launch stories, practical guides, hooks newsroom",
+    "technology news, latest mobile news, science news, consumer tech news, sports technology, launch stories, practical guides, MobileX News",
   canonicalPath: "/news",
   canonicalUrl: toCanonicalPageUrl("/news", NEWS_SITE_ORIGIN),
 });
@@ -85,9 +85,13 @@ const isUsefulNewsDescription = (value, title) => {
 
 const buildContextAwareDescription = (source = {}) => {
   const title = stripNewsMarkup(
-    source?.title || source?.headline || source?.metaTitle || source?.meta_title,
+    source?.title ||
+      source?.headline ||
+      source?.metaTitle ||
+      source?.meta_title,
   );
-  if (!title) return "Hooks editorial coverage with the key details and context.";
+  if (!title)
+    return "MobileX editorial coverage with the key details and context.";
 
   const rawTags = Array.isArray(source?.tags)
     ? source.tags
@@ -154,12 +158,10 @@ export const buildNewsArticleDescription = (
   );
 };
 
-const appendHooksBrand = (value = "") => {
+const appendMobileXBrand = (value = "") => {
   const title = stripNewsMarkup(value);
-  if (!title) return "Hooks News";
-  return /(?:^|[|\-—:]\s*)hooks$/i.test(title)
-    ? title
-    : `${title} | Hooks`;
+  if (!title) return "MobileX News";
+  return /(?:^|[|\-—:]\s*)mobilex$/i.test(title) ? title : `${title} | MobileX`;
 };
 
 export const buildNewsArticleCanonicalPath = (slug = "") => {
@@ -175,7 +177,10 @@ export const buildNewsArticleSeo = (
 ) => {
   const slug = String(source?.slug || "").trim();
   const headline = stripNewsMarkup(
-    source?.title || source?.headline || source?.metaTitle || source?.meta_title,
+    source?.title ||
+      source?.headline ||
+      source?.metaTitle ||
+      source?.meta_title,
   );
   const editorialTitle = stripNewsMarkup(
     source?.metaTitle || source?.meta_title || headline,
@@ -185,7 +190,7 @@ export const buildNewsArticleSeo = (
   return {
     slug,
     headline,
-    title: appendHooksBrand(editorialTitle || headline),
+    title: appendMobileXBrand(editorialTitle || headline),
     description: buildNewsArticleDescription(source, articleParagraphs),
     canonicalPath,
     canonicalUrl: toCanonicalPageUrl(canonicalPath, NEWS_SITE_ORIGIN),
@@ -210,7 +215,10 @@ export const sanitizeNewsArticleHtml = (value = "") => {
     )
     .replace(/<(?:iframe|object|embed|input)\b[^>]*\/?\s*>/gi, "")
     .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "")
-    .replace(/\s(?:style|class|id|aria-[\w-]+|data-[\w-]+)\s*=\s*("[^"]*"|'[^']*')/gi, "")
+    .replace(
+      /\s(?:style|class|id|aria-[\w-]+|data-[\w-]+)\s*=\s*("[^"]*"|'[^']*')/gi,
+      "",
+    )
     .replace(/\s(?:style|class|id)\s*=\s*[^\s>]+/gi, "")
     .replace(/href\s*=\s*(['"])\s*javascript:[^'"]*\1/gi, 'href="#"')
     .replace(/src\s*=\s*(['"])\s*javascript:[^'"]*\1/gi, "")
@@ -219,7 +227,9 @@ export const sanitizeNewsArticleHtml = (value = "") => {
     .trim();
 
   if (!decoded) return "";
-  if (/<\s*\/?(?:p|h[2-6]|ul|ol|li|table|blockquote|pre|figure)\b/i.test(decoded)) {
+  if (
+    /<\s*\/?(?:p|h[2-6]|ul|ol|li|table|blockquote|pre|figure)\b/i.test(decoded)
+  ) {
     return decoded;
   }
 

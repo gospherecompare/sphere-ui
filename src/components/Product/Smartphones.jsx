@@ -37,7 +37,6 @@ import {
 // BannerSlot disabled until completed.
 import useStoreLogos from "../../hooks/useStoreLogos";
 import Spinner from "../ui/Spinner";
-import HookLogo from "../ui/HookLogo";
 import Breadcrumbs from "../Breadcrumbs";
 import SEO from "../SEO";
 import ProductDiscoverySections from "../ui/ProductDiscoverySections";
@@ -56,7 +55,10 @@ import {
   createItemListSchema,
 } from "../../utils/schemaGenerators";
 import { buildListSeoKeywords } from "../../utils/seoKeywordBuilder";
-import { normalizeSeoTitle } from "../../utils/seoTitle";
+import {
+  getSmartphoneFeatureTitle,
+  normalizeSeoTitle,
+} from "../../utils/seoTitle";
 import {
   computePopularSmartphoneFeatures,
   SMARTPHONE_FEATURE_CATALOG,
@@ -71,9 +73,12 @@ import { buildCanonicalComparePathFromDevices } from "../../utils/compareRoutes"
 import { toCanonicalPagePath } from "../../utils/publicUrl";
 import { isPublishedProduct } from "../../utils/publishedProducts";
 import { fetchPublicJson } from "../../utils/publicJsonRequest";
+import MobileXSpecScore from "../ui/MobileXSpecScore";
+import ProductFilterSheet from "../ui/ProductFilterSheet";
 
 const ROUTE_FEED_CACHE_KEY = "hooks_smartphone_route_feed_v1";
 const SMARTPHONES_PER_PAGE = 20;
+const SMARTPHONE_SKELETON_COUNT = 8;
 const SMARTPHONE_MOBILE_SORT_OPTIONS = [
   {
     value: "featured",
@@ -177,6 +182,7 @@ const ImageCarousel = ({
   fallbackLogo = "",
   compact = false,
   altText = "Smartphone product image",
+  priority = false,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const imageSignature = Array.isArray(images)
@@ -244,7 +250,8 @@ const ImageCarousel = ({
             src={images[0]}
             alt={altText}
             className={imageClass}
-            loading="lazy"
+            loading={priority ? "eager" : "lazy"}
+            fetchPriority={priority ? "high" : "auto"}
           />
         </div>
       </div>
@@ -259,7 +266,8 @@ const ImageCarousel = ({
           src={images[currentIndex]}
           alt={`${altText} view ${currentIndex + 1}`}
           className={imageClass}
-          loading="lazy"
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : "auto"}
         />
       </div>
 
@@ -293,6 +301,28 @@ const ImageCarousel = ({
   );
 };
 
+const SmartphoneGridSkeleton = ({ count = SMARTPHONE_SKELETON_COUNT }) => (
+  <div
+    className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 md:gap-5 xl:grid-cols-3 xl:gap-6"
+    aria-label="Loading smartphones"
+    aria-busy="true"
+  >
+    {Array.from({ length: count }).map((_, index) => (
+      <div
+        key={`smartphone-skeleton-${index}`}
+        className="min-h-[440px] animate-pulse rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900"
+      >
+        <div className="mx-auto h-52 w-36 rounded-2xl bg-slate-200 dark:bg-slate-700" />
+        <div className="mt-5 h-3 w-24 rounded bg-slate-200 dark:bg-slate-700" />
+        <div className="mt-3 h-6 w-4/5 rounded bg-slate-200 dark:bg-slate-700" />
+        <div className="mt-3 h-4 w-3/5 rounded bg-slate-200 dark:bg-slate-700" />
+        <div className="mt-8 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800" />
+        <div className="mt-5 h-10 rounded-xl bg-slate-200 dark:bg-slate-700" />
+      </div>
+    ))}
+  </div>
+);
+
 const clampScore100 = (value) => {
   const n = Number(value);
   if (!Number.isFinite(n)) return null;
@@ -309,15 +339,16 @@ const mapScoreToDisplayBand = (score, minTarget = 80, maxTarget = 98) => {
 };
 
 const API_ASSET_ORIGIN = "https://api.apisphere.in";
-const SITE_ORIGIN = "https://tryhook.shop";
+const SITE_ORIGIN = "https://mobilex.in";
 
 const Smartphones = ({ onlyUpcoming = false } = {}) => {
-  const deviceContext = useDevice({
-    resources: ["smartphones", "brands"],
-  });
-  const { smartphone, smartphoneAll } = deviceContext || {};
   const location = useLocation();
   const navigate = useNavigate();
+  const deviceContext = useDevice({
+    resources: ["brands"],
+  });
+  const { smartphone, smartphoneAll, smartphonePagination } =
+    deviceContext || {};
   const {
     filterSlug,
     brandSlug: routeBrandSlug = "",
@@ -347,6 +378,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const normalizedFeature = normalizeSmartphoneListingSlug(
     routeFeatureSlug || legacyFeatureParam || "",
   );
+  const shouldUseServerPagination =
+    normalizedRoutePathname === "/smartphones" &&
+    !location.search &&
+    !onlyUpcoming;
 
   const [popularFeatureOrder, setPopularFeatureOrder] = useState([]);
   const [popularFeatureOrderLoaded, setPopularFeatureOrderLoaded] =
@@ -451,12 +486,25 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const dispatch = useDispatch();
 
   useEffect(() => {
+    if (!shouldUseServerPagination) return;
+    dispatch(
+      fetchSmartphones({ page: 1, limit: SMARTPHONES_PER_PAGE, force: true }),
+    );
+  }, [dispatch, shouldUseServerPagination]);
+
+  useEffect(() => {
+    if (shouldUseServerPagination) return;
     if (listFilter === "trending") dispatch(fetchTrendingSmartphones());
     else if (listFilter === "new") dispatch(fetchNewLaunchSmartphones());
     else if (listFilter === "upcoming") dispatch(fetchUpcomingSmartphones());
     else if (!smartphoneAll || smartphoneAll.length === 0)
       dispatch(fetchSmartphones());
-  }, [listFilter, dispatch, smartphoneAll ? smartphoneAll.length : 0]);
+  }, [
+    listFilter,
+    dispatch,
+    shouldUseServerPagination,
+    smartphoneAll ? smartphoneAll.length : 0,
+  ]);
 
   // Normalize legacy query-based brand/feature routes into the canonical path shape.
   useEffect(() => {
@@ -493,16 +541,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     legacyBrandParam,
     legacyFeatureParam,
   ]);
-
-  // When route filters change, scroll back to top so the
-  // user immediately sees the updated cards.
-  useEffect(() => {
-    try {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch {
-      // ignore scroll errors (SSR / old browsers)
-    }
-  }, [normalizedBrandSlug, normalizedFeature, listFilter]);
 
   const { getLogo, getStore, getStoreLogo } = useStoreLogos();
 
@@ -2227,8 +2265,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     processor: [],
     network: [],
     refreshRate: [],
+    display: [],
     rearCamera: [],
     frontCamera: [],
+    additionalFeatures: [],
   });
 
   const normalizeFilters = (value = {}) => {
@@ -2258,8 +2298,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       processor: asArray(incoming.processor),
       network: asArray(incoming.network),
       refreshRate: asArray(incoming.refreshRate),
+      display: asArray(incoming.display),
       rearCamera: asArray(incoming.rearCamera),
       frontCamera: asArray(incoming.frontCamera),
+      additionalFeatures: asArray(incoming.additionalFeatures),
       priceRange: {
         min: asNumber(priceRange.min, defaults.priceRange.min),
         max: asNumber(priceRange.max, defaults.priceRange.max),
@@ -2571,6 +2613,23 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
   const processorOptions = getProcessorOptions(devices);
   const refreshRateOptions = getRefreshRateOptions(devices);
+  const displayOptions = (() => {
+    const values = devices
+      .map((device) => {
+        const raw = device?.display || device?.specs?.display || {};
+        if (raw && typeof raw === "object") {
+          return (
+            raw.panel || raw.type || raw.display_type || raw.technology || ""
+          );
+        }
+        return raw;
+      })
+      .map((value) => String(value || "").trim())
+      .filter(Boolean);
+    const unique = [...new Set(values)];
+    return unique.sort((a, b) => a.localeCompare(b));
+  })();
+
   const rearCameraOptions = getCameraMpOptions(
     devices,
     resolveRearCameraMpForFilter,
@@ -2609,6 +2668,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const [processorFilterQuery, setProcessorFilterQuery] = useState("");
   const [networkFilterQuery, setNetworkFilterQuery] = useState("");
   const [refreshRateFilterQuery, setRefreshRateFilterQuery] = useState("");
+  const [displayFilterQuery, setDisplayFilterQuery] = useState("");
+  const [additionalFeatureQuery, setAdditionalFeatureQuery] = useState("");
   const [rearCameraFilterQuery, setRearCameraFilterQuery] = useState("");
   const [frontCameraFilterQuery, setFrontCameraFilterQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -2782,6 +2843,31 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       String(rate).toLowerCase().includes(q),
     );
   }, [refreshRateOptions, refreshRateFilterQuery]);
+  const filteredDisplayOptions = useMemo(() => {
+    const q = String(displayFilterQuery || "")
+      .trim()
+      .toLowerCase();
+    if (!q) return displayOptions;
+    return displayOptions.filter((value) =>
+      String(value).toLowerCase().includes(q),
+    );
+  }, [displayOptions, displayFilterQuery]);
+
+  const additionalFeatureOptions = useMemo(() => {
+    const list = Array.isArray(SMARTPHONE_FEATURE_CATALOG)
+      ? SMARTPHONE_FEATURE_CATALOG
+      : [];
+    const q = String(additionalFeatureQuery || "")
+      .trim()
+      .toLowerCase();
+    return q
+      ? list.filter((feature) =>
+          `${feature.name} ${feature.description || ""}`
+            .toLowerCase()
+            .includes(q),
+        )
+      : list;
+  }, [additionalFeatureQuery]);
   const filteredRearCameraOptions = useMemo(() => {
     const q = String(rearCameraFilterQuery || "")
       .trim()
@@ -2821,15 +2907,9 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const isUpcomingFilterPath = listFilter === "upcoming";
   const currentYear = new Date().getFullYear();
   const currentMonthYear = new Intl.DateTimeFormat("en-US", {
-    month: "short",
+    month: "long",
     year: "numeric",
   }).format(new Date());
-  const currentDayMonthYear = new Intl.DateTimeFormat("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(new Date());
-
   const priceFilterMap = {
     "under-10000": { min: 0, max: 10000, label: "Under ₹ 10,000" },
     "under-15000": { min: 0, max: 15000, label: "Under ₹ 15,000" },
@@ -2879,30 +2959,30 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     return text.length > 180 ? `${text.slice(0, 177)}...` : text;
   };
 
-  let seoTitle = `Smartphones (${currentYear}) - Price, Specifications and Features in India - Hooks`;
+  let seoTitle = `Best Smartphones in India (${currentMonthYear}) | MobileX`;
   let seoDescription = sanitizeDescription(
-    "Explore the latest smartphones with prices in India, full specifications, features, reviews, comparisons, images, and buying guides on TryHook.",
+    "Explore the latest smartphones with prices in India, full specifications, features, reviews, comparisons, images, and buying guides on MobileX.",
   );
   const featureHeroText = currentFeatureMeta
     ? `Browse smartphones focused on ${currentFeatureMeta.name.toLowerCase()} and compare how different brands approach this feature across budget, mid-range, and flagship models. This page helps you review battery life, charging behavior, display quality, chipset efficiency, camera tradeoffs, RAM, storage, and software support so you can shortlist phones that suit your needs without opening multiple product pages. Use the feature cards to spot the models that stand out, then open the listings that match your priority.`
     : "";
 
   if (isSingleSmartphonePath) {
-    seoTitle = `Smartphones (${currentYear}) - Price, Specifications and Features in India - Hooks`;
+    seoTitle = `Best Smartphones in India (${currentMonthYear}) | MobileX`;
     seoDescription =
-      "Explore the latest smartphones with prices in India, full specifications, features, reviews, comparisons, images, and buying guides on TryHook.";
+      "Explore the latest smartphones with prices in India, full specifications, features, reviews, comparisons, images, and buying guides on MobileX.";
   } else if (isNewFilterPath) {
-    seoTitle = `Latest Smartphones (${currentDayMonthYear}) - Full Specifications, Features and Price - Hooks`;
+    seoTitle = `Latest Smartphones in India (${currentMonthYear}) | MobileX`;
     seoDescription =
-      "Browse the latest smartphones across camera, battery, display, and performance with updated prices, full specifications, and launch details on TryHook.";
+      "Browse the latest smartphones across camera, battery, display, and performance with updated prices, full specifications, and launch details on MobileX.";
   } else if (isTrendingFilterPath) {
-    seoTitle = `Trending Smartphones (${currentDayMonthYear}) - Full Specifications, Features and Price - Hooks`;
+    seoTitle = `Trending Smartphones in India (${currentMonthYear}) | MobileX`;
     seoDescription =
-      "Browse trending smartphones in India with updated prices, full specifications, and key features across camera, battery, display, performance, RAM, storage, and network support on TryHook.";
+      "Browse trending smartphones in India with updated prices, full specifications, and key features across camera, battery, display, performance, RAM, storage, and network support on MobileX.";
   } else if (isUpcomingFilterPath) {
-    seoTitle = `Upcoming Smartphones (${currentDayMonthYear}) - Expected Launches, Features and Prices - Hooks`;
+    seoTitle = `Upcoming Smartphones in India (${currentMonthYear}) | MobileX`;
     seoDescription =
-      "Browse upcoming smartphones in India, track expected launch timelines, compare preview specifications, and watch preorder-ready devices before they arrive on TryHook.";
+      "Browse upcoming smartphones in India, track expected launch timelines, compare preview specifications, and watch preorder-ready devices before they arrive on MobileX.";
   } else if (currentFeatureMeta) {
     const featureContextParts = [
       currentBrandObj?.name ? `${currentBrandObj.name}` : "",
@@ -2912,22 +2992,33 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     ].filter(Boolean);
     const featureContext = featureContextParts.join(" ");
     const featureLabel = currentFeatureMeta.name.toLowerCase();
+    const featureTitle = getSmartphoneFeatureTitle(currentFeatureMeta.name);
     const featureDescription = currentFeatureMeta.description
       ? `${currentFeatureMeta.description.toLowerCase()}`
       : featureLabel;
 
-    seoTitle = `${featureContext} (${currentMonthYear}) - Prices, Specs & Comparison - Hooks`;
+    seoTitle = currentBrandObj
+      ? `Best ${currentBrandObj.name} ${featureTitle} in India (${currentMonthYear}) | MobileX`
+      : `Best ${featureTitle} in India (${currentMonthYear}) | MobileX`;
     seoDescription = sanitizeDescription(
-      `Explore ${featureContext.toLowerCase()} in India with updated prices and detailed specifications covering battery camera display and performance comparisons on TryHook. Discover phones focused on ${featureDescription}.`,
+      `Explore ${featureContext.toLowerCase()} in India with updated prices and detailed specifications covering battery camera display and performance comparisons on MobileX. Discover phones focused on ${featureDescription}.`,
     );
   } else if (priceFilter) {
-    seoTitle = `Best Smartphones ${seoPriceFilterLabel} (${currentMonthYear}) - Full Specifications Features and Price - Hooks`;
-    seoDescription = `Explore the best smartphones ${seoPriceFilterLabel.toLowerCase()} with detailed specs, latest prices, reviews, and comparisons to choose the right phone for your budget on TryHook.`;
+    const priceLabel = priceFilter.max.toLocaleString("en-IN");
+    seoTitle =
+      priceFilter.max === MAX_PRICE
+        ? `Best Phones Above ₹${priceFilter.min.toLocaleString("en-IN")} in India (${currentMonthYear}) | MobileX`
+        : `Best Phones Under ₹${priceLabel} in India (${currentMonthYear}) | MobileX`;
+    seoDescription = `Explore the best smartphones ${seoPriceFilterLabel.toLowerCase()} with detailed specs, latest prices, reviews, and comparisons to choose the right phone for your budget on MobileX.`;
   } else if (currentBrandObj) {
-    seoTitle = `${currentBrandObj.name} Smartphones (${currentMonthYear}) - Full Specifications, Features and Price - Hooks`;
+    const brandTitle =
+      currentBrandObj.name.toLowerCase() === "apple"
+        ? "Apple iPhones"
+        : `${currentBrandObj.name} Smartphones`;
+    seoTitle = `Best ${brandTitle} in India (${currentMonthYear}) | MobileX`;
     seoDescription = sanitizeDescription(
       currentBrandObj.description ||
-        `Discover the latest ${currentBrandObj.name} smartphones with prices, specifications, launches, reviews, comparisons, news, and buying guides on TryHook.`,
+        `Discover the latest ${currentBrandObj.name} smartphones with prices, specifications, launches, reviews, comparisons, news, and buying guides on MobileX.`,
     );
   }
   // Heading label: prefer new launches, then price-filtered collection
@@ -3009,12 +3100,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         ? priceFilter.label
         : `₹ ${filters.priceRange.min?.toLocaleString()} - ₹ ${filters.priceRange.max?.toLocaleString()}`
       : `₹ ${filters.priceRange.min?.toLocaleString()} - ₹ ${filters.priceRange.max?.toLocaleString()}`;
-
-  // Defer render check until after all Hooks are declared to keep Hooks order stable
-  const noDataAndNotLoading =
-    (!smartphonesForList ||
-      (Array.isArray(smartphonesForList) && smartphonesForList.length === 0)) &&
-    !loading;
 
   const hasUrlDrivenFilters = useMemo(() => {
     const qp = new URLSearchParams(search || "");
@@ -3586,6 +3671,38 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
           net.includes(n.toLowerCase()),
         );
         if (!hasNet) return false;
+      }
+
+      // Display panel/type filter
+      if (filters.display && filters.display.length > 0) {
+        const raw = device?.display || device?.specs?.display || {};
+        const displayText =
+          raw && typeof raw === "object"
+            ? [raw.panel, raw.type, raw.display_type, raw.technology]
+                .filter(Boolean)
+                .join(" ")
+                .toLowerCase()
+            : String(raw || "").toLowerCase();
+        const hasDisplay = filters.display.some((value) =>
+          displayText.includes(String(value).toLowerCase()),
+        );
+        if (!hasDisplay) return false;
+      }
+
+      // Additional feature filters use the existing feature catalog matchers.
+      if (filters.additionalFeatures && filters.additionalFeatures.length > 0) {
+        const hasAllFeatures = filters.additionalFeatures.every((featureId) => {
+          const feature = SMARTPHONE_FEATURE_CATALOG.find(
+            (item) => item.id === featureId,
+          );
+          if (!feature || typeof feature.match !== "function") return false;
+          try {
+            return Boolean(feature.match(device));
+          } catch {
+            return false;
+          }
+        });
+        if (!hasAllFeatures) return false;
       }
 
       // Feature filter from query param (e.g., ?feature=amoled)
@@ -4294,18 +4411,24 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         return 0;
     }
   });
-  const totalPages = Math.max(
-    1,
-    Math.ceil(sortedVariants.length / SMARTPHONES_PER_PAGE),
-  );
+  const totalPages = shouldUseServerPagination
+    ? Math.max(
+        1,
+        Math.ceil(
+          Number(smartphonePagination?.total || sortedVariants.length) /
+            SMARTPHONES_PER_PAGE,
+        ),
+      )
+    : Math.max(1, Math.ceil(sortedVariants.length / SMARTPHONES_PER_PAGE));
   const currentPageSafe = Math.min(currentPage, totalPages);
   const paginatedVariants = useMemo(() => {
     const startIndex = (currentPageSafe - 1) * SMARTPHONES_PER_PAGE;
     return sortedVariants.slice(startIndex, startIndex + SMARTPHONES_PER_PAGE);
   }, [currentPageSafe, sortedVariants]);
-  const visibleVariants = shouldShowAllMatches
-    ? sortedVariants
-    : paginatedVariants;
+  const visibleVariants =
+    shouldShowAllMatches || shouldUseServerPagination
+      ? sortedVariants
+      : paginatedVariants;
   const visibleResultsStart = sortedVariants.length
     ? shouldShowAllMatches
       ? 1
@@ -4313,7 +4436,12 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     : 0;
   const visibleResultsEnd = sortedVariants.length
     ? shouldShowAllMatches
-      ? sortedVariants.length
+      ? shouldUseServerPagination
+        ? Math.min(
+            currentPageSafe * SMARTPHONES_PER_PAGE,
+            Number(smartphonePagination?.total || sortedVariants.length),
+          )
+        : sortedVariants.length
       : visibleResultsStart + paginatedVariants.length - 1
     : 0;
   const featuredDiscoveryProduct = useMemo(
@@ -4345,6 +4473,15 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const handlePageChange = (nextPage) => {
     const targetPage = Math.max(1, Math.min(totalPages, nextPage));
     if (targetPage === currentPageSafe) return;
+    if (shouldUseServerPagination) {
+      dispatch(
+        fetchSmartphones({
+          page: targetPage,
+          limit: SMARTPHONES_PER_PAGE,
+          force: true,
+        }),
+      );
+    }
     setCurrentPage(targetPage);
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -4394,8 +4531,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       processor: [],
       network: [],
       refreshRate: [],
+      display: [],
       rearCamera: [],
       frontCamera: [],
+      additionalFeatures: [],
     };
     setFilters(empty);
     try {
@@ -4411,6 +4550,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     setProcessorFilterQuery("");
     setNetworkFilterQuery("");
     setRefreshRateFilterQuery("");
+    setDisplayFilterQuery("");
+    setAdditionalFeatureQuery("");
     setRearCameraFilterQuery("");
     setFrontCameraFilterQuery("");
     try {
@@ -4455,6 +4596,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       count += filters.network.length;
     if (filters.refreshRate && filters.refreshRate.length)
       count += filters.refreshRate.length;
+    if (filters.display && filters.display.length)
+      count += filters.display.length;
+    if (filters.additionalFeatures && filters.additionalFeatures.length)
+      count += filters.additionalFeatures.length;
     if (filters.rearCamera && filters.rearCamera.length)
       count += filters.rearCamera.length;
     if (filters.frontCamera && filters.frontCamera.length)
@@ -4487,7 +4632,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-10 text-sm font-medium text-slate-900 outline-none transition placeholder:font-normal placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+        className="h-11 w-full rounded-xl border border-blue-200 bg-transparent pl-10 pr-10 text-sm font-medium text-slate-900 outline-none transition placeholder:font-normal placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
       />
       {value ? (
         <button
@@ -4513,7 +4658,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     maxHeightClass = "max-h-52",
   }) => (
     <div
-      className={`[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${maxHeightClass} mt-3 space-y-1 overflow-y-auto`}
+      className={`[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${maxHeightClass} mt-3 grid grid-cols-1 gap-2 overflow-y-auto md:grid-cols-2 xl:grid-cols-3`}
     >
       {items.map((item) => {
         const selected = isSelected(item);
@@ -4522,30 +4667,38 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         return (
           <label
             key={getKey(item)}
-            className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
+            className={`group flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-xl border px-3.5 py-2.5 text-sm transition ${
               selected
-                ? "bg-blue-50 font-semibold text-blue-700"
-                : "font-medium text-slate-700 hover:bg-slate-50"
+                ? "border-blue-300 bg-blue-50 text-blue-700"
+                : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-slate-50"
             }`}
           >
-            <span
-              className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border transition ${
-                selected
-                  ? "border-blue-600 bg-blue-600 text-white"
-                  : "border-slate-300 bg-white text-transparent"
-              }`}
-            >
-              <FaPlus className="rotate-45 text-[9px]" />
+            <span className="flex min-w-0 items-center gap-3">
+              <span
+                className={`grid h-4.5 w-4.5 shrink-0 place-items-center rounded-md border text-[9px] transition ${
+                  selected
+                    ? "border-blue-600 bg-blue-600 text-white"
+                    : "border-slate-300 bg-white text-transparent group-hover:border-blue-300"
+                }`}
+              >
+                ✓
+              </span>
+              <input
+                type="checkbox"
+                checked={selected}
+                onChange={() => onChange(item)}
+                className="sr-only"
+              />
+              <span className="min-w-0 truncate text-[13px] font-bold">
+                {label}
+              </span>
             </span>
-            <input
-              type="checkbox"
-              checked={selected}
-              onChange={() => onChange(item)}
-              className="sr-only"
-            />
-            <span className="min-w-0 flex-1 truncate">{label}</span>
             {meta !== null && meta !== undefined ? (
-              <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-500">
+              <span
+                className={`shrink-0 text-[10px] font-bold ${
+                  selected ? "text-blue-500" : "text-slate-400"
+                }`}
+              >
                 {meta}
               </span>
             ) : null}
@@ -4553,7 +4706,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         );
       })}
       {items.length === 0 ? (
-        <div className="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-400">
+        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-400 md:col-span-2 xl:col-span-3">
           {emptyText}
         </div>
       ) : null}
@@ -4624,7 +4777,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                 </span>
               ) : null}
             </div>
-            <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2.5 xl:grid-cols-5">
               {brands
                 .slice(0, showAllDesktopBrands ? brands.length : 7)
                 .map((brand) => {
@@ -4637,17 +4790,17 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                       key={`desktop-brand-tile-${brand}`}
                       type="button"
                       onClick={() => handleFilterChange("brand", brand)}
-                      className={`flex min-h-20 items-center gap-3 rounded-2xl px-4 py-3 text-left transition ${
+                      className={`flex min-h-[64px] items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition ${
                         selected
-                          ? "bg-blue-600 text-white"
-                          : "bg-slate-50 text-slate-900 hover:bg-blue-50"
+                          ? "border-blue-300 bg-blue-50 text-blue-700"
+                          : "border-slate-200 bg-white text-slate-900 hover:border-blue-200 hover:bg-slate-50"
                       }`}
                     >
                       <span
-                        className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl text-xs font-black uppercase ${
+                        className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[10px] font-black uppercase ${
                           selected
-                            ? "bg-white/20 text-white"
-                            : "bg-white text-blue-600 ring-1 ring-slate-200"
+                            ? "bg-blue-600 text-white"
+                            : "bg-blue-50 text-blue-600"
                         }`}
                       >
                         {String(brand).slice(0, 2)}
@@ -4657,8 +4810,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                           {brand}
                         </strong>
                         <small
-                          className={`mt-1 block text-xs ${
-                            selected ? "text-blue-100" : "text-slate-500"
+                          className={`mt-1 block text-[10px] font-medium ${
+                            selected ? "text-blue-600" : "text-slate-400"
                           }`}
                         >
                           {count} phones
@@ -4714,7 +4867,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
             <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
           ) : null}
         </div>
-        <div className="max-w-4xl">{content}</div>
+        <div className="max-w-none">{content}</div>
       </section>
     );
   };
@@ -4777,40 +4930,79 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   };
 
   const renderSelectedFiltersSummary = ({ compact = false } = {}) => {
-    const activeCount = getActiveFiltersCount();
+    const chips = [];
+    const push = (label, key) =>
+      chips.push({ key: `${key}-${chips.length}`, label });
+
+    filters.brand.forEach((value) => push(value, "brand"));
+    filters.ram.forEach((value) => push(`${value} RAM`, "ram"));
+    filters.storage.forEach((value) => push(`${value} Storage`, "storage"));
+    filters.display.forEach((value) => push(value, "display"));
+    filters.processor.forEach((value) => push(value, "processor"));
+    filters.battery.forEach((value) => {
+      const item = BATTERY_FEATURES.find((entry) => entry.id === value);
+      push(item?.label || value, "battery");
+    });
+    filters.network.forEach((value) => push(value, "network"));
+    filters.refreshRate.forEach((value) => push(value, "refreshRate"));
+    filters.rearCamera.forEach((value) => push(`Rear ${value}`, "rearCamera"));
+    filters.frontCamera.forEach((value) =>
+      push(`Front ${value}`, "frontCamera"),
+    );
+    filters.additionalFeatures.forEach((value) => {
+      const item = SMARTPHONE_FEATURE_CATALOG.find(
+        (entry) => entry.id === value,
+      );
+      push(item?.name || value, "additionalFeatures");
+    });
+    if (
+      filters.priceRange.min > MIN_PRICE ||
+      filters.priceRange.max < MAX_PRICE
+    ) {
+      push(
+        `₹${Number(filters.priceRange.min).toLocaleString()} – ₹${Number(filters.priceRange.max).toLocaleString()}`,
+        "price",
+      );
+    }
+
+    const count = chips.length;
     return (
       <section>
         <div className="mb-3 flex items-center justify-between gap-3">
-          <h5 className="text-sm font-bold text-slate-900">Selected filters</h5>
-          {activeCount > 0 ? (
+          <h5 className="text-[13px] font-black text-slate-900">
+            Selected filters{count ? ` (${count})` : ""}
+          </h5>
+          {count > 0 ? (
             <button
               type="button"
               onClick={clearFilters}
-              className="text-xs font-bold text-blue-600 transition hover:text-blue-700"
+              className="text-[11px] font-bold text-blue-600 transition hover:text-blue-700"
             >
               Clear all
             </button>
           ) : null}
         </div>
-        <div
-          className={`rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 text-center ${
-            compact ? "px-4 py-5" : "px-5 py-7"
-          }`}
-        >
-          <span className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-white text-blue-600">
-            <FaFilter className="text-sm" />
-          </span>
-          <strong className="mt-3 block text-sm font-bold text-blue-700">
-            {activeCount > 0
-              ? `${activeCount} filter${activeCount === 1 ? "" : "s"} selected`
-              : "No filters selected yet"}
-          </strong>
-          <p className="mt-1 text-xs leading-5 text-slate-500">
-            {activeCount > 0
-              ? `${filteredVariants.length} smartphones match your choices.`
-              : "Choose from the options to narrow down results."}
+        {count > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {chips.slice(0, compact ? 16 : 30).map((chip) => (
+              <span
+                key={chip.key}
+                className="inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1.5 text-[10px] font-bold text-blue-700"
+              >
+                {chip.label}
+              </span>
+            ))}
+            {count > (compact ? 16 : 30) ? (
+              <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1.5 text-[10px] font-bold text-slate-500">
+                +{count - (compact ? 16 : 30)} more
+              </span>
+            ) : null}
+          </div>
+        ) : (
+          <p className="text-xs font-medium leading-5 text-slate-400">
+            Choose options to narrow the catalogue.
           </p>
-        </div>
+        )}
       </section>
     );
   };
@@ -4825,9 +5017,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         children: (
           <div className="space-y-4">
             <div>
-              <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
-                Search phones
-              </label>
               {renderFilterSearchInput({
                 value: searchQuery,
                 onChange: setSearchQuery,
@@ -5031,6 +5220,87 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
           })
         : null}
 
+      {displayOptions.length > 0
+        ? renderBlock({
+            title: "Display",
+            subtitle: "Panel and display technology",
+            badge: filters.display.length,
+            icon: FaMobileAlt,
+            children: (
+              <>
+                {renderFilterSearchInput({
+                  value: displayFilterQuery,
+                  onChange: setDisplayFilterQuery,
+                  placeholder: "Search display",
+                  clearLabel: "Clear display search",
+                })}
+                {renderFilterOptionList({
+                  items: filteredDisplayOptions,
+                  emptyText: "No display options found",
+                  isSelected: (value) => filters.display.includes(value),
+                  onChange: (value) => handleFilterChange("display", value),
+                  getLabel: (value) => value,
+                  getMeta: (value) =>
+                    devices.filter((device) => {
+                      const raw =
+                        device?.display || device?.specs?.display || {};
+                      const displayText =
+                        raw && typeof raw === "object"
+                          ? [
+                              raw.panel,
+                              raw.type,
+                              raw.display_type,
+                              raw.technology,
+                            ]
+                              .filter(Boolean)
+                              .join(" ")
+                              .toLowerCase()
+                          : String(raw || "").toLowerCase();
+                      return displayText.includes(String(value).toLowerCase());
+                    }).length,
+                })}
+              </>
+            ),
+          })
+        : null}
+
+      {additionalFeatureOptions.length > 0
+        ? renderBlock({
+            title: "Additional Features",
+            subtitle: "Extra hardware and software capabilities",
+            badge: filters.additionalFeatures.length,
+            icon: FaStar,
+            children: (
+              <>
+                {renderFilterSearchInput({
+                  value: additionalFeatureQuery,
+                  onChange: setAdditionalFeatureQuery,
+                  placeholder: "Search features",
+                  clearLabel: "Clear feature search",
+                })}
+                {renderFilterOptionList({
+                  items: additionalFeatureOptions,
+                  emptyText: "No additional features found",
+                  isSelected: (feature) =>
+                    filters.additionalFeatures.includes(feature.id),
+                  onChange: (feature) =>
+                    handleFilterChange("additionalFeatures", feature.id),
+                  getLabel: (feature) => feature.name,
+                  getKey: (feature) => feature.id,
+                  getMeta: (feature) => {
+                    try {
+                      return devices.filter((device) => feature.match?.(device))
+                        .length;
+                    } catch {
+                      return 0;
+                    }
+                  },
+                })}
+              </>
+            ),
+          })
+        : null}
+
       {rearCameraOptions.length > 0 || frontCameraOptions.length > 0
         ? renderBlock({
             title: "Camera",
@@ -5088,6 +5358,101 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     </>
   );
 
+  const buildMobileFilterSections = () => {
+    const collected = [];
+    renderFilterSections(
+      ({ title, badge = 0, icon: Icon = FaFilter, children }) => {
+        collected.push({
+          id: title,
+          title,
+          badge,
+          icon: Icon,
+          content: children,
+        });
+        return null;
+      },
+    );
+    return collected;
+  };
+
+  const filterSectionDefinitions = [
+    {
+      id: "Search & Brands",
+      title: "Search & Brands",
+      badge: filters.brand.length,
+      icon: FaSearch,
+    },
+    {
+      id: "Price Range",
+      title: "Price Range",
+      badge:
+        filters.priceRange.min > MIN_PRICE || filters.priceRange.max < MAX_PRICE
+          ? 1
+          : 0,
+      icon: FaMoneyBill,
+    },
+    {
+      id: "Memory (RAM)",
+      title: "Memory (RAM)",
+      badge: filters.ram.length,
+      icon: FaMemory,
+    },
+    {
+      id: "Storage Capacity",
+      title: "Storage Capacity",
+      badge: filters.storage.length,
+      icon: FaShoppingBag,
+    },
+    {
+      id: "Display",
+      title: "Display",
+      badge: filters.display.length,
+      icon: FaMobileAlt,
+      hidden: displayOptions.length === 0,
+    },
+    {
+      id: "Processor",
+      title: "Processor",
+      badge: filters.processor.length,
+      icon: FaRobot,
+      hidden: processorOptions.length === 0,
+    },
+    {
+      id: "Camera",
+      title: "Camera",
+      badge: filters.rearCamera.length + filters.frontCamera.length,
+      icon: FaMobileAlt,
+      hidden: rearCameraOptions.length === 0 && frontCameraOptions.length === 0,
+    },
+    {
+      id: "Battery Features",
+      title: "Battery Features",
+      badge: filters.battery.length,
+      icon: FaBatteryFull,
+    },
+    {
+      id: "Network",
+      title: "Network",
+      badge: filters.network.length,
+      icon: FaWifi,
+      hidden: networkOptions.length === 0,
+    },
+    {
+      id: "Refresh Rate",
+      title: "Refresh Rate",
+      badge: filters.refreshRate.length,
+      icon: FaSyncAlt,
+      hidden: refreshRateOptions.length === 0,
+    },
+    {
+      id: "Additional Features",
+      title: "Additional Features",
+      badge: filters.additionalFeatures.length,
+      icon: FaStar,
+      hidden: additionalFeatureOptions.length === 0,
+    },
+  ].filter((item) => !item.hidden);
+
   const renderPriceRangeControl = () => {
     const priceMin = Number(filters.priceRange?.min ?? MIN_PRICE);
     const priceMax = Number(filters.priceRange?.max ?? MAX_PRICE);
@@ -5101,67 +5466,59 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     );
 
     return (
-      <div className="rounded-2xl bg-white p-1">
-        <div className="mb-4 flex items-start justify-between text-xs text-slate-500">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-3">
           <div>
-            <div>Minimum</div>
-            <div className="mt-1 text-sm font-bold text-slate-900">
-              ₹ {priceMin.toLocaleString()}
-            </div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">
+              Budget range
+            </p>
+            <p className="mt-1 text-lg font-black text-slate-950">
+              ₹{priceMin.toLocaleString()} – ₹{priceMax.toLocaleString()}
+            </p>
           </div>
-          <div className="text-right">
-            <div>Maximum</div>
-            <div className="mt-1 text-sm font-bold text-slate-900">
-              ₹ {priceMax.toLocaleString()}
-            </div>
-          </div>
-        </div>
-
-        <div className="relative mb-4 h-7">
-          <div className="absolute left-0 right-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-slate-200"></div>
-          <div
-            className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-gradient-to-r from-blue-600 to-indigo-500"
-            style={{
-              left: `${minPercent}%`,
-              width: `${rangePercent}%`,
-            }}
-          ></div>
-
-          <input
-            type="range"
-            min={MIN_PRICE}
-            max={MAX_PRICE}
-            value={priceMin}
-            onChange={(event) =>
-              updatePriceRange(Number(event.target.value), priceMax)
-            }
-            className="absolute left-0 right-0 top-1/2 h-5 w-full -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-400 [&::-webkit-slider-thumb]:bg-white"
-          />
-
-          <input
-            type="range"
-            min={MIN_PRICE}
-            max={MAX_PRICE}
-            value={priceMax}
-            onChange={(event) =>
-              updatePriceRange(priceMin, Number(event.target.value))
-            }
-            className="absolute left-0 right-0 top-1/2 h-5 w-full -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-400 [&::-webkit-slider-thumb]:bg-white"
-          />
-        </div>
-
-        <div className="mb-3 flex items-center justify-between text-xs text-slate-400">
-          <span>₹ {MIN_PRICE.toLocaleString()}</span>
-          <span>₹ {MAX_PRICE.toLocaleString()}</span>
-        </div>
-        <div className="flex justify-center">
           <button
             type="button"
             onClick={() => updatePriceRange(MIN_PRICE, MAX_PRICE)}
-            className="rounded-xl bg-blue-50 px-3 py-2 text-xs font-bold text-blue-600 transition hover:bg-blue-100"
+            className="rounded-full bg-blue-50 px-3 py-1.5 text-[10px] font-extrabold text-blue-700 transition hover:bg-blue-100"
           >
-            Reset Range
+            Reset range
           </button>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-5">
+          <div className="mb-4 flex items-center justify-between text-[11px] font-semibold text-slate-400">
+            <span>₹0</span>
+            <span>₹1.5L</span>
+            <span>₹3L+</span>
+          </div>
+
+          <div className="relative h-8">
+            <div className="absolute left-0 right-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-slate-200" />
+            <div
+              className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-blue-600"
+              style={{ left: `${minPercent}%`, width: `${rangePercent}%` }}
+            />
+            <input
+              type="range"
+              min={MIN_PRICE}
+              max={MAX_PRICE}
+              value={priceMin}
+              onChange={(event) =>
+                updatePriceRange(Number(event.target.value), priceMax)
+              }
+              className="absolute inset-x-0 top-1/2 h-6 w-full -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:bg-white"
+            />
+            <input
+              type="range"
+              min={MIN_PRICE}
+              max={MAX_PRICE}
+              value={priceMax}
+              onChange={(event) =>
+                updatePriceRange(priceMin, Number(event.target.value))
+              }
+              className="absolute inset-x-0 top-1/2 h-6 w-full -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:bg-white"
+            />
+          </div>
         </div>
       </div>
     );
@@ -5218,7 +5575,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   const siteOrigin =
     typeof window !== "undefined" && window.location?.origin
       ? window.location.origin
-      : "https://tryhook.shop";
+      : "https://mobilex.in";
 
   const toAbsoluteUrl = (value) => {
     const raw = normalizeAssetUrl(value);
@@ -5276,7 +5633,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     );
     const raw = getListingProductImage(firstWithImage);
     const abs = toAbsoluteUrl(raw);
-    return abs || `${SITE_ORIGIN}/hook-logo.png`;
+    return abs || `${SITE_ORIGIN}/mobilex-favicon.svg`;
   }, [visibleVariants, sortedVariants, siteOrigin]);
 
   const listOgImageMeta = listOgImage
@@ -5353,8 +5710,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     listOgImageMeta,
     listSchemaItems,
   ]);
-
-  if (noDataAndNotLoading) return null;
 
   return (
     <div
@@ -5763,747 +6118,603 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                 {/* Products List */}
                 <div className={productColumnWidthClass}>
                   {/* Products Grid */}
-                  <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 md:items-stretch md:gap-5 md:auto-rows-fr xl:grid-cols-3 xl:gap-6">
-                    {visibleVariants.map((device, _idx) => {
-                      const devicePolicy = resolveDevicePolicy(device);
-                      const availabilityState = getAvailabilityState(
-                        device.storePrices || [],
-                        device.brand,
-                      );
-                      const availableStoreRows = availabilityState.stores || [];
-                      const shouldFilterEmptyStores = listFilter === "new";
-                      const storeRowsForDisplay = shouldFilterEmptyStores
-                        ? availableStoreRows.filter((storePrice) => {
-                            if (!storePrice) return false;
-                            const hasUrl = Boolean(
-                              String(storePrice.url || "").trim(),
-                            );
-                            const hasPrice =
-                              extractNumericPrice(storePrice.price) > 0;
-                            return hasUrl || hasPrice;
-                          })
-                        : availableStoreRows;
-                      const renderType = getRenderType(device);
-                      const isUpcomingCard =
-                        isUpcomingFilterPath || renderType === "upcoming";
-                      const launchDateParsed =
-                        parseDateValue(device.launchDate) ||
-                        resolveSaleStartDate(device) ||
-                        null;
-                      const hasLaunchDate =
-                        launchDateParsed &&
-                        !Number.isNaN(launchDateParsed.getTime());
-                      const launchDateText = hasLaunchDate
-                        ? formatLaunchDate(launchDateParsed)
-                        : "Date not confirmed";
-                      const launchDateLabel = isUpcomingCard
-                        ? resolveLaunchDateLabel(device, launchDateParsed)
-                        : "Launched";
-                      const allowSpecScore = devicePolicy.allowSpecScore;
-                      const resolvedScoreValue = allowSpecScore
-                        ? resolveSmartphoneBadgeScore(device)
-                        : null;
-                      const scoreValueRaw =
-                        resolvedScoreValue == null
-                          ? null
-                          : Number(resolvedScoreValue);
-                      const scoreValue = Number.isFinite(scoreValueRaw)
-                        ? formatSmartphoneBadgeScore(scoreValueRaw)
-                        : null;
-                      const isAiDevice = hasAiPhoneSignal(device);
-                      const statusLabel = isUpcomingCard
-                        ? null
-                        : device.display_status ||
-                          device.displayStatus ||
-                          (renderType === "available" ? "Available now" : null);
-                      const marketStatusLabel = isUpcomingCard
-                        ? "Upcoming"
-                        : statusLabel || "Available now";
-                      const cardBadgeLabel = isAiDevice ? "AI Phone" : null;
-                      const deviceCompareLimit = Number.isFinite(
-                        devicePolicy.compareLimit,
-                      )
-                        ? devicePolicy.compareLimit
-                        : compareLimit;
-                      const compareSelected = isCompareSelected(device);
-                      const compareDisabled =
-                        deviceCompareLimit === 0 ||
-                        devicePolicy.allowCompare === false;
-                      const effectiveCompareLimit = Math.min(
-                        compareLimit,
-                        deviceCompareLimit,
-                      );
-                      const brandStoreUrl =
-                        availabilityState.stores?.find(
-                          (sp) =>
-                            typeof sp?.url === "string" &&
-                            sp.url.trim().length > 0,
-                        )?.url || null;
-                      const brandLogoSrc = normalizeAssetUrl(
-                        device.brandLogo || device.brandLogoUrl || null,
-                      );
-                      const brandPriceNumeric = extractNumericPrice(
-                        device.numericPrice || device.price,
-                      );
-                      const upcomingExpectedPrice =
-                        resolveUpcomingExpectedPriceMeta(device);
-                      const shouldUseBrandPriceFallback =
-                        storeRowsForDisplay.length === 0 &&
-                        brandPriceNumeric > 0;
-                      const brandPriceFallbackRow = shouldUseBrandPriceFallback
-                        ? {
-                            id: `${device.id ?? device.model ?? "phone"}-brand-price`,
-                            store: device.brand || "Brand",
-                            store_name: device.brand || "Brand",
-                            storeName: device.brand || "Brand",
-                            display_store_name: device.brand || "Brand",
-                            logo: brandLogoSrc,
-                            price: device.price || brandPriceNumeric,
-                            cta_label: "Brand price",
-                            is_brand_price: true,
-                          }
-                        : null;
-                      const shouldUseExpectedPriceFallback =
-                        isUpcomingCard &&
-                        storeRowsForDisplay.length === 0 &&
-                        !shouldUseBrandPriceFallback &&
-                        upcomingExpectedPrice.numeric > 0;
-                      const expectedPriceFallbackRow =
-                        shouldUseExpectedPriceFallback
-                          ? {
-                              id: `${device.id ?? device.model ?? "phone"}-expected-price`,
-                              store: device.brand || "Expected",
-                              store_name: device.brand || "Expected",
-                              storeName: device.brand || "Expected",
-                              display_store_name: device.brand || "Expected",
-                              logo: brandLogoSrc,
-                              price: upcomingExpectedPrice.numeric,
-                              cta_label: "Expected price",
-                              is_expected_price: true,
-                            }
+                  {loading && !smartphonesForList.length ? (
+                    <SmartphoneGridSkeleton />
+                  ) : (
+                    <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 md:items-stretch md:gap-5 md:auto-rows-fr xl:grid-cols-3 xl:gap-6">
+                      {visibleVariants.map((device, _idx) => {
+                        const devicePolicy = resolveDevicePolicy(device);
+                        const availabilityState = getAvailabilityState(
+                          device.storePrices || [],
+                          device.brand,
+                        );
+                        const availableStoreRows =
+                          availabilityState.stores || [];
+                        const shouldFilterEmptyStores = listFilter === "new";
+                        const storeRowsForDisplay = shouldFilterEmptyStores
+                          ? availableStoreRows.filter((storePrice) => {
+                              if (!storePrice) return false;
+                              const hasUrl = Boolean(
+                                String(storePrice.url || "").trim(),
+                              );
+                              const hasPrice =
+                                extractNumericPrice(storePrice.price) > 0;
+                              return hasUrl || hasPrice;
+                            })
+                          : availableStoreRows;
+                        const renderType = getRenderType(device);
+                        const isUpcomingCard =
+                          isUpcomingFilterPath || renderType === "upcoming";
+                        const launchDateParsed =
+                          parseDateValue(device.launchDate) ||
+                          resolveSaleStartDate(device) ||
+                          null;
+                        const hasLaunchDate =
+                          launchDateParsed &&
+                          !Number.isNaN(launchDateParsed.getTime());
+                        const launchDateText = hasLaunchDate
+                          ? formatLaunchDate(launchDateParsed)
+                          : "Date not confirmed";
+                        const launchDateLabel = isUpcomingCard
+                          ? resolveLaunchDateLabel(device, launchDateParsed)
+                          : "Launched";
+                        const allowSpecScore = devicePolicy.allowSpecScore;
+                        const resolvedScoreValue = allowSpecScore
+                          ? resolveSmartphoneBadgeScore(device)
                           : null;
-                      const primaryStoreRow = storeRowsForDisplay[0] || null;
-                      const primaryStoreName =
-                        primaryStoreRow?.display_store_name ||
-                        primaryStoreRow?.store ||
-                        primaryStoreRow?.store_name ||
-                        primaryStoreRow?.storeName ||
-                        "";
-                      const primaryStoreLogo = normalizeAssetUrl(
-                        primaryStoreRow?.logo ||
-                          (primaryStoreName
-                            ? getStoreLogo
-                              ? getStoreLogo(primaryStoreName)
-                              : getLogo(primaryStoreName)
-                            : null) ||
-                          brandLogoSrc ||
-                          null,
-                      );
-                      const primaryStoreUrl =
-                        primaryStoreRow?.url || brandStoreUrl || null;
-                      const storePriceRowsForDisplay = storeRowsForDisplay
-                        .filter(
-                          (row) =>
-                            row &&
-                            (row.price ||
-                              row.url ||
-                              row.store ||
-                              row.store_name ||
-                              row.storeName),
+                        const scoreValueRaw =
+                          resolvedScoreValue == null
+                            ? null
+                            : Number(resolvedScoreValue);
+                        const scoreValue = Number.isFinite(scoreValueRaw)
+                          ? formatSmartphoneBadgeScore(scoreValueRaw)
+                          : null;
+                        const isAiDevice = hasAiPhoneSignal(device);
+                        const statusLabel = isUpcomingCard
+                          ? null
+                          : device.display_status ||
+                            device.displayStatus ||
+                            (renderType === "available"
+                              ? "Available now"
+                              : null);
+                        const marketStatusLabel = isUpcomingCard
+                          ? "Upcoming"
+                          : statusLabel || "Available now";
+                        const cardBadgeLabel = isAiDevice ? "AI Phone" : null;
+                        const deviceCompareLimit = Number.isFinite(
+                          devicePolicy.compareLimit,
                         )
-                        .slice(0, 2);
-                      const priceRowsForDisplay =
-                        storePriceRowsForDisplay.length > 0
-                          ? storePriceRowsForDisplay
-                          : brandPriceFallbackRow
-                            ? [brandPriceFallbackRow]
-                            : expectedPriceFallbackRow
-                              ? [expectedPriceFallbackRow]
-                              : [];
-                      const isBrandPriceOnly =
-                        priceRowsForDisplay.length > 0 &&
-                        priceRowsForDisplay.every((row) => row?.is_brand_price);
-                      const isExpectedPriceOnly =
-                        priceRowsForDisplay.length > 0 &&
-                        priceRowsForDisplay.every(
-                          (row) => row?.is_expected_price,
+                          ? devicePolicy.compareLimit
+                          : compareLimit;
+                        const compareSelected = isCompareSelected(device);
+                        const compareDisabled =
+                          deviceCompareLimit === 0 ||
+                          devicePolicy.allowCompare === false;
+                        const effectiveCompareLimit = Math.min(
+                          compareLimit,
+                          deviceCompareLimit,
                         );
-                      const hasListedPrice =
-                        brandPriceNumeric > 0 ||
-                        priceRowsForDisplay.some(
-                          (row) =>
-                            !row?.is_expected_price &&
-                            extractNumericPrice(row?.price) > 0,
+                        const brandStoreUrl =
+                          availabilityState.stores?.find(
+                            (sp) =>
+                              typeof sp?.url === "string" &&
+                              sp.url.trim().length > 0,
+                          )?.url || null;
+                        const brandLogoSrc = normalizeAssetUrl(
+                          device.brandLogo || device.brandLogoUrl || null,
                         );
-                      const upcomingPriceEyebrow = hasListedPrice
-                        ? "Price"
-                        : upcomingExpectedPrice.numeric > 0
-                          ? "Expected price"
-                          : "Price";
-                      const pricePanelTitle = isBrandPriceOnly
-                        ? "Brand Price"
-                        : isExpectedPriceOnly
-                          ? "Expected Price"
-                          : "Check Price On";
-                      const upcomingPriceLabel = isUpcomingCard
-                        ? resolveUpcomingPriceLabel(device, brandPriceNumeric)
-                        : "";
-                      const cardPriceLabel =
-                        device.price ||
-                        (isUpcomingCard &&
-                        upcomingPriceLabel &&
-                        upcomingPriceLabel !== "Price not confirmed"
-                          ? upcomingPriceLabel
-                          : "");
-                      const availableDateRaw =
-                        device.saleStartDate ||
-                        device.sale_start_date ||
-                        device.availableDate ||
-                        device.available_date ||
-                        device.predictedAvailableDate ||
-                        device.predicted_available_date ||
-                        null;
-                      const availableDateParsed =
-                        parseDateValue(availableDateRaw);
-                      const availableOnText = null;
-                      const displaySummary = (() => {
-                        const rawDisplay =
-                          device.display || device.specs?.display;
-                        if (
-                          typeof rawDisplay === "string" &&
-                          rawDisplay.trim()
-                        ) {
-                          return rawDisplay.trim().split("|")[0].trim();
-                        }
-                        if (rawDisplay && typeof rawDisplay === "object") {
-                          const size =
-                            rawDisplay.size ||
-                            rawDisplay.display_size ||
-                            rawDisplay.displaySize ||
-                            "";
-                          const inches =
-                            rawDisplay.inches || rawDisplay.sizeInches || "";
-                          if (size && inches) return `${size} (${inches})`;
-                          if (size) return size;
-                        }
-                        return "Display Info";
-                      })();
-                      const processorSummary =
-                        device.specs?.processor ||
-                        device.processor ||
-                        device.performance?.processor ||
-                        "Processor Info";
-                      const cameraMp =
-                        parseFirstInt(device.specs?.rearCameraResolution) ||
-                        getRearCameraMp(device) ||
-                        50;
-                      const cameraSummary = `${cameraMp} MP Camera`;
-                      const batteryCapacity = getBatteryMah(device);
-                      const batterySummary = `${
-                        batteryCapacity || "5000"
-                      } mAh Battery`;
-                      const formatGbLabel = (value, fallback) => {
-                        const normalized = parseFirstInt(value);
-                        if (normalized) return `${normalized} GB`;
-                        const raw = String(value || "").trim();
-                        return raw || fallback;
-                      };
-                      const ramValue = formatGbLabel(device.specs?.ram, "8 GB");
-                      const storageValue = formatGbLabel(
-                        device.specs?.storage,
-                        "256 GB",
-                      );
-                      const memorySummary = `${ramValue} | ${storageValue}`;
-                      const specHighlights = [
-                        {
-                          label: "Memory",
-                          value: memorySummary,
-                          Icon: FaMemory,
-                        },
-                        {
-                          label: "Camera",
-                          value: cameraSummary,
-                          Icon: FaMobileAlt,
-                        },
-                        {
-                          label: "Battery",
-                          value: batterySummary,
-                          Icon: FaBatteryFull,
-                        },
-                        {
-                          label: "Chipset",
-                          value: processorSummary,
-                          Icon: FaRobot,
-                        },
-                      ];
-                      const formatStorePrice = (price) => {
-                        if (price == null || price === "" || price === "NaN") {
-                          return "";
-                        }
-                        const numeric = extractNumericPrice(price);
-                        if (numeric > 0)
-                          return `₹ ${numeric.toLocaleString("en-IN")}`;
-                        const raw = String(price).trim();
-                        return raw.startsWith("₹") ? raw : `₹ ${raw}`;
-                      };
-                      const variantOptions = Array.isArray(
-                        device.variantOptions,
-                      )
-                        ? device.variantOptions
-                        : [];
-                      const selectedVariantId = String(
-                        device.selectedVariantId ?? "",
-                      );
-                      const renderVariantSelector = (
-                        mode = "desktop",
-                        className = "",
-                      ) => {
-                        if (variantOptions.length <= 1) return null;
-
-                        const isCompact = mode === "compact";
-                        const isMobile = mode === "mobile";
-                        const wrapperSpacing = isCompact
-                          ? "mt-2"
-                          : isMobile
-                            ? "mt-3"
-                            : "mt-5";
-                        const labelClass =
-                          isCompact || isMobile
-                            ? "mb-2 block text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-500 sm:text-xs"
-                            : "mb-2 block text-xs font-extrabold uppercase tracking-[0.14em] text-slate-500";
-                        const gridClass =
-                          isCompact || isMobile
-                            ? "grid grid-cols-2 gap-1.5"
-                            : "grid gap-2 sm:grid-cols-2";
-
-                        return (
-                          <div
-                            className={`${wrapperSpacing} ${className}`}
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            <span className={labelClass}>Select variant</span>
-                            <div className={gridClass}>
-                              {variantOptions.map((option) => {
-                                const isSelected =
-                                  String(option.variantId) ===
-                                    selectedVariantId ||
-                                  option.variantIndex ===
-                                    device.selectedVariantIndex;
-                                const baseClass = isCompact
-                                  ? "flex min-h-11 min-w-0 items-center justify-between gap-1 rounded-lg px-3 text-left text-xs font-extrabold transition"
-                                  : isMobile
-                                    ? "flex min-h-11 min-w-0 items-center justify-between gap-1 rounded-lg px-3 text-left text-[11px] font-bold transition sm:text-xs"
-                                    : "flex min-h-11 items-center justify-between rounded-xl px-4 text-left text-sm font-bold transition";
-                                const selectedClass = isCompact
-                                  ? "bg-blue-100 text-blue-700"
-                                  : "bg-blue-600 text-white";
-                                const idleClass = isCompact
-                                  ? "bg-slate-100 text-slate-600 hover:bg-slate-100"
-                                  : "bg-slate-100 text-slate-700 hover:bg-slate-100";
-
-                                return (
-                                  <button
-                                    key={`${device.id}-variant-${option.variantId}`}
-                                    type="button"
-                                    aria-pressed={isSelected}
-                                    onClick={(event) => {
-                                      event.stopPropagation();
-                                      const productKey =
-                                        getSmartphoneProductKey(device);
-                                      if (!productKey) return;
-                                      setSelectedVariantByProduct((prev) => ({
-                                        ...prev,
-                                        [productKey]: option.variantId,
-                                      }));
-                                    }}
-                                    className={`${baseClass} ${
-                                      isSelected ? selectedClass : idleClass
-                                    }`}
-                                  >
-                                    <span className="min-w-0 truncate">
-                                      {option.label}
-                                    </span>
-                                    {isSelected ? (
-                                      <span
-                                        className={`grid shrink-0 place-items-center rounded-full text-[8px] ${
-                                          isCompact
-                                            ? "h-5 w-5 bg-blue-600 text-white"
-                                            : "h-6 w-6 bg-white/20 text-white"
-                                        }`}
-                                        aria-hidden="true"
-                                      >
-                                        ✓
-                                      </span>
-                                    ) : null}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
+                        const brandPriceNumeric = extractNumericPrice(
+                          device.numericPrice || device.price,
                         );
-                      };
-                      const renderSpecScore = (compact = false) =>
-                        scoreValue != null ? (
-                          <div
-                            className={
-                              compact
-                                ? "inline-flex h-9 max-w-full items-center gap-1.5 rounded-lg bg-blue-50 px-2.5 text-blue-700"
-                                : "inline-flex items-center gap-2 rounded-xl bg-blue-50 px-3 py-2 text-blue-700"
-                            }
-                            aria-label={`Spec score ${scoreValue} out of 100`}
-                          >
-                            <HookLogo
-                              aria-label="Hooks"
-                              className={`shrink-0 object-cover ${
-                                compact
-                                  ? "h-7 w-7 rounded-md"
-                                  : "h-9 w-9 rounded-lg"
-                              }`}
-                            />
-                            <span className="flex min-w-0 items-baseline">
-                              <strong
-                                className={
-                                  compact
-                                    ? "text-xl font-black leading-none"
-                                    : "text-2xl font-black leading-none"
-                                }
-                              >
-                                {scoreValue}
-                              </strong>
-                              <small
-                                className={
-                                  compact
-                                    ? "ml-0.5 text-[9px] font-bold text-blue-500"
-                                    : "ml-0.5 text-[10px] font-bold text-blue-500"
-                                }
-                              >
-                                /100
-                              </small>
-                            </span>
-                            <span
-                              className={
-                                compact
-                                  ? "truncate border-l border-blue-200 pl-2 text-[7px] font-extrabold uppercase tracking-[0.09em] text-blue-700"
-                                  : "border-l border-blue-200 pl-2 text-[9px] font-extrabold uppercase tracking-[0.12em] text-blue-700"
+                        const upcomingExpectedPrice =
+                          resolveUpcomingExpectedPriceMeta(device);
+                        const shouldUseBrandPriceFallback =
+                          storeRowsForDisplay.length === 0 &&
+                          brandPriceNumeric > 0;
+                        const brandPriceFallbackRow =
+                          shouldUseBrandPriceFallback
+                            ? {
+                                id: `${device.id ?? device.model ?? "phone"}-brand-price`,
+                                store: device.brand || "Brand",
+                                store_name: device.brand || "Brand",
+                                storeName: device.brand || "Brand",
+                                display_store_name: device.brand || "Brand",
+                                logo: brandLogoSrc,
+                                price: device.price || brandPriceNumeric,
+                                cta_label: "Brand price",
+                                is_brand_price: true,
                               }
-                            >
-                              Spec score
-                            </span>
-                          </div>
-                        ) : null;
-
-                      const renderStoreRows = (compact = false) => (
-                        <div className={compact ? "space-y-1.5" : "space-y-2"}>
-                          {priceRowsForDisplay.map((storePrice, i) => {
-                            const storeObj =
-                              storePrice.storeObj ||
-                              (getStore
-                                ? getStore(
-                                    storePrice.store ||
-                                      storePrice.store_name ||
-                                      storePrice.storeName ||
-                                      "",
-                                  )
-                                : null);
-                            const storeNameCandidate =
-                              storePrice.display_store_name ||
-                              storePrice.store ||
-                              storePrice.store_name ||
-                              storePrice.storeName ||
-                              storeObj?.name ||
+                            : null;
+                        const shouldUseExpectedPriceFallback =
+                          isUpcomingCard &&
+                          storeRowsForDisplay.length === 0 &&
+                          !shouldUseBrandPriceFallback &&
+                          upcomingExpectedPrice.numeric > 0;
+                        const expectedPriceFallbackRow =
+                          shouldUseExpectedPriceFallback
+                            ? {
+                                id: `${device.id ?? device.model ?? "phone"}-expected-price`,
+                                store: device.brand || "Expected",
+                                store_name: device.brand || "Expected",
+                                storeName: device.brand || "Expected",
+                                display_store_name: device.brand || "Expected",
+                                logo: brandLogoSrc,
+                                price: upcomingExpectedPrice.numeric,
+                                cta_label: "Expected price",
+                                is_expected_price: true,
+                              }
+                            : null;
+                        const primaryStoreRow = storeRowsForDisplay[0] || null;
+                        const primaryStoreName =
+                          primaryStoreRow?.display_store_name ||
+                          primaryStoreRow?.store ||
+                          primaryStoreRow?.store_name ||
+                          primaryStoreRow?.storeName ||
+                          "";
+                        const primaryStoreLogo = normalizeAssetUrl(
+                          primaryStoreRow?.logo ||
+                            (primaryStoreName
+                              ? getStoreLogo
+                                ? getStoreLogo(primaryStoreName)
+                                : getLogo(primaryStoreName)
+                              : null) ||
+                            brandLogoSrc ||
+                            null,
+                        );
+                        const primaryStoreUrl =
+                          primaryStoreRow?.url || brandStoreUrl || null;
+                        const storePriceRowsForDisplay = storeRowsForDisplay
+                          .filter(
+                            (row) =>
+                              row &&
+                              (row.price ||
+                                row.url ||
+                                row.store ||
+                                row.store_name ||
+                                row.storeName),
+                          )
+                          .slice(0, 2);
+                        const priceRowsForDisplay =
+                          storePriceRowsForDisplay.length > 0
+                            ? storePriceRowsForDisplay
+                            : brandPriceFallbackRow
+                              ? [brandPriceFallbackRow]
+                              : expectedPriceFallbackRow
+                                ? [expectedPriceFallbackRow]
+                                : [];
+                        const isBrandPriceOnly =
+                          priceRowsForDisplay.length > 0 &&
+                          priceRowsForDisplay.every(
+                            (row) => row?.is_brand_price,
+                          );
+                        const isExpectedPriceOnly =
+                          priceRowsForDisplay.length > 0 &&
+                          priceRowsForDisplay.every(
+                            (row) => row?.is_expected_price,
+                          );
+                        const hasListedPrice =
+                          brandPriceNumeric > 0 ||
+                          priceRowsForDisplay.some(
+                            (row) =>
+                              !row?.is_expected_price &&
+                              extractNumericPrice(row?.price) > 0,
+                          );
+                        const upcomingPriceEyebrow = hasListedPrice
+                          ? "Price"
+                          : upcomingExpectedPrice.numeric > 0
+                            ? "Expected price"
+                            : "Price";
+                        const pricePanelTitle = isBrandPriceOnly
+                          ? "Brand Price"
+                          : isExpectedPriceOnly
+                            ? "Expected Price"
+                            : "Check Price On";
+                        const upcomingPriceLabel = isUpcomingCard
+                          ? resolveUpcomingPriceLabel(device, brandPriceNumeric)
+                          : "";
+                        const cardPriceLabel =
+                          device.price ||
+                          (isUpcomingCard &&
+                          upcomingPriceLabel &&
+                          upcomingPriceLabel !== "Price not confirmed"
+                            ? upcomingPriceLabel
+                            : "");
+                        const availableDateRaw =
+                          device.saleStartDate ||
+                          device.sale_start_date ||
+                          device.availableDate ||
+                          device.available_date ||
+                          device.predictedAvailableDate ||
+                          device.predicted_available_date ||
+                          null;
+                        const availableDateParsed =
+                          parseDateValue(availableDateRaw);
+                        const availableOnText = null;
+                        const displaySummary = (() => {
+                          const rawDisplay =
+                            device.display || device.specs?.display;
+                          if (
+                            typeof rawDisplay === "string" &&
+                            rawDisplay.trim()
+                          ) {
+                            return rawDisplay.trim().split("|")[0].trim();
+                          }
+                          if (rawDisplay && typeof rawDisplay === "object") {
+                            const size =
+                              rawDisplay.size ||
+                              rawDisplay.display_size ||
+                              rawDisplay.displaySize ||
                               "";
-                            const ctaText = storePrice.cta_label || "Buy Now";
-                            const rawLogoSrc =
-                              storePrice.logo ||
-                              (storeNameCandidate
-                                ? getStoreLogo
-                                  ? getStoreLogo(storeNameCandidate)
-                                  : getLogo(storeNameCandidate)
-                                : null) ||
-                              device.brandLogo ||
-                              null;
-                            const logoSrc = normalizeAssetUrl(rawLogoSrc);
-                            const priceLabel = formatStorePrice(
-                              storePrice.price,
-                            );
+                            const inches =
+                              rawDisplay.inches || rawDisplay.sizeInches || "";
+                            if (size && inches) return `${size} (${inches})`;
+                            if (size) return size;
+                          }
+                          return "Display Info";
+                        })();
+                        const processorSummary =
+                          device.specs?.processor ||
+                          device.processor ||
+                          device.performance?.processor ||
+                          "Processor Info";
+                        const cameraMp =
+                          parseFirstInt(device.specs?.rearCameraResolution) ||
+                          getRearCameraMp(device) ||
+                          50;
+                        const cameraSummary = `${cameraMp} MP Camera`;
+                        const batteryCapacity = getBatteryMah(device);
+                        const batterySummary = `${
+                          batteryCapacity || "5000"
+                        } mAh Battery`;
+                        const formatGbLabel = (value, fallback) => {
+                          const normalized = parseFirstInt(value);
+                          if (normalized) return `${normalized} GB`;
+                          const raw = String(value || "").trim();
+                          return raw || fallback;
+                        };
+                        const ramValue = formatGbLabel(
+                          device.specs?.ram,
+                          "8 GB",
+                        );
+                        const storageValue = formatGbLabel(
+                          device.specs?.storage,
+                          "256 GB",
+                        );
+                        const memorySummary = `${ramValue} | ${storageValue}`;
+                        const specHighlights = [
+                          {
+                            label: "Memory",
+                            value: memorySummary,
+                            Icon: FaMemory,
+                          },
+                          {
+                            label: "Camera",
+                            value: cameraSummary,
+                            Icon: FaMobileAlt,
+                          },
+                          {
+                            label: "Battery",
+                            value: batterySummary,
+                            Icon: FaBatteryFull,
+                          },
+                          {
+                            label: "Chipset",
+                            value: processorSummary,
+                            Icon: FaRobot,
+                          },
+                        ];
+                        const formatStorePrice = (price) => {
+                          if (
+                            price == null ||
+                            price === "" ||
+                            price === "NaN"
+                          ) {
+                            return "";
+                          }
+                          const numeric = extractNumericPrice(price);
+                          if (numeric > 0)
+                            return `₹ ${numeric.toLocaleString("en-IN")}`;
+                          const raw = String(price).trim();
+                          return raw.startsWith("₹") ? raw : `₹ ${raw}`;
+                        };
+                        const variantOptions = Array.isArray(
+                          device.variantOptions,
+                        )
+                          ? device.variantOptions
+                          : [];
+                        const selectedVariantId = String(
+                          device.selectedVariantId ?? "",
+                        );
+                        const renderVariantSelector = (
+                          mode = "desktop",
+                          className = "",
+                        ) => {
+                          if (variantOptions.length <= 1) return null;
 
-                            return (
-                              <div
-                                key={`${
-                                  device.id ?? device.model ?? ""
-                                }-${compact ? "mobile-" : ""}price-${i}`}
-                                className={`flex items-center justify-between gap-2 bg-white ${
-                                  compact
-                                    ? "min-h-12 rounded-lg px-2.5 py-2"
-                                    : "min-h-14 rounded-lg px-3 py-2"
-                                }`}
-                              >
-                                <div className="flex min-w-0 items-center gap-2">
-                                  {logoSrc ? (
-                                    <div
-                                      className={`flex shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white ${
-                                        compact ? "h-8 w-8" : "h-9 w-9"
+                          const isCompact = mode === "compact";
+                          const isMobile = mode === "mobile";
+                          const wrapperSpacing = isCompact
+                            ? "mt-2"
+                            : isMobile
+                              ? "mt-3"
+                              : "mt-5";
+                          const labelClass =
+                            isCompact || isMobile
+                              ? "mb-2 block text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-500 sm:text-xs"
+                              : "mb-2 block text-xs font-extrabold uppercase tracking-[0.14em] text-slate-500";
+                          const gridClass =
+                            isCompact || isMobile
+                              ? "grid grid-cols-2 gap-1.5"
+                              : "grid gap-2 sm:grid-cols-2";
+
+                          return (
+                            <div
+                              className={`${wrapperSpacing} ${className}`}
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              <span className={labelClass}>Select variant</span>
+                              <div className={gridClass}>
+                                {variantOptions.map((option) => {
+                                  const isSelected =
+                                    String(option.variantId) ===
+                                      selectedVariantId ||
+                                    option.variantIndex ===
+                                      device.selectedVariantIndex;
+                                  const baseClass = isCompact
+                                    ? "flex min-h-11 min-w-0 items-center justify-between gap-1 rounded-lg px-3 text-left text-xs font-extrabold transition"
+                                    : isMobile
+                                      ? "flex min-h-11 min-w-0 items-center justify-between gap-1 rounded-lg px-3 text-left text-[11px] font-bold transition sm:text-xs"
+                                      : "flex min-h-11 items-center justify-between rounded-xl px-4 text-left text-sm font-bold transition";
+                                  const selectedClass = isCompact
+                                    ? "bg-blue-100 text-blue-700"
+                                    : "bg-blue-600 text-white";
+                                  const idleClass = isCompact
+                                    ? "bg-slate-100 text-slate-600 hover:bg-slate-100"
+                                    : "bg-slate-100 text-slate-700 hover:bg-slate-100";
+
+                                  return (
+                                    <button
+                                      key={`${device.id}-variant-${option.variantId}`}
+                                      type="button"
+                                      aria-pressed={isSelected}
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        const productKey =
+                                          getSmartphoneProductKey(device);
+                                        if (!productKey) return;
+                                        setSelectedVariantByProduct((prev) => ({
+                                          ...prev,
+                                          [productKey]: option.variantId,
+                                        }));
+                                      }}
+                                      className={`${baseClass} ${
+                                        isSelected ? selectedClass : idleClass
                                       }`}
                                     >
-                                      <img
-                                        src={logoSrc}
-                                        alt={
-                                          storeObj?.name || storeNameCandidate
-                                        }
-                                        className="h-full w-full object-contain"
-                                      />
-                                    </div>
-                                  ) : (
-                                    <div
-                                      className={`flex shrink-0 items-center justify-center rounded-lg bg-blue-50 ${
-                                        compact ? "h-8 w-8" : "h-9 w-9"
-                                      }`}
-                                    >
-                                      <FaStore className="text-[9px] text-slate-400" />
-                                    </div>
-                                  )}
-                                  <span
-                                    className={`truncate font-semibold text-slate-700 ${
-                                      compact
-                                        ? "max-w-28 text-[11px] sm:text-xs"
-                                        : "text-xs sm:text-sm"
-                                    }`}
-                                  >
-                                    {storeNameCandidate || "Online Store"}
-                                  </span>
-                                </div>
-                                <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
-                                  <span
-                                    className={`whitespace-nowrap font-extrabold text-emerald-600 ${
-                                      compact
-                                        ? "text-[11px] sm:text-xs"
-                                        : "text-sm"
-                                    }`}
-                                  >
-                                    {priceLabel}
-                                  </span>
-                                  {storePrice.url ? (
-                                    <a
-                                      href={storePrice.url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      onClick={(event) =>
-                                        event.stopPropagation()
-                                      }
-                                      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-md bg-blue-600 font-bold text-white transition hover:bg-blue-700 ${
-                                        compact
-                                          ? "min-h-9 px-3 text-[10px] sm:text-[11px]"
-                                          : "min-h-9 px-3 py-2 text-[10px] sm:text-xs"
-                                      }`}
-                                    >
-                                      {ctaText || "Buy Now"}
-                                      <FaExternalLinkAlt className="text-[8px]" />
-                                    </a>
-                                  ) : (
-                                    <span
-                                      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-md bg-slate-200 font-bold text-slate-500 ${
-                                        compact
-                                          ? "min-h-9 px-3 text-[10px] sm:text-[11px]"
-                                          : "min-h-9 px-3 py-2 text-[10px] sm:text-xs"
-                                      }`}
-                                    >
-                                      {ctaText || "Unavailable"}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      );
-                      return (
-                        <div
-                          key={`${device.id ?? device.model ?? ""}-${_idx}`}
-                          onClick={(e) => handleView(device, e)}
-                          className={` mx-auto h-auto w-full cursor-pointer overflow-hidden rounded-2xl bg-transparent transition duration-200 md:h-full dark:bg-[#0e1a2b] dark:[&_.bg-white]:bg-[#0f1c2d] dark:[&_.bg-slate-50]:bg-[#132238] dark:[&_.bg-slate-100]:bg-[#162941] dark:[&_.bg-blue-50]:bg-[#142b52] dark:[&_.bg-blue-100]:bg-[#1b3967] dark:[&_.smartphone-card-media_.bg-white]:bg-[#11213d] dark:[&_.text-slate-950]:text-[#f3f7ff] dark:[&_.text-slate-900]:text-[#eaf1ff] dark:[&_.text-slate-800]:text-[#d8e2f0] dark:[&_.text-slate-700]:text-[#c7d2e5] dark:[&_.text-slate-600]:text-[#aebbd0] dark:[&_.text-slate-500]:text-[#94a4bd] dark:[&_.border-slate-200]:border-[#263750] dark:[&_.divide-slate-200]:divide-[#263750] dark:hover:bg-[#102038] ${
-                            isCompareSelected(device) ? "bg-blue-50/50" : ""
-                          }`}
-                        >
-                          <div className="flex h-auto flex-col p-0 md:h-full">
-                            <div className="hidden">
-                              <div className="min-w-0 flex-1">
-                                <h3 className="text-2xl font-black text-slate-950">
-                                  {device.name || device.model}
-                                </h3>
-                              </div>
-
-                              <div className="shrink-0">
-                                {cardPriceLabel ? (
-                                  <div className="text-right">
-                                    {isUpcomingCard ? (
-                                      <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                                        {upcomingPriceEyebrow}
-                                      </div>
-                                    ) : null}
-                                    <div className="text-2xl font-black text-slate-950">
-                                      {cardPriceLabel}
-                                    </div>
-                                  </div>
-                                ) : null}
-                              </div>
-                            </div>
-
-                            <div className="hidden">
-                              <div className="flex items-center">
-                                {renderSpecScore()}
-                              </div>
-
-                              {hasLaunchDate ? (
-                                <div className="flex items-center gap-1.5 text-sm text-slate-700 sm:justify-end">
-                                  <FaCalendarAlt className="text-slate-400" />
-                                  <span>
-                                    {launchDateLabel}:{" "}
-                                    <span className="font-semibold text-slate-900">
-                                      {launchDateText}
-                                    </span>
-                                  </span>
-                                </div>
-                              ) : null}
-                            </div>
-
-                            <div className="hidden">
-                              <div className="smartphone-card-media relative flex min-h-[560px] items-center justify-center overflow-hidden border-r border-slate-200/70 bg-gradient-to-b from-blue-50 to-slate-50 p-8">
-                                {cardBadgeLabel ? (
-                                  <span className="smartphone-card-ai-badge absolute left-6 top-6 z-10 inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-3 py-1.5 text-xs font-bold text-white">
-                                    <FaRobot aria-hidden="true" />
-                                    {cardBadgeLabel}
-                                  </span>
-                                ) : null}
-                                <ImageCarousel
-                                  images={device.images}
-                                  fallbackTitle={
-                                    isUpcomingCard ? "" : "No image"
-                                  }
-                                  fallbackSubtitle={
-                                    isUpcomingCard
-                                      ? device.brand || "Launch image coming"
-                                      : "Image coming soon"
-                                  }
-                                  fallbackLogo={brandLogoSrc}
-                                  altText={
-                                    device.name || device.model || "Smartphone"
-                                  }
-                                />
-                              </div>
-
-                              <div className="min-w-0 p-6 xl:p-8">
-                                <div className="flex items-start justify-between gap-6 border-b border-slate-200/80 pb-5">
-                                  <div className="min-w-0">
-                                    {device.brand ? (
-                                      <p className="mb-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-blue-700">
-                                        {device.brand}
-                                      </p>
-                                    ) : null}
-                                    <h3 className="text-3xl font-black tracking-[-0.045em] text-slate-950 xl:text-4xl">
-                                      {device.name || device.model}
-                                    </h3>
-                                    {hasLaunchDate ? (
-                                      <div className="mt-2 flex items-center gap-2 text-xs text-slate-500 [&_svg]:text-slate-400 [&_strong]:font-bold [&_strong]:text-slate-700">
-                                        <FaCalendarAlt />
-                                        <span>
-                                          {launchDateLabel}:{" "}
-                                          <strong>{launchDateText}</strong>
-                                        </span>
-                                      </div>
-                                    ) : null}
-                                    <div className="mt-2 text-xs text-slate-500">
-                                      Market status:{" "}
-                                      <span className="font-bold text-slate-700">
-                                        {marketStatusLabel}
+                                      <span className="min-w-0 truncate">
+                                        {option.label}
                                       </span>
-                                    </div>
-                                  </div>
-                                  {cardPriceLabel ? (
-                                    <div className="shrink-0 text-right">
-                                      <strong className="block text-2xl font-black tracking-tight text-slate-950">
-                                        {cardPriceLabel}
-                                      </strong>
-                                      <span className="mt-1 block text-[10px] font-semibold text-slate-500">
-                                        {isUpcomingCard
-                                          ? upcomingPriceEyebrow
-                                          : "Starting price"}
-                                      </span>
-                                    </div>
-                                  ) : null}
-                                </div>
-
-                                <div className="mt-4 grid grid-cols-[150px_minmax(0,1fr)] gap-3">
-                                  <div className="flex items-center justify-center rounded-xl bg-blue-50 p-3">
-                                    {renderSpecScore()}
-                                  </div>
-                                  <div className="grid min-w-0 grid-cols-4 gap-2">
-                                    {specHighlights.map(
-                                      ({ label, value, Icon }) => (
-                                        <div
-                                          className="flex min-w-0 flex-col items-center justify-center rounded-xl bg-slate-50 px-2 py-3 text-center"
-                                          key={`desktop-${label}`}
+                                      {isSelected ? (
+                                        <span
+                                          className={`grid shrink-0 place-items-center rounded-full text-[8px] ${
+                                            isCompact
+                                              ? "h-5 w-5 bg-blue-600 text-white"
+                                              : "h-6 w-6 bg-white/20 text-white"
+                                          }`}
+                                          aria-hidden="true"
                                         >
-                                          <span className="mb-2 grid h-8 w-8 place-items-center rounded-xl bg-blue-50 text-xs text-blue-600">
-                                            <Icon />
-                                          </span>
-                                          <strong className="w-full break-words text-xs font-bold leading-4 text-slate-800">
-                                            {value}
-                                          </strong>
-                                          <small className="mt-1 text-[9px] font-bold uppercase tracking-wide text-slate-400">
-                                            {label}
-                                          </small>
-                                        </div>
-                                      ),
+                                          ✓
+                                        </span>
+                                      ) : null}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        };
+                        const renderSpecScore = (compact = false) => (
+                          <MobileXSpecScore
+                            score={scoreValue}
+                            compact={compact}
+                          />
+                        );
+
+                        const renderStoreRows = (compact = false) => (
+                          <div
+                            className={compact ? "space-y-1.5" : "space-y-2"}
+                          >
+                            {priceRowsForDisplay.map((storePrice, i) => {
+                              const storeObj =
+                                storePrice.storeObj ||
+                                (getStore
+                                  ? getStore(
+                                      storePrice.store ||
+                                        storePrice.store_name ||
+                                        storePrice.storeName ||
+                                        "",
+                                    )
+                                  : null);
+                              const storeNameCandidate =
+                                storePrice.display_store_name ||
+                                storePrice.store ||
+                                storePrice.store_name ||
+                                storePrice.storeName ||
+                                storeObj?.name ||
+                                "";
+                              const ctaText = storePrice.cta_label || "Buy Now";
+                              const rawLogoSrc =
+                                storePrice.logo ||
+                                (storeNameCandidate
+                                  ? getStoreLogo
+                                    ? getStoreLogo(storeNameCandidate)
+                                    : getLogo(storeNameCandidate)
+                                  : null) ||
+                                device.brandLogo ||
+                                null;
+                              const logoSrc = normalizeAssetUrl(rawLogoSrc);
+                              const priceLabel = formatStorePrice(
+                                storePrice.price,
+                              );
+
+                              return (
+                                <div
+                                  key={`${
+                                    device.id ?? device.model ?? ""
+                                  }-${compact ? "mobile-" : ""}price-${i}`}
+                                  className={`flex items-center justify-between gap-2 bg-white ${
+                                    compact
+                                      ? "min-h-12 rounded-lg px-2.5 py-2"
+                                      : "min-h-14 rounded-lg px-3 py-2"
+                                  }`}
+                                >
+                                  <div className="flex min-w-0 items-center gap-2">
+                                    {logoSrc ? (
+                                      <div
+                                        className={`flex shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white ${
+                                          compact ? "h-8 w-8" : "h-9 w-9"
+                                        }`}
+                                      >
+                                        <img
+                                          src={logoSrc}
+                                          alt={
+                                            storeObj?.name || storeNameCandidate
+                                          }
+                                          className="h-full w-full object-contain"
+                                        />
+                                      </div>
+                                    ) : (
+                                      <div
+                                        className={`flex shrink-0 items-center justify-center rounded-lg bg-blue-50 ${
+                                          compact ? "h-8 w-8" : "h-9 w-9"
+                                        }`}
+                                      >
+                                        <FaStore className="text-[9px] text-slate-400" />
+                                      </div>
+                                    )}
+                                    <span
+                                      className={`truncate font-semibold text-slate-700 ${
+                                        compact
+                                          ? "max-w-28 text-[11px] sm:text-xs"
+                                          : "text-xs sm:text-sm"
+                                      }`}
+                                    >
+                                      {storeNameCandidate || "Online Store"}
+                                    </span>
+                                  </div>
+                                  <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+                                    <span
+                                      className={`whitespace-nowrap font-extrabold text-emerald-600 ${
+                                        compact
+                                          ? "text-[11px] sm:text-xs"
+                                          : "text-sm"
+                                      }`}
+                                    >
+                                      {priceLabel}
+                                    </span>
+                                    {storePrice.url ? (
+                                      <a
+                                        href={storePrice.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={(event) =>
+                                          event.stopPropagation()
+                                        }
+                                        className={`inline-flex items-center gap-1 whitespace-nowrap rounded-md bg-blue-600 font-bold text-white transition hover:bg-blue-700 ${
+                                          compact
+                                            ? "min-h-9 px-3 text-[10px] sm:text-[11px]"
+                                            : "min-h-9 px-3 py-2 text-[10px] sm:text-xs"
+                                        }`}
+                                      >
+                                        {ctaText || "Buy Now"}
+                                        <FaExternalLinkAlt className="text-[8px]" />
+                                      </a>
+                                    ) : (
+                                      <span
+                                        className={`inline-flex items-center gap-1 whitespace-nowrap rounded-md bg-slate-200 font-bold text-slate-500 ${
+                                          compact
+                                            ? "min-h-9 px-3 text-[10px] sm:text-[11px]"
+                                            : "min-h-9 px-3 py-2 text-[10px] sm:text-xs"
+                                        }`}
+                                      >
+                                        {ctaText || "Unavailable"}
+                                      </span>
                                     )}
                                   </div>
                                 </div>
+                              );
+                            })}
+                          </div>
+                        );
+                        return (
+                          <div
+                            key={`${device.id ?? device.model ?? ""}-${_idx}`}
+                            onClick={(e) => handleView(device, e)}
+                            className={` mx-auto h-auto w-full cursor-pointer overflow-hidden rounded-2xl bg-transparent transition duration-200 md:h-full dark:bg-[#0e1a2b] dark:[&_.bg-white]:bg-[#0f1c2d] dark:[&_.bg-slate-50]:bg-[#132238] dark:[&_.bg-slate-100]:bg-[#162941] dark:[&_.bg-blue-50]:bg-[#142b52] dark:[&_.bg-blue-100]:bg-[#1b3967] dark:[&_.smartphone-card-media_.bg-white]:bg-[#11213d] dark:[&_.text-slate-950]:text-[#f3f7ff] dark:[&_.text-slate-900]:text-[#eaf1ff] dark:[&_.text-slate-800]:text-[#d8e2f0] dark:[&_.text-slate-700]:text-[#c7d2e5] dark:[&_.text-slate-600]:text-[#aebbd0] dark:[&_.text-slate-500]:text-[#94a4bd] dark:[&_.border-slate-200]:border-[#263750] dark:[&_.divide-slate-200]:divide-[#263750] dark:hover:bg-[#102038] ${
+                              isCompareSelected(device) ? "bg-blue-50/50" : ""
+                            }`}
+                          >
+                            <div className="flex h-auto flex-col p-0 md:h-full">
+                              <div className="hidden">
+                                <div className="min-w-0 flex-1">
+                                  <h3 className="text-2xl font-black text-slate-950">
+                                    {device.name || device.model}
+                                  </h3>
+                                </div>
 
-                                {renderVariantSelector("desktop")}
+                                <div className="shrink-0">
+                                  {cardPriceLabel ? (
+                                    <div className="text-right">
+                                      {isUpcomingCard ? (
+                                        <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                          {upcomingPriceEyebrow}
+                                        </div>
+                                      ) : null}
+                                      <div className="text-2xl font-black text-slate-950">
+                                        {cardPriceLabel}
+                                      </div>
+                                    </div>
+                                  ) : null}
+                                </div>
+                              </div>
 
-                                {availableOnText ? (
-                                  <div className="mt-4 flex items-center gap-1.5 text-sm text-slate-700">
+                              <div className="hidden">
+                                <div className="flex items-center">
+                                  {renderSpecScore()}
+                                </div>
+
+                                {hasLaunchDate ? (
+                                  <div className="flex items-center gap-1.5 text-sm text-slate-700 sm:justify-end">
                                     <FaCalendarAlt className="text-slate-400" />
                                     <span>
-                                      Available on:{" "}
+                                      {launchDateLabel}:{" "}
                                       <span className="font-semibold text-slate-900">
-                                        {availableOnText}
+                                        {launchDateText}
                                       </span>
                                     </span>
                                   </div>
                                 ) : null}
-
-                                {priceRowsForDisplay.length > 0 ? (
-                                  <div className="mt-5 rounded-xl bg-slate-50 p-3">
-                                    <div className="mb-2 flex items-center justify-between gap-3 px-1">
-                                      <span className="inline-flex items-center gap-2 text-xs font-bold text-slate-800 [&_svg]:text-emerald-500">
-                                        <FaStore />
-                                        {pricePanelTitle}
-                                      </span>
-                                      <span className="text-[9px] font-semibold text-slate-400">
-                                        Best prices · Trusted stores
-                                      </span>
-                                    </div>
-                                    {renderStoreRows(false)}
-                                  </div>
-                                ) : null}
                               </div>
-                            </div>
 
-                            <div className="flex-1">
-                              <div className="grid grid-cols-[116px_minmax(0,1fr)] gap-3 p-3 sm:grid-cols-[136px_minmax(0,1fr)] sm:gap-4 sm:p-4 xl:grid-cols-[148px_minmax(0,1fr)]">
-                                <div className="smartphone-card-media relative flex min-h-[190px] items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-blue-50 via-white to-slate-50 p-2 sm:min-h-[210px] xl:min-h-[226px] dark:bg-gradient-to-b dark:from-[#0e1930] dark:via-[#11213d] dark:to-[#0a1529]">
+                              <div className="hidden">
+                                <div className="smartphone-card-media relative flex min-h-[560px] items-center justify-center overflow-hidden border-r border-slate-200/70 bg-gradient-to-b from-blue-50 to-slate-50 p-8">
                                   {cardBadgeLabel ? (
-                                    <span className="smartphone-card-ai-badge absolute left-2 top-2 z-10 inline-flex max-w-[110px] items-center gap-1 truncate rounded-full bg-blue-600 px-2.5 py-1 text-[8px] font-bold text-white sm:max-w-[124px] sm:text-[9px]">
+                                    <span className="smartphone-card-ai-badge absolute left-6 top-6 z-10 inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-3 py-1.5 text-xs font-bold text-white">
                                       <FaRobot aria-hidden="true" />
                                       {cardBadgeLabel}
                                     </span>
                                   ) : null}
                                   <ImageCarousel
                                     images={device.images}
-                                    fallbackTitle=""
-                                    fallbackSubtitle=""
+                                    fallbackTitle={
+                                      isUpcomingCard ? "" : "No image"
+                                    }
+                                    fallbackSubtitle={
+                                      isUpcomingCard
+                                        ? device.brand || "Launch image coming"
+                                        : "Image coming soon"
+                                    }
                                     fallbackLogo={brandLogoSrc}
-                                    compact
                                     altText={
                                       device.name ||
                                       device.model ||
@@ -6512,135 +6723,258 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                                   />
                                 </div>
 
-                                <div className="min-w-0 pt-0.5">
-                                  {device.brand ? (
-                                    <p className="truncate text-[10px] font-extrabold uppercase tracking-[0.14em] text-blue-700 sm:text-[11px]">
-                                      {device.brand}
-                                    </p>
-                                  ) : null}
-                                  <h3 className="mt-1 line-clamp-2 text-base font-black leading-5 tracking-tight text-slate-950 sm:text-lg sm:leading-6 xl:text-xl xl:leading-7">
-                                    {device.name || device.model}
-                                  </h3>
-
-                                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                                    {renderSpecScore(true)}
-                                  </div>
-
-                                  <div className="mt-2 space-y-1 text-[11px] font-semibold text-slate-500 sm:text-xs">
-                                    <div>
-                                      Market status:{" "}
-                                      <span className="font-bold text-slate-700">
-                                        {marketStatusLabel}
-                                      </span>
-                                    </div>
-                                    {hasLaunchDate ? (
-                                      <div className="flex items-center gap-1.5">
-                                        <FaCalendarAlt className="text-slate-400" />
-                                        <span>
-                                          {launchDateLabel}:{" "}
-                                          <span className="font-bold text-slate-700">
-                                            {launchDateText}
+                                <div className="min-w-0 p-6 xl:p-8">
+                                  <div className="flex items-start justify-between gap-6 border-b border-slate-200/80 pb-5">
+                                    <div className="min-w-0">
+                                      {device.brand ? (
+                                        <p className="mb-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-blue-700">
+                                          {device.brand}
+                                        </p>
+                                      ) : null}
+                                      <h3 className="text-3xl font-black tracking-[-0.045em] text-slate-950 xl:text-4xl">
+                                        {device.name || device.model}
+                                      </h3>
+                                      {hasLaunchDate ? (
+                                        <div className="mt-2 flex items-center gap-2 text-xs text-slate-500 [&_svg]:text-slate-400 [&_strong]:font-bold [&_strong]:text-slate-700">
+                                          <FaCalendarAlt />
+                                          <span>
+                                            {launchDateLabel}:{" "}
+                                            <strong>{launchDateText}</strong>
                                           </span>
+                                        </div>
+                                      ) : null}
+                                      <div className="mt-2 text-xs text-slate-500">
+                                        Market status:{" "}
+                                        <span className="font-bold text-slate-700">
+                                          {marketStatusLabel}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    {cardPriceLabel ? (
+                                      <div className="shrink-0 text-right">
+                                        <strong className="block text-2xl font-black tracking-tight text-slate-950">
+                                          {cardPriceLabel}
+                                        </strong>
+                                        <span className="mt-1 block text-[10px] font-semibold text-slate-500">
+                                          {isUpcomingCard
+                                            ? upcomingPriceEyebrow
+                                            : "Starting price"}
                                         </span>
                                       </div>
                                     ) : null}
                                   </div>
 
-                                  {cardPriceLabel ? (
-                                    <div className="mt-3 text-xl font-black leading-none tracking-tight text-slate-950 sm:text-2xl">
-                                      {cardPriceLabel}
+                                  <div className="mt-4 grid grid-cols-[150px_minmax(0,1fr)] gap-3">
+                                    <div className="flex items-center justify-center rounded-xl bg-blue-50 p-3">
+                                      {renderSpecScore()}
+                                    </div>
+                                    <div className="grid min-w-0 grid-cols-4 gap-2">
+                                      {specHighlights.map(
+                                        ({ label, value, Icon }) => (
+                                          <div
+                                            className="flex min-w-0 flex-col items-center justify-center rounded-xl bg-slate-50 px-2 py-3 text-center"
+                                            key={`desktop-${label}`}
+                                          >
+                                            <span className="mb-2 grid h-8 w-8 place-items-center rounded-xl bg-blue-50 text-xs text-blue-600">
+                                              <Icon />
+                                            </span>
+                                            <strong className="w-full break-words text-xs font-bold leading-4 text-slate-800">
+                                              {value}
+                                            </strong>
+                                            <small className="mt-1 text-[9px] font-bold uppercase tracking-wide text-slate-400">
+                                              {label}
+                                            </small>
+                                          </div>
+                                        ),
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {renderVariantSelector("desktop")}
+
+                                  {availableOnText ? (
+                                    <div className="mt-4 flex items-center gap-1.5 text-sm text-slate-700">
+                                      <FaCalendarAlt className="text-slate-400" />
+                                      <span>
+                                        Available on:{" "}
+                                        <span className="font-semibold text-slate-900">
+                                          {availableOnText}
+                                        </span>
+                                      </span>
+                                    </div>
+                                  ) : null}
+
+                                  {priceRowsForDisplay.length > 0 ? (
+                                    <div className="mt-5 rounded-xl bg-slate-50 p-3">
+                                      <div className="mb-2 flex items-center justify-between gap-3 px-1">
+                                        <span className="inline-flex items-center gap-2 text-xs font-bold text-slate-800 [&_svg]:text-emerald-500">
+                                          <FaStore />
+                                          {pricePanelTitle}
+                                        </span>
+                                        <span className="text-[9px] font-semibold text-slate-400">
+                                          Best prices · Trusted stores
+                                        </span>
+                                      </div>
+                                      {renderStoreRows(false)}
                                     </div>
                                   ) : null}
                                 </div>
                               </div>
 
-                              <div className="mx-2.5 grid grid-cols-4 divide-x divide-slate-200/70 overflow-hidden rounded-xl bg-slate-50 sm:mx-3">
-                                {specHighlights.map(
-                                  ({ label, value, Icon }) => (
-                                    <div
-                                      className="flex min-w-0 flex-col items-center px-1 py-2 text-center sm:px-2 sm:py-2.5"
-                                      key={`mobile-${label}`}
-                                    >
-                                      <span className="mb-1 grid h-7 w-7 place-items-center rounded-lg bg-blue-50 text-[9px] text-blue-600 sm:h-8 sm:w-8 sm:text-[10px]">
-                                        <Icon />
+                              <div className="flex-1">
+                                <div className="grid grid-cols-[116px_minmax(0,1fr)] gap-3 p-3 sm:grid-cols-[136px_minmax(0,1fr)] sm:gap-4 sm:p-4 xl:grid-cols-[148px_minmax(0,1fr)]">
+                                  <div className="smartphone-card-media relative flex min-h-[190px] items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-blue-50 via-white to-slate-50 p-2 sm:min-h-[210px] xl:min-h-[226px] dark:bg-gradient-to-b dark:from-[#0e1930] dark:via-[#11213d] dark:to-[#0a1529]">
+                                    {cardBadgeLabel ? (
+                                      <span className="smartphone-card-ai-badge absolute left-2 top-2 z-10 inline-flex max-w-[110px] items-center gap-1 truncate rounded-full bg-blue-600 px-2.5 py-1 text-[8px] font-bold text-white sm:max-w-[124px] sm:text-[9px]">
+                                        <FaRobot aria-hidden="true" />
+                                        {cardBadgeLabel}
                                       </span>
-                                      <small className="text-[8px] font-bold uppercase tracking-[0.04em] text-slate-500 sm:text-[9px]">
-                                        {label}
-                                      </small>
-                                      <strong className="mt-1 line-clamp-3 w-full break-words text-[9px] font-bold leading-[11px] text-slate-800 sm:text-[10px] sm:leading-[12px]">
-                                        {value}
-                                      </strong>
+                                    ) : null}
+                                    <ImageCarousel
+                                      images={device.images}
+                                      fallbackTitle=""
+                                      fallbackSubtitle=""
+                                      fallbackLogo={brandLogoSrc}
+                                      compact
+                                      priority={_idx < 4}
+                                      altText={
+                                        device.name ||
+                                        device.model ||
+                                        "Smartphone"
+                                      }
+                                    />
+                                  </div>
+
+                                  <div className="min-w-0 pt-0.5">
+                                    {device.brand ? (
+                                      <p className="truncate text-[10px] font-extrabold uppercase tracking-[0.14em] text-blue-700 sm:text-[11px]">
+                                        {device.brand}
+                                      </p>
+                                    ) : null}
+                                    <h3 className="mt-1 line-clamp-2 text-base font-black leading-5 tracking-tight text-slate-950 sm:text-lg sm:leading-6 xl:text-xl xl:leading-7">
+                                      {device.name || device.model}
+                                    </h3>
+
+                                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                                      {renderSpecScore(true)}
                                     </div>
-                                  ),
-                                )}
+
+                                    <div className="mt-2 space-y-1 text-[11px] font-semibold text-slate-500 sm:text-xs">
+                                      <div>
+                                        Market status:{" "}
+                                        <span className="font-bold text-slate-700">
+                                          {marketStatusLabel}
+                                        </span>
+                                      </div>
+                                      {hasLaunchDate ? (
+                                        <div className="flex items-center gap-1.5">
+                                          <FaCalendarAlt className="text-slate-400" />
+                                          <span>
+                                            {launchDateLabel}:{" "}
+                                            <span className="font-bold text-slate-700">
+                                              {launchDateText}
+                                            </span>
+                                          </span>
+                                        </div>
+                                      ) : null}
+                                    </div>
+
+                                    {cardPriceLabel ? (
+                                      <div className="mt-3 text-xl font-black leading-none tracking-tight text-slate-950 sm:text-2xl">
+                                        {cardPriceLabel}
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                </div>
+
+                                <div className="mx-2.5 grid grid-cols-4 divide-x divide-slate-200/70 overflow-hidden rounded-xl bg-slate-50 sm:mx-3">
+                                  {specHighlights.map(
+                                    ({ label, value, Icon }) => (
+                                      <div
+                                        className="flex min-w-0 flex-col items-center px-1 py-2 text-center sm:px-2 sm:py-2.5"
+                                        key={`mobile-${label}`}
+                                      >
+                                        <span className="mb-1 grid h-7 w-7 place-items-center rounded-lg bg-blue-50 text-[9px] text-blue-600 sm:h-8 sm:w-8 sm:text-[10px]">
+                                          <Icon />
+                                        </span>
+                                        <small className="text-[8px] font-bold uppercase tracking-[0.04em] text-slate-500 sm:text-[9px]">
+                                          {label}
+                                        </small>
+                                        <strong className="mt-1 line-clamp-3 w-full break-words text-[9px] font-bold leading-[11px] text-slate-800 sm:text-[10px] sm:leading-[12px]">
+                                          {value}
+                                        </strong>
+                                      </div>
+                                    ),
+                                  )}
+                                </div>
+
+                                <div className="px-2.5 pb-2.5 sm:px-3 sm:pb-3">
+                                  {renderVariantSelector("mobile")}
+
+                                  {availableOnText ? (
+                                    <div className="mt-3 flex items-center gap-1.5 text-[10px] text-slate-600">
+                                      <FaCalendarAlt className="text-slate-400" />
+                                      <span>
+                                        Available on:{" "}
+                                        <span className="font-semibold text-slate-900">
+                                          {availableOnText}
+                                        </span>
+                                      </span>
+                                    </div>
+                                  ) : null}
+
+                                  {priceRowsForDisplay.length > 0 ? (
+                                    <div className="mt-3 rounded-xl bg-slate-50 p-2">
+                                      <div className="mb-1.5 flex items-center justify-between gap-2 px-1">
+                                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-800 sm:text-xs [&_svg]:text-emerald-500">
+                                          <FaStore />
+                                          {pricePanelTitle}
+                                        </span>
+                                        <span className="text-[9px] font-semibold text-slate-400 sm:text-[10px]">
+                                          Best prices
+                                        </span>
+                                      </div>
+                                      {renderStoreRows(true)}
+                                    </div>
+                                  ) : null}
+                                </div>
                               </div>
 
-                              <div className="px-2.5 pb-2.5 sm:px-3 sm:pb-3">
-                                {renderVariantSelector("mobile")}
-
-                                {availableOnText ? (
-                                  <div className="mt-3 flex items-center gap-1.5 text-[10px] text-slate-600">
-                                    <FaCalendarAlt className="text-slate-400" />
-                                    <span>
-                                      Available on:{" "}
-                                      <span className="font-semibold text-slate-900">
-                                        {availableOnText}
-                                      </span>
-                                    </span>
-                                  </div>
-                                ) : null}
-
-                                {priceRowsForDisplay.length > 0 ? (
-                                  <div className="mt-3 rounded-xl bg-slate-50 p-2">
-                                    <div className="mb-1.5 flex items-center justify-between gap-2 px-1">
-                                      <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-800 sm:text-xs [&_svg]:text-emerald-500">
-                                        <FaStore />
-                                        {pricePanelTitle}
-                                      </span>
-                                      <span className="text-[9px] font-semibold text-slate-400 sm:text-[10px]">
-                                        Best prices
-                                      </span>
-                                    </div>
-                                    {renderStoreRows(true)}
-                                  </div>
-                                ) : null}
-                              </div>
-                            </div>
-
-                            <div className="smartphone-card-footer mt-1 flex min-h-10 items-center justify-between gap-2 px-3 py-2 md:mt-auto xl:min-h-12 xl:px-4 xl:py-3">
-                              <label
-                                className={`flex cursor-pointer items-center gap-2 ${compareDisabled ? "cursor-not-allowed opacity-50" : ""}`}
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={compareSelected}
-                                  disabled={
-                                    compareDisabled ||
-                                    (!compareSelected &&
-                                      compareItems.length >=
-                                        effectiveCompareLimit)
-                                  }
+                              <div className="smartphone-card-footer mt-1 flex min-h-10 items-center justify-between gap-2 px-3 py-2 md:mt-auto xl:min-h-12 xl:px-4 xl:py-3">
+                                <label
+                                  className={`flex cursor-pointer items-center gap-2 ${compareDisabled ? "cursor-not-allowed opacity-50" : ""}`}
                                   onClick={(e) => e.stopPropagation()}
-                                  onChange={(e) =>
-                                    handleCompareToggle(device, e)
-                                  }
-                                  className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white transition-all duration-200 checked:border-emerald-600 checked:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-1 disabled:cursor-not-allowed"
-                                />
-                                <span className="text-sm font-semibold text-slate-700">
-                                  Compare
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={compareSelected}
+                                    disabled={
+                                      compareDisabled ||
+                                      (!compareSelected &&
+                                        compareItems.length >=
+                                          effectiveCompareLimit)
+                                    }
+                                    onClick={(e) => e.stopPropagation()}
+                                    onChange={(e) =>
+                                      handleCompareToggle(device, e)
+                                    }
+                                    className="h-4 w-4 appearance-none rounded border border-slate-300 bg-white transition-all duration-200 checked:border-emerald-600 checked:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-1 disabled:cursor-not-allowed"
+                                  />
+                                  <span className="text-sm font-semibold text-slate-700">
+                                    Compare
+                                  </span>
+                                </label>
+                                <span className="inline-flex items-center gap-1 text-sm font-bold text-blue-700">
+                                  View full details <FaChevronRight />
                                 </span>
-                              </label>
-                              <span className="inline-flex items-center gap-1 text-sm font-bold text-blue-700">
-                                View full details <FaChevronRight />
-                              </span>
+                              </div>
                             </div>
+                            <div className="hidden" />
                           </div>
-                          <div className="hidden" />
-                        </div>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  )}
 
                   {/* Floating Compare Bar - Appears when 2+ items selected */}
                   {compareItems.length >= 2 && (
@@ -6665,7 +6999,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                   )}
 
                   {/* No Results State */}
-                  {sortedVariants.length === 0 && (
+                  {!loading && sortedVariants.length === 0 && (
                     <div className="rounded-3xl bg-white py-16 text-center transition-all duration-300">
                       <div className="max-w-md mx-auto">
                         <FaSearch className="mx-auto mb-4 text-5xl text-slate-300" />
@@ -6805,150 +7139,30 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
               />
 
               {/* Responsive filter workspace */}
-              {showFilters && (
-                <div className="fixed inset-0 z-[80] flex items-center justify-center p-0 lg:p-6">
-                  <button
-                    type="button"
-                    className="absolute inset-0 cursor-default bg-slate-950/45 backdrop-blur-[2px]"
-                    onClick={() => setShowFilters(false)}
-                    aria-label="Close filters"
-                  />
-
-                  {/* Desktop filter modal */}
-                  <section
-                    role="dialog"
-                    aria-modal="true"
-                    aria-label="Smartphone filters"
-                    className="relative hidden h-[min(820px,calc(100vh-3rem))] w-[min(1180px,calc(100vw-3rem))] flex-col overflow-hidden rounded-[32px] bg-white lg:flex"
-                  >
-                    <header className="flex shrink-0 items-center justify-between gap-6 border-b border-slate-100 px-7 py-5">
-                      <div className="flex min-w-0 items-center gap-4">
-                        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-slate-100 text-slate-600">
-                          <FaFilter />
-                        </span>
-                        <div className="min-w-0">
-                          <h3 className="text-2xl font-black tracking-tight text-slate-950">
-                            Filters
-                          </h3>
-                          <p className="mt-1 text-sm text-slate-500">
-                            Refine smartphones by specifications
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <button
-                          type="button"
-                          onClick={clearFilters}
-                          disabled={getActiveFiltersCount() === 0}
-                          className="rounded-xl px-3 py-2 text-sm font-bold text-blue-600 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                          Clear all
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setShowFilters(false)}
-                          className="grid h-11 w-11 place-items-center rounded-2xl bg-slate-100 text-slate-600 transition hover:bg-slate-200"
-                          aria-label="Close filters"
-                        >
-                          <FaTimes />
-                        </button>
-                      </div>
-                    </header>
-
-                    <div className="grid min-h-0 flex-1 grid-cols-[18rem_minmax(0,1fr)]">
-                      <nav className="min-h-0 overflow-y-auto border-r border-slate-100 p-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                        <div className="space-y-1.5">
-                          {renderFilterSections(renderDesktopFilterNavItem)}
-                        </div>
-                      </nav>
-
-                      <div className="flex min-h-0 min-w-0 flex-col">
-                        <div className="min-h-0 flex-1 overflow-y-auto px-7 py-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                          {renderFilterSections(renderDesktopFilterPanel)}
-                          <div className="mt-8">
-                            {renderSelectedFiltersSummary()}
-                          </div>
-                        </div>
-
-                        <footer className="grid shrink-0 grid-cols-[0.9fr_1.1fr] gap-3 border-t border-slate-100 bg-white px-7 py-5">
-                          <button
-                            type="button"
-                            onClick={clearFilters}
-                            disabled={getActiveFiltersCount() === 0}
-                            className="rounded-2xl bg-slate-100 px-5 py-3.5 text-sm font-bold text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-45"
-                          >
-                            Reset all
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setShowFilters(false)}
-                            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3.5 text-sm font-bold text-white transition hover:bg-blue-700"
-                          >
-                            <FaFilter className="text-xs" />
-                            Apply filters ({filteredVariants.length})
-                          </button>
-                        </footer>
-                      </div>
-                    </div>
-                  </section>
-
-                  {/* Mobile filter drawer */}
-                  <aside
-                    role="dialog"
-                    aria-modal="true"
-                    aria-label="Smartphone filters"
-                    className="relative ml-auto flex h-full w-full max-w-md flex-col overflow-hidden bg-white sm:my-3 sm:mr-3 sm:h-[calc(100%-1.5rem)] sm:rounded-[30px] lg:hidden"
-                  >
-                    <header className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-5 pb-4 pt-5">
-                      <div>
-                        <h3 className="text-2xl font-black tracking-tight text-slate-950">
-                          Filters
-                        </h3>
-                        <p className="mt-1 text-sm text-slate-500">
-                          {isUpcomingFilterPath
-                            ? "Filter upcoming phones by launch signals"
-                            : "Refine smartphones by specifications"}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowFilters(false)}
-                        className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-slate-100 text-slate-600 transition hover:bg-slate-200"
-                        aria-label="Close filters"
-                      >
-                        <FaTimes />
-                      </button>
-                    </header>
-
-                    <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                      {renderFilterSections(renderMobileFilterBlock)}
-                      <div className="pt-2">
-                        {renderSelectedFiltersSummary({ compact: true })}
-                      </div>
-                    </div>
-
-                    <footer className="shrink-0 border-t border-slate-100 bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
-                      <div className="space-y-2">
-                        <button
-                          type="button"
-                          onClick={() => setShowFilters(false)}
-                          className="w-full rounded-2xl bg-blue-600 px-4 py-3.5 text-sm font-bold text-white transition hover:bg-blue-700"
-                        >
-                          Apply filters ({filteredVariants.length})
-                        </button>
-                        <button
-                          type="button"
-                          onClick={clearFilters}
-                          disabled={getActiveFiltersCount() === 0}
-                          className="w-full rounded-2xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-45"
-                        >
-                          Reset all
-                        </button>
-                      </div>
-                    </footer>
-                  </aside>
-                </div>
-              )}
+              <ProductFilterSheet
+                open={showFilters}
+                onClose={() => setShowFilters(false)}
+                onReset={clearFilters}
+                onApply={() => setShowFilters(false)}
+                title="Filters"
+                subtitle={
+                  isUpcomingFilterPath
+                    ? "Refine upcoming smartphones by launch signals"
+                    : "Refine smartphones by specifications and features"
+                }
+                applyLabel="Apply filters"
+                resultCount={filteredVariants.length}
+                sections={filterSectionDefinitions}
+                activeSection={openDesktopFilterSection}
+                onSectionChange={setOpenDesktopFilterSection}
+                desktopContent={
+                  <div className="min-h-full">
+                    {renderFilterSections(renderDesktopFilterPanel)}
+                  </div>
+                }
+                selectedSummary={renderSelectedFiltersSummary()}
+                mobileSections={buildMobileFilterSections()}
+              />
             </section>
           </div>
         </div>

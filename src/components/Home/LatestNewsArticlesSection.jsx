@@ -17,8 +17,10 @@ import SmartDeviceArt from "./SmartDeviceArt";
 
 const artVariantForStory = (story) => {
   const category = String(story?.category || "").toLowerCase();
-  if (/launch|smartphone|mobile|gadget|wearable/.test(category)) return "launch";
-  if (/chip|ai|software|cloud|internet|cyber/.test(category)) return "performance";
+  if (/launch|smartphone|mobile|gadget|wearable/.test(category))
+    return "launch";
+  if (/chip|ai|software|cloud|internet|cyber/.test(category))
+    return "performance";
   return "newsroom";
 };
 
@@ -81,7 +83,8 @@ const LatestNewsArticlesSection = () => {
 
     return {
       topics: topics.slice(0, 5),
-      productLinked: uniqueStories.filter((story) => story.productLinked).length,
+      productLinked: uniqueStories.filter((story) => story.productLinked)
+        .length,
       priority: uniqueStories.filter(
         (story) => story.featured || story.trending || story.pinned,
       ).length,
@@ -98,14 +101,14 @@ const LatestNewsArticlesSection = () => {
           <header className="hooks-newsroom-masthead">
             <div className="hooks-newsroom-masthead__copy">
               <p>
-                <FaSignal aria-hidden="true" /> Hooks newsroom
+                <FaSignal aria-hidden="true" /> MobileX newsroom
               </p>
               <h2 id="hooks-newsroom-title">
                 Technology news designed for better product decisions
               </h2>
               <span>
-                Launch coverage, practical explainers and product-linked reporting
-                from the live Hooks editorial feed.
+                Launch coverage, practical explainers and product-linked
+                reporting from the live MobileX editorial feed.
               </span>
             </div>
 
@@ -153,12 +156,14 @@ const LatestNewsArticlesSection = () => {
 
                     <p className="hooks-newsroom-lead__kicker">Top story</p>
                     <h3>{lead.title}</h3>
-                    <p className="hooks-newsroom-lead__summary">{lead.summary}</p>
+                    <p className="hooks-newsroom-lead__summary">
+                      {lead.summary}
+                    </p>
 
                     <div className="hooks-newsroom-lead__footer">
                       <span>
                         <b>{lead.author}</b>
-                        <small>{lead.authorRole || "Hooks newsroom"}</small>
+                        <small>{lead.authorRole || "MobileX newsroom"}</small>
                       </span>
                       <strong>
                         Read full story <FaArrowRight aria-hidden="true" />
@@ -168,7 +173,10 @@ const LatestNewsArticlesSection = () => {
                 </Link>
 
                 {features.length ? (
-                  <div className="hooks-newsroom-features" aria-label="Featured technology stories">
+                  <div
+                    className="hooks-newsroom-features"
+                    aria-label="Featured technology stories"
+                  >
                     {features.map((story, index) => (
                       <Link
                         key={story.slug}
@@ -193,7 +201,10 @@ const LatestNewsArticlesSection = () => {
                 ) : null}
               </div>
 
-              <aside className="hooks-newsroom-sidebar" aria-label="Hooks newsroom live desk">
+              <aside
+                className="hooks-newsroom-sidebar"
+                aria-label="MobileX newsroom live desk"
+              >
                 <div className="hooks-newsroom-pulse">
                   <div className="hooks-newsroom-pulse__heading">
                     <span>
@@ -220,7 +231,10 @@ const LatestNewsArticlesSection = () => {
                   </div>
 
                   {newsroomStats.topics.length ? (
-                    <div className="hooks-newsroom-topics" aria-label="Current newsroom topics">
+                    <div
+                      className="hooks-newsroom-topics"
+                      aria-label="Current newsroom topics"
+                    >
                       {newsroomStats.topics.map((topic) => (
                         <span key={topic.key}>#{topic.label}</span>
                       ))}

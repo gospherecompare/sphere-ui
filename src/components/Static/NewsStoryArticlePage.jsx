@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+
 import {
   FaArrowRight,
   FaChevronLeft,
@@ -10,23 +11,32 @@ import {
   FaWhatsapp,
 } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
+
 import SEO from "../SEO";
 import NotFound from "./NotFound";
+import AiSummary from "../News/AiSummary";
+
 import {
   createBreadcrumbSchema,
   createNewsArticleSchema,
 } from "../../utils/schemaGenerators";
+
 import {
   buildRelatedNewsStories,
   createNewsStoryPath,
   usePublicNewsFeed,
   usePublicNewsStory,
 } from "../../hooks/usePublicNews";
+
 import GoogleSwgBasic from "../News/GoogleSwgBasic";
 import GooglePreferredSourceButton from "../News/GooglePreferredSourceButton";
-import HookLogo from "../ui/HookLogo";
+import MobileXLogo from "../ui/MoblieX";
+
 import "./news-article.css";
+
 import { buildNewsArticleSeo } from "../../utils/newsSeo";
+
+const SITE_ORIGIN = "https://mobilex.in";
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -35,12 +45,30 @@ const DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
 });
 
 const POPULAR_MOBILE_LIST = [
-  "Best Mobile Phones Under 30000",
-  "Best Mobile Phones Under 20000",
-  "Best Mobile Phones Under 15000",
-  "Samsung Galaxy S Series Mobile Phones",
-  "6000mAh Battery Mobile Phones",
-  "Fast Charging Mobile Phones",
+  {
+    label: "Best Phones Under ₹30,000",
+    href: "/smartphones/filter/under-30000",
+  },
+  {
+    label: "Best Phones Under ₹20,000",
+    href: "/smartphones/filter/under-20000",
+  },
+  {
+    label: "Best Phones Under ₹15,000",
+    href: "/smartphones/filter/under-15000",
+  },
+  {
+    label: "Samsung Galaxy S Series",
+    href: "/smartphones/samsung",
+  },
+  {
+    label: "Best 6000mAh Battery Phones",
+    href: "/smartphones",
+  },
+  {
+    label: "Best Fast Charging Phones",
+    href: "/smartphones",
+  },
 ];
 
 const MOBILE_RELATED_STORIES_PER_PAGE = 2;
@@ -87,13 +115,17 @@ const ArticleAuthorAvatar = ({ story, className = "" }) => {
 
 const parseStoryDate = (story) => {
   const raw = story?.publishedIso || story?.updatedIso || story?.publishedAt;
+
   const date = new Date(raw);
+
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
 const parseStoryUpdatedDate = (story) => {
   const raw = story?.updatedIso || story?.updatedAt;
+
   const date = new Date(raw);
+
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
@@ -108,9 +140,13 @@ const stripMarkup = (value) =>
 
 const clipDescription = (value, maxWords = 34) => {
   const text = stripMarkup(value);
+
   if (!text) return "";
+
   const words = text.split(/\s+/).filter(Boolean);
+
   if (words.length <= maxWords) return text;
+
   return `${words.slice(0, maxWords).join(" ")}...`;
 };
 
@@ -126,14 +162,18 @@ const dedupeStories = (stories = []) => {
 
   return stories.filter((item) => {
     const key = String(item?.slug || normalizeTagKey(item?.title || "")).trim();
+
     if (!key || seen.has(key)) return false;
+
     seen.add(key);
+
     return true;
   });
 };
 
 const decodeHtmlEntitiesOnce = (value) => {
   let text = String(value || "");
+
   const replacements = [
     ["&lt;", "<"],
     ["&gt;", ">"],
@@ -166,7 +206,9 @@ const normalizeArticleHtml = (value) => {
     pass += 1
   ) {
     const next = decodeHtmlEntitiesOnce(text);
+
     if (next === text) break;
+
     text = next;
   }
 
@@ -178,7 +220,9 @@ const decodeTextEntities = (value) => {
 
   for (let pass = 0; pass < 3; pass += 1) {
     const next = decodeHtmlEntitiesOnce(text);
+
     if (next === text) break;
+
     text = next;
   }
 
@@ -199,10 +243,12 @@ const applyInlineBoldMarkers = (value) =>
           return part
             .replace(/\*\*([\s\S]*?)\*\*/g, (full, inner) => {
               const text = String(inner || "").trim();
+
               return text ? `<strong>${text}</strong>` : full;
             })
             .replace(/__([\s\S]*?)__/g, (full, inner) => {
               const text = String(inner || "").trim();
+
               return text ? `<strong>${text}</strong>` : full;
             });
         })
@@ -248,9 +294,11 @@ const getStoryCategory = (story) =>
 
 const getRelatedStoryMetaLabel = (story) => {
   const brandOrProduct = stripMarkup(story?.brandName || story?.productName);
+
   if (brandOrProduct) return brandOrProduct;
 
   const category = stripMarkup(story?.category).toLowerCase();
+
   if (category === "launches") return "Launches";
 
   return getStoryCategory(story);
@@ -258,19 +306,25 @@ const getRelatedStoryMetaLabel = (story) => {
 
 const formatAbsoluteDate = (story) => {
   const date = parseStoryDate(story);
+
   if (!date) return story?.publishedAt || "Recent update";
+
   return DATE_FORMATTER.format(date);
 };
 
 const formatUpdatedDate = (story) => {
   const updatedDate = parseStoryUpdatedDate(story);
+
   if (!updatedDate) return "";
 
   const publishedDate = parseStoryDate(story);
+
   const updatedLabel = DATE_FORMATTER.format(updatedDate);
+
   const publishedLabel = publishedDate
     ? DATE_FORMATTER.format(publishedDate)
     : "";
+
   if (publishedLabel && updatedLabel === publishedLabel) {
     return "";
   }
@@ -293,7 +347,8 @@ const formatImageCredit = (story) => {
     .map((value) => String(value || "").trim())
     .find(Boolean);
 
-  if (!raw || /^(asset|url|hooks newsroom)$/i.test(raw)) return "";
+  if (!raw || /^(asset|url|mobilex news)$/i.test(raw)) return "";
+
   if (/^https?:\/\//i.test(raw)) {
     try {
       return new URL(raw).hostname.replace(/^www\./i, "");
@@ -301,15 +356,30 @@ const formatImageCredit = (story) => {
       return "";
     }
   }
+
   return raw;
 };
 
 const buildStoryBreadcrumbs = (story, canonicalUrl) => {
   const items = [
-    { label: "Home", to: "/", url: "https://tryhook.shop/" },
-    { label: "News", to: "/news", url: "https://tryhook.shop/news" },
+    {
+      label: "Home",
+      to: "/",
+      url: `${SITE_ORIGIN}/`,
+    },
+    {
+      label: "News",
+      to: "/news",
+      url: `${SITE_ORIGIN}/news`,
+    },
   ];
-  if (story?.title) items.push({ label: story.title, url: canonicalUrl });
+
+  if (story?.title) {
+    items.push({
+      label: story.title,
+      url: canonicalUrl,
+    });
+  }
 
   return items;
 };
@@ -332,14 +402,23 @@ const extractArticleHeadings = (html) => {
     /<h([2-4])\b[^>]*>([\s\S]*?)<\/h\1>/gi,
     (full, level, inner) => {
       const text = stripMarkup(inner);
+
       if (!text) return full;
 
       const baseId = createAnchorId(text, `section-${headings.length + 1}`);
+
       const count = seen.get(baseId) || 0;
+
       const id = count ? `${baseId}-${count + 1}` : baseId;
 
       seen.set(baseId, count + 1);
-      headings.push({ id, text, level: Number(level) });
+
+      headings.push({
+        id,
+        text,
+        level: Number(level),
+      });
+
       return full;
     },
   );
@@ -354,42 +433,76 @@ const injectHeadingIds = (html, headings = []) => {
     /<h([2-4])\b([^>]*)>/gi,
     (full, level, attrs = "") => {
       const heading = headings[headingIndex];
+
       headingIndex += 1;
 
-      if (!heading || /\sid\s*=/.test(attrs)) return full;
+      if (!heading || /\sid\s*=/.test(attrs)) {
+        return full;
+      }
+
       return `<h${level}${attrs} id="${heading.id}">`;
     },
   );
 };
 
 const splitStructuredArticleHtml = (html, paragraphCount = 2) => {
-  if (!html) return { leadHtml: "", restHtml: "" };
+  if (!html) {
+    return {
+      leadHtml: "",
+      restHtml: "",
+    };
+  }
+
   if (typeof DOMParser === "undefined") {
-    return { leadHtml: html, restHtml: "" };
+    return {
+      leadHtml: html,
+      restHtml: "",
+    };
   }
 
   const parsed = new DOMParser().parseFromString(
     `<article data-news-article-root>${html}</article>`,
     "text/html",
   );
+
   const root = parsed.querySelector("[data-news-article-root]");
-  if (!root) return { leadHtml: html, restHtml: "" };
+
+  if (!root) {
+    return {
+      leadHtml: html,
+      restHtml: "",
+    };
+  }
 
   const nodes = Array.from(root.childNodes).filter(
     (node) => node.nodeType !== 3 || String(node.textContent || "").trim(),
   );
+
   let topLevelParagraphs = 0;
   let splitAfter = -1;
 
   nodes.forEach((node, index) => {
-    if (splitAfter >= 0 || node.nodeType !== 1) return;
-    if (String(node.nodeName || "").toLowerCase() !== "p") return;
+    if (splitAfter >= 0 || node.nodeType !== 1) {
+      return;
+    }
+
+    if (String(node.nodeName || "").toLowerCase() !== "p") {
+      return;
+    }
 
     topLevelParagraphs += 1;
-    if (topLevelParagraphs >= paragraphCount) splitAfter = index;
+
+    if (topLevelParagraphs >= paragraphCount) {
+      splitAfter = index;
+    }
   });
 
-  if (splitAfter < 0) return { leadHtml: root.innerHTML, restHtml: "" };
+  if (splitAfter < 0) {
+    return {
+      leadHtml: root.innerHTML,
+      restHtml: "",
+    };
+  }
 
   const serialize = (items) =>
     items
@@ -423,8 +536,9 @@ const StoryImageFallback = ({ story }) => (
       <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/70">
         {getStoryCategory(story)}
       </p>
+
       <h3 className="mt-3 text-sm font-black leading-tight sm:text-base">
-        {story?.title || "Hooks editorial"}
+        {story?.title || "MobileX editorial"}
       </h3>
     </div>
   </div>
@@ -432,6 +546,7 @@ const StoryImageFallback = ({ story }) => (
 
 const StoryImage = ({ story, className = "", eager = false }) => {
   const [imageError, setImageError] = useStoryImageState(story);
+
   const hasImage = Boolean(story?.image) && !imageError;
 
   return (
@@ -473,6 +588,7 @@ const InstagramBrandIcon = ({ className = "" }) => (
         <stop offset="1" stopColor="#4f5bd5" />
       </linearGradient>
     </defs>
+
     <rect
       x="3.25"
       y="3.25"
@@ -483,6 +599,7 @@ const InstagramBrandIcon = ({ className = "" }) => (
       stroke="url(#instagram-share-gradient)"
       strokeWidth="2"
     />
+
     <circle
       cx="12"
       cy="12"
@@ -491,30 +608,43 @@ const InstagramBrandIcon = ({ className = "" }) => (
       stroke="url(#instagram-share-gradient)"
       strokeWidth="2"
     />
+
     <circle cx="17.1" cy="6.9" r="1.25" fill="url(#instagram-share-gradient)" />
   </svg>
 );
 
 const ArticleShareLinks = ({ title, description, url }) => {
   const [copied, setCopied] = useState(false);
+
   const fallbackUrl = typeof window !== "undefined" ? window.location.href : "";
+
   const currentUrl = url || fallbackUrl;
-  const shareTitle = stripMarkup(title || "Hooks");
+
+  const shareTitle = stripMarkup(title || "MobileX");
+
   const shareDescription = stripMarkup(description || "");
+
   const shareText = [shareTitle, shareDescription].filter(Boolean).join("\n\n");
+
   const encodedUrl = encodeURIComponent(currentUrl || "");
+
   const encodedText = encodeURIComponent(shareText || shareTitle || "");
+
   const encodedQuote = encodeURIComponent(shareDescription || shareTitle || "");
 
   const copyLink = async () => {
-    if (!currentUrl || typeof navigator === "undefined") return;
+    if (!currentUrl || typeof navigator === "undefined") {
+      return;
+    }
 
     try {
       await navigator.clipboard.writeText(currentUrl);
+
       setCopied(true);
+
       window.setTimeout(() => setCopied(false), 1800);
     } catch {
-      // Clipboard access can be unavailable in older browsers or insecure origins.
+      // Clipboard access can be unavailable.
     }
   };
 
@@ -522,17 +652,19 @@ const ArticleShareLinks = ({ title, description, url }) => {
     try {
       if (typeof navigator !== "undefined" && navigator.share) {
         await navigator.share({
-          title: shareTitle || "Hooks",
-          text: shareText || shareTitle || "Hooks",
+          title: shareTitle || "MobileX",
+          text: shareText || shareTitle || "MobileX",
           url: currentUrl,
         });
+
         return;
       }
     } catch {
-      // If native share is cancelled or unavailable, fall back to opening Instagram.
+      // Native share cancelled or unavailable.
     }
 
     await copyLink();
+
     if (typeof window !== "undefined") {
       window.open(
         "https://www.instagram.com/",
@@ -573,6 +705,7 @@ const ArticleShareLinks = ({ title, description, url }) => {
     <div className="hooks-article-share" aria-label="Share this article">
       {shareLinks.map((item) => {
         const Icon = item.icon;
+
         const className = `hooks-article-share__button ${item.className}`;
 
         if (item.onClick) {
@@ -630,6 +763,7 @@ const SectionTitle = ({
       {eyebrow ? <p>{eyebrow}</p> : null}
       <h2>{title}</h2>
     </div>
+
     {subtitle ? (
       <span className={hideSubtitleOnMobile ? "hide-on-mobile" : ""}>
         {subtitle}
@@ -643,8 +777,10 @@ const TrendingStoryCard = ({ story, index }) => (
     <span className="hooks-trending-story__index">
       {String(index + 1).padStart(2, "0")}
     </span>
+
     <div className="hooks-trending-story__copy">
       <h3>{story.title}</h3>
+
       <p>
         {story.brandName || getStoryCategory(story)} ·{" "}
         {formatAbsoluteDate(story)}
@@ -656,9 +792,12 @@ const TrendingStoryCard = ({ story, index }) => (
 const SidebarStoryCard = ({ story }) => (
   <Link to={createNewsStoryPath(story.slug)} className="hooks-sidebar-story">
     <StoryImage story={story} className="hooks-sidebar-story__image" />
+
     <div>
       <p>{story.brandName || getStoryCategory(story)}</p>
+
       <h3>{story.title}</h3>
+
       <span>{formatAbsoluteDate(story)}</span>
     </div>
   </Link>
@@ -673,9 +812,11 @@ const RailPanel = ({ title, items = [], linkable = false }) => {
         <span />
         <h2>{title}</h2>
       </div>
+
       <div className="hooks-article-rail-panel__items">
         {items.map((item, index) => {
           const label = typeof item === "string" ? item : item?.text || "";
+
           const href =
             linkable && typeof item === "object" && item?.id
               ? `#${item.id}`
@@ -702,6 +843,7 @@ const RailPanel = ({ title, items = [], linkable = false }) => {
               className="hooks-article-rail-link"
             >
               <span>{String(index + 1).padStart(2, "0")}</span>
+
               <strong>{label}</strong>
             </a>
           );
@@ -717,6 +859,7 @@ const SidebarSection = ({ title, children }) => (
       <span className="hooks-article-sidebar-section__pulse" />
       <h2>{title}</h2>
     </div>
+
     <div className="hooks-article-sidebar-section__body">{children}</div>
   </section>
 );
@@ -728,6 +871,7 @@ const RelatedStoryTile = ({ story, featured = false }) => (
   >
     <div className="hooks-related-story__media">
       <StoryImage story={story} className="hooks-related-story__image" />
+
       <span className="hooks-related-story__category">
         {getRelatedStoryMetaLabel(story)}
       </span>
@@ -736,10 +880,14 @@ const RelatedStoryTile = ({ story, featured = false }) => (
     <div className="hooks-related-story__content">
       <div className="hooks-related-story__meta">
         <span>{formatAbsoluteDate(story)}</span>
+
         <i aria-hidden="true" />
+
         <span>{story.readTime || "3 min read"}</span>
       </div>
+
       <h3>{story.title}</h3>
+
       {featured ? (
         <p className="hooks-related-story__summary">
           {clipDescription(
@@ -748,8 +896,10 @@ const RelatedStoryTile = ({ story, featured = false }) => (
           )}
         </p>
       ) : null}
+
       <div className="hooks-related-story__footer">
         <strong>Read article</strong>
+
         <span aria-hidden="true">
           <FaArrowRight />
         </span>
@@ -758,28 +908,18 @@ const RelatedStoryTile = ({ story, featured = false }) => (
   </Link>
 );
 
-const LinkListPanel = ({ title, subtitle, items }) => (
-  <SidebarSection title={title}>
-    {subtitle ? <p className="hooks-link-list__subtitle">{subtitle}</p> : null}
-    <div className="hooks-link-list">
-      {items.map((item) => (
-        <Link key={item} to="/smartphones" className="hooks-link-list__item">
-          <span>{item}</span>
-          <FaArrowRight />
-        </Link>
-      ))}
-    </div>
-  </SidebarSection>
-);
-
 const LoadingState = () => (
   <main className="min-h-screen bg-white text-slate-900">
     <section className="border-b border-[#e6ebf2] bg-white">
       <div className="mx-auto max-w-[1200px] px-4 pb-10 pt-6 sm:px-6 sm:pb-12 sm:pt-8 lg:px-8">
         <div className="h-4 w-36 animate-pulse rounded-full bg-slate-200" />
+
         <div className="mt-5 h-16 max-w-5xl animate-pulse rounded-[22px] bg-slate-200" />
+
         <div className="mt-4 h-6 max-w-4xl animate-pulse rounded-full bg-slate-100" />
+
         <div className="mt-6 h-12 w-full max-w-3xl animate-pulse rounded-[18px] bg-slate-100" />
+
         <div className="mt-8 h-[320px] animate-pulse rounded-[28px] border border-slate-200 bg-slate-200 sm:h-[420px]" />
       </div>
     </section>
@@ -789,11 +929,15 @@ const LoadingState = () => (
         <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-6">
             <div className="h-[420px] animate-pulse rounded-[28px] border border-slate-200 bg-white" />
+
             <div className="h-[280px] animate-pulse rounded-[28px] border border-slate-200 bg-white" />
+
             <div className="h-[320px] animate-pulse rounded-[28px] border border-slate-200 bg-white" />
           </div>
+
           <div className="space-y-5">
             <div className="h-[420px] animate-pulse rounded-[24px] border border-slate-200 bg-white" />
+
             <div className="h-[280px] animate-pulse rounded-[24px] border border-slate-200 bg-white" />
           </div>
         </div>
@@ -807,14 +951,17 @@ const ErrorState = ({ message = "" }) => (
     <section className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
       <div className="rounded-lg bg-[#fff5f5] p-8">
         <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-rose-700">
-          Hooks News
+          MobileX News
         </p>
+
         <h2 className="mt-3 text-3xl font-black tracking-[-0.04em] text-rose-900">
           We could not load the story
         </h2>
+
         <p className="mt-4 max-w-2xl text-[15px] leading-7 text-rose-700">
           {message || "The article is unavailable right now."}
         </p>
+
         <Link
           to="/news"
           className="mt-6 inline-flex items-center gap-2 rounded-lg bg-rose-700 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-rose-800"
@@ -829,21 +976,32 @@ const ErrorState = ({ message = "" }) => (
 
 const NewsStoryArticlePage = () => {
   const { slug = "" } = useParams();
+
   const { story, loading, error, notFound } = usePublicNewsStory(slug);
-  const { stories: feedStories = [] } = usePublicNewsFeed({ limit: 18 });
+
+  const { stories: feedStories = [] } = usePublicNewsFeed({
+    limit: 18,
+  });
+
   const [relatedPage, setRelatedPage] = useState(0);
+
   const [isRelatedMobileLayout, setIsRelatedMobileLayout] = useState(() => {
-    if (typeof window === "undefined") return false;
+    if (typeof window === "undefined") {
+      return false;
+    }
+
     return window.matchMedia(RELATED_STORIES_MOBILE_QUERY).matches;
   });
 
-  const canonicalUrl = `https://tryhook.shop${createNewsStoryPath(slug)}`;
+  const canonicalUrl = `${SITE_ORIGIN}${createNewsStoryPath(slug)}`;
 
   const feedStoriesOrdered = useMemo(
     () =>
       [...feedStories].sort((a, b) => {
         const left = parseStoryDate(a)?.getTime() || 0;
+
         const right = parseStoryDate(b)?.getTime() || 0;
+
         return right - left;
       }),
     [feedStories],
@@ -857,18 +1015,25 @@ const NewsStoryArticlePage = () => {
     if (body.length) return body;
 
     const summary = stripMarkup(story?.summary);
+
     return summary ? [summary] : [];
   }, [story?.body, story?.summary]);
 
   const articleSeo = useMemo(
-    () => buildNewsArticleSeo(story, { articleParagraphs }),
+    () =>
+      buildNewsArticleSeo(story, {
+        articleParagraphs,
+      }),
     [story, articleParagraphs],
   );
+
   const articleDescription = articleSeo.description;
+
   const articleHtml = useMemo(
     () => sanitizeArticleHtml(story?.contentHtml || ""),
     [story?.contentHtml],
   );
+
   const hasStructuredArticle = useMemo(
     () => hasStructuredArticleMarkup(story?.contentHtml || ""),
     [story?.contentHtml],
@@ -885,54 +1050,76 @@ const NewsStoryArticlePage = () => {
       .filter(Boolean);
 
     const seen = new Set();
+
     return candidates
       .filter((value) => {
         const key = normalizeTagKey(value);
-        if (!key || seen.has(key)) return false;
+
+        if (!key || seen.has(key)) {
+          return false;
+        }
+
         seen.add(key);
+
         return true;
       })
       .slice(0, 4);
   })();
 
   const storyAuthor =
-    String(story?.author || "Hooks editorial").trim() || "Hooks editorial";
+    String(story?.author || "MobileX editorial").trim() || "MobileX editorial";
+
   const storyEditor = String(
     story?.editor || story?.editedBy || story?.editorName || "",
   ).trim();
+
   const imageCredit = formatImageCredit(story);
+
   const updatedDateLabel = formatUpdatedDate(story);
+
   const articleHeadings = useMemo(
     () => extractArticleHeadings(articleHtml),
     [articleHtml],
   );
+
   const articleHtmlWithAnchors = useMemo(
     () => injectHeadingIds(articleHtml, articleHeadings),
     [articleHtml, articleHeadings],
   );
+
   const { leadHtml: structuredLeadHtml, restHtml: structuredRestHtml } =
     useMemo(
       () => splitStructuredArticleHtml(articleHtmlWithAnchors, 2),
       [articleHtmlWithAnchors],
     );
+
   const introParagraphs = articleParagraphs.slice(0, 2);
+
   const remainingParagraphs = articleParagraphs.slice(2);
 
   const editorialHighlights = useMemo(() => {
     const candidates = [
       ...(Array.isArray(story?.takeaways) ? story.takeaways : []),
+
       ...(Array.isArray(story?.highlights) ? story.highlights : []),
+
       articleDescription,
     ]
       .map((value) => stripMarkup(value))
       .filter(Boolean);
 
     const seen = new Set();
+
     return candidates
       .filter((value) => {
         const key = normalizeTagKey(value);
-        if (!key || seen.has(key)) return false;
+
+        if (!key || seen.has(key)) {
+          return false;
+        }
+
         seen.add(key);
+
         return true;
       })
       .slice(0, 3);
@@ -944,10 +1131,17 @@ const NewsStoryArticlePage = () => {
     return [...pool]
       .sort((left, right) => {
         const leftScore = left?.highlights?.length || 0;
+
         const rightScore = right?.highlights?.length || 0;
-        if (rightScore !== leftScore) return rightScore - leftScore;
+
+        if (rightScore !== leftScore) {
+          return rightScore - leftScore;
+        }
+
         const leftDate = parseStoryDate(left)?.getTime() || 0;
+
         const rightDate = parseStoryDate(right)?.getTime() || 0;
+
         return rightDate - leftDate;
       })
       .slice(0, 4);
@@ -966,13 +1160,17 @@ const NewsStoryArticlePage = () => {
   }, [story?.slug]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return undefined;
+    if (typeof window === "undefined") {
+      return undefined;
+    }
 
     const mediaQuery = window.matchMedia(RELATED_STORIES_MOBILE_QUERY);
+
     const syncRelatedLayout = () =>
       setIsRelatedMobileLayout(mediaQuery.matches);
 
     syncRelatedLayout();
+
     mediaQuery.addEventListener("change", syncRelatedLayout);
 
     return () => {
@@ -982,28 +1180,35 @@ const NewsStoryArticlePage = () => {
 
   const moreStories = useMemo(() => {
     const excluded = new Set(trendingStories.map((item) => item.slug));
+
     excluded.add(story?.slug);
 
     return feedStoriesOrdered
       .filter((item) => !excluded.has(item.slug))
-      .slice(0, 3);
+      .slice(0, 4);
   }, [feedStoriesOrdered, story?.slug, trendingStories]);
+
   const relatedStoriesPerPage = isRelatedMobileLayout
     ? MOBILE_RELATED_STORIES_PER_PAGE
     : DESKTOP_RELATED_STORIES_PER_PAGE;
+
   const relatedPageCount = Math.max(
     1,
     Math.ceil(relatedStories.length / relatedStoriesPerPage),
   );
+
   const currentRelatedPage = Math.min(relatedPage, relatedPageCount - 1);
+
   const paginatedRelatedStories = useMemo(
     () =>
       relatedStories.slice(
         currentRelatedPage * relatedStoriesPerPage,
+
         currentRelatedPage * relatedStoriesPerPage + relatedStoriesPerPage,
       ),
     [currentRelatedPage, relatedStories, relatedStoriesPerPage],
   );
+
   const articleKeywords = useMemo(() => {
     const candidates = [
       story?.productName,
@@ -1015,11 +1220,17 @@ const NewsStoryArticlePage = () => {
       .filter(Boolean);
 
     const seen = new Set();
+
     return candidates
       .filter((value) => {
         const key = normalizeTagKey(value);
-        if (!key || seen.has(key)) return false;
+
+        if (!key || seen.has(key)) {
+          return false;
+        }
+
         seen.add(key);
+
         return true;
       })
       .slice(0, 6);
@@ -1033,8 +1244,12 @@ const NewsStoryArticlePage = () => {
   const schema = story
     ? [
         createBreadcrumbSchema(
-          storyBreadcrumbs.map(({ label, url }) => ({ label, url })),
+          storyBreadcrumbs.map(({ label, url }) => ({
+            label,
+            url,
+          })),
         ),
+
         createNewsArticleSchema({
           headline: articleSeo.headline,
           description: articleDescription,
@@ -1051,8 +1266,12 @@ const NewsStoryArticlePage = () => {
     : [];
 
   if (loading) return <LoadingState />;
+
   if (notFound) return <NotFound />;
-  if (!story) return <ErrorState message={error} />;
+
+  if (!story) {
+    return <ErrorState message={error} />;
+  }
 
   return (
     <>
@@ -1067,6 +1286,7 @@ const NewsStoryArticlePage = () => {
         imageAlt={story.heroImageAlt || story.title}
         schema={schema}
       />
+
       <GoogleSwgBasic />
 
       <main className="hooks-article-page">
@@ -1074,6 +1294,7 @@ const NewsStoryArticlePage = () => {
           <div className="hooks-article-shell hooks-article-header__grid">
             <div className="hooks-article-header__headline">
               <h1>{story.title}</h1>
+
               <p className="hooks-article-deck">{articleDescription}</p>
             </div>
 
@@ -1082,6 +1303,7 @@ const NewsStoryArticlePage = () => {
                 <div className="hooks-article-header__meta">
                   <div className="hooks-article-byline-row">
                     <ArticleAuthorAvatar story={story} />
+
                     <div className="hooks-article-byline-copy">
                       <p>
                         Written by <strong>{storyAuthor}</strong>
@@ -1094,6 +1316,7 @@ const NewsStoryArticlePage = () => {
                           </>
                         ) : null}
                       </p>
+
                       <span>
                         Updated: {updatedDateLabel || formatAbsoluteDate(story)}
                         <span className="hooks-article-byline-separator">
@@ -1117,8 +1340,10 @@ const NewsStoryArticlePage = () => {
                     eager
                     className="hooks-article-hero-media__image"
                   />
+
                   <figcaption>
                     <span>{story.heroImageAlt || story.title}</span>
+
                     {imageCredit ? <p>Photo Credit: {imageCredit}</p> : null}
                   </figcaption>
                 </figure>
@@ -1127,19 +1352,24 @@ const NewsStoryArticlePage = () => {
               <aside className="hooks-article-lead-rail">
                 <div className="hooks-article-source-card">
                   <div className="hooks-article-source-card__brand">
-                    <HookLogo
+                    <MobileXLogo
                       className="hooks-article-source-card__logo"
-                      aria-label="Hooks"
+                      aria-label="MobileX"
+                      darkBackground={false}
                     />
+
                     <div>
-                      <strong>Hooks Newsroom</strong>
+                      <strong>MobileX News</strong>
+
                       <span>Research smarter</span>
                     </div>
                   </div>
+
                   <p>
-                    Add Hooks as a preferred source to see our technology
+                    Add MobileX as a preferred source to see our technology
                     reporting more often.
                   </p>
+
                   <GooglePreferredSourceButton variant="article" />
                 </div>
 
@@ -1169,6 +1399,7 @@ const NewsStoryArticlePage = () => {
             >
               <div className="hooks-article-share-rail__sticky">
                 <span>Share</span>
+
                 <ArticleShareLinks
                   title={story.title}
                   description={articleDescription}
@@ -1184,6 +1415,7 @@ const NewsStoryArticlePage = () => {
                     <div className="hooks-article-highlights__title">
                       <span>Highlights</span>
                     </div>
+
                     <ul>
                       {editorialHighlights
                         .slice(0, 3)
@@ -1196,18 +1428,25 @@ const NewsStoryArticlePage = () => {
                   </section>
                 ) : null}
 
+                {story.aiSummary ? (
+                  <AiSummary summary={story.aiSummary} />
+                ) : null}
+
                 {hasStructuredArticle && articleHtmlWithAnchors ? (
                   <>
                     {structuredLeadHtml ? (
                       <div
                         className={ARTICLE_PROSE_CLASS}
-                        dangerouslySetInnerHTML={{ __html: structuredLeadHtml }}
+                        dangerouslySetInnerHTML={{
+                          __html: structuredLeadHtml,
+                        }}
                       />
                     ) : null}
 
                     {relatedStories.length ? (
                       <section className="hooks-article-also-read">
                         <span>Also read</span>
+
                         <div>
                           {relatedStories.slice(0, 3).map((item) => (
                             <Link
@@ -1215,6 +1454,7 @@ const NewsStoryArticlePage = () => {
                               to={createNewsStoryPath(item.slug)}
                             >
                               {item.title}
+
                               <FaArrowRight />
                             </Link>
                           ))}
@@ -1225,7 +1465,9 @@ const NewsStoryArticlePage = () => {
                     {structuredRestHtml ? (
                       <div
                         className={ARTICLE_PROSE_CONTINUATION_CLASS}
-                        dangerouslySetInnerHTML={{ __html: structuredRestHtml }}
+                        dangerouslySetInnerHTML={{
+                          __html: structuredRestHtml,
+                        }}
                       />
                     ) : null}
                   </>
@@ -1242,6 +1484,7 @@ const NewsStoryArticlePage = () => {
                     {relatedStories.length ? (
                       <section className="hooks-article-also-read">
                         <span>Also read</span>
+
                         <div>
                           {relatedStories.slice(0, 3).map((item) => (
                             <Link
@@ -1249,6 +1492,7 @@ const NewsStoryArticlePage = () => {
                               to={createNewsStoryPath(item.slug)}
                             >
                               {item.title}
+
                               <FaArrowRight />
                             </Link>
                           ))}
@@ -1272,6 +1516,7 @@ const NewsStoryArticlePage = () => {
                   <footer className="hooks-article-topic-footer">
                     <div>
                       <span>Further reading</span>
+
                       {storyTags.map((tag) => (
                         <strong key={tag}>{tag}</strong>
                       ))}
@@ -1284,12 +1529,15 @@ const NewsStoryArticlePage = () => {
                     story={story}
                     className="hooks-article-author-card__avatar"
                   />
+
                   <div>
                     <span>About the author</span>
+
                     <h2>{storyAuthor}</h2>
+
                     <p>
                       {story?.authorBio ||
-                        "Technology reporting and buying intelligence from the Hooks newsroom."}
+                        "Technology reporting and buying intelligence from MobileX news."}
                     </p>
                   </div>
                 </section>
@@ -1304,6 +1552,7 @@ const NewsStoryArticlePage = () => {
                       subtitle="Fresh reporting selected for this story."
                       hideSubtitleOnMobile
                     />
+
                     <Link
                       to="/news"
                       className="hooks-related-section__all-link"
@@ -1334,23 +1583,26 @@ const NewsStoryArticlePage = () => {
                       >
                         <FaChevronLeft />
                       </button>
+
                       <div>
-                        {Array.from({ length: relatedPageCount }).map(
-                          (_, index) => {
-                            const isActive = index === currentRelatedPage;
-                            return (
-                              <button
-                                key={`related-page-${index + 1}`}
-                                type="button"
-                                onClick={() => setRelatedPage(index)}
-                                aria-label={`Show related stories page ${index + 1}`}
-                                aria-current={isActive ? "page" : undefined}
-                                className={isActive ? "is-active" : ""}
-                              />
-                            );
-                          },
-                        )}
+                        {Array.from({
+                          length: relatedPageCount,
+                        }).map((_, index) => {
+                          const isActive = index === currentRelatedPage;
+
+                          return (
+                            <button
+                              key={`related-page-${index + 1}`}
+                              type="button"
+                              onClick={() => setRelatedPage(index)}
+                              aria-label={`Show related stories page ${index + 1}`}
+                              aria-current={isActive ? "page" : undefined}
+                              className={isActive ? "is-active" : ""}
+                            />
+                          );
+                        })}
                       </div>
+
                       <button
                         type="button"
                         onClick={() =>
@@ -1371,39 +1623,339 @@ const NewsStoryArticlePage = () => {
 
             <aside className="hooks-article-right-rail">
               <div className="hooks-article-sticky-stack hooks-article-sticky-stack--right">
-                <section className="hooks-newsroom-card">
-                  <div className="hooks-newsroom-card__top">
-                    <HookLogo
-                      className="hooks-newsroom-card__logo"
-                      aria-label="Hooks"
-                    />
-                    <span>HOOKS NEWSROOM</span>
+                {/* MobileX News card */}
+                <section
+                  className="
+                    relative overflow-hidden
+                    rounded-2xl
+                    border border-slate-200
+                    bg-white
+                    p-6 sm:p-7
+                  "
+                >
+                  <div
+                    aria-hidden="true"
+                    className="
+                      pointer-events-none
+                      absolute -right-16 -top-16
+                      h-40 w-40
+                      rounded-full
+                      bg-[#2563EB]/[0.06]
+                      blur-3xl
+                    "
+                  />
+
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-3">
+                      <MobileXLogo
+                        className="h-7 w-auto sm:h-8"
+                        aria-label="MobileX"
+                        darkBackground={false}
+                      />
+
+                      <span
+                        className="
+                          text-[0.68rem]
+                          font-extrabold
+                          tracking-[0.16em]
+                          text-[#2563EB]
+                        "
+                      >
+                        MOBILEX NEWS
+                      </span>
+                    </div>
+
+                    <h2
+                      className="
+                        mt-6
+                        max-w-[420px]
+                        text-xl
+                        font-bold
+                        tracking-[-0.025em]
+                        text-slate-900
+                        sm:text-2xl
+                      "
+                    >
+                      News with buying context.
+                    </h2>
+
+                    <p
+                      className="
+                        mt-3
+                        max-w-[500px]
+                        text-sm
+                        leading-6
+                        text-slate-600
+                        sm:text-[0.95rem]
+                      "
+                    >
+                      Technology launches, practical comparisons and device
+                      intelligence without the noise.
+                    </p>
+
+                    <Link
+                      to="/news"
+                      className="
+                        mt-6
+                        inline-flex
+                        items-center
+                        gap-2
+                        rounded-lg
+                        bg-[#2563EB]
+                        px-4
+                        py-2.5
+                        text-sm
+                        font-bold
+                        text-white
+                        no-underline
+                        transition
+                        hover:bg-[#1D4ED8]
+                        focus:outline-none
+                        focus:ring-2
+                        focus:ring-[#2563EB]/30
+                        focus:ring-offset-2
+                        focus:ring-offset-white
+                      "
+                    >
+                      Latest News
+                      <FaArrowRight className="text-xs" aria-hidden="true" />
+                    </Link>
                   </div>
-                  <h2>News with buying context.</h2>
-                  <p>
-                    Technology launches, practical comparisons and device
-                    intelligence without the noise.
-                  </p>
-                  <Link to="/news">
-                    Latest News <FaArrowRight />
-                  </Link>
                 </section>
 
+                {/* Latest News */}
                 {moreStories.length ? (
-                  <SidebarSection title="Latest News">
-                    <div className="hooks-sidebar-story-list">
+                  <section className="border-t border-slate-200 pt-6">
+                    <div className="flex items-end justify-between gap-4">
+                      <div>
+                        <p
+                          className="
+                            text-[10px]
+                            font-extrabold
+                            uppercase
+                            tracking-[0.18em]
+                            text-[#2563EB]
+                          "
+                        >
+                          Latest
+                        </p>
+
+                        <h2
+                          className="
+                            mt-1
+                            text-lg
+                            font-black
+                            tracking-[-0.025em]
+                            text-slate-900
+                          "
+                        >
+                          Latest News
+                        </h2>
+                      </div>
+
+                      <Link
+                        to="/news"
+                        className="
+                          inline-flex
+                          items-center
+                          gap-1.5
+                          text-xs
+                          font-bold
+                          text-slate-500
+                          no-underline
+                          transition
+                          hover:text-[#2563EB]
+                        "
+                      >
+                        View all
+                        <FaArrowRight className="h-3 w-3" aria-hidden="true" />
+                      </Link>
+                    </div>
+
+                    <div className="mt-5 space-y-4">
                       {moreStories.map((item) => (
-                        <SidebarStoryCard key={item.slug} story={item} />
+                        <Link
+                          key={item.slug}
+                          to={createNewsStoryPath(item.slug)}
+                          className="
+                              group
+                              grid
+                              grid-cols-[84px_minmax(0,1fr)]
+                              gap-3
+                              border-b
+                              border-slate-100
+                              pb-4
+                              no-underline
+                              last:border-b-0
+                            "
+                        >
+                          <StoryImage
+                            story={item}
+                            className="h-[68px] w-[84px] rounded-lg"
+                          />
+
+                          <div className="min-w-0">
+                            <p
+                              className="
+                                  text-[10px]
+                                  font-bold
+                                  uppercase
+                                  tracking-[0.08em]
+                                  text-[#2563EB]
+                                "
+                            >
+                              {item.brandName || getStoryCategory(item)}
+                            </p>
+
+                            <h3
+                              className="
+                                  mt-1
+                                  line-clamp-2
+                                  text-sm
+                                  font-bold
+                                  leading-5
+                                  text-slate-900
+                                  transition
+                                  group-hover:text-[#2563EB]
+                                "
+                            >
+                              {item.title}
+                            </h3>
+
+                            <p
+                              className="
+                                  mt-1
+                                  text-[11px]
+                                  text-slate-400
+                                "
+                            >
+                              {formatAbsoluteDate(item)}
+                            </p>
+                          </div>
+                        </Link>
                       ))}
                     </div>
-                  </SidebarSection>
+                  </section>
                 ) : null}
 
-                <LinkListPanel
-                  title="Popular Mobile Lists"
-                  subtitle="Useful buying guides from Hooks."
-                  items={POPULAR_MOBILE_LIST}
-                />
+                {/* Popular Mobile Lists */}
+                <section className="border-t border-slate-200 pt-6">
+                  <div>
+                    <p
+                      className="
+                        text-[10px]
+                        font-extrabold
+                        uppercase
+                        tracking-[0.18em]
+                        text-[#2563EB]
+                      "
+                    >
+                      Explore
+                    </p>
+
+                    <h2
+                      className="
+                        mt-1
+                        text-lg
+                        font-black
+                        tracking-[-0.025em]
+                        text-slate-900
+                      "
+                    >
+                      Popular Mobile Lists
+                    </h2>
+
+                    <p
+                      className="
+                        mt-1
+                        text-xs
+                        leading-5
+                        text-slate-500
+                      "
+                    >
+                      Useful smartphone research paths for faster buying
+                      decisions.
+                    </p>
+                  </div>
+
+                  <div
+                    className="
+                      mt-4
+                      overflow-hidden
+                      rounded-xl
+                      border
+                      border-slate-200
+                      bg-white
+                    "
+                  >
+                    {POPULAR_MOBILE_LIST.map((item, index) => (
+                      <Link
+                        key={item.label}
+                        to={item.href}
+                        className="
+                            group
+                            flex
+                            items-center
+                            gap-3
+                            border-b
+                            border-slate-100
+                            px-4
+                            py-3.5
+                            no-underline
+                            last:border-b-0
+                            transition
+                            hover:bg-slate-50
+                          "
+                      >
+                        <span
+                          className="
+                              flex
+                              h-7
+                              w-7
+                              shrink-0
+                              items-center
+                              justify-center
+                              rounded-md
+                              bg-[#2563EB]/[0.08]
+                              text-[10px]
+                              font-black
+                              text-[#2563EB]
+                            "
+                        >
+                          {String(index + 1).padStart(2, "0")}
+                        </span>
+
+                        <span
+                          className="
+                              min-w-0
+                              flex-1
+                              text-sm
+                              font-semibold
+                              leading-5
+                              text-slate-700
+                              transition
+                              group-hover:text-slate-900
+                            "
+                        >
+                          {item.label}
+                        </span>
+
+                        <FaArrowRight
+                          className="
+                              h-3
+                              w-3
+                              shrink-0
+                              text-slate-300
+                              transition
+                              group-hover:translate-x-0.5
+                              group-hover:text-[#2563EB]
+                            "
+                          aria-hidden="true"
+                        />
+                      </Link>
+                    ))}
+                  </div>
+                </section>
               </div>
             </aside>
           </div>

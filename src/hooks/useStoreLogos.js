@@ -1,14 +1,11 @@
 import { useEffect, useState, useCallback } from "react";
+import STORE_LOGOS from "../constants/storeLogos";
+import { buildApiUrl } from "../utils/apiUrl";
 
-const API_URL = "https://api.apisphere.in/api/public/online-stores";
+const API_URL = buildApiUrl("/public/online-stores");
 let sharedStorePayload = null;
 let sharedStoreError = null;
 let sharedStorePromise = null;
-
-const normalizeKey = (name) =>
-  String(name || "")
-    .toLowerCase()
-    .trim();
 
 const normalizeForConstants = (name) =>
   String(name || "")
@@ -132,8 +129,12 @@ export default function useStoreLogos() {
       if (!storeName) return null;
       const storeObj = storeLookup(storeName);
       if (storeObj && storeObj.logo) return storeObj.logo;
-      // no local asset fallback — caller should handle missing logos
-      return null;
+      const key = normalizeForConstants(storeName);
+      if (STORE_LOGOS[key]) return STORE_LOGOS[key];
+      const fallback = Object.entries(STORE_LOGOS).find(
+        ([storeKey]) => key.includes(storeKey) || storeKey.includes(key),
+      );
+      return fallback?.[1] || null;
     } catch {
       return null;
     }

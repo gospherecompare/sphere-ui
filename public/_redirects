@@ -1,1 +1,6 @@
+/smartphones/ /smartphones 301!
+/smartphones/upcoming/ /smartphones/upcoming 301!
+/smartphones/filter/new/ /smartphones/filter/new 301!
+/compare/ /compare 301!
+/*/ /:splat 301!
 /compare/* /index.html 200

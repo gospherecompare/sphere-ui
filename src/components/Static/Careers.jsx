@@ -1,12 +1,11 @@
-﻿import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
-import useTitle from "../../hooks/useTitle";
 import { createWebPageSchema } from "../../utils/schemaGenerators";
 import { toCanonicalPageUrl } from "../../utils/publicUrl";
 import { buildApiUrl } from "../../utils/apiUrl";
 
-const SITE_ORIGIN = "https://tryhook.shop";
-const CAREERS_OG_IMAGE = `${SITE_ORIGIN}/hook-logo.png`;
+const SITE_ORIGIN = "https://mobilex.in";
+const CAREERS_OG_IMAGE = `${SITE_ORIGIN}/mobilex-favicon.svg`;
 const CAREERS_API_URL = buildApiUrl("/careers");
 
 const ROLE_OPTIONS = [
@@ -979,14 +978,12 @@ const SectionCard = ({ title, children, optional = false }) => (
 );
 
 const Careers = () => {
-  useTitle({ page: "Careers" });
-
   const canonical = toCanonicalPageUrl("/careers");
   const careersSchemaJson = JSON.stringify(
     createWebPageSchema({
-      name: "Careers at Hooks",
+      name: "Careers at MobileX",
       description:
-        "Apply for frontend, backend, content developer, and fullstack roles at Hooks.",
+        "Apply for frontend, backend, content developer, and fullstack roles at MobileX.",
       url: canonical,
     }),
   );
@@ -1395,657 +1392,636 @@ const Careers = () => {
   };
 
   return (
-    <main className="hooks-company-page hooks-careers-page min-h-screen bg-white">
-      <Helmet>
-        <title>Careers at Hooks | Build Better Buying Tools</title>
-        <meta
-          name="description"
-          content="Explore opportunities at Hooks and help build clearer product discovery, comparison, editorial and shopping experiences for technology buyers."
-        />
-        <meta
-          property="og:title"
-          content="Careers at Hooks | Build Better Buying Tools"
-        />
-        <meta
-          property="og:description"
-          content="Apply for Frontend, Backend, Content Developer, and Fullstack roles at Hooks."
-        />
-        <meta property="og:image" content={CAREERS_OG_IMAGE} />
-        <meta property="og:image:secure_url" content={CAREERS_OG_IMAGE} />
-        <meta property="og:image:type" content="image/png" />
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
-        <meta property="og:image:alt" content="Careers at Hooks preview image" />
-        <meta
-          name="twitter:title"
-          content="Careers at Hooks | Build Better Buying Tools"
-        />
-        <meta
-          name="twitter:description"
-          content="Apply for Frontend, Backend, Content Developer, and Fullstack roles at Hooks."
-        />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:image" content={CAREERS_OG_IMAGE} />
-        <meta name="twitter:image:alt" content="Careers at Hooks preview image" />
-        <meta name="robots" content="index, follow" />
-        <link rel="canonical" href={canonical} />
+    <>
+      <SEO
+        title="Careers at MobileX"
+        description="Explore opportunities at MobileX and help build clearer product discovery, comparison, editorial and shopping experiences for technology buyers."
+        url={canonical}
+        image={{
+          url: CAREERS_OG_IMAGE,
+          width: 1200,
+          height: 630,
+          alt: "Careers at MobileX preview image",
+        }}
+      >
         {careersSchemaJson && (
           <script type="application/ld+json">{careersSchemaJson}</script>
         )}
-      </Helmet>
-
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-        <div className="overflow-hidden">
-          <div className="border-b border-slate-200 bg-white px-4 py-6 sm:px-6 sm:py-8">
-            <p className="inline-flex rounded-md border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-blue-700">
-              Hiring Process
-            </p>
-            <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
-              Build clearer technology experiences with Hooks
-            </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-              Build your career with us. Complete the 4-step application form to
-              apply for current openings.
-            </p>
-          </div>
-
-          <div className="p-4 sm:p-6">
-            <div className=" bg-white p-4 sm:p-5">
-              <div className="flex items-start justify-between gap-1 sm:gap-2">
-                {STEPS.map((item, index) => {
-                  const isActive = step === index;
-                  const isDone = step > index;
-                  const labelClass =
-                    isActive || isDone ? "text-blue-700" : "text-slate-400";
-
-                  return (
-                    <div key={item.title} className="flex-1 px-1 text-center">
-                      <p
-                        className={`mx-auto max-w-[80px] text-[10px] font-semibold uppercase tracking-wide leading-tight sm:max-w-[140px] sm:text-[11px] ${labelClass}`}
-                      >
-                        {item.subtitle}
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="relative mt-3 flex items-center justify-between">
-                <div className="pointer-events-none absolute inset-0 flex items-center px-2 sm:px-3.5">
-                  <div className="relative h-0.5 w-full rounded-full bg-slate-200 sm:h-1">
-                    <div
-                      className="absolute left-0 top-0 h-0.5 rounded-full bg-blue-600 sm:h-1"
-                      style={{
-                        width: `${Math.min(
-                          100,
-                          Math.max(
-                            0,
-                            STEPS.length > 1
-                              ? (step / (STEPS.length - 1)) * 100
-                              : 0,
-                          ),
-                        )}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {STEPS.map((item, index) => {
-                  const isActive = step === index;
-                  const isDone = step > index;
-
-                  return (
-                    <div
-                      key={item.title}
-                      className={`relative z-10 flex h-5 w-5 items-center justify-center rounded-full border-2 transition sm:h-7 sm:w-7 ${
-                        isDone
-                          ? "border-blue-600 bg-white text-blue-600"
-                          : isActive
-                            ? "border-blue-600 bg-white text-blue-600"
-                            : "border-slate-200 bg-white text-slate-300"
-                      }`}
-                      aria-label={item.title}
-                    >
-                      {isDone ? (
-                        <svg
-                          viewBox="0 0 24 24"
-                          className="h-3 w-3 sm:h-4 sm:w-4"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                          aria-hidden="true"
-                        >
-                          <path
-                            d="M5 12.5L9.5 17L19 7.5"
-                            stroke="currentColor"
-                            strokeWidth="2.4"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
+      </SEO>
+      <main className="hooks-company-page hooks-careers-page min-h-screen bg-white">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+          <div className="overflow-hidden">
+            <div className="border-b border-slate-200 bg-white px-4 py-6 sm:px-6 sm:py-8">
+              <p className="inline-flex rounded-md border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-blue-700">
+                Hiring Process
+              </p>
+              <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
+                Build clearer technology experiences with Hooks
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+                Build your career with us. Complete the 4-step application form
+                to apply for current openings.
+              </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-              {step === 0 ? (
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <QuestionSelect
-                    question="Which role are you applying for?"
-                    name="role"
-                    value={formData.role}
-                    onChange={handleChange}
-                    options={ROLE_OPTIONS}
-                    required
-                    placeholder="Select your role"
-                    error={getError("role")}
-                  />
+            <div className="p-4 sm:p-6">
+              <div className=" bg-white p-4 sm:p-5">
+                <div className="flex items-start justify-between gap-1 sm:gap-2">
+                  {STEPS.map((item, index) => {
+                    const isActive = step === index;
+                    const isDone = step > index;
+                    const labelClass =
+                      isActive || isDone ? "text-blue-700" : "text-slate-400";
 
-                  <QuestionSelect
-                    question="How do you identify your gender?"
-                    name="gender"
-                    value={formData.gender}
-                    onChange={handleChange}
-                    options={GENDER_OPTIONS}
-                    required
-                    placeholder="Select your gender"
-                    error={getError("gender")}
-                  />
-
-                  <QuestionInput
-                    question="What is your first name?"
-                    type="text"
-                    name="firstName"
-                    value={formData.firstName}
-                    onChange={handleChange}
-                    placeholder="Enter first name"
-                    required
-                    error={getError("firstName")}
-                  />
-
-                  <QuestionInput
-                    question="What is your last name?"
-                    type="text"
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={handleChange}
-                    placeholder="Enter last name"
-                    required
-                    error={getError("lastName")}
-                  />
-
-                  <QuestionInput
-                    question="What is your email address?"
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="you@example.com"
-                    required
-                    error={getError("email")}
-                  />
-
-                  <QuestionInput
-                    question="What is your phone number?"
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    placeholder="Enter mobile number"
-                    required
-                    error={getError("phone")}
-                  />
-
-                  <div className="sm:col-span-2">
-                    <QuestionDate
-                      question="What is your date of birth?"
-                      name="dob"
-                      value={formData.dob}
-                      onChange={handleChange}
-                      min="1900-01-01"
-                      max={new Date().toISOString().slice(0, 10)}
-                      error={getError("dob")}
-                    />
-                  </div>
+                    return (
+                      <div key={item.title} className="flex-1 px-1 text-center">
+                        <p
+                          className={`mx-auto max-w-[80px] text-[10px] font-semibold uppercase tracking-wide leading-tight sm:max-w-[140px] sm:text-[11px] ${labelClass}`}
+                        >
+                          {item.subtitle}
+                        </p>
+                      </div>
+                    );
+                  })}
                 </div>
-              ) : null}
 
-              {step === 1 ? (
-                <div className="space-y-4">
-                  <SectionCard title="10th education details">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <QuestionInput
-                        question="Which board or school did you complete 10th from?"
-                        type="text"
-                        name="tenthBoard"
-                        value={formData.tenthBoard}
-                        onChange={handleChange}
-                        placeholder="Board or school name"
-                        required
-                        error={getError("tenthBoard")}
-                      />
-                      <QuestionInput
-                        question="What was your stream in 10th?"
-                        type="text"
-                        name="tenthStream"
-                        value={formData.tenthStream}
-                        onChange={handleChange}
-                        placeholder="General / Science / Other"
-                        required
-                        error={getError("tenthStream")}
-                      />
-                      <QuestionInput
-                        question="What were your 10th marks?"
-                        type="text"
-                        name="tenthMarks"
-                        value={formData.tenthMarks}
-                        onChange={handleChange}
-                        placeholder="Example: 89% or 9.1 CGPA"
-                        required
-                        error={getError("tenthMarks")}
-                      />
-                      <QuestionInput
-                        question="In which year did you complete 10th?"
-                        type="number"
-                        name="tenthYear"
-                        value={formData.tenthYear}
-                        onChange={handleChange}
-                        placeholder="Example: 2018"
-                        min="1980"
-                        max="2099"
-                        required
-                        error={getError("tenthYear")}
+                <div className="relative mt-3 flex items-center justify-between">
+                  <div className="pointer-events-none absolute inset-0 flex items-center px-2 sm:px-3.5">
+                    <div className="relative h-0.5 w-full rounded-full bg-slate-200 sm:h-1">
+                      <div
+                        className="absolute left-0 top-0 h-0.5 rounded-full bg-blue-600 sm:h-1"
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            Math.max(
+                              0,
+                              STEPS.length > 1
+                                ? (step / (STEPS.length - 1)) * 100
+                                : 0,
+                            ),
+                          )}%`,
+                        }}
                       />
                     </div>
-                  </SectionCard>
-
-                  <SectionCard title="12th education details">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <QuestionInput
-                        question="Which board or school did you complete 12th from?"
-                        type="text"
-                        name="twelfthBoard"
-                        value={formData.twelfthBoard}
-                        onChange={handleChange}
-                        placeholder="Board or school name"
-                        required
-                        error={getError("twelfthBoard")}
-                      />
-                      <QuestionInput
-                        question="What was your stream in 12th?"
-                        type="text"
-                        name="twelfthStream"
-                        value={formData.twelfthStream}
-                        onChange={handleChange}
-                        placeholder="Science / Commerce / Arts"
-                        required
-                        error={getError("twelfthStream")}
-                      />
-                      <QuestionInput
-                        question="What were your 12th marks?"
-                        type="text"
-                        name="twelfthMarks"
-                        value={formData.twelfthMarks}
-                        onChange={handleChange}
-                        placeholder="Example: 84% or 8.7 CGPA"
-                        required
-                        error={getError("twelfthMarks")}
-                      />
-                      <QuestionInput
-                        question="In which year did you complete 12th?"
-                        type="number"
-                        name="twelfthYear"
-                        value={formData.twelfthYear}
-                        onChange={handleChange}
-                        placeholder="Example: 2020"
-                        min="1980"
-                        max="2099"
-                        required
-                        error={getError("twelfthYear")}
-                      />
-                    </div>
-                  </SectionCard>
-
-                  <SectionCard title="UG education details">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <QuestionSearchSelect
-                        question="Which college or university did you complete UG from?"
-                        name="ugInstitute"
-                        value={formData.ugInstitute}
-                        onChange={handleChange}
-                        options={UG_INSTITUTE_OPTIONS}
-                        placeholder="Search institute"
-                        required
-                        error={getError("ugInstitute")}
-                      />
-                      <QuestionSelect
-                        question="What was your UG stream?"
-                        name="ugStream"
-                        value={formData.ugStream}
-                        onChange={handleChange}
-                        options={UG_STREAM_OPTIONS}
-                        placeholder="Select UG stream"
-                        required
-                        error={getError("ugStream")}
-                      />
-                      <QuestionInput
-                        question="What were your UG marks?"
-                        type="text"
-                        name="ugMarks"
-                        value={formData.ugMarks}
-                        onChange={handleChange}
-                        placeholder="Example: 78% or 8.0 CGPA"
-                        required
-                        error={getError("ugMarks")}
-                      />
-                      <QuestionInput
-                        question="In which year did you complete UG?"
-                        type="number"
-                        name="ugYear"
-                        value={formData.ugYear}
-                        onChange={handleChange}
-                        placeholder="Example: 2024"
-                        min="1980"
-                        max="2099"
-                        required
-                        error={getError("ugYear")}
-                      />
-                    </div>
-                  </SectionCard>
-
-                  <SectionCard title="PG education details" optional>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <QuestionInput
-                        question="If applicable, where did you complete PG?"
-                        type="text"
-                        name="pgInstitute"
-                        value={formData.pgInstitute}
-                        onChange={handleChange}
-                        placeholder="Institute name"
-                        error={getError("pgInstitute")}
-                      />
-                      <QuestionInput
-                        question="If applicable, what was your PG stream?"
-                        type="text"
-                        name="pgStream"
-                        value={formData.pgStream}
-                        onChange={handleChange}
-                        placeholder="Example: M.Tech / MBA"
-                        error={getError("pgStream")}
-                      />
-                      <QuestionInput
-                        question="If applicable, what were your PG marks?"
-                        type="text"
-                        name="pgMarks"
-                        value={formData.pgMarks}
-                        onChange={handleChange}
-                        placeholder="Example: 8.3 CGPA"
-                        error={getError("pgMarks")}
-                      />
-                      <QuestionInput
-                        question="If applicable, in which year did you complete PG?"
-                        type="number"
-                        name="pgYear"
-                        value={formData.pgYear}
-                        onChange={handleChange}
-                        placeholder="Example: 2026"
-                        min="1980"
-                        max="2099"
-                        error={getError("pgYear")}
-                      />
-                    </div>
-                  </SectionCard>
-                </div>
-              ) : null}
-
-              {step === 2 ? (
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <QuestionSelect
-                    question="How much total work experience do you have?"
-                    name="experienceLevel"
-                    value={formData.experienceLevel}
-                    onChange={handleChange}
-                    options={EXPERIENCE_OPTIONS}
-                    required
-                    placeholder="Select experience"
-                    error={getError("experienceLevel")}
-                  />
-
-                  <QuestionSelect
-                    question="What is your current employment status?"
-                    name="employmentStatus"
-                    value={formData.employmentStatus}
-                    onChange={handleChange}
-                    options={EMPLOYMENT_OPTIONS}
-                    required
-                    placeholder="Select employment status"
-                    error={getError("employmentStatus")}
-                  />
-
-                  <QuestionInput
-                    question="Where are you currently working?"
-                    type="text"
-                    name="currentCompany"
-                    value={formData.currentCompany}
-                    onChange={handleChange}
-                    placeholder="Current company name"
-                    required={formData.experienceLevel !== "fresher"}
-                    error={getError("currentCompany")}
-                  />
-
-                  <QuestionInput
-                    question="What is your current role or designation?"
-                    type="text"
-                    name="currentRole"
-                    value={formData.currentRole}
-                    onChange={handleChange}
-                    placeholder="Current role"
-                    required={formData.experienceLevel !== "fresher"}
-                    error={getError("currentRole")}
-                  />
-
-                  <QuestionSelect
-                    question="What is your notice period?"
-                    name="noticePeriod"
-                    value={formData.noticePeriod}
-                    onChange={handleChange}
-                    options={NOTICE_OPTIONS}
-                    required
-                    placeholder="Select notice period"
-                    error={getError("noticePeriod")}
-                  />
-
-                  <QuestionInput
-                    question="Which location do you prefer for work?"
-                    type="text"
-                    name="preferredLocation"
-                    value={formData.preferredLocation}
-                    onChange={handleChange}
-                    placeholder="City or remote"
-                    required
-                    error={getError("preferredLocation")}
-                  />
-
-                  <QuestionInput
-                    question="What is your expected CTC in INR per year?"
-                    type="number"
-                    name="expectedCtc"
-                    value={formData.expectedCtc}
-                    onChange={handleChange}
-                    placeholder="Example: 850000"
-                    min="0"
-                    error={getError("expectedCtc")}
-                  />
-
-                  <div className="sm:col-span-2">
-                    <QuestionTextArea
-                      question="Which skills best represent your profile?"
-                      name="skills"
-                      value={formData.skills}
-                      onChange={handleChange}
-                      rows={4}
-                      placeholder="Example: React, Node.js, SQL, SEO writing, CMS"
-                      required
-                      error={getError("skills")}
-                    />
                   </div>
 
-                  <div className="sm:col-span-2">
-                    <QuestionTextArea
-                      question="Can you share key project experience or achievements?"
-                      name="projects"
-                      value={formData.projects}
-                      onChange={handleChange}
-                      rows={4}
-                      placeholder="Write short points about your work impact"
-                      error={getError("projects")}
-                    />
-                  </div>
+                  {STEPS.map((item, index) => {
+                    const isActive = step === index;
+                    const isDone = step > index;
+
+                    return (
+                      <div
+                        key={item.title}
+                        className={`relative z-10 flex h-5 w-5 items-center justify-center rounded-full border-2 transition sm:h-7 sm:w-7 ${
+                          isDone
+                            ? "border-blue-600 bg-white text-blue-600"
+                            : isActive
+                              ? "border-blue-600 bg-white text-blue-600"
+                              : "border-slate-200 bg-white text-slate-300"
+                        }`}
+                        aria-label={item.title}
+                      >
+                        {isDone ? (
+                          <svg
+                            viewBox="0 0 24 24"
+                            className="h-3 w-3 sm:h-4 sm:w-4"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="M5 12.5L9.5 17L19 7.5"
+                              stroke="currentColor"
+                              strokeWidth="2.4"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        ) : null}
+                      </div>
+                    );
+                  })}
                 </div>
-              ) : null}
+              </div>
 
-              {step === 3 ? (
-                <div className="space-y-4">
-                  <QuestionTextArea
-                    question="Why do you want to join Hooks?"
-                    name="coverLetter"
-                    value={formData.coverLetter}
-                    onChange={handleChange}
-                    rows={4}
-                    placeholder="Write a short note about your interest"
-                    error={getError("coverLetter")}
-                  />
-
+              <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+                {step === 0 ? (
                   <div className="grid gap-4 sm:grid-cols-2">
+                    <QuestionSelect
+                      question="Which role are you applying for?"
+                      name="role"
+                      value={formData.role}
+                      onChange={handleChange}
+                      options={ROLE_OPTIONS}
+                      required
+                      placeholder="Select your role"
+                      error={getError("role")}
+                    />
+
+                    <QuestionSelect
+                      question="How do you identify your gender?"
+                      name="gender"
+                      value={formData.gender}
+                      onChange={handleChange}
+                      options={GENDER_OPTIONS}
+                      required
+                      placeholder="Select your gender"
+                      error={getError("gender")}
+                    />
+
                     <QuestionInput
-                      question="From which place are you applying?"
+                      question="What is your first name?"
                       type="text"
-                      name="applicationPlace"
-                      value={formData.applicationPlace}
+                      name="firstName"
+                      value={formData.firstName}
                       onChange={handleChange}
-                      placeholder="City"
+                      placeholder="Enter first name"
                       required
-                      error={getError("applicationPlace")}
+                      error={getError("firstName")}
                     />
 
-                    <QuestionDate
-                      question="What is today\'s application date?"
-                      name="applicationDate"
-                      value={formData.applicationDate}
+                    <QuestionInput
+                      question="What is your last name?"
+                      type="text"
+                      name="lastName"
+                      value={formData.lastName}
                       onChange={handleChange}
-                      min="1980-01-01"
-                      max={new Date().toISOString().slice(0, 10)}
-                      error={getError("applicationDate")}
+                      placeholder="Enter last name"
+                      required
+                      error={getError("lastName")}
                     />
+
+                    <QuestionInput
+                      question="What is your email address?"
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      placeholder="you@example.com"
+                      required
+                      error={getError("email")}
+                    />
+
+                    <QuestionInput
+                      question="What is your phone number?"
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      placeholder="Enter mobile number"
+                      required
+                      error={getError("phone")}
+                    />
+
+                    <div className="sm:col-span-2">
+                      <QuestionDate
+                        question="What is your date of birth?"
+                        name="dob"
+                        value={formData.dob}
+                        onChange={handleChange}
+                        min="1900-01-01"
+                        max={new Date().toISOString().slice(0, 10)}
+                        error={getError("dob")}
+                      />
+                    </div>
                   </div>
-
-                  <label className="flex items-start gap-3 rounded-md border border-slate-200 bg-white p-4">
-                    <input
-                      type="checkbox"
-                      name="agreeTerms"
-                      checked={formData.agreeTerms}
-                      onChange={handleChange}
-                      className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                      required
-                    />
-                    <span className="text-sm text-slate-700">
-                      I confirm that all details provided in this application
-                      are correct, and I agree to be contacted for hiring
-                      updates.
-                    </span>
-                  </label>
-                  {getError("agreeTerms") ? (
-                    <p className="text-xs font-medium text-red-600">
-                      {getError("agreeTerms")}
-                    </p>
-                  ) : null}
-                </div>
-              ) : null}
-
-              <div className="flex flex-wrap items-center gap-3 pt-2">
-                {step > 0 ? (
-                  <button
-                    type="button"
-                    onClick={goBack}
-                    disabled={isSubmitting}
-                    className="rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-300 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    Back
-                  </button>
                 ) : null}
 
-                {step < STEPS.length - 1 ? (
-                  <button
-                    type="button"
-                    onClick={goNext}
-                    disabled={!isStepComplete() || isSubmitting}
-                    className="rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-blue-700 transition hover:border-blue-300 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Continue
-                  </button>
-                ) : (
-                  <button
-                    type="submit"
-                    disabled={!isStepComplete() || isSubmitting}
-                    className="rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-blue-700 transition hover:border-blue-300 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {isSubmitting ? "Submitting..." : "Submit Application"}
-                  </button>
-                )}
-              </div>
+                {step === 1 ? (
+                  <div className="space-y-4">
+                    <SectionCard title="10th education details">
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <QuestionInput
+                          question="Which board or school did you complete 10th from?"
+                          type="text"
+                          name="tenthBoard"
+                          value={formData.tenthBoard}
+                          onChange={handleChange}
+                          placeholder="Board or school name"
+                          required
+                          error={getError("tenthBoard")}
+                        />
+                        <QuestionInput
+                          question="What was your stream in 10th?"
+                          type="text"
+                          name="tenthStream"
+                          value={formData.tenthStream}
+                          onChange={handleChange}
+                          placeholder="General / Science / Other"
+                          required
+                          error={getError("tenthStream")}
+                        />
+                        <QuestionInput
+                          question="What were your 10th marks?"
+                          type="text"
+                          name="tenthMarks"
+                          value={formData.tenthMarks}
+                          onChange={handleChange}
+                          placeholder="Example: 89% or 9.1 CGPA"
+                          required
+                          error={getError("tenthMarks")}
+                        />
+                        <QuestionInput
+                          question="In which year did you complete 10th?"
+                          type="number"
+                          name="tenthYear"
+                          value={formData.tenthYear}
+                          onChange={handleChange}
+                          placeholder="Example: 2018"
+                          min="1980"
+                          max="2099"
+                          required
+                          error={getError("tenthYear")}
+                        />
+                      </div>
+                    </SectionCard>
 
-              {submitError ? (
-                <p className="rounded-md border border-red-200 bg-white px-4 py-3 text-sm font-medium text-red-700">
-                  {submitError}
-                </p>
-              ) : null}
-            </form>
-          </div>
-        </div>
-      </div>
+                    <SectionCard title="12th education details">
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <QuestionInput
+                          question="Which board or school did you complete 12th from?"
+                          type="text"
+                          name="twelfthBoard"
+                          value={formData.twelfthBoard}
+                          onChange={handleChange}
+                          placeholder="Board or school name"
+                          required
+                          error={getError("twelfthBoard")}
+                        />
+                        <QuestionInput
+                          question="What was your stream in 12th?"
+                          type="text"
+                          name="twelfthStream"
+                          value={formData.twelfthStream}
+                          onChange={handleChange}
+                          placeholder="Science / Commerce / Arts"
+                          required
+                          error={getError("twelfthStream")}
+                        />
+                        <QuestionInput
+                          question="What were your 12th marks?"
+                          type="text"
+                          name="twelfthMarks"
+                          value={formData.twelfthMarks}
+                          onChange={handleChange}
+                          placeholder="Example: 84% or 8.7 CGPA"
+                          required
+                          error={getError("twelfthMarks")}
+                        />
+                        <QuestionInput
+                          question="In which year did you complete 12th?"
+                          type="number"
+                          name="twelfthYear"
+                          value={formData.twelfthYear}
+                          onChange={handleChange}
+                          placeholder="Example: 2020"
+                          min="1980"
+                          max="2099"
+                          required
+                          error={getError("twelfthYear")}
+                        />
+                      </div>
+                    </SectionCard>
 
-      {submitted ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
-          <div className="w-full max-w-md rounded-md border border-slate-200 bg-white p-6">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-md border border-slate-200 bg-white">
-              <svg
-                viewBox="0 0 24 24"
-                className="h-7 w-7 text-blue-600"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                aria-hidden="true"
-              >
-                <path
-                  d="M5 12.5L9.5 17L19 7.5"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+                    <SectionCard title="UG education details">
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <QuestionSearchSelect
+                          question="Which college or university did you complete UG from?"
+                          name="ugInstitute"
+                          value={formData.ugInstitute}
+                          onChange={handleChange}
+                          options={UG_INSTITUTE_OPTIONS}
+                          placeholder="Search institute"
+                          required
+                          error={getError("ugInstitute")}
+                        />
+                        <QuestionSelect
+                          question="What was your UG stream?"
+                          name="ugStream"
+                          value={formData.ugStream}
+                          onChange={handleChange}
+                          options={UG_STREAM_OPTIONS}
+                          placeholder="Select UG stream"
+                          required
+                          error={getError("ugStream")}
+                        />
+                        <QuestionInput
+                          question="What were your UG marks?"
+                          type="text"
+                          name="ugMarks"
+                          value={formData.ugMarks}
+                          onChange={handleChange}
+                          placeholder="Example: 78% or 8.0 CGPA"
+                          required
+                          error={getError("ugMarks")}
+                        />
+                        <QuestionInput
+                          question="In which year did you complete UG?"
+                          type="number"
+                          name="ugYear"
+                          value={formData.ugYear}
+                          onChange={handleChange}
+                          placeholder="Example: 2024"
+                          min="1980"
+                          max="2099"
+                          required
+                          error={getError("ugYear")}
+                        />
+                      </div>
+                    </SectionCard>
+
+                    <SectionCard title="PG education details" optional>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <QuestionInput
+                          question="If applicable, where did you complete PG?"
+                          type="text"
+                          name="pgInstitute"
+                          value={formData.pgInstitute}
+                          onChange={handleChange}
+                          placeholder="Institute name"
+                          error={getError("pgInstitute")}
+                        />
+                        <QuestionInput
+                          question="If applicable, what was your PG stream?"
+                          type="text"
+                          name="pgStream"
+                          value={formData.pgStream}
+                          onChange={handleChange}
+                          placeholder="Example: M.Tech / MBA"
+                          error={getError("pgStream")}
+                        />
+                        <QuestionInput
+                          question="If applicable, what were your PG marks?"
+                          type="text"
+                          name="pgMarks"
+                          value={formData.pgMarks}
+                          onChange={handleChange}
+                          placeholder="Example: 8.3 CGPA"
+                          error={getError("pgMarks")}
+                        />
+                        <QuestionInput
+                          question="If applicable, in which year did you complete PG?"
+                          type="number"
+                          name="pgYear"
+                          value={formData.pgYear}
+                          onChange={handleChange}
+                          placeholder="Example: 2026"
+                          min="1980"
+                          max="2099"
+                          error={getError("pgYear")}
+                        />
+                      </div>
+                    </SectionCard>
+                  </div>
+                ) : null}
+
+                {step === 2 ? (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <QuestionSelect
+                      question="How much total work experience do you have?"
+                      name="experienceLevel"
+                      value={formData.experienceLevel}
+                      onChange={handleChange}
+                      options={EXPERIENCE_OPTIONS}
+                      required
+                      placeholder="Select experience"
+                      error={getError("experienceLevel")}
+                    />
+
+                    <QuestionSelect
+                      question="What is your current employment status?"
+                      name="employmentStatus"
+                      value={formData.employmentStatus}
+                      onChange={handleChange}
+                      options={EMPLOYMENT_OPTIONS}
+                      required
+                      placeholder="Select employment status"
+                      error={getError("employmentStatus")}
+                    />
+
+                    <QuestionInput
+                      question="Where are you currently working?"
+                      type="text"
+                      name="currentCompany"
+                      value={formData.currentCompany}
+                      onChange={handleChange}
+                      placeholder="Current company name"
+                      required={formData.experienceLevel !== "fresher"}
+                      error={getError("currentCompany")}
+                    />
+
+                    <QuestionInput
+                      question="What is your current role or designation?"
+                      type="text"
+                      name="currentRole"
+                      value={formData.currentRole}
+                      onChange={handleChange}
+                      placeholder="Current role"
+                      required={formData.experienceLevel !== "fresher"}
+                      error={getError("currentRole")}
+                    />
+
+                    <QuestionSelect
+                      question="What is your notice period?"
+                      name="noticePeriod"
+                      value={formData.noticePeriod}
+                      onChange={handleChange}
+                      options={NOTICE_OPTIONS}
+                      required
+                      placeholder="Select notice period"
+                      error={getError("noticePeriod")}
+                    />
+
+                    <QuestionInput
+                      question="Which location do you prefer for work?"
+                      type="text"
+                      name="preferredLocation"
+                      value={formData.preferredLocation}
+                      onChange={handleChange}
+                      placeholder="City or remote"
+                      required
+                      error={getError("preferredLocation")}
+                    />
+
+                    <QuestionInput
+                      question="What is your expected CTC in INR per year?"
+                      type="number"
+                      name="expectedCtc"
+                      value={formData.expectedCtc}
+                      onChange={handleChange}
+                      placeholder="Example: 850000"
+                      min="0"
+                      error={getError("expectedCtc")}
+                    />
+
+                    <div className="sm:col-span-2">
+                      <QuestionTextArea
+                        question="Which skills best represent your profile?"
+                        name="skills"
+                        value={formData.skills}
+                        onChange={handleChange}
+                        rows={4}
+                        placeholder="Example: React, Node.js, SQL, SEO writing, CMS"
+                        required
+                        error={getError("skills")}
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <QuestionTextArea
+                        question="Can you share key project experience or achievements?"
+                        name="projects"
+                        value={formData.projects}
+                        onChange={handleChange}
+                        rows={4}
+                        placeholder="Write short points about your work impact"
+                        error={getError("projects")}
+                      />
+                    </div>
+                  </div>
+                ) : null}
+
+                {step === 3 ? (
+                  <div className="space-y-4">
+                    <QuestionTextArea
+                      question="Why do you want to join Hooks?"
+                      name="coverLetter"
+                      value={formData.coverLetter}
+                      onChange={handleChange}
+                      rows={4}
+                      placeholder="Write a short note about your interest"
+                      error={getError("coverLetter")}
+                    />
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <QuestionInput
+                        question="From which place are you applying?"
+                        type="text"
+                        name="applicationPlace"
+                        value={formData.applicationPlace}
+                        onChange={handleChange}
+                        placeholder="City"
+                        required
+                        error={getError("applicationPlace")}
+                      />
+
+                      <QuestionDate
+                        question="What is today\'s application date?"
+                        name="applicationDate"
+                        value={formData.applicationDate}
+                        onChange={handleChange}
+                        min="1980-01-01"
+                        max={new Date().toISOString().slice(0, 10)}
+                        error={getError("applicationDate")}
+                      />
+                    </div>
+
+                    <label className="flex items-start gap-3 rounded-md border border-slate-200 bg-white p-4">
+                      <input
+                        type="checkbox"
+                        name="agreeTerms"
+                        checked={formData.agreeTerms}
+                        onChange={handleChange}
+                        className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        required
+                      />
+                      <span className="text-sm text-slate-700">
+                        I confirm that all details provided in this application
+                        are correct, and I agree to be contacted for hiring
+                        updates.
+                      </span>
+                    </label>
+                    {getError("agreeTerms") ? (
+                      <p className="text-xs font-medium text-red-600">
+                        {getError("agreeTerms")}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                <div className="flex flex-wrap items-center gap-3 pt-2">
+                  {step > 0 ? (
+                    <button
+                      type="button"
+                      onClick={goBack}
+                      disabled={isSubmitting}
+                      className="rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-300 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Back
+                    </button>
+                  ) : null}
+
+                  {step < STEPS.length - 1 ? (
+                    <button
+                      type="button"
+                      onClick={goNext}
+                      disabled={!isStepComplete() || isSubmitting}
+                      className="rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-blue-700 transition hover:border-blue-300 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Continue
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={!isStepComplete() || isSubmitting}
+                      className="rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-blue-700 transition hover:border-blue-300 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isSubmitting ? "Submitting..." : "Submit Application"}
+                    </button>
+                  )}
+                </div>
+
+                {submitError ? (
+                  <p className="rounded-md border border-red-200 bg-white px-4 py-3 text-sm font-medium text-red-700">
+                    {submitError}
+                  </p>
+                ) : null}
+              </form>
             </div>
-            <h2 className="text-center text-xl font-bold text-slate-900">
-              Application Submitted
-            </h2>
-            <p className="mt-2 text-center text-sm text-slate-600">
-              Your form has been submitted successfully. We will review your
-              profile and contact you soon.
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setSubmitted(false);
-              }}
-              className="mt-5 w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-blue-700 transition hover:border-blue-300"
-            >
-              Close
-            </button>
           </div>
         </div>
-      ) : null}
-    </main>
+
+        {submitted ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
+            <div className="w-full max-w-md rounded-md border border-slate-200 bg-white p-6">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-md border border-slate-200 bg-white">
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-7 w-7 text-blue-600"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M5 12.5L9.5 17L19 7.5"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+              <h2 className="text-center text-xl font-bold text-slate-900">
+                Application Submitted
+              </h2>
+              <p className="mt-2 text-center text-sm text-slate-600">
+                Your form has been submitted successfully. We will review your
+                profile and contact you soon.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setSubmitted(false);
+                }}
+                className="mt-5 w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-blue-700 transition hover:border-blue-300"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </main>
+    </>
   );
 };
 

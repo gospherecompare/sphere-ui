@@ -13,67 +13,35 @@ import {
   useLocation,
   useParams,
 } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
 import MobileBottomNavigation from "./components/ui/MobileBottomNavigation";
 import AppPushOptInPrompt from "./components/ui/AppPushOptInPrompt";
 import RouteExperience from "./components/ui/RouteExperience";
 import { useDevice } from "./hooks/useDevice";
 import {
-  createOrganizationSchema,
-  createWebsiteSchema,
-} from "./utils/schemaGenerators";
-import { normalizeSeoTitle } from "./utils/seoTitle";
-import {
   buildPublicSmartphoneBrandPath as buildSmartphoneBrandPath,
   buildPublicSmartphoneListingPath as buildSmartphoneListingPath,
 } from "./utils/smartphoneListingRoutes";
-import { getTvRouteFeatureMeta } from "./utils/tvPopularFeatures";
-import { toCanonicalPagePath, toCanonicalPageUrl } from "./utils/publicUrl";
+import { toCanonicalPagePath } from "./utils/publicUrl";
 
 const RouteBreadcrumbs = () => {
   const { pathname } = useLocation();
   const isSmartphoneDetailRoute =
     /^\/smartphones\/[^/]+-price-in-indi(?:a)?\/?$/i.test(pathname);
+  const isTvDetailRoute = /^\/tvs\/[^/]+\/?$/i.test(pathname);
   const isSmartphonesCatalogRoute = /^\/smartphones\/?$/i.test(pathname);
   const isNewsRoute = /^\/news(?:\/|$)/i.test(pathname);
 
-  if (isSmartphoneDetailRoute || isSmartphonesCatalogRoute || isNewsRoute) {
+  if (
+    isSmartphoneDetailRoute ||
+    isTvDetailRoute ||
+    isSmartphonesCatalogRoute ||
+    isNewsRoute
+  ) {
     return null;
   }
 
   return <Breadcrumbs />;
 };
-
-const SITE_ORIGIN = "https://tryhook.shop";
-const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/hook-logo.png`;
-const CURRENT_YEAR = new Date().getFullYear();
-const CURRENT_MONTH_YEAR = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  year: "numeric",
-}).format(new Date());
-const CURRENT_FULL_DATE = new Intl.DateTimeFormat("en-GB", {
-  day: "2-digit",
-  month: "long",
-  year: "numeric",
-}).format(new Date());
-const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
-const SMARTPHONE_LIST_SLUGS = new Set(["upcoming"]);
-const SMARTPHONE_FILTER_SEO = {
-  "under-10000": { label: "Under ₹10,000" },
-  "under-15000": { label: "Under ₹15,000" },
-  "under-20000": { label: "Under ₹20,000" },
-  "under-25000": { label: "Under ₹25,000" },
-  "under-30000": { label: "Under ₹30,000" },
-  "under-40000": { label: "Under ₹40,000" },
-  "under-50000": { label: "Under ₹50,000" },
-  "above-50000": { label: "Above ₹50,000" },
-  new: { label: "Latest" },
-};
-const DEFAULT_SEO_DESCRIPTION =
-  "Compare smartphones, laptops, TVs, and networking devices with specs, variants, pricing insights, and trend signals on Hooks.";
-const BUDGET_PHONE_KEYWORDS =
-  "budget phones under 10000, budget phones under 15000, budget phones under 20000, budget phones under 30000, budget phones under 50000";
-const DEFAULT_SEO_KEYWORDS = `hooks, best gadget comparison site, mobile price comparison india, moblie price comparison india, compare laptops smartphones tvs, compare smartphone tv laptops, compare specs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch phones, trending phone in india, most popular mobiles, top selling gadgets india, 5g phones in india, ai phones in india, ${BUDGET_PHONE_KEYWORDS}, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, gaming laptops india, student laptops india, laptop comparison india, vacuum cooler laptop and phone, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000, smart tv comparison india`;
 
 const Home = React.lazy(() => import("./components/Home/Home"));
 const Smartphones = React.lazy(
@@ -110,41 +78,6 @@ const NetworkingDetailCard = React.lazy(
   () => import("./components/Device detail/Network"),
 );
 
-const normalizeSeoPath = (pathname) => {
-  if (!pathname) return "/";
-  if (pathname.length > 1 && pathname.endsWith("/")) {
-    return pathname.slice(0, -1);
-  }
-  if (pathname === "/smartphones/latest") return "/smartphones/filter/new";
-  if (pathname === "/smartphones/top") return "/trending/smartphones";
-  return pathname;
-};
-
-const stripSmartphoneSeoSuffix = (slug = "") => {
-  const value = String(slug || "")
-    .toLowerCase()
-    .trim();
-  if (!value) return "";
-  if (value.endsWith(SMARTPHONE_SEO_SUFFIX)) {
-    return value.slice(0, -SMARTPHONE_SEO_SUFFIX.length).replace(/-+$/g, "");
-  }
-  return value;
-};
-
-const toSmartphoneSeoSlug = (slug = "") => {
-  const base = stripSmartphoneSeoSuffix(slug);
-  return base ? `${base}${SMARTPHONE_SEO_SUFFIX}` : "";
-};
-
-const ensureSmartphoneSeoDetailPath = (path = "") => {
-  if (!path.startsWith("/smartphones/")) return path;
-  const tail = path.slice("/smartphones/".length);
-  if (!tail || tail.includes("/")) return path;
-  if (SMARTPHONE_LIST_SLUGS.has(tail.toLowerCase())) return path;
-  const seoSlug = toSmartphoneSeoSlug(tail);
-  return seoSlug ? `/smartphones/${seoSlug}` : path;
-};
-
 const getCatalogBasePath = (value = "") => {
   const text = String(value || "")
     .toLowerCase()
@@ -168,49 +101,6 @@ const getCatalogBasePath = (value = "") => {
   return "/smartphones";
 };
 
-const toSeoTextWithoutCommas = (value = "") =>
-  String(value || "").replace(/,/g, "");
-
-const toCanonicalPath = (path) => {
-  if (path === "/career") return "/careers";
-  if (path === "/articles") return "/news";
-  if (path.startsWith("/articles/")) return "/news";
-  if (path === "/blog" || path === "/blogs") return "/news";
-  if (path.startsWith("/blog/") || path.startsWith("/blogs/")) return "/news";
-  if (path === "/trending") return "/trending/smartphones";
-  if (path === "/trending/smartphone") return "/trending/smartphones";
-  if (path === "/trending/tv") return "/trending/tvs";
-  if (path === "/devices") return "/smartphones";
-
-  if (path === "/mobiles") return "/smartphones";
-  if (path.startsWith("/devices/mobiles")) {
-    return ensureSmartphoneSeoDetailPath(
-      path.replace("/devices/mobiles", "/smartphones"),
-    );
-  }
-  if (path.startsWith("/devices/smartphones")) {
-    return ensureSmartphoneSeoDetailPath(
-      path.replace("/devices/smartphones", "/smartphones"),
-    );
-  }
-
-  if (path === "/appliances") return "/tvs";
-  if (path.startsWith("/appliances/")) {
-    return path.replace("/appliances/", "/tvs/");
-  }
-  if (path.startsWith("/devices/tvs")) {
-    return path.replace("/devices/tvs", "/tvs");
-  }
-  if (path.startsWith("/devices/appliances")) {
-    return path.replace("/devices/appliances", "/tvs");
-  }
-  if (path.startsWith("/devices/networking")) {
-    return path.replace("/devices/networking", "/networking");
-  }
-
-  return ensureSmartphoneSeoDetailPath(path);
-};
-
 const toReadableTitleFromSlug = (slug = "") => {
   const raw = (() => {
     try {
@@ -229,297 +119,7 @@ const toReadableTitleFromSlug = (slug = "") => {
     .join(" ");
 };
 
-const extractDetailSlugName = (path, prefix, normalizeTail) => {
-  if (!path.startsWith(prefix)) return "";
-  const tail = path.slice(prefix.length);
-  if (!tail || tail.includes("/")) return "";
-  const normalizedTail =
-    typeof normalizeTail === "function" ? normalizeTail(tail) : tail;
-  if (!normalizedTail) return "";
-  return toReadableTitleFromSlug(normalizedTail);
-};
-
-const getTvListingRouteMeta = (path = "") => {
-  if (path === "/tvs/latest") return { type: "latest" };
-  const match = String(path || "").match(/^\/tvs\/features\/([^/]+)$/i);
-  if (!match) return null;
-  const feature = getTvRouteFeatureMeta(match[1]);
-  return feature ? { type: "feature", feature } : null;
-};
-
-const resolveSeoMeta = (pathname) => {
-  const path = normalizeSeoPath(pathname);
-  const canonicalPath = toCanonicalPath(path);
-  const smartphoneDetailName = (() => {
-    const name = extractDetailSlugName(
-      canonicalPath,
-      "/smartphones/",
-      stripSmartphoneSeoSuffix,
-    );
-    const tail = canonicalPath.startsWith("/smartphones/")
-      ? canonicalPath.slice("/smartphones/".length)
-      : "";
-    if (SMARTPHONE_LIST_SLUGS.has(tail.toLowerCase())) return "";
-    return name;
-  })();
-  const tvListingRoute = getTvListingRouteMeta(canonicalPath);
-  const tvDetailName = tvListingRoute
-    ? ""
-    : extractDetailSlugName(canonicalPath, "/tvs/");
-  const smartphoneFilterSlug = (() => {
-    const match = canonicalPath.match(/^\/smartphones\/filter\/([^/]+)$/i);
-    if (!match) return "";
-    return String(match[1] || "").toLowerCase();
-  })();
-  const smartphoneFilterMeta =
-    smartphoneFilterSlug && SMARTPHONE_FILTER_SEO[smartphoneFilterSlug]
-      ? SMARTPHONE_FILTER_SEO[smartphoneFilterSlug]
-      : null;
-  const smartphoneFilterSeoLabel = smartphoneFilterMeta
-    ? toSeoTextWithoutCommas(smartphoneFilterMeta.label)
-    : "";
-
-  const rules = [
-    {
-      test: (p) => p.startsWith("/news"),
-      title: "Technology News, Reviews & Buying Guides | Hooks",
-      description:
-        "Browse the latest mobile coverage, gadget updates, launch coverage, and editorial guides on Hooks.",
-      keywords:
-        "stories and updates, mobile coverage, gadget updates, launch updates, tech guides, latest gadgets india, smartphone coverage india",
-    },
-    {
-      test: (p) => p === "/",
-      title:
-        "Compare Phones, TVs & Networking Devices | Hooks",
-      description:
-        "Compare smartphones, TVs and networking devices with clear specifications, price context, popular matchups and practical technology news on Hooks.",
-      keywords: `hooks, best gadget comparison site, mobile price comparison india, compare laptops smartphones tvs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, latest laptops in india ${CURRENT_YEAR}, latest smart tvs in india ${CURRENT_YEAR}, new launch and trending gadgets, top selling gadgets india, compare specs`,
-    },
-    {
-      test: () => Boolean(smartphoneDetailName),
-      title: `${smartphoneDetailName} Price, Specs & Comparison in India | Hooks`,
-      description: `Compare ${smartphoneDetailName} price in India, full specifications, variants, and launch details on Hooks.`,
-      keywords: `${smartphoneDetailName.toLowerCase()}, ${smartphoneDetailName.toLowerCase()} price in india, ${smartphoneDetailName.toLowerCase()} specifications, ${smartphoneDetailName.toLowerCase()} launch date, compare smartphones, mobile price comparison india`,
-    },
-    {
-      test: () => Boolean(tvDetailName),
-      title: `${tvDetailName} Price, Specs & Comparison in India | Hooks`,
-      description: `Compare ${tvDetailName} TV price in India, size variants, display specs, smart features, and store offers on Hooks.`,
-      keywords: `${tvDetailName.toLowerCase()}, ${tvDetailName.toLowerCase()} tv price in india, ${tvDetailName.toLowerCase()} specifications, smart tv comparison india, tv prices list ${CURRENT_YEAR}`,
-    },
-    {
-      test: () => Boolean(smartphoneFilterMeta),
-      title:
-        smartphoneFilterSlug === "new"
-          ? `Latest Smartphones in India: Prices & Specs | Hooks`
-          : `Best Smartphones ${smartphoneFilterSeoLabel}: Prices & Specs | Hooks`,
-      description:
-        smartphoneFilterSlug === "new"
-          ? "Discover newly launched smartphones with updated prices, full specifications, and reviews. Stay updated with the latest mobile releases on Hooks."
-          : `Explore the best smartphones ${String(
-              smartphoneFilterSeoLabel || "",
-            ).toLowerCase()} with detailed specs latest prices reviews and comparisons to choose the right phone for your budget.`,
-      keywords:
-        smartphoneFilterSlug === "new"
-          ? `latest smartphones ${CURRENT_YEAR}, new launch mobiles, smartphone releases`
-          : `smartphones ${String(
-              smartphoneFilterMeta?.label || "",
-            ).toLowerCase()}, best smartphones ${String(
-              smartphoneFilterMeta?.label || "",
-            ).toLowerCase()}, mobile price comparison india, compare smartphone specs, ${BUDGET_PHONE_KEYWORDS}`,
-    },
-    {
-      test: (p) => p.startsWith("/smartphones") || p === "/mobiles",
-      title: `Smartphones in India: Prices, Specs & Comparisons | Hooks`,
-      description:
-        "Compare smartphones by price, RAM/ROM variants, camera, battery, and performance. Find trending and latest mobile launches on Hooks.",
-      keywords: `smartphones, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch mobiles, trending phone in india, most popular mobiles, mobile price comparison india, moblie price comparison india, compare smartphone specs, compare smartphone prices, 5g phones in india, ai phone, ai budget phone, ${BUDGET_PHONE_KEYWORDS}`,
-    },
-    {
-      test: () => tvListingRoute?.type === "latest",
-      title: `Latest Smart TVs in India: Prices & Specs | Hooks`,
-      description:
-        "Browse newly launched smart TVs in India with updated prices, display specifications, screen sizes, and store availability on Hooks.",
-      keywords: `latest smart tvs in india ${CURRENT_YEAR}, new tv launches india, latest tv prices, compare smart tv specs`,
-    },
-    {
-      test: () => tvListingRoute?.type === "feature",
-      title: `Best ${tvListingRoute?.feature?.seoName || ""} TVs in India | Hooks`,
-      description: `Browse the best ${tvListingRoute?.feature?.seoName || ""} TVs in India with updated prices, display specifications, screen sizes, smart features, and store availability on Hooks.`,
-      keywords: `best ${String(
-        tvListingRoute?.feature?.seoName || "",
-      ).toLowerCase()} tvs in india, ${String(
-        tvListingRoute?.feature?.seoName || "",
-      ).toLowerCase()} tv prices, compare tv specs`,
-    },
-    {
-      test: (p) => p.startsWith("/tvs") || p.startsWith("/appliances"),
-      title: `Latest Smart TVs in India: Prices & Specs | Hooks`,
-      description:
-        "Compare TVs across 43, 55, 65, and larger screen sizes with full specifications, variant pricing, and store availability on Hooks.",
-      keywords: `tvs, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, smart tv comparison india, compare tv prices india, compare tv specs, 43 inch tv, 55 inch tv, 65 inch tv, 75 inch tv, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000`,
-    },
-    {
-      test: (p) => p.startsWith("/networking"),
-      title: `Networking Devices: Compare Routers & Wi-Fi Gear | Hooks`,
-      description:
-        "Compare routers and networking products with speed, band, and connectivity specs to choose the right setup for your needs.",
-      keywords:
-        "networking devices, routers, wifi routers, dual band router, compare routers, modem router specs",
-    },
-    {
-      test: (p) => p.startsWith("/compare"),
-      title: "Compare Devices Side by Side: Specs & Prices | Hooks",
-      description:
-        "Compare devices side by side with full specs, pricing, and feature differences to make faster buying decisions.",
-      keywords:
-        "device comparison, compare smartphones laptops tvs, compare smartphone tv laptops, compare spec online, compare prices india, side by side comparison, best gadget comparison site",
-    },
-    {
-      test: (p) => p.startsWith("/trending"),
-      title: `Trending Technology Products in India | Hooks`,
-      description:
-        "Track trending smartphones, laptops, and TVs based on momentum and user interest to spot what is hot right now.",
-      keywords: `trending smartphones india, trending laptops india, trending tvs india, trending phone in india, most popular mobiles, top selling gadgets india, new launch and trending devices, latest smartphones in india ${CURRENT_YEAR}`,
-    },
-    {
-      test: (p) => p.startsWith("/careers") || p.startsWith("/career"),
-      title: "Careers at Hooks | Build Better Buying Tools",
-      description:
-        "Apply for frontend, backend, content developer, and fullstack opportunities at Hooks through a simple step-by-step application form.",
-      keywords:
-        "careers at hooks, frontend jobs, backend jobs, fullstack jobs, content developer jobs, tech careers",
-    },
-    {
-      test: (p) => p.startsWith("/about"),
-      title: "About Hooks | Clearer Technology Decisions",
-      description:
-        "Learn how Hooks helps people compare smartphones, laptops, TVs, and networking products with structured, neutral, and variant-aware information.",
-      keywords:
-        "about hooks, tech comparison platform, compare devices, smartphone comparison platform, laptop comparison, tv comparison, networking comparison",
-    },
-    {
-      test: (p) => p.startsWith("/contact"),
-      title: "Contact Hooks | Support, Corrections & Partnerships",
-      description:
-        "Contact Hooks for product support, partnerships, and press queries. Reach the team through verified contact channels.",
-      keywords:
-        "contact hooks, support hooks, partnerships, press inquiries, hooks contact details",
-    },
-    {
-      test: (p) => p.startsWith("/privacy-policy"),
-      title: "Privacy Policy | Hooks",
-      description:
-        "Read Hooks privacy policy to understand what data we collect, why we collect it, and how you can control your information.",
-      keywords:
-        "privacy policy, data privacy, hooks policy, personal data rights",
-    },
-    {
-      test: (p) => p.startsWith("/terms"),
-      title: "Terms of Use | Hooks",
-      description:
-        "Read Hooks terms of use covering platform usage, content accuracy, and service limitations.",
-      keywords: "terms of use, hooks terms, website terms, usage policy",
-    },
-  ];
-
-  const matched = rules.find((rule) => rule.test(canonicalPath));
-
-  return {
-    path,
-    canonicalPath,
-    title: matched?.title || "Hooks | Compare Technology with Clarity",
-    description: matched?.description || DEFAULT_SEO_DESCRIPTION,
-    keywords: matched?.keywords || DEFAULT_SEO_KEYWORDS,
-    robots: matched?.robots || "index, follow, max-image-preview:large",
-  };
-};
-
-const RouteSeoFallback = () => {
-  const { pathname } = useLocation();
-
-  // Initialize all hooks before any conditional returns
-  const seo = resolveSeoMeta(pathname);
-  const canonicalUrl = toCanonicalPageUrl(seo.canonicalPath, SITE_ORIGIN);
-  const normalizedTitle = normalizeSeoTitle(seo.title);
-  const schemaJson = React.useMemo(() => {
-    if (seo.canonicalPath === "/") {
-      return JSON.stringify([
-        createWebsiteSchema(),
-        createOrganizationSchema(),
-      ]);
-    }
-    return null;
-  }, [seo.canonicalPath]);
-
-  // Skip product pages - let component Helmet handle SEO
-  if (pathname.startsWith("/compare")) return null;
-  if (pathname.startsWith("/popular-comparisons")) return null;
-  if (pathname.startsWith("/news")) return null;
-  if (pathname.startsWith("/smartphones")) return null;
-  if (pathname.startsWith("/tvs")) return null;
-  if (pathname.startsWith("/networking")) return null;
-  if (pathname.startsWith("/trending")) return null;
-  if (pathname.startsWith("/devices")) return null;
-  if (pathname.startsWith("/mobiles")) return null;
-  if (pathname.startsWith("/about")) return null;
-  if (pathname.startsWith("/contact")) return null;
-  if (pathname.startsWith("/privacy-policy")) return null;
-  if (pathname.startsWith("/terms")) return null;
-  if (pathname.startsWith("/careers")) return null;
-
-  //welcome to the SEO fallback - this will handle all non-product, non-news routes and set basic SEO tags based on the path
-
-  return (
-    <Helmet prioritizeSeoTags>
-      <title>{normalizedTitle}</title>
-      <meta name="description" content={seo.description} />
-      <meta name="robots" content={seo.robots} />
-      <link key="canonical" rel="canonical" href={canonicalUrl} />
-      <meta property="og:type" content="website" />
-      <meta property="og:title" content={normalizedTitle} />
-      <meta property="og:description" content={seo.description} />
-      <meta property="og:url" content={canonicalUrl} />
-      <meta property="og:image" content={DEFAULT_OG_IMAGE} />
-      <meta property="og:image:secure_url" content={DEFAULT_OG_IMAGE} />
-      <meta property="og:image:type" content="image/png" />
-      <meta property="og:image:width" content="1200" />
-      <meta property="og:image:height" content="630" />
-      <meta property="og:image:alt" content="Hooks preview image" />
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={normalizedTitle} />
-      <meta name="twitter:description" content={seo.description} />
-      <meta name="twitter:image" content={DEFAULT_OG_IMAGE} />
-      <meta name="twitter:image:alt" content="Hooks preview image" />
-      {schemaJson && <script type="application/ld+json">{schemaJson}</script>}
-    </Helmet>
-  );
-};
-
-const preloadCoreRouteChunks = () => {
-  void import("./components/Product/Smartphones");
-  void import("./components/Product/TVs");
-  void import("./components/Static/NewsArticlesPage");
-  void import("./components/Device detail/Smartphone");
-  void import("./components/Device detail/TV");
-  void import("./components/Product/TrendingProductsHub");
-};
-
 function App() {
-  React.useEffect(() => {
-    if (typeof window === "undefined") return undefined;
-
-    const preload = () => preloadCoreRouteChunks();
-    if ("requestIdleCallback" in window) {
-      const idleId = window.requestIdleCallback(preload, { timeout: 1200 });
-      return () => window.cancelIdleCallback(idleId);
-    }
-
-    const timeoutId = window.setTimeout(preload, 700);
-    return () => window.clearTimeout(timeoutId);
-  }, []);
-
   const AppliancesListRedirect = () => {
     const location = useLocation();
     return <Navigate to={`/tvs${location.search || ""}`} replace />;
@@ -631,9 +231,8 @@ function App() {
   return (
     <Router>
       <RouteExperience />
-      <RouteSeoFallback />
       <AppPushOptInPrompt />
-      <div className="hooks-app-shell min-h-screen w-full overflow-x-hidden pb-[calc(58px+env(safe-area-inset-bottom))] lg:pb-0">
+      <div className="hooks-app-shell min-h-screen w-full overflow-x-hidden pb-[calc(64px+env(safe-area-inset-bottom))] lg:pb-0">
         <Header />
 
         <ScrollToTop />
@@ -685,6 +284,7 @@ function App() {
             />
             <Route path="/tvs" element={<TVs />} />
             <Route path="/tvs/latest" element={<TVs />} />
+            <Route path="/tvs/filter/:filterSlug" element={<TVs />} />
             <Route path="/tvs/features/:featureSlug" element={<TVs />} />
             <Route path="/appliances" element={<AppliancesListRedirect />} />
             <Route path="/networking" element={<Networking />} />

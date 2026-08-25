@@ -1,4 +1,5 @@
 import React from "react";
+
 import {
   FaBriefcase,
   FaCheckCircle,
@@ -7,13 +8,14 @@ import {
   FaNewspaper,
   FaRoute,
 } from "react-icons/fa";
-import useTitle from "../../hooks/useTitle";
+
 import SEO from "../SEO";
 import CompanyPageShell from "../ui/CompanyPageShell";
 import { createContactPageSchema } from "../../utils/schemaGenerators";
-import { hookContactChannels } from "../../utils/hookContactChannels";
+import { mobileXContactChannels } from "../../utils/mobileXContactChannels";
 
-const SITE_ORIGIN = "https://tryhook.shop";
+const SITE_ORIGIN = "https://mobilex.in";
+const CONTACT_EMAIL = "contact@mobilex.in";
 
 const iconByKey = {
   business: FaBriefcase,
@@ -41,46 +43,57 @@ const highlights = [
 ];
 
 const Contact = () => {
-  useTitle({ page: "Contact Hooks" });
   const canonical = `${SITE_ORIGIN}/contact/`;
+
   const schema = createContactPageSchema({
-    name: "Contact Hooks",
+    name: "Contact MobileX",
     description:
-      "Contact Hooks for product data corrections, support, editorial tips, press material, business partnerships and general enquiries.",
+      "Contact MobileX for product data corrections, support, editorial tips, press material, business partnerships and general enquiries.",
     url: canonical,
-    email: "contact@tryhook.shop",
+    email: CONTACT_EMAIL,
   });
 
   return (
     <>
       <SEO
-        title="Contact Hooks | Support, Corrections, News and Partnerships"
-        description="Contact the right Hooks team for product data corrections, website support, editorial tips, press material, partnerships and general enquiries."
+        title="Contact MobileX | Support, Corrections and Partnerships"
+        description="Contact the MobileX team for product data corrections, website support, editorial tips, press material, partnerships and general enquiries."
         url={canonical}
         schema={schema}
       />
 
       <CompanyPageShell
-        eyebrow="Contact Hooks"
+        eyebrow="Contact MobileX"
         title="Send your message to the right team."
         intro="Whether you found incorrect product data, have a technology story, need platform help or want to discuss a partnership, use the channel that best matches your request."
         icon={FaEnvelope}
         highlights={highlights}
         sections={[]}
         contactLabel="Email general enquiries"
-        contactTo="mailto:contact@tryhook.shop"
+        contactTo={`mailto:${CONTACT_EMAIL}`}
       >
-        <section className="hooks-contact-grid" aria-label="Hooks contact channels">
-          {hookContactChannels.map((channel) => {
+        <section
+          className="hooks-contact-grid"
+          aria-label="MobileX contact channels"
+        >
+          {mobileXContactChannels.map((channel) => {
             const Icon = iconByKey[channel.key] || FaEnvelope;
+
             return (
               <article key={channel.key} className="hooks-contact-card">
-                <div className="hooks-contact-card__icon"><Icon aria-hidden="true" /></div>
+                <div className="hooks-contact-card__icon">
+                  <Icon aria-hidden="true" />
+                </div>
+
                 <p className="hooks-eyebrow">{channel.name}</p>
+
                 <h2>{channel.headline}</h2>
+
                 <p>{channel.summary}</p>
+
                 <div className="hooks-contact-card__help">
                   <strong>Helpful details to include</strong>
+
                   <ul>
                     {channel.key === "support" ? (
                       <>
@@ -109,7 +122,11 @@ const Contact = () => {
                     )}
                   </ul>
                 </div>
-                <a href={`mailto:${channel.email}`} className="hooks-contact-card__email">
+
+                <a
+                  href={`mailto:${channel.email}`}
+                  className="hooks-contact-card__email"
+                >
                   <FaEnvelope aria-hidden="true" />
                   {channel.email}
                 </a>
@@ -120,8 +137,11 @@ const Contact = () => {
 
         <section className="hooks-response-note">
           <h2>Before sending a correction</h2>
+
           <p>
-            Product specifications can vary by region, storage variant and software version. Please include the manufacturer or retailer source that supports the correction so the team can verify it efficiently.
+            Product specifications can vary by region, storage variant and
+            software version. Please include the manufacturer or retailer source
+            that supports the correction so the team can verify it efficiently.
           </p>
         </section>
       </CompanyPageShell>
