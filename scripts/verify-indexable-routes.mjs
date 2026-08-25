@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const SITE_ORIGIN = "https://tryhook.shop";
+const SITE_ORIGIN = "https://mobilex.in";
 const MAX_COMPARE_PAYLOAD_BYTES = 75_000;
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const clientRoot = path.resolve(scriptDir, "..");
@@ -147,7 +147,10 @@ const run = async () => {
     const parsed = new URL(url);
     assert(parsed.origin === SITE_ORIGIN, `Sitemap URL uses another origin: ${url}`);
     assert(!parsed.search && !parsed.hash, `Sitemap URL contains a query or hash: ${url}`);
-    assert(parsed.pathname.endsWith("/"), `Sitemap URL lacks a trailing slash: ${url}`);
+    assert(
+      parsed.pathname === "/" || !parsed.pathname.endsWith("/"),
+      `Sitemap URL has an unexpected trailing slash: ${url}`,
+    );
   });
 
   const compareUrls = urls.filter((url) => /^\/compare\/[^/]+\/$/.test(new URL(url).pathname));

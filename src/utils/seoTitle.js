@@ -1,5 +1,21 @@
-const SITE_NAME = "Hooks";
-const BRAND_DUPLICATE_RE = /(?:\s*[|–—-]\s*Hooks){2,}$/i;
+const SITE_NAME = "MobileX";
+export const SMARTPHONE_FEATURE_TITLE_MAP = {
+  "high mp camera": "Camera Phones",
+  "long battery": "Battery Phones",
+  gaming: "Gaming Phones",
+  amoled: "AMOLED Display Phones",
+  "5g": "5G Smartphones",
+  nfc: "Smartphones with NFC",
+  "high-refresh-rate": "High Refresh Rate Phones",
+  "fast-charge": "Fast Charging Phones",
+};
+
+export const getSmartphoneFeatureTitle = (feature = "") => {
+  const normalized = String(feature || "").trim().toLowerCase();
+  return SMARTPHONE_FEATURE_TITLE_MAP[normalized] || `${feature} Smartphones`;
+};
+
+const BRAND_DUPLICATE_RE = /(?:\s*[|–—-]\s*MobileX){2,}$/i;
 
 /**
  * Keep page titles readable and descriptive without stripping useful punctuation.

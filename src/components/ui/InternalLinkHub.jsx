@@ -42,7 +42,7 @@ const links = [
   },
   {
     title: "Trending technology",
-    copy: "Discover products people are researching and comparing across Hooks.",
+    copy: "Discover products people are researching and comparing across MobileX.",
     to: "/trending/smartphones",
     icon: FaBolt,
     art: "radial-gradient(circle at 75% 30%, rgba(245,158,11,.22), transparent 42%), linear-gradient(135deg,#fffbeb,#f8fafc)",
@@ -81,7 +81,7 @@ const directoryGroups = [
     title: "Read and learn",
     links: [
       ["Technology news", "/news"],
-      ["About Hooks", "/about"],
+      ["About MobileX", "/about"],
       ["Contact the team", "/contact"],
       ["Privacy policy", "/privacy-policy"],
       ["Terms of use", "/terms"],
@@ -90,16 +90,21 @@ const directoryGroups = [
 ];
 
 const DirectoryVariant = () => (
-  <section className="home-v2-research-directory" aria-labelledby="home-research-directory-title">
+  <section
+    className="home-v2-research-directory"
+    aria-labelledby="home-research-directory-title"
+  >
     <div className="hooks-container">
       <div className="home-v2-research-directory__head">
         <div>
           <p className="home-v2-eyebrow">Research directory</p>
-          <h2 id="home-research-directory-title">Continue exploring without starting over</h2>
+          <h2 id="home-research-directory-title">
+            Continue exploring without starting over
+          </h2>
         </div>
         <p>
-          Direct internal paths to product discovery, price filters, comparisons,
-          editorial coverage, and essential Hooks information.
+          Direct internal paths to product discovery, price filters,
+          comparisons, editorial coverage, and essential MobileX information.
         </p>
       </div>
       <div className="home-v2-research-directory__grid">
@@ -123,20 +128,28 @@ const DirectoryVariant = () => (
 );
 
 const CardVariant = ({ compact = false }) => (
-  <section className="hooks-section hooks-link-hub" aria-labelledby="explore-hooks-title">
+  <section
+    className="hooks-section hooks-link-hub"
+    aria-labelledby="explore-hooks-title"
+  >
     <div className="hooks-container">
       <SectionHeading
         eyebrow="Decision shortcuts"
         title="Go from browsing to a confident choice"
-        description="Explore the most useful paths across Hooks. Each destination is connected to product details, comparisons, price discovery and related editorial coverage."
+        description="Explore the most useful paths across MobileX. Each destination is connected to product details, comparisons, price discovery and related editorial coverage."
       />
 
-      <div className={`hooks-link-grid ${compact ? "hooks-link-grid--compact" : ""}`}>
+      <div
+        className={`hooks-link-grid ${compact ? "hooks-link-grid--compact" : ""}`}
+      >
         {links.map((item, index) => {
           const Icon = item.icon;
           return (
             <Link key={item.to} to={item.to} className="hooks-link-card">
-              <span className="hooks-link-card__art" style={{ background: item.art }}>
+              <span
+                className="hooks-link-card__art"
+                style={{ background: item.art }}
+              >
                 <span className="hooks-link-card__index">0{index + 1}</span>
                 <Icon aria-hidden="true" />
               </span>
@@ -144,7 +157,10 @@ const CardVariant = ({ compact = false }) => (
                 <strong>{item.title}</strong>
                 <span>{item.copy}</span>
               </span>
-              <FaArrowRight className="hooks-link-card__arrow" aria-hidden="true" />
+              <FaArrowRight
+                className="hooks-link-card__arrow"
+                aria-hidden="true"
+              />
             </Link>
           );
         })}
@@ -154,6 +170,10 @@ const CardVariant = ({ compact = false }) => (
 );
 
 const InternalLinkHub = ({ compact = false, variant = "cards" }) =>
-  variant === "directory" ? <DirectoryVariant /> : <CardVariant compact={compact} />;
+  variant === "directory" ? (
+    <DirectoryVariant />
+  ) : (
+    <CardVariant compact={compact} />
+  );
 
 export default InternalLinkHub;

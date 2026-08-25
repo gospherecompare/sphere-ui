@@ -4,7 +4,7 @@
  */
 import { toCanonicalPageUrl } from "./publicUrl";
 
-const SITE_ORIGIN = "https://tryhook.shop";
+const SITE_ORIGIN = "https://mobilex.in";
 
 /**
  * Convert relative/absolute URLs to full absolute URLs
@@ -247,7 +247,7 @@ export const createCollectionSchema = ({
     name: name || "",
     description: description || "",
     url: toAbsolutePageUrl(url || "/"),
-    image: image || `${SITE_ORIGIN}/hook-logo.png`,
+    image: image || `${SITE_ORIGIN}/mobilex-favicon.svg`,
   };
 };
 
@@ -264,8 +264,8 @@ export const createNewsArticleSchema = ({
   imageAlt = "",
   datePublished,
   dateModified = null,
-  authorName = "Hooks News",
-  publisherName = "Hooks",
+  authorName = "MobileX News",
+  publisherName = "MobileX",
   articleSection = "",
   keywords = [],
 } = {}) => {
@@ -286,7 +286,7 @@ export const createNewsArticleSchema = ({
       name: publisherName,
       logo: {
         "@type": "ImageObject",
-        url: `${SITE_ORIGIN}/hook-logo.png`,
+        url: `${SITE_ORIGIN}/mobilex-favicon.svg`,
       },
     },
     mainEntityOfPage: toAbsolutePageUrl(url || "/"),
@@ -326,20 +326,15 @@ export const createOrganizationSchema = () => {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "Hooks",
+    name: "MobileX",
     url: toAbsolutePageUrl("/"),
-    logo: `${SITE_ORIGIN}/hook-logo.png`,
+    logo: `${SITE_ORIGIN}/mobilex-favicon.svg`,
     description:
       "Compare smartphones, laptops, TVs, and gadgets with specs, prices, and reviews",
-    sameAs: [
-      "https://www.instagram.com/tryhooks",
-      "https://www.twitter.com/tryhooks",
-      "https://www.facebook.com/tryhooks",
-    ],
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "Customer Support",
-      email: "support@tryhook.shop",
+      email: "support@mobilex.in",
     },
   };
 };
@@ -351,7 +346,7 @@ export const createWebsiteSchema = () => {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "Hooks",
+    name: "MobileX",
     url: toAbsolutePageUrl("/"),
     description: "Smart device comparison platform",
     potentialAction: {
@@ -395,7 +390,7 @@ export const createContactPageSchema = ({
   name,
   description,
   url,
-  contactEmail = "support@tryhook.shop",
+  contactEmail = "support@mobilex.in",
   contactPoints = [],
   contactPhone = null,
   contactAddress = null,
@@ -428,7 +423,7 @@ export const createContactPageSchema = ({
     "@context": "https://schema.org",
     "@type": "ContactPage",
     name: name || "Contact Us",
-    description: description || "Get in touch with Hooks support team",
+    description: description || "Get in touch with MobileX support team",
     url: toAbsolutePageUrl(url || "/contact"),
     contactPoint:
       normalizedContactPoints.length > 0
@@ -458,7 +453,7 @@ export const createAboutPageSchema = ({
   name,
   description,
   url,
-  organizationName = "Hooks",
+  organizationName = "MobileX",
 } = {}) => {
   return {
     "@context": "https://schema.org",
@@ -466,13 +461,13 @@ export const createAboutPageSchema = ({
     name: name || "About Us",
     description:
       description ||
-      "Learn about Hooks - a device comparison and research platform",
+      "Learn about MobileX - a device comparison and research platform",
     url: toAbsolutePageUrl(url || "/about"),
     about: {
       "@type": "Organization",
       name: organizationName,
       url: toAbsolutePageUrl("/"),
-      logo: `${SITE_ORIGIN}/hook-logo.png`,
+      logo: `${SITE_ORIGIN}/mobilex-favicon.svg`,
       description:
         "Compare smartphones, laptops, TVs, and gadgets with specs, prices, and trend insights",
     },

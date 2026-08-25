@@ -33,14 +33,14 @@ import {
   createProductSchema,
   createWebPageSchema,
 } from "../../utils/schemaGenerators";
-import { Helmet } from "react-helmet-async";
+import SEO from "../SEO";
 import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
 import { toCanonicalPageUrl } from "../../utils/publicUrl";
 import usePageEngagementTracker from "../../hooks/usePageEngagementTracker";
 import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
 import ProductDiscoverySections from "../ui/ProductDiscoverySections";
 
-const SITE_ORIGIN = "https://tryhook.shop";
+const SITE_ORIGIN = "https://mobilex.in";
 
 const normalizeScore100 = (value) => {
   if (value === null || value === undefined || value === "") return null;
@@ -1702,15 +1702,7 @@ const LaptopDetailCard = () => {
     ram: metaRam,
     storage: metaStorage,
   });
-  const currentMonthYearLabel = new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    year: "numeric",
-  }).format(new Date());
-  const metaTitleWithMonthYear = String(metaTitle).includes(
-    currentMonthYearLabel,
-  )
-    ? metaTitle
-    : `${metaTitle} (${currentMonthYearLabel})`;
+  const metaTitleWithMonthYear = metaTitle;
   const metaDescription = laptopMeta.description({
     name: metaBaseName,
     cpu: metaCpu,
@@ -1768,26 +1760,17 @@ const LaptopDetailCard = () => {
 
   return (
     <div className="hooks-product-detail hooks-laptop-detail w-full">
-      <Helmet prioritizeSeoTags>
-        <title>{metaTitleWithMonthYear}</title>
-        <meta name="description" content={metaDescription} />
-        <link rel="canonical" href={canonicalUrl} />
-        <meta property="og:type" content="product" />
-        <meta property="og:title" content={metaTitle} />
-        <meta property="og:description" content={metaDescription} />
-        {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
-        {ogImage && <meta property="og:image" content={ogImage} />}
-        <meta
-          name="twitter:card"
-          content={ogImage ? "summary_large_image" : "summary"}
-        />
-        <meta name="twitter:title" content={metaTitle} />
-        <meta name="twitter:description" content={metaDescription} />
-        {ogImage && <meta name="twitter:image" content={ogImage} />}
+      <SEO
+        title={metaTitleWithMonthYear}
+        description={metaDescription}
+        url={canonicalUrl}
+        ogType="product"
+        image={ogImage || null}
+      >
         {productSchemaJson && (
           <script type="application/ld+json">{productSchemaJson}</script>
         )}
-      </Helmet>
+      </SEO>
       {/* Share Menu Modal */}
       {showShareMenu && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -1900,282 +1883,34 @@ const LaptopDetailCard = () => {
           <div className="mx-auto max-w-7xl px-3 pb-4 pt-0 sm:px-6 sm:pb-5 lg:px-8 lg:pb-6">
             <div className="px-3 pb-3 pt-3 sm:px-6 sm:pb-6 sm:pt-4 lg:px-7 lg:pb-7 lg:pt-4">
               <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-            <div className="min-w-0 flex-1">
-              {headerDescriptor ? (
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.32em] text-blue-500 sm:text-xs">
-                  {headerDescriptor}
-                </p>
-              ) : null}
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-[2rem]">
-                {headerTitle}
-              </h1>
-
-              {visibleHeaderSummary ? (
-                <div className="mt-2 max-w-3xl">
-                  <p className="text-sm leading-6 text-slate-600 sm:text-base">
-                    {visibleHeaderSummary}
-                  </p>
-                  {headerSummaryHasMore ? (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowHeaderSummaryFull((current) => !current)
-                      }
-                      className="mt-2 inline-flex items-center text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700"
-                      aria-expanded={showHeaderSummaryFull}
-                    >
-                      {showHeaderSummaryFull ? "Show less" : "Read more"}
-                    </button>
-                  ) : null}
-                </div>
-              ) : null}
-
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-                {headerVariantLabel ? (
-                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-medium text-slate-700">
-                    {headerVariantLabel}
-                  </span>
-                ) : null}
-                {headerOsLabel ? (
-                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-medium text-slate-700">
-                    {headerOsLabel}
-                  </span>
-                ) : null}
-              </div>
-
-              {currentVariant ? (
-                <div className="mt-4 flex flex-wrap items-end gap-2">
-                  <div className="text-3xl font-bold tracking-tight text-emerald-600">
-                    ₹ {formatPrice(selectedVariantPrice)}
-                  </div>
-                  <div className="pb-0.5 text-sm text-slate-500">
-                    ({currentVariant.ram} / {currentVariant.storage})
-                  </div>
-                </div>
-              ) : null}
-            </div>
-            <div className="flex flex-col items-start gap-3 xl:items-end">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleShare}
-                  className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
-                  title="Share"
-                >
-                  <FaShareAlt className="text-lg text-slate-500" />
-                </button>
-              </div>
-
-              {headerSpecScoreBlock}
-
-            </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <div className="mx-auto max-w-7xl px-3 py-6 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-6 lg:flex-row">
-          {/* Images Section */}
-          <div className="lg:w-2/5 rounded-md bg-transparent p-4 shadow-none sm:p-6">
-            {/* Main Image */}
-            <div className="relative mb-4 overflow-hidden rounded-[28px] bg-white px-4 py-8 sm:px-10 sm:py-12">
-              {galleryImages.length > 1 ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={goToPreviousImage}
-                    aria-label="Previous image"
-                    className="absolute left-4 top-1/2 z-10 -translate-y-1/2 rounded-full border border-slate-200 bg-white/95 p-3 text-slate-600 shadow-md transition-all hover:border-blue-300 hover:text-blue-700"
-                  >
-                    <FaChevronLeft className="text-sm" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={goToNextImage}
-                    aria-label="Next image"
-                    className="absolute right-4 top-1/2 z-10 -translate-y-1/2 rounded-full border border-slate-200 bg-white/95 p-3 text-slate-600 shadow-md transition-all hover:border-blue-300 hover:text-blue-700"
-                  >
-                    <FaChevronRight className="text-sm" />
-                  </button>
-                </>
-              ) : null}
-              <div className="flex min-h-[340px] items-center justify-center sm:min-h-[420px]">
-                <img
-                  src={galleryImages[activeImage] || "/placeholder-laptop.jpg"}
-                  alt={laptopData.product_name}
-                  className="h-auto max-h-[320px] w-auto object-contain drop-shadow-[0_16px_24px_rgba(15,23,42,0.12)] sm:max-h-[380px]"
-                  onError={(e) => {
-                    e.target.src =
-                      "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%23ffffff'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='16' fill='%239ca3af'%3ENo Image Available%3C/text%3E%3C/svg%3E";
-                  }}
-                />
-              </div>
-              {galleryImages.length > 1 ? (
-                <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2">
-                  {galleryImages.map((_, index) => (
-                    <button
-                      key={index}
-                      type="button"
-                      onClick={() => setActiveImage(index)}
-                      aria-label={`Go to image ${index + 1}`}
-                      className={`h-2 rounded-full transition-all duration-300 ${
-                        activeImage === index
-                          ? "w-10 bg-slate-700"
-                          : "w-2.5 bg-slate-300 hover:bg-slate-400"
-                      }`}
-                    />
-                  ))}
-                </div>
-              ) : null}
-            </div>
-
-            {/* Thumbnails */}
-            {galleryImages.length > 1 && (
-              <div className="mb-6 flex gap-3 overflow-x-auto pb-1 no-scrollbar">
-                {galleryImages.slice(0, 4).map((image, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setActiveImage(index)}
-                    className={`flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-md border p-1.5 transition-all duration-200 ${
-                      activeImage === index
-                        ? "border-blue-500 bg-white shadow-sm ring-2 ring-blue-100"
-                        : "border-slate-200 bg-slate-50 hover:border-blue-300 hover:bg-white"
-                    }`}
-                  >
-                    <img
-                      src={image}
-                      alt={`${laptopData.product_name} view ${index + 1}`}
-                      className="h-full w-full object-contain"
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Variant Selection */}
-            {variants.length > 0 ? (
-              <div className="mb-6">
-                <h4 className="mb-3 text-base font-semibold text-slate-900">
-                  Available Variants
-                </h4>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {variants.map((variant, index) => (
-                    <button
-                      key={variant.id || index}
-                      type="button"
-                      onClick={() => setSelectedVariant(index)}
-                      aria-pressed={selectedVariant === index}
-                      className={`relative rounded-2xl border p-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 sm:p-4 ${
-                        selectedVariant === index
-                          ? "border-blue-600 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-600 text-white shadow-md"
-                          : "border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/40"
-                      }`}
-                    >
-                      {selectedVariant === index ? (
-                        <span className="absolute right-2 top-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-blue-600 shadow-sm">
-                          <FaCheck className="text-[9px]" />
-                        </span>
-                      ) : null}
-                      <div
-                        className={`mb-1 text-sm font-semibold leading-tight ${selectedVariant === index ? "text-white" : "text-gray-900"}`}
-                      >
-                        {variant.ram} / {variant.storage}
-                      </div>
-                      {variant.processor ? (
-                        <div
-                          className={`mb-1.5 text-[11px] leading-tight ${selectedVariant === index ? "text-white/80" : "text-gray-500"}`}
-                        >
-                          {variant.processor}
-                        </div>
-                      ) : null}
-                      <div
-                        className={`text-sm font-bold ${selectedVariant === index ? "text-emerald-200" : "text-green-600"}`}
-                      >
-                        ₹{formatPrice(getVariantBestPrice(variant))}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {/* Quick Specs - Mobile Only */}
-            <div className="lg:hidden grid grid-cols-2 gap-2 mb-6">
-              {laptopData.specifications &&
-                [
-                  {
-                    key: "processor",
-                    label: "Processor",
-                    icon: FaMicrochip,
-                    format: (v) => getCompactProcessorLabel(v),
-                  },
-                  {
-                    key: "ram",
-                    label: "RAM",
-                    icon: FaMemory,
-                    format: (v) => getCompactRamLabel(v),
-                  },
-                  {
-                    key: "storage",
-                    label: "Storage",
-                    icon: FaHdd,
-                    format: (v) => getCompactStorageLabel(v),
-                  },
-                  {
-                    key: "battery_capacity",
-                    label: "Battery",
-                    icon: FaBatteryFull,
-                    format: (v) => getCompactBatteryLabel(v),
-                  },
-                ].map((item) => {
-                  const rawValue = laptopData.specifications[item.key];
-                  if (
-                    rawValue === undefined ||
-                    rawValue === null ||
-                    rawValue === ""
-                  )
-                    return null;
-                  const normalizedValue =
-                    typeof item.format === "function"
-                      ? item.format(String(rawValue))
-                      : String(rawValue);
-                  if (!normalizedValue) return null;
-                  const displayValue = normalizedValue;
-                  return (
-                    <div
-                      key={item.key}
-                      className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-center"
-                    >
-                      <div className="font-semibold text-sm leading-tight text-slate-900 whitespace-nowrap">
-                        {displayValue}
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          </div>
-
-          {/* Details Section */}
-          <div className="flex flex-col lg:w-3/5">
-            {/* Desktop Header */}
-            <div className="hidden">
-              <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                 <div className="min-w-0 flex-1">
                   {headerDescriptor ? (
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.32em] text-slate-500">
+                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.32em] text-blue-500 sm:text-xs">
                       {headerDescriptor}
                     </p>
                   ) : null}
-                  <div className="flex flex-wrap items-center gap-3">
-                    <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-[2rem]">
-                      {headerTitle}
-                    </h1>
-                  </div>
+                  <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-[2rem]">
+                    {headerTitle}
+                  </h1>
 
-                  {headerSubtitle ? (
-                    <p className="mt-2 text-sm font-medium text-cyan-700">
-                      {headerSubtitle}
-                    </p>
+                  {visibleHeaderSummary ? (
+                    <div className="mt-2 max-w-3xl">
+                      <p className="text-sm leading-6 text-slate-600 sm:text-base">
+                        {visibleHeaderSummary}
+                      </p>
+                      {headerSummaryHasMore ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowHeaderSummaryFull((current) => !current)
+                          }
+                          className="mt-2 inline-flex items-center text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700"
+                          aria-expanded={showHeaderSummaryFull}
+                        >
+                          {showHeaderSummaryFull ? "Show less" : "Read more"}
+                        </button>
+                      ) : null}
+                    </div>
                   ) : null}
 
                   <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
@@ -2202,234 +1937,485 @@ const LaptopDetailCard = () => {
                     </div>
                   ) : null}
                 </div>
-                <div className="flex flex-col items-start gap-3 lg:items-end">
-                  <button
-                    onClick={handleShare}
-                    className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
-                    title="Share"
-                  >
-                    <FaShareAlt className="text-lg text-slate-500" />
-                  </button>
-                  <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
-                    {headerSpecScoreLabel != null ? (
-                      <div className="flex items-end gap-1 leading-none">
-                        <span className="text-3xl font-semibold leading-none text-blue-600">
-                          {headerSpecScoreLabel}
-                        </span>
-                        <div className="flex flex-col items-start leading-none">
-                          <span className="text-[8px] font-semibold uppercase tracking-[0.32em] text-blue-400">
-                            Spec
-                          </span>
-                          <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-blue-500">
-                            Score
-                          </span>
-                        </div>
-                      </div>
-                    ) : null}
-                    {headerRatingLabel ? (
-                      <span className="pb-0.5 font-medium text-slate-800">
-                        {headerRatingLabel}/5
-                      </span>
-                    ) : null}
+                <div className="flex flex-col items-start gap-3 xl:items-end">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleShare}
+                      className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
+                      title="Share"
+                    >
+                      <FaShareAlt className="text-lg text-slate-500" />
+                    </button>
                   </div>
-                </div>
-              </div>
 
-              <div className="hidden items-center gap-3 mb-6">
-                {currentVariant && (
-                  <div>
-                    <div className="text-sm text-gray-500 mb-1">
-                      Starting from
-                    </div>
-                    <div className="text-4xl font-bold text-green-600">
-                      ₹ {formatPrice(selectedVariantPrice)}
-                    </div>
-                  </div>
-                )}
+                  {headerSpecScoreBlock}
+                </div>
               </div>
             </div>
+          </div>
+        </section>
 
-            {/* Store Prices Section */}
-            {sortedStores.length > 0 && (
-              <div className="order-2 mb-5 mt-5">
-                <div className="mb-4 flex items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-                      <FaStore className="text-green-500" />
-                      Check Price On
-                    </h3>
-                    <p className="text-sm leading-6 text-slate-500">
-                      Compare live offers from trusted stores for{" "}
-                      {metaBrand || "this laptop"}.
-                    </p>
-                  </div>
-                  {sortedStores.length > 3 && (
+        <div className="mx-auto max-w-7xl px-3 py-6 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-6 lg:flex-row">
+            {/* Images Section */}
+            <div className="lg:w-2/5 rounded-md bg-transparent p-4 shadow-none sm:p-6">
+              {/* Main Image */}
+              <div className="relative mb-4 overflow-hidden rounded-[28px] bg-white px-4 py-8 sm:px-10 sm:py-12">
+                {galleryImages.length > 1 ? (
+                  <>
                     <button
-                      onClick={() => setShowAllStores(!showAllStores)}
-                      className="flex items-center gap-1 text-sm font-medium text-blue-600 transition-colors hover:text-blue-500"
+                      type="button"
+                      onClick={goToPreviousImage}
+                      aria-label="Previous image"
+                      className="absolute left-4 top-1/2 z-10 -translate-y-1/2 rounded-full border border-slate-200 bg-white/95 p-3 text-slate-600 shadow-md transition-all hover:border-blue-300 hover:text-blue-700"
                     >
-                      {showAllStores ? "Show Less" : "View All"}
-                      <FaChevronDown
-                        className={`text-xs text-blue-400 transition-transform ${
-                          showAllStores ? "rotate-180" : ""
+                      <FaChevronLeft className="text-sm" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={goToNextImage}
+                      aria-label="Next image"
+                      className="absolute right-4 top-1/2 z-10 -translate-y-1/2 rounded-full border border-slate-200 bg-white/95 p-3 text-slate-600 shadow-md transition-all hover:border-blue-300 hover:text-blue-700"
+                    >
+                      <FaChevronRight className="text-sm" />
+                    </button>
+                  </>
+                ) : null}
+                <div className="flex min-h-[340px] items-center justify-center sm:min-h-[420px]">
+                  <img
+                    src={
+                      galleryImages[activeImage] || "/placeholder-laptop.jpg"
+                    }
+                    alt={laptopData.product_name}
+                    className="h-auto max-h-[320px] w-auto object-contain drop-shadow-[0_16px_24px_rgba(15,23,42,0.12)] sm:max-h-[380px]"
+                    onError={(e) => {
+                      e.target.src =
+                        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%23ffffff'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='16' fill='%239ca3af'%3ENo Image Available%3C/text%3E%3C/svg%3E";
+                    }}
+                  />
+                </div>
+                {galleryImages.length > 1 ? (
+                  <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2">
+                    {galleryImages.map((_, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => setActiveImage(index)}
+                        aria-label={`Go to image ${index + 1}`}
+                        className={`h-2 rounded-full transition-all duration-300 ${
+                          activeImage === index
+                            ? "w-10 bg-slate-700"
+                            : "w-2.5 bg-slate-300 hover:bg-slate-400"
                         }`}
                       />
-                    </button>
-                  )}
-                </div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
 
-                <div className="space-y-3">
-                  {displayedStores.map((store, index) => {
-                    const hasStoreUrl = Boolean(store?.url);
+              {/* Thumbnails */}
+              {galleryImages.length > 1 && (
+                <div className="mb-6 flex gap-3 overflow-x-auto pb-1 no-scrollbar">
+                  {galleryImages.slice(0, 4).map((image, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setActiveImage(index)}
+                      className={`flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-md border p-1.5 transition-all duration-200 ${
+                        activeImage === index
+                          ? "border-blue-500 bg-white shadow-sm ring-2 ring-blue-100"
+                          : "border-slate-200 bg-slate-50 hover:border-blue-300 hover:bg-white"
+                      }`}
+                    >
+                      <img
+                        src={image}
+                        alt={`${laptopData.product_name} view ${index + 1}`}
+                        className="h-full w-full object-contain"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Variant Selection */}
+              {variants.length > 0 ? (
+                <div className="mb-6">
+                  <h4 className="mb-3 text-base font-semibold text-slate-900">
+                    Available Variants
+                  </h4>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {variants.map((variant, index) => (
+                      <button
+                        key={variant.id || index}
+                        type="button"
+                        onClick={() => setSelectedVariant(index)}
+                        aria-pressed={selectedVariant === index}
+                        className={`relative rounded-2xl border p-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 sm:p-4 ${
+                          selectedVariant === index
+                            ? "border-blue-600 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-600 text-white shadow-md"
+                            : "border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/40"
+                        }`}
+                      >
+                        {selectedVariant === index ? (
+                          <span className="absolute right-2 top-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-blue-600 shadow-sm">
+                            <FaCheck className="text-[9px]" />
+                          </span>
+                        ) : null}
+                        <div
+                          className={`mb-1 text-sm font-semibold leading-tight ${selectedVariant === index ? "text-white" : "text-gray-900"}`}
+                        >
+                          {variant.ram} / {variant.storage}
+                        </div>
+                        {variant.processor ? (
+                          <div
+                            className={`mb-1.5 text-[11px] leading-tight ${selectedVariant === index ? "text-white/80" : "text-gray-500"}`}
+                          >
+                            {variant.processor}
+                          </div>
+                        ) : null}
+                        <div
+                          className={`text-sm font-bold ${selectedVariant === index ? "text-emerald-200" : "text-green-600"}`}
+                        >
+                          ₹{formatPrice(getVariantBestPrice(variant))}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Quick Specs - Mobile Only */}
+              <div className="lg:hidden grid grid-cols-2 gap-2 mb-6">
+                {laptopData.specifications &&
+                  [
+                    {
+                      key: "processor",
+                      label: "Processor",
+                      icon: FaMicrochip,
+                      format: (v) => getCompactProcessorLabel(v),
+                    },
+                    {
+                      key: "ram",
+                      label: "RAM",
+                      icon: FaMemory,
+                      format: (v) => getCompactRamLabel(v),
+                    },
+                    {
+                      key: "storage",
+                      label: "Storage",
+                      icon: FaHdd,
+                      format: (v) => getCompactStorageLabel(v),
+                    },
+                    {
+                      key: "battery_capacity",
+                      label: "Battery",
+                      icon: FaBatteryFull,
+                      format: (v) => getCompactBatteryLabel(v),
+                    },
+                  ].map((item) => {
+                    const rawValue = laptopData.specifications[item.key];
+                    if (
+                      rawValue === undefined ||
+                      rawValue === null ||
+                      rawValue === ""
+                    )
+                      return null;
+                    const normalizedValue =
+                      typeof item.format === "function"
+                        ? item.format(String(rawValue))
+                        : String(rawValue);
+                    if (!normalizedValue) return null;
+                    const displayValue = normalizedValue;
                     return (
                       <div
-                        key={store.id || index}
-                        className="rounded-xl border border-slate-200 bg-white p-2.5 transition-all duration-200 hover:border-blue-300 hover:shadow-sm"
+                        key={item.key}
+                        className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-center"
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex min-w-0 flex-1 items-center gap-2.5">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 p-2 shadow-sm">
-                              <img
-                                src={getStoreLogo(store.store_name)}
-                                alt={store.store_name}
-                                className="w-full h-full object-contain"
-                                onError={(e) => {
-                                  e.target.src = getLogo("");
-                                }}
-                              />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <h4 className="truncate text-sm font-bold capitalize text-slate-900">
-                                {store.store_name}
-                              </h4>
-                              {store.variantSpec ? (
-                                <p className="text-[11px] text-gray-500 mt-0.5 truncate">
-                                  {store.variantSpec}
-                                </p>
-                              ) : null}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <div className="text-right">
-                              <div className="text-sm font-bold text-green-600">
-                                {RUPEE_SYMBOL} {formatPrice(store.price)}
-                              </div>
-                            </div>
-                            <a
-                              href={hasStoreUrl ? store.url : undefined}
-                              target="_blank"
-                              rel="noopener noreferrer nofollow"
-                              onClick={(e) => {
-                                if (!hasStoreUrl) e.preventDefault();
-                              }}
-                              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
-                                hasStoreUrl
-                                  ? "bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 text-white shadow-sm hover:from-blue-700 hover:via-blue-600 hover:to-blue-700 hover:shadow-md"
-                                  : "cursor-not-allowed bg-slate-200 text-slate-500"
-                              }`}
-                            >
-                              <FaExternalLinkAlt className="text-[10px]" />
-                              {hasStoreUrl ? "Buy Now" : "Unavailable"}
-                            </a>
-                          </div>
+                        <div className="font-semibold text-sm leading-tight text-slate-900 whitespace-nowrap">
+                          {displayValue}
                         </div>
                       </div>
                     );
                   })}
-                </div>
               </div>
-            )}
+            </div>
 
-            {laptopSummarySections.length > 0 ? (
-              <div className="order-1 mt-5 space-y-5">
-                <div className="max-w-2xl">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-blue-600">
-                    Key Specifications
-                  </p>
-                  <h3 className="mt-2 text-xl font-semibold text-slate-900 sm:text-2xl">
-                    Main hardware highlights
-                  </h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-500 sm:text-base">
-                    A quick breakdown of the processor, display, memory, and
-                    battery details that matter most.
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-[#dce4f3] bg-gradient-to-br from-[#eef3ff] via-[#f7f8ff] to-[#f2eeff] p-3 sm:p-4 md:p-5">
-                  <div className="grid items-stretch gap-3 md:grid-cols-2 lg:gap-5">
-                    {laptopSummarySections.map((section) => {
-                      const Icon = section.icon;
-                      return (
-                        <div
-                          key={section.key}
-                          className="flex h-full flex-col rounded-2xl border border-[#dce4f3] bg-white/75 p-4 transition-all duration-200 sm:p-5"
-                        >
-                        <div className="flex items-start gap-3">
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-50 ring-1 ring-slate-200">
-                            {Icon ? (
-                              <Icon className={`text-base ${section.color}`} />
-                            ) : null}
-                          </div>
-                          <div className="min-w-0">
-                            <h4 className="text-[1rem] font-semibold leading-snug text-slate-900 sm:text-[1.08rem]">
-                              {section.title}
-                            </h4>
-                            {section.description ? (
-                              <p className="mt-1 line-clamp-2 text-[13px] leading-5 text-slate-500">
-                                {section.description}
-                              </p>
-                            ) : null}
+            {/* Details Section */}
+            <div className="flex flex-col lg:w-3/5">
+              {/* Desktop Header */}
+              <div className="hidden">
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="min-w-0 flex-1">
+                    {headerDescriptor ? (
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.32em] text-slate-500">
+                        {headerDescriptor}
+                      </p>
+                    ) : null}
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-[2rem]">
+                        {headerTitle}
+                      </h1>
+                    </div>
+
+                    {headerSubtitle ? (
+                      <p className="mt-2 text-sm font-medium text-cyan-700">
+                        {headerSubtitle}
+                      </p>
+                    ) : null}
+
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+                      {headerVariantLabel ? (
+                        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-medium text-slate-700">
+                          {headerVariantLabel}
+                        </span>
+                      ) : null}
+                      {headerOsLabel ? (
+                        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-medium text-slate-700">
+                          {headerOsLabel}
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {currentVariant ? (
+                      <div className="mt-4 flex flex-wrap items-end gap-2">
+                        <div className="text-3xl font-bold tracking-tight text-emerald-600">
+                          ₹ {formatPrice(selectedVariantPrice)}
+                        </div>
+                        <div className="pb-0.5 text-sm text-slate-500">
+                          ({currentVariant.ram} / {currentVariant.storage})
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                  <div className="flex flex-col items-start gap-3 lg:items-end">
+                    <button
+                      onClick={handleShare}
+                      className="rounded-full border border-slate-200 p-2 transition-colors hover:bg-slate-50"
+                      title="Share"
+                    >
+                      <FaShareAlt className="text-lg text-slate-500" />
+                    </button>
+                    <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
+                      {headerSpecScoreLabel != null ? (
+                        <div className="flex items-end gap-1 leading-none">
+                          <span className="text-3xl font-semibold leading-none text-blue-600">
+                            {headerSpecScoreLabel}
+                          </span>
+                          <div className="flex flex-col items-start leading-none">
+                            <span className="text-[8px] font-semibold uppercase tracking-[0.32em] text-blue-400">
+                              Spec
+                            </span>
+                            <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-blue-500">
+                              Score
+                            </span>
                           </div>
                         </div>
+                      ) : null}
+                      {headerRatingLabel ? (
+                        <span className="pb-0.5 font-medium text-slate-800">
+                          {headerRatingLabel}/5
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
 
-                        <ul className="mt-4 space-y-2.5">
-                          {section.points.slice(0, 3).map((point, idx) => (
-                            <li
-                              key={idx}
-                              className="flex items-start gap-2.5 text-sm leading-6 text-slate-700"
-                            >
-                              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
-                              <span className="min-w-0">{point}</span>
-                            </li>
-                          ))}
-                        </ul>
+                <div className="hidden items-center gap-3 mb-6">
+                  {currentVariant && (
+                    <div>
+                      <div className="text-sm text-gray-500 mb-1">
+                        Starting from
+                      </div>
+                      <div className="text-4xl font-bold text-green-600">
+                        ₹ {formatPrice(selectedVariantPrice)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Store Prices Section */}
+              {sortedStores.length > 0 && (
+                <div className="order-2 mb-5 mt-5">
+                  <div className="mb-4 flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+                        <FaStore className="text-green-500" />
+                        Check Price On
+                      </h3>
+                      <p className="text-sm leading-6 text-slate-500">
+                        Compare live offers from trusted stores for{" "}
+                        {metaBrand || "this laptop"}.
+                      </p>
+                    </div>
+                    {sortedStores.length > 3 && (
+                      <button
+                        onClick={() => setShowAllStores(!showAllStores)}
+                        className="flex items-center gap-1 text-sm font-medium text-blue-600 transition-colors hover:text-blue-500"
+                      >
+                        {showAllStores ? "Show Less" : "View All"}
+                        <FaChevronDown
+                          className={`text-xs text-blue-400 transition-transform ${
+                            showAllStores ? "rotate-180" : ""
+                          }`}
+                        />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="space-y-3">
+                    {displayedStores.map((store, index) => {
+                      const hasStoreUrl = Boolean(store?.url);
+                      return (
+                        <div
+                          key={store.id || index}
+                          className="rounded-xl border border-slate-200 bg-white p-2.5 transition-all duration-200 hover:border-blue-300 hover:shadow-sm"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 p-2 shadow-sm">
+                                <img
+                                  src={getStoreLogo(store.store_name)}
+                                  alt={store.store_name}
+                                  className="w-full h-full object-contain"
+                                  onError={(e) => {
+                                    e.target.src = getLogo("");
+                                  }}
+                                />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <h4 className="truncate text-sm font-bold capitalize text-slate-900">
+                                  {store.store_name}
+                                </h4>
+                                {store.variantSpec ? (
+                                  <p className="text-[11px] text-gray-500 mt-0.5 truncate">
+                                    {store.variantSpec}
+                                  </p>
+                                ) : null}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="text-right">
+                                <div className="text-sm font-bold text-green-600">
+                                  {RUPEE_SYMBOL} {formatPrice(store.price)}
+                                </div>
+                              </div>
+                              <a
+                                href={hasStoreUrl ? store.url : undefined}
+                                target="_blank"
+                                rel="noopener noreferrer nofollow"
+                                onClick={(e) => {
+                                  if (!hasStoreUrl) e.preventDefault();
+                                }}
+                                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
+                                  hasStoreUrl
+                                    ? "bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 text-white shadow-sm hover:from-blue-700 hover:via-blue-600 hover:to-blue-700 hover:shadow-md"
+                                    : "cursor-not-allowed bg-slate-200 text-slate-500"
+                                }`}
+                              >
+                                <FaExternalLinkAlt className="text-[10px]" />
+                                {hasStoreUrl ? "Buy Now" : "Unavailable"}
+                              </a>
+                            </div>
+                          </div>
                         </div>
                       );
                     })}
                   </div>
                 </div>
-                <div className="flex justify-center pt-1 sm:justify-end">
-                  <button
-                    type="button"
-                    onClick={() => handleTabClick("specifications")}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-blue-700 bg-blue-700 px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-blue-800 sm:w-auto sm:py-2"
-                  >
-                    See full specifications
-                    <FaChevronRight className="text-xs" />
-                  </button>
+              )}
+
+              {laptopSummarySections.length > 0 ? (
+                <div className="order-1 mt-5 space-y-5">
+                  <div className="max-w-2xl">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-blue-600">
+                      Key Specifications
+                    </p>
+                    <h3 className="mt-2 text-xl font-semibold text-slate-900 sm:text-2xl">
+                      Main hardware highlights
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-500 sm:text-base">
+                      A quick breakdown of the processor, display, memory, and
+                      battery details that matter most.
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-[#dce4f3] bg-gradient-to-br from-[#eef3ff] via-[#f7f8ff] to-[#f2eeff] p-3 sm:p-4 md:p-5">
+                    <div className="grid items-stretch gap-3 md:grid-cols-2 lg:gap-5">
+                      {laptopSummarySections.map((section) => {
+                        const Icon = section.icon;
+                        return (
+                          <div
+                            key={section.key}
+                            className="flex h-full flex-col rounded-2xl border border-[#dce4f3] bg-white/75 p-4 transition-all duration-200 sm:p-5"
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-50 ring-1 ring-slate-200">
+                                {Icon ? (
+                                  <Icon
+                                    className={`text-base ${section.color}`}
+                                  />
+                                ) : null}
+                              </div>
+                              <div className="min-w-0">
+                                <h4 className="text-[1rem] font-semibold leading-snug text-slate-900 sm:text-[1.08rem]">
+                                  {section.title}
+                                </h4>
+                                {section.description ? (
+                                  <p className="mt-1 line-clamp-2 text-[13px] leading-5 text-slate-500">
+                                    {section.description}
+                                  </p>
+                                ) : null}
+                              </div>
+                            </div>
+
+                            <ul className="mt-4 space-y-2.5">
+                              {section.points.slice(0, 3).map((point, idx) => (
+                                <li
+                                  key={idx}
+                                  className="flex items-start gap-2.5 text-sm leading-6 text-slate-700"
+                                >
+                                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
+                                  <span className="min-w-0">{point}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="flex justify-center pt-1 sm:justify-end">
+                    <button
+                      type="button"
+                      onClick={() => handleTabClick("specifications")}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-blue-700 bg-blue-700 px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-blue-800 sm:w-auto sm:py-2"
+                    >
+                      See full specifications
+                      <FaChevronRight className="text-xs" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
           </div>
-        </div>
 
-        <LatestNewsRouteSection
-          className="mt-6"
-          productType="laptop"
-          subtitle="Fresh laptop launches, processor updates, and buying context from the Hooks news desk."
-        />
-
-        <div className="mt-6 p-0 sm:p-2">{renderTabContent()}</div>
-
-        {currentProductId ? (
-          <ProductDiscoverySections
-            productId={currentProductId}
-            currentBrand={laptopData?.brand || ""}
-            entityType="laptops"
-            catalogItems={laptops}
-            brandCatalog={brands}
-            className="mt-6 w-full px-4 sm:px-0"
+          <LatestNewsRouteSection
+            className="mt-6"
+            productType="laptop"
+            subtitle="Fresh laptop launches, processor updates, and buying context from the MobileX news desk."
           />
-        ) : null}
+
+          <div className="mt-6 p-0 sm:p-2">{renderTabContent()}</div>
+
+          {currentProductId ? (
+            <ProductDiscoverySections
+              productId={currentProductId}
+              currentBrand={laptopData?.brand || ""}
+              entityType="laptops"
+              catalogItems={laptops}
+              brandCatalog={brands}
+              className="mt-6 w-full px-4 sm:px-0"
+            />
+          ) : null}
         </div>
       </div>
     </div>

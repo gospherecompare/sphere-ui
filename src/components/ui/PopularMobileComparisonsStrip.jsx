@@ -178,7 +178,9 @@ const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
   const scrollerRef = useRef(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [remoteComparisons, setRemoteComparisons] = useState(() =>
-    mapRemoteComparisonsPayload(readPreloadedApiResponse(MOST_COMPARED_ENDPOINT)),
+    mapRemoteComparisonsPayload(
+      readPreloadedApiResponse(MOST_COMPARED_ENDPOINT),
+    ),
   );
 
   useEffect(() => {
@@ -269,7 +271,9 @@ const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
     let closestDistance = Number.POSITIVE_INFINITY;
 
     cards.forEach((card, index) => {
-      const distance = Math.abs(card.getBoundingClientRect().left - viewportLeft);
+      const distance = Math.abs(
+        card.getBoundingClientRect().left - viewportLeft,
+      );
       if (distance < closestDistance) {
         closestDistance = distance;
         closestIndex = index;
@@ -351,7 +355,7 @@ const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
               data-matchup-card
               to={buildComparePath(item)}
               aria-label={`Compare ${item.leftName} with ${item.rightName}`}
-              className="group w-[86vw] max-w-[390px] shrink-0 snap-start rounded-xl border border-slate-200/80 bg-white p-3 transition-colors hover:bg-blue-50/40 sm:w-[390px] sm:p-4 lg:w-[calc((100%_-_2rem)/3)] lg:min-w-[340px] dark:border-slate-700/70 dark:bg-[#0f1c2d] dark:hover:bg-[#13243b]"
+              className="group w-[86vw] max-w-[390px] shrink-0 snap-start rounded-xl bg-transparent p-3 transition-colors hover:bg-blue-50/40 sm:w-[390px] sm:p-4 lg:w-[calc((100%_-_2rem)/3)] lg:min-w-[340px] dark:hover:bg-[#13243b]"
             >
               <div className="smartphones-product-stage relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 via-white to-slate-50 px-3 pb-3 pt-4 dark:from-[#e7effb] dark:via-[#f8fbff] dark:to-[#dce7f5]">
                 <span className="absolute left-4 top-3 text-[9px] font-extrabold uppercase tracking-[0.15em] text-blue-600 dark:text-blue-700">

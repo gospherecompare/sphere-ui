@@ -1,6 +1,6 @@
 // src/components/NetworkingList.jsx
 import React, { useState, useEffect, useMemo } from "react";
-import { Helmet } from "react-helmet-async";
+import SEO from "../SEO";
 import {
   FaStar,
   FaWifi,
@@ -35,7 +35,6 @@ import { useDispatch } from "react-redux";
 import {} from "../../store/deviceSlice";
 import useStoreLogos from "../../hooks/useStoreLogos";
 import Spinner from "../ui/Spinner";
-import useTitle from "../../hooks/useTitle";
 import { generateSlug } from "../../utils/slugGenerator";
 import { toCanonicalPageUrl } from "../../utils/publicUrl";
 import {
@@ -48,7 +47,7 @@ import { isPublishedProduct } from "../../utils/publishedProducts";
 import useDevice from "../../hooks/useDevice";
 import Breadcrumbs from "../Breadcrumbs";
 
-const SITE_ORIGIN = "https://tryhook.shop";
+const SITE_ORIGIN = "https://mobilex.in";
 
 // Enhanced Image Carousel
 const ImageCarousel = ({ images = [] }) => {
@@ -564,11 +563,6 @@ const Networking = () => {
   const [showSort, setShowSort] = useState(false);
   const [compareItems, setCompareItems] = useState([]);
 
-  // Set page title
-  useTitle({
-    page: "networking",
-  });
-
   const navigate = useNavigate();
   const location = useLocation();
   const { search } = location;
@@ -932,7 +926,8 @@ const Networking = () => {
     const comparePath = buildCanonicalComparePathFromDevices({
       devices: compareItems,
       getName: (device) => device?.name || device?.model || "",
-      getId: (device) => device?.productId ?? device?.id ?? device?.model ?? null,
+      getId: (device) =>
+        device?.productId ?? device?.id ?? device?.model ?? null,
     });
 
     navigate(comparePath, {
@@ -946,12 +941,16 @@ const Networking = () => {
     return <IconComponent className="text-sm" />;
   };
 
+  const currentMonthYear = new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    year: "numeric",
+  }).format(new Date());
   const seoTitle = currentBrandObj
-    ? `${currentBrandObj.name} Networking Devices - SmartArena`
-    : "Networking Devices - SmartArena";
+    ? `${currentBrandObj.name} Networking Devices in India (${currentMonthYear}) | MobileX`
+    : `Best Networking Devices in India (${currentMonthYear}) | MobileX`;
   const seoDescription =
     currentBrandObj?.description ||
-    "Discover routers, modems, switches, mesh systems and extenders on SmartArena.";
+    "Discover routers, modems, switches, mesh systems and extenders on MobileX.";
   const _seoKeywords = useMemo(
     () =>
       buildListSeoKeywords({
@@ -974,7 +973,7 @@ const Networking = () => {
   const siteOrigin =
     typeof window !== "undefined" && window.location?.origin
       ? window.location.origin
-      : "https://tryhook.shop";
+      : "https://mobilex.in";
 
   const toAbsoluteUrl = (value) => {
     if (!value) return "";
@@ -1009,7 +1008,7 @@ const Networking = () => {
       Boolean(getListingProductImage(device)),
     );
     const raw = getListingProductImage(firstWithImage);
-    return toAbsoluteUrl(raw) || `${SITE_ORIGIN}/hook-logo.png`;
+    return toAbsoluteUrl(raw) || `${SITE_ORIGIN}/mobilex-favicon.svg`;
   }, [sortedVariants, siteOrigin]);
 
   const listSchemaUrl = toCanonicalPageUrl(
@@ -1061,43 +1060,16 @@ const Networking = () => {
   return (
     <div className="hooks-product-listing hooks-networking-listing min-h-screen">
       <style>{animationStyles}</style>
-      <Helmet prioritizeSeoTags>
-        <title>{seoTitle}</title>
-        <meta name="description" content={seoDescription} />
-
-        {/* Canonical URL - CRITICAL for SEO per route */}
-        <link rel="canonical" href={listSchemaUrl} />
-
-        {/* Open Graph */}
-        <meta property="og:type" content="website" />
-        <meta property="og:title" content={seoTitle} />
-        <meta property="og:description" content={seoDescription} />
-        <meta property="og:url" content={listSchemaUrl} />
-        {listOgImage ? (
-          <meta
-            key="networking-og-image"
-            property="og:image"
-            content={listOgImage}
-          />
-        ) : null}
-
-        {/* Twitter Card */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={seoTitle} />
-        <meta name="twitter:description" content={seoDescription} />
-        {listOgImage ? (
-          <meta
-            key="networking-twitter-image"
-            name="twitter:image"
-            content={listOgImage}
-          />
-        ) : null}
-
+      <SEO
+        title={seoTitle}
+        description={seoDescription}
+        url={listSchemaUrl}
+        image={listOgImage || null}
+      >
         {listSchemaJson && (
           <script type="application/ld+json">{listSchemaJson}</script>
         )}
-
-      </Helmet>
+      </SEO>
       {/* Main Content */}
       <div className="hooks-product-listing__inner max-w-7xl mx-auto p-4 sm:p-6 md:p-8 lg:p-10">
         {/* Hero Section - Professional Styling */}

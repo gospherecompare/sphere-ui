@@ -41,7 +41,7 @@ import {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const SITE_ORIGIN = "https://tryhook.shop";
+const SITE_ORIGIN = "https://mobilex.in";
 const DEFAULT_REMOTE_API_BASE_URL = "https://api.apisphere.in/api";
 const DEFAULT_LOCAL_API_BASE_URL = "http://localhost:5000/api";
 const trimTrailingSlash = (value = "") =>
@@ -158,7 +158,7 @@ const PRELOAD_CANONICAL_PATHS = new Set([
   "/trending/networking",
 ]);
 const PRELOAD_API_ENDPOINTS = [
-  `${API_BASE_URL}/smartphones`,
+  `${API_BASE_URL}/smartphones?page=1&limit=20`,
   `${API_BASE_URL}/networking`,
   `${API_BASE_URL}/tvs`,
   `${API_BASE_URL}/brand`,
@@ -177,17 +177,11 @@ const PRELOAD_API_ENDPOINTS = [
   `${API_BASE_URL}/public/blogs?limit=4`,
   `${API_BASE_URL}/public/blogs?limit=4&productType=smartphone`,
   `${API_BASE_URL}/public/blogs?limit=4&productType=tv`,
-  `${API_BASE_URL}/public/blogs?limit=12`,
   `${API_BASE_URL}/public/blogs?limit=18`,
-  `${API_BASE_URL}/public/blogs?limit=24`,
-  `${API_BASE_URL}/public/blogs?limit=36`,
   `${API_BASE_URL}/public/blogs?limit=50`,
-  `${API_BASE_URL}/public/trending/smartphones?limit=15`,
-  `${API_BASE_URL}/public/trending/smartphones?limit=25`,
+  `${API_BASE_URL}/public/trending/smartphones?limit=40`,
   `${API_BASE_URL}/public/trending/smartphones?limit=120`,
-  `${API_BASE_URL}/public/trending/tvs?limit=15`,
   `${API_BASE_URL}/public/trending/tvs?limit=120`,
-  `${API_BASE_URL}/public/trending/networking?limit=15`,
   `${API_BASE_URL}/public/trending/networking?limit=120`,
   `${API_BASE_URL}/public/trending/all`,
   `${API_BASE_URL}/public/trending/most-compared`,
@@ -216,6 +210,20 @@ const CURRENT_MONTH_LONG_YEAR = new Intl.DateTimeFormat("en-US", {
   month: "long",
   year: "numeric",
 }).format(new Date());
+const CURRENT_MONTH_SHORT_YEAR = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  year: "numeric",
+}).format(new Date());
+const SMARTPHONE_FEATURE_TITLE_MAP = {
+  "high-mp-camera": "Best Camera Phones",
+  "long-battery": "Best Battery Phones",
+  gaming: "Best Gaming Phones",
+  amoled: "Best AMOLED Display Phones",
+  "5g": "Best 5G Smartphones",
+  nfc: "Best Smartphones with NFC",
+};
+const getSmartphoneFeatureTitle = (slug, fallback = "") =>
+  SMARTPHONE_FEATURE_TITLE_MAP[slug] || `Best ${fallback} Smartphones`;
 const getOrdinalSuffix = (day) => {
   const value = Number(day);
   if (!Number.isFinite(value)) return "";
@@ -516,7 +524,10 @@ const buildCompareResolveEndpoint = (slug = "") =>
 const createCompareRouteMetaFromPage = (page = {}, fallback = {}) => ({
   title: String(page?.title || fallback?.title || "").trim(),
   description: String(
-    page?.meta_description || page?.metaDescription || fallback?.description || "",
+    page?.meta_description ||
+      page?.metaDescription ||
+      fallback?.description ||
+      "",
   ).trim(),
   updatedAt:
     page?.updated_at ||
@@ -539,7 +550,9 @@ const addCompareRouteMeta = (routePath, meta = {}) => {
 
   publishedCompareRouteMeta.set(normalizedRoute, {
     title: String(meta?.title || "").trim(),
-    description: String(meta?.description || meta?.meta_description || "").trim(),
+    description: String(
+      meta?.description || meta?.meta_description || "",
+    ).trim(),
     updatedAt: meta?.updatedAt || meta?.updated_at || null,
     compareCount: Number(meta?.compareCount ?? meta?.compare_count) || 0,
   });
@@ -547,7 +560,10 @@ const addCompareRouteMeta = (routePath, meta = {}) => {
   return normalizedRoute;
 };
 
-const buildExpandedCompareRouteCandidates = (routes = [], routeMeta = new Map()) => {
+const buildExpandedCompareRouteCandidates = (
+  routes = [],
+  routeMeta = new Map(),
+) => {
   const pairRoutes = [];
   const productStats = new Map();
 
@@ -607,7 +623,11 @@ const buildExpandedCompareRouteCandidates = (routes = [], routeMeta = new Map())
   };
 
   for (let leftIndex = 0; leftIndex < pairRoutes.length; leftIndex += 1) {
-    for (let rightIndex = leftIndex + 1; rightIndex < pairRoutes.length; rightIndex += 1) {
+    for (
+      let rightIndex = leftIndex + 1;
+      rightIndex < pairRoutes.length;
+      rightIndex += 1
+    ) {
       const left = pairRoutes[leftIndex];
       const right = pairRoutes[rightIndex];
       const union = [...new Set([...left.parts, ...right.parts])];
@@ -636,7 +656,11 @@ const buildExpandedCompareRouteCandidates = (routes = [], routeMeta = new Map())
       for (let c = b + 1; c < topProducts.length; c += 1) {
         const rankSpan = c - a;
         if (rankSpan > 8) break;
-        const parts = [topProducts[a].slug, topProducts[b].slug, topProducts[c].slug];
+        const parts = [
+          topProducts[a].slug,
+          topProducts[b].slug,
+          topProducts[c].slug,
+        ];
         const combinedScore =
           topProducts[a].score + topProducts[b].score + topProducts[c].score;
         addCandidate(parts, 100000 - rankSpan * 1000 + combinedScore, 2);
@@ -671,7 +695,10 @@ const buildExpandedCompareRouteCandidates = (routes = [], routeMeta = new Map())
     .slice(0, MAX_COMPARE_EXPANDED_CANDIDATES);
 };
 
-const resolveCompareRouteFromApi = async (routePath = "", fallbackMeta = {}) => {
+const resolveCompareRouteFromApi = async (
+  routePath = "",
+  fallbackMeta = {},
+) => {
   const slug = getSingleSegmentRouteTail(routePath, "/compare");
   if (!slug) return "";
 
@@ -1344,7 +1371,9 @@ const fetchCompareRoutesFromApi = async (existingRoutes = []) => {
 
     const resolvedRoute = await resolveCompareRouteFromApi(routePath, {
       title: String(row?.title || "").trim(),
-      description: String(row?.meta_description || row?.description || "").trim(),
+      description: String(
+        row?.meta_description || row?.description || "",
+      ).trim(),
       updatedAt: row?.updated_at || null,
       compareCount: row?.compare_count || 0,
     });
@@ -1362,9 +1391,12 @@ const fetchCompareRoutesFromApi = async (existingRoutes = []) => {
     if (routes.length >= MAX_COMPARE_ROUTES) break;
     if (expandedRouteCount >= MAX_COMPARE_EXPANDED_ROUTES) break;
     if (publishedCompareRouteMeta.has(candidate.routePath)) continue;
-    const resolvedRoute = await resolveCompareRouteFromApi(candidate.routePath, {
-      updatedAt: body?.generated_at || null,
-    });
+    const resolvedRoute = await resolveCompareRouteFromApi(
+      candidate.routePath,
+      {
+        updatedAt: body?.generated_at || null,
+      },
+    );
     if (resolvedRoute) {
       routes.push(resolvedRoute);
       expandedRouteCount += 1;
@@ -1442,9 +1474,7 @@ const fetchNewsRoutesFromSitemap = async () => {
 
 const fetchNewsRoutesFromApi = async () => {
   publishedNewsRouteMeta = new Map();
-  const body = await fetchApiBody(
-    `${API_BASE_URL}/public/blogs?limit=50`,
-  );
+  const body = await fetchApiBody(`${API_BASE_URL}/public/blogs?limit=50`);
   if (!body) {
     throw new Error(
       "[news-prerender] The published news feed is unavailable; refusing to emit generic article shells.",
@@ -1892,7 +1922,7 @@ const buildNewsSitemapXml = () => {
   const urls = entries
     .map(
       (entry) =>
-        `  <url>\n    <loc>${escapeSitemapXml(entry.loc)}</loc>\n    <news:news>\n      <news:publication>\n        <news:name>Hooks</news:name>\n        <news:language>en</news:language>\n      </news:publication>\n      <news:publication_date>${escapeSitemapXml(entry.publishedAt)}</news:publication_date>\n      <news:title>${escapeSitemapXml(entry.title)}</news:title>\n    </news:news>\n  </url>`,
+        `  <url>\n    <loc>${escapeSitemapXml(entry.loc)}</loc>\n    <news:news>\n      <news:publication>\n        <news:name>MobileX</news:name>\n        <news:language>en</news:language>\n      </news:publication>\n      <news:publication_date>${escapeSitemapXml(entry.publishedAt)}</news:publication_date>\n      <news:title>${escapeSitemapXml(entry.title)}</news:title>\n    </news:news>\n  </url>`,
     )
     .join("\n");
 
@@ -2042,35 +2072,34 @@ const resolveSeo = (routePath) => {
   const rules = [
     {
       test: (p) => p === "/",
-      title:
-        "Compare Smartphones, Laptops & TVs in India | Specs, Prices & Reviews | Hooks",
+      title: "Compare Smartphones, TVs & More in India | MobileX",
       description:
-        "Compare smartphones, laptops, TVs, and networking devices in India with specs, prices, variants, and trend insights. Discover latest launches on Hooks.",
+        "Compare smartphones, laptops, TVs, and networking devices in India with specs, prices, variants, and trend insights. Discover latest launches on MobileX.",
       keywords: `hook, best gadget comparison site, mobile price comparison india, compare laptops smartphones tvs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, latest laptops in india ${CURRENT_YEAR}, latest smart tvs in india ${CURRENT_YEAR}, new launch and trending gadgets, top selling gadgets india, compare specs`,
     },
     {
       test: () => Boolean(smartphoneDetailName),
-      title: `${smartphoneDetailName} - Full Specifications & Price in India (${resolveFreshnessDate()}) | Hooks`,
-      description: `Compare ${smartphoneDetailName} price in India, full specifications, variants, and launch details on Hooks.`,
+      title: `${smartphoneDetailName} Price in India, Specs & Features (${CURRENT_MONTH_SHORT_YEAR}) | MobileX`,
+      description: `Compare ${smartphoneDetailName} price in India, full specifications, variants, and launch details on MobileX.`,
       keywords: `${smartphoneDetailName.toLowerCase()}, ${smartphoneDetailName.toLowerCase()} price in india, ${smartphoneDetailName.toLowerCase()} specifications, ${smartphoneDetailName.toLowerCase()} launch date, compare smartphones, mobile price comparison india`,
     },
     {
       test: () => Boolean(laptopDetailName),
-      title: `${laptopDetailName} - Full Specifications & Price in India (${resolveFreshnessDate()}) | Hooks`,
-      description: `Compare ${laptopDetailName} laptop price in India, full specifications, variants, and best store offers on Hooks.`,
+      title: `${laptopDetailName} Price in India, Specs & Features (${CURRENT_MONTH_SHORT_YEAR}) | MobileX`,
+      description: `Compare ${laptopDetailName} laptop price in India, full specifications, variants, and best store offers on MobileX.`,
       keywords: `${laptopDetailName.toLowerCase()}, ${laptopDetailName.toLowerCase()} price in india, ${laptopDetailName.toLowerCase()} specs, compare laptops india, laptop prices list ${CURRENT_YEAR}`,
     },
     {
       test: () => tvListingRoute?.type === "latest",
-      title: `Latest Smart TVs in India (${CURRENT_FULL_DATE}) - Hooks`,
+      title: `Latest TVs in India (${CURRENT_MONTH_LONG_YEAR}) | MobileX`,
       description:
-        "Browse newly launched smart TVs in India with updated prices, display specifications, screen sizes, and store availability on Hooks.",
+        "Browse newly launched smart TVs in India with updated prices, display specifications, screen sizes, and store availability on MobileX.",
       keywords: `latest smart tvs in india ${CURRENT_YEAR}, new tv launches india, latest tv prices, compare smart tv specs`,
     },
     {
       test: () => tvListingRoute?.type === "feature",
-      title: `Best ${tvListingRoute?.feature?.seoName || ""} TVs in India (${CURRENT_FULL_DATE}) - Hooks`,
-      description: `Browse the best ${tvListingRoute?.feature?.seoName || ""} TVs in India with updated prices, display specifications, screen sizes, smart features, and store availability on Hooks.`,
+      title: `Best ${tvListingRoute?.feature?.id === "ultra-hd-4k" ? "4K" : tvListingRoute?.feature?.id === "smart-tv" ? "Smart" : tvListingRoute?.feature?.seoName || ""} TVs in India (${CURRENT_MONTH_LONG_YEAR}) | MobileX`,
+      description: `Browse the best ${tvListingRoute?.feature?.seoName || ""} TVs in India with updated prices, display specifications, screen sizes, smart features, and store availability on MobileX.`,
       keywords: `best ${String(
         tvListingRoute?.feature?.seoName || "",
       ).toLowerCase()} tvs in india, ${String(
@@ -2079,17 +2108,17 @@ const resolveSeo = (routePath) => {
     },
     {
       test: () => Boolean(tvDetailName),
-      title: `${tvDetailName} - Full Specifications & Price in India (${resolveFreshnessDate()}) | Hooks`,
-      description: `Compare ${tvDetailName} TV price in India, size variants, display specs, smart features, and store offers on Hooks.`,
+      title: `${tvDetailName} Price in India, Specs & Features (${CURRENT_MONTH_SHORT_YEAR}) | MobileX`,
+      description: `Compare ${tvDetailName} TV price in India, size variants, display specs, smart features, and store offers on MobileX.`,
       keywords: `${tvDetailName.toLowerCase()}, ${tvDetailName.toLowerCase()} tv price in india, ${tvDetailName.toLowerCase()} specifications, smart tv comparison india, tv prices list ${CURRENT_YEAR}`,
     },
     {
       test: () =>
         Boolean(smartphoneBrandLabel) && Boolean(smartphoneFeatureMeta?.name),
-      title: `Best ${smartphoneBrandLabel} ${smartphoneFeatureMeta?.name || ""} Phones in India (${CURRENT_MONTH_LONG_YEAR}): Price & Specs | Hooks`,
+      title: `${getSmartphoneFeatureTitle(smartphoneListingRoute?.featureSlug, smartphoneFeatureMeta?.name || "")} in India (${CURRENT_MONTH_LONG_YEAR}) | MobileX`,
       description: `Explore ${smartphoneBrandLabel.toLowerCase()} ${String(
         smartphoneFeatureMeta?.name || "",
-      ).toLowerCase()} smartphones in India with updated prices and detailed specifications covering battery camera display and performance comparisons on Hooks. Discover phones focused on ${String(
+      ).toLowerCase()} smartphones in India with updated prices and detailed specifications covering battery camera display and performance comparisons on MobileX. Discover phones focused on ${String(
         smartphoneFeatureMeta?.description || smartphoneFeatureMeta?.name || "",
       ).toLowerCase()}.`,
       keywords: `${smartphoneBrandLabel.toLowerCase()} ${String(
@@ -2100,10 +2129,10 @@ const resolveSeo = (routePath) => {
     },
     {
       test: () => Boolean(smartphoneFeatureMeta?.name),
-      title: `Best ${smartphoneFeatureMeta?.name || ""} Smartphones in India (${CURRENT_MONTH_LONG_YEAR}): Price & Specs | Hooks`,
+      title: `${getSmartphoneFeatureTitle(smartphoneListingRoute?.featureSlug, smartphoneFeatureMeta?.name || "")} in India (${CURRENT_MONTH_LONG_YEAR}) | MobileX`,
       description: `Explore ${String(
         smartphoneFeatureMeta?.name || "",
-      ).toLowerCase()} smartphones in India with updated prices and detailed specifications covering battery camera display and performance comparisons on Hooks. Discover phones focused on ${String(
+      ).toLowerCase()} smartphones in India with updated prices and detailed specifications covering battery camera display and performance comparisons on MobileX. Discover phones focused on ${String(
         smartphoneFeatureMeta?.description || smartphoneFeatureMeta?.name || "",
       ).toLowerCase()}.`,
       keywords: `${String(
@@ -2114,19 +2143,21 @@ const resolveSeo = (routePath) => {
     },
     {
       test: () => Boolean(smartphoneBrandLabel),
-      title: `${smartphoneBrandLabel} Smartphones ${CURRENT_YEAR} - Full Specifications Features and Price | Hooks`,
-      description: `Explore ${smartphoneBrandLabel} smartphones on Hooks. Compare models check prices specifications reviews and find the best phone for your needs.`,
+      title: `Best ${smartphoneBrandLabel} Smartphones in India (${CURRENT_MONTH_LONG_YEAR}) | MobileX`,
+      description: `Explore ${smartphoneBrandLabel} smartphones on MobileX. Compare models check prices specifications reviews and find the best phone for your needs.`,
       keywords: `${smartphoneBrandLabel.toLowerCase()} smartphones, ${smartphoneBrandLabel.toLowerCase()} phones in india, ${smartphoneBrandLabel.toLowerCase()} mobile price, compare smartphone specs, mobile price comparison india`,
     },
     {
       test: () => Boolean(smartphoneFilterMeta),
       title:
         smartphoneFilterSlug === "new"
-          ? `Latest Smartphones ${CURRENT_YEAR} - New Launches & Prices | Hooks`
-          : `Best Smartphones ${smartphoneFilterSeoLabel} in ${CURRENT_YEAR} - Reviews Specs & Deals | Hooks`,
+          ? `Latest Smartphones in India (${CURRENT_MONTH_LONG_YEAR}) | MobileX`
+          : smartphoneFilterMeta?.label?.startsWith("Under")
+            ? `Best Phones Under ${smartphoneFilterMeta.label.replace(/^Under\s+/, "")} in India (${CURRENT_MONTH_LONG_YEAR}) | MobileX`
+            : `Best Phones ${smartphoneFilterMeta?.label || ""} in India (${CURRENT_MONTH_LONG_YEAR}) | MobileX`,
       description:
         smartphoneFilterSlug === "new"
-          ? "Discover newly launched smartphones with updated prices, full specifications, and reviews. Stay updated with the latest mobile releases on Hooks."
+          ? "Discover newly launched smartphones with updated prices, full specifications, and reviews. Stay updated with the latest mobile releases on MobileX."
           : `Explore the best smartphones ${String(
               smartphoneFilterSeoLabel || "",
             ).toLowerCase()} with detailed specs latest prices reviews and comparisons to choose the right phone for your budget.`,
@@ -2141,16 +2172,16 @@ const resolveSeo = (routePath) => {
     },
     {
       test: (p) => p === "/smartphones/upcoming",
-      title: `Upcoming Smartphones ${CURRENT_YEAR} - Expected Launches Features and Prices | Hooks`,
+      title: `Upcoming Smartphones in India (${CURRENT_MONTH_LONG_YEAR}) | MobileX`,
       description:
-        "Browse upcoming smartphones in India, track expected launch timelines, compare preview specifications, and watch preorder-ready devices before they arrive on Hooks.",
+        "Browse upcoming smartphones in India, track expected launch timelines, compare preview specifications, and watch preorder-ready devices before they arrive on MobileX.",
       keywords: `upcoming smartphones ${CURRENT_YEAR}, upcoming mobiles, expected phone prices, smartphone launch dates, mobile price comparison india`,
     },
     {
       test: (p) => p.startsWith("/smartphones"),
-      title: "Smartphones - Compare Prices, Specs & Variants | Hooks",
+      title: `Best Smartphones in India (${CURRENT_MONTH_LONG_YEAR}) | MobileX`,
       description:
-        "Compare smartphones by price, RAM/ROM variants, camera, battery, and performance. Find trending and latest mobile launches on Hooks.",
+        "Compare smartphones by price, RAM/ROM variants, camera, battery, and performance. Find trending and latest mobile launches on MobileX.",
       keywords: `smartphones, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch mobiles, trending phone in india, most popular mobiles, mobile price comparison india, moblie price comparison india, compare smartphone specs, compare smartphone prices, 5g phones in india, ai phone, ai budget phone, ${BUDGET_PHONE_KEYWORDS}`,
     },
     {
@@ -2161,14 +2192,14 @@ const resolveSeo = (routePath) => {
     },
     {
       test: (p) => p.startsWith("/tvs"),
-      title: `Best TVs in India (${CURRENT_MONTH_LONG_YEAR}) - Hooks`,
+      title: `Best TVs in India (${CURRENT_MONTH_LONG_YEAR}) | MobileX`,
       description:
-        "Browse the best TVs in India ranked using buyer interest, trend momentum, and freshness signals. Compare screen sizes, specifications, variant pricing, and store availability on Hooks.",
+        "Browse the best TVs in India ranked using buyer interest, trend momentum, and freshness signals. Compare screen sizes, specifications, variant pricing, and store availability on MobileX.",
       keywords: `best tvs in india ${CURRENT_YEAR}, smart tv prices list ${CURRENT_YEAR}, smart tv comparison india, compare tv prices india, compare tv specs, 43 inch tv, 55 inch tv, 65 inch tv, 75 inch tv, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000`,
     },
     {
       test: (p) => p.startsWith("/networking"),
-      title: "Networking Devices - Compare Routers & More | Hooks",
+      title: `Best Networking Devices in India (${CURRENT_MONTH_LONG_YEAR}) | MobileX`,
       description:
         "Compare routers and networking products with speed, band, and connectivity specs to choose the right setup for your needs.",
       keywords:
@@ -2179,13 +2210,13 @@ const resolveSeo = (routePath) => {
       title:
         publishedCompareSeo?.title ||
         (compareVsJoinedNames
-          ? `${compareVsJoinedNames}: Price, Specs & Comparison in India (${CURRENT_MONTH_LONG_YEAR}) | Hooks`
-          : `Compare Smartphones, Laptops & TVs Side-by-Side (${CURRENT_MONTH_LONG_YEAR}) | Hooks`),
+          ? `${compareVsJoinedNames} | MobileX`
+          : "Compare Smartphones, TVs and Devices | MobileX"),
       description:
         publishedCompareSeo?.description ||
         (compareJoinedNames
-          ? `See how ${compareJoinedNames} compare on price, specifications, camera, battery, and performance in India. | Hooks`
-          : "Compare devices side by side with latest price specifications camera battery performance and features in India. | Hooks"),
+          ? `See how ${compareJoinedNames} compare on price, specifications, camera, battery, and performance in India. | MobileX`
+          : "Compare devices side by side with latest price specifications camera battery performance and features in India. | MobileX"),
       keywords:
         compareNames.length >= 2
           ? `${compareNames.map((name) => name.toLowerCase()).join(", ")}, compare ${compareNames.map((name) => name.toLowerCase()).join(" and ")}, compare devices india, smartphone comparison india`
@@ -2193,7 +2224,7 @@ const resolveSeo = (routePath) => {
     },
     {
       test: (p) => p.startsWith("/trending"),
-      title: "Trending Devices - Smartphones, Laptops & TVs | Hooks",
+      title: `Trending Smartphones in India (${CURRENT_MONTH_LONG_YEAR}) | MobileX`,
       description:
         "Track trending smartphones, laptops, and TVs based on momentum and user interest to spot what is hot right now.",
       keywords: `trending smartphones india, trending laptops india, trending tvs india, trending phone in india, most popular mobiles, top selling gadgets india, new launch and trending devices, latest smartphones in india ${CURRENT_YEAR}`,
@@ -2206,41 +2237,41 @@ const resolveSeo = (routePath) => {
     },
     {
       test: (p) => p.startsWith("/careers"),
-      title: "Careers at Hooks | Apply for Open Roles",
+      title: "Careers at MobileX | Join Our Team",
       description:
-        "Apply for frontend, backend, content developer, and fullstack opportunities at Hooks through a simple step-by-step application form.",
+        "Apply for frontend, backend, content developer, and fullstack opportunities at MobileX through a simple step-by-step application form.",
       keywords:
         "careers at hook, frontend jobs, backend jobs, fullstack jobs, content developer jobs, tech careers",
     },
     {
       test: (p) => p.startsWith("/about"),
-      title: "About Hooks | Product Discovery & Comparison Platform",
+      title: "About MobileX | Technology Research and Comparisons",
       description:
-        "Learn about Hooks, our mission, and how we help users compare technology products with structured and transparent information.",
+        "Learn about MobileX, our mission, and how we help users compare technology products with structured and transparent information.",
       keywords:
         "about hook, product comparison platform, technology discovery, gadget research platform",
     },
     {
       test: (p) => p.startsWith("/contact"),
-      title: "Contact Hooks | Support, Partnerships & Press",
+      title: "Contact MobileX | Support, Corrections and Partnerships",
       description:
-        "Contact Hooks for product support, partnerships, and press queries. Reach the team through verified contact channels.",
+        "Contact MobileX for product support, partnerships, and press queries. Reach the team through verified contact channels.",
       keywords:
         "contact hook, support hook, partnerships, press inquiries, hook contact details",
     },
     {
       test: (p) => p.startsWith("/privacy-policy"),
-      title: "Privacy Policy | Hooks",
+      title: "Privacy Policy | MobileX",
       description:
-        "Read Hooks privacy policy to understand what data we collect, why we collect it, and how you can control your information.",
+        "Read MobileX privacy policy to understand what data we collect, why we collect it, and how you can control your information.",
       keywords:
         "privacy policy, data privacy, hook policy, personal data rights",
     },
     {
       test: (p) => p.startsWith("/terms"),
-      title: "Terms of Use | Hooks",
+      title: "Terms and Conditions | MobileX",
       description:
-        "Read Hooks terms of use covering platform usage, content accuracy, and service limitations.",
+        "Read MobileX terms of use covering platform usage, content accuracy, and service limitations.",
       keywords: "terms of use, hook terms, website terms, usage policy",
     },
     {
@@ -2249,9 +2280,9 @@ const resolveSeo = (routePath) => {
         p.startsWith("/wishlist") ||
         p.startsWith("/login") ||
         p.startsWith("/signup"),
-      title: "Hooks Account",
+      title: "MobileX Account",
       description:
-        "Secure account pages for your Hooks profile and saved data.",
+        "Secure account pages for your MobileX profile and saved data.",
       keywords: "hook account, user account, login, signup, wishlist",
       robots: "noindex, nofollow",
     },
@@ -2260,10 +2291,11 @@ const resolveSeo = (routePath) => {
   const matched = rules.find((rule) => rule.test(canonicalPath));
   return {
     canonicalPath,
-    title: matched?.title || "Hooks | Smart Device Comparison Platform",
+    title:
+      matched?.title || "Compare Smartphones, TVs & More in India | MobileX",
     description:
       matched?.description ||
-      "Compare smartphones, laptops, TVs, and networking devices with specs, variants, pricing insights, and trend signals on Hooks.",
+      "Compare smartphones, laptops, TVs, and networking devices with specs, variants, pricing insights, and trend signals on MobileX.",
     keywords: matched?.keywords || DEFAULT_SEO_KEYWORDS,
     robots: matched?.robots || DEFAULT_INDEX_ROBOTS,
   };
@@ -2283,7 +2315,10 @@ const stripMarkupForSeo = (value = "") =>
     .replace(/\s+/g, " ")
     .trim();
 
-const toAbsoluteAssetUrl = (value = "", fallbackPath = "/hook-logo.png") => {
+const toAbsoluteAssetUrl = (
+  value = "",
+  fallbackPath = "/mobilex-favicon.svg",
+) => {
   const raw = String(value || "").trim();
   const fallback = `${SITE_ORIGIN}${fallbackPath}`;
   if (!raw) return fallback;
@@ -2294,7 +2329,9 @@ const toAbsoluteAssetUrl = (value = "", fallbackPath = "/hook-logo.png") => {
 };
 
 const inferImageType = (url = "") => {
-  const raw = String(url || "").toLowerCase().split(/[?#]/, 1)[0];
+  const raw = String(url || "")
+    .toLowerCase()
+    .split(/[?#]/, 1)[0];
   if (raw.endsWith(".png")) return "image/png";
   if (raw.endsWith(".webp")) return "image/webp";
   if (raw.endsWith(".avif")) return "image/avif";
@@ -2324,10 +2361,7 @@ const getRouteSitemapLastmod = (routePath = "/", fallbackDate = "") => {
   return fallbackDate;
 };
 
-const getComparePageFromPayload = (
-  canonicalPath = "",
-  preloadedApiPayload,
-) => {
+const getComparePageFromPayload = (canonicalPath = "", preloadedApiPayload) => {
   const slug = getSingleSegmentRouteTail(canonicalPath, "/compare");
   if (!slug) return null;
 
@@ -2370,10 +2404,8 @@ const getNewsArticleSeo = (canonicalPath = "", preloadedApiPayload) => {
     datePublished,
     blog.updated_at || datePublished,
   );
-  const image = toAbsoluteAssetUrl(blog.hero_image || "/hook-logo.png");
-  const imageAlt = stripMarkupForSeo(
-    blog.hero_image_alt || sharedSeo.headline,
-  );
+  const image = toAbsoluteAssetUrl(blog.hero_image || "/mobilex-favicon.svg");
+  const imageAlt = stripMarkupForSeo(blog.hero_image_alt || sharedSeo.headline);
 
   return {
     blog,
@@ -2387,7 +2419,7 @@ const getNewsArticleSeo = (canonicalPath = "", preloadedApiPayload) => {
     imageWidth: 1200,
     imageHeight: 630,
     imageType: inferImageType(image),
-    authorName: stripMarkupForSeo(blog.author_name || "Hooks News"),
+    authorName: stripMarkupForSeo(blog.author_name || "MobileX News"),
     articleSection: stripMarkupForSeo(blog.category || "News"),
     keywords: [
       blog.category,
@@ -2433,13 +2465,13 @@ const buildStructuredDataForRoute = (routePath, preloadedApiPayload) => {
         { label: "News", url: canonicalUrl },
       ]),
       createCollectionSchema({
-        name: "Hooks News",
+        name: "MobileX News",
         description: NEWS_LISTING_SEO.description,
         url: canonicalUrl,
-        image: `${SITE_ORIGIN}/hook-logo.png`,
+        image: `${SITE_ORIGIN}/mobilex-favicon.svg`,
       }),
       createWebPageSchema({
-        name: "Hooks News",
+        name: "MobileX News",
         description: NEWS_LISTING_SEO.description,
         url: canonicalUrl,
       }),
@@ -2930,10 +2962,7 @@ const injectCompareRouteContent = (html, routePath, preloadedApiPayload) => {
     canonicalPath,
     preloadedApiPayload,
   );
-  return html.replace(
-    emptyRootPattern,
-    `<div id="root">${markup}</div>`,
-  );
+  return html.replace(emptyRootPattern, `<div id="root">${markup}</div>`);
 };
 
 const formatNewsPrerenderDate = (value = "") => {
@@ -3049,7 +3078,7 @@ const buildNewsArticlePrerenderMarkup = (
     : "";
   const publishedValue = blog.published_at || blog.updated_at || "";
   const publishedLabel = formatNewsPrerenderDate(publishedValue);
-  const author = stripMarkupForSeo(blog.author_name || "Hooks News");
+  const author = stripMarkupForSeo(blog.author_name || "MobileX News");
 
   return `<main data-news-prerendered="article" class="min-h-screen bg-white text-slate-950">
   <section class="mx-auto max-w-[1120px] px-4 py-8 sm:px-6 lg:px-8">
@@ -3070,10 +3099,14 @@ const buildNewsArticlePrerenderMarkup = (
     <article class="news-article-prose mt-8 space-y-6 text-lg leading-8 text-slate-800">
       ${articleHtml}
     </article>
-    ${relatedLinks ? `<aside aria-label="Related news" class="mt-10 border-t border-slate-200 pt-6">
+    ${
+      relatedLinks
+        ? `<aside aria-label="Related news" class="mt-10 border-t border-slate-200 pt-6">
       <h2 class="text-2xl font-bold text-slate-950">Related News</h2>
       <ul class="mt-4 space-y-3">${relatedLinks}</ul>
-    </aside>` : ""}
+    </aside>`
+        : ""
+    }
   </section>
 </main>`;
 };
@@ -3084,8 +3117,7 @@ const injectNewsRouteContent = (html, routePath, preloadedApiPayload) => {
     return html;
   }
 
-  const emptyRootPattern =
-    /<div\s+id=["']root["'][^>]*>\s*<\/div>/i;
+  const emptyRootPattern = /<div\s+id=["']root["'][^>]*>\s*<\/div>/i;
   if (!emptyRootPattern.test(html)) {
     return html;
   }
@@ -3095,10 +3127,7 @@ const injectNewsRouteContent = (html, routePath, preloadedApiPayload) => {
       ? buildNewsListingPrerenderMarkup(preloadedApiPayload)
       : buildNewsArticlePrerenderMarkup(canonicalPath, preloadedApiPayload);
 
-  return html.replace(
-    emptyRootPattern,
-    `<div id="root">${markup}</div>`,
-  );
+  return html.replace(emptyRootPattern, `<div id="root">${markup}</div>`);
 };
 
 const applySeoToHtml = (html, routePath) => {

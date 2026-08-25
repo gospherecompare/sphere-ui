@@ -146,9 +146,11 @@ export function useDevice({ resources = ALL_DEVICE_RESOURCES } = {}) {
   // Memoized to avoid re-creating the array on every render.
   const devices = useMemo(() => {
     return [
-      ...((state.smartphoneAll && state.smartphoneAll.length
-        ? state.smartphoneAll
-        : state.smartphone) || []).map((d) => ({
+      ...(
+        (state.smartphoneAll && state.smartphoneAll.length
+          ? state.smartphoneAll
+          : state.smartphone) || []
+      ).map((d) => ({
         ...d,
         deviceType: "smartphone",
       })),
@@ -169,6 +171,8 @@ export function useDevice({ resources = ALL_DEVICE_RESOURCES } = {}) {
     state.networking,
     state.homeAppliances,
   ]);
+
+  const smartphonePagination = state.smartphonePagination || null;
 
   const getDeviceById = useCallback(
     (id) => {
@@ -300,6 +304,7 @@ export function useDevice({ resources = ALL_DEVICE_RESOURCES } = {}) {
     getDeviceByModel,
     getDevice,
     fetchDevice,
+    smartphonePagination,
     setDevices,
     setDevice,
     networking: state.networking,

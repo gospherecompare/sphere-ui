@@ -1,0 +1,75 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 512 512"
+  fill="none"
+>
+  <!-- App icon background -->
+  <rect
+    x="0"
+    y="0"
+    width="512"
+    height="512"
+    rx="112"
+    fill="#111318"
+  />
+
+  <!-- MobileX mark -->
+  <g transform="translate(72 126) scale(0.42)">
+
+    <!-- White M -->
+    <path
+      fill="#FFFFFF"
+      d="
+        M0 419
+        H99
+        L101 142
+        L288 327
+        L471 145
+        L400 75
+        L288 185
+        L101 0
+        H0
+        Z
+      "
+    />
+
+    <!-- White central chevron -->
+    <path
+      fill="#FFFFFF"
+      d="
+        M365 0
+        L568 202
+        L357 419
+        H476
+        L689 202
+        L488 0
+        Z
+      "
+    />
+
+    <!-- Blue X - top -->
+    <path
+      fill="#2563EB"
+      d="
+        M868 0
+        H746
+        L639 117
+        L700 179
+        Z
+      "
+    />
+
+    <!-- Blue X - bottom -->
+    <path
+      fill="#2563EB"
+      d="
+        M631 298
+        L746 420
+        H874
+        L694 235
+        Z
+      "
+    />
+
+  </g>
+</svg>

@@ -43,7 +43,7 @@ const routeLabels = {
   compare: "Compare",
   "popular-comparisons": "Popular Comparisons",
   news: "News",
-  about: "About Hooks",
+  about: "About MobileX",
   careers: "Careers",
   contact: "Contact",
   "privacy-policy": "Privacy Policy",
@@ -159,12 +159,14 @@ const Breadcrumbs = ({ variant = "default" }) => {
   );
 
   const isPlain = variant === "plain";
-  const isCompareRoute = location.pathname === "/compare" || location.pathname.startsWith("/compare/");
+  const isCompareRoute =
+    location.pathname === "/compare" ||
+    location.pathname.startsWith("/compare/");
 
   if (crumbs.length <= 1 || (!isPlain && isCompareRoute)) return null;
 
   return (
-    <div className={isPlain ? "bg-transparent" : "hooks-breadcrumb-wrap"}>
+    <div className={isPlain ? "bg-white" : "hooks-breadcrumb-wrap"}>
       <Helmet>
         <script type="application/ld+json" data-hooks-breadcrumb-schema="true">
           {JSON.stringify(schema)}

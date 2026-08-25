@@ -222,7 +222,7 @@ const DetailPageNavigator = ({
   return (
     <div
       ref={slotRef}
-      className="relative z-[55] w-full"
+      className="relative z-[55] w-full bg-white"
       style={
         isPinned && navigatorHeight > 0
           ? { height: navigatorHeight }
@@ -235,7 +235,7 @@ const DetailPageNavigator = ({
         style={isPinned ? { top: stickyTopOffset } : undefined}
         className={`${
           isPinned ? "fixed left-0 right-0" : "relative"
-        } z-[55] w-full  bg-white shadow-md  transition-[top] duration-300 ease-out dark:border-slate-800/70 dark:bg-[#07111f]/98 ${className}`}
+        } z-[55] w-full !bg-white shadow-none transition-[top] duration-300 ease-out dark:border-0 ${className}`}
       >
         <div className="mx-auto w-full max-w-[1440px] px-2 py-1 sm:px-5 sm:py-1.5 lg:px-8 ">
           <nav

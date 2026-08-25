@@ -341,7 +341,7 @@ const buildTvCatalogSections = (catalogItems = [], brandCatalog = []) => {
   const smartDiscoveries = [
     {
       label: "Latest Smart TVs in India",
-      path: "/tvs/latest",
+      path: "/tvs/filter/new",
     },
     ...TV_FEATURE_CATALOG.filter((feature) =>
       uniqueItems.some((item) => matchesTvFeature(item, feature.id)),
@@ -511,7 +511,9 @@ const BrandLogo = ({ src = "", label = "", flat = false }) => {
           onError={() => setFailed(true)}
         />
       ) : (
-        <span className="text-sm font-semibold text-slate-500 dark:text-slate-300">{initial}</span>
+        <span className="text-sm font-semibold text-slate-500 dark:text-slate-300">
+          {initial}
+        </span>
       )}
     </span>
   );
@@ -557,7 +559,7 @@ const renderSectionSubtitle = (title = "", itemNounLower = "devices") => {
     return "Freshly launched phones you can compare right now.";
   }
   if (value === "smart popular links") {
-    return "Quick shortcuts users explore most on Hooks.";
+    return "Quick shortcuts users explore most on MobileX.";
   }
   if (value === "latest launches") {
     return `Freshly launched ${itemNounLower}s you can compare right now.`;
@@ -746,9 +748,7 @@ const DiscoveryHeaderDivider = () => (
   <div className="mt-4 h-px w-full bg-gradient-to-r from-[#6fa8ff] via-[#8e87ff] to-[#d2b6ff]" />
 );
 
-const DiscoveryCardHeader = ({
-  title = "",
-}) => (
+const DiscoveryCardHeader = ({ title = "" }) => (
   <div className="px-3.5 pt-3.5 sm:px-5 sm:pt-4">
     <div className="flex items-start gap-3">
       <h4 className="text-[15px] font-semibold tracking-tight text-slate-900 sm:text-base">
@@ -767,7 +767,6 @@ const toCompactPriceLabel = (label = "") => {
   return cleaned || fixCurrencyText(label) || "Explore";
 };
 
-
 const SmartphoneDiscoveryPanelHeader = ({
   icon: Icon,
   title,
@@ -777,18 +776,15 @@ const SmartphoneDiscoveryPanelHeader = ({
   const tones = {
     blue: {
       line: "bg-blue-600 dark:bg-blue-400",
-      icon:
-        "bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300",
+      icon: "bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300",
     },
     green: {
       line: "bg-emerald-500 dark:bg-emerald-400",
-      icon:
-        "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300",
+      icon: "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300",
     },
     violet: {
       line: "bg-violet-600 dark:bg-violet-400",
-      icon:
-        "bg-violet-50 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300",
+      icon: "bg-violet-50 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300",
     },
   };
   const palette = tones[tone] || tones.blue;
@@ -815,7 +811,7 @@ const SmartphoneDiscoveryPanelHeader = ({
 };
 
 const SmartphoneDiscoveryPricePanel = ({ items = [], entityType }) => (
-  <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white dark:border-slate-700/70 dark:bg-[#101e31]">
+  <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white via-slate-50/80 to-blue-50/80 dark:border-slate-700/70 dark:from-[#101e31] dark:via-[#12233d] dark:to-[#0d1c2b]">
     <SmartphoneDiscoveryPanelHeader
       icon={FaWallet}
       title="Discover by Price"
@@ -853,7 +849,7 @@ const SmartphoneDiscoveryPricePanel = ({ items = [], entityType }) => (
 );
 
 const SmartphoneDiscoveryBrandPanel = ({ items = [], entityType }) => (
-  <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white dark:border-slate-700/70 dark:bg-[#101e31]">
+  <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white via-slate-50/80 to-blue-50/80 dark:border-slate-700/70 dark:from-[#101e31] dark:via-[#12233d] dark:to-[#0d1c2b]">
     <SmartphoneDiscoveryPanelHeader
       icon={FaStar}
       title="Discover by Brand"
@@ -908,7 +904,7 @@ const SmartphoneDiscoveryBrandPanel = ({ items = [], entityType }) => (
 );
 
 const SmartphoneDiscoverySearchPanel = ({ items = [], entityType }) => (
-  <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white dark:border-slate-700/70 dark:bg-[#101e31]">
+  <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white via-slate-50/80 to-blue-50/80 dark:border-slate-700/70 dark:from-[#101e31] dark:via-[#12233d] dark:to-[#0d1c2b]">
     <SmartphoneDiscoveryPanelHeader
       icon={FaSearch}
       title="Popular Searches"
@@ -945,80 +941,104 @@ const SmartphoneDiscoverySearchPanel = ({ items = [], entityType }) => (
   </article>
 );
 
-const SmartphoneDiscoveryHero = ({ latestItems = [] }) => {
-  const images = latestItems
-    .map((item) => normalizeText(item?.image_url))
-    .filter(Boolean)
-    .slice(0, 3);
+const SmartphoneDiscoveryHero = () => (
+  <header className="relative overflow-hidden bg-gradient-to-r from-slate-50/80 via-white/80 to-blue-50/80 px-1 py-1 dark:from-[#0b1728] dark:via-[#0d1b2d] dark:to-[#11213d] sm:px-0 sm:py-0">
+    <div className="relative z-10 max-w-2xl pr-24 sm:pr-40 lg:pr-0">
+      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-blue-600 sm:text-xs">
+        Explore smartphones
+      </p>
+      <h2 className="mt-2 text-2xl font-black tracking-[-0.04em] text-slate-950 dark:text-white sm:text-3xl lg:text-4xl">
+        Find your next smartphone
+      </h2>
+      <p className="mt-2 max-w-xl text-xs leading-5 text-slate-500 dark:text-slate-400 sm:text-sm lg:text-base">
+        Browse by price, brand, or see what everyone is searching for.
+      </p>
+    </div>
 
+    <div className="pointer-events-none absolute -right-2 bottom-0 top-0 hidden w-[330px] overflow-hidden sm:block lg:w-[380px]">
+      <div className="absolute inset-0 bg-[linear-gradient(135deg,transparent_0%,rgba(37,99,235,0.05)_45%,rgba(124,58,237,0.09)_100%)] dark:bg-[radial-gradient(circle_at_70%_45%,rgba(59,130,246,0.24),transparent_55%)]" />
+      <div className="absolute left-1/2 top-1/2 h-44 w-44 -translate-x-1/2 -translate-y-1/2 rounded-full border border-blue-200/80 bg-blue-50/30 shadow-[0_0_30px_rgba(96,165,250,0.18)] dark:border-blue-400/20 dark:bg-blue-500/10" />
+
+      <div className="absolute left-[12%] top-[18%] h-[170px] w-[84px] -rotate-[14deg] rounded-[26px] bg-slate-950 p-1.5 shadow-[0_18px_30px_rgba(15,23,42,0.22)] sm:h-[188px] sm:w-[94px]">
+        <div className="relative h-full w-full overflow-hidden rounded-[20px] bg-gradient-to-br from-slate-700 via-blue-700 to-indigo-700">
+          <div className="absolute left-2.5 top-2.5 grid h-8 w-8 grid-cols-2 gap-1 rounded-xl bg-slate-950/70 p-1.5">
+            <span className="rounded-full bg-blue-200" />
+            <span className="rounded-full bg-slate-400" />
+            <span className="rounded-full bg-indigo-300" />
+            <span className="rounded-full bg-slate-700" />
+          </div>
+          <div className="absolute inset-x-3 bottom-3 h-1 rounded-full bg-white/40" />
+        </div>
+      </div>
+
+      <div className="absolute left-[43%] top-[4%] h-[190px] w-[92px] rotate-[8deg] rounded-[28px] bg-slate-950 p-1.5 shadow-[0_25px_35px_rgba(37,99,235,0.18)] sm:h-[214px] sm:w-[104px]">
+        <div className="relative h-full w-full overflow-hidden rounded-[22px] bg-gradient-to-br from-cyan-300 via-blue-500 to-indigo-700">
+          <span className="absolute left-1/2 top-2.5 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-slate-950/80" />
+          <span className="absolute -left-9 top-10 h-28 w-28 rounded-full border-[17px] border-white/20" />
+          <span className="absolute -right-10 bottom-5 h-24 w-24 rounded-full border-[14px] border-cyan-100/25" />
+          <span className="absolute bottom-5 left-1/2 h-2.5 w-10 -translate-x-1/2 rounded-full bg-white/30" />
+        </div>
+      </div>
+
+      <div className="absolute right-[10%] top-[18%] h-[170px] w-[82px] rotate-[14deg] rounded-[26px] bg-slate-950 p-1.5 shadow-[0_18px_30px_rgba(20,184,166,0.22)] sm:h-[188px] sm:w-[94px]">
+        <div className="relative h-full w-full overflow-hidden rounded-[20px] bg-gradient-to-br from-teal-200 via-emerald-300 to-cyan-500">
+          <span className="absolute left-1/2 top-3 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-slate-950/80" />
+          <span className="absolute bottom-5 left-1/2 h-6 w-10 -translate-x-1/2 rounded-full bg-white/25" />
+        </div>
+      </div>
+
+      <div className="absolute left-2 top-4 grid h-10 w-10 place-items-center rounded-xl bg-white/80 text-[10px] font-black text-blue-600 ring-1 ring-blue-100 shadow-sm backdrop-blur-sm dark:bg-[#0e1d31]/90 dark:text-[#8fb4ff] dark:ring-[#2a456c]">
+        AI
+      </div>
+      <div className="absolute bottom-7 left-5 grid h-10 w-10 place-items-center rounded-xl bg-white/80 text-[10px] font-black text-blue-600 ring-1 ring-blue-100 shadow-sm backdrop-blur-sm dark:bg-[#0e1d31]/90 dark:text-[#8fb4ff] dark:ring-[#2a456c]">
+        5G
+      </div>
+      <div className="absolute right-5 top-9 grid h-10 w-10 place-items-center rounded-xl bg-white/80 text-[9px] font-black text-blue-600 ring-1 ring-blue-100 shadow-sm backdrop-blur-sm dark:bg-[#0e1d31]/90 dark:text-[#8fb4ff] dark:ring-[#2a456c]">
+        CAM
+      </div>
+      <span className="absolute right-3 top-1/2 h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.9)]" />
+      <span className="absolute bottom-9 left-[35%] h-2 w-2 rounded-full bg-indigo-400 shadow-[0_0_12px_rgba(129,140,248,0.9)]" />
+    </div>
+  </header>
+);
+
+const SmartphoneCompareBanner = () => {
   return (
-    <header className="relative overflow-hidden bg-white px-1 py-1 dark:bg-transparent sm:px-0 sm:py-0">
-      <div className="relative z-10 max-w-2xl pr-24 sm:pr-40 lg:pr-0">
-        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-blue-600 sm:text-xs">
-          Explore smartphones
-        </p>
-        <h2 className="mt-2 text-2xl font-black tracking-[-0.04em] text-slate-950 dark:text-white sm:text-3xl lg:text-4xl">
-          Find your next smartphone
-        </h2>
-        <p className="mt-2 max-w-xl text-xs leading-5 text-slate-500 dark:text-slate-400 sm:text-sm lg:text-base">
-          Browse by price, brand, or see what everyone is searching for.
-        </p>
+    <aside className="relative mt-4 overflow-hidden rounded-[20px] border border-blue-200/80 bg-gradient-to-r from-[#edf5ff] via-[#f3f7ff] to-[#eff6ff] px-4 py-4 shadow-[inset_0_0_0_1px_rgba(147,197,253,0.1)] dark:border-blue-400/20 dark:from-[#10213a] dark:via-[#122947] dark:to-[#18264a] sm:px-6 sm:py-5 lg:flex lg:min-h-[152px] lg:items-center lg:justify-between lg:gap-6 lg:px-8">
+      <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-64 overflow-hidden sm:block lg:flex lg:items-center">
+        <div className="relative h-28 w-56 lg:h-32 lg:w-64">
+          <div className="absolute left-2 bottom-0 h-24 w-20 -rotate-12 rounded-[20px] bg-slate-950 p-1.5 shadow-[0_18px_25px_rgba(15,23,42,0.18)]">
+            <div className="relative h-full w-full overflow-hidden rounded-[16px] bg-gradient-to-br from-slate-700 via-blue-700 to-indigo-700">
+              <span className="absolute left-2 top-2 grid h-7 w-7 grid-cols-2 gap-1 rounded-lg bg-slate-950/70 p-1">
+                <span className="rounded-full bg-blue-200" />
+                <span className="rounded-full bg-slate-400" />
+                <span className="rounded-full bg-indigo-300" />
+                <span className="rounded-full bg-slate-700" />
+              </span>
+              <span className="absolute inset-x-3 bottom-3 h-1 rounded-full bg-white/40" />
+            </div>
+          </div>
+          <div className="absolute left-14 bottom-1 h-28 w-20 rotate-2 rounded-[20px] bg-slate-950 p-1.5 shadow-[0_18px_25px_rgba(37,99,235,0.16)]">
+            <div className="relative h-full w-full overflow-hidden rounded-[16px] bg-gradient-to-br from-cyan-300 via-blue-500 to-indigo-700">
+              <span className="absolute left-1/2 top-2.5 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-slate-950/80" />
+              <span className="absolute -left-8 top-10 h-20 w-20 rounded-full border-[12px] border-white/20" />
+              <span className="absolute inset-x-3 bottom-3 h-2 rounded-full bg-white/35" />
+            </div>
+          </div>
+          <div className="absolute left-24 bottom-0 h-24 w-20 rotate-12 rounded-[20px] bg-slate-950 p-1.5 shadow-[0_18px_25px_rgba(20,184,166,0.18)]">
+            <div className="relative h-full w-full overflow-hidden rounded-[16px] bg-gradient-to-br from-teal-200 via-emerald-300 to-cyan-500">
+              <span className="absolute left-1/2 top-2.5 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-slate-950/80" />
+              <span className="absolute inset-x-3 bottom-3 h-2 rounded-full bg-white/35" />
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="pointer-events-none absolute -right-4 bottom-0 top-0 hidden w-72 overflow-hidden sm:block lg:w-[360px]">
-        <div className="absolute inset-0 bg-[linear-gradient(135deg,transparent_0%,rgba(37,99,235,0.05)_45%,rgba(124,58,237,0.09)_100%)] dark:bg-[radial-gradient(circle_at_70%_45%,rgba(59,130,246,0.24),transparent_55%)]" />
-        <div className="absolute right-8 top-1/2 h-36 w-36 -translate-y-1/2 rotate-12 border border-blue-100 bg-blue-50/50 dark:border-blue-400/15 dark:bg-blue-500/10" />
-        {images.map((src, index) => (
-          <img
-            key={`${src}-${index}`}
-            src={src}
-            alt=""
-            aria-hidden="true"
-            className={`absolute bottom-[-18px] h-36 w-24 object-contain dark:mix-blend-multiply dark:brightness-125 dark:contrast-125  lg:h-44 lg:w-28 ${
-              index === 0
-                ? "right-24 -rotate-12"
-                : index === 1
-                  ? "right-10 rotate-6"
-                  : "right-0 rotate-12 opacity-80"
-            }`}
-          />
-        ))}
-      </div>
-    </header>
-  );
-};
-
-const SmartphoneCompareBanner = ({ latestItems = [] }) => {
-  const images = latestItems
-    .map((item) => normalizeText(item?.image_url))
-    .filter(Boolean)
-    .slice(0, 3);
-
-  return (
-    <aside className="relative mt-4 overflow-hidden rounded-xl border border-blue-200 bg-blue-50/40 px-4 py-4 dark:border-blue-400/20 dark:bg-gradient-to-r dark:from-[#10213a] dark:via-[#122947] dark:to-[#18264a] sm:px-6 sm:py-5 lg:flex lg:min-h-[132px] lg:items-center lg:justify-between lg:gap-6 lg:px-8">
-      <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-80 overflow-hidden dark:bg-[radial-gradient(circle_at_24%_65%,rgba(59,130,246,0.22),transparent_58%)] sm:block">
-        {images.map((src, index) => (
-          <img
-            key={`compare-${src}-${index}`}
-            src={src}
-            alt=""
-            aria-hidden="true"
-            className={`absolute bottom-[-28px] h-32 w-24 object-contain dark:mix-blend-multiply dark:brightness-125 dark:contrast-125  lg:h-40 lg:w-28 ${
-              index === 0
-                ? "left-2 -rotate-12"
-                : index === 1
-                  ? "left-16 rotate-3"
-                  : "left-28 rotate-12"
-            }`}
-          />
-        ))}
-      </div>
-
-      <div className="relative z-10 sm:pl-48 lg:pl-72">
+      <div className="relative z-10 flex-1 px-0 sm:pl-40 lg:pl-52">
         <p className="text-[9px] font-black uppercase tracking-[0.22em] text-blue-600 sm:text-[10px]">
           Smart comparison
         </p>
-        <h3 className="mt-1 text-lg font-black tracking-tight text-slate-950 dark:text-white sm:text-xl">
+        <h3 className="mt-1 text-[22px] font-black tracking-[-0.04em] text-slate-950 dark:text-white sm:text-[28px] lg:text-[32px]">
           Compare phones side by side
         </h3>
         <p className="mt-1 max-w-xl text-xs leading-5 text-slate-500 dark:text-slate-300 sm:text-sm">
@@ -1028,11 +1048,13 @@ const SmartphoneCompareBanner = ({ latestItems = [] }) => {
 
       <Link
         to="/compare"
-        className="relative z-10 mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 bg-blue-600 px-5 text-sm font-extrabold text-white no-underline transition-colors hover:bg-blue-700 hover:no-underline sm:ml-48 sm:w-auto lg:ml-0 lg:mt-0"
+        className="relative z-10 mt-4 inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 text-sm font-extrabold text-white no-underline shadow-[0_12px_20px_rgba(37,99,235,0.22)] transition-colors hover:bg-blue-700 hover:no-underline sm:ml-2 sm:mt-0 sm:w-auto lg:ml-0"
       >
-        <FaBalanceScale />
+        <span className="grid h-7 w-7 place-items-center rounded-full bg-white/15 text-base">
+          <FaBalanceScale className="text-[14px]" />
+        </span>
         Start Comparing
-        <FaArrowRight className="text-xs" />
+        <FaArrowRight className="text-[12px]" />
       </Link>
     </aside>
   );
@@ -1045,7 +1067,7 @@ const AdvancedSmartphoneDiscovery = ({
   latestItems = [],
   entityType = "smartphones",
 }) => (
-  <div className="smartphones-discovery-section overflow-hidden rounded-2xl bg-white px-3 py-5 text-slate-950 dark:bg-[#0b1728] dark:text-slate-100 sm:px-6 sm:py-7">
+  <div className="smartphones-discovery-section overflow-hidden bg-transparent px-0 py-5 text-slate-950 dark:text-slate-100 sm:px-0 sm:py-7">
     <SmartphoneDiscoveryHero latestItems={latestItems} />
     <div className="mt-5 grid grid-cols-1 gap-3 bg-transparent sm:gap-4 lg:grid-cols-3">
       <SmartphoneDiscoveryPricePanel
@@ -1062,15 +1084,12 @@ const AdvancedSmartphoneDiscovery = ({
       />
     </div>
     <div className="mt-4 bg-transparent">
-      <SmartphoneCompareBanner latestItems={latestItems} />
+      <SmartphoneCompareBanner />
     </div>
   </div>
 );
 
-const PriceDiscoveryBlock = ({
-  items = [],
-  entityType = "smartphones",
-}) => {
+const PriceDiscoveryBlock = ({ items = [], entityType = "smartphones" }) => {
   if (!Array.isArray(items) || items.length === 0) return null;
 
   return (
@@ -1091,10 +1110,7 @@ const PriceDiscoveryBlock = ({
   );
 };
 
-const PopularSearchesBlock = ({
-  items = [],
-  entityType = "smartphones",
-}) => {
+const PopularSearchesBlock = ({ items = [], entityType = "smartphones" }) => {
   if (!Array.isArray(items) || items.length === 0) return null;
 
   return (

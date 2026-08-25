@@ -288,7 +288,7 @@ const NewsEditorialDesk = ({ stories = [], loading = false, error = "" }) => {
 
             <p className={`mt-4 max-w-3xl ${NEWS_BRAND_STYLES.bodyLarge}`}>
               Explore the latest mobile stories, article updates, and launch
-              coverage from the Hooks news desk.
+              coverage from the MobileX news desk.
             </p>
           </div>
 

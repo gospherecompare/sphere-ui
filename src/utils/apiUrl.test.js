@@ -22,7 +22,7 @@ describe("resolveApiBaseUrl", () => {
   });
 
   it("uses the remote API base in the browser by default", () => {
-    expect(resolveApiBaseUrl({ hostname: "tryhook.shop" })).toBe(
+    expect(resolveApiBaseUrl({ hostname: "mobilex.in" })).toBe(
       DEFAULT_REMOTE_API_BASE_URL,
     );
   });

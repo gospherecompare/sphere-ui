@@ -236,7 +236,7 @@ const MobileFeaturesFinder = () => {
         <div className="mt-1 flex items-center gap-4">
           <div className="h-px flex-1 bg-gradient-to-r from-transparent via-purple-300 to-transparent" />
           <span className="whitespace-nowrap text-xs font-bold uppercase tracking-[0.3em] text-slate-500">
-            Featured Picks on Hooks
+            Featured Picks on MobileX
           </span>
           <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
         </div>

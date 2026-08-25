@@ -59,7 +59,9 @@ export const ProductVisual = ({ product, className = "" }) => {
       ) : (
         <div className="home-v2-product-fallback" aria-hidden="true">
           <FaMobileAlt />
-          <span>{String(product?.brand || product?.name || "Hooks").slice(0, 2)}</span>
+          <span>
+            {String(product?.brand || product?.name || "MobileX").slice(0, 2)}
+          </span>
         </div>
       )}
     </div>
@@ -69,7 +71,10 @@ export const ProductVisual = ({ product, className = "" }) => {
 export const ScoreBadge = ({ score }) => {
   if (!Number.isFinite(score)) return null;
   return (
-    <span className="home-v2-score" aria-label={`Hooks score ${score} out of 100`}>
+    <span
+      className="home-v2-score"
+      aria-label={`MobileX score ${score} out of 100`}
+    >
       <FaStar aria-hidden="true" />
       {score}
     </span>
@@ -86,12 +91,20 @@ export const ProductCard = ({ product, rank, compact = false, label = "" }) => {
     >
       <div className="home-v2-product-card__topline">
         <span>{label || product.brand || "Product"}</span>
-        {rank ? <b>{String(rank).padStart(2, "0")}</b> : <ScoreBadge score={product.score} />}
+        {rank ? (
+          <b>{String(rank).padStart(2, "0")}</b>
+        ) : (
+          <ScoreBadge score={product.score} />
+        )}
       </div>
       <ProductVisual product={product} />
       <div className="home-v2-product-card__body">
         <h3>{product.name}</h3>
-        <p>{product.spec || product.secondarySpec || "Full specifications and price comparison"}</p>
+        <p>
+          {product.spec ||
+            product.secondarySpec ||
+            "Full specifications and price comparison"}
+        </p>
         <div className="home-v2-product-card__footer">
           <strong>{formatPrice(product.price)}</strong>
           <span>
@@ -104,7 +117,10 @@ export const ProductCard = ({ product, rank, compact = false, label = "" }) => {
 };
 
 export const HomeSkeleton = ({ count = 4, variant = "cards" }) => (
-  <div className={`home-v2-skeleton home-v2-skeleton--${variant}`} aria-hidden="true">
+  <div
+    className={`home-v2-skeleton home-v2-skeleton--${variant}`}
+    aria-hidden="true"
+  >
     {Array.from({ length: count }, (_, index) => (
       <span key={index} />
     ))}

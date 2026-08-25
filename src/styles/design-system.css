@@ -663,8 +663,7 @@ html[data-route-group="company"] h1 {
     var(--hooks-surface) 90%,
     transparent
   ) !important;
-  box-shadow: 0 12px 36px rgba(17, 32, 62, 0.08) !important;
-  backdrop-filter: blur(20px);
+  box-shadow: none !important;
 }
 
 .hooks-brand-wordmark {
@@ -1056,6 +1055,10 @@ html[data-theme="dark"] [class*="shadow-["] {
   gap: clamp(2rem, 5vw, 5rem);
 }
 
+.hooks-company-content__grid--full {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .hooks-company-toc {
   position: sticky;
   top: calc(var(--desktop-header-height, 64px) + 1.5rem);
@@ -1270,11 +1273,8 @@ html[data-theme="dark"] [class*="shadow-["] {
 }
 
 .hooks-contact-card {
-  padding: clamp(1.25rem, 3vw, 2rem);
-  border: 1px solid var(--hooks-line);
-  border-radius: var(--hooks-radius-lg);
-  background: var(--hooks-surface);
-  box-shadow: var(--hooks-shadow-sm);
+  min-width: 0;
+  padding: clamp(0.5rem, 1.5vw, 1rem) 0 clamp(1.5rem, 3vw, 2.25rem);
 }
 
 .hooks-contact-card__icon {
@@ -1758,6 +1758,16 @@ html[data-theme="dark"] [class*="shadow-["] {
 .hooks-tv-detail > div,
 .hooks-network-detail > div {
   border-color: var(--hooks-line) !important;
+}
+
+.hooks-tv-detail,
+.hooks-tv-detail > div {
+  background: #ffffff !important;
+}
+
+.hooks-tv-listing .hooks-category-hero::before,
+.hooks-tv-listing .hooks-category-hero::after {
+  display: none;
 }
 
 /* Careers and 404 inherit the same editorial system */

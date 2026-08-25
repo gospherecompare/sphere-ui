@@ -7,7 +7,7 @@ import {
   createProductSchema,
   createWebPageSchema,
 } from "../../utils/schemaGenerators";
-import { Helmet } from "react-helmet-async";
+import SEO from "../SEO";
 import { buildDeviceSeoKeywords } from "../../utils/seoKeywordBuilder";
 import usePageEngagementTracker from "../../hooks/usePageEngagementTracker";
 
@@ -69,7 +69,7 @@ import RatingReview from "../ui/RatingReview";
 import useStoreLogos from "../../hooks/useStoreLogos";
 import { toCanonicalPageUrl } from "../../utils/publicUrl";
 
-const SITE_ORIGIN = "https://tryhook.shop";
+const SITE_ORIGIN = "https://mobilex.in";
 
 // Rating Input Component
 const InlineRatingInput = ({
@@ -1346,7 +1346,8 @@ const NetworkingDetailCard = () => {
   };
   const ogImage = toAbsoluteUrl(metaImage);
   const productSchemaJson = (() => {
-    const productName = deviceData?.name || deviceData?.model || metaTitle || "";
+    const productName =
+      deviceData?.name || deviceData?.model || metaTitle || "";
     if (!productName) return null;
     const schemas = [
       createWebPageSchema({
@@ -1367,27 +1368,17 @@ const NetworkingDetailCard = () => {
 
   return (
     <div className="hooks-product-detail hooks-network-detail max-w-8xl mx-auto bg-white">
-      {/* SEO Helmet */}
-      <Helmet prioritizeSeoTags>
-        <title>{metaTitle}</title>
-        <meta name="description" content={metaDescription} />
-        {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
-        <meta property="og:type" content="product" />
-        <meta property="og:title" content={metaTitle} />
-        <meta property="og:description" content={metaDescription} />
-        {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
-        {ogImage && <meta property="og:image" content={ogImage} />}
-        <meta
-          name="twitter:card"
-          content={ogImage ? "summary_large_image" : "summary"}
-        />
-        <meta name="twitter:title" content={metaTitle} />
-        <meta name="twitter:description" content={metaDescription} />
-        {ogImage && <meta name="twitter:image" content={ogImage} />}
+      <SEO
+        title={metaTitle}
+        description={metaDescription}
+        url={canonicalUrl}
+        ogType="product"
+        image={ogImage || null}
+      >
         {productSchemaJson && (
           <script type="application/ld+json">{productSchemaJson}</script>
         )}
-      </Helmet>
+      </SEO>
       {/* Share Menu Modal */}
       {showShareMenu && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">

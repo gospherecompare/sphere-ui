@@ -7,8 +7,10 @@ import {
   createProductSchema,
   createWebPageSchema,
 } from "../../utils/schemaGenerators";
-import { Helmet } from "react-helmet-async";
+import SEO from "../SEO";
 import usePageEngagementTracker from "../../hooks/usePageEngagementTracker";
+import Breadcrumbs from "../Breadcrumbs";
+import DetailPageNavigator from "../ui/DetailPageNavigator";
 
 // Icons
 import {
@@ -34,6 +36,7 @@ import {
   FaShoppingCart,
   FaBalanceScale,
   FaMicrochip,
+  FaPlus,
   FaExpand,
   FaWifi,
   FaBluetooth,
@@ -66,7 +69,68 @@ import { toCanonicalPageUrl } from "../../utils/publicUrl";
 
 // Data comes from API via `useDevice()`; embedded mock removed.
 const mockAppliances = [];
-const SITE_ORIGIN = "https://tryhook.shop";
+const SITE_ORIGIN = "https://mobilex.in";
+
+const TvOrbitArtwork = () => (
+  <div
+    aria-hidden="true"
+    className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+  >
+    <div className="absolute left-[12%] top-[10%] h-32 w-32 rounded-full bg-blue-400/10 blur-3xl sm:h-44 sm:w-44" />
+    <div className="absolute bottom-[8%] right-[8%] h-36 w-36 rounded-full bg-indigo-400/10 blur-3xl sm:h-52 sm:w-52" />
+    <svg
+      viewBox="0 0 620 500"
+      fill="none"
+      className="absolute inset-0 h-full w-full text-blue-500/20"
+      preserveAspectRatio="xMidYMid slice"
+    >
+      <ellipse cx="310" cy="250" rx="198" ry="154" stroke="currentColor" strokeWidth="1.2" strokeDasharray="8 12" />
+      <ellipse cx="310" cy="250" rx="148" ry="204" stroke="currentColor" strokeWidth="1" strokeDasharray="3 13" transform="rotate(22 310 250)" />
+      <path d="M74 357C160 314 191 349 244 316C302 281 288 210 360 183C417 161 463 185 550 133" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M102 117H174L197 140H247" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M445 374H512L534 352H574" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <circle cx="102" cy="117" r="4" fill="currentColor" />
+      <circle cx="247" cy="140" r="4" fill="currentColor" />
+      <circle cx="74" cy="357" r="4" fill="currentColor" />
+      <circle cx="360" cy="183" r="4" fill="currentColor" />
+      <circle cx="550" cy="133" r="4" fill="currentColor" />
+      <circle cx="445" cy="374" r="4" fill="currentColor" />
+      <circle cx="574" cy="352" r="4" fill="currentColor" />
+    </svg>
+    <div className="absolute left-5 top-5 hidden items-center gap-1.5 sm:flex">
+      <span className="h-1.5 w-8 rounded-full bg-blue-600/35" />
+      <span className="h-1.5 w-3 rounded-full bg-blue-400/25" />
+      <span className="h-1.5 w-1.5 rounded-full bg-indigo-500/30" />
+    </div>
+    <div className="absolute bottom-7 right-6 hidden grid-cols-3 gap-1.5 sm:grid">
+      {Array.from({ length: 9 }).map((_, index) => (
+        <span
+          key={index}
+          className={`h-1.5 w-1.5 rounded-full ${
+            index === 4 ? "bg-blue-600/40" : "bg-slate-400/20"
+          }`}
+        />
+      ))}
+    </div>
+  </div>
+);
+
+const TvXScoreLogo = ({ className }) => (
+  <svg
+    viewBox="0 0 874 420"
+    className={className}
+    preserveAspectRatio="xMidYMid meet"
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    role="img"
+    aria-label="MobileX"
+  >
+    <path fill="#111318" d="M0 419H99L101 142L288 327L471 145L400 75L288 185L101 0H0V419Z" />
+    <path fill="#111318" d="M365 0L568 202L357 419H476L689 202L488 0H365Z" />
+    <path fill="#2563EB" d="M868 0H746L639 117L700 179L868 0Z" />
+    <path fill="#2563EB" d="M631 298L746 420H874L694 235L631 298Z" />
+  </svg>
+);
 
 const toNumericPrice = (value) => {
   if (value === null || value === undefined || value === "") return null;
@@ -174,6 +238,7 @@ const TVDetailCard = () => {
   const [copied, setCopied] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [showHeaderSummaryFull, setShowHeaderSummaryFull] = useState(false);
+  const [expandedSpecSections, setExpandedSpecSections] = useState({});
   // Review form removed
 
   const [loading, setLoading] = useState(false);
@@ -674,12 +739,7 @@ const TVDetailCard = () => {
       }
 
       // 2) Resolve legacy query-string routes by variant id.
-      if (
-        !selected &&
-        !requestedProductId &&
-        variantIdParam &&
-        source.length
-      ) {
+      if (!selected && !requestedProductId && variantIdParam && source.length) {
         for (const dev of source) {
           const vars = Array.isArray(dev.variants) ? dev.variants : [];
           const idx = vars.findIndex(
@@ -931,8 +991,7 @@ const TVDetailCard = () => {
 
   usePageEngagementTracker({
     productId: currentProductId,
-    pagePath:
-      typeof window !== "undefined" ? window.location.pathname : "/tvs",
+    pagePath: typeof window !== "undefined" ? window.location.pathname : "/tvs",
     source: "tv-detail",
     enabled: Boolean(currentProductId),
   });
@@ -2003,7 +2062,7 @@ const TVDetailCard = () => {
     return formatSpecValueText(value);
   };
 
-  const renderSpecTable = (data) => {
+  const renderSpecTable = (data, limit = 5, sectionId = "tv-specifications") => {
     if (!data || typeof data !== "object") {
       return (
         <div className="rounded-lg border border-dashed border-slate-100 bg-white py-6 text-center text-sm text-slate-500 shadow-[0_2px_2px_rgba(0,0,0,0.1)]">
@@ -2025,41 +2084,60 @@ const TVDetailCard = () => {
       );
     }
 
+    const isExpanded = Boolean(expandedSpecSections[sectionId]);
+    const displayRows = isExpanded ? rows : rows.slice(0, limit);
+
     return (
       <>
-        {/* Mobile: Stacked Layout */}
-        <div className="space-y-3 sm:hidden">
-          {rows.map(([key, value]) => (
+        <div className="divide-y divide-slate-200/80 sm:hidden">
+          {displayRows.map(([key, value]) => (
             <div
               key={key}
-              className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-start gap-x-4 gap-y-1 py-1"
+              className="grid grid-cols-[5.75rem_minmax(0,1fr)] items-start gap-x-3 gap-y-1 py-3 first:pt-0 last:pb-0"
             >
-              <div className="text-[13px] font-medium leading-5 text-[#45608f]">
+              <div className="text-sm font-medium leading-5 text-slate-500">
                 {toNormalCase(key)}
               </div>
-              <div className="break-words text-[15px] font-semibold leading-6 text-[#0d347f]">
+              <div className="break-words text-[15px] font-semibold leading-5 text-slate-900">
                 {renderSpecValue(value)}
               </div>
             </div>
           ))}
         </div>
 
-        {/* Desktop: Table Layout */}
-        <div className="hidden space-y-4 sm:block">
-          {rows.map(([key, value]) => (
+        <div className="hidden divide-y divide-slate-200/80 sm:block">
+          {displayRows.map(([key, value]) => (
             <div
               key={key}
-              className="grid gap-2 py-1 sm:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] sm:gap-6"
+              className="grid min-h-11 items-center gap-2 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] sm:gap-6"
             >
-              <div className="text-sm font-medium text-[#58709d]">
+              <div className="text-sm font-medium text-slate-500">
                 {toNormalCase(key)}
               </div>
-              <div className="break-words text-sm font-semibold text-[#123986]">
+              <div className="break-words text-sm font-semibold text-slate-900">
                 {renderSpecValue(value)}
               </div>
             </div>
           ))}
         </div>
+        {rows.length > limit ? (
+          <button
+            type="button"
+            aria-expanded={isExpanded}
+            onClick={() =>
+              setExpandedSpecSections((current) => ({
+                ...current,
+                [sectionId]: !current[sectionId],
+              }))
+            }
+            className="mt-4 inline-flex w-full items-center justify-center gap-2 border-t border-slate-200 pt-4 text-sm font-bold text-blue-600 transition-colors hover:text-blue-700"
+          >
+            {isExpanded ? "View fewer" : "View more"}
+            <FaChevronDown
+              className={`text-xs transition-transform ${isExpanded ? "rotate-180" : ""}`}
+            />
+          </button>
+        ) : null}
       </>
     );
   };
@@ -2073,6 +2151,14 @@ const TVDetailCard = () => {
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   };
+
+  const detailPageSections = tabs.map(({ id, label, icon: Icon }) => ({
+    id: id === "specifications" ? "tv-specifications" : `tv-${id}`,
+    label,
+    Icon,
+  }));
+  const activeDetailSection =
+    activeTab === "specifications" ? "tv-specifications" : `tv-${activeTab}`;
 
   const renderTabContent = () => {
     if (!applianceData) return null;
@@ -2122,43 +2208,39 @@ const TVDetailCard = () => {
         return (
           <section
             id={sectionId}
-            className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_2px_2px_rgba(0,0,0,0.1)]"
+            className="flex scroll-mt-[136px] flex-col overflow-hidden rounded-2xl border border-blue-200 bg-transparent shadow-none sm:scroll-mt-[148px]"
           >
-            <div className="px-4 pt-4 sm:px-6 sm:pt-6">
-              <h4 className="text-xl font-semibold tracking-tight text-[#123986] sm:text-2xl">
+            <div className="flex items-center gap-3 bg-blue-50/60 px-4 py-4 sm:px-5 sm:py-3.5">
+              <span className="h-6 w-1 rounded-full bg-blue-600" aria-hidden="true" />
+              <h4 className="text-[17px] font-bold tracking-tight text-slate-950 sm:text-base">
                 {title}
               </h4>
-              <div className="mt-4 h-px w-full bg-gradient-to-r from-[#6fa8ff] via-[#8e87ff] to-[#d2b6ff]" />
             </div>
-            <div className="mt-5 px-4 pb-4 sm:px-6 sm:pb-6">
-              {renderSpecTable(data)}
+            <div className="flex flex-1 flex-col bg-transparent px-4 py-4 sm:px-5 sm:py-4">
+              {renderSpecTable(data, 5, sectionId)}
             </div>
           </section>
         );
       };
 
       return (
-        <div
-          id="tv-specifications"
-          className="w-full max-w-7xl px-2 sm:px-0"
-        >
-          <div className="hidden text-slate-900 sm:block">
+        <div id="tv-specifications" className="mx-auto w-full max-w-6xl px-2 sm:px-0">
+          <div className="text-slate-900">
             <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-blue-600">
               Full Specifications
             </p>
-            <p className="mt-3 max-w-7xl text-sm leading-6 text-[#556b95]">
+            <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
+              Complete hardware and software details
+            </h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
               {headerTitle} specifications cover display quality, smart TV
               features, audio, connectivity, ports, gaming, and physical
               details.
             </p>
           </div>
 
-          <div className="space-y-4 sm:mt-6 sm:space-y-5">
-            {renderTvSpecSection(
-              "tv-core",
-              "General",
-              generalSection,
-            )}
+          <div className="mt-5 grid gap-5 lg:grid-cols-2">
+            {renderTvSpecSection("tv-core", "General", generalSection)}
             {renderTvSpecSection(
               "tv-display",
               "Display",
@@ -2369,24 +2451,25 @@ const TVDetailCard = () => {
   const headerSpecScoreBlock =
     headerSpecScoreValue != null ? (
       <div
-        className="flex items-end gap-1.5 leading-none"
+        className="flex items-center gap-3"
         aria-label={`Spec score ${Math.round(headerSpecScoreValue)} out of 100`}
       >
-        <div className="flex items-baseline leading-none">
-          <span className="text-3xl font-semibold leading-none text-blue-600">
+        <TvXScoreLogo className="h-11 w-11 shrink-0 rounded-xl object-cover" />
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+            Spec score
+          </p>
+          <div className="mt-1 flex items-end gap-1">
+            <span className="text-3xl font-black leading-none text-slate-950">
             {Math.round(headerSpecScoreValue)}
-          </span>
-          <span className="ml-0.5 text-[13px] font-semibold leading-none text-blue-500">
-            /100
-          </span>
-        </div>
-        <div className="mb-0.5 flex flex-col items-start leading-none">
-          <span className="text-[8px] font-semibold uppercase tracking-[0.32em] text-blue-400">
-            Spec
-          </span>
-          <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-blue-500">
-            Score
-          </span>
+            </span>
+            <span className="pb-0.5 text-sm font-semibold text-slate-500">
+              /100
+            </span>
+          </div>
+          <p className="mt-1 text-[11px] text-slate-500">
+            Based on specifications
+          </p>
         </div>
       </div>
     ) : null;
@@ -2451,15 +2534,7 @@ const TVDetailCard = () => {
     screenSize: metaScreenSize,
     resolution: metaResolution,
   });
-  const currentMonthYearLabel = new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    year: "numeric",
-  }).format(new Date());
-  const metaTitleWithMonthYear = String(metaTitle).includes(
-    currentMonthYearLabel,
-  )
-    ? metaTitle
-    : `${metaTitle} (${currentMonthYearLabel})`;
+  const metaTitleWithMonthYear = metaTitle;
   const metaDescription = tvMeta.description({
     name: metaName,
     brand: metaBrand,
@@ -2579,34 +2654,18 @@ const TVDetailCard = () => {
     : [];
 
   return (
-    <div className="hooks-product-detail hooks-tv-detail w-full bg-white">
-      <Helmet prioritizeSeoTags>
-        <title>{metaTitleWithMonthYear}</title>
-        <meta name="description" content={metaDescription} />
-        <link rel="canonical" href={canonicalUrl} />
-        <meta property="og:type" content="product" />
-        <meta property="og:title" content={metaTitleWithMonthYear} />
-        <meta property="og:description" content={metaDescription} />
-        <meta property="og:site_name" content="Hooks" />
-        {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
-        {ogImage && <meta property="og:image" content={ogImage} />}
-        {ogImage && <meta property="og:image:secure_url" content={ogImage} />}
-        {ogImage && <meta property="og:image:type" content="image/jpeg" />}
-        {ogImage && <meta property="og:image:width" content="1200" />}
-        {ogImage && <meta property="og:image:height" content="630" />}
-        <meta
-          name="twitter:card"
-          content={ogImage ? "summary_large_image" : "summary"}
-        />
-        <meta name="twitter:site" content="@tryhooks" />
-        <meta name="twitter:creator" content="@tryhooks" />
-        <meta name="twitter:title" content={metaTitleWithMonthYear} />
-        <meta name="twitter:description" content={metaDescription} />
-        {ogImage && <meta name="twitter:image" content={ogImage} />}
+    <div className="hooks-product-detail hooks-tv-detail min-h-screen w-full bg-white text-slate-950">
+      <SEO
+        title={metaTitleWithMonthYear}
+        description={metaDescription}
+        url={canonicalUrl}
+        ogType="product"
+        image={ogImage || null}
+      >
         {productSchemaJson && (
           <script type="application/ld+json">{productSchemaJson}</script>
         )}
-      </Helmet>
+      </SEO>
       {/* Share Menu Modal */}
       {showShareMenu && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -2688,7 +2747,24 @@ const TVDetailCard = () => {
       )}
 
       <div className="overflow-hidden">
-        <section className="w-full text-slate-900">
+        <DetailPageNavigator
+          sections={detailPageSections}
+          activeId={activeDetailSection}
+          onNavigate={(sectionId) =>
+            handleTabClick(
+              sectionId === "tv-specifications"
+                ? "specifications"
+                : sectionId.replace(/^tv-/, ""),
+            )
+          }
+        />
+        <div className="mx-auto max-w-7xl px-3 pt-3 sm:px-6 lg:px-8">
+          <Breadcrumbs variant="plain" />
+        </div>
+        <section className="hidden w-full text-slate-900" aria-hidden="true">
+          <div className="mx-auto max-w-7xl px-3 pt-3 sm:px-6 lg:px-8">
+            <Breadcrumbs variant="plain" />
+          </div>
           <div className="mx-auto max-w-7xl px-3 pb-0 pt-0 sm:px-6 sm:pb-0 lg:px-8 lg:pb-0">
             <div className="px-3 pb-0 pt-3 sm:px-6 sm:pb-0 sm:pt-4 lg:px-7 lg:pb-0 lg:pt-4">
               <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -2812,13 +2888,14 @@ const TVDetailCard = () => {
           </div>
         </section>
 
-        <div className="mx-auto max-w-7xl px-3 pb-6 pt-0 sm:px-6 sm:pb-6 lg:px-8">
-          <div className="flex flex-col gap-6 lg:flex-row">
+        <div className="mx-auto w-full max-w-[1440px] px-3 pb-7 pt-5 sm:px-6 sm:pb-9 sm:pt-7 lg:px-8">
+          <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-7">
             {/* Images Section */}
-            <div className="rounded-md bg-transparent p-0 shadow-none lg:w-2/5">
-              <div className="space-y-5">
+            <div className="min-w-0 rounded-[24px] bg-transparent p-3 shadow-none sm:p-5 lg:p-6">
+              <div className="grid min-w-0 gap-3 sm:grid-cols-[68px_minmax(0,1fr)]">
                 {/* Main Image */}
-                <div className="relative overflow-hidden rounded-[28px] border border-slate-100 bg-white px-4 py-8 shadow-[0_2px_2px_rgba(0,0,0,0.1)] sm:px-10 sm:py-12">
+                <div className="relative order-1 min-w-0 overflow-hidden rounded-[22px] border border-slate-100 bg-white px-4 py-8 shadow-[0_18px_40px_rgba(15,23,42,0.10)] sm:col-start-2 sm:row-start-1 sm:order-2 sm:px-8 sm:py-8">
+                  <TvOrbitArtwork />
                   {galleryImages.length > 1 ? (
                     <>
                       <button
@@ -2846,7 +2923,7 @@ const TVDetailCard = () => {
                         "/placeholder-appliance.jpg"
                       }
                       alt={applianceData.product_name}
-                      className="h-auto max-h-[320px] w-auto object-contain drop-shadow-[0_16px_24px_rgba(15,23,42,0.12)] sm:max-h-[380px]"
+                      className="relative z-[1] h-auto max-h-[320px] w-auto object-contain drop-shadow-[0_16px_24px_rgba(15,23,42,0.12)] sm:max-h-[380px]"
                       onError={(e) => {
                         e.target.src =
                           "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%23ffffff'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='16' fill='%239ca3af'%3ENo Image Available%3C/text%3E%3C/svg%3E";
@@ -2855,23 +2932,72 @@ const TVDetailCard = () => {
                   </div>
 
                   {galleryImages.length > 1 ? (
-                    <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2">
+                    <div className="order-2 flex min-w-0 snap-x snap-mandatory gap-2 overflow-x-auto px-1 py-1 sm:hidden">
+                      {galleryImages.slice(0, 6).map((image, index) => (
+                        <button
+                          key={`${image}-${index}`}
+                          type="button"
+                          onClick={() => setActiveImage(index)}
+                          aria-label={`View ${headerTitle} image ${index + 1}`}
+                          className={`flex h-14 w-14 shrink-0 snap-start items-center justify-center overflow-hidden rounded-xl border-2 bg-white p-1.5 transition-all ${
+                            activeImage === index
+                              ? "border-blue-500 shadow-sm"
+                              : "border-transparent hover:border-blue-200"
+                          }`}
+                        >
+                          <img
+                            src={image}
+                            alt={`${headerTitle} thumbnail ${index + 1}`}
+                            loading="lazy"
+                            className="h-full w-full object-contain"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  {galleryImages.length > 1 ? (
+                    <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5">
                       {galleryImages.map((_, index) => (
-                      <button
-                        key={index}
-                        type="button"
-                        onClick={() => setActiveImage(index)}
-                        aria-label={`Go to image ${index + 1}`}
-                        className={`h-2 rounded-full transition-all duration-300 ${
-                          activeImage === index
-                            ? "w-10 bg-slate-700"
-                            : "w-2.5 bg-slate-300 hover:bg-slate-400"
-                        }`}
-                      />
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => setActiveImage(index)}
+                          aria-label={`Go to image ${index + 1}`}
+                          className={`h-2 rounded-full transition-all duration-300 ${
+                            activeImage === index
+                              ? "w-10 bg-slate-700"
+                              : "w-2.5 bg-slate-300 hover:bg-slate-400"
+                          }`}
+                        />
                       ))}
                     </div>
                   ) : null}
                 </div>
+                {galleryImages.length > 1 ? (
+                  <div className="order-2 hidden min-w-0 gap-2 sm:col-start-1 sm:row-start-1 sm:flex sm:flex-col">
+                    {galleryImages.slice(0, 6).map((image, index) => (
+                      <button
+                        key={`rail-${image}-${index}`}
+                        type="button"
+                        onClick={() => setActiveImage(index)}
+                        aria-label={`View ${headerTitle} image ${index + 1}`}
+                        className={`flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 bg-white p-1.5 transition-all ${
+                          activeImage === index
+                            ? "border-blue-500 shadow-sm"
+                            : "border-transparent hover:border-blue-200"
+                        }`}
+                      >
+                        <img
+                          src={image}
+                          alt={`${headerTitle} thumbnail ${index + 1}`}
+                          loading="lazy"
+                          className="h-full w-full object-contain"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
               </div>
 
               <div className="mb-4 flex gap-2 lg:hidden">
@@ -2888,32 +3014,31 @@ const TVDetailCard = () => {
               {/* Variant Selection */}
               {variants && variants.length > 0 && (
                 <div className="mb-2">
-                  <h4 className="mb-3 text-base font-semibold text-slate-900">
-                    Available Variants
+                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-blue-600">
+                    Select variant
+                  </p>
+                  <h4 className="mt-1 text-lg font-black text-slate-950">
+                    Choose screen size
                   </h4>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="mt-4 grid min-w-0 grid-cols-2 gap-3 sm:flex sm:overflow-x-auto sm:pb-1">
                     {variants.map((variant, index) => (
                       <button
                         key={variant.id || index}
                         onClick={() => setSelectedVariant(index)}
                         aria-pressed={selectedVariant === index}
-                        className={`relative rounded-2xl border p-3 text-left shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 sm:p-4 ${
+                        className={`relative min-h-[88px] min-w-0 rounded-xl border-2 p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 sm:min-w-[190px] sm:p-4 ${
                           selectedVariant === index
-                            ? "border-blue-600 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-600 text-white shadow-md"
-                            : "border-slate-100 bg-white hover:border-blue-300 hover:bg-slate-50"
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-slate-200 bg-transparent hover:border-blue-300 hover:bg-blue-50/60"
                         }`}
                       >
                         {selectedVariant === index ? (
-                          <span className="absolute right-2 top-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-blue-600 shadow-sm">
+                          <span className="absolute right-3 top-3 inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-white">
                             <FaCheck className="text-[9px]" />
                           </span>
                         ) : null}
                         <div
-                          className={`mb-1 text-sm font-semibold leading-tight ${
-                            selectedVariant === index
-                              ? "text-white"
-                              : "text-gray-900"
-                          }`}
+                          className="pr-6 text-sm font-black leading-tight text-slate-900"
                         >
                           {toSafeText(
                             variant.capacity ||
@@ -2924,11 +3049,7 @@ const TVDetailCard = () => {
                           ) || `Variant ${index + 1}`}
                         </div>
                         <div
-                          className={`mb-1.5 text-[11px] leading-tight ${
-                            selectedVariant === index
-                              ? "text-white/80"
-                              : "text-gray-500"
-                          }`}
+                          className="mt-2 text-[11px] leading-tight text-slate-500"
                         >
                           {toSafeText(
                             variant.resolution ||
@@ -2939,9 +3060,9 @@ const TVDetailCard = () => {
                           )}
                         </div>
                         <div
-                          className={`text-sm font-bold ${
+                          className={`mt-2 text-lg font-black ${
                             selectedVariant === index
-                              ? "text-emerald-200"
+                              ? "text-blue-700"
                               : "text-green-600"
                           }`}
                         >
@@ -2956,37 +3077,161 @@ const TVDetailCard = () => {
             </div>
 
             {/* Details Section */}
-            <div className="flex flex-col lg:w-3/5">
+            <div className="relative isolate min-w-0 overflow-hidden rounded-[24px] bg-transparent p-4 sm:p-6 lg:p-7">
+              <div>
+                <div className="relative z-[1] flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-700 ring-1 ring-emerald-100">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      In stock
+                    </span>
+                    <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.24em] text-blue-600">
+                      {metaBrand || headerType}
+                    </p>
+                    <h1 className="mt-1 text-3xl font-black leading-tight tracking-tight text-slate-950 sm:text-4xl">
+                      {headerTitle}
+                    </h1>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleShare}
+                      aria-label="Share TV"
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/70 text-slate-600 backdrop-blur-md transition hover:bg-white hover:text-blue-700"
+                    >
+                      <FaShareAlt className="text-sm" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigate("/compare")}
+                      className="hidden h-10 items-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-bold text-white transition hover:bg-blue-700 sm:inline-flex"
+                    >
+                      <FaPlus className="text-xs" />
+                      Compare
+                    </button>
+                  </div>
+                </div>
+
+                <div className="relative z-[1] mt-4">
+                  <p
+                    className={`text-sm leading-6 text-slate-600 sm:text-[15px] ${
+                      showHeaderSummaryFull ? "" : "line-clamp-2"
+                    }`}
+                  >
+                    {visibleHeaderSummary}
+                  </p>
+                  {headerSummaryHasMore ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowHeaderSummaryFull((current) => !current)
+                      }
+                      className="mt-1 text-sm font-bold text-blue-600 hover:text-blue-700"
+                    >
+                      {showHeaderSummaryFull ? "Show less" : "Read more"}
+                    </button>
+                  ) : null}
+                </div>
+
+                <div className="relative z-[1] mt-5 grid gap-3 sm:grid-cols-2">
+                  {headerSpecScoreBlock ? (
+                    <div className="rounded-2xl bg-transparent p-4">
+                      {headerSpecScoreBlock}
+                    </div>
+                  ) : null}
+                  <div className="rounded-2xl bg-transparent p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                          Market status
+                        </p>
+                        <p className="mt-1 text-base font-black text-emerald-600">
+                          Available
+                        </p>
+                      </div>
+                      {headerLaunchText ? (
+                        <span className="text-right text-xs leading-5 text-slate-500">
+                          Launched
+                          <br />
+                          <strong className="text-slate-800">
+                            {headerLaunchText}
+                          </strong>
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="mt-4">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                        Starting price
+                      </p>
+                      <p className="mt-1 text-2xl font-black tracking-tight text-slate-950">
+                        {headlinePrice
+                          ? `${RUPEE_SYMBOL} ${formatPrice(headlinePrice)}`
+                          : "Price not announced"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {currentVariantLabel ? (
+                  <div className="relative z-[1] mt-4 inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-semibold text-slate-700">
+                    {currentVariantLabel}
+                  </div>
+                ) : null}
+
+                {tvSummarySections.length > 0 ? (
+                  <div className="relative z-[1] mt-5 grid grid-cols-2 gap-1 rounded-2xl bg-transparent p-1 sm:grid-cols-4">
+                    {tvSummarySections.slice(0, 4).map((item) => {
+                      const Icon = item.Icon;
+                      return (
+                        <button
+                          key={item.key}
+                          type="button"
+                          onClick={() => handleTabClick(item.key)}
+                          className="min-w-0 rounded-xl px-2 py-3 text-left transition hover:bg-white sm:px-3"
+                        >
+                          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                            <Icon className="text-xs" />
+                          </span>
+                          <span className="mt-2 block truncate text-xs font-semibold text-slate-500">
+                            {item.title}
+                          </span>
+                          <span className="mt-1 block line-clamp-2 text-sm font-black leading-5 text-slate-900">
+                            {item.points[0]}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
+
+                <button
+                  type="button"
+                  onClick={() => navigate("/compare")}
+                  className="relative z-[1] mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-700 sm:hidden"
+                >
+                  <FaBalanceScale className="text-sm" />
+                  Compare with another TV
+                </button>
+              </div>
+
               {/* Store Prices Section */}
               {sortedStores.length > 0 && (
                 <div className="order-2 mb-5 mt-5">
                   <div className="mb-4 flex items-start justify-between gap-3">
-                    <div className="space-y-1">
-                      <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-                        <FaStore className="text-green-500" />
-                        Check Price On
-                      </h3>
-                      <p className="text-sm leading-6 text-slate-500">
-                        Compare live offers from trusted stores for{" "}
-                        {metaBrand || "this TV"}.
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-blue-600">
+                        Best prices
                       </p>
+                      <h3 className="mt-1 text-lg font-black text-slate-950">
+                        Buy from trusted stores
+                      </h3>
                     </div>
-                    {sortedStores.length > 3 && (
-                      <button
-                        onClick={() => setShowAllStores(!showAllStores)}
-                        className="flex items-center gap-1 text-sm font-medium text-blue-600 transition-colors hover:text-blue-500"
-                      >
-                        {showAllStores ? "Show Less" : "View All"}
-                        <FaChevronDown
-                          className={`text-xs text-blue-400 transition-transform ${
-                            showAllStores ? "rotate-180" : ""
-                          }`}
-                        />
-                      </button>
-                    )}
+                    <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500">
+                      {sortedStores.length} offer{sortedStores.length === 1 ? "" : "s"}
+                    </span>
                   </div>
 
-                  <div className="space-y-3">
+                  <div className="mt-4 space-y-3">
                     {displayedStores.map((store, index) => {
                       const visitUrl = getStoreVisitUrl(
                         store.url,
@@ -3007,61 +3252,52 @@ const TVDetailCard = () => {
                       return (
                         <div
                           key={store.id || index}
-                          className="rounded-xl border border-slate-100 bg-white p-2.5 shadow-[0_2px_2px_rgba(0,0,0,0.1)] transition-all duration-200 hover:border-blue-300"
+                          className="flex min-h-[68px] min-w-0 items-center justify-between gap-2 rounded-xl border border-slate-100 bg-[#f8fafc] px-3 py-3 shadow-md transition-all duration-200 hover:border-blue-300 sm:gap-4 sm:px-4"
                         >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2.5 flex-1">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 p-2 shadow-sm">
-                                <img
-                                  src={getStoreLogo(store.store_name)}
-                                  alt={store.store_name}
-                                  className="w-full h-full object-contain"
-                                  onError={(e) => {
-                                    e.target.src = getLogo("");
-                                  }}
-                                />
-                              </div>
-                              <div className="flex-1">
-                                <h4 className="text-sm font-bold capitalize text-slate-900">
-                                  {store.store_name}
-                                </h4>
-                                <p className="text-[11px] text-slate-500">
-                                  {store.variantName || store.variantSpec}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <div className="text-right">
-                                <div className="text-sm font-bold text-green-600">
-                                  {RUPEE_SYMBOL} {formatPrice(store.price)}
-                                </div>
-                              </div>
-                              <a
-                                href={hasStoreUrl ? visitUrl : undefined}
-                                target="_blank"
-                                rel="noopener noreferrer nofollow"
-                                onClick={(e) => {
-                                  if (!hasStoreUrl) e.preventDefault();
+                          <div className="flex min-w-0 items-center gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white p-1.5">
+                              <img
+                                src={getStoreLogo(store.store_name)}
+                                alt={store.store_name}
+                                className="w-full h-full object-contain"
+                                onError={(e) => {
+                                  e.target.src = getLogo("");
                                 }}
-                                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
-                                  hasStoreUrl
-                                    ? "bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 text-white shadow-sm hover:from-blue-700 hover:via-blue-600 hover:to-blue-700 hover:shadow-md"
-                                    : "cursor-not-allowed bg-slate-200 text-slate-500"
-                                }`}
-                              >
-                                <FaExternalLinkAlt className="text-xs" />
-                                {hasStoreUrl ? "Buy Now" : "Unavailable"}
-                              </a>
+                              />
+                              </div>
+                            <div className="min-w-0">
+                              <h4 className="text-sm font-bold capitalize text-slate-900">
+                                {store.store_name}
+                              </h4>
+                              <p className="mt-1 text-base font-black text-emerald-600">
+                                {RUPEE_SYMBOL} {formatPrice(store.price)}
+                              </p>
                             </div>
                           </div>
-                        </div>
+                          <a
+                            href={hasStoreUrl ? visitUrl : undefined}
+                            target="_blank"
+                            rel="noopener noreferrer nofollow"
+                            onClick={(e) => {
+                              if (!hasStoreUrl) e.preventDefault();
+                            }}
+                            className={`inline-flex min-w-[84px] shrink-0 items-center justify-center gap-1.5 rounded-lg px-2.5 py-2.5 text-xs font-bold transition-all duration-200 sm:min-w-[96px] sm:px-3 ${
+                              hasStoreUrl
+                                ? "bg-blue-600 text-white shadow-sm hover:bg-blue-700"
+                                : "cursor-not-allowed bg-slate-200 text-slate-500"
+                            }`}
+                          >
+                            <FaExternalLinkAlt className="text-xs" />
+                            {hasStoreUrl ? "Buy now" : "Unavailable"}
+                          </a>
+                          </div>
                       );
                     })}
                   </div>
                 </div>
               )}
 
-              {tvSummarySections.length > 0 ? (
+              {false ? (
                 <div className="order-1 mt-5 space-y-5">
                   <div className="max-w-2xl">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-blue-600">
@@ -3086,7 +3322,9 @@ const TVDetailCard = () => {
                           >
                             <div className="flex items-start gap-3">
                               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-50 ring-1 ring-slate-200">
-                                <Icon className={`text-base ${section.color}`} />
+                                <Icon
+                                  className={`text-base ${section.color}`}
+                                />
                               </div>
                               <div className="min-w-0">
                                 <h4 className="text-[1rem] font-semibold leading-snug text-slate-900 sm:text-[1.08rem]">
@@ -3132,22 +3370,8 @@ const TVDetailCard = () => {
           </div>
 
           {activeTab === "specifications" ? (
-            <div className="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px]">
+            <div className="mt-6">
               <div className="min-w-0">{renderTabContent()}</div>
-              {currentProductId ? (
-                <aside className="min-w-0 px-4 sm:px-0 lg:sticky lg:top-24">
-                  <ProductDiscoverySections
-                    productId={currentProductId}
-                    currentBrand={applianceData?.brand || ""}
-                    entityType="tvs"
-                    catalogItems={homeAppliances}
-                    brandCatalog={brands}
-                    className="w-full"
-                    layout="latestPhones"
-                    variant="sidebar"
-                  />
-                </aside>
-              ) : null}
             </div>
           ) : (
             <>
@@ -3172,7 +3396,7 @@ const TVDetailCard = () => {
           <LatestNewsRouteSection
             className="mt-6"
             productType="tv"
-            subtitle="Fresh TV launches, display technology updates, and buying context from the Hooks news desk."
+            subtitle="Fresh TV launches, display technology updates, and buying context from the MobileX news desk."
           />
         </div>
       </div>
