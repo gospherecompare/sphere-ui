@@ -2894,7 +2894,7 @@ const TVDetailCard = () => {
             <div className="min-w-0 rounded-[24px] bg-transparent p-3 shadow-none sm:p-5 lg:p-6">
               <div className="grid min-w-0 gap-3 sm:grid-cols-[68px_minmax(0,1fr)]">
                 {/* Main Image */}
-                <div className="relative order-1 min-w-0 overflow-hidden rounded-[22px] border border-slate-100 bg-white px-4 py-8 shadow-[0_18px_40px_rgba(15,23,42,0.10)] sm:col-start-2 sm:row-start-1 sm:order-2 sm:px-8 sm:py-8">
+                <div className="relative order-1 min-w-0 overflow-hidden rounded-[22px] border border-slate-100 bg-white px-4 py-8 sm:col-start-2 sm:row-start-1 sm:order-2 sm:px-8 sm:py-8">
                   <TvOrbitArtwork />
                   {galleryImages.length > 1 ? (
                     <>
@@ -2923,7 +2923,7 @@ const TVDetailCard = () => {
                         "/placeholder-appliance.jpg"
                       }
                       alt={applianceData.product_name}
-                      className="relative z-[1] h-auto max-h-[320px] w-auto object-contain drop-shadow-[0_16px_24px_rgba(15,23,42,0.12)] sm:max-h-[380px]"
+                      className="relative z-[1] h-auto max-h-[320px] w-auto object-contain sm:max-h-[380px]"
                       onError={(e) => {
                         e.target.src =
                           "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%23ffffff'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='16' fill='%239ca3af'%3ENo Image Available%3C/text%3E%3C/svg%3E";

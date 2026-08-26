@@ -274,7 +274,7 @@ const resolveNewsDateModified = (publishedValue, updatedValue) => {
 };
 const BUDGET_PHONE_KEYWORDS =
   "budget phones under 10000, budget phones under 15000, budget phones under 20000, budget phones under 30000, budget phones under 50000";
-const DEFAULT_SEO_KEYWORDS = `hook, best gadget comparison site, mobile price comparison india, moblie price comparison india, compare laptops smartphones tvs, compare smartphone tv laptops, compare specs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch phones, trending phone in india, most popular mobiles, top selling gadgets india, 5g phones in india, ai phones in india, ${BUDGET_PHONE_KEYWORDS}, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, gaming laptops india, student laptops india, laptop comparison india, vacuum cooler laptop and phone, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000, smart tv comparison india`;
+const DEFAULT_SEO_KEYWORDS = `hook, best gadget comparison site, mobile price comparison india, compare laptops smartphones tvs, compare smartphone tv laptops, compare specs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch phones, trending phone in india, most popular mobiles, top selling gadgets india, 5g phones in india, ai phones in india, ${BUDGET_PHONE_KEYWORDS}, latest laptops in india ${CURRENT_YEAR}, laptop prices list ${CURRENT_YEAR}, gaming laptops india, student laptops india, laptop comparison india, vacuum cooler laptop and phone, latest smart tvs in india ${CURRENT_YEAR}, tv prices list ${CURRENT_YEAR}, best 4k tv india, best 8k tv india, oled tv india, android tv price india, led tv under 30000, smart tv comparison india`;
 const DEFAULT_INDEX_ROBOTS = "index, follow, max-image-preview:large";
 let publishedCompareRouteMeta = new Map();
 let publishedNewsRouteMeta = new Map();
@@ -486,6 +486,54 @@ const joinCompareNamesWithoutCommas = (names = []) => {
   if (!clean.length) return "";
   if (clean.length === 1) return clean[0];
   return clean.join(" and ");
+};
+const limitSeoText = (value, maxLength) => {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, Math.max(1, maxLength - 3)).trim()}...`;
+};
+
+const getSeoFingerprint = (value = "") => {
+  let hash = 2166136261;
+  for (const character of String(value || "")) {
+    hash ^= character.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36).slice(0, 5);
+};
+
+const compactCompareName = (name = "") => {
+  const words = String(name || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (words.length <= 3) return words.join(" ");
+  return `${words.slice(0, 2).join(" ")} ${words[words.length - 1]}`;
+};
+
+const buildCompareSeoTitle = (names = []) => {
+  const cleanNames = (Array.isArray(names) ? names : [])
+    .map((name) => String(name || "").trim())
+    .filter(Boolean);
+  if (!cleanNames.length) return "Compare Smartphones, TVs and Devices | MobileX";
+
+  const suffix = ": Specs & Price | MobileX";
+  const compactNames = cleanNames.map(compactCompareName);
+  const label = compactNames.join(" vs ");
+  if (label.length <= 60 - suffix.length) return `${label}${suffix}`;
+
+  const fingerprint = getSeoFingerprint(cleanNames.join("|"));
+  const labelBudget = 60 - suffix.length - fingerprint.length - 3;
+  const shortened = `${limitSeoText(label, labelBudget)} (${fingerprint})`;
+  return `${shortened}${suffix}`;
+};
+
+const buildCompareSeoDescription = (names = []) => {
+  const label = joinCompareNamesWithoutCommas(names) || "these devices";
+  return limitSeoText(
+    `Compare ${label} on price, specifications, features, and performance in India with current product details on MobileX.`,
+    160,
+  );
 };
 
 const toSlug = (value = "") =>
@@ -2046,10 +2094,6 @@ const resolveSeo = (routePath) => {
   const tvListingRoute = getTvListingRouteMeta(canonicalPath);
   const tvDetailName = getTvDetailName(canonicalPath);
   const compareNames = extractCompareRouteNames(canonicalPath);
-  const compareJoinedNames = joinCompareNamesWithoutCommas(compareNames);
-  const compareVsJoinedNames = compareNames.filter(Boolean).join(" vs ");
-  const publishedCompareSeo =
-    publishedCompareRouteMeta.get(canonicalPath) || null;
   const smartphoneFilterSlug = (() => {
     const match = canonicalPath.match(/^\/smartphones\/filter\/([^/]+)$/i);
     if (!match) return "";
@@ -2069,6 +2113,18 @@ const resolveSeo = (routePath) => {
   const smartphoneFeatureMeta = smartphoneListingRoute?.featureSlug
     ? getSmartphoneFeatureRouteMeta(smartphoneListingRoute.featureSlug)
     : null;
+  const trendingCategory = canonicalPath.split("/")[2] || "smartphones";
+  const trendingLabels = {
+    smartphones: "Smartphones",
+    tvs: "TVs",
+    networking: "Networking Devices",
+  };
+  const trendingKeywordSets = {
+    smartphones: `trending smartphones india, trending phone in india, most popular mobiles, latest smartphones in india ${CURRENT_YEAR}`,
+    tvs: "trending tvs india, trending smart tvs, popular tvs in india, latest tv deals",
+    networking:
+      "trending networking devices india, popular wifi routers, latest networking products",
+  };
   const rules = [
     {
       test: (p) => p === "/",
@@ -2182,7 +2238,7 @@ const resolveSeo = (routePath) => {
       title: `Best Smartphones in India (${CURRENT_MONTH_LONG_YEAR}) | MobileX`,
       description:
         "Compare smartphones by price, RAM/ROM variants, camera, battery, and performance. Find trending and latest mobile launches on MobileX.",
-      keywords: `smartphones, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch mobiles, trending phone in india, most popular mobiles, mobile price comparison india, moblie price comparison india, compare smartphone specs, compare smartphone prices, 5g phones in india, ai phone, ai budget phone, ${BUDGET_PHONE_KEYWORDS}`,
+      keywords: `smartphones, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, new launch mobiles, trending phone in india, most popular mobiles, mobile price comparison india, compare smartphone specs, compare smartphone prices, 5g phones in india, ai phone, ai budget phone, ${BUDGET_PHONE_KEYWORDS}`,
     },
     {
       test: () => Boolean(laptopListingRoute),
@@ -2206,17 +2262,17 @@ const resolveSeo = (routePath) => {
         "networking devices, routers, wifi routers, dual band router, compare routers, modem router specs",
     },
     {
-      test: (p) => p.startsWith("/compare"),
-      title:
-        publishedCompareSeo?.title ||
-        (compareVsJoinedNames
-          ? `${compareVsJoinedNames} | MobileX`
-          : "Compare Smartphones, TVs and Devices | MobileX"),
+      test: (p) => p === "/popular-comparisons",
+      title: "Popular Smartphone Comparisons in India | MobileX",
       description:
-        publishedCompareSeo?.description ||
-        (compareJoinedNames
-          ? `See how ${compareJoinedNames} compare on price, specifications, camera, battery, and performance in India. | MobileX`
-          : "Compare devices side by side with latest price specifications camera battery performance and features in India. | MobileX"),
+        "Explore popular smartphone comparisons and compare specifications, features, and important differences side by side.",
+      keywords:
+        "popular smartphone comparisons, compare smartphones india, smartphone specifications comparison, compare phone features",
+    },
+    {
+      test: (p) => p.startsWith("/compare"),
+      title: buildCompareSeoTitle(compareNames),
+      description: buildCompareSeoDescription(compareNames),
       keywords:
         compareNames.length >= 2
           ? `${compareNames.map((name) => name.toLowerCase()).join(", ")}, compare ${compareNames.map((name) => name.toLowerCase()).join(" and ")}, compare devices india, smartphone comparison india`
@@ -2224,10 +2280,12 @@ const resolveSeo = (routePath) => {
     },
     {
       test: (p) => p.startsWith("/trending"),
-      title: `Trending Smartphones in India (${CURRENT_MONTH_LONG_YEAR}) | MobileX`,
-      description:
-        "Track trending smartphones, laptops, and TVs based on momentum and user interest to spot what is hot right now.",
-      keywords: `trending smartphones india, trending laptops india, trending tvs india, trending phone in india, most popular mobiles, top selling gadgets india, new launch and trending devices, latest smartphones in india ${CURRENT_YEAR}`,
+      title: `Trending ${trendingLabels[trendingCategory] || trendingLabels.smartphones} in India (${CURRENT_MONTH_LONG_YEAR}) | MobileX`,
+      description: `Track trending ${String(
+        trendingLabels[trendingCategory] || trendingLabels.smartphones,
+      ).toLowerCase()} based on momentum and user interest to spot what is popular right now.`,
+      keywords:
+        trendingKeywordSets[trendingCategory] || trendingKeywordSets.smartphones,
     },
     {
       test: (p) => p === "/news",
@@ -3130,6 +3188,227 @@ const injectNewsRouteContent = (html, routePath, preloadedApiPayload) => {
   return html.replace(emptyRootPattern, `<div id="root">${markup}</div>`);
 };
 
+const getListingPrerenderRows = (canonicalPath, payload) => {
+  const candidates = [];
+  if (canonicalPath.startsWith("/trending/")) {
+    const category = canonicalPath.split("/")[2] || "smartphones";
+    candidates.push(`${API_BASE_URL}/public/trending/${category}?limit=120`);
+  } else if (canonicalPath.startsWith("/smartphones")) {
+    const listingRoute = parseSmartphoneListingPath(canonicalPath);
+    if (listingRoute?.upcoming || canonicalPath.includes("/upcoming")) {
+      candidates.push(`${API_BASE_URL}/public/upcoming/smartphones`);
+    } else if (listingRoute?.filter === "new" || canonicalPath.includes("/filter/new")) {
+      candidates.push(`${API_BASE_URL}/public/new/smartphones`);
+    }
+    candidates.push(
+      `${API_BASE_URL}/smartphones?page=1&limit=20`,
+      `${API_BASE_URL}/smartphones`,
+    );
+  } else if (canonicalPath.startsWith("/tvs")) {
+    const tvListingRoute = getTvListingRouteMeta(canonicalPath);
+    candidates.push(
+      tvListingRoute?.type === "latest"
+        ? `${API_BASE_URL}/public/new/tvs`
+        : `${API_BASE_URL}/tvs`,
+    );
+    candidates.push(`${API_BASE_URL}/tvs`);
+  } else if (canonicalPath === "/networking") {
+    candidates.push(`${API_BASE_URL}/networking`);
+  }
+
+  for (const endpoint of [...new Set(candidates)]) {
+    const rows = getPreloadedRows(
+      payload,
+      endpoint,
+      endpoint.includes("smartphones") ? ["smartphones"] : ["tvs", "results"],
+    );
+    if (rows.length) return rows;
+  }
+  return [];
+};
+
+const buildListingPrerenderMarkup = (canonicalPath, payload) => {
+  const seo = resolveSeo(canonicalPath);
+  const rows = getListingPrerenderRows(canonicalPath, payload);
+  const isSmartphoneRoute =
+    canonicalPath.startsWith("/smartphones") ||
+    canonicalPath === "/trending/smartphones";
+  const isNetworkingRoute = canonicalPath === "/trending/networking";
+  const basePath = isSmartphoneRoute
+    ? "/smartphones"
+    : isNetworkingRoute
+      ? "/networking"
+      : canonicalPath === "/networking" || isNetworkingRoute
+        ? "/networking"
+        : "/tvs";
+  const links = buildItemListFromRows(rows, {
+    basePath,
+    toDetailSlug: isSmartphoneRoute
+      ? (slug) => toSmartphoneSeoSlug(slug)
+      : (slug) => slug,
+    getName: (item) =>
+      item?.product_name ||
+      item?.name ||
+      item?.model_number ||
+      item?.model ||
+      item?.basic_info?.product_name ||
+      item?.basic_info?.title ||
+      item?.basic_info?.model_number ||
+      item?.basic_info?.model,
+  });
+  const productLinks = links
+    .map(
+      (item) =>
+        `<li><a href="${escapeHtml(item.url)}" class="font-semibold text-slate-800 hover:text-blue-700">${escapeHtml(item.name)}</a></li>`,
+    )
+    .join("\n");
+
+  return `<main data-listing-prerendered="true" class="min-h-screen bg-white text-slate-950">
+  <section class="mx-auto max-w-[1280px] px-4 py-8 sm:px-6 lg:px-8">
+    <nav aria-label="Breadcrumb" class="mb-5 text-sm text-slate-500">
+      <a href="/" class="hover:text-blue-700">Home</a>
+      <span aria-hidden="true"> / </span>
+      <span aria-current="page">${escapeHtml(seo.title.replace(/\s*\|\s*MobileX$/, ""))}</span>
+    </nav>
+    <header class="max-w-4xl">
+      <h1 class="text-4xl font-black tracking-tight text-slate-950">${escapeHtml(seo.title.replace(/\s*\([^)]*\)\s*\|\s*MobileX$/, ""))}</h1>
+      <p class="mt-4 text-lg leading-8 text-slate-600">${escapeHtml(seo.description)}</p>
+    </header>
+    ${productLinks ? `<section aria-label="Featured products" class="mt-8"><h2 class="text-2xl font-bold text-slate-950">Explore ${isSmartphoneRoute ? "smartphones" : isNetworkingRoute ? "networking devices" : "TVs"}</h2><ul class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">${productLinks}</ul></section>` : ""}
+  </section>
+</main>`;
+};
+
+const injectListingRouteContent = (html, routePath, payload) => {
+  const canonicalPath = toCanonicalPath(normalizePath(routePath || "/"));
+  const isPopularComparisonsRoute = canonicalPath === "/popular-comparisons";
+  const isListingRoute =
+    canonicalPath.startsWith("/smartphones") ||
+    canonicalPath.startsWith("/tvs") ||
+    canonicalPath === "/networking" ||
+    canonicalPath === "/trending/smartphones" ||
+    canonicalPath === "/trending/tvs" ||
+    canonicalPath === "/trending/networking" ||
+    isPopularComparisonsRoute;
+  if (!isListingRoute || getSmartphoneDetailName(canonicalPath) || getTvDetailName(canonicalPath)) {
+    return html;
+  }
+
+  const emptyRootPattern = /<div\s+id=["']root["'][^>]*>\s*<\/div>/i;
+  if (!emptyRootPattern.test(html)) return html;
+  if (isPopularComparisonsRoute) {
+    return html.replace(
+      emptyRootPattern,
+      `<div id="root"><main data-popular-comparisons-prerendered="true" class="min-h-screen bg-white text-slate-950"><section class="mx-auto max-w-[1280px] px-4 py-8 sm:px-6 lg:px-8"><nav aria-label="Breadcrumb" class="mb-5 text-sm text-slate-500"><a href="/" class="hover:text-blue-700">Home</a><span aria-hidden="true"> / </span><span aria-current="page">Popular Comparisons</span></nav><header class="max-w-4xl"><h1 class="text-4xl font-black tracking-tight text-slate-950">Popular Smartphone Comparisons in India</h1><p class="mt-4 text-lg leading-8 text-slate-600">Explore popular smartphone comparisons and compare specifications, features, and important differences side by side.</p></header></section></main></div>`,
+    );
+  }
+  return html.replace(
+    emptyRootPattern,
+    `<div id="root">${buildListingPrerenderMarkup(canonicalPath, payload)}</div>`,
+  );
+};
+
+const buildProductPrerenderMarkup = (canonicalPath) => {
+  const isSmartphone = canonicalPath.startsWith("/smartphones/");
+  const productName = isSmartphone
+    ? getSmartphoneDetailName(canonicalPath)
+    : getTvDetailName(canonicalPath);
+  const seo = resolveSeo(canonicalPath);
+  const categoryPath = isSmartphone ? "/smartphones" : "/tvs";
+  const categoryLabel = isSmartphone ? "Smartphones" : "TVs";
+
+  return `<main data-product-prerendered="true" class="min-h-screen bg-white text-slate-950">
+  <article class="mx-auto max-w-[1120px] px-4 py-8 sm:px-6 lg:px-8">
+    <nav aria-label="Breadcrumb" class="text-sm text-slate-500">
+      <a href="/" class="hover:text-blue-700">Home</a>
+      <span aria-hidden="true"> / </span>
+      <a href="${categoryPath}" class="hover:text-blue-700">${categoryLabel}</a>
+      <span aria-hidden="true"> / </span>
+      <span aria-current="page">${escapeHtml(productName)}</span>
+    </nav>
+    <header class="mt-6 max-w-4xl">
+      <h1 class="text-4xl font-black leading-tight tracking-tight text-slate-950">${escapeHtml(productName)}</h1>
+      <p class="mt-4 text-lg leading-8 text-slate-600">${escapeHtml(seo.description)}</p>
+    </header>
+    <nav aria-label="Related product navigation" class="mt-8 flex flex-wrap gap-4 text-sm font-semibold">
+      <a href="${categoryPath}" class="text-blue-700 hover:text-blue-900">Browse all ${categoryLabel.toLowerCase()}</a>
+      <a href="/popular-comparisons" class="text-blue-700 hover:text-blue-900">Compare popular devices</a>
+    </nav>
+  </article>
+</main>`;
+};
+
+const injectProductRouteContent = (html, routePath) => {
+  const canonicalPath = toCanonicalPath(normalizePath(routePath || "/"));
+  const smartphoneSlug = getSingleSegmentRouteTail(
+    canonicalPath,
+    "/smartphones",
+  );
+  const tvSlug = getSingleSegmentRouteTail(canonicalPath, "/tvs");
+  const isSmartphoneDetail =
+    Boolean(smartphoneSlug) && !SMARTPHONE_LIST_SLUGS.has(smartphoneSlug);
+  const isTvDetail = Boolean(tvSlug) && !getTvListingRouteMeta(canonicalPath);
+  if (!isSmartphoneDetail && !isTvDetail) return html;
+
+  const emptyRootPattern = /<div\s+id=["']root["'][^>]*>\s*<\/div>/i;
+  if (!emptyRootPattern.test(html)) return html;
+  return html.replace(
+    emptyRootPattern,
+    `<div id="root">${buildProductPrerenderMarkup(canonicalPath)}</div>`,
+  );
+};
+
+const PUBLIC_STATIC_PRERENDER_CONTENT = {
+  "/": {
+    heading: "Compare Smartphones, TVs & More in India",
+    description:
+      "Compare smartphones, laptops, TVs, and networking devices in India with specifications, prices, variants, and trend insights on MobileX.",
+  },
+  "/about": {
+    heading: "About MobileX",
+    description:
+      "Learn about MobileX and how we help people discover, compare, and understand technology products with structured information.",
+  },
+  "/careers": {
+    heading: "Careers at MobileX",
+    description:
+      "Explore frontend, backend, content, and fullstack opportunities at MobileX.",
+  },
+  "/contact": {
+    heading: "Contact MobileX",
+    description:
+      "Contact MobileX for product support, corrections, partnerships, and press enquiries.",
+  },
+  "/privacy-policy": {
+    heading: "Privacy Policy",
+    description:
+      "Read the MobileX privacy policy to understand how information is collected, used, stored, and protected.",
+  },
+  "/terms": {
+    heading: "Terms and Conditions",
+    description:
+      "Read the MobileX terms of use covering platform usage, content accuracy, and service limitations.",
+  },
+  "/compare": {
+    heading: "Compare Smartphones Side by Side",
+    description:
+      "Select two to four phones and compare price, performance, camera, battery, launch timing, and complete specifications.",
+  },
+};
+
+const injectPublicStaticRouteContent = (html, routePath) => {
+  const canonicalPath = toCanonicalPath(normalizePath(routePath || "/"));
+  const content = PUBLIC_STATIC_PRERENDER_CONTENT[canonicalPath];
+  if (!content) return html;
+
+  const emptyRootPattern = /<div\s+id=["']root["'][^>]*>\s*<\/div>/i;
+  if (!emptyRootPattern.test(html)) return html;
+  return html.replace(
+    emptyRootPattern,
+    `<div id="root"><main data-static-prerendered="true" class="min-h-screen bg-white text-slate-950"><section class="mx-auto max-w-[1120px] px-4 py-8 sm:px-6 lg:px-8"><nav aria-label="Breadcrumb" class="mb-5 text-sm text-slate-500"><a href="/" class="hover:text-blue-700">Home</a><span aria-hidden="true"> / </span><span aria-current="page">${escapeHtml(content.heading)}</span></nav><header class="max-w-4xl"><h1 class="text-4xl font-black tracking-tight text-slate-950">${escapeHtml(content.heading)}</h1><p class="mt-4 text-lg leading-8 text-slate-600">${escapeHtml(content.description)}</p></header></section></main></div>`,
+  );
+};
+
 const applySeoToHtml = (html, routePath) => {
   const seo = resolveSeo(routePath);
   const canonicalUrl = toCanonicalPageUrl(seo.canonicalPath, SITE_ORIGIN);
@@ -3371,6 +3650,16 @@ const processRouteHtml = (html, routePath, preloadedApiPayload) => {
     normalizedRoute,
     preloadedApiPayload,
   );
+
+  nextHtml = injectListingRouteContent(
+    nextHtml,
+    normalizedRoute,
+    preloadedApiPayload,
+  );
+
+  nextHtml = injectProductRouteContent(nextHtml, normalizedRoute);
+
+  nextHtml = injectPublicStaticRouteContent(nextHtml, normalizedRoute);
 
   return nextHtml;
 };

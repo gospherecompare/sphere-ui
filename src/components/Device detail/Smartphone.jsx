@@ -5376,7 +5376,7 @@ Price: ${price}
                     ) : null}
 
                     <div className="order-1 sm:order-2">
-                      <div className="relative flex min-h-[330px] items-center justify-center overflow-hidden rounded-[22px] bg-[#ffffff] p-6 shadow-[0_18px_40px_rgba(15,23,42,0.10)]   sm:min-h-[430px] sm:p-8">
+                      <div className="relative flex min-h-[330px] items-center justify-center overflow-hidden rounded-[22px] bg-[#ffffff] p-6   sm:min-h-[430px] sm:p-8">
                         <SmartphoneOrbitArtwork />
                         {carouselImages.length > 1 ? (
                           <>
