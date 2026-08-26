@@ -26,29 +26,6 @@
   --hooks-radius-xl: 38px;
 }
 
-html[data-theme="dark"] {
-  --hooks-canvas: #07111f;
-  --hooks-canvas-strong: #0a1728;
-  --hooks-surface: #0f1c2d;
-  --hooks-surface-soft: #132238;
-  --hooks-surface-raised: rgba(15, 28, 45, 0.88);
-  --hooks-text: #f3f7ff;
-  --hooks-text-soft: #c7d2e5;
-  --hooks-muted: #94a4bd;
-  --hooks-line: #263750;
-  --hooks-line-strong: #344965;
-  --hooks-brand: #6f9cff;
-  --hooks-brand-strong: #8eb0ff;
-  --hooks-brand-soft: #142b52;
-  --hooks-accent: #a08cff;
-  --hooks-cyan: #43cae4;
-  --hooks-success: #5dd6ad;
-  --hooks-warning: #f3b45e;
-  --hooks-danger: #ff8294;
-  --hooks-shadow-sm: 0 12px 34px rgba(0, 0, 0, 0.2);
-  --hooks-shadow-md: 0 24px 64px rgba(0, 0, 0, 0.3);
-  --hooks-shadow-lg: 0 38px 100px rgba(0, 0, 0, 0.42);
-}
 
 html {
   background: var(--hooks-canvas);
@@ -187,46 +164,6 @@ body {
 .hooks-text-link svg {
   width: 0.8rem;
   height: 0.8rem;
-}
-
-.hooks-theme-toggle {
-  position: relative;
-  display: inline-flex;
-  width: 44px;
-  height: 44px;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  overflow: hidden;
-  border: 1px solid var(--hooks-line);
-  border-radius: 999px;
-  background: var(--hooks-surface);
-  color: var(--hooks-text-soft);
-  box-shadow: var(--hooks-shadow-sm);
-  transition:
-    transform 180ms ease,
-    border-color 180ms ease,
-    color 180ms ease,
-    background 180ms ease;
-}
-
-.hooks-theme-toggle:hover {
-  transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--hooks-brand) 45%, var(--hooks-line));
-  color: var(--hooks-brand);
-}
-
-.hooks-theme-toggle__icon {
-  display: inline-flex;
-  width: 20px;
-  height: 20px;
-  align-items: center;
-  justify-content: center;
-}
-
-.hooks-theme-toggle__icon svg {
-  width: 18px;
-  height: 18px;
 }
 
 /* Homepage decision studio */
@@ -535,10 +472,6 @@ body {
   color: #173a85;
 }
 
-html[data-theme="dark"] .hooks-link-card__art {
-  filter: brightness(0.72) saturate(1.15);
-  color: white;
-}
 
 .hooks-link-card__art svg {
   position: relative;
@@ -733,81 +666,7 @@ html[data-route-group="company"] h1 {
 }
 
 /* Dark mode compatibility for existing Tailwind utility-heavy pages */
-html[data-theme="dark"] .bg-white,
-html[data-theme="dark"] .bg-white\/95,
-html[data-theme="dark"] .bg-white\/90,
-html[data-theme="dark"] .bg-white\/80,
-html[data-theme="dark"] .bg-white\/60 {
-  background-color: var(--hooks-surface) !important;
-}
 
-html[data-theme="dark"] .bg-slate-50,
-html[data-theme="dark"] .bg-gray-50,
-html[data-theme="dark"] .bg-\[\#f8fbff\],
-html[data-theme="dark"] .bg-\[\#f7fbff\],
-html[data-theme="dark"] .bg-\[\#f6f8fc\] {
-  background-color: var(--hooks-surface-soft) !important;
-}
-
-html[data-theme="dark"] .bg-slate-100,
-html[data-theme="dark"] .bg-gray-100 {
-  background-color: color-mix(
-    in srgb,
-    var(--hooks-surface-soft) 84%,
-    white 4%
-  ) !important;
-}
-
-html[data-theme="dark"] .text-slate-950,
-html[data-theme="dark"] .text-slate-900,
-html[data-theme="dark"] .text-gray-950,
-html[data-theme="dark"] .text-gray-900,
-html[data-theme="dark"] .text-\[\#071120\],
-html[data-theme="dark"] .text-\[\#14255e\] {
-  color: var(--hooks-text) !important;
-}
-
-html[data-theme="dark"] .text-slate-800,
-html[data-theme="dark"] .text-slate-700,
-html[data-theme="dark"] .text-gray-800,
-html[data-theme="dark"] .text-gray-700 {
-  color: var(--hooks-text-soft) !important;
-}
-
-html[data-theme="dark"] .text-slate-600,
-html[data-theme="dark"] .text-slate-500,
-html[data-theme="dark"] .text-gray-600,
-html[data-theme="dark"] .text-gray-500 {
-  color: var(--hooks-muted) !important;
-}
-
-html[data-theme="dark"] .border-slate-100,
-html[data-theme="dark"] .border-slate-200,
-html[data-theme="dark"] .border-slate-300,
-html[data-theme="dark"] .border-gray-100,
-html[data-theme="dark"] .border-gray-200,
-html[data-theme="dark"] .border-gray-300,
-html[data-theme="dark"] .border-blue-100 {
-  border-color: var(--hooks-line) !important;
-}
-
-html[data-theme="dark"] input,
-html[data-theme="dark"] select,
-html[data-theme="dark"] textarea {
-  border-color: var(--hooks-line) !important;
-  background-color: var(--hooks-surface-soft) !important;
-  color: var(--hooks-text) !important;
-}
-
-html[data-theme="dark"] input::placeholder,
-html[data-theme="dark"] textarea::placeholder {
-  color: var(--hooks-muted) !important;
-}
-
-html[data-theme="dark"] .shadow-sm,
-html[data-theme="dark"] [class*="shadow-["] {
-  box-shadow: var(--hooks-shadow-sm);
-}
 
 @media (max-width: 1023px) {
   .hooks-decision-grid,
@@ -853,11 +712,6 @@ html[data-theme="dark"] [class*="shadow-["] {
     height: 5.6rem;
   }
 
-  .hooks-theme-toggle {
-    width: 38px;
-    height: 38px;
-    box-shadow: none;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1824,66 +1678,7 @@ html[data-theme="dark"] [class*="shadow-["] {
 }
 
 /* Dark-mode coverage for legacy arbitrary Tailwind colors */
-html[data-theme="dark"] .bg-\[\#fbfdff\],
-html[data-theme="dark"] .bg-\[\#fafafa\],
-html[data-theme="dark"] .bg-\[\#f8fafc\],
-html[data-theme="dark"] .bg-\[\#f7faff\],
-html[data-theme="dark"] .bg-\[\#f7f9fc\],
-html[data-theme="dark"] .bg-\[\#f6f8ff\],
-html[data-theme="dark"] .bg-\[\#f6f7fb\],
-html[data-theme="dark"] .bg-\[\#f5f7fb\],
-html[data-theme="dark"] .bg-\[\#f4f5f8\],
-html[data-theme="dark"] .bg-\[\#f3f7ff\],
-html[data-theme="dark"] .bg-\[\#f3f6fb\],
-html[data-theme="dark"] .bg-\[\#f1f5f9\],
-html[data-theme="dark"] .bg-\[\#eef5ff\],
-html[data-theme="dark"] .bg-\[\#eef3fb\],
-html[data-theme="dark"] .bg-\[\#eef2ff\],
-html[data-theme="dark"] .bg-\[\#eef2f8\],
-html[data-theme="dark"] .bg-\[\#eef2f7\],
-html[data-theme="dark"] .bg-\[\#edf3fb\],
-html[data-theme="dark"] .bg-\[\#eaf0f8\],
-html[data-theme="dark"] .bg-\[\#e9eef5\],
-html[data-theme="dark"] .bg-\[\#e9edf4\] {
-  background-color: var(--hooks-surface-soft) !important;
-}
 
-html[data-theme="dark"] .text-\[\#20242b\],
-html[data-theme="dark"] .text-\[\#1f2937\],
-html[data-theme="dark"] .text-\[\#18212f\],
-html[data-theme="dark"] .text-\[\#171717\],
-html[data-theme="dark"] .text-\[\#111827\],
-html[data-theme="dark"] .text-\[\#111111\],
-html[data-theme="dark"] .text-\[\#0f172a\],
-html[data-theme="dark"] .text-\[\#06133a\] {
-  color: var(--hooks-text) !important;
-}
-
-html[data-theme="dark"] .text-\[\#7d8898\],
-html[data-theme="dark"] .text-\[\#7b8796\],
-html[data-theme="dark"] .text-\[\#667689\],
-html[data-theme="dark"] .text-\[\#667085\],
-html[data-theme="dark"] .text-\[\#64748b\],
-html[data-theme="dark"] .text-\[\#5f6670\],
-html[data-theme="dark"] .text-\[\#575757\],
-html[data-theme="dark"] .text-\[\#555555\],
-html[data-theme="dark"] .text-\[\#475569\],
-html[data-theme="dark"] .text-\[\#334155\] {
-  color: var(--hooks-muted) !important;
-}
-
-html[data-theme="dark"] .border-\[\#eef2fb\],
-html[data-theme="dark"] .border-\[\#eceff3\],
-html[data-theme="dark"] .border-\[\#e9edf3\],
-html[data-theme="dark"] .border-\[\#e6ebf2\],
-html[data-theme="dark"] .border-\[\#e5e7eb\],
-html[data-theme="dark"] .border-\[\#e2e8f0\],
-html[data-theme="dark"] .border-\[\#dfe5ee\],
-html[data-theme="dark"] .border-\[\#dce4f3\],
-html[data-theme="dark"] .border-\[\#dbe5f2\],
-html[data-theme="dark"] .border-\[\#d9dee7\] {
-  border-color: var(--hooks-line) !important;
-}
 
 /* Apple-inspired smartphone catalog cards. */
 .smartphone-catalog-card {
@@ -1947,30 +1742,6 @@ html[data-theme="dark"] .border-\[\#d9dee7\] {
   letter-spacing: -0.025em;
 }
 
-html[data-theme="dark"] .smartphone-catalog-card {
-  border-color: rgba(82, 96, 117, 0.62);
-  background: #151a21 !important;
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.24);
-}
-
-html[data-theme="dark"] .smartphone-catalog-card:hover {
-  border-color: rgba(41, 151, 255, 0.52);
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
-}
-
-html[data-theme="dark"] .smartphone-catalog-card .smartphone-card-media {
-  background: linear-gradient(180deg, #202631 0%, #171c24 100%);
-}
-
-html[data-theme="dark"] .smartphone-catalog-card .bg-blue-50,
-html[data-theme="dark"] .smartphone-catalog-card .bg-blue-100 {
-  background-color: #1b3554 !important;
-}
-
-html[data-theme="dark"] .smartphone-catalog-card .bg-slate-50,
-html[data-theme="dark"] .smartphone-catalog-card .bg-slate-100 {
-  background-color: #202631 !important;
-}
 .smartphone-catalog-card .smartphone-card-ai-badge {
   border: 1px solid rgba(255, 255, 255, 0.34);
   background: rgba(0, 113, 227, 0.96) !important;
@@ -1996,11 +1767,3 @@ html[data-theme="dark"] .smartphone-catalog-card .bg-slate-100 {
   white-space: nowrap;
 }
 
-html[data-theme="dark"] .smartphone-catalog-card .smartphone-card-ai-badge {
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 6px 18px rgba(0, 113, 227, 0.34);
-}
-
-html[data-theme="dark"].smartphone-card-footer {
-  border-top-color: rgba(82, 96, 117, 0.62);
-}

@@ -887,11 +887,11 @@ const insightSectionMeta = (type) => {
       title: "Pros over this phone",
       Icon: FaThumbsUp,
       itemIcon: FaCheck,
-      shellClass: "border-blue-100 bg-transparent dark:border-slate-700",
-      titleClass: "text-emerald-700 dark:text-emerald-300",
+      shellClass: "border-blue-100 bg-transparent ",
+      titleClass: "text-emerald-700 ",
       iconClass:
-        "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300",
-      itemClass: "text-emerald-600 dark:text-emerald-400",
+        "bg-emerald-50 text-emerald-600  ",
+      itemClass: "text-emerald-600 ",
     };
   }
 
@@ -900,11 +900,11 @@ const insightSectionMeta = (type) => {
       title: "Cons vs this phone",
       Icon: FaThumbsDown,
       itemIcon: FaTimesCircle,
-      shellClass: "border-blue-100 bg-transparent dark:border-slate-700",
-      titleClass: "text-rose-700 dark:text-rose-300",
+      shellClass: "border-blue-100 bg-transparent ",
+      titleClass: "text-rose-700 ",
       iconClass:
-        "bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-300",
-      itemClass: "text-rose-500 dark:text-rose-400",
+        "bg-rose-50 text-rose-600  ",
+      itemClass: "text-rose-500 ",
     };
   }
 
@@ -912,11 +912,11 @@ const insightSectionMeta = (type) => {
     title: "Similarities",
     Icon: FaBalanceScale,
     itemIcon: FaCheckCircle,
-    shellClass: "border-blue-100 bg-transparent dark:border-slate-700",
-    titleClass: "text-blue-700 dark:text-blue-300",
+    shellClass: "border-blue-100 bg-transparent ",
+    titleClass: "text-blue-700 ",
     iconClass:
-      "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300",
-    itemClass: "text-blue-500 dark:text-blue-400",
+      "bg-blue-50 text-blue-600  ",
+    itemClass: "text-blue-500 ",
   };
 };
 
@@ -948,7 +948,7 @@ const InsightSection = ({ type, items = [] }) => {
               className={`mt-0.5 text-[11px] ${meta.itemClass}`}
               aria-hidden="true"
             />
-            <span className="text-[12px] leading-[1.45] text-slate-600 dark:text-slate-300">
+            <span className="text-[12px] leading-[1.45] text-slate-600 ">
               {item.text}
             </span>
           </li>
@@ -1012,16 +1012,16 @@ const CompetitorCard = ({
   const compareLabel = `Compare ${baseProductName || "this device"} vs ${displayName}`;
 
   return (
-    <article className="group relative w-[86vw] max-w-[340px] shrink-0 self-stretch snap-start overflow-hidden rounded-2xl  border border-blue-200 dark:bg-[#0d1b2e] sm:w-[320px] xl:w-[308px]">
+    <article className="group relative w-[86vw] max-w-[340px] shrink-0 self-stretch snap-start overflow-hidden rounded-2xl  border border-blue-200  sm:w-[320px] xl:w-[308px]">
       <div className="flex h-full flex-col">
         <div className="p-4 sm:p-5">
           <div className="flex items-center justify-between gap-2">
-            <span className="inline-flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300">
+            <span className="inline-flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.16em] text-blue-600 ">
               <FaCheckDouble className="text-[10px]" aria-hidden="true" />
               Recommended
             </span>
             {displayScore != null ? (
-              <span className="rounded-full border border-blue-200 px-2.5 py-1 text-[10px] font-bold text-blue-700 dark:border-blue-500/30 dark:text-blue-300">
+              <span className="rounded-full border border-blue-200 px-2.5 py-1 text-[10px] font-bold text-blue-700  ">
                 {Math.round(displayScore)}% match
               </span>
             ) : null}
@@ -1031,7 +1031,7 @@ const CompetitorCard = ({
             <Link
               to={cardProductPath}
               aria-label={`View ${displayName} specs, price, and details`}
-              className="flex h-28 w-[88px] items-center justify-center overflow-hidden rounded-xl border border-slate-100 bg-slate-50 p-2.5 transition dark:border-slate-700 dark:bg-slate-900"
+              className="flex h-28 w-[88px] items-center justify-center overflow-hidden rounded-xl border border-slate-100 bg-slate-50 p-2.5 transition  "
             >
               {competitor?.image_url ? (
                 <img
@@ -1049,32 +1049,32 @@ const CompetitorCard = ({
             </Link>
 
             <div className="min-w-0">
-              <h3 className="space-grotesk-title line-clamp-2 text-lg font-bold leading-tight text-slate-950 dark:text-white">
+              <h3 className="space-grotesk-title line-clamp-2 text-lg font-bold leading-tight text-slate-950 ">
                 <Link
                   to={cardProductPath}
-                  className="transition hover:text-blue-600 dark:hover:text-blue-300"
+                  className="transition hover:text-blue-600 "
                 >
                   {displayName}
                 </Link>
               </h3>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              <p className="mt-1 text-sm text-slate-500 ">
                 By{" "}
-                <span className="font-semibold text-slate-700 dark:text-slate-200">
+                <span className="font-semibold text-slate-700 ">
                   {buyFrom}
                 </span>
               </p>
               <div className="mt-3">
-                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
+                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400 ">
                   Best price
                 </p>
-                <p className="mt-0.5 text-lg font-black text-emerald-600 dark:text-emerald-300">
+                <p className="mt-0.5 text-lg font-black text-emerald-600 ">
                   {formatPrice(competitor?.price)}
                 </p>
               </div>
             </div>
           </div>
 
-          <p className="mt-4 min-h-[42px] border-y border-slate-100 py-3 text-[12px] leading-5 text-slate-500 dark:border-slate-700 dark:text-slate-400">
+          <p className="mt-4 min-h-[42px] border-y border-slate-100 py-3 text-[12px] leading-5 text-slate-500  ">
             {matchSummary}
           </p>
         </div>
@@ -1091,7 +1091,7 @@ const CompetitorCard = ({
             <button
               type="button"
               onClick={() => setLocalExpanded((current) => !current)}
-              className="inline-flex items-center gap-1.5 px-1 pt-1 text-xs font-bold text-blue-600 transition hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+              className="inline-flex items-center gap-1.5 px-1 pt-1 text-xs font-bold text-blue-600 transition hover:text-blue-700  "
             >
               {isExpanded ? "Show less" : `Show ${hiddenInsightCount} more`}
               <FaChevronRight
@@ -1101,15 +1101,15 @@ const CompetitorCard = ({
           ) : null}
         </div>
 
-        <div className="mt-auto border-t border-slate-100  p-4 dark:border-slate-700 dark:bg-[#0d1b2e] sm:p-5">
-          <div className="mb-3 flex min-w-0 items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+        <div className="mt-auto border-t border-slate-100  p-4   sm:p-5">
+          <div className="mb-3 flex min-w-0 items-center gap-2 text-xs font-semibold text-slate-500 ">
             <span className="min-w-0 truncate">
               {baseProductName || `This ${productLabel}`}
             </span>
-            <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[9px] font-black text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">
+            <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[9px] font-black text-blue-700  ">
               VS
             </span>
-            <span className="min-w-0 truncate text-slate-700 dark:text-slate-200">
+            <span className="min-w-0 truncate text-slate-700 ">
               {displayName}
             </span>
           </div>
@@ -1118,7 +1118,7 @@ const CompetitorCard = ({
             <Link
               to={cardProductPath}
               aria-label={`View ${displayName} details`}
-              className="inline-flex items-center justify-center rounded-xl border border-blue-200  px-3 py-3 text-xs font-bold text-slate-700 transition hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-blue-500 dark:hover:text-blue-300"
+              className="inline-flex items-center justify-center rounded-xl border border-blue-200  px-3 py-3 text-xs font-bold text-slate-700 transition hover:border-blue-300 hover:text-blue-600     "
             >
               View details
             </Link>
@@ -1141,7 +1141,7 @@ const CompetitorCard = ({
               <button
                 type="button"
                 disabled
-                className="inline-flex cursor-not-allowed items-center justify-center rounded-xl bg-slate-200 px-3 py-3 text-xs font-bold text-slate-400 dark:bg-slate-800"
+                className="inline-flex cursor-not-allowed items-center justify-center rounded-xl bg-slate-200 px-3 py-3 text-xs font-bold text-slate-400 "
               >
                 Compare
               </button>
@@ -1555,7 +1555,7 @@ const CompetitorCards = ({
 
   return (
     <div className={`w-full font-sans ${className}`}>
-      <div className="rounded-[20px] bg-transparent px-0 py-2 dark:bg-transparent sm:py-3">
+      <div className="rounded-[20px] bg-transparent px-0 py-2  sm:py-3">
         <div className="mb-5">
           <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-blue-600">
             Recommended Comparisons
@@ -1592,7 +1592,7 @@ const CompetitorCards = ({
                   onClick={() => scrollRail(-1)}
                   disabled={!railControls.canScrollLeft}
                   aria-label="Scroll competitors left"
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-50 text-slate-500 transition-colors hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-blue-300"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-50 text-slate-500 transition-colors hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-40   "
                 >
                   <FaChevronRight className="rotate-180 text-sm" />
                 </button>
@@ -1601,7 +1601,7 @@ const CompetitorCards = ({
                   onClick={() => scrollRail(1)}
                   disabled={!railControls.canScrollRight}
                   aria-label="Scroll competitors right"
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-50 text-slate-500 transition-colors hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-blue-300"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-50 text-slate-500 transition-colors hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-40   "
                 >
                   <FaChevronRight className="text-sm" />
                 </button>

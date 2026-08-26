@@ -310,14 +310,14 @@ const SmartphoneGridSkeleton = ({ count = SMARTPHONE_SKELETON_COUNT }) => (
     {Array.from({ length: count }).map((_, index) => (
       <div
         key={`smartphone-skeleton-${index}`}
-        className="min-h-[440px] animate-pulse rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900"
+        className="min-h-[440px] animate-pulse rounded-3xl border border-slate-200 bg-white p-4 shadow-sm  "
       >
-        <div className="mx-auto h-52 w-36 rounded-2xl bg-slate-200 dark:bg-slate-700" />
-        <div className="mt-5 h-3 w-24 rounded bg-slate-200 dark:bg-slate-700" />
-        <div className="mt-3 h-6 w-4/5 rounded bg-slate-200 dark:bg-slate-700" />
-        <div className="mt-3 h-4 w-3/5 rounded bg-slate-200 dark:bg-slate-700" />
-        <div className="mt-8 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800" />
-        <div className="mt-5 h-10 rounded-xl bg-slate-200 dark:bg-slate-700" />
+        <div className="mx-auto h-52 w-36 rounded-2xl bg-slate-200 " />
+        <div className="mt-5 h-3 w-24 rounded bg-slate-200 " />
+        <div className="mt-3 h-6 w-4/5 rounded bg-slate-200 " />
+        <div className="mt-3 h-4 w-3/5 rounded bg-slate-200 " />
+        <div className="mt-8 h-16 rounded-2xl bg-slate-100 " />
+        <div className="mt-5 h-10 rounded-xl bg-slate-200 " />
       </div>
     ))}
   </div>
@@ -5713,7 +5713,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
   return (
     <div
-      className="hooks-smartphones-page min-h-screen bg-[#f3f6fb] text-[#0f172a] dark:bg-[#07111f] dark:text-[#f3f7ff]"
+      className="hooks-smartphones-page min-h-screen bg-[#f3f6fb] text-[#0f172a]  "
       data-page-label={headerLabel}
     >
       <SEO
@@ -5728,7 +5728,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       {/* Main Content */}
       <div className="relative mx-auto max-w-[1440px] px-3 pb-10 sm:px-6 sm:pb-14 lg:px-8 lg:pb-20">
         <div className="relative">
-          <section className="smartphones-hero relative left-1/2 isolate w-screen -translate-x-1/2 overflow-hidden bg-gradient-to-b from-white via-blue-50/70 to-[#f3f6fb] dark:from-[#091526] dark:via-[#0d1d33] dark:to-[#07111f]">
+          <section className="smartphones-hero relative left-1/2 isolate w-screen -translate-x-1/2 overflow-hidden bg-gradient-to-b from-white via-blue-50/70 to-[#f3f6fb]   ">
             {normalizedRoutePathname === "/smartphones" ? (
               <Breadcrumbs variant="plain" />
             ) : null}
@@ -5737,18 +5737,18 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
               <div className="relative mx-auto max-w-7xl">
                 <div className="grid items-center gap-4 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-8">
                   <div className={`${heroContentWidthClass} min-w-0`}>
-                    <div className="mb-2 inline-flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.18em] text-blue-700 dark:text-[#8eb0ff]">
+                    <div className="mb-2 inline-flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.18em] text-blue-700 ">
                       <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-100" />
                       Live smartphone catalogue
                     </div>
                     <h1
-                      className={`${heroTitleWidthClass} max-w-4xl font-[Space_Grotesk] text-4xl font-bold leading-[0.98] tracking-[-0.055em] text-[#0f172a] sm:text-5xl lg:text-7xl dark:text-[#f7faff]`}
+                      className={`${heroTitleWidthClass} max-w-4xl font-[Space_Grotesk] text-4xl font-bold leading-[0.98] tracking-[-0.055em] text-[#0f172a] sm:text-5xl lg:text-7xl `}
                     >
                       {heroTitleText}
                     </h1>
 
                     <p
-                      className={`${heroSubtitleWidthClass} mt-3 max-w-3xl text-sm leading-6 text-[#64748b] sm:text-base dark:text-[#afbdd2]`}
+                      className={`${heroSubtitleWidthClass} mt-3 max-w-3xl text-sm leading-6 text-[#64748b] sm:text-base `}
                       style={heroSubtitleStyle}
                     >
                       {heroSubtitleText}
@@ -5765,7 +5765,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                       <button
                         type="button"
                         onClick={() => setShowSort(true)}
-                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#ffffff] px-5 py-2.5 text-sm font-bold text-[#1e293b] ring-1 ring-[#e2e8f0] transition hover:bg-[#f8fafc] lg:hidden dark:bg-[#0e1b2d] dark:text-[#eaf1ff] dark:ring-[#2a3d58] dark:hover:bg-[#132640]"
+                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#ffffff] px-5 py-2.5 text-sm font-bold text-[#1e293b] ring-1 ring-[#e2e8f0] transition hover:bg-[#f8fafc] lg:hidden    "
                       >
                         <FaSyncAlt /> Sort results
                       </button>
@@ -5775,7 +5775,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                           onClick={() =>
                             setShowHeroDescription((prev) => !prev)
                           }
-                          className="inline-flex min-h-11 items-center gap-2 px-2 text-sm font-bold text-blue-700 transition hover:text-blue-900 dark:text-[#8eb0ff] dark:hover:text-[#b6ccff]"
+                          className="inline-flex min-h-11 items-center gap-2 px-2 text-sm font-bold text-blue-700 transition hover:text-blue-900  "
                           aria-expanded={showHeroDescription}
                         >
                           {showHeroDescription
@@ -5813,16 +5813,16 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                         <span className="absolute -right-10 bottom-5 h-24 w-24 rounded-full border-[14px] border-cyan-100/25" />
                       </div>
                     </div>
-                    <div className="absolute left-1 top-3 grid h-11 w-11 place-items-center rounded-xl bg-white/75 text-blue-600 ring-1 ring-blue-100 backdrop-blur-sm dark:bg-[#0e1d31]/90 dark:text-[#8fb4ff] dark:ring-[#2a456c]">
+                    <div className="absolute left-1 top-3 grid h-11 w-11 place-items-center rounded-xl bg-white/75 text-blue-600 ring-1 ring-blue-100 backdrop-blur-sm   ">
                       <FaRobot />
                     </div>
-                    <div className="absolute bottom-4 left-4 grid h-10 w-10 place-items-center rounded-xl bg-white/75 text-blue-600 ring-1 ring-blue-100 backdrop-blur-sm dark:bg-[#0e1d31]/90 dark:text-[#8fb4ff] dark:ring-[#2a456c]">
+                    <div className="absolute bottom-4 left-4 grid h-10 w-10 place-items-center rounded-xl bg-white/75 text-blue-600 ring-1 ring-blue-100 backdrop-blur-sm   ">
                       <FaWifi />
                     </div>
-                    <div className="absolute right-3 top-8 grid h-11 w-11 place-items-center rounded-xl bg-white/75 text-blue-600 ring-1 ring-blue-100 backdrop-blur-sm dark:bg-[#0e1d31]/90 dark:text-[#8fb4ff] dark:ring-[#2a456c]">
+                    <div className="absolute right-3 top-8 grid h-11 w-11 place-items-center rounded-xl bg-white/75 text-blue-600 ring-1 ring-blue-100 backdrop-blur-sm   ">
                       <FaBatteryFull />
                     </div>
-                    <div className="absolute bottom-3 right-8 grid h-10 w-10 place-items-center rounded-xl bg-white/75 text-blue-600 ring-1 ring-blue-100 backdrop-blur-sm dark:bg-[#0e1d31]/90 dark:text-[#8fb4ff] dark:ring-[#2a456c]">
+                    <div className="absolute bottom-3 right-8 grid h-10 w-10 place-items-center rounded-xl bg-white/75 text-blue-600 ring-1 ring-blue-100 backdrop-blur-sm   ">
                       <FaMobileAlt />
                     </div>
                     <span className="absolute right-2 top-1/2 h-2.5 w-2.5 rounded-full bg-cyan-400" />
@@ -6049,7 +6049,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                 <button
                   type="button"
                   onClick={() => setShowFilters(true)}
-                  className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-[#e2e8f0] bg-transparent text-blue-600 transition-colors hover:border-blue-300 hover:bg-blue-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:border-[#2a3d58] dark:text-[#8eb0ff] dark:hover:border-[#4c6f9f] dark:hover:bg-[#132640] dark:focus-visible:ring-[#6f9cff] dark:focus-visible:ring-offset-[#07111f]"
+                  className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-[#e2e8f0] bg-transparent text-blue-600 transition-colors hover:border-blue-300 hover:bg-blue-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2      "
                   aria-label="Open smartphone search"
                 >
                   <FaSearch className="text-sm" />
@@ -6061,10 +6061,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                     setPendingPopularFeature(normalizedFeature || "");
                     setShowPopularFeaturePicker(true);
                   }}
-                  className="group flex min-h-12 min-w-[13.5rem] items-center gap-3 rounded-2xl border border-[#e2e8f0] bg-transparent px-4 text-left transition-colors hover:border-blue-300 hover:bg-blue-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:border-[#2a3d58] dark:hover:border-[#4c6f9f] dark:hover:bg-[#132640] dark:focus-visible:ring-[#6f9cff] dark:focus-visible:ring-offset-[#07111f]"
+                  className="group flex min-h-12 min-w-[13.5rem] items-center gap-3 rounded-2xl border border-[#e2e8f0] bg-transparent px-4 text-left transition-colors hover:border-blue-300 hover:bg-blue-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2     "
                 >
                   <FaStar className="shrink-0 text-sm text-blue-600" />
-                  <span className="min-w-0 flex-1 truncate text-sm font-bold text-[#0f172a] dark:text-[#eaf1ff]">
+                  <span className="min-w-0 flex-1 truncate text-sm font-bold text-[#0f172a] ">
                     {currentFeatureMeta?.name || "Popular Features"}
                   </span>
                   {normalizedFeature ? (
@@ -6078,10 +6078,10 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                 <button
                   type="button"
                   onClick={() => setShowFilters(true)}
-                  className="group flex min-h-12 min-w-[11.5rem] items-center gap-3 rounded-2xl border border-[#e2e8f0] bg-transparent px-4 text-left transition-colors hover:border-blue-300 hover:bg-blue-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:border-[#2a3d58] dark:hover:border-[#4c6f9f] dark:hover:bg-[#132640] dark:focus-visible:ring-[#6f9cff] dark:focus-visible:ring-offset-[#07111f]"
+                  className="group flex min-h-12 min-w-[11.5rem] items-center gap-3 rounded-2xl border border-[#e2e8f0] bg-transparent px-4 text-left transition-colors hover:border-blue-300 hover:bg-blue-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2     "
                 >
                   <FaFilter className="shrink-0 text-sm text-blue-600" />
-                  <span className="min-w-0 flex-1 truncate text-sm font-bold text-[#0f172a] dark:text-[#eaf1ff]">
+                  <span className="min-w-0 flex-1 truncate text-sm font-bold text-[#0f172a] ">
                     All Filters
                   </span>
                   {getActiveFiltersCount() > 0 ? (
@@ -6092,17 +6092,17 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                   <FaChevronDown className="shrink-0 text-[10px] text-slate-500 transition-transform group-hover:text-blue-600" />
                 </button>
 
-                <label className="ml-auto flex min-h-12 min-w-[15.5rem] items-center gap-3 rounded-2xl border border-[#e2e8f0] bg-transparent px-4 transition-colors hover:border-blue-300 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-500/20 dark:border-[#2a3d58] dark:hover:border-[#4c6f9f] dark:focus-within:border-[#6f9cff] dark:focus-within:ring-[#6f9cff]/20">
+                <label className="ml-auto flex min-h-12 min-w-[15.5rem] items-center gap-3 rounded-2xl border border-[#e2e8f0] bg-transparent px-4 transition-colors hover:border-blue-300 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-500/20    ">
                   <FaSyncAlt className="shrink-0 text-sm text-blue-600" />
                   <span className="min-w-0 flex-1">
-                    <span className="mr-2 text-sm font-medium text-[#64748b] dark:text-[#94a4bd]">
+                    <span className="mr-2 text-sm font-medium text-[#64748b] ">
                       Sort by:
                     </span>
                     <select
                       value={sortBy}
                       onChange={(event) => setSortBy(event.target.value)}
                       aria-label="Sort smartphones"
-                      className="max-w-[10rem] cursor-pointer appearance-none bg-transparent pr-6 text-sm font-bold text-[#0f172a] outline-none dark:text-[#eaf1ff] dark:[&>option]:bg-[#0f1c2d]"
+                      className="max-w-[10rem] cursor-pointer appearance-none bg-transparent pr-6 text-sm font-bold text-[#0f172a] outline-none  "
                     >
                       {SMARTPHONE_MOBILE_SORT_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>
@@ -6650,7 +6650,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                           <div
                             key={`${device.id ?? device.model ?? ""}-${_idx}`}
                             onClick={(e) => handleView(device, e)}
-                            className={` mx-auto h-auto w-full cursor-pointer overflow-hidden rounded-2xl bg-transparent transition duration-200 md:h-full dark:bg-[#0e1a2b] dark:[&_.bg-white]:bg-[#0f1c2d] dark:[&_.bg-slate-50]:bg-[#132238] dark:[&_.bg-slate-100]:bg-[#162941] dark:[&_.bg-blue-50]:bg-[#142b52] dark:[&_.bg-blue-100]:bg-[#1b3967] dark:[&_.smartphone-card-media_.bg-white]:bg-[#11213d] dark:[&_.text-slate-950]:text-[#f3f7ff] dark:[&_.text-slate-900]:text-[#eaf1ff] dark:[&_.text-slate-800]:text-[#d8e2f0] dark:[&_.text-slate-700]:text-[#c7d2e5] dark:[&_.text-slate-600]:text-[#aebbd0] dark:[&_.text-slate-500]:text-[#94a4bd] dark:[&_.border-slate-200]:border-[#263750] dark:[&_.divide-slate-200]:divide-[#263750] dark:hover:bg-[#102038] ${
+                            className={` mx-auto h-auto w-full cursor-pointer overflow-hidden rounded-2xl bg-transparent transition duration-200 md:h-full                 ${
                               isCompareSelected(device) ? "bg-blue-50/50" : ""
                             }`}
                           >
@@ -6823,7 +6823,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
                               <div className="flex-1">
                                 <div className="grid grid-cols-[116px_minmax(0,1fr)] gap-3 p-3 sm:grid-cols-[136px_minmax(0,1fr)] sm:gap-4 sm:p-4 xl:grid-cols-[148px_minmax(0,1fr)]">
-                                  <div className="smartphone-card-media relative flex min-h-[190px] items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-blue-50 via-white to-slate-50 p-2 sm:min-h-[210px] xl:min-h-[226px] dark:bg-gradient-to-b dark:from-[#0e1930] dark:via-[#11213d] dark:to-[#0a1529]">
+                                  <div className="smartphone-card-media relative flex min-h-[190px] items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-blue-50 via-white to-slate-50 p-2 sm:min-h-[210px] xl:min-h-[226px]    ">
                                     {cardBadgeLabel ? (
                                       <span className="smartphone-card-ai-badge absolute left-2 top-2 z-10 inline-flex max-w-[110px] items-center gap-1 truncate rounded-full bg-blue-600 px-2.5 py-1 text-[8px] font-bold text-white sm:max-w-[124px] sm:text-[9px]">
                                         <FaRobot aria-hidden="true" />

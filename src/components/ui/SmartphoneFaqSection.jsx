@@ -39,7 +39,7 @@ const SmartphoneFaqSection = ({
     return (
       <article
         key={faq.id}
-        className="overflow-hidden border-b border-slate-200 bg-transparent shadow-none last:border-b-0 dark:border-slate-800"
+        className="overflow-hidden border-b border-slate-200 bg-transparent shadow-none last:border-b-0 "
       >
         <button
           type="button"
@@ -55,7 +55,7 @@ const SmartphoneFaqSection = ({
                 {faq.category}
               </span>
             ) : null}
-            <span className="text-[15px] font-bold leading-6 text-slate-900 transition-colors group-hover:text-blue-700 dark:text-white dark:group-hover:text-blue-300">
+            <span className="text-[15px] font-bold leading-6 text-slate-900 transition-colors group-hover:text-blue-700  ">
               {faq.question}
             </span>
           </span>
@@ -63,7 +63,7 @@ const SmartphoneFaqSection = ({
             className={`mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors group-focus-visible:ring-2 group-focus-visible:ring-blue-500 group-focus-visible:ring-offset-2 ${
               isOpen
                 ? "bg-blue-600 text-white"
-                : "bg-slate-50 text-blue-600 group-hover:bg-blue-50 dark:bg-slate-800 dark:text-blue-400 dark:group-hover:bg-blue-500/10"
+                : "bg-slate-50 text-blue-600 group-hover:bg-blue-50   "
             }`}
             aria-hidden="true"
           >
@@ -76,8 +76,8 @@ const SmartphoneFaqSection = ({
         </button>
 
         {isOpen ? (
-          <div className="border-t border-slate-200 px-0 pb-5 pt-4 dark:border-slate-800">
-            <p className="text-[15px] leading-7 text-slate-600 dark:text-slate-300">
+          <div className="border-t border-slate-200 px-0 pb-5 pt-4 ">
+            <p className="text-[15px] leading-7 text-slate-600 ">
               {faq.answer}
             </p>
           </div>
@@ -88,17 +88,17 @@ const SmartphoneFaqSection = ({
 
   return (
     <section
-      className={`overflow-hidden rounded-[20px] bg-transparent dark:bg-transparent ${className}`}
+      className={`overflow-hidden rounded-[20px] bg-transparent  ${className}`}
     >
       <header className="flex flex-col gap-2 px-4 py-5 sm:flex-row sm:items-end sm:justify-between sm:px-6">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-blue-600 dark:text-blue-400 sm:text-[11px]">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-blue-600  sm:text-[11px]">
             Helpful answers
           </p>
-          <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950 dark:text-white">
+          <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950 ">
             {title}
           </h2>
-          <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
+          <p className="mt-1 text-sm leading-6 text-slate-500 ">
             Quick answers about price, launch status, specifications, and everyday use.
           </p>
         </div>
@@ -125,7 +125,7 @@ const SmartphoneFaqSection = ({
           <button
             type="button"
             onClick={() => setShowAll((current) => !current)}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-50 px-4 py-2.5 text-sm font-bold text-blue-700 transition hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-300"
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-50 px-4 py-2.5 text-sm font-bold text-blue-700 transition hover:bg-blue-100  "
           >
             {showAll ? "Show fewer questions" : "View all questions"}
             <FaChevronDown

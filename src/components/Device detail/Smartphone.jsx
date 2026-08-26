@@ -487,11 +487,11 @@ const LinkedNewsStoryCard = ({ story }) => {
     story?.publishedIso || story?.updatedIso || story?.publishedAt,
   );
   const baseCardClass =
-    "group flex h-full w-full flex-col overflow-hidden rounded-2xl bg-yellow-200 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 dark:bg-slate-900 dark:shadow-none";
+    "group flex h-full w-full flex-col overflow-hidden rounded-2xl bg-yellow-200 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500  ";
   const imageWrapClass =
-    "relative aspect-[16/9] overflow-hidden bg-slate-100 dark:bg-slate-800";
+    "relative aspect-[16/9] overflow-hidden bg-slate-100 ";
   const titleClass =
-    "line-clamp-2 text-[0.98rem] leading-6 text-slate-900 dark:text-white sm:text-[1.03rem] sm:leading-7";
+    "line-clamp-2 text-[0.98rem] leading-6 text-slate-900  sm:text-[1.03rem] sm:leading-7";
 
   return (
     <Link to={storyPath} className={baseCardClass}>
@@ -546,13 +546,13 @@ const SmartphoneOrbitArtwork = () => (
     aria-hidden="true"
     className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
   >
-    <div className="absolute left-[12%] top-[10%] h-32 w-32 rounded-full bg-blue-400/10 blur-3xl dark:bg-blue-400/10 sm:h-44 sm:w-44" />
-    <div className="absolute bottom-[8%] right-[8%] h-36 w-36 rounded-full bg-indigo-400/10 blur-3xl dark:bg-indigo-400/10 sm:h-52 sm:w-52" />
+    <div className="absolute left-[12%] top-[10%] h-32 w-32 rounded-full bg-blue-400/10 blur-3xl  sm:h-44 sm:w-44" />
+    <div className="absolute bottom-[8%] right-[8%] h-36 w-36 rounded-full bg-indigo-400/10 blur-3xl  sm:h-52 sm:w-52" />
 
     <svg
       viewBox="0 0 620 500"
       fill="none"
-      className="absolute inset-0 h-full w-full text-blue-500/20 dark:text-blue-300/15"
+      className="absolute inset-0 h-full w-full text-blue-500/20 "
       preserveAspectRatio="xMidYMid slice"
     >
       <ellipse
@@ -602,9 +602,9 @@ const SmartphoneOrbitArtwork = () => (
     </svg>
 
     <div className="absolute left-5 top-5 hidden items-center gap-1.5 sm:flex">
-      <span className="h-1.5 w-8 rounded-full bg-blue-600/35 dark:bg-blue-400/35" />
-      <span className="h-1.5 w-3 rounded-full bg-blue-400/25 dark:bg-blue-300/25" />
-      <span className="h-1.5 w-1.5 rounded-full bg-indigo-500/30 dark:bg-indigo-300/30" />
+      <span className="h-1.5 w-8 rounded-full bg-blue-600/35 " />
+      <span className="h-1.5 w-3 rounded-full bg-blue-400/25 " />
+      <span className="h-1.5 w-1.5 rounded-full bg-indigo-500/30 " />
     </div>
     <div className="absolute bottom-7 right-6 hidden grid-cols-3 gap-1.5 sm:grid">
       {Array.from({ length: 9 }).map((_, index) => (
@@ -612,8 +612,8 @@ const SmartphoneOrbitArtwork = () => (
           key={index}
           className={`h-1.5 w-1.5 rounded-full ${
             index === 4
-              ? "bg-blue-600/40 dark:bg-blue-300/40"
-              : "bg-slate-400/20 dark:bg-slate-300/15"
+              ? "bg-blue-600/40 "
+              : "bg-slate-400/20 "
           }`}
         />
       ))}
@@ -629,7 +629,7 @@ const SmartphoneDetailArtwork = () => (
     <svg
       viewBox="0 0 320 280"
       fill="none"
-      className="h-full w-full text-blue-500/15 dark:text-blue-300/10"
+      className="h-full w-full text-blue-500/15 "
     >
       <path
         d="M32 210C87 174 116 195 154 165C201 128 189 79 272 34"
@@ -669,8 +669,8 @@ const SmartphoneDetailArtwork = () => (
         strokeLinecap="round"
       />
     </svg>
-    <div className="absolute right-10 top-4 h-20 w-20 rounded-full border border-blue-400/10 dark:border-blue-300/10" />
-    <div className="absolute right-16 top-10 h-8 w-8 rounded-full border border-indigo-400/10 dark:border-indigo-300/10" />
+    <div className="absolute right-10 top-4 h-20 w-20 rounded-full border border-blue-400/10 " />
+    <div className="absolute right-16 top-10 h-8 w-8 rounded-full border border-indigo-400/10 " />
   </div>
 );
 
@@ -3856,16 +3856,16 @@ Price: ${price}
     return (
       <>
         {/* Mobile: Stacked Layout */}
-        <div className="divide-y divide-slate-200/80 dark:divide-slate-800 sm:hidden">
+        <div className="divide-y divide-slate-200/80  sm:hidden">
           {displayEntries.map(([key, value]) => (
             <div
               key={key}
               className="grid grid-cols-[5.75rem_minmax(0,1fr)] items-start gap-x-3 gap-y-1 py-3 first:pt-0 last:pb-0"
             >
-              <div className="text-sm font-medium leading-5 text-slate-500 dark:text-slate-400">
+              <div className="text-sm font-medium leading-5 text-slate-500 ">
                 {toNormalCase(key)}
               </div>
-              <div className="break-words text-[15px] font-semibold leading-5 text-slate-900 dark:text-slate-100">
+              <div className="break-words text-[15px] font-semibold leading-5 text-slate-900 ">
                 {formatSpecValue(value, key)}
               </div>
             </div>
@@ -3873,16 +3873,16 @@ Price: ${price}
         </div>
 
         {/* Desktop: Table Layout */}
-        <div className="hidden divide-y divide-slate-200/80 dark:divide-slate-800 sm:block">
+        <div className="hidden divide-y divide-slate-200/80  sm:block">
           {displayEntries.map(([key, value]) => (
             <div
               key={key}
               className="grid min-h-11 items-center gap-2 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] sm:gap-6"
             >
-              <div className="text-sm font-medium text-slate-500 dark:text-slate-400">
+              <div className="text-sm font-medium text-slate-500 ">
                 {toNormalCase(key)}
               </div>
-              <div className="break-words text-sm font-semibold text-slate-900 dark:text-slate-100">
+              <div className="break-words text-sm font-semibold text-slate-900 ">
                 {formatSpecValue(value, key)}
               </div>
             </div>
@@ -3898,7 +3898,7 @@ Price: ${price}
                 [sectionId]: !current[sectionId],
               }))
             }
-            className="mt-auto inline-flex w-full items-center justify-center gap-2 border-t border-slate-200/80 pt-4 text-sm font-bold text-blue-600 transition-colors hover:text-blue-700 dark:border-slate-800 dark:text-blue-400 dark:hover:text-blue-300"
+            className="mt-auto inline-flex w-full items-center justify-center gap-2 border-t border-slate-200/80 pt-4 text-sm font-bold text-blue-600 transition-colors hover:text-blue-700   "
           >
             {isExpanded ? "View fewer" : "View more"}
             <FaChevronDown
@@ -4018,7 +4018,7 @@ Price: ${price}
             "N/A",
         };
         const sectionCardClass =
-          "scroll-mt-[136px] sm:scroll-mt-[148px] flex flex-col overflow-hidden rounded-2xl border border-blue-200 dark:bg-slate-900";
+          "scroll-mt-[136px] sm:scroll-mt-[148px] flex flex-col overflow-hidden rounded-2xl border border-blue-200 ";
         const fullSpecHighlightFormatter = new Intl.ListFormat("en", {
           style: "long",
           type: "conjunction",
@@ -4039,12 +4039,12 @@ Price: ${price}
             id={sectionId}
             className={`${sectionCardClass} lg:min-h-[22rem]`}
           >
-            <div className="flex items-center gap-3  bg-blue-50/60 px-4 py-4 dark:border-slate-800 dark:bg-slate-800/40 sm:px-5 sm:py-3.5">
+            <div className="flex items-center gap-3  bg-blue-50/60 px-4 py-4   sm:px-5 sm:py-3.5">
               <span
                 className="h-6 w-1 rounded-full bg-blue-600"
                 aria-hidden="true"
               />
-              <h4 className="text-[17px] font-bold tracking-tight text-slate-950 dark:text-white sm:text-base">
+              <h4 className="text-[17px] font-bold tracking-tight text-slate-950  sm:text-base">
                 {title}
               </h4>
             </div>
@@ -4059,17 +4059,17 @@ Price: ${price}
             id="spec-specifications"
             className={`scroll-mt-[136px] sm:scroll-mt-[148px] w-full px-1 pb-2 sm:px-0 ${combineResponsiveClasses(RESPONSIVE_SPACING.contentMarginY)}`}
           >
-            <section className="rounded-[20px] bg-transparent px-0 py-2 dark:bg-transparent sm:py-3">
+            <section className="rounded-[20px] bg-transparent px-0 py-2  sm:py-3">
               <div className="max-w-4xl pb-2">
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-blue-600 dark:text-blue-400 sm:text-[11px]">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-blue-600  sm:text-[11px]">
                     Full specifications
                   </p>
-                  <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
+                  <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950  sm:text-2xl">
                     Complete hardware and software details
                   </h2>
                 </div>
-                <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500 ">
                   {fullSpecIntroText}
                 </p>
               </div>
@@ -4735,7 +4735,7 @@ Price: ${price}
   if (loading && !mobileData) {
     return (
       <div className="max-w-4xl mx-auto p-8">
-        <div className="rounded-lg bg-white p-8 text-center dark:bg-slate-900">
+        <div className="rounded-lg bg-white p-8 text-center ">
           <Spinner />
           <div className="text-sm text-gray-500 mt-3">Please wait</div>
         </div>
@@ -4746,7 +4746,7 @@ Price: ${price}
   if (!loading && !mobileData) {
     return (
       <div className="max-w-4xl mx-auto p-4">
-        <div className="rounded-lg bg-white p-8 text-center dark:bg-slate-900">
+        <div className="rounded-lg bg-white p-8 text-center ">
           <div className="text-gray-400 text-6xl mb-4">ðŸ“±</div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
             Device Not Found
@@ -5255,7 +5255,7 @@ Price: ${price}
   }
 
   return (
-    <div className="hooks-product-detail m-0 w-full bg-white text-slate-950 dark:bg-[#07111f] dark:text-slate-100">
+    <div className="hooks-product-detail m-0 w-full bg-white text-slate-950  ">
       <SEO
         title={metaTitle}
         description={metaDescription}
@@ -5341,14 +5341,14 @@ Price: ${price}
 
         <section
           id="detail-overview"
-          className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full overflow-hidden bg-white dark:bg-[#0a1628]"
+          className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full overflow-hidden bg-white "
         >
           <Breadcrumbs variant="plain" />
 
           <div className="mx-auto w-full max-w-[1440px] px-3 pb-7 pt-5 sm:px-6 sm:pb-9 sm:pt-7 lg:px-8">
-            <div className="relative mx-auto w-full max-w-7xl bg-transparent dark:bg-transparent">
+            <div className="relative mx-auto w-full max-w-7xl bg-transparent ">
               <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-7">
-                <div className="rounded-[24px] bg-transparent p-3 dark:bg-transparent sm:p-5 lg:p-6">
+                <div className="rounded-[24px] bg-transparent p-3  sm:p-5 lg:p-6">
                   <div className="grid gap-3 sm:grid-cols-[68px_minmax(0,1fr)]">
                     {carouselImages.length > 1 ? (
                       <div className="no-scrollbar order-2 flex snap-x snap-mandatory scroll-px-1 gap-2 overflow-x-auto px-1 py-1 sm:order-1 sm:flex-col sm:overflow-visible">
@@ -5358,10 +5358,10 @@ Price: ${price}
                             type="button"
                             onClick={() => setActiveImage(index)}
                             aria-label={`View ${headerTitle} image ${index + 1}`}
-                            className={`flex h-16 w-16 shrink-0 snap-start items-center justify-center overflow-hidden rounded-xl border-2 bg-[#ffffff] p-1.5 transition-all dark:bg-slate-900 ${
+                            className={`flex h-16 w-16 shrink-0 snap-start items-center justify-center overflow-hidden rounded-xl border-2 bg-[#ffffff] p-1.5 transition-all  ${
                               activeImage === index
-                                ? "border-blue-500 shadow-sm dark:border-blue-400"
-                                : "border-transparent hover:border-blue-200 hover:bg-blue-50 dark:hover:border-slate-600 dark:hover:bg-slate-800"
+                                ? "border-blue-500 shadow-sm "
+                                : "border-transparent hover:border-blue-200 hover:bg-blue-50  "
                             }`}
                           >
                             <img
@@ -5376,7 +5376,7 @@ Price: ${price}
                     ) : null}
 
                     <div className="order-1 sm:order-2">
-                      <div className="relative flex min-h-[330px] items-center justify-center overflow-hidden rounded-[22px] bg-[#ffffff] p-6 shadow-[0_18px_40px_rgba(15,23,42,0.10)] dark:bg-[#0f1f34] dark:shadow-none sm:min-h-[430px] sm:p-8">
+                      <div className="relative flex min-h-[330px] items-center justify-center overflow-hidden rounded-[22px] bg-[#ffffff] p-6 shadow-[0_18px_40px_rgba(15,23,42,0.10)]   sm:min-h-[430px] sm:p-8">
                         <SmartphoneOrbitArtwork />
                         {carouselImages.length > 1 ? (
                           <>
@@ -5384,7 +5384,7 @@ Price: ${price}
                               type="button"
                               onClick={goToPreviousImage}
                               aria-label="Previous product image"
-                              className="absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/80 p-2.5 text-slate-600 backdrop-blur-md transition hover:bg-white hover:text-blue-700 dark:bg-[#13223a]/90 dark:text-slate-300"
+                              className="absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/80 p-2.5 text-slate-600 backdrop-blur-md transition hover:bg-white hover:text-blue-700  "
                             >
                               <FaChevronLeft className="text-xs" />
                             </button>
@@ -5392,7 +5392,7 @@ Price: ${price}
                               type="button"
                               onClick={goToNextImage}
                               aria-label="Next product image"
-                              className="absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/80 p-2.5 text-slate-600 backdrop-blur-md transition hover:bg-white hover:text-blue-700 dark:bg-[#13223a]/90 dark:text-slate-300"
+                              className="absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/80 p-2.5 text-slate-600 backdrop-blur-md transition hover:bg-white hover:text-blue-700  "
                             >
                               <FaChevronRight className="text-xs" />
                             </button>
@@ -5426,7 +5426,7 @@ Price: ${price}
                                 className={`h-1.5 rounded-full transition-all ${
                                   activeImage === index
                                     ? "w-7 bg-blue-600"
-                                    : "w-1.5 bg-slate-300 dark:bg-slate-600"
+                                    : "w-1.5 bg-slate-300 "
                                 }`}
                               />
                             ))}
@@ -5434,7 +5434,7 @@ Price: ${price}
                         ) : null}
                       </div>
                       {carouselImages.length > 0 ? (
-                        <p className="mt-2 text-center text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                        <p className="mt-2 text-center text-[11px] font-medium text-slate-500 ">
                           {activeImage + 1} / {carouselImages.length}
                         </p>
                       ) : null}
@@ -5450,8 +5450,8 @@ Price: ${price}
                         <span
                           className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ring-1 ${
                             launchStatus === "upcoming"
-                              ? "bg-violet-50 text-violet-700 ring-violet-100 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/20"
-                              : "bg-emerald-50 text-emerald-700 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20"
+                              ? "bg-violet-50 text-violet-700 ring-violet-100   "
+                              : "bg-emerald-50 text-emerald-700 ring-emerald-100   "
                           }`}
                         >
                           <span
@@ -5464,15 +5464,15 @@ Price: ${price}
                           {heroMarketLabel}
                         </span>
                         {mobileData?.isAiPhone ? (
-                          <span className="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
+                          <span className="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-blue-700 ring-1 ring-blue-100   ">
                             AI phone
                           </span>
                         ) : null}
                       </div>
-                      <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.24em] text-blue-600 dark:text-blue-400">
+                      <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.24em] text-blue-600 ">
                         {mobileData?.brand || metaBrand || "Smartphone"}
                       </p>
-                      <h1 className="mt-1 text-3xl font-black leading-tight tracking-tight text-slate-950 dark:text-white sm:text-4xl">
+                      <h1 className="mt-1 text-3xl font-black leading-tight tracking-tight text-slate-950  sm:text-4xl">
                         {headerTitle}
                       </h1>
                     </div>
@@ -5482,7 +5482,7 @@ Price: ${price}
                         type="button"
                         onClick={handleShare}
                         aria-label="Share smartphone"
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/70 text-slate-600 backdrop-blur-md transition hover:bg-white hover:text-blue-700 dark:bg-slate-800/80 dark:text-slate-300 dark:hover:bg-blue-500/10"
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/70 text-slate-600 backdrop-blur-md transition hover:bg-white hover:text-blue-700   "
                       >
                         <FaShareAlt className="text-sm" />
                       </button>
@@ -5496,7 +5496,7 @@ Price: ${price}
                           }
                           navigate("/compare");
                         }}
-                        className="hidden h-10 items-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-blue-500 dark:hover:bg-blue-400 sm:inline-flex"
+                        className="hidden h-10 items-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40   sm:inline-flex"
                       >
                         <FaPlus className="text-xs" />
                         Compare
@@ -5507,7 +5507,7 @@ Price: ${price}
                   {headerSummary ? (
                     <div className="relative z-[1] mt-4">
                       <p
-                        className={`text-sm leading-6 text-slate-600 dark:text-slate-300 sm:text-[15px] ${
+                        className={`text-sm leading-6 text-slate-600  sm:text-[15px] ${
                           showHeaderSummaryFull ? "" : "line-clamp-2"
                         }`}
                       >
@@ -5519,7 +5519,7 @@ Price: ${price}
                           onClick={() =>
                             setShowHeaderSummaryFull((value) => !value)
                           }
-                          className="mt-1 text-sm font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                          className="mt-1 text-sm font-bold text-blue-600 hover:text-blue-700 "
                         >
                           {showHeaderSummaryFull ? "Show less" : "Read more"}
                         </button>
@@ -5529,56 +5529,56 @@ Price: ${price}
 
                   <div className="relative z-[1] mt-5 grid gap-3 sm:grid-cols-2">
                     {headerSpecScoreValue != null ? (
-                      <div className="flex items-center gap-3 rounded-2xl  p-4   dark:bg-[#111f34]/80 dark:shadow-none">
+                      <div className="flex items-center gap-3 rounded-2xl  p-4    ">
                         <MobileXScoreLogo className="h-11 w-11 shrink-0 rounded-xl object-cover" />
                         <div>
-                          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 ">
                             Spec score
                           </p>
                           <div className="mt-1 flex items-end gap-1">
-                            <span className="text-3xl font-black leading-none text-slate-950 dark:text-white">
+                            <span className="text-3xl font-black leading-none text-slate-950 ">
                               {headerSpecScoreValue}
                             </span>
                             <span className="pb-0.5 text-sm font-semibold text-slate-500">
                               /100
                             </span>
                           </div>
-                          <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                          <p className="mt-1 text-[11px] text-slate-500 ">
                             Based on specifications
                           </p>
                         </div>
                       </div>
                     ) : null}
 
-                    <div className=" p-4  dark:bg-[#111f34]/80 dark:shadow-none">
+                    <div className=" p-4   ">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 ">
                             Market status
                           </p>
                           <p
-                            className={`mt-1 text-base font-black ${launchStatus === "upcoming" ? "text-violet-600 dark:text-violet-300" : "text-emerald-600 dark:text-emerald-300"}`}
+                            className={`mt-1 text-base font-black ${launchStatus === "upcoming" ? "text-violet-600 " : "text-emerald-600 "}`}
                           >
                             {heroMarketLabel}
                           </p>
                         </div>
-                        <span className="text-right text-xs leading-5 text-slate-500 dark:text-slate-400">
+                        <span className="text-right text-xs leading-5 text-slate-500 ">
                           {launchStatus === "upcoming"
                             ? "Expected"
                             : "Launched"}
                           <br />
-                          <strong className="text-slate-800 dark:text-slate-200">
+                          <strong className="text-slate-800 ">
                             {formattedHeroLaunchDate}
                           </strong>
                         </span>
                       </div>
                       <div className="mt-4">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 ">
                           {launchStatus === "upcoming"
                             ? "Expected price"
                             : "Starting price"}
                         </p>
-                        <p className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+                        <p className="mt-1 text-2xl font-black tracking-tight text-slate-950 ">
                           {currentPriceDisplay || "Price not announced"}
                         </p>
                       </div>
@@ -5587,7 +5587,7 @@ Price: ${price}
 
                   <div
                     id="detail-highlights"
-                    className="relative z-[1] scroll-mt-[136px] mt-5 grid grid-cols-2 gap-1   p-1  backdrop-blur-md dark:bg-[#111f34]/80 dark:shadow-none sm:scroll-mt-[148px] sm:grid-cols-3"
+                    className="relative z-[1] scroll-mt-[136px] mt-5 grid grid-cols-2 gap-1   p-1  backdrop-blur-md   sm:scroll-mt-[148px] sm:grid-cols-3"
                   >
                     {heroQuickSpecs.slice(0, 6).map((item, index) => (
                       <button
@@ -5600,20 +5600,20 @@ Price: ${price}
                               : item.key,
                           )
                         }
-                        className="group min-w-0 rounded-xl px-3 py-4 text-left transition hover:bg-white/80 dark:hover:bg-slate-800/80"
+                        className="group min-w-0 rounded-xl px-3 py-4 text-left transition hover:bg-white/80 "
                       >
                         <div className="flex items-center gap-2">
-                          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600  ">
                             <item.Icon className="text-xs" />
                           </span>
-                          <span className="truncate text-xs font-semibold text-slate-500 dark:text-slate-400">
+                          <span className="truncate text-xs font-semibold text-slate-500 ">
                             {item.label}
                           </span>
                         </div>
-                        <p className="mt-2 line-clamp-2 text-[15px] font-black leading-5 text-slate-900 dark:text-white sm:text-base">
+                        <p className="mt-2 line-clamp-2 text-[15px] font-black leading-5 text-slate-900  sm:text-base">
                           {formatSpecValue(item.value, item.label)}
                         </p>
-                        <p className="mt-0.5 truncate text-[11px] text-slate-500 dark:text-slate-400">
+                        <p className="mt-0.5 truncate text-[11px] text-slate-500 ">
                           {formatSpecValue(item.sub, item.label)}
                         </p>
                       </button>
@@ -5642,19 +5642,19 @@ Price: ${price}
                 </div>
               </div>
 
-              <div className="mx-0 mb-4 mt-5  dark:bg-[#111f34]/75 sm:mb-6">
-                <div className="grid min-w-0 lg:grid-cols-[minmax(0,1.12fr)_minmax(330px,0.88fr)] lg:divide-x lg:divide-slate-200/80 dark:lg:divide-slate-700/70">
+              <div className="mx-0 mb-4 mt-5   sm:mb-6">
+                <div className="grid min-w-0 lg:grid-cols-[minmax(0,1.12fr)_minmax(330px,0.88fr)] lg:divide-x lg:divide-slate-200/80 ">
                   <div className="min-w-0 p-4 sm:p-6">
                     <div className="flex flex-wrap items-end justify-between gap-3">
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-blue-600 dark:text-blue-400">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-blue-600 ">
                           Select variant
                         </p>
-                        <h2 className="mt-1 text-lg font-black text-slate-950 dark:text-white">
+                        <h2 className="mt-1 text-lg font-black text-slate-950 ">
                           Choose RAM and storage
                         </h2>
                       </div>
-                      <span className="shrink-0  px-2.5 py-1 text-[11px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                      <span className="shrink-0  px-2.5 py-1 text-[11px] font-semibold text-slate-500  ">
                         {variants.length} option
                         {variants.length === 1 ? "" : "s"}
                       </span>
@@ -5670,10 +5670,10 @@ Price: ${price}
                               type="button"
                               onClick={() => setSelectedVariant(index)}
                               aria-pressed={selected}
-                              className={`relative min-h-[88px] min-w-0 snap-start rounded-xl border-2 p-3 text-left  transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-2 dark:shadow-none dark:focus-visible:ring-offset-[#111f34] sm:min-w-[190px] sm:p-4 ${
+                              className={`relative min-h-[88px] min-w-0 snap-start rounded-xl border-2 p-3 text-left  transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-2   sm:min-w-[190px] sm:p-4 ${
                                 selected
-                                  ? "border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-500/10"
-                                  : "border-slate-200  hover:border-blue-300 hover:bg-blue-50/60 dark:border-slate-700 dark:bg-[#0f1d31] dark:hover:border-blue-500 dark:hover:bg-slate-800"
+                                  ? "border-blue-500 bg-blue-50  "
+                                  : "border-slate-200  hover:border-blue-300 hover:bg-blue-50/60    "
                               }`}
                             >
                               {selected ? (
@@ -5681,18 +5681,18 @@ Price: ${price}
                                   <FaCheck className="text-[9px]" />
                                 </span>
                               ) : null}
-                              <p className="pr-6 text-sm font-black text-slate-900 dark:text-white">
+                              <p className="pr-6 text-sm font-black text-slate-900 ">
                                 {variant.ram} / {variant.storage}
                               </p>
                               <p
-                                className={`mt-2 text-lg font-black ${selected ? "text-blue-700 dark:text-blue-300" : "text-emerald-600 dark:text-emerald-300"}`}
+                                className={`mt-2 text-lg font-black ${selected ? "text-blue-700 " : "text-emerald-600 "}`}
                               >
                                 {formatPriceLabel(
                                   resolveVariantNumericPrice(variant),
                                 ) || "Price pending"}
                               </p>
                               {variant.color_name ? (
-                                <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                                <p className="mt-1 text-[11px] text-slate-500 ">
                                   {variant.color_name}
                                 </p>
                               ) : null}
@@ -5710,14 +5710,14 @@ Price: ${price}
                   <div className="min-w-0 p-4 sm:p-6 lg:pl-7">
                     <div className="flex flex-wrap items-end justify-between gap-3">
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-blue-600 dark:text-blue-400">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-blue-600 ">
                           Best prices
                         </p>
-                        <h2 className="mt-1 text-lg font-black text-slate-950 dark:text-white">
+                        <h2 className="mt-1 text-lg font-black text-slate-950 ">
                           Buy from trusted stores
                         </h2>
                       </div>
-                      <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                      <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500  ">
                         {currentVariantStoreRows.length} offer
                         {currentVariantStoreRows.length === 1 ? "" : "s"}
                       </span>
@@ -5760,10 +5760,10 @@ Price: ${price}
                             return (
                               <div
                                 key={`${storePrice.id || storeName || index}`}
-                                className="flex min-h-[68px] min-w-0 items-center justify-between gap-2 rounded-xl border border-slate-100 bg-[#f8fafc] px-3 py-3 shadow-md dark:border-slate-700 dark:bg-[#0f1d31] sm:gap-4 sm:px-4"
+                                className="flex min-h-[68px] min-w-0 items-center justify-between gap-2 rounded-xl border border-slate-100 bg-[#f8fafc] px-3 py-3 shadow-md   sm:gap-4 sm:px-4"
                               >
                                 <div className="flex min-w-0 items-center gap-3">
-                                  <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg  bg-[#ffffff] p-1.5 dark:border-slate-700 dark:bg-slate-900">
+                                  <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg  bg-[#ffffff] p-1.5  ">
                                     {logoSrc ? (
                                       <img
                                         src={logoSrc}
@@ -5775,10 +5775,10 @@ Price: ${price}
                                     )}
                                   </span>
                                   <div className="min-w-0">
-                                    <p className="truncate text-sm font-bold text-slate-900 dark:text-white">
+                                    <p className="truncate text-sm font-bold text-slate-900 ">
                                       {storeName}
                                     </p>
-                                    <p className="mt-0.5 text-base font-black text-emerald-600 dark:text-emerald-300">
+                                    <p className="mt-0.5 text-base font-black text-emerald-600 ">
                                       {formatPriceLabel(storePrice.price) ||
                                         "Price pending"}
                                     </p>
@@ -5796,7 +5796,7 @@ Price: ${price}
                                     <FaExternalLinkAlt className="text-[9px]" />
                                   </a>
                                 ) : (
-                                  <span className="inline-flex min-w-[84px] items-center justify-center rounded-lg bg-slate-200 px-2.5 py-2.5 text-xs font-bold text-slate-500 dark:bg-slate-700 dark:text-slate-300 sm:min-w-[96px] sm:px-3">
+                                  <span className="inline-flex min-w-[84px] items-center justify-center rounded-lg bg-slate-200 px-2.5 py-2.5 text-xs font-bold text-slate-500   sm:min-w-[96px] sm:px-3">
                                     Unavailable
                                   </span>
                                 )}
@@ -5804,7 +5804,7 @@ Price: ${price}
                             );
                           })
                       ) : (
-                        <div className="rounded-xl border border-dashed border-slate-300 px-4 py-5 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                        <div className="rounded-xl border border-dashed border-slate-300 px-4 py-5 text-center text-sm text-slate-500  ">
                           Store offers will appear here when available.
                         </div>
                       )}
@@ -5818,7 +5818,7 @@ Price: ${price}
 
         <div
           id="detail-competitors"
-          className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-white dark:bg-[#07111f]"
+          className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-white "
         >
           <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
             <div className="mx-auto w-full max-w-7xl space-y-4 sm:space-y-6">
@@ -5850,7 +5850,7 @@ Price: ${price}
           </div>
         </div>
 
-        <div className="w-full bg-white dark:bg-[#07111f]">
+        <div className="w-full bg-white ">
           <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
             <div className="mx-auto w-full max-w-7xl">{renderTabContent()}</div>
           </div>
@@ -5858,15 +5858,15 @@ Price: ${price}
 
         <div
           id="detail-news"
-          className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-white dark:bg-[#07111f]"
+          className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-white "
         >
           {shouldShowLinkedNews ? (
             <div className="w-full">
               <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
-                <section className="mx-auto w-full max-w-7xl bg-transparent dark:bg-transparent">
+                <section className="mx-auto w-full max-w-7xl bg-transparent ">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.34em] text-blue-600 dark:text-blue-400 sm:text-[11px]">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.34em] text-blue-600  sm:text-[11px]">
                         Related News
                       </p>
                       <h2 className="mt-1 text-base font-semibold tracking-tight text-slate-900 sm:mt-2 sm:text-lg md:text-xl">
@@ -5894,7 +5894,7 @@ Price: ${price}
                   <div className="mt-8 flex justify-center">
                     <Link
                       to="/news"
-                      className="inline-flex items-center gap-3 text-base font-bold text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                      className="inline-flex items-center gap-3 text-base font-bold text-blue-600 transition-colors hover:text-blue-700  "
                     >
                       More smartphone news
                       <FaArrowRight className="text-base" />
@@ -5916,7 +5916,7 @@ Price: ${price}
         {smartphoneFaqItems.length > 0 ? (
           <div
             id="detail-faqs"
-            className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-white dark:bg-[#07111f]"
+            className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-white "
           >
             <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
               <div className="mx-auto w-full max-w-7xl">
@@ -5930,21 +5930,21 @@ Price: ${price}
         ) : null}
 
         {recentlyViewed.length > 0 ? (
-          <section className="w-full bg-white dark:bg-[#07111f]">
+          <section className="w-full bg-white ">
             <div className="mx-auto w-full max-w-[1440px] px-3 pb-10 pt-6 sm:px-6 sm:pb-12 lg:px-8">
-              <div className="mx-auto w-full max-w-7xl bg-transparent dark:bg-transparent">
+              <div className="mx-auto w-full max-w-7xl bg-transparent ">
                 <div className="flex items-end justify-between gap-4">
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-blue-600 dark:text-blue-400">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-blue-600 ">
                       Continue browsing
                     </p>
-                    <h2 className="mt-1 text-lg font-bold tracking-tight text-slate-950 dark:text-white">
+                    <h2 className="mt-1 text-lg font-bold tracking-tight text-slate-950 ">
                       Recently viewed smartphones
                     </h2>
                   </div>
                   <Link
                     to="/smartphones"
-                    className="hidden items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 sm:inline-flex"
+                    className="hidden items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700  sm:inline-flex"
                   >
                     View all
                     <FaArrowRight className="text-xs" />
@@ -5959,9 +5959,9 @@ Price: ${price}
                       <Link
                         key={String(item?.id || itemName)}
                         to={href}
-                        className="grid w-[230px] shrink-0 snap-start grid-cols-[64px_minmax(0,1fr)] items-center gap-3 rounded-xl bg-[#ffffff] p-3 transition hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-blue-500/10"
+                        className="grid w-[230px] shrink-0 snap-start grid-cols-[64px_minmax(0,1fr)] items-center gap-3 rounded-xl bg-[#ffffff] p-3 transition hover:bg-blue-50  "
                       >
-                        <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg bg-white p-1 dark:bg-slate-900">
+                        <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg bg-white p-1 ">
                           {item?.image ? (
                             <img
                               src={item.image}
@@ -5974,16 +5974,16 @@ Price: ${price}
                           )}
                         </div>
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-bold text-slate-900 dark:text-white">
+                          <p className="truncate text-sm font-bold text-slate-900 ">
                             {itemName}
                           </p>
                           {item?.brand ? (
-                            <p className="mt-0.5 truncate text-[11px] text-slate-500 dark:text-slate-400">
+                            <p className="mt-0.5 truncate text-[11px] text-slate-500 ">
                               {item.brand}
                             </p>
                           ) : null}
                           {item?.price ? (
-                            <p className="mt-2 text-sm font-bold text-slate-900 dark:text-slate-100">
+                            <p className="mt-2 text-sm font-bold text-slate-900 ">
                               {item.price}
                             </p>
                           ) : null}
