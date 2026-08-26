@@ -65,6 +65,10 @@ const ProductAiSummary = ({ summary = "" }) => {
               AI Summary
             </h2>
 
+            <p className="mt-2 text-xs font-semibold uppercase tracking-[0.14em] text-blue-700">
+              Powered by Gemini
+            </p>
+
             <p className="mt-4 text-[17px] font-normal leading-[1.75] tracking-[0.01em] text-slate-800">
               {summary}
             </p>
