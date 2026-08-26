@@ -293,21 +293,21 @@ const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
 
   return (
     <section
-      className={`smartphones-matchups-section mx-auto w-full max-w-7xl bg-transparent py-6 text-slate-950 sm:py-8 dark:text-slate-100 ${className}`}
+      className={`smartphones-matchups-section mx-auto w-full max-w-7xl bg-transparent py-6 text-slate-950 sm:py-8  ${className}`}
       aria-labelledby="popular-phone-comparisons-title"
     >
       <div className="mb-5 flex items-end justify-between gap-3 px-1 sm:mb-6">
         <div className="min-w-0">
-          <span className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-blue-600 sm:text-xs dark:text-blue-400">
+          <span className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-blue-600 sm:text-xs ">
             Popular matchups
           </span>
           <h2
             id="popular-phone-comparisons-title"
-            className="mt-1.5 max-w-3xl text-2xl font-black tracking-[-0.035em] text-slate-950 sm:text-3xl dark:text-white"
+            className="mt-1.5 max-w-3xl text-2xl font-black tracking-[-0.035em] text-slate-950 sm:text-3xl "
           >
             Compare popular mobile phones
           </h2>
-          <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base dark:text-slate-400">
+          <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base ">
             Pick a matchup and compare the details that matter.
           </p>
         </div>
@@ -315,7 +315,7 @@ const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
         <div className="flex shrink-0 items-center gap-2">
           <Link
             to="/popular-comparisons"
-            className="hidden min-h-10 items-center gap-2 rounded-lg bg-blue-50 px-4 text-sm font-bold text-blue-700 transition-colors hover:bg-blue-100 sm:inline-flex dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20"
+            className="hidden min-h-10 items-center gap-2 rounded-lg bg-blue-50 px-4 text-sm font-bold text-blue-700 transition-colors hover:bg-blue-100 sm:inline-flex   "
           >
             View all
             <FaArrowRight className="text-[11px]" />
@@ -325,7 +325,7 @@ const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
             onClick={() => scrollToComparison(activeIndex - 1)}
             disabled={activeIndex === 0}
             aria-label="Previous phone comparison"
-            className="grid h-10 w-10 place-items-center rounded-lg bg-white text-blue-600 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-30 dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700"
+            className="grid h-10 w-10 place-items-center rounded-lg bg-white text-blue-600 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-30   "
           >
             <FaChevronLeft className="text-xs" />
           </button>
@@ -334,7 +334,7 @@ const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
             onClick={() => scrollToComparison(activeIndex + 1)}
             disabled={activeIndex >= comparisons.length - 1}
             aria-label="Next phone comparison"
-            className="grid h-10 w-10 place-items-center rounded-lg bg-white text-blue-600 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-30 dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700"
+            className="grid h-10 w-10 place-items-center rounded-lg bg-white text-blue-600 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-30   "
           >
             <FaChevronRight className="text-xs" />
           </button>
@@ -355,14 +355,14 @@ const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
               data-matchup-card
               to={buildComparePath(item)}
               aria-label={`Compare ${item.leftName} with ${item.rightName}`}
-              className="group w-[86vw] max-w-[390px] shrink-0 snap-start rounded-xl bg-transparent p-3 transition-colors hover:bg-blue-50/40 sm:w-[390px] sm:p-4 lg:w-[calc((100%_-_2rem)/3)] lg:min-w-[340px] dark:hover:bg-[#13243b]"
+              className="group w-[86vw] max-w-[390px] shrink-0 snap-start rounded-xl bg-transparent p-3 transition-colors hover:bg-blue-50/40 sm:w-[390px] sm:p-4 lg:w-[calc((100%_-_2rem)/3)] lg:min-w-[340px] "
             >
-              <div className="smartphones-product-stage relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 via-white to-slate-50 px-3 pb-3 pt-4 dark:from-[#e7effb] dark:via-[#f8fbff] dark:to-[#dce7f5]">
-                <span className="absolute left-4 top-3 text-[9px] font-extrabold uppercase tracking-[0.15em] text-blue-600 dark:text-blue-700">
+              <div className="smartphones-product-stage relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 via-white to-slate-50 px-3 pb-3 pt-4   ">
+                <span className="absolute left-4 top-3 text-[9px] font-extrabold uppercase tracking-[0.15em] text-blue-600 ">
                   Matchup {index + 1}
                 </span>
-                <span className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-blue-100/50 dark:bg-blue-200/60" />
-                <span className="absolute -bottom-14 -left-10 h-32 w-32 rounded-full bg-indigo-100/40 dark:bg-indigo-200/50" />
+                <span className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-blue-100/50 " />
+                <span className="absolute -bottom-14 -left-10 h-32 w-32 rounded-full bg-indigo-100/40 " />
 
                 <div className="relative mt-4 grid grid-cols-[minmax(0,1fr)_44px_minmax(0,1fr)] items-center gap-1 sm:grid-cols-[minmax(0,1fr)_48px_minmax(0,1fr)] sm:gap-2">
                   <PhoneVisual src={item.leftImage} label={item.leftName} />
@@ -376,15 +376,15 @@ const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
               </div>
 
               <div className="mt-3 grid grid-cols-2 gap-3">
-                <p className="truncate text-sm font-extrabold text-slate-900 sm:text-base dark:text-slate-100">
+                <p className="truncate text-sm font-extrabold text-slate-900 sm:text-base ">
                   {item.leftName}
                 </p>
-                <p className="truncate text-right text-sm font-extrabold text-slate-900 sm:text-base dark:text-slate-100">
+                <p className="truncate text-right text-sm font-extrabold text-slate-900 sm:text-base ">
                   {item.rightName}
                 </p>
               </div>
 
-              <div className="mt-4 flex min-h-11 items-center justify-between gap-3 rounded-lg bg-blue-600 px-4 text-sm font-bold text-white transition-colors group-hover:bg-blue-700 dark:bg-blue-500 dark:group-hover:bg-blue-400">
+              <div className="mt-4 flex min-h-11 items-center justify-between gap-3 rounded-lg bg-blue-600 px-4 text-sm font-bold text-white transition-colors group-hover:bg-blue-700  ">
                 <span className="min-w-0 truncate">Compare this matchup</span>
                 <FaArrowRight className="shrink-0 text-[11px] transition-transform group-hover:translate-x-0.5" />
               </div>
@@ -412,8 +412,8 @@ const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
             aria-label={`Go to comparison group ${index + 1}`}
             className={`h-2 rounded-full transition-all ${
               index === activeDot
-                ? "w-6 bg-blue-600 dark:bg-blue-400"
-                : "w-2 bg-slate-300 dark:bg-slate-600"
+                ? "w-6 bg-blue-600 "
+                : "w-2 bg-slate-300 "
             }`}
           />
         ))}
@@ -421,7 +421,7 @@ const PopularMobileComparisonsStrip = ({ devices = [], className = "" }) => {
 
       <Link
         to="/popular-comparisons"
-        className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg bg-blue-50 px-4 text-sm font-bold text-blue-700 sm:hidden dark:bg-blue-500/10 dark:text-blue-300"
+        className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg bg-blue-50 px-4 text-sm font-bold text-blue-700 sm:hidden  "
       >
         View all comparisons
         <FaArrowRight className="text-[11px]" />

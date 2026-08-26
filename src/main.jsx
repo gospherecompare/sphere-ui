@@ -7,7 +7,6 @@ import App from "./App.jsx";
 import { Provider } from "react-redux";
 import { store } from "./store";
 import { HelmetProvider } from "react-helmet-async";
-import { ThemeProvider } from "./context/ThemeContext";
 import { installApiAliasFetch } from "./utils/installApiAliasFetch";
 import { installFetchActivityTracker } from "./utils/installFetchActivityTracker";
 import { installPreloadedFetchInterceptor } from "./utils/installPreloadedFetch";
@@ -20,9 +19,7 @@ createRoot(document.getElementById("root")).render(
   <StrictMode>
     <Provider store={store}>
       <HelmetProvider>
-        <ThemeProvider>
-          <App />
-        </ThemeProvider>
+        <App />
       </HelmetProvider>
     </Provider>
   </StrictMode>,

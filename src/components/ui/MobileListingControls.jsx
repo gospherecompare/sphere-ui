@@ -22,7 +22,7 @@ const MobileListingControls = ({
   showPopularFeatures = true,
 }) => (
   <div
-    className={`smartphones-mobile-toolbar ${showDesktop ? "" : "lg:hidden"} sticky top-[var(--mobile-listing-controls-top,52px)] z-40 -mx-3 mb-3 bg-transparent px-3 py-2 dark:text-[#f3f7ff] ${className}`}
+    className={`smartphones-mobile-toolbar ${showDesktop ? "" : "lg:hidden"} sticky top-[var(--mobile-listing-controls-top,52px)] z-40 -mx-3 mb-3 bg-transparent px-3 py-2  ${className}`}
   >
     <div
       className={`flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${showDesktop ? "lg:gap-3 lg:py-2" : ""}`}
@@ -30,7 +30,7 @@ const MobileListingControls = ({
       <button
         type="button"
         onClick={onOpenFilters}
-        className={`grid shrink-0 place-items-center border border-[#e2e8f0] bg-transparent text-blue-600 active:border-blue-300 active:bg-blue-50/60 dark:border-[#2a3d58] dark:text-[#8eb0ff] dark:active:border-[#4c6f9f] dark:active:bg-[#132640] ${showDesktop ? "h-12 w-12 rounded-2xl" : "h-11 w-11 rounded-xl"}`}
+        className={`grid shrink-0 place-items-center border border-[#e2e8f0] bg-transparent text-blue-600 active:border-blue-300 active:bg-blue-50/60     ${showDesktop ? "h-12 w-12 rounded-2xl" : "h-11 w-11 rounded-xl"}`}
         aria-label="Open smartphone filters and search"
       >
         <FaSearch className="text-xs" />
@@ -40,10 +40,10 @@ const MobileListingControls = ({
         <button
           type="button"
           onClick={onOpenPopularFeatures}
-          className={`flex shrink-0 items-center gap-2.5 border border-[#e2e8f0] bg-transparent text-left active:border-blue-300 active:bg-blue-50/60 dark:border-[#2a3d58] dark:active:border-[#4c6f9f] dark:active:bg-[#132640] ${showDesktop ? "min-h-12 min-w-[13.5rem] rounded-2xl px-4" : "h-11 min-w-[11.5rem] rounded-xl px-3"}`}
+          className={`flex shrink-0 items-center gap-2.5 border border-[#e2e8f0] bg-transparent text-left active:border-blue-300 active:bg-blue-50/60    ${showDesktop ? "min-h-12 min-w-[13.5rem] rounded-2xl px-4" : "h-11 min-w-[11.5rem] rounded-xl px-3"}`}
         >
           <FaStar className="shrink-0 text-xs text-blue-600" />
-          <span className="min-w-0 flex-1 truncate text-[11px] font-extrabold text-[#0f172a] dark:text-[#eaf1ff]">
+          <span className="min-w-0 flex-1 truncate text-[11px] font-extrabold text-[#0f172a] ">
             {activeFeatureCount > 0 ? currentFeatureLabel : "Popular Features"}
           </span>
           {activeFeatureCount > 0 ? (
@@ -58,10 +58,10 @@ const MobileListingControls = ({
       <button
         type="button"
         onClick={onOpenFilters}
-        className={`flex shrink-0 items-center gap-2.5 border border-[#e2e8f0] bg-transparent text-left active:border-blue-300 active:bg-blue-50/60 dark:border-[#2a3d58] dark:active:border-[#4c6f9f] dark:active:bg-[#132640] ${showDesktop ? "min-h-12 min-w-[11.5rem] rounded-2xl px-4" : "h-11 min-w-[9.5rem] rounded-xl px-3"}`}
+        className={`flex shrink-0 items-center gap-2.5 border border-[#e2e8f0] bg-transparent text-left active:border-blue-300 active:bg-blue-50/60    ${showDesktop ? "min-h-12 min-w-[11.5rem] rounded-2xl px-4" : "h-11 min-w-[9.5rem] rounded-xl px-3"}`}
       >
         <FaFilter className="shrink-0 text-xs text-blue-600" />
-        <span className="min-w-0 flex-1 truncate text-[11px] font-extrabold text-[#0f172a] dark:text-[#eaf1ff]">
+        <span className="min-w-0 flex-1 truncate text-[11px] font-extrabold text-[#0f172a] ">
           All Filters
         </span>
         {activeFilterCount > 0 ? (
@@ -73,16 +73,16 @@ const MobileListingControls = ({
       </button>
 
       <label
-        className={`flex shrink-0 items-center gap-2.5 border border-[#e2e8f0] bg-transparent active:border-blue-300 dark:border-[#2a3d58] dark:active:border-[#4c6f9f] ${showDesktop ? "ml-auto min-h-12 min-w-[15.5rem] rounded-2xl px-4" : "h-11 min-w-[12rem] rounded-xl px-3"}`}
+        className={`flex shrink-0 items-center gap-2.5 border border-[#e2e8f0] bg-transparent active:border-blue-300   ${showDesktop ? "ml-auto min-h-12 min-w-[15.5rem] rounded-2xl px-4" : "h-11 min-w-[12rem] rounded-xl px-3"}`}
       >
         <FaSyncAlt className="shrink-0 text-xs text-blue-600" />
-        <span className="min-w-0 flex-1 whitespace-nowrap text-[10px] font-medium text-[#64748b] dark:text-[#94a4bd]">
+        <span className="min-w-0 flex-1 whitespace-nowrap text-[10px] font-medium text-[#64748b] ">
           Sort by:
           <select
             value={sortBy}
             onChange={(event) => onSortChange?.(event.target.value)}
             aria-label="Sort smartphones"
-            className="ml-1 max-w-[7.5rem] cursor-pointer appearance-none bg-transparent pr-4 text-[11px] font-extrabold text-[#0f172a] outline-none dark:text-[#eaf1ff] dark:[&>option]:bg-[#0f1c2d]"
+            className="ml-1 max-w-[7.5rem] cursor-pointer appearance-none bg-transparent pr-4 text-[11px] font-extrabold text-[#0f172a] outline-none  "
           >
             {sortOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -114,14 +114,14 @@ export const MobileSortSheet = ({
         onClick={onClose}
       />
 
-      <div className="absolute bottom-0 left-0 right-0 mx-auto flex max-h-[75vh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl border border-[#e2e8f0] bg-[#ffffff] sm:bottom-4 sm:rounded-2xl dark:border-[#2a3d58] dark:bg-[#0f1c2d]">
-        <div className="flex items-center justify-between gap-4 border-b border-[#e2e8f0] bg-[#ffffff] px-5 py-4 sm:px-6 dark:border-[#263750] dark:bg-[#0f1c2d]">
+      <div className="absolute bottom-0 left-0 right-0 mx-auto flex max-h-[75vh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl border border-[#e2e8f0] bg-[#ffffff] sm:bottom-4 sm:rounded-2xl  ">
+        <div className="flex items-center justify-between gap-4 border-b border-[#e2e8f0] bg-[#ffffff] px-5 py-4 sm:px-6  ">
           <div className="min-w-0">
-            <h3 className="text-xl font-bold text-[#0f172a] dark:text-[#f3f7ff]">
+            <h3 className="text-xl font-bold text-[#0f172a] ">
               Sort Options
             </h3>
             {subtitle ? (
-              <p className="mt-1 text-sm text-[#64748b] dark:text-[#94a4bd]">
+              <p className="mt-1 text-sm text-[#64748b] ">
                 {subtitle}
               </p>
             ) : null}
@@ -129,7 +129,7 @@ export const MobileSortSheet = ({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-2 text-[#64748b] transition-colors duration-200 hover:bg-slate-100 hover:text-slate-800 dark:text-[#94a4bd] dark:hover:bg-[#132238] dark:hover:text-[#eaf1ff]"
+            className="rounded-lg p-2 text-[#64748b] transition-colors duration-200 hover:bg-slate-100 hover:text-slate-800   "
             aria-label="Close sort options"
           >
             <FaTimes className="text-base" />
@@ -147,8 +147,8 @@ export const MobileSortSheet = ({
               }}
               className={`flex w-full items-start gap-3 rounded-xl border px-3 py-3 text-left transition-colors duration-200 ${
                 sortBy === option.value
-                  ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-[#3d67a7] dark:bg-[#142b52] dark:text-[#a9c2ff]"
-                  : "border-slate-100 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700 dark:border-[#263750] dark:bg-[#0f1c2d] dark:text-[#c7d2e5] dark:hover:border-[#4c6f9f] dark:hover:text-[#a9c2ff]"
+                  ? "border-blue-200 bg-blue-50 text-blue-700   "
+                  : "border-slate-100 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700     "
               }`}
             >
               <span

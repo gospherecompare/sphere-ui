@@ -189,7 +189,7 @@ const Breadcrumbs = ({ variant = "default" }) => {
                 {index > 0 ? (
                   isPlain ? (
                     <span
-                      className="shrink-0 text-slate-300 dark:text-slate-600"
+                      className="shrink-0 text-slate-300 "
                       aria-hidden="true"
                     >
                       ›
@@ -206,7 +206,7 @@ const Breadcrumbs = ({ variant = "default" }) => {
                   <span
                     className={
                       isPlain
-                        ? "max-w-[19rem] shrink-0 truncate font-semibold text-slate-900 dark:text-slate-100"
+                        ? "max-w-[19rem] shrink-0 truncate font-semibold text-slate-900 "
                         : "hooks-breadcrumb-current max-w-[19rem] shrink-0 truncate"
                     }
                     aria-current="page"
@@ -221,7 +221,7 @@ const Breadcrumbs = ({ variant = "default" }) => {
                     to={crumb.path}
                     className={
                       isPlain
-                        ? "max-w-[15rem] shrink-0 truncate font-medium text-slate-500 transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
+                        ? "max-w-[15rem] shrink-0 truncate font-medium text-slate-500 transition-colors hover:text-blue-600  "
                         : "hooks-breadcrumb-link max-w-[15rem] shrink-0 truncate"
                     }
                   >

@@ -498,8 +498,8 @@ const BrandLogo = ({ src = "", label = "", flat = false }) => {
     <span
       className={`flex h-11 w-11 items-center justify-center rounded-xl sm:h-14 sm:w-14 ${
         flat
-          ? "bg-slate-50 dark:bg-[#172941] dark:ring-1 dark:ring-slate-700/60"
-          : "bg-white  dark:bg-[#172941]  dark:ring-1 dark:ring-slate-700/60"
+          ? "bg-slate-50   "
+          : "bg-white     "
       }`}
     >
       {imageSrc && !failed ? (
@@ -507,11 +507,11 @@ const BrandLogo = ({ src = "", label = "", flat = false }) => {
           src={imageSrc}
           alt={label || "Brand"}
           loading="lazy"
-          className="h-8 w-8 object-contain dark:brightness-110 dark:contrast-110 sm:h-9 sm:w-9"
+          className="h-8 w-8 object-contain   sm:h-9 sm:w-9"
           onError={() => setFailed(true)}
         />
       ) : (
-        <span className="text-sm font-semibold text-slate-500 dark:text-slate-300">
+        <span className="text-sm font-semibold text-slate-500 ">
           {initial}
         </span>
       )}
@@ -628,7 +628,7 @@ const LinkListBlock = ({
     <div
       className={
         isPlainSurface
-          ? "overflow-hidden rounded-2xl border border-slate-200/80 bg-white dark:border-slate-700 dark:bg-slate-900"
+          ? "overflow-hidden rounded-2xl border border-slate-200/80 bg-white  "
           : "overflow-hidden rounded-lg bg-white"
       }
     >
@@ -775,22 +775,22 @@ const SmartphoneDiscoveryPanelHeader = ({
 }) => {
   const tones = {
     blue: {
-      line: "bg-blue-600 dark:bg-blue-400",
-      icon: "bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300",
+      line: "bg-blue-600 ",
+      icon: "bg-blue-50 text-blue-600  ",
     },
     green: {
-      line: "bg-emerald-500 dark:bg-emerald-400",
-      icon: "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300",
+      line: "bg-emerald-500 ",
+      icon: "bg-emerald-50 text-emerald-600  ",
     },
     violet: {
-      line: "bg-violet-600 dark:bg-violet-400",
-      icon: "bg-violet-50 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300",
+      line: "bg-violet-600 ",
+      icon: "bg-violet-50 text-violet-600  ",
     },
   };
   const palette = tones[tone] || tones.blue;
 
   return (
-    <div className="relative flex min-h-[92px] items-start gap-3 border-b border-slate-200 px-4 py-4 dark:border-slate-700/70 sm:px-5">
+    <div className="relative flex min-h-[92px] items-start gap-3 border-b border-slate-200 px-4 py-4  sm:px-5">
       <span className={`absolute inset-y-0 left-0 w-1 ${palette.line}`} />
       <span
         className={`grid h-11 w-11 shrink-0 place-items-center rounded-md text-lg ${palette.icon}`}
@@ -799,10 +799,10 @@ const SmartphoneDiscoveryPanelHeader = ({
         <Icon />
       </span>
       <span className="min-w-0 pt-0.5">
-        <strong className="block text-base font-black tracking-tight text-slate-950 dark:text-white sm:text-lg">
+        <strong className="block text-base font-black tracking-tight text-slate-950  sm:text-lg">
           {title}
         </strong>
-        <span className="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400 sm:text-sm">
+        <span className="mt-1 block text-xs leading-5 text-slate-500  sm:text-sm">
           {subtitle}
         </span>
       </span>
@@ -811,7 +811,7 @@ const SmartphoneDiscoveryPanelHeader = ({
 };
 
 const SmartphoneDiscoveryPricePanel = ({ items = [], entityType }) => (
-  <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white via-slate-50/80 to-blue-50/80 dark:border-slate-700/70 dark:from-[#101e31] dark:via-[#12233d] dark:to-[#0d1c2b]">
+  <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white via-slate-50/80 to-blue-50/80    ">
     <SmartphoneDiscoveryPanelHeader
       icon={FaWallet}
       title="Discover by Price"
@@ -819,27 +819,27 @@ const SmartphoneDiscoveryPricePanel = ({ items = [], entityType }) => (
       tone="blue"
     />
 
-    <div className="grid flex-1 grid-cols-2 gap-px bg-slate-200 dark:bg-slate-700/60 sm:grid-cols-3 lg:grid-cols-1">
+    <div className="grid flex-1 grid-cols-2 gap-px bg-slate-200  sm:grid-cols-3 lg:grid-cols-1">
       {items.slice(0, 6).map((item, index) => (
         <Link
           key={`${item.path || item.label || "price"}-${index}`}
           to={normalizeDiscoveryPath(item.path || "", entityType)}
-          className="group flex min-h-14 items-center gap-3 bg-white px-3 py-3 text-slate-800 no-underline transition-colors hover:bg-blue-50/70 hover:no-underline dark:bg-[#101e31] dark:text-slate-200 dark:hover:bg-blue-500/10 sm:px-4 lg:min-h-[58px]"
+          className="group flex min-h-14 items-center gap-3 bg-white px-3 py-3 text-slate-800 no-underline transition-colors hover:bg-blue-50/70 hover:no-underline    sm:px-4 lg:min-h-[58px]"
         >
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-blue-50 text-sm font-black text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-blue-50 text-sm font-black text-blue-600  ">
             ₹
           </span>
           <span className="min-w-0 flex-1 truncate text-[11px] font-bold sm:text-xs lg:text-sm">
             {toCompactPriceLabel(item.label)}
           </span>
-          <FaChevronRight className="hidden shrink-0 text-[10px] text-blue-500 dark:text-blue-300 sm:block" />
+          <FaChevronRight className="hidden shrink-0 text-[10px] text-blue-500  sm:block" />
         </Link>
       ))}
     </div>
 
     <Link
       to="/compare"
-      className="group flex min-h-12 items-center justify-center gap-2 border-t border-blue-100 bg-blue-50/70 px-4 text-xs font-extrabold text-blue-700 no-underline transition-colors hover:bg-blue-100 hover:no-underline dark:border-blue-400/20 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/15 sm:text-sm"
+      className="group flex min-h-12 items-center justify-center gap-2 border-t border-blue-100 bg-blue-50/70 px-4 text-xs font-extrabold text-blue-700 no-underline transition-colors hover:bg-blue-100 hover:no-underline     sm:text-sm"
     >
       <FaBalanceScale />
       Compare phones side by side
@@ -849,7 +849,7 @@ const SmartphoneDiscoveryPricePanel = ({ items = [], entityType }) => (
 );
 
 const SmartphoneDiscoveryBrandPanel = ({ items = [], entityType }) => (
-  <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white via-slate-50/80 to-blue-50/80 dark:border-slate-700/70 dark:from-[#101e31] dark:via-[#12233d] dark:to-[#0d1c2b]">
+  <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white via-slate-50/80 to-blue-50/80    ">
     <SmartphoneDiscoveryPanelHeader
       icon={FaStar}
       title="Discover by Brand"
@@ -857,7 +857,7 @@ const SmartphoneDiscoveryBrandPanel = ({ items = [], entityType }) => (
       tone="green"
     />
 
-    <div className="grid flex-1 grid-cols-3 gap-px bg-slate-200 p-px dark:bg-slate-700/60 sm:grid-cols-5 lg:grid-cols-3">
+    <div className="grid flex-1 grid-cols-3 gap-px bg-slate-200 p-px  sm:grid-cols-5 lg:grid-cols-3">
       {items.slice(0, 5).map((item, index) => {
         const rawBrandName = normalizeText(item?.name || item?.label);
         const brandName = rawBrandName.replace(/\s+Mobiles$/i, "");
@@ -865,14 +865,14 @@ const SmartphoneDiscoveryBrandPanel = ({ items = [], entityType }) => (
           <Link
             key={`${item.path || brandName || "brand"}-${index}`}
             to={normalizeDiscoveryPath(item.path || "", entityType)}
-            className="group flex min-h-[106px] min-w-0 flex-col items-center justify-center bg-white px-2 py-3 text-center no-underline transition-colors hover:bg-emerald-50/70 hover:no-underline dark:bg-[#101e31] dark:hover:bg-emerald-500/10 sm:min-h-[112px] lg:min-h-[142px]"
+            className="group flex min-h-[106px] min-w-0 flex-col items-center justify-center bg-white px-2 py-3 text-center no-underline transition-colors hover:bg-emerald-50/70 hover:no-underline   sm:min-h-[112px] lg:min-h-[142px]"
           >
             <BrandLogo
               src={item.logo_url || item.image_url || ""}
               label={brandName || "Brand"}
               flat
             />
-            <span className="mt-2 w-full truncate text-[10px] font-bold text-slate-700 group-hover:text-emerald-700 dark:text-slate-300 dark:group-hover:text-emerald-300 sm:text-[11px] lg:text-xs">
+            <span className="mt-2 w-full truncate text-[10px] font-bold text-slate-700 group-hover:text-emerald-700   sm:text-[11px] lg:text-xs">
               {brandName || "Brand"}
             </span>
           </Link>
@@ -881,12 +881,12 @@ const SmartphoneDiscoveryBrandPanel = ({ items = [], entityType }) => (
 
       <Link
         to="/smartphones"
-        className="group flex min-h-[106px] min-w-0 flex-col items-center justify-center bg-white px-2 py-3 text-center no-underline transition-colors hover:bg-emerald-50/70 hover:no-underline dark:bg-[#101e31] dark:hover:bg-emerald-500/10 sm:min-h-[112px] lg:min-h-[142px]"
+        className="group flex min-h-[106px] min-w-0 flex-col items-center justify-center bg-white px-2 py-3 text-center no-underline transition-colors hover:bg-emerald-50/70 hover:no-underline   sm:min-h-[112px] lg:min-h-[142px]"
       >
-        <span className="grid h-11 w-11 place-items-center rounded-md bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300">
+        <span className="grid h-11 w-11 place-items-center rounded-md bg-emerald-50 text-emerald-600  ">
           <FaThLarge />
         </span>
-        <span className="mt-2 text-[10px] font-bold text-slate-700 group-hover:text-emerald-700 dark:text-slate-300 dark:group-hover:text-emerald-300 sm:text-[11px] lg:text-xs">
+        <span className="mt-2 text-[10px] font-bold text-slate-700 group-hover:text-emerald-700   sm:text-[11px] lg:text-xs">
           More Brands
         </span>
       </Link>
@@ -894,7 +894,7 @@ const SmartphoneDiscoveryBrandPanel = ({ items = [], entityType }) => (
 
     <Link
       to="/smartphones"
-      className="group flex min-h-12 items-center justify-center gap-2 border-t border-emerald-100 bg-emerald-50/70 px-4 text-xs font-extrabold text-emerald-700 no-underline transition-colors hover:bg-emerald-100 hover:no-underline dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/15 sm:text-sm"
+      className="group flex min-h-12 items-center justify-center gap-2 border-t border-emerald-100 bg-emerald-50/70 px-4 text-xs font-extrabold text-emerald-700 no-underline transition-colors hover:bg-emerald-100 hover:no-underline     sm:text-sm"
     >
       <FaThLarge />
       View all brands
@@ -904,7 +904,7 @@ const SmartphoneDiscoveryBrandPanel = ({ items = [], entityType }) => (
 );
 
 const SmartphoneDiscoverySearchPanel = ({ items = [], entityType }) => (
-  <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white via-slate-50/80 to-blue-50/80 dark:border-slate-700/70 dark:from-[#101e31] dark:via-[#12233d] dark:to-[#0d1c2b]">
+  <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white via-slate-50/80 to-blue-50/80    ">
     <SmartphoneDiscoveryPanelHeader
       icon={FaSearch}
       title="Popular Searches"
@@ -912,27 +912,27 @@ const SmartphoneDiscoverySearchPanel = ({ items = [], entityType }) => (
       tone="violet"
     />
 
-    <div className="flex flex-1 flex-col divide-y divide-slate-200 dark:divide-slate-700/70">
+    <div className="flex flex-1 flex-col divide-y divide-slate-200 ">
       {items.slice(0, 5).map((item, index) => (
         <Link
           key={`${item.path || item.label || "popular"}-${index}`}
           to={normalizeDiscoveryPath(item.path || "", entityType)}
-          className="group flex min-h-[58px] items-center gap-3 px-3 py-3 text-slate-800 no-underline transition-colors hover:bg-violet-50/70 hover:no-underline dark:text-slate-200 dark:hover:bg-violet-500/10 sm:px-4"
+          className="group flex min-h-[58px] items-center gap-3 px-3 py-3 text-slate-800 no-underline transition-colors hover:bg-violet-50/70 hover:no-underline   sm:px-4"
         >
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-violet-50 text-[11px] text-violet-600 dark:bg-violet-500/15 dark:text-violet-300">
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-violet-50 text-[11px] text-violet-600  ">
             <FaFire />
           </span>
           <span className="min-w-0 flex-1 truncate text-xs font-bold sm:text-sm">
             {item.label || "Explore"}
           </span>
-          <FaChevronRight className="shrink-0 text-[10px] text-violet-500 dark:text-violet-300" />
+          <FaChevronRight className="shrink-0 text-[10px] text-violet-500 " />
         </Link>
       ))}
     </div>
 
     <Link
       to="/smartphones"
-      className="group flex min-h-12 items-center justify-center gap-2 border-t border-violet-100 bg-violet-50/70 px-4 text-xs font-extrabold text-violet-700 no-underline transition-colors hover:bg-violet-100 hover:no-underline dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-300 dark:hover:bg-violet-500/15 sm:text-sm"
+      className="group flex min-h-12 items-center justify-center gap-2 border-t border-violet-100 bg-violet-50/70 px-4 text-xs font-extrabold text-violet-700 no-underline transition-colors hover:bg-violet-100 hover:no-underline     sm:text-sm"
     >
       <FaFire />
       Explore all searches
@@ -942,22 +942,22 @@ const SmartphoneDiscoverySearchPanel = ({ items = [], entityType }) => (
 );
 
 const SmartphoneDiscoveryHero = () => (
-  <header className="relative overflow-hidden bg-gradient-to-r from-slate-50/80 via-white/80 to-blue-50/80 px-1 py-1 dark:from-[#0b1728] dark:via-[#0d1b2d] dark:to-[#11213d] sm:px-0 sm:py-0">
+  <header className="relative overflow-hidden bg-gradient-to-r from-slate-50/80 via-white/80 to-blue-50/80 px-1 py-1    sm:px-0 sm:py-0">
     <div className="relative z-10 max-w-2xl pr-24 sm:pr-40 lg:pr-0">
       <p className="text-[10px] font-black uppercase tracking-[0.24em] text-blue-600 sm:text-xs">
         Explore smartphones
       </p>
-      <h2 className="mt-2 text-2xl font-black tracking-[-0.04em] text-slate-950 dark:text-white sm:text-3xl lg:text-4xl">
+      <h2 className="mt-2 text-2xl font-black tracking-[-0.04em] text-slate-950  sm:text-3xl lg:text-4xl">
         Find your next smartphone
       </h2>
-      <p className="mt-2 max-w-xl text-xs leading-5 text-slate-500 dark:text-slate-400 sm:text-sm lg:text-base">
+      <p className="mt-2 max-w-xl text-xs leading-5 text-slate-500  sm:text-sm lg:text-base">
         Browse by price, brand, or see what everyone is searching for.
       </p>
     </div>
 
     <div className="pointer-events-none absolute -right-2 bottom-0 top-0 hidden w-[330px] overflow-hidden sm:block lg:w-[380px]">
-      <div className="absolute inset-0 bg-[linear-gradient(135deg,transparent_0%,rgba(37,99,235,0.05)_45%,rgba(124,58,237,0.09)_100%)] dark:bg-[radial-gradient(circle_at_70%_45%,rgba(59,130,246,0.24),transparent_55%)]" />
-      <div className="absolute left-1/2 top-1/2 h-44 w-44 -translate-x-1/2 -translate-y-1/2 rounded-full border border-blue-200/80 bg-blue-50/30 shadow-[0_0_30px_rgba(96,165,250,0.18)] dark:border-blue-400/20 dark:bg-blue-500/10" />
+      <div className="absolute inset-0 bg-[linear-gradient(135deg,transparent_0%,rgba(37,99,235,0.05)_45%,rgba(124,58,237,0.09)_100%)] " />
+      <div className="absolute left-1/2 top-1/2 h-44 w-44 -translate-x-1/2 -translate-y-1/2 rounded-full border border-blue-200/80 bg-blue-50/30 shadow-[0_0_30px_rgba(96,165,250,0.18)]  " />
 
       <div className="absolute left-[12%] top-[18%] h-[170px] w-[84px] -rotate-[14deg] rounded-[26px] bg-slate-950 p-1.5 shadow-[0_18px_30px_rgba(15,23,42,0.22)] sm:h-[188px] sm:w-[94px]">
         <div className="relative h-full w-full overflow-hidden rounded-[20px] bg-gradient-to-br from-slate-700 via-blue-700 to-indigo-700">
@@ -987,13 +987,13 @@ const SmartphoneDiscoveryHero = () => (
         </div>
       </div>
 
-      <div className="absolute left-2 top-4 grid h-10 w-10 place-items-center rounded-xl bg-white/80 text-[10px] font-black text-blue-600 ring-1 ring-blue-100 shadow-sm backdrop-blur-sm dark:bg-[#0e1d31]/90 dark:text-[#8fb4ff] dark:ring-[#2a456c]">
+      <div className="absolute left-2 top-4 grid h-10 w-10 place-items-center rounded-xl bg-white/80 text-[10px] font-black text-blue-600 ring-1 ring-blue-100 shadow-sm backdrop-blur-sm   ">
         AI
       </div>
-      <div className="absolute bottom-7 left-5 grid h-10 w-10 place-items-center rounded-xl bg-white/80 text-[10px] font-black text-blue-600 ring-1 ring-blue-100 shadow-sm backdrop-blur-sm dark:bg-[#0e1d31]/90 dark:text-[#8fb4ff] dark:ring-[#2a456c]">
+      <div className="absolute bottom-7 left-5 grid h-10 w-10 place-items-center rounded-xl bg-white/80 text-[10px] font-black text-blue-600 ring-1 ring-blue-100 shadow-sm backdrop-blur-sm   ">
         5G
       </div>
-      <div className="absolute right-5 top-9 grid h-10 w-10 place-items-center rounded-xl bg-white/80 text-[9px] font-black text-blue-600 ring-1 ring-blue-100 shadow-sm backdrop-blur-sm dark:bg-[#0e1d31]/90 dark:text-[#8fb4ff] dark:ring-[#2a456c]">
+      <div className="absolute right-5 top-9 grid h-10 w-10 place-items-center rounded-xl bg-white/80 text-[9px] font-black text-blue-600 ring-1 ring-blue-100 shadow-sm backdrop-blur-sm   ">
         CAM
       </div>
       <span className="absolute right-3 top-1/2 h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.9)]" />
@@ -1004,7 +1004,7 @@ const SmartphoneDiscoveryHero = () => (
 
 const SmartphoneCompareBanner = () => {
   return (
-    <aside className="relative mt-4 overflow-hidden rounded-[20px] border border-blue-200/80 bg-gradient-to-r from-[#edf5ff] via-[#f3f7ff] to-[#eff6ff] px-4 py-4 shadow-[inset_0_0_0_1px_rgba(147,197,253,0.1)] dark:border-blue-400/20 dark:from-[#10213a] dark:via-[#122947] dark:to-[#18264a] sm:px-6 sm:py-5 lg:flex lg:min-h-[152px] lg:items-center lg:justify-between lg:gap-6 lg:px-8">
+    <aside className="relative mt-4 overflow-hidden rounded-[20px] border border-blue-200/80 bg-gradient-to-r from-[#edf5ff] via-[#f3f7ff] to-[#eff6ff] px-4 py-4 shadow-[inset_0_0_0_1px_rgba(147,197,253,0.1)]     sm:px-6 sm:py-5 lg:flex lg:min-h-[152px] lg:items-center lg:justify-between lg:gap-6 lg:px-8">
       <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-64 overflow-hidden sm:block lg:flex lg:items-center">
         <div className="relative h-28 w-56 lg:h-32 lg:w-64">
           <div className="absolute left-2 bottom-0 h-24 w-20 -rotate-12 rounded-[20px] bg-slate-950 p-1.5 shadow-[0_18px_25px_rgba(15,23,42,0.18)]">
@@ -1038,10 +1038,10 @@ const SmartphoneCompareBanner = () => {
         <p className="text-[9px] font-black uppercase tracking-[0.22em] text-blue-600 sm:text-[10px]">
           Smart comparison
         </p>
-        <h3 className="mt-1 text-[22px] font-black tracking-[-0.04em] text-slate-950 dark:text-white sm:text-[28px] lg:text-[32px]">
+        <h3 className="mt-1 text-[22px] font-black tracking-[-0.04em] text-slate-950  sm:text-[28px] lg:text-[32px]">
           Compare phones side by side
         </h3>
-        <p className="mt-1 max-w-xl text-xs leading-5 text-slate-500 dark:text-slate-300 sm:text-sm">
+        <p className="mt-1 max-w-xl text-xs leading-5 text-slate-500  sm:text-sm">
           Compare specs, cameras, battery, and features to find the right phone.
         </p>
       </div>
@@ -1067,7 +1067,7 @@ const AdvancedSmartphoneDiscovery = ({
   latestItems = [],
   entityType = "smartphones",
 }) => (
-  <div className="smartphones-discovery-section overflow-hidden bg-transparent px-0 py-5 text-slate-950 dark:text-slate-100 sm:px-0 sm:py-7">
+  <div className="smartphones-discovery-section overflow-hidden bg-transparent px-0 py-5 text-slate-950  sm:px-0 sm:py-7">
     <SmartphoneDiscoveryHero latestItems={latestItems} />
     <div className="mt-5 grid grid-cols-1 gap-3 bg-transparent sm:gap-4 lg:grid-cols-3">
       <SmartphoneDiscoveryPricePanel
@@ -1093,7 +1093,7 @@ const PriceDiscoveryBlock = ({ items = [], entityType = "smartphones" }) => {
   if (!Array.isArray(items) || items.length === 0) return null;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white dark:border-slate-700 dark:bg-slate-900">
+    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white  ">
       <DiscoveryCardHeader title="Discover by Price" />
       <div className="grid grid-cols-2 gap-2 px-3.5 py-3.5 sm:flex sm:flex-wrap sm:px-5 sm:py-4">
         {items.slice(0, 8).map((item, index) => (
@@ -1114,7 +1114,7 @@ const PopularSearchesBlock = ({ items = [], entityType = "smartphones" }) => {
   if (!Array.isArray(items) || items.length === 0) return null;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white dark:border-slate-700 dark:bg-slate-900">
+    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white  ">
       <DiscoveryCardHeader title="Popular Searches" />
       <div className="grid grid-cols-2 gap-2 px-3.5 py-3.5 sm:flex sm:flex-wrap sm:px-5 sm:py-4">
         {items.slice(0, 10).map((item, index) => (
@@ -1149,8 +1149,8 @@ const TopBrandsBlock = ({
     <div
       className={
         isPlainSurface
-          ? "overflow-hidden rounded-2xl border border-slate-200/80 bg-white dark:border-slate-700 dark:bg-slate-900"
-          : "overflow-hidden rounded-xl border border-slate-200/80 bg-white dark:border-slate-700 dark:bg-slate-900 "
+          ? "overflow-hidden rounded-2xl border border-slate-200/80 bg-white  "
+          : "overflow-hidden rounded-xl border border-slate-200/80 bg-white   "
       }
     >
       <div
@@ -1588,10 +1588,10 @@ const ProductDiscoverySections = ({
 
   return (
     <section
-      className={`mx-auto w-full max-w-7xl dark:text-slate-100 dark:[&_.text-slate-900]:text-white dark:[&_.text-slate-700]:text-slate-200 dark:[&_.text-slate-600]:text-slate-300 dark:[&_.text-slate-500]:text-slate-400 ${
+      className={`mx-auto w-full max-w-7xl      ${
         isLatestPhonesLayout
           ? "overflow-visible"
-          : "overflow-hidden rounded-2xl border border-slate-200/80 bg-white dark:border-slate-700 dark:bg-slate-900"
+          : "overflow-hidden rounded-2xl border border-slate-200/80 bg-white  "
       } ${className}`}
     >
       <div className="mx-auto max-w-7xl ">

@@ -13,8 +13,6 @@
 /* Tailwind CSS v4 */
 @import "tailwindcss";
 
-/* Tailwind dark utilities follow the app theme class set by ThemeContext. */
-@custom-variant dark (&:where(.dark, .dark *));
 
 /* =========================
    THEME CONFIGURATION

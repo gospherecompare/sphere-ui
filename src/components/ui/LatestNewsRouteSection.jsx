@@ -264,7 +264,7 @@ const LatestNewsRouteSection = ({
 
   return (
     <section
-      className={`smartphones-news-section mx-auto w-full max-w-7xl rounded-[20px] bg-transparent p-0 dark:bg-transparent dark:text-[#f3f7ff] dark:[&_.bg-white]:bg-[#0f1c2d] dark:[&_.bg-slate-50]:bg-[#132238] dark:[&_.bg-slate-100]:bg-[#162941] dark:[&_.bg-slate-200]:bg-[#263750] dark:[&_.text-slate-950]:text-[#f3f7ff] dark:[&_.text-slate-900]:text-[#eaf1ff] dark:[&_.text-slate-600]:text-[#aebbd0] dark:[&_.text-slate-500]:text-[#94a4bd] sm:p-6 ${className}`}
+      className={`smartphones-news-section mx-auto w-full max-w-7xl rounded-[20px] bg-transparent p-0           sm:p-6 ${className}`}
     >
       <div className="mb-5 flex items-end justify-between gap-4 sm:mb-6">
         <div className="min-w-0">

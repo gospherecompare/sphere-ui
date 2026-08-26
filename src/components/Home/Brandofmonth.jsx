@@ -11,8 +11,6 @@ import {
 import { buildPublicSmartphoneFeaturePath as buildSmartphoneFeaturePath } from "../../utils/smartphoneListingRoutes";
 import { fetchPublicJson } from "../../utils/publicJsonRequest";
 import {
-  HOME_SECTION_LEAD_DARK,
-  HOME_SECTION_TITLE_DARK,
   HOME_SECTION_LEAD_LIGHT,
   HOME_SECTION_TITLE_LIGHT,
 } from "./homeSectionTypography";

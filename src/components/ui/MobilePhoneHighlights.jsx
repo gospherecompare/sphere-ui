@@ -251,10 +251,10 @@ const HIGHLIGHT_ROWS = {
     subtitle: "What is launching soon",
     Icon: FaCalendarAlt,
     accentClass: "bg-blue-600",
-    surfaceClass: "bg-blue-50/80 dark:bg-blue-500/10",
+    surfaceClass: "bg-blue-50/80 ",
     iconClass:
-      "bg-blue-100 text-blue-600 dark:bg-blue-400/15 dark:text-blue-300",
-    textClass: "text-blue-700 dark:text-blue-300",
+      "bg-blue-100 text-blue-600  ",
+    textClass: "text-blue-700 ",
     viewAllPath: buildSmartphoneFilterPath("upcoming"),
   },
   trending: {
@@ -262,10 +262,10 @@ const HIGHLIGHT_ROWS = {
     subtitle: "Most explored right now",
     Icon: FaFireAlt,
     accentClass: "bg-emerald-500",
-    surfaceClass: "bg-emerald-50/80 dark:bg-emerald-500/10",
+    surfaceClass: "bg-emerald-50/80 ",
     iconClass:
-      "bg-emerald-100 text-emerald-600 dark:bg-emerald-400/15 dark:text-emerald-300",
-    textClass: "text-emerald-700 dark:text-emerald-300",
+      "bg-emerald-100 text-emerald-600  ",
+    textClass: "text-emerald-700 ",
     viewAllPath: buildSmartphoneFilterPath("trending"),
   },
   latest: {
@@ -273,10 +273,10 @@ const HIGHLIGHT_ROWS = {
     subtitle: "Recently launched models",
     Icon: FaStar,
     accentClass: "bg-amber-500",
-    surfaceClass: "bg-amber-50/80 dark:bg-amber-500/10",
+    surfaceClass: "bg-amber-50/80 ",
     iconClass:
-      "bg-amber-100 text-amber-600 dark:bg-amber-400/15 dark:text-amber-300",
-    textClass: "text-amber-700 dark:text-amber-300",
+      "bg-amber-100 text-amber-600  ",
+    textClass: "text-amber-700 ",
     viewAllPath: buildSmartphoneFilterPath("new"),
   },
   popular: {
@@ -284,10 +284,10 @@ const HIGHLIGHT_ROWS = {
     subtitle: "Useful ways to discover",
     Icon: FaMobileAlt,
     accentClass: "bg-violet-500",
-    surfaceClass: "bg-violet-50/80 dark:bg-violet-500/10",
+    surfaceClass: "bg-violet-50/80 ",
     iconClass:
-      "bg-violet-100 text-violet-600 dark:bg-violet-400/15 dark:text-violet-300",
-    textClass: "text-violet-700 dark:text-violet-300",
+      "bg-violet-100 text-violet-600  ",
+    textClass: "text-violet-700 ",
     viewAllPath: "/smartphones",
   },
 };
@@ -299,7 +299,7 @@ const POPULAR_PICKS = [
     Icon: FaTrophy,
     path: "/smartphones",
     iconClass:
-      "bg-violet-100 text-violet-600 dark:bg-violet-400/15 dark:text-violet-300",
+      "bg-violet-100 text-violet-600  ",
   },
   {
     label: "Best Value",
@@ -307,7 +307,7 @@ const POPULAR_PICKS = [
     Icon: FaTag,
     path: buildSmartphoneFeaturePath("high-ram"),
     iconClass:
-      "bg-rose-100 text-rose-600 dark:bg-rose-400/15 dark:text-rose-300",
+      "bg-rose-100 text-rose-600  ",
   },
   {
     label: "Best Camera",
@@ -315,7 +315,7 @@ const POPULAR_PICKS = [
     Icon: FaCamera,
     path: buildSmartphoneFeaturePath("high-camera"),
     iconClass:
-      "bg-blue-100 text-blue-600 dark:bg-blue-400/15 dark:text-blue-300",
+      "bg-blue-100 text-blue-600  ",
   },
   {
     label: "Best Battery",
@@ -323,7 +323,7 @@ const POPULAR_PICKS = [
     Icon: FaBatteryFull,
     path: buildSmartphoneFeaturePath("long-battery"),
     iconClass:
-      "bg-emerald-100 text-emerald-600 dark:bg-emerald-400/15 dark:text-emerald-300",
+      "bg-emerald-100 text-emerald-600  ",
   },
   {
     label: "Best for Gaming",
@@ -331,7 +331,7 @@ const POPULAR_PICKS = [
     Icon: FaGamepad,
     path: buildSmartphoneFeaturePath("gaming"),
     iconClass:
-      "bg-orange-100 text-orange-600 dark:bg-orange-400/15 dark:text-orange-300",
+      "bg-orange-100 text-orange-600  ",
   },
 ];
 
@@ -394,7 +394,7 @@ const PhoneImage = ({ phone, className = "", imageClassName = "" }) => {
 
   return (
     <span
-      className={`grid shrink-0 place-items-center overflow-hidden bg-slate-50 dark:bg-slate-800/80 ${className}`}
+      className={`grid shrink-0 place-items-center overflow-hidden bg-slate-50  ${className}`}
     >
       {image && !imageFailed ? (
         <img
@@ -406,7 +406,7 @@ const PhoneImage = ({ phone, className = "", imageClassName = "" }) => {
         />
       ) : (
         <FaMobileAlt
-          className="text-xl text-slate-300 dark:text-slate-600"
+          className="text-xl text-slate-300 "
           aria-hidden="true"
         />
       )}
@@ -417,7 +417,7 @@ const PhoneImage = ({ phone, className = "", imageClassName = "" }) => {
 const ViewAllLink = ({ to, className = "" }) => (
   <Link
     to={to}
-    className={`inline-flex min-h-9 shrink-0 items-center gap-1 whitespace-nowrap text-xs font-extrabold text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-200 ${className}`}
+    className={`inline-flex min-h-9 shrink-0 items-center gap-1 whitespace-nowrap text-xs font-extrabold text-blue-600 transition-colors hover:text-blue-700   ${className}`}
   >
     View all
   </Link>
@@ -439,7 +439,7 @@ const CategoryCell = ({ meta }) => {
         <strong className={`block text-sm font-black ${meta.textClass}`}>
           {meta.title}
         </strong>
-        <span className="mt-0.5 block text-[10px] font-medium leading-4 text-slate-500 dark:text-slate-400">
+        <span className="mt-0.5 block text-[10px] font-medium leading-4 text-slate-500 ">
           {meta.subtitle}
         </span>
       </span>
@@ -455,12 +455,12 @@ const ArtPhoneTile = ({ phone, mode = "latest", featured = false }) => {
   return (
     <Link
       to={path}
-      className={`group relative flex min-w-0 items-center overflow-hidden   transition-all duration-200  dark:border-slate-700/60 dark:bg-slate-900/70 dark:hover:border-blue-500/30 ${
+      className={`group relative flex min-w-0 items-center overflow-hidden   transition-all duration-200     ${
         featured ? "gap-4 p-3" : "gap-2.5 p-2.5"
       }`}
     >
       <div
-        className={`relative shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 via-white to-violet-50 dark:from-slate-800 dark:via-slate-900 dark:to-blue-950/50 ${
+        className={`relative shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 via-white to-violet-50    ${
           featured ? "h-24 w-20" : "h-16 w-14"
         }`}
       >
@@ -483,7 +483,7 @@ const ArtPhoneTile = ({ phone, mode = "latest", featured = false }) => {
 
       <span className="min-w-0 flex-1">
         <strong
-          className={`block truncate text-slate-950 group-hover:text-blue-700 dark:text-slate-100 dark:group-hover:text-blue-300 ${
+          className={`block truncate text-slate-950 group-hover:text-blue-700   ${
             featured ? "text-sm font-black" : "text-xs font-extrabold"
           }`}
           title={name}
@@ -496,8 +496,8 @@ const ArtPhoneTile = ({ phone, mode = "latest", featured = false }) => {
             featured ? "text-[10px]" : "text-[9px]"
           } ${
             mode === "trending"
-              ? "text-emerald-600 dark:text-emerald-300"
-              : "text-slate-500 dark:text-slate-400"
+              ? "text-emerald-600 "
+              : "text-slate-500 "
           }`}
         >
           {mode === "trending" ? (
@@ -526,9 +526,9 @@ const UpcomingArt = ({ phone }) => {
   return (
     <Link
       to={path}
-      className="group relative flex min-w-0 items-center gap-4 overflow-hidden bg-white  dark:border-blue-500/20 dark:from-blue-500/10 dark:via-slate-900/70 dark:to-violet-500/10"
+      className="group relative flex min-w-0 items-center gap-4 overflow-hidden bg-white     "
     >
-      <div className="relative grid h-24 w-24 shrink-0 place-items-center overflow-hidden rounded-xl bg-white/80 dark:bg-slate-900/70">
+      <div className="relative grid h-24 w-24 shrink-0 place-items-center overflow-hidden rounded-xl bg-white/80 ">
         <span className="absolute h-24 w-24 rounded-full bg-blue-300/20 blur-2xl" />
         <span className="absolute -bottom-5 -right-5 h-20 w-20 bg-violet-300/20 blur-xl" />
         <PhoneImage
@@ -539,13 +539,13 @@ const UpcomingArt = ({ phone }) => {
       </div>
 
       <span className="min-w-0 flex-1">
-        <span className="inline-flex rounded-full bg-blue-100 px-2 py-1 text-[8px] font-black uppercase tracking-[0.12em] text-blue-700 dark:bg-blue-400/15 dark:text-blue-300">
+        <span className="inline-flex rounded-full bg-blue-100 px-2 py-1 text-[8px] font-black uppercase tracking-[0.12em] text-blue-700  ">
           Next launch
         </span>
-        <strong className="mt-2 block truncate text-base font-black tracking-tight text-slate-950 group-hover:text-blue-700 dark:text-slate-100 dark:group-hover:text-blue-300">
+        <strong className="mt-2 block truncate text-base font-black tracking-tight text-slate-950 group-hover:text-blue-700  ">
           {name}
         </strong>
-        <span className="mt-1 block truncate text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+        <span className="mt-1 block truncate text-[10px] font-semibold text-slate-500 ">
           Expected launch: {formatMonthYear(launchDate)}
         </span>
       </span>
@@ -563,12 +563,12 @@ const MobileTextPhoneTile = ({ phone, mode = "latest" }) => {
       to={path}
       className="group flex min-w-[190px] flex-1 items-center gap-3 px-2.5 py-2.5"
     >
-      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-500  ">
         <FaMobileAlt className="text-xs" />
       </span>
       <span className="min-w-0 flex-1">
         <strong
-          className="block truncate text-xs font-extrabold text-slate-900 group-hover:text-blue-700 dark:text-slate-100 dark:group-hover:text-blue-300"
+          className="block truncate text-xs font-extrabold text-slate-900 group-hover:text-blue-700  "
           title={name}
         >
           {name}
@@ -576,8 +576,8 @@ const MobileTextPhoneTile = ({ phone, mode = "latest" }) => {
         <span
           className={`mt-0.5 flex items-center gap-1 truncate text-[9px] font-bold ${
             mode === "trending"
-              ? "text-emerald-600 dark:text-emerald-300"
-              : "text-slate-500 dark:text-slate-400"
+              ? "text-emerald-600 "
+              : "text-slate-500 "
           }`}
         >
           {mode === "trending" ? (
@@ -592,7 +592,7 @@ const MobileTextPhoneTile = ({ phone, mode = "latest" }) => {
           )}
         </span>
       </span>
-      <FaChevronRight className="shrink-0 text-[8px] text-slate-300 group-hover:text-blue-600 dark:text-slate-600 dark:group-hover:text-blue-300" />
+      <FaChevronRight className="shrink-0 text-[8px] text-slate-300 group-hover:text-blue-600  " />
     </Link>
   );
 };
@@ -609,21 +609,21 @@ const MobileUpcomingText = ({ phone }) => {
       to={path}
       className="group flex min-w-0 items-center gap-3 px-2.5 py-2.5"
     >
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600  ">
         <FaRocket className="text-sm" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="inline-flex text-[8px] font-black uppercase tracking-[0.12em] text-blue-600 dark:text-blue-300">
+        <span className="inline-flex text-[8px] font-black uppercase tracking-[0.12em] text-blue-600 ">
           Next launch
         </span>
-        <strong className="mt-0.5 block truncate text-sm font-black tracking-tight text-slate-950 group-hover:text-blue-700 dark:text-slate-100 dark:group-hover:text-blue-300">
+        <strong className="mt-0.5 block truncate text-sm font-black tracking-tight text-slate-950 group-hover:text-blue-700  ">
           {name}
         </strong>
-        <span className="mt-0.5 block truncate text-[9px] font-semibold text-slate-500 dark:text-slate-400">
+        <span className="mt-0.5 block truncate text-[9px] font-semibold text-slate-500 ">
           Expected launch: {formatMonthYear(launchDate)}
         </span>
       </span>
-      <FaChevronRight className="shrink-0 text-[8px] text-slate-300 group-hover:text-blue-600 dark:text-slate-600 dark:group-hover:text-blue-300" />
+      <FaChevronRight className="shrink-0 text-[8px] text-slate-300 group-hover:text-blue-600  " />
     </Link>
   );
 };
@@ -634,7 +634,7 @@ const PopularArtTile = ({ item }) => {
   return (
     <Link
       to={item.path}
-      className="group flex min-w-0 items-center gap-2.5 rounded-xl  bg-slate-50/70 p-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50/60 dark:border-slate-700/60 dark:bg-slate-800/50 dark:hover:border-blue-500/30 dark:hover:bg-blue-500/10"
+      className="group flex min-w-0 items-center gap-2.5 rounded-xl  bg-slate-50/70 p-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50/60    "
     >
       <span
         className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${item.iconClass}`}
@@ -642,10 +642,10 @@ const PopularArtTile = ({ item }) => {
         <Icon className="text-xs" />
       </span>
       <span className="min-w-0 flex-1">
-        <strong className="block truncate text-[12px] font-black text-slate-900 group-hover:text-blue-700 dark:text-slate-100 dark:group-hover:text-blue-300">
+        <strong className="block truncate text-[12px] font-black text-slate-900 group-hover:text-blue-700  ">
           {item.label}
         </strong>
-        <span className="mt-0.5 block truncate text-[10px] font-medium text-slate-500 dark:text-slate-400">
+        <span className="mt-0.5 block truncate text-[10px] font-medium text-slate-500 ">
           {item.copy}
         </span>
       </span>
@@ -654,7 +654,7 @@ const PopularArtTile = ({ item }) => {
 };
 
 const DesktopHighlightTableRow = ({ meta, children, viewAllPath }) => (
-  <tr className="group border-t border-slate-200/80 align-middle transition-colors hover:bg-slate-50/50 dark:border-slate-700/60 dark:hover:bg-white/[0.02]">
+  <tr className="group border-t border-slate-200/80 align-middle transition-colors hover:bg-slate-50/50  ">
     <td className="w-[220px] px-4 py-3 align-middle">
       <CategoryCell meta={meta} />
     </td>
@@ -834,15 +834,15 @@ const MobilePhoneHighlights = ({
           <p className="text-[10px] font-extrabold uppercase tracking-[0.3em] text-blue-600 sm:text-[11px]">
             Key highlights
           </p>
-          <h2 className="mt-2 text-xl font-black tracking-tight text-slate-950 sm:text-2xl dark:text-slate-100">
+          <h2 className="mt-2 text-xl font-black tracking-tight text-slate-950 sm:text-2xl ">
             {highlightTitle}
           </h2>
-          <p className="mt-1.5 text-xs leading-5 text-slate-500 sm:text-sm sm:leading-6 dark:text-slate-400">
+          <p className="mt-1.5 text-xs leading-5 text-slate-500 sm:text-sm sm:leading-6 ">
             {highlightCopy}
           </p>
         </header>
 
-        <div className="mt-6 hidden overflow-hidden rounded-2xl lg:block dark:border-slate-700/60 dark:bg-slate-900/40">
+        <div className="mt-6 hidden overflow-hidden rounded-2xl lg:block  ">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[820px] table-fixed border-collapse">
               <tbody>
@@ -962,7 +962,7 @@ const MobilePhoneHighlights = ({
 
         <Link
           to="/compare"
-          className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50/40 px-4 text-xs font-extrabold text-blue-600 transition-colors hover:bg-blue-50 sm:text-sm dark:border-blue-400/30 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/15"
+          className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50/40 px-4 text-xs font-extrabold text-blue-600 transition-colors hover:bg-blue-50 sm:text-sm    "
         >
           <FaMobileAlt className="text-[11px]" />
           Compare phones side by side

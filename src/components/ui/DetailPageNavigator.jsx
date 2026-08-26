@@ -235,7 +235,7 @@ const DetailPageNavigator = ({
         style={isPinned ? { top: stickyTopOffset } : undefined}
         className={`${
           isPinned ? "fixed left-0 right-0" : "relative"
-        } z-[55] w-full !bg-white shadow-none transition-[top] duration-300 ease-out dark:border-0 ${className}`}
+        } z-[55] w-full !bg-white shadow-none transition-[top] duration-300 ease-out  ${className}`}
       >
         <div className="mx-auto w-full max-w-[1440px] px-2 py-1 sm:px-5 sm:py-1.5 lg:px-8 ">
           <nav
@@ -259,8 +259,8 @@ const DetailPageNavigator = ({
                   aria-current={isActive ? "location" : undefined}
                   className={`inline-flex min-h-9 shrink-0 snap-center items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-colors sm:min-h-10 sm:gap-2 sm:px-4 sm:text-[13px] ${
                     isActive
-                      ? "bg-blue-600 text-white dark:bg-blue-500"
-                      : "text-slate-600 hover:bg-blue-50 hover:text-blue-700 dark:bg-slate-900/95 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-blue-300"
+                      ? "bg-blue-600 text-white "
+                      : "text-slate-600 hover:bg-blue-50 hover:text-blue-700    "
                   }`}
                 >
                   {Icon ? (
