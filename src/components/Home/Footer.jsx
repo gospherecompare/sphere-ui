@@ -51,7 +51,6 @@ const footerSections = [
       { label: "Product launches", href: "/news" },
       { label: "Buying context", href: "/news" },
       { label: "About MobileX", href: "/about" },
-      { label: "Careers", href: "/careers" },
     ],
   },
 

@@ -909,8 +909,8 @@ const RelatedStoryTile = ({ story, featured = false }) => (
 );
 
 const LoadingState = () => (
-  <main className="min-h-screen bg-white text-slate-900">
-    <section className="border-b border-[#e6ebf2] bg-white">
+  <main className="min-h-screen bg-[#f3f6fb] text-slate-900">
+    <section className="border-b border-[#e6ebf2] bg-[#f3f6fb]">
       <div className="mx-auto max-w-[1200px] px-4 pb-10 pt-6 sm:px-6 sm:pb-12 sm:pt-8 lg:px-8">
         <div className="h-4 w-36 animate-pulse rounded-full bg-slate-200" />
 
@@ -924,7 +924,7 @@ const LoadingState = () => (
       </div>
     </section>
 
-    <section className="bg-white">
+    <section className="bg-[#f3f6fb]">
       <div className="mx-auto max-w-[1280px] px-4 py-10 sm:px-6 lg:px-8 lg:py-12">
         <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-6">
@@ -1327,11 +1327,17 @@ const NewsStoryArticlePage = () => {
                     </div>
                   </div>
 
-                  <ArticleShareLinks
-                    title={story.title}
-                    description={articleDescription}
-                    url={canonicalUrl}
-                  />
+                  <div className="hooks-article-header-actions">
+                    <ArticleShareLinks
+                      title={story.title}
+                      description={articleDescription}
+                      url={canonicalUrl}
+                    />
+
+                    {story.aiSummary ? (
+                      <AiSummary summary={story.aiSummary} />
+                    ) : null}
+                  </div>
                 </div>
 
                 <figure className="hooks-article-hero-media">
@@ -1426,10 +1432,6 @@ const NewsStoryArticlePage = () => {
                         ))}
                     </ul>
                   </section>
-                ) : null}
-
-                {story.aiSummary ? (
-                  <AiSummary summary={story.aiSummary} />
                 ) : null}
 
                 {hasStructuredArticle && articleHtmlWithAnchors ? (

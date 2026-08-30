@@ -1924,6 +1924,14 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         "",
       ),
       spec_score: specScoreRaw,
+      ranking_score: toNumber(
+        apiDevice.ranking_score ?? apiDevice.rankingScore ?? null,
+      ),
+      ranking_score_source: pick(
+        toString(apiDevice.ranking_score_source),
+        toString(apiDevice.rankingScoreSource),
+        "",
+      ),
       hook_score: hookScoreRaw,
       hookScore: hookScoreRaw,
       spec_score_v2_raw: toNumber(

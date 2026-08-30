@@ -1,4 +1,5 @@
 import React from "react";
+import { roundSpecScoreDisplay } from "../../utils/smartphoneBadgeScore";
 
 const MobileXScoreLogo = ({ className = "h-8 w-8" }) => (
   <svg
@@ -28,20 +29,20 @@ const normalizeScore = (value) => {
 };
 
 const MobileXSpecScore = ({ score, compact = false, className = "" }) => {
-  const normalized = normalizeScore(score);
-  if (normalized == null) return null;
+  const rounded = roundSpecScoreDisplay(score);
+  if (rounded == null) return null;
 
   return (
     <div
       className={`inline-flex max-w-full items-center gap-1.5 rounded-xl bg-blue-50 px-3 py-2 text-blue-700 ${compact ? "h-9 rounded-lg px-2.5" : ""} ${className}`}
-      aria-label={`Spec score ${Math.round(normalized)} out of 100`}
+      aria-label={`Spec score ${rounded} out of 100`}
     >
       <MobileXScoreLogo className={compact ? "h-7 w-7" : "h-8 w-8"} />
       <span className="flex min-w-0 items-baseline">
         <strong
           className={`${compact ? "text-xl" : "text-2xl"} font-black leading-none`}
         >
-          {Math.round(normalized)}
+          {rounded}
         </strong>
         <small className="ml-0.5 text-[10px] font-bold text-blue-500">
           /100
