@@ -767,9 +767,6 @@ const NewsHero = ({ title, description, leadStory }) => (
         </div>
 
         <div className="hooks-news-hero__visual" aria-hidden="true">
-          <div className="hooks-news-hero__orbit hooks-news-hero__orbit--one" />
-          <div className="hooks-news-hero__orbit hooks-news-hero__orbit--two" />
-
           <div className="hooks-news-hero__news-card">
             <span className="hooks-news-hero__card-kicker">
               MobileX intelligence
@@ -1688,7 +1685,7 @@ const NewsArticlesPage = () => {
         schema={pageSchema}
       />
 
-      <main className="hooks-news-page overflow-x-hidden bg-white text-[#111827]">
+      <main className="hooks-news-page overflow-x-hidden bg-[linear-gradient(180deg,#ffffff_0%,#f7f9fd_40%,#f3f6fa_100%)] text-[#111827]">
         <NewsHero
           title={taxonomyRoute?.title || "Technology news with buying context"}
           description={

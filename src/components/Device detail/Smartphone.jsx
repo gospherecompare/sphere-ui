@@ -56,7 +56,11 @@ import ProductAiSummary from "../Product/ProductAiSummary";
 import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import SEO from "../SEO";
 import { smartphoneMeta } from "../../constants/meta";
-import { generateSlug, extractNameFromSlug } from "../../utils/slugGenerator";
+import {
+  generateSlug,
+  extractNameFromSlug,
+  createSmartphoneDetailPath,
+} from "../../utils/slugGenerator";
 import { buildCanonicalComparePath } from "../../utils/compareRoutes";
 import {
   createWebPageSchema,
@@ -488,8 +492,7 @@ const LinkedNewsStoryCard = ({ story }) => {
   );
   const baseCardClass =
     "group flex h-full w-full flex-col overflow-hidden rounded-2xl bg-yellow-200 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500  ";
-  const imageWrapClass =
-    "relative aspect-[16/9] overflow-hidden bg-slate-100 ";
+  const imageWrapClass = "relative aspect-[16/9] overflow-hidden bg-slate-100 ";
   const titleClass =
     "line-clamp-2 text-[0.98rem] leading-6 text-slate-900  sm:text-[1.03rem] sm:leading-7";
 
@@ -611,9 +614,7 @@ const SmartphoneOrbitArtwork = () => (
         <span
           key={index}
           className={`h-1.5 w-1.5 rounded-full ${
-            index === 4
-              ? "bg-blue-600/40 "
-              : "bg-slate-400/20 "
+            index === 4 ? "bg-blue-600/40 " : "bg-slate-400/20 "
           }`}
         />
       ))}
@@ -1752,9 +1753,31 @@ const MobileDetailCard = () => {
       ),
     [localResolved, routeSlug, selectedResolved, selectedResolvedForRoute],
   );
-  const scoreSourceData = selectedResolvedForRoute
-    ? normalizeSmartphone(selectedResolvedForRoute)
-    : mobileData;
+  const scoreSourceData = useMemo(() => {
+    const candidates = [
+      mobileData,
+      selectedResolvedForRoute,
+      localResolved,
+      selectedResolved,
+    ].filter(Boolean);
+
+    for (const candidate of candidates) {
+      const normalized = normalizeSmartphone(candidate);
+      const directRawSpecScore =
+        normalized?.spec_score ??
+        normalized?.specScore ??
+        candidate?.spec_score ??
+        candidate?.specScore ??
+        null;
+
+      const numeric = Number(directRawSpecScore);
+      if (Number.isFinite(numeric) && directRawSpecScore !== "") {
+        return normalized;
+      }
+    }
+
+    return mobileData ?? null;
+  }, [localResolved, mobileData, selectedResolved, selectedResolvedForRoute]);
   const resolvedCanonicalRouteSlug = useMemo(
     () =>
       getCanonicalSeoSlugForDevice(
@@ -1840,37 +1863,8 @@ const MobileDetailCard = () => {
   };
   const resolveVisibleSpecScore = (device) => {
     if (!device || typeof device !== "object") return null;
-    const scoreValues = [
-      resolveSmartphoneBadgeScore(device),
-      device.spec_score_v2_display_80_98,
-      device.specScoreV2Display8098,
-      device.spec_score_display,
-      device.specScoreDisplay,
-      device.spec_score_v2,
-      device.specScoreV2,
-      device.spec_score,
-      device.specScore,
-      device.overall_score_v2_display_80_98,
-      device.overallScoreV2Display8098,
-      device.overall_score_display,
-      device.overallScoreDisplay,
-      device.overall_score_v2,
-      device.overallScoreV2,
-      device.overall_score,
-      device.overallScore,
-    ];
-
-    for (const value of scoreValues) {
-      if (value == null || value === "") continue;
-      const rawValue =
-        typeof value === "string" ? value.match(/\d+(?:\.\d+)?/)?.[0] : value;
-      const numericValue = Number(formatSmartphoneBadgeScore(rawValue));
-      if (Number.isFinite(numericValue) && numericValue > 0) {
-        return numericValue;
-      }
-    }
-
-    return null;
+    const score = resolveSmartphoneBadgeScore(device);
+    return score == null ? null : Number(formatSmartphoneBadgeScore(score));
   };
   const serverPolicy = useMemo(() => {
     const allowCompareRaw =
@@ -2423,16 +2417,7 @@ const MobileDetailCard = () => {
         const rating = Number(d.rating ?? d.avg_rating ?? 0) || 0;
         const resolvedPrice = resolveDeviceNumericPrice(d);
         const price = resolvedPrice > 0 ? resolvedPrice : null;
-        const score =
-          resolveSmartphoneBadgeScore(d) ??
-          Number(
-            d.overall_score_v2 ??
-              d.overallScoreV2 ??
-              d.overall_score ??
-              d.overallScore ??
-              0,
-          ) ??
-          0;
+        const score = resolveSmartphoneBadgeScore(d);
         let priceFit = 55;
         if (currentPrice && price) {
           const diffRatio =
@@ -5255,7 +5240,7 @@ Price: ${price}
   }
 
   return (
-    <div className="hooks-product-detail m-0 w-full bg-white text-slate-950  ">
+    <div className="hooks-product-detail m-0 w-full bg-[#f3f6fb] text-slate-950  ">
       <SEO
         title={metaTitle}
         description={metaDescription}
@@ -5332,7 +5317,7 @@ Price: ${price}
         </div>
       )}
 
-      <main className="w-full ">
+      <main className="min-h-screen bg-[linear-gradient(180deg,#ffffff_0%,#f6f9ff_38%,#f1f5f9_100%)]">
         <DetailPageNavigator
           sections={detailPageSections}
           activeId={activePageSection}
@@ -5341,7 +5326,7 @@ Price: ${price}
 
         <section
           id="detail-overview"
-          className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full overflow-hidden bg-white "
+          className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full overflow-hidden bg-transparent"
         >
           <Breadcrumbs variant="plain" />
 
@@ -5527,6 +5512,12 @@ Price: ${price}
                     </div>
                   ) : null}
 
+                  {mobileData?.aiSummary ? (
+                    <div className="relative z-[1] mt-4">
+                      <ProductAiSummary summary={mobileData.aiSummary} />
+                    </div>
+                  ) : null}
+
                   <div className="relative z-[1] mt-5 grid gap-3 sm:grid-cols-2">
                     {headerSpecScoreValue != null ? (
                       <div className="flex items-center gap-3 rounded-2xl  p-4    ">
@@ -5619,10 +5610,6 @@ Price: ${price}
                       </button>
                     ))}
                   </div>
-
-                  {mobileData?.aiSummary ? (
-                    <ProductAiSummary summary={mobileData.aiSummary} />
-                  ) : null}
 
                   <button
                     type="button"
@@ -5818,7 +5805,7 @@ Price: ${price}
 
         <div
           id="detail-competitors"
-          className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-white "
+          className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-[#f3f6fb] "
         >
           <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
             <div className="mx-auto w-full max-w-7xl space-y-4 sm:space-y-6">
@@ -5850,7 +5837,7 @@ Price: ${price}
           </div>
         </div>
 
-        <div className="w-full bg-white ">
+        <div className="w-full bg-[#f3f6fb] ">
           <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
             <div className="mx-auto w-full max-w-7xl">{renderTabContent()}</div>
           </div>
@@ -5858,7 +5845,7 @@ Price: ${price}
 
         <div
           id="detail-news"
-          className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-white "
+          className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-[#f3f6fb] "
         >
           {shouldShowLinkedNews ? (
             <div className="w-full">
@@ -5916,7 +5903,7 @@ Price: ${price}
         {smartphoneFaqItems.length > 0 ? (
           <div
             id="detail-faqs"
-            className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-white "
+            className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-[#f3f6fb] "
           >
             <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
               <div className="mx-auto w-full max-w-7xl">
@@ -5930,7 +5917,7 @@ Price: ${price}
         ) : null}
 
         {recentlyViewed.length > 0 ? (
-          <section className="w-full bg-white ">
+          <section className="w-full bg-[#f3f6fb] ">
             <div className="mx-auto w-full max-w-[1440px] px-3 pb-10 pt-6 sm:px-6 sm:pb-12 lg:px-8">
               <div className="mx-auto w-full max-w-7xl bg-transparent ">
                 <div className="flex items-end justify-between gap-4">
@@ -5954,7 +5941,12 @@ Price: ${price}
                 <div className="no-scrollbar mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 pr-4">
                   {recentlyViewed.map((item) => {
                     const itemName = item?.name || "Smartphone";
-                    const href = `/smartphones/${generateSlug(itemName)}${SMARTPHONE_SEO_SUFFIX}`;
+                    const href = createSmartphoneDetailPath(
+                      item?.model ||
+                        item?.product_name ||
+                        item?.productName ||
+                        itemName,
+                    );
                     return (
                       <Link
                         key={String(item?.id || itemName)}

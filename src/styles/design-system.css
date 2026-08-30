@@ -26,7 +26,6 @@
   --hooks-radius-xl: 38px;
 }
 
-
 html {
   background: var(--hooks-canvas);
   color: var(--hooks-text);
@@ -472,7 +471,6 @@ body {
   color: #173a85;
 }
 
-
 .hooks-link-card__art svg {
   position: relative;
   z-index: 2;
@@ -530,6 +528,7 @@ html[data-route-group="product-detail"] main,
 html[data-route-group="compare"] main,
 html[data-route-group="news"] main,
 html[data-route-group="company"] main {
+  background: #f3f6fb;
   color: var(--hooks-text);
 }
 
@@ -667,7 +666,6 @@ html[data-route-group="company"] h1 {
 
 /* Dark mode compatibility for existing Tailwind utility-heavy pages */
 
-
 @media (max-width: 1023px) {
   .hooks-decision-grid,
   .hooks-link-grid {
@@ -711,7 +709,6 @@ html[data-route-group="company"] h1 {
     width: 4.5rem;
     height: 5.6rem;
   }
-
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1382,7 +1379,47 @@ html[data-route-group="company"] h1 {
 
 /* News landing */
 .hooks-news-page {
-  background: transparent !important;
+  background: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    #f7f9fd 40%,
+    #f3f6fa 100%
+  ) !important;
+}
+
+.ai-summary-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1.5px solid #1264f7;
+  border-radius: 9999px;
+  background: #ffffff;
+  color: #1264f7;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: none;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
+}
+
+.ai-summary-trigger:hover {
+  background: #1264f7;
+  border-color: #1264f7;
+  color: #ffffff;
+}
+
+@media (max-width: 639px) {
+  .ai-summary-trigger {
+    min-height: 40px;
+    padding: 0 15px;
+    font-size: 13px;
+  }
 }
 
 .hooks-news-hero {
@@ -1679,7 +1716,6 @@ html[data-route-group="company"] h1 {
 
 /* Dark-mode coverage for legacy arbitrary Tailwind colors */
 
-
 /* Apple-inspired smartphone catalog cards. */
 .smartphone-catalog-card {
   border: 1px solid rgba(210, 214, 220, 0.78);
@@ -1766,4 +1802,3 @@ html[data-route-group="company"] h1 {
   line-height: 1.25;
   white-space: nowrap;
 }
-

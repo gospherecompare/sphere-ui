@@ -18,6 +18,18 @@ export const generateSlug = (name) => {
     .replace(/^-+|-+$/g, ""); // Remove leading/trailing hyphens
 };
 
+export const stripSmartphoneSeoSuffix = (value = "") => {
+  const slug = generateSlug(value || "");
+  if (!slug) return "";
+  return slug.replace(/-price-in-indi(?:a)?$/i, "").replace(/-+$/g, "");
+};
+
+export const createSmartphoneDetailPath = (productName) => {
+  const baseSlug = stripSmartphoneSeoSuffix(productName);
+  const detailPath = baseSlug ? `/smartphones/${baseSlug}-price-in-india` : "/smartphones";
+  return toCanonicalPagePath(detailPath);
+};
+
 /**
  * Create a SEO-friendly URL path for a product
  * @param {string} category - Product category (smartphones, laptops, appliances, networking)
@@ -25,7 +37,6 @@ export const generateSlug = (name) => {
  * @returns {string} - Complete URL path
  */
 export const createProductPath = (category, productName) => {
-  const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
   const normalizedCategory = String(category || "")
     .replace(/^\/+|\/+$/g, "")
     .toLowerCase();
@@ -38,10 +49,7 @@ export const createProductPath = (category, productName) => {
   const slug = generateSlug(productName);
   if (!slug) return toCanonicalPagePath(`/${baseCategory}`);
   if (isSmartphoneCategory) {
-    const baseSlug = slug.replace(new RegExp(`${SMARTPHONE_SEO_SUFFIX}$`, "i"), "");
-    return toCanonicalPagePath(
-      `/smartphones/${baseSlug}${SMARTPHONE_SEO_SUFFIX}`,
-    );
+    return createSmartphoneDetailPath(productName);
   }
   return toCanonicalPagePath(`/${baseCategory}/${slug}`);
 };
@@ -61,6 +69,8 @@ export const extractNameFromSlug = (slug) => {
 
 export default {
   generateSlug,
+  stripSmartphoneSeoSuffix,
+  createSmartphoneDetailPath,
   createProductPath,
   extractNameFromSlug,
 };

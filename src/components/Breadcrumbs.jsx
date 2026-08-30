@@ -166,7 +166,7 @@ const Breadcrumbs = ({ variant = "default" }) => {
   if (crumbs.length <= 1 || (!isPlain && isCompareRoute)) return null;
 
   return (
-    <div className={isPlain ? "bg-white" : "hooks-breadcrumb-wrap"}>
+    <div className={isPlain ? "bg-transparent" : "hooks-breadcrumb-wrap"}>
       <Helmet>
         <script type="application/ld+json" data-hooks-breadcrumb-schema="true">
           {JSON.stringify(schema)}

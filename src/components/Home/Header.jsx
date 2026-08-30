@@ -1275,7 +1275,6 @@ const Header = () => {
       items: [
         { label: "About", href: "/about" },
         { label: "Contact", href: "/contact" },
-        { label: "Careers", href: "/careers" },
       ],
     },
     {

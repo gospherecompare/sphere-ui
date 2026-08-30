@@ -454,7 +454,7 @@ const NewsStoryPage = () => {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-white text-slate-900">
+      <main className="min-h-screen bg-[linear-gradient(180deg,#ffffff_0%,#f7f9fd_40%,#f3f6fa_100%)] text-slate-900">
         <section className="bg-[#0b427e] text-white">
           <div className="mx-auto max-w-[1240px] px-4 py-12 sm:px-6 lg:px-8">
             <div className="h-10 w-48 animate-pulse rounded-full bg-white/15" />
@@ -490,7 +490,7 @@ const NewsStoryPage = () => {
 
   if (!story) {
     return (
-      <main className="min-h-screen bg-white text-slate-900">
+      <main className="min-h-screen bg-[linear-gradient(180deg,#ffffff_0%,#f7f9fd_40%,#f3f6fa_100%)] text-slate-900">
         <section className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
           <div className="rounded-[28px] border border-slate-200 p-6">
             <p className="text-base font-semibold text-slate-900">
@@ -518,7 +518,7 @@ const NewsStoryPage = () => {
         schema={schema}
       />
 
-      <main className="min-h-screen bg-white text-slate-900">
+      <main className="min-h-screen bg-[linear-gradient(180deg,#ffffff_0%,#f7f9fd_40%,#f3f6fa_100%)] text-slate-900">
         <section className="relative isolate overflow-hidden bg-gradient-to-br from-slate-950 via-blue-900 to-indigo-950 text-white">
           <div className="absolute inset-0 opacity-50 [background-image:linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:72px_72px]" />
           <div className="absolute -top-40 -left-32 h-96 w-96 rounded-full bg-gradient-to-br from-cyan-500/30 to-blue-500/20 blur-3xl animate-pulse" />
@@ -566,7 +566,7 @@ const NewsStoryPage = () => {
           </div>
         </section>
 
-        <section className="relative bg-white">
+        <section className="relative bg-[#f3f6fb]">
           <div className="mx-auto max-w-7xl px-4 pt-12 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-2xl">
               <NewsStoryMedia

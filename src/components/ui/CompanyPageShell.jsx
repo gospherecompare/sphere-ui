@@ -34,17 +34,6 @@ const CompanyPageShell = ({
               </p>
             ) : null}
           </div>
-
-          <div className="hooks-company-hero__art" aria-hidden="true">
-            <span className="hooks-company-hero__ring hooks-company-hero__ring--one" />
-            <span className="hooks-company-hero__ring hooks-company-hero__ring--two" />
-
-            <span className="hooks-company-hero__icon">
-              {Icon ? <Icon /> : <FaEnvelope />}
-            </span>
-
-            <span className="hooks-company-hero__label">MobileX</span>
-          </div>
         </div>
 
         {highlights.length ? (

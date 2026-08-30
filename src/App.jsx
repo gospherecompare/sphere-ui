@@ -366,11 +366,6 @@ function App() {
 
             {/* Placeholder routes for footer links (can be implemented later) */}
             <Route path="/about" element={<About />} />
-            <Route path="/careers" element={<Careers />} />
-            <Route
-              path="/career"
-              element={<Navigate to="/careers" replace />}
-            />
             <Route path="/contact" element={<Contact />} />
             <Route path="/news" element={<NewsArticlesPage />} />
             <Route path="/news/:slug" element={<NewsArticlesPage />} />
