@@ -30,13 +30,13 @@ import {
 
 import GoogleSwgBasic from "../News/GoogleSwgBasic";
 import GooglePreferredSourceButton from "../News/GooglePreferredSourceButton";
-import MobileXLogo from "../ui/MoblieX";
+import MobileXLogo from "../ui/MobileX";
 
 import "./news-article.css";
 
 import { buildNewsArticleSeo } from "../../utils/newsSeo";
 
-const SITE_ORIGIN = "https://mobilex.in";
+const SITE_ORIGIN = "https://mobilesx.in";
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
   month: "short",

@@ -4,7 +4,7 @@ export const mobileXContactChannels = [
 
     name: "Business",
 
-    email: "business@mobilex.in",
+    email: "business@mobilesx.in",
 
     contactType: "Business partnerships",
 
@@ -22,7 +22,7 @@ export const mobileXContactChannels = [
 
     name: "Contact",
 
-    email: "contact@mobilex.in",
+    email: "contact@mobilesx.in",
 
     contactType: "General contact",
 
@@ -40,7 +40,7 @@ export const mobileXContactChannels = [
 
     name: "News",
 
-    email: "news@mobilex.in",
+    email: "news@mobilesx.in",
 
     contactType: "News and press",
 
@@ -58,7 +58,7 @@ export const mobileXContactChannels = [
 
     name: "Support",
 
-    email: "support@mobilex.in",
+    email: "support@mobilesx.in",
 
     contactType: "Customer support",
 

@@ -59,7 +59,7 @@ const Home = () => {
       <SEO
         title="Compare Smartphones, TVs & Gadgets in India | MobileX"
         description="Compare smartphones, laptops, TVs and technology products with specifications, prices, feature comparisons and practical buying information."
-        url="https://mobilex.in/"
+        url="https://mobilesx.in/"
       />
       <HomeDataProvider>
         <main className="hooks-home home-v2 min-h-screen overflow-x-hidden [&_h1]:font-[Space_Grotesk] [&_h2]:font-[Space_Grotesk] [&_h3]:font-[Space_Grotesk]">

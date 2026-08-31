@@ -91,7 +91,7 @@ import ProductCardFooter from "../ui/ProductCardFooter";
 import ProductVariantSelector from "../ui/ProductVariantSelector";
 import Breadcrumbs from "../Breadcrumbs";
 
-const SITE_ORIGIN = "https://mobilex.in";
+const SITE_ORIGIN = "https://mobilesx.in";
 const TV_MOBILE_SORT_OPTIONS = [
   {
     value: "featured",
@@ -3238,7 +3238,7 @@ const TVs = () => {
   const siteOrigin =
     typeof window !== "undefined" && window.location?.origin
       ? window.location.origin
-      : "https://mobilex.in";
+      : "https://mobilesx.in";
 
   const toAbsoluteUrl = (value) => {
     if (!value) return "";

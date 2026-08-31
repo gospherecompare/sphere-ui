@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import HookLogo from "../ui/MoblieX";
+import HookLogo from "../ui/MobileX";
 
 export const NewsBrandBadge = ({
   brandName = "MobileX",

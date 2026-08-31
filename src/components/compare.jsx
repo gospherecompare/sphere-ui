@@ -286,7 +286,7 @@ const COMPARE_VIEW_TABS = [
 
 const MAX_DEVICES = 4;
 const MIN_DEVICES = 2;
-const SITE_ORIGIN = "https://mobilex.in";
+const SITE_ORIGIN = "https://mobilesx.in";
 const resolveCompareApiBase = () => {
   const configured = String(import.meta.env.VITE_API_BASE_URL || "").trim();
   if (configured) return normalizeApiBaseUrl(configured);

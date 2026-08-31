@@ -69,7 +69,7 @@ import { toCanonicalPageUrl } from "../../utils/publicUrl";
 
 // Data comes from API via `useDevice()`; embedded mock removed.
 const mockAppliances = [];
-const SITE_ORIGIN = "https://mobilex.in";
+const SITE_ORIGIN = "https://mobilesx.in";
 
 const TvOrbitArtwork = () => (
   <div

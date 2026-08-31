@@ -1,6 +1,6 @@
 import React from "react";
 
-const PREFERRED_SOURCE_DOMAIN = "mobilex.in";
+const PREFERRED_SOURCE_DOMAIN = "mobilesx.in";
 const PREFERRED_SOURCE_URL = `https://google.com/preferences/source?q=${encodeURIComponent(
   PREFERRED_SOURCE_DOMAIN,
 )}`;

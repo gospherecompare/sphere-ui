@@ -4,7 +4,7 @@
  */
 import { toCanonicalPageUrl } from "./publicUrl";
 
-const SITE_ORIGIN = "https://mobilex.in";
+const SITE_ORIGIN = "https://mobilesx.in";
 
 /**
  * Convert relative/absolute URLs to full absolute URLs
@@ -334,7 +334,7 @@ export const createOrganizationSchema = () => {
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "Customer Support",
-      email: "support@mobilex.in",
+      email: "support@mobilesx.in",
     },
   };
 };
@@ -390,7 +390,7 @@ export const createContactPageSchema = ({
   name,
   description,
   url,
-  contactEmail = "support@mobilex.in",
+  contactEmail = "support@mobilesx.in",
   contactPoints = [],
   contactPhone = null,
   contactAddress = null,

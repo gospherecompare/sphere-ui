@@ -106,7 +106,7 @@ const SMARTPHONE_SEO_SUFFIX = "-price-in-india";
 const SMARTPHONE_SEO_SUFFIX_ALIAS = "-price-in-indi";
 const RECENT_STORAGE_KEY = "hooks_recent_smartphones_v1";
 const MAX_RECENT_ITEMS = 12;
-const SITE_ORIGIN = "https://mobilex.in";
+const SITE_ORIGIN = "https://mobilesx.in";
 const LINKED_NEWS_LIMIT = 3;
 const CURRENT_MONTH_YEAR = new Intl.DateTimeFormat("en-US", {
   month: "short",
