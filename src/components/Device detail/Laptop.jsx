@@ -40,7 +40,7 @@ import usePageEngagementTracker from "../../hooks/usePageEngagementTracker";
 import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
 import ProductDiscoverySections from "../ui/ProductDiscoverySections";
 
-const SITE_ORIGIN = "https://mobilex.in";
+const SITE_ORIGIN = "https://mobilesx.in";
 
 const normalizeScore100 = (value) => {
   if (value === null || value === undefined || value === "") return null;

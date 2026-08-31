@@ -1596,7 +1596,7 @@ const NewsArticlesPage = () => {
     (!taxonomyRoute || hasExtraNewsRouteSegments);
   const canonicalPath = taxonomyRoute?.path || "/news";
   const canonical = taxonomyRoute
-    ? `https://mobilex.in${canonicalPath}`
+    ? `https://mobilesx.in${canonicalPath}`
     : NEWS_LISTING_SEO.canonicalUrl;
   const { stories, loading, error } = usePublicNewsFeed({
     limit: NEWS_GRID_LIMIT,
@@ -1649,7 +1649,7 @@ const NewsArticlesPage = () => {
 
   const pageSchema = [
     createBreadcrumbSchema([
-      { label: "Home", url: "https://mobilex.in/" },
+      { label: "Home", url: "https://mobilesx.in/" },
       { label: "News", url: NEWS_LISTING_SEO.canonicalUrl },
       ...(taxonomyRoute
         ? [{ label: taxonomyRoute.title, url: canonical }]
@@ -1659,7 +1659,7 @@ const NewsArticlesPage = () => {
       name: taxonomyRoute?.title || "MobileX News",
       description: pageDescription,
       url: canonical,
-      image: "https://mobilex.in/mobilex-favicon.svg",
+      image: "https://mobilesx.in/mobilex-favicon.svg",
     }),
     createWebPageSchema({
       name: taxonomyRoute?.title || "MobileX News",
@@ -1681,7 +1681,7 @@ const NewsArticlesPage = () => {
         url={canonical}
         robots="index, follow, max-image-preview:large"
         ogType="website"
-        image="https://mobilex.in/mobilex-favicon.svg"
+        image="https://mobilesx.in/mobilex-favicon.svg"
         schema={pageSchema}
       />
 

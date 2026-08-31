@@ -50,7 +50,7 @@ const TRENDING_PRODUCTS_PER_PAGE = 20;
 const MAX_COMPARE_ITEMS = 4;
 const RUPEE = "\u20B9";
 const API_BASE = "https://api.apisphere.in";
-const SITE_ORIGIN = "https://mobilex.in";
+const SITE_ORIGIN = "https://mobilesx.in";
 const CURRENT_MONTH_YEAR = new Intl.DateTimeFormat("en-US", {
   month: "long",
   year: "numeric",

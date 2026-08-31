@@ -4,7 +4,7 @@ import { useLocation } from "react-router-dom";
 import { normalizeSeoTitle } from "../utils/seoTitle";
 import { toCanonicalPageUrl } from "../utils/publicUrl";
 
-const SITE_ORIGIN = "https://mobilex.in";
+const SITE_ORIGIN = "https://mobilesx.in";
 const DEFAULT_ROBOTS = "index, follow, max-image-preview:large";
 const PRERENDER_SCHEMA_SELECTOR =
   'script[type="application/ld+json"][data-hooks-prerender-schema="true"]';

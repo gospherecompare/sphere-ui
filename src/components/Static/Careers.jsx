@@ -4,7 +4,7 @@ import { createWebPageSchema } from "../../utils/schemaGenerators";
 import { toCanonicalPageUrl } from "../../utils/publicUrl";
 import { buildApiUrl } from "../../utils/apiUrl";
 
-const SITE_ORIGIN = "https://mobilex.in";
+const SITE_ORIGIN = "https://mobilesx.in";
 const CAREERS_OG_IMAGE = `${SITE_ORIGIN}/mobilex-favicon.svg`;
 const CAREERS_API_URL = buildApiUrl("/careers");
 

@@ -11,9 +11,9 @@ import { Link } from "react-router-dom";
 
 import { toCanonicalPagePath } from "../../utils/publicUrl";
 
-import MobileXLogo from "../ui/MoblieX";
+import MobileXLogo from "../ui/MobileX";
 
-const CONTACT_EMAIL = "contact@mobilex.in";
+const CONTACT_EMAIL = "contact@mobilesx.in";
 
 const footerSections = [
   {

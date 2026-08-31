@@ -340,7 +340,7 @@ const NewsStoryPage = () => {
   const { stories: feedStories } = usePublicNewsFeed({ limit: 18 });
   const [sidebarTab, setSidebarTab] = useState("latest");
 
-  const canonical = `https://mobilex.in${createNewsStoryPath(slug)}`;
+  const canonical = `https://mobilesx.in${createNewsStoryPath(slug)}`;
 
   const feedStoriesOrdered = useMemo(
     () =>
@@ -433,8 +433,8 @@ const NewsStoryPage = () => {
   const schema = story
     ? [
         createBreadcrumbSchema([
-          { label: "Home", url: "https://mobilex.in/" },
-          { label: "News", url: "https://mobilex.in/news" },
+          { label: "Home", url: "https://mobilesx.in/" },
+          { label: "News", url: "https://mobilesx.in/news" },
           { label: story.title, url: canonicalUrl },
         ]),
         createNewsArticleSchema({

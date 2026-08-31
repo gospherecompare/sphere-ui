@@ -41,7 +41,7 @@ import {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const SITE_ORIGIN = "https://mobilex.in";
+const SITE_ORIGIN = "https://mobilesx.in";
 const DEFAULT_REMOTE_API_BASE_URL = "https://api.apisphere.in/api";
 const DEFAULT_LOCAL_API_BASE_URL = "http://localhost:5000/api";
 const trimTrailingSlash = (value = "") =>

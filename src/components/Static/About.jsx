@@ -14,7 +14,7 @@ import CompanyPageShell from "../ui/CompanyPageShell";
 import InternalLinkHub from "../ui/InternalLinkHub";
 import { createAboutPageSchema } from "../../utils/schemaGenerators";
 
-const SITE_ORIGIN = "https://mobilex.in";
+const SITE_ORIGIN = "https://mobilesx.in";
 
 const highlights = [
   {

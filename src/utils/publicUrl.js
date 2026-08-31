@@ -1,4 +1,4 @@
-const DEFAULT_SITE_ORIGIN = "https://mobilex.in";
+const DEFAULT_SITE_ORIGIN = "https://mobilesx.in";
 
 const parseUrlLike = (value = "", baseOrigin = DEFAULT_SITE_ORIGIN) => {
   const raw = String(value || "").trim();
