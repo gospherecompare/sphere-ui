@@ -2,8 +2,8 @@
 export const STORE_LOGOS = {
   amazon: "/asset/amazon.svg",
   flipkart: "/asset/flipkart.svg",
-  smartarena: "/asset/hooklogo.png",
-  default: "/asset/hooklogo.png",
+  smartarena: "/asset/logo.png",
+  default: "/asset/logo.png",
 };
 
 export default STORE_LOGOS;

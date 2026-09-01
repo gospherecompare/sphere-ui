@@ -73,6 +73,7 @@ import { buildCanonicalComparePathFromDevices } from "../../utils/compareRoutes"
 import { toCanonicalPagePath } from "../../utils/publicUrl";
 import { isPublishedProduct } from "../../utils/publishedProducts";
 import { fetchPublicJson } from "../../utils/publicJsonRequest";
+import { isUpcomingProduct } from "../../utils/launchStatusHelpers";
 import MobilesXSpecScore from "../ui/MobileXSpecScore";
 import ProductFilterSheet from "../ui/ProductFilterSheet";
 
@@ -887,11 +888,31 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
 
   const resolveLaunchStage = (device) => {
     if (!device) return null;
+
+    const explicitStatus = normalizeLaunchStatus(
+      device?.launch_status_override ||
+        device?.launchStatusOverride ||
+        device?.launch_status ||
+        device?.launchStatus ||
+        device?.status ||
+        "",
+    );
+
+    if (explicitStatus === "upcoming") return "upcoming";
+    if (explicitStatus === "rumored") return "rumored";
+    if (explicitStatus === "announced") return "announced";
+    if (explicitStatus === "available") return "available";
+    if (explicitStatus === "released") return "released";
+
+    if (isUpcomingProduct(device)) return "upcoming";
+
     const saleStartDate = resolveSaleStartDate(device);
     if (isFutureDateValue(saleStartDate)) return "upcoming";
+
     const hasStoreEntries =
       getDeviceStoreRows(device).some(hasStoreMarketSignal);
     if (!hasStoreEntries) return "upcoming";
+
     return "available";
   };
 
@@ -1000,12 +1021,24 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       .trim()
       .toLowerCase();
 
-    const saleStartDate = resolveSaleStartDate(device);
-    if (isFutureDateValue(saleStartDate)) return "upcoming";
-    const storeRows = getDeviceStoreRows(device);
-    const hasStoreEntries = storeRows.some(hasStoreMarketSignal);
-    if (!hasStoreEntries) return "upcoming";
-    if (saleStartDate) return "available";
+    const explicitStatus = normalizeLaunchStatus(
+      device?.launch_status_override ||
+        device?.launchStatusOverride ||
+        device?.launch_status ||
+        device?.launchStatus ||
+        device?.status ||
+        "",
+    );
+
+    if (explicitStatus === "upcoming") return "upcoming";
+    if (explicitStatus === "rumored") return "upcoming";
+    if (explicitStatus === "announced") return "upcoming";
+    if (explicitStatus === "available") return "available";
+    if (explicitStatus === "released") return "available";
+
+    if (isUpcomingProduct(device)) return "upcoming";
+
+    if (backendRenderType === "upcoming") return "upcoming";
     if (backendRenderType === "available") return "available";
 
     const launchStage = resolveLaunchStage(device);
@@ -1016,6 +1049,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     ) {
       return "upcoming";
     }
+
     const saleStage = resolveSaleStage(device);
     const storeStage = resolveStoreStage(device);
 
