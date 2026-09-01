@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   --hooks-canvas: #f6f8fc;
   --hooks-canvas-strong: #eef3fb;
   --hooks-surface: #ffffff;
@@ -1317,7 +1317,11 @@ html[data-route-group="company"] h1 {
   width: 4px;
   content: "";
   border-radius: 1.65rem 0 0 1.65rem;
-  background: linear-gradient(180deg, var(--hooks-brand), var(--hooks-accent));
+  background: linear-gradient(
+    180deg,
+    var(--hooks-brand),
+    var(--hooks-accent)
+  );
   opacity: 0;
   transition: opacity 180ms ease;
 }
@@ -1802,3 +1806,4 @@ html[data-route-group="company"] h1 {
   line-height: 1.25;
   white-space: nowrap;
 }
+
