@@ -40,7 +40,7 @@ export const smartphoneMeta = {
         : name || brand || "";
     if (!identity) return "";
 
-    return `${identity} Price in India, Specs & Features (${CURRENT_SHORT_MONTH_YEAR}) | MobileX`;
+    return `${identity} Price in India, Specs & Features (${CURRENT_SHORT_MONTH_YEAR}) | MobilesX`;
   },
 
   description: ({ name, brand, highlights = [], updatedAt = null }) => {
@@ -53,7 +53,7 @@ export const smartphoneMeta = {
     if (!identity) return "";
 
     const freshnessDate = resolveFreshnessDate(updatedAt);
-    const intro = `Check the latest ${identity} price in India, full specifications, features, images, variants, launch date, availability, reviews, and comparisons on MobileX. Updated ${freshnessDate}.`;
+    const intro = `Check the latest ${identity} price in India, full specifications, features, images, variants, launch date, availability, reviews, and comparisons on MobilesX. Updated ${freshnessDate}.`;
     const cleanHighlights = Array.isArray(highlights)
       ? highlights.filter(Boolean).slice(0, 3)
       : [];
@@ -66,19 +66,19 @@ export const smartphoneMeta = {
 
 export const laptopMeta = {
   title: ({ name }) =>
-    `${name} Price in India, Specs & Features (${CURRENT_SHORT_MONTH_YEAR}) | MobileX`,
+    `${name} Price in India, Specs & Features (${CURRENT_SHORT_MONTH_YEAR}) | MobilesX`,
 
   description: ({ name, cpu, ram, storage, brand, updatedAt = null }) =>
     `${name}${brand ? ` by ${brand}` : ""}${cpu ? ` powered by ${cpu}` : ""}${
       ram ? ` with ${ram} RAM` : ""
     }${
       storage ? ` and ${storage} storage` : ""
-    }. View detailed specifications, compare prices, and find the best laptop deals on MobileX. Updated ${resolveFreshnessDate(updatedAt)}.`,
+    }. View detailed specifications, compare prices, and find the best laptop deals on MobilesX. Updated ${resolveFreshnessDate(updatedAt)}.`,
 };
 
 export const tvMeta = {
   title: ({ name }) =>
-    `${name} Price in India, Specs & Features (${CURRENT_SHORT_MONTH_YEAR}) | MobileX`,
+    `${name} Price in India, Specs & Features (${CURRENT_SHORT_MONTH_YEAR}) | MobilesX`,
 
   description: ({
     name,
@@ -92,29 +92,29 @@ export const tvMeta = {
       screenSize ? ` with ${screenSize} display` : ""
     }${resolution ? `, ${resolution} resolution` : ""}${
       os ? `, and ${os}` : ""
-    }. Compare TV prices, key features, and store offers on MobileX. Updated ${resolveFreshnessDate(updatedAt)}.`,
+    }. Compare TV prices, key features, and store offers on MobilesX. Updated ${resolveFreshnessDate(updatedAt)}.`,
 };
 
 export const networkingMeta = {
   title: ({ name }) =>
-    `${name} Price in India, Specs & Features (${CURRENT_SHORT_MONTH_YEAR}) | MobileX`,
+    `${name} Price in India, Specs & Features (${CURRENT_SHORT_MONTH_YEAR}) | MobilesX`,
 
   description: ({ name, deviceType, brand }) =>
     `${name}${deviceType ? ` ${deviceType}` : ""}${
       brand ? ` by ${brand}` : ""
-    }. Check Wi-Fi standards, speed, coverage, and compare prices from trusted stores on MobileX.`,
+    }. Check Wi-Fi standards, speed, coverage, and compare prices from trusted stores on MobilesX.`,
 };
 
 export const homeApplianceMeta = {
   title: ({ name, applianceType, capacity }) =>
     `${name}${capacity ? ` ${capacity}` : ""}${
       applianceType ? ` ${applianceType}` : ""
-    } (${CURRENT_MONTH_YEAR}) | Price & Features | MobileX`,
+    } (${CURRENT_MONTH_YEAR}) | Price & Features | MobilesX`,
 
   description: ({ name, applianceType, capacity, brand }) =>
     `${name}${capacity ? ` ${capacity}` : ""}${
       applianceType ? ` ${applianceType}` : ""
-    }${brand ? ` by ${brand}` : ""}. Explore energy rating, performance, features, warranty, and compare prices on MobileX.`,
+    }${brand ? ` by ${brand}` : ""}. Explore energy rating, performance, features, warranty, and compare prices on MobilesX.`,
 };
 
 export default {

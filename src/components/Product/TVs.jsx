@@ -79,7 +79,7 @@ import "../../styles/hideScrollbar.css";
 import MobileListingControls, {
   MobileSortSheet,
 } from "../ui/MobileListingControls";
-import MobileXSpecScore from "../ui/MobileXSpecScore";
+import MobilesXSpecScore from "../ui/MobileXSpecScore";
 import CategoryListingShell from "../ui/CategoryListingShell";
 import ProductListingCard from "../ui/ProductListingCard";
 import ProductHighlightStrip from "../ui/ProductHighlightStrip";
@@ -3170,7 +3170,7 @@ const TVs = () => {
         ? "Browse the TVs buyers are watching most and quickly spot the models that are getting attention right now. This page brings together updated prices, display technology, panel type, resolution, refresh rate, audio features, smart features, and model variants in one place so you can compare the practical details that matter without opening multiple store pages. Whether you are looking for a budget smart TV, a 4K home-theater screen, a gaming-friendly panel, or a premium flagship display, the trending collection helps you narrow the field with confidence. Use the filters and product cards to sort by brand, price, screen size, resolution, and feature, then open the listings that look the most promising."
         : filter === "new"
           ? "Browse the newest TV releases and keep up with fresh launches as they arrive. This page brings together updated pricing, panel details, refresh rates, audio information, smart platform options, and screen sizes so you can track what is new in one place. If you are waiting for a newly announced model, planning a living-room upgrade, or checking how the latest releases stack up, the new-launch collection makes it easy to review the important details without jumping between many product pages. Use the filters and product cards to sort by brand, price, size, resolution, and feature, then open the TVs that are most worth watching."
-          : "Browse the best TVs in India ranked using current buyer interest, product momentum, and freshness signals from MobileX. Compare brands, prices, screen sizes, panel types, smart features, refresh rates, audio output, and model variants in one place. Whether you want a budget smart TV, a family viewing screen, a gaming display, or a premium home-theater panel, use the filters and product cards to narrow the shortlist and open the TVs that fit your needs.";
+          : "Browse the best TVs in India ranked using current buyer interest, product momentum, and freshness signals from MobilesX. Compare brands, prices, screen sizes, panel types, smart features, refresh rates, audio output, and model variants in one place. Whether you want a budget smart TV, a family viewing screen, a gaming display, or a premium home-theater panel, use the filters and product cards to narrow the shortlist and open the TVs that fit your needs.";
 
   const isExpandedHeroDescriptionPath =
     Boolean(routeFeatureMeta) ||
@@ -3184,18 +3184,18 @@ const TVs = () => {
     }
   }, [isExpandedHeroDescriptionPath]);
 
-  let seoTitle = `Best TVs in India (${currentMonthYear}) | MobileX`;
+  let seoTitle = `Best TVs in India (${currentMonthYear}) | MobilesX`;
   let seoDescription =
-    "Browse the best TVs in India ranked using buyer interest, trend momentum, and freshness signals. Compare updated prices, screen sizes, display specifications, and smart TV features on MobileX.";
+    "Browse the best TVs in India ranked using buyer interest, trend momentum, and freshness signals. Compare updated prices, screen sizes, display specifications, and smart TV features on MobilesX.";
 
   if (filter === "trending") {
-    seoTitle = `Trending TVs in India (${currentMonthYear}) | MobileX`;
+    seoTitle = `Trending TVs in India (${currentMonthYear}) | MobilesX`;
     seoDescription =
-      "Browse trending TVs with rising demand, key specifications, and latest prices to find the right smart TV on MobileX.";
+      "Browse trending TVs with rising demand, key specifications, and latest prices to find the right smart TV on MobilesX.";
   } else if (filter === "new") {
-    seoTitle = `Latest TVs in India (${currentMonthYear}) | MobileX`;
+    seoTitle = `Latest TVs in India (${currentMonthYear}) | MobilesX`;
     seoDescription =
-      "Browse newly launched TVs with updated specifications, panel details, refresh rates, and best store prices on MobileX.";
+      "Browse newly launched TVs with updated specifications, panel details, refresh rates, and best store prices on MobilesX.";
   }
 
   if (routeFeatureMeta) {
@@ -3205,15 +3205,15 @@ const TVs = () => {
         : routeFeatureSlug === "smart-tv"
           ? "Smart"
           : routeFeatureSeoName;
-    seoTitle = `Best ${featureTitle} TVs in India (${currentMonthYear}) | MobileX`;
-    seoDescription = `Browse the best ${routeFeatureSeoName} TVs in India with updated prices, display specifications, screen sizes, smart features, and store availability on MobileX.`;
+    seoTitle = `Best ${featureTitle} TVs in India (${currentMonthYear}) | MobilesX`;
+    seoDescription = `Browse the best ${routeFeatureSeoName} TVs in India with updated prices, display specifications, screen sizes, smart features, and store availability on MobilesX.`;
   }
 
   if (currentBrandObj && !routeFeatureMeta) {
-    seoTitle = `${currentBrandObj.name} TVs in India (${currentMonthYear}) | MobileX`;
+    seoTitle = `${currentBrandObj.name} TVs in India (${currentMonthYear}) | MobilesX`;
     seoDescription = sanitizeDescription(
       currentBrandObj.description ||
-        `Browse ${currentBrandObj.name} TVs with detailed specifications, latest prices, and top store offers on MobileX.`,
+        `Browse ${currentBrandObj.name} TVs with detailed specifications, latest prices, and top store offers on MobilesX.`,
     );
   }
   const _seoKeywords = useMemo(
@@ -3848,7 +3848,7 @@ const TVs = () => {
         <LatestNewsRouteSection
           className="mt-6"
           productType="tv"
-          subtitle="Fresh TV launches, display technology updates, and buying context from the MobileX news desk."
+          subtitle="Fresh TV launches, display technology updates, and buying context from the MobilesX news desk."
         />
 
         <ProductDiscoverySections

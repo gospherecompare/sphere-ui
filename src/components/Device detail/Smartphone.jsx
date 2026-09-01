@@ -82,7 +82,7 @@ import LatestNewsRouteSection from "../ui/LatestNewsRouteSection";
 import DetailPageNavigator from "../ui/DetailPageNavigator";
 import { SMARTPHONE_FEATURE_CATALOG } from "../../utils/smartphonePopularFeatures";
 
-const MobileXScoreLogo = ({ className }) => (
+const MobilesXScoreLogo = ({ className }) => (
   <svg
     viewBox="0 0 874 420"
     className={className}
@@ -90,7 +90,7 @@ const MobileXScoreLogo = ({ className }) => (
     xmlns="http://www.w3.org/2000/svg"
     fill="none"
     role="img"
-    aria-label="MobileX"
+    aria-label="MobilesX"
   >
     <path
       fill="#111318"
@@ -481,7 +481,7 @@ const LinkedNewsStoryCard = ({ story }) => {
   if (!story?.slug || !story?.title) return null;
 
   const storyPath = createNewsStoryPath(story.slug);
-  const authorLabel = story?.author || "MobileX news";
+  const authorLabel = story?.author || "MobilesX news";
   const linkedProductNames = Array.isArray(story?.linkedProductNames)
     ? story.linkedProductNames.filter(Boolean)
     : [];
@@ -5521,7 +5521,7 @@ Price: ${price}
                   <div className="relative z-[1] mt-5 grid gap-3 sm:grid-cols-2">
                     {headerSpecScoreValue != null ? (
                       <div className="flex items-center gap-3 rounded-2xl  p-4    ">
-                        <MobileXScoreLogo className="h-11 w-11 shrink-0 rounded-xl object-cover" />
+                        <MobilesXScoreLogo className="h-11 w-11 shrink-0 rounded-xl object-cover" />
                         <div>
                           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 ">
                             Spec score

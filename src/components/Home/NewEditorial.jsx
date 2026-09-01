@@ -77,7 +77,7 @@ const formatAbsoluteLabel = (story) => {
   return DATE_FORMATTER.format(date);
 };
 
-const formatByline = (story) => `Written by ${story?.author || "MobileX Desk"}`;
+const formatByline = (story) => `Written by ${story?.author || "MobilesX Desk"}`;
 
 const extractTopicCandidates = (story) =>
   [
@@ -151,7 +151,7 @@ const StoryMedia = ({ story, className = "", eager = false }) => {
               {getStoryCategory(story)}
             </p>
             <h3 className="mt-3 text-base font-black leading-tight">
-              {story?.title || "MobileX News"}
+              {story?.title || "MobilesX News"}
             </h3>
           </div>
         </div>
@@ -198,7 +198,7 @@ const LoadingState = () => (
 const EmptyState = () => (
   <div className="mt-8 rounded-lg bg-[#f7faff] p-8">
     <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#1d4ed8]">
-      MobileX News
+      MobilesX News
     </p>
     <h2 className="mt-3 text-3xl font-black tracking-[-0.04em] text-[#111111]">
       No stories published yet
@@ -220,7 +220,7 @@ const EmptyState = () => (
 const ErrorState = ({ error = "" }) => (
   <div className="mt-8 rounded-lg bg-[#f7faff] p-8">
     <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#1d4ed8]">
-      MobileX News
+      MobilesX News
     </p>
     <h2 className="mt-3 text-3xl font-black tracking-[-0.04em] text-[#111111]">
       We could not load the story feed
@@ -504,7 +504,7 @@ const NewEditorial = ({ stories = [], loading = false, error = "" }) => {
           <div className="mt-5">
             <div className="max-w-4xl">
               <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-[#1d4ed8]">
-                MobileX News
+                MobilesX News
               </p>
               <h2 className="mt-3 text-[28px] font-black leading-[1.02] tracking-[-0.05em] text-[#121212] sm:text-[44px] lg:text-[50px]">
                 Latest News

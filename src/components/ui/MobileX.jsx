@@ -1,13 +1,13 @@
 import React from "react";
 
-export default function MobileXLogo({
+export default function MobilesXLogo({
   className,
-  title = "MobileX",
-  "aria-label": ariaLabel = "MobileX",
-  brandName = "MobileX",
+  title = "MobilesX",
+  "aria-label": ariaLabel = "MobilesX",
+  brandName = "MobilesX",
   darkBackground = true,
 }) {
-  const altText = ariaLabel || title || brandName || "MobileX";
+  const altText = ariaLabel || title || brandName || "MobilesX";
   const primaryColor = darkBackground ? "#FFFFFF" : "#111318";
 
   return (

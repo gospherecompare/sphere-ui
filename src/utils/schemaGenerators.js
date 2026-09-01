@@ -264,8 +264,8 @@ export const createNewsArticleSchema = ({
   imageAlt = "",
   datePublished,
   dateModified = null,
-  authorName = "MobileX News",
-  publisherName = "MobileX",
+  authorName = "MobilesX News",
+  publisherName = "MobilesX",
   articleSection = "",
   keywords = [],
 } = {}) => {
@@ -326,7 +326,7 @@ export const createOrganizationSchema = () => {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "MobileX",
+    name: "MobilesX",
     url: toAbsolutePageUrl("/"),
     logo: `${SITE_ORIGIN}/mobilex-favicon.svg`,
     description:
@@ -346,7 +346,7 @@ export const createWebsiteSchema = () => {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "MobileX",
+    name: "MobilesX",
     url: toAbsolutePageUrl("/"),
     description: "Smart device comparison platform",
     potentialAction: {
@@ -423,7 +423,7 @@ export const createContactPageSchema = ({
     "@context": "https://schema.org",
     "@type": "ContactPage",
     name: name || "Contact Us",
-    description: description || "Get in touch with MobileX support team",
+    description: description || "Get in touch with MobilesX support team",
     url: toAbsolutePageUrl(url || "/contact"),
     contactPoint:
       normalizedContactPoints.length > 0
@@ -453,7 +453,7 @@ export const createAboutPageSchema = ({
   name,
   description,
   url,
-  organizationName = "MobileX",
+  organizationName = "MobilesX",
 } = {}) => {
   return {
     "@context": "https://schema.org",
@@ -461,7 +461,7 @@ export const createAboutPageSchema = ({
     name: name || "About Us",
     description:
       description ||
-      "Learn about MobileX - a device comparison and research platform",
+      "Learn about MobilesX - a device comparison and research platform",
     url: toAbsolutePageUrl(url || "/about"),
     about: {
       "@type": "Organization",

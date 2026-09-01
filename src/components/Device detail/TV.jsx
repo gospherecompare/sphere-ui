@@ -123,7 +123,7 @@ const TvXScoreLogo = ({ className }) => (
     xmlns="http://www.w3.org/2000/svg"
     fill="none"
     role="img"
-    aria-label="MobileX"
+    aria-label="MobilesX"
   >
     <path fill="#111318" d="M0 419H99L101 142L288 327L471 145L400 75L288 185L101 0H0V419Z" />
     <path fill="#111318" d="M365 0L568 202L357 419H476L689 202L488 0H365Z" />
@@ -3396,7 +3396,7 @@ const TVDetailCard = () => {
           <LatestNewsRouteSection
             className="mt-6"
             productType="tv"
-            subtitle="Fresh TV launches, display technology updates, and buying context from the MobileX news desk."
+            subtitle="Fresh TV launches, display technology updates, and buying context from the MobilesX news desk."
           />
         </div>
       </div>

@@ -30,7 +30,7 @@ import {
 
 import GoogleSwgBasic from "../News/GoogleSwgBasic";
 import GooglePreferredSourceButton from "../News/GooglePreferredSourceButton";
-import MobileXLogo from "../ui/MobileX";
+import MobilesXLogo from "../ui/MobileX";
 
 import "./news-article.css";
 
@@ -538,7 +538,7 @@ const StoryImageFallback = ({ story }) => (
       </p>
 
       <h3 className="mt-3 text-sm font-black leading-tight sm:text-base">
-        {story?.title || "MobileX editorial"}
+        {story?.title || "MobilesX editorial"}
       </h3>
     </div>
   </div>
@@ -620,7 +620,7 @@ const ArticleShareLinks = ({ title, description, url }) => {
 
   const currentUrl = url || fallbackUrl;
 
-  const shareTitle = stripMarkup(title || "MobileX");
+  const shareTitle = stripMarkup(title || "MobilesX");
 
   const shareDescription = stripMarkup(description || "");
 
@@ -652,8 +652,8 @@ const ArticleShareLinks = ({ title, description, url }) => {
     try {
       if (typeof navigator !== "undefined" && navigator.share) {
         await navigator.share({
-          title: shareTitle || "MobileX",
-          text: shareText || shareTitle || "MobileX",
+          title: shareTitle || "MobilesX",
+          text: shareText || shareTitle || "MobilesX",
           url: currentUrl,
         });
 
@@ -951,7 +951,7 @@ const ErrorState = ({ message = "" }) => (
     <section className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
       <div className="rounded-lg bg-[#fff5f5] p-8">
         <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-rose-700">
-          MobileX News
+          MobilesX News
         </p>
 
         <h2 className="mt-3 text-3xl font-black tracking-[-0.04em] text-rose-900">
@@ -1067,7 +1067,8 @@ const NewsStoryArticlePage = () => {
   })();
 
   const storyAuthor =
-    String(story?.author || "MobileX editorial").trim() || "MobileX editorial";
+    String(story?.author || "MobilesX editorial").trim() ||
+    "MobilesX editorial";
 
   const storyEditor = String(
     story?.editor || story?.editedBy || story?.editorName || "",
@@ -1358,21 +1359,21 @@ const NewsStoryArticlePage = () => {
               <aside className="hooks-article-lead-rail">
                 <div className="hooks-article-source-card">
                   <div className="hooks-article-source-card__brand">
-                    <MobileXLogo
+                    <MobilesXLogo
                       className="hooks-article-source-card__logo"
-                      aria-label="MobileX"
+                      aria-label="MobilesX"
                       darkBackground={false}
                     />
 
                     <div>
-                      <strong>MobileX News</strong>
+                      <strong>MobilesX News</strong>
 
                       <span>Research smarter</span>
                     </div>
                   </div>
 
                   <p>
-                    Add MobileX as a preferred source to see our technology
+                    Add MobilesX as a preferred source to see our technology
                     reporting more often.
                   </p>
 
@@ -1539,7 +1540,7 @@ const NewsStoryArticlePage = () => {
 
                     <p>
                       {story?.authorBio ||
-                        "Technology reporting and buying intelligence from MobileX news."}
+                        "Technology reporting and buying intelligence from MobilesX news."}
                     </p>
                   </div>
                 </section>
@@ -1625,7 +1626,7 @@ const NewsStoryArticlePage = () => {
 
             <aside className="hooks-article-right-rail">
               <div className="hooks-article-sticky-stack hooks-article-sticky-stack--right">
-                {/* MobileX News card */}
+                {/* MobilesX News card */}
                 <section
                   className="
                     relative overflow-hidden
@@ -1649,9 +1650,9 @@ const NewsStoryArticlePage = () => {
 
                   <div className="relative z-10">
                     <div className="flex items-center gap-3">
-                      <MobileXLogo
+                      <MobilesXLogo
                         className="h-7 w-auto sm:h-8"
-                        aria-label="MobileX"
+                        aria-label="MobilesX"
                         darkBackground={false}
                       />
 
@@ -1663,7 +1664,7 @@ const NewsStoryArticlePage = () => {
                           text-[#2563EB]
                         "
                       >
-                        MOBILEX NEWS
+                        MOBILESX NEWS
                       </span>
                     </div>
 

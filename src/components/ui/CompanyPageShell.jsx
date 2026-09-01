@@ -13,7 +13,7 @@ const CompanyPageShell = ({
   highlights = [],
   sections = [],
   children,
-  contactLabel = "Contact MobileX",
+  contactLabel = "Contact MobilesX",
   contactTo = "/contact",
 }) => (
   <main className="hooks-company-page min-h-screen">
@@ -126,7 +126,7 @@ const CompanyPageShell = ({
           <div>
             <p className="hooks-eyebrow">Need a human response?</p>
 
-            <h2>Connect with the MobileX team.</h2>
+            <h2>Connect with the MobilesX team.</h2>
 
             <p>
               Use the contact page for product-data corrections, editorial

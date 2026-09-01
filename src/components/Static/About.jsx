@@ -36,19 +36,19 @@ const highlights = [
 
 const sections = [
   {
-    id: "why-mobilex",
-    title: "Why MobileX exists",
+    id: "why-mobilesx",
+    title: "Why MobilesX exists",
     description:
       "Choosing a device should be a research process, not a tab-collecting exercise.",
     paragraphs: [
       "Modern smartphones come with more specifications than ever, but more specifications do not automatically make a decision easier. What matters is understanding which differences are meaningful and how they affect the experience.",
-      "MobileX brings product discovery, specifications, comparisons, pricing context and technology coverage into one connected experience. The goal is simple: help people move from a search to a confident decision with less friction.",
+      "MobilesX brings product discovery, specifications, comparisons, pricing context and technology coverage into one connected experience. The goal is simple: help people move from a search to a confident decision with less friction.",
     ],
   },
 
   {
-    id: "how-mobilex-works",
-    title: "How MobileX helps",
+    id: "how-mobilesx-works",
+    title: "How MobilesX helps",
     description:
       "The platform is designed around the way people actually research smartphones.",
     paragraphs: [
@@ -67,7 +67,7 @@ const sections = [
     title: "Our editorial standards",
     description: "Clarity, attribution and context come before hype.",
     paragraphs: [
-      "MobileX aims to distinguish confirmed information from early reports, manufacturer claims from practical interpretation and editorial context from raw product data.",
+      "MobilesX aims to distinguish confirmed information from early reports, manufacturer claims from practical interpretation and editorial context from raw product data.",
       "When information changes, affected pages should be updated and corrections should remain easy for readers to report.",
     ],
     bullets: [
@@ -83,7 +83,7 @@ const sections = [
     title: "Product data and accuracy",
     description: "Specifications are useful only when their context is clear.",
     paragraphs: [
-      "Specifications, prices and availability may vary by region, configuration, retailer and software version. MobileX organises this information for research, but important purchase details should always be verified with the manufacturer or retailer.",
+      "Specifications, prices and availability may vary by region, configuration, retailer and software version. MobilesX organises this information for research, but important purchase details should always be verified with the manufacturer or retailer.",
       "Readers can report incorrect specifications, outdated information or broken links through the contact page. These reports help improve the quality of the platform.",
     ],
     bullets: [
@@ -96,11 +96,11 @@ const sections = [
 
   {
     id: "future",
-    title: "Where MobileX is going",
+    title: "Where MobilesX is going",
     description:
       "Build a better decision system, not simply a larger catalogue.",
     paragraphs: [
-      "MobileX is evolving toward stronger comparison explanations, clearer recommendation signals, more transparent product timelines and deeper connections between product research and editorial coverage.",
+      "MobilesX is evolving toward stronger comparison explanations, clearer recommendation signals, more transparent product timelines and deeper connections between product research and editorial coverage.",
       "The long-term objective is to help every visitor understand what a device offers, why it may fit their needs and which trade-offs they are accepting.",
     ],
   },
@@ -110,26 +110,26 @@ const About = () => {
   const canonical = `${SITE_ORIGIN}/about/`;
 
   const schema = createAboutPageSchema({
-    name: "About MobileX",
+    name: "About MobilesX",
     description:
-      "Learn how MobileX connects smartphone discovery, comparisons, specifications, pricing context and technology reporting to help people make clearer mobile buying decisions.",
+      "Learn how MobilesX connects smartphone discovery, comparisons, specifications, pricing context and technology reporting to help people make clearer mobile buying decisions.",
     url: canonical,
-    organizationName: "MobileX",
+    organizationName: "MobilesX",
   });
 
   return (
     <>
       <SEO
-        title="About MobileX | Technology Research and Comparisons"
-        description="Learn how MobileX helps people discover smartphones, compare specifications, understand trade-offs and follow relevant mobile technology news."
+        title="About MobilesX | Technology Research and Comparisons"
+        description="Learn how MobilesX helps people discover smartphones, compare specifications, understand trade-offs and follow relevant mobile technology news."
         url={canonical}
         schema={schema}
       />
 
       <CompanyPageShell
-        eyebrow="About MobileX"
+        eyebrow="About MobilesX"
         title="A clearer way to research your next smartphone."
-        intro="MobileX is a smartphone research and technology publishing platform built to turn complex specifications into useful decisions."
+        intro="MobilesX is a smartphone research and technology publishing platform built to turn complex specifications into useful decisions."
         icon={FaChartLine}
         highlights={highlights}
         sections={sections}

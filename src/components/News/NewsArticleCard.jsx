@@ -19,7 +19,7 @@ const NewsArticleCard = ({
   const {
     title = "Untitled Article",
     image = "",
-    author = "MobileX News",
+    author = "MobilesX News",
     publishedAt = "",
     updatedAt = "",
     label = "Update",

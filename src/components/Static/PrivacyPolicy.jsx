@@ -23,7 +23,7 @@ const highlights = [
   {
     icon: FaEye,
     title: "Clear purpose",
-    text: "Information is used to operate, secure and improve the MobileX experience.",
+    text: "Information is used to operate, secure and improve the MobilesX experience.",
   },
   {
     icon: FaLock,
@@ -33,7 +33,7 @@ const highlights = [
   {
     icon: FaUserCheck,
     title: "Choices and requests",
-    text: "Users can contact MobileX about privacy questions, corrections or deletion requests where applicable.",
+    text: "Users can contact MobilesX about privacy questions, corrections or deletion requests where applicable.",
   },
 ];
 
@@ -42,8 +42,8 @@ const sections = [
     id: "scope",
     title: "Scope of this policy",
     paragraphs: [
-      "This Privacy Policy explains how MobileX handles information when you visit mobilesx.in, use smartphone discovery and comparison features, read editorial content, submit a contact request or interact with related services.",
-      "This policy applies to information handled by MobileX. Third-party retailers, analytics providers, advertising platforms and external websites operate under their own privacy policies.",
+      "This Privacy Policy explains how MobilesX handles information when you visit mobilesx.in, use smartphone discovery and comparison features, read editorial content, submit a contact request or interact with related services.",
+      "This policy applies to information handled by MobilesX. Third-party retailers, analytics providers, advertising platforms and external websites operate under their own privacy policies.",
     ],
   },
 
@@ -51,7 +51,7 @@ const sections = [
     id: "information-collected",
     title: "Information we may collect",
     description:
-      "The information available to MobileX depends on how you use the platform.",
+      "The information available to MobilesX depends on how you use the platform.",
     bullets: [
       "Information you provide directly, such as your name, email address and message when contacting the team",
       "Technical information such as browser type, device type, operating system, approximate region, referring page and IP-related security signals",
@@ -78,7 +78,7 @@ const sections = [
     id: "cookies-and-measurement",
     title: "Cookies, analytics and similar technologies",
     paragraphs: [
-      "MobileX may use cookies, local storage, analytics tools and similar technologies to remember preferences, understand usage, measure performance and support advertising or affiliate attribution. Some technologies may be provided by third parties.",
+      "MobilesX may use cookies, local storage, analytics tools and similar technologies to remember preferences, understand usage, measure performance and support advertising or affiliate attribution. Some technologies may be provided by third parties.",
       "You can control many cookies through your browser settings. Blocking some technologies may affect preferences, analytics, notifications or parts of the site experience.",
     ],
   },
@@ -87,7 +87,7 @@ const sections = [
     id: "sharing",
     title: "When information may be shared",
     paragraphs: [
-      "MobileX does not sell personal information as a standalone data product. Information may be shared with service providers that support hosting, analytics, communications, security, advertising, affiliate measurement or other platform operations, subject to appropriate contractual or technical controls where applicable.",
+      "MobilesX does not sell personal information as a standalone data product. Information may be shared with service providers that support hosting, analytics, communications, security, advertising, affiliate measurement or other platform operations, subject to appropriate contractual or technical controls where applicable.",
       "Information may also be disclosed when required by law, necessary to protect rights or safety, or connected with a legitimate business reorganisation, acquisition or transfer of assets.",
     ],
   },
@@ -97,7 +97,7 @@ const sections = [
     title: "Retention and security",
     paragraphs: [
       "Information is retained only for as long as reasonably necessary for the purposes described in this policy, including support, security, analytics, dispute resolution and legal requirements. Retention periods can vary by information type and service provider.",
-      "No online system can guarantee absolute security. MobileX uses reasonable safeguards, but users should avoid sending sensitive personal, financial or authentication information through general contact channels.",
+      "No online system can guarantee absolute security. MobilesX uses reasonable safeguards, but users should avoid sending sensitive personal, financial or authentication information through general contact channels.",
     ],
   },
 
@@ -109,7 +109,7 @@ const sections = [
       "Disable notifications through browser or device settings",
       "Request correction or deletion of information you submitted, where applicable",
       "Ask how a privacy request will be verified and processed",
-      "Contact MobileX with questions about this policy or the handling of your information",
+      "Contact MobilesX with questions about this policy or the handling of your information",
     ],
   },
 
@@ -117,7 +117,7 @@ const sections = [
     id: "children",
     title: "Children's privacy",
     paragraphs: [
-      "MobileX is a general-audience technology platform and is not designed to knowingly collect personal information from children below the age required for independent consent in their jurisdiction. A parent or guardian who believes a child provided personal information may contact MobileX for review.",
+      "MobilesX is a general-audience technology platform and is not designed to knowingly collect personal information from children below the age required for independent consent in their jurisdiction. A parent or guardian who believes a child provided personal information may contact MobilesX for review.",
     ],
   },
 
@@ -142,17 +142,17 @@ const PrivacyPolicy = () => {
   const canonical = `${SITE_ORIGIN}/privacy-policy/`;
 
   const schema = createWebPageSchema({
-    name: "MobileX Privacy Policy",
+    name: "MobilesX Privacy Policy",
     description:
-      "Learn how MobileX may collect, use, protect and share information across its smartphone discovery, comparison, news and support experiences.",
+      "Learn how MobilesX may collect, use, protect and share information across its smartphone discovery, comparison, news and support experiences.",
     url: canonical,
   });
 
   return (
     <>
       <SEO
-        title="Privacy Policy | MobileX"
-        description="Read the MobileX Privacy Policy covering information collection, cookies, analytics, security, retention, service providers and privacy choices."
+        title="Privacy Policy | MobilesX"
+        description="Read the MobilesX Privacy Policy covering information collection, cookies, analytics, security, retention, service providers and privacy choices."
         url={canonical}
         schema={schema}
       />
@@ -160,7 +160,7 @@ const PrivacyPolicy = () => {
       <CompanyPageShell
         eyebrow="Privacy Policy"
         title="Privacy information in plain language."
-        intro="This policy explains what information MobileX may handle, why it is used, when service providers may receive it and which choices are available to users."
+        intro="This policy explains what information MobilesX may handle, why it is used, when service providers may receive it and which choices are available to users."
         updated={EFFECTIVE_DATE}
         icon={FaShieldAlt}
         highlights={highlights}

@@ -559,7 +559,7 @@ const renderSectionSubtitle = (title = "", itemNounLower = "devices") => {
     return "Freshly launched phones you can compare right now.";
   }
   if (value === "smart popular links") {
-    return "Quick shortcuts users explore most on MobileX.";
+    return "Quick shortcuts users explore most on MobilesX.";
   }
   if (value === "latest launches") {
     return `Freshly launched ${itemNounLower}s you can compare right now.`;

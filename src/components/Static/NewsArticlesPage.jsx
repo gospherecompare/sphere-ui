@@ -62,7 +62,7 @@ const NEWS_TAXONOMY = [
     slug: "technology",
     label: "Technology",
     title: "Technology News",
-    eyebrow: "MobileX Technology Desk",
+    eyebrow: "MobilesX Technology Desk",
     description:
       "AI, smartphones, chips, laptops, cybersecurity, software, robotics, and the product shifts shaping what people buy next.",
     accent: "from-[#0f172a] via-[#1d4ed8] to-[#06b6d4]",
@@ -490,7 +490,7 @@ const filterStoriesForTaxonomyRoute = (stories = [], route = null) =>
     : stories;
 
 const getNewsPageTitle = (route = null) =>
-  route ? `${route.title} - MobileX News` : NEWS_LISTING_SEO.title;
+  route ? `${route.title} - MobilesX News` : NEWS_LISTING_SEO.title;
 
 const getNewsPageDescription = (route = null) =>
   route ? route.description : NEWS_LISTING_SEO.description;
@@ -712,7 +712,7 @@ const StoryAuthorLine = ({ story, light = false, compact = false }) => (
       ) : null}
     </span>
     <span className="hooks-news-author__copy">
-      <strong>{story?.author || "MobileX News"}</strong>
+      <strong>{story?.author || "MobilesX News"}</strong>
       <i aria-hidden="true" />
       <span>
         {compact
@@ -729,7 +729,7 @@ const NewsHero = ({ title, description, leadStory }) => (
     <div className="mx-auto max-w-[1280px] px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
       <div className="hooks-news-hero__grid">
         <div className="hooks-news-hero__copy">
-          <p className="hooks-eyebrow">MobileX News</p>
+          <p className="hooks-eyebrow">MobilesX News</p>
           <h1>{title}</h1>
           <p>{description}</p>
 
@@ -769,7 +769,7 @@ const NewsHero = ({ title, description, leadStory }) => (
         <div className="hooks-news-hero__visual" aria-hidden="true">
           <div className="hooks-news-hero__news-card">
             <span className="hooks-news-hero__card-kicker">
-              MobileX intelligence
+              MobilesX intelligence
             </span>
             <strong>NEWS</strong>
             <p className="!font-[Space_Grotesk] !text-white/85 !text-[0.82rem] !font-bold !leading-[1.18] !tracking-[-0.04em]">
@@ -778,7 +778,7 @@ const NewsHero = ({ title, description, leadStory }) => (
               Better decisions.
             </p>
             <span className="hooks-news-hero__card-badge">
-              <FaBolt className="h-3 w-3" /> MobileX news
+              <FaBolt className="h-3 w-3" /> MobilesX news
             </span>
           </div>
 
@@ -1656,13 +1656,13 @@ const NewsArticlesPage = () => {
         : []),
     ]),
     createCollectionSchema({
-      name: taxonomyRoute?.title || "MobileX News",
+      name: taxonomyRoute?.title || "MobilesX News",
       description: pageDescription,
       url: canonical,
       image: "https://mobilesx.in/mobilex-favicon.svg",
     }),
     createWebPageSchema({
-      name: taxonomyRoute?.title || "MobileX News",
+      name: taxonomyRoute?.title || "MobilesX News",
       description: pageDescription,
       url: canonical,
     }),

@@ -57,7 +57,7 @@ const GooglePreferredSourceButton = ({
       href={PREFERRED_SOURCE_URL}
       target="_blank"
       rel="noopener noreferrer"
-      aria-label="Add MobileX as a preferred source on Google"
+      aria-label="Add MobilesX as a preferred source on Google"
       className={[
         isArticle
           ? "group flex w-full max-w-full flex-col items-start gap-3 rounded-sm bg-[#f8fafc] px-4 py-3 text-left transition hover:bg-[#f3f6fb] focus:outline-none focus:ring-2 focus:ring-[#4285f4] focus:ring-offset-2 sm:min-h-[64px] sm:flex-row sm:items-center sm:justify-between"
@@ -80,8 +80,8 @@ const GooglePreferredSourceButton = ({
             ].join(" ")}
           >
             {isArticle
-              ? "Add MobileX as a preferred source on Google"
-              : "Add MobileX as a preferred source"}
+              ? "Add MobilesX as a preferred source on Google"
+              : "Add MobilesX as a preferred source"}
           </span>
           <span
             className={[

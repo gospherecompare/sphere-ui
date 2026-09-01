@@ -617,17 +617,17 @@ const buildCompareTitleText = ({
   const vsJoined = cleanNames.join(" vs ");
 
   if (!vsJoined)
-    return "Compare Smartphones, TVs & Gadgets Side by Side | MobileX";
+    return "Compare Smartphones, TVs & Gadgets Side by Side | MobilesX";
 
   if (cleanNames.length === 2) {
-    return `${vsJoined} | MobileX`;
+    return `${vsJoined} | MobilesX`;
   }
 
   if (cleanNames.length === 3) {
-    return `${vsJoined} | MobileX`;
+    return `${vsJoined} | MobilesX`;
   }
 
-  return "Compare Smartphones, TVs & Gadgets Side by Side | MobileX";
+  return "Compare Smartphones, TVs & Gadgets Side by Side | MobilesX";
 };
 
 const buildCompareDescriptionText = ({
@@ -640,15 +640,15 @@ const buildCompareDescriptionText = ({
 
   const joined = joinCompareNamesWithoutCommas(names);
   if (!joined) {
-    return "Compare devices with latest price specifications camera battery performance and features in India. | MobileX";
+    return "Compare devices with latest price specifications camera battery performance and features in India. | MobilesX";
   }
 
   const segment = String(segmentLabel || "").trim();
   if (segment) {
-    return `See how ${joined} compare in the ${segment} segment on price, specifications, camera, battery, and performance in India. | MobileX`;
+    return `See how ${joined} compare in the ${segment} segment on price, specifications, camera, battery, and performance in India. | MobilesX`;
   }
 
-  return `See how ${joined} compare on price, specifications, camera, battery, and performance in India. | MobileX`;
+  return `See how ${joined} compare on price, specifications, camera, battery, and performance in India. | MobilesX`;
 };
 
 const sortCompareEntries = (left, right) => {
@@ -4408,8 +4408,8 @@ const MobileCompare = () => {
           publishedTitle: publishedComparePage?.title || "",
         })
       : canonicalCompareEntries.length > 0
-        ? `Compare Selected Devices: Specs, Prices & Differences | MobileX`
-        : `Compare Technology Products Side by Side | MobileX`;
+        ? `Compare Selected Devices: Specs, Prices & Differences | MobilesX`
+        : `Compare Technology Products Side by Side | MobilesX`;
   const normalizedMetaTitle = normalizeSeoTitle(metaTitle);
 
   const metaDescription =
@@ -4420,8 +4420,8 @@ const MobileCompare = () => {
           publishedDescription: publishedComparePage?.meta_description || "",
         })
       : canonicalCompareEntries.length > 0
-        ? "Compare selected devices with detailed specifications, price, camera, display, battery, performance, software, benchmarks, and key differences on MobileX."
-        : "Compare devices with detailed specifications, price, camera, display, battery, performance, software, benchmarks, and key differences on MobileX.";
+        ? "Compare selected devices with detailed specifications, price, camera, display, battery, performance, software, benchmarks, and key differences on MobilesX."
+        : "Compare devices with detailed specifications, price, camera, display, battery, performance, software, benchmarks, and key differences on MobilesX.";
   const _metaKeywords = useMemo(
     () =>
       buildListSeoKeywords({
@@ -4492,7 +4492,7 @@ const MobileCompare = () => {
         const price = resolveLowestPriceForSeo(device);
         const schema = createProductSchema({
           name,
-          description: `${name} price, specifications, and comparison details on MobileX.`,
+          description: `${name} price, specifications, and comparison details on MobilesX.`,
           image:
             device?.image ||
             (Array.isArray(device?.images) ? device.images[0] : ""),
@@ -4718,7 +4718,7 @@ const MobileCompare = () => {
 
     if (!positive.length) {
       const score = getDeviceSpecScore(device);
-      if (score) positive.push(`${score}/100 MobileX specification score`);
+      if (score) positive.push(`${score}/100 MobilesX specification score`);
       const price = getCardPrice(device, getSelectedVariant(device));
       if (price) positive.push(`Available from ${formatPrice(price)}`);
     }
@@ -5697,7 +5697,7 @@ const MobileCompare = () => {
     ),
     explanation: compareInsights.overallWinner
       ? "Based on available specification scores and selected-variant prices."
-      : "The server verdict is unavailable, so MobileX is showing a directional specification-based comparison.",
+      : "The server verdict is unavailable, so MobilesX is showing a directional specification-based comparison.",
   };
   const resolvedConfidence = compareDecision.confidence || fallbackConfidence;
 
@@ -6331,14 +6331,14 @@ const MobileCompare = () => {
 
         <header className="hc-section flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <p className="hc-eyebrow">MobileX comparison intelligence</p>
+            <p className="hc-eyebrow">MobilesX comparison intelligence</p>
             <h1 className="hc-heading font-[Space_Grotesk]">
               Compare smartphones side by side
             </h1>
             <p className="hc-copy">
               {isComparing && activeDevices.length >= MIN_DEVICES
                 ? `${activeDevices.map((device) => getDeviceName(device)).join(" vs ")} — compare price, performance, camera, battery, launch timing and complete specifications in one decision-focused view.`
-                : "Select two to four phones. MobileX will explain meaningful differences, the newer choice, category leaders, price value and the trade-offs you make."}
+                : "Select two to four phones. MobilesX will explain meaningful differences, the newer choice, category leaders, price value and the trade-offs you make."}
             </p>
           </div>
 
@@ -6575,7 +6575,7 @@ const MobileCompare = () => {
                             <strong>
                               {formatComparisonScore(comparisonScore)}
                             </strong>
-                            <span>MobileX score</span>
+                            <span>MobilesX score</span>
                           </div>
                         </div>
                       </div>
@@ -6669,7 +6669,7 @@ const MobileCompare = () => {
                 <FaTrophy className="h-16 w-16" />
               </div>
               <div className="hc-verdict-card__content">
-                <p className="hc-eyebrow">MobileX comparison verdict</p>
+                <p className="hc-eyebrow">MobilesX comparison verdict</p>
                 <span className="hc-verdict-badge">Best overall</span>
                 <h2>
                   {resolvedOverallWinner
@@ -7608,7 +7608,7 @@ const MobileCompare = () => {
             <div className="hc-section-title">
               <div>
                 <p className="hc-eyebrow">Comparison FAQs</p>
-                <h2>Understand the MobileX verdict</h2>
+                <h2>Understand the MobilesX verdict</h2>
               </div>
             </div>
             <div className="grid gap-3 lg:grid-cols-3">

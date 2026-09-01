@@ -114,7 +114,7 @@ const BrandIdentity = ({ variant = "desktop", darkBackground = false }) => {
   return (
     <span
       className={`inline-flex shrink-0 items-center ${logoClass}`}
-      aria-label="MobileX"
+      aria-label="MobilesX"
       role="img"
     >
       <svg
@@ -1964,7 +1964,8 @@ const Header = () => {
     const imageUrl = getSuggestionImage(suggestion);
     const { brand, model } = getSuggestionBrandAndModel(suggestion);
     const typeLabel = getSuggestionTypeLabel(suggestion);
-    const modelText = model || brand || readFirstText(suggestion?.name, suggestion?.model);
+    const modelText =
+      model || brand || readFirstText(suggestion?.name, suggestion?.model);
 
     const buttonClasses = isMobileVariant
       ? `group flex w-full items-center gap-3 px-2 py-3 text-left transition-colors duration-200 border-b border-slate-200 bg-transparent last:border-b-0 ${
@@ -2285,7 +2286,7 @@ const Header = () => {
           <Link
             to="/"
             className="inline-grid min-w-0 w-max gap-[0.05rem] text-[var(--hooks-text)] no-underline [&_small]:overflow-hidden [&_small]:text-ellipsis [&_small]:whitespace-nowrap [&_small]:text-[0.55rem] [&_small]:font-[800] [&_small]:uppercase [&_small]:tracking-[0.12em] [&_small]:text-[var(--hooks-muted)]"
-            aria-label="MobileX home"
+            aria-label="MobilesX home"
           >
             <BrandIdentity variant="mobile" />
             <small className="hidden md:block">Device intelligence</small>{" "}
@@ -2296,7 +2297,7 @@ const Header = () => {
               type="button"
               onClick={() => setIsSearchOpen(true)}
               className="inline-flex h-10 w-10 items-center justify-center rounded-[14px] text-[var(--hooks-text-soft)] transition-all duration-[170ms] hover:-translate-y-px hover:border-[color-mix(in_srgb,var(--hooks-brand)_40%,var(--hooks-line))] hover:text-[var(--hooks-brand)]"
-              aria-label="Search MobileX"
+              aria-label="Search MobilesX"
             >
               <FaSearch aria-hidden="true" />
             </button>
@@ -2346,7 +2347,7 @@ const Header = () => {
           <Link
             to="/"
             className="flex items-center text-inherit no-underline"
-            aria-label="MobileX home"
+            aria-label="MobilesX home"
           >
             <BrandIdentity variant="desktop" />
           </Link>
@@ -2417,7 +2418,7 @@ const Header = () => {
                   }}
                   onKeyDown={handleSearchKeyDown}
                   placeholder="Search devices, brands or specifications"
-                  aria-label="Search MobileX"
+                  aria-label="Search MobilesX"
                   className="w-full border-0 bg-transparent px-2 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
                 />
                 <button

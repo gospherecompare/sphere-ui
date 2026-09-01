@@ -11,8 +11,8 @@ const NotFound = () => {
   return (
     <>
       <SEO
-        title="Page Not Found | MobileX"
-        description="The page you are looking for was not found. Explore smartphones, laptops, TVs, and trending products on MobileX."
+        title="Page Not Found | MobilesX"
+        description="The page you are looking for was not found. Explore smartphones, laptops, TVs, and trending products on MobilesX."
         url={canonicalUrl}
         robots="noindex, nofollow"
       />

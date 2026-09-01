@@ -43,7 +43,7 @@ const routeLabels = {
   compare: "Compare",
   "popular-comparisons": "Popular Comparisons",
   news: "News",
-  about: "About MobileX",
+  about: "About MobilesX",
   careers: "Careers",
   contact: "Contact",
   "privacy-policy": "Privacy Policy",

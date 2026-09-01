@@ -101,14 +101,14 @@ const LatestNewsArticlesSection = () => {
           <header className="hooks-newsroom-masthead">
             <div className="hooks-newsroom-masthead__copy">
               <p>
-                <FaSignal aria-hidden="true" /> MobileX newsroom
+                <FaSignal aria-hidden="true" /> MobilesX newsroom
               </p>
               <h2 id="hooks-newsroom-title">
                 Technology news designed for better product decisions
               </h2>
               <span>
                 Launch coverage, practical explainers and product-linked
-                reporting from the live MobileX editorial feed.
+                reporting from the live MobilesX editorial feed.
               </span>
             </div>
 
@@ -163,7 +163,7 @@ const LatestNewsArticlesSection = () => {
                     <div className="hooks-newsroom-lead__footer">
                       <span>
                         <b>{lead.author}</b>
-                        <small>{lead.authorRole || "MobileX newsroom"}</small>
+                        <small>{lead.authorRole || "MobilesX newsroom"}</small>
                       </span>
                       <strong>
                         Read full story <FaArrowRight aria-hidden="true" />
@@ -203,7 +203,7 @@ const LatestNewsArticlesSection = () => {
 
               <aside
                 className="hooks-newsroom-sidebar"
-                aria-label="MobileX newsroom live desk"
+                aria-label="MobilesX newsroom live desk"
               >
                 <div className="hooks-newsroom-pulse">
                   <div className="hooks-newsroom-pulse__heading">

@@ -32,7 +32,7 @@ export const mobileXContactChannels = [
       "For messages that need a first review before being sent to support, editorial, or business.",
 
     story:
-      "The contact inbox is the front door for MobileX. It helps broad questions, suggestions, and general requests get routed cleanly.",
+      "The contact inbox is the front door for MobilesX. It helps broad questions, suggestions, and general requests get routed cleanly.",
   },
 
   {
@@ -50,7 +50,7 @@ export const mobileXContactChannels = [
       "For product launches, press material, editorial tips, and news corrections.",
 
     story:
-      "The news inbox supports the editorial side of MobileX, where launches, product updates, and useful mobile technology context become clearer stories for readers.",
+      "The news inbox supports the editorial side of MobilesX, where launches, product updates, and useful mobile technology context become clearer stories for readers.",
   },
 
   {
@@ -65,10 +65,10 @@ export const mobileXContactChannels = [
     headline: "Help, corrections, and product data",
 
     summary:
-      "For incorrect specifications, broken pages, comparison issues, and help using MobileX.",
+      "For incorrect specifications, broken pages, comparison issues, and help using MobilesX.",
 
     story:
-      "The support inbox is where user questions, product-page corrections, and comparison issues are reviewed so MobileX can keep improving.",
+      "The support inbox is where user questions, product-page corrections, and comparison issues are reviewed so MobilesX can keep improving.",
   },
 ];
 

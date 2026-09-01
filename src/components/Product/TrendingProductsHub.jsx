@@ -60,7 +60,7 @@ const CATEGORIES = {
     id: "smartphones",
     label: "Smartphones",
     badge: "TRENDING SMARTPHONES",
-    title: `Trending Smartphones in India (${CURRENT_MONTH_YEAR}) | MobileX`,
+    title: `Trending Smartphones in India (${CURRENT_MONTH_YEAR}) | MobilesX`,
     description:
       "Browse trending smartphones across camera, battery, display, and performance so you can quickly spot which device truly fits your needs. Each phone can be evaluated by day-to-day photography, low-light shots, portrait quality, video stabilization, charging speed, chipset performance, RAM, storage, refresh rate, brightness, speaker quality, software experience, and long-term update support. This page brings those details together in one place, along with live prices from trusted online stores, so you do not have to jump between dozens of product pages or reviews. Whether you are searching for a flagship camera phone, a battery-focused budget pick, a gaming-ready powerhouse, or a balanced all-rounder for everyday use, the trending list helps you narrow the field quickly. Use the filters and product cards to sort by brand, price, or feature, then open the models that are gaining the most attention right now. You can also identify phones with fast charging, 5G support, AMOLED or OLED displays, high refresh rates, and generous storage options. The goal is simple: reduce confusion, highlight the strongest contenders, and help you choose a smartphone with confidence, value, and the right blend of performance and features. You can also review warranties, exchange offers, discounts, and color variants to find the best total value before you buy, and every week new launches reshuffle the lineup, so checking trends keeps you current.",
     endpoint: "/api/public/trending/smartphones?limit=120",
@@ -78,7 +78,7 @@ const CATEGORIES = {
     id: "laptops",
     label: "Laptops",
     badge: "TRENDING LAPTOPS",
-    title: `Trending Laptops in India (${CURRENT_MONTH_YEAR}) | MobileX`,
+    title: `Trending Laptops in India (${CURRENT_MONTH_YEAR}) | MobilesX`,
     description:
       "Browse trending laptops by processor, RAM, storage, display, and battery life, plus live prices from top online stores.",
     endpoint: "/api/public/trending/laptops?limit=120",
@@ -96,7 +96,7 @@ const CATEGORIES = {
     id: "tvs",
     label: "TVs",
     badge: "TRENDING TVS",
-    title: `Trending TVs in India (${CURRENT_MONTH_YEAR}) | MobileX`,
+    title: `Trending TVs in India (${CURRENT_MONTH_YEAR}) | MobilesX`,
     description:
       "Browse trending TVs by screen size, resolution, refresh rate, panel type, and smart features, plus live prices from top online stores.",
     endpoint: "/api/public/trending/tvs?limit=120",
@@ -1249,7 +1249,7 @@ const TrendingProductsHub = () => {
 
   const seoTitle = config.metaTitle.includes("|")
     ? config.metaTitle
-    : `${config.metaTitle} | MobileX`;
+    : `${config.metaTitle} | MobilesX`;
   const seoDescription = config.metaDescription;
   const seoKeywords = useMemo(() => {
     const baseKeywords = String(config.metaKeywords || "")
