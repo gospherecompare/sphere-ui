@@ -57,7 +57,7 @@ const Home = () => {
   return (
     <>
       <SEO
-        title="Compare Smartphones, TVs & Gadgets in India | MobileX"
+        title="Compare Smartphones, TVs & Gadgets in India | MobilesX"
         description="Compare smartphones, laptops, TVs and technology products with specifications, prices, feature comparisons and practical buying information."
         url="https://mobilesx.in/"
       />

@@ -3,11 +3,11 @@ import { toCanonicalPagePath, toCanonicalPageUrl } from "./publicUrl";
 export const NEWS_SITE_ORIGIN = "https://mobilesx.in";
 
 export const NEWS_LISTING_SEO = Object.freeze({
-  title: "Latest Technology News & Product Updates | MobileX",
+  title: "Tech News, Gadget Launches, Reviews & Buying Guides | MobilesX",
   description:
-    "Technology news, product launches, science updates, consumer tech, sports technology, and practical guides from MobileX News.",
+    "Stay updated with the latest smartphone, laptop, TV and gadget launches, reviews, comparisons, buying guides and AI-powered insights from MobilesX.",
   keywords:
-    "technology news, latest mobile news, science news, consumer tech news, sports technology, launch stories, practical guides, MobileX News",
+    "tech news, mobile news, gadget launches, smartphone updates, laptop news, tv news, buying guides, MobilesX News",
   canonicalPath: "/news",
   canonicalUrl: toCanonicalPageUrl("/news", NEWS_SITE_ORIGIN),
 });
@@ -91,7 +91,7 @@ const buildContextAwareDescription = (source = {}) => {
       source?.meta_title,
   );
   if (!title)
-    return "MobileX editorial coverage with the key details and context.";
+    return "MobilesX editorial coverage with the key details and context.";
 
   const rawTags = Array.isArray(source?.tags)
     ? source.tags
@@ -158,10 +158,12 @@ export const buildNewsArticleDescription = (
   );
 };
 
-const appendMobileXBrand = (value = "") => {
+const appendMobilesXBrand = (value = "") => {
   const title = stripNewsMarkup(value);
-  if (!title) return "MobileX News";
-  return /(?:^|[|\-—:]\s*)mobilex$/i.test(title) ? title : `${title} | MobileX`;
+  if (!title) return "MobilesX News";
+  return /(?:^|[|\-—:]\s*)mobilesx$/i.test(title)
+    ? title
+    : `${title} | MobilesX`;
 };
 
 export const buildNewsArticleCanonicalPath = (slug = "") => {
@@ -190,7 +192,7 @@ export const buildNewsArticleSeo = (
   return {
     slug,
     headline,
-    title: appendMobileXBrand(editorialTitle || headline),
+    title: appendMobilesXBrand(editorialTitle || headline),
     description: buildNewsArticleDescription(source, articleParagraphs),
     canonicalPath,
     canonicalUrl: toCanonicalPageUrl(canonicalPath, NEWS_SITE_ORIGIN),

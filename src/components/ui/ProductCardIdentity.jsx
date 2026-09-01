@@ -1,5 +1,5 @@
 import React from "react";
-import MobileXSpecScore from "./MobileXSpecScore";
+import MobilesXSpecScore from "./MobileXSpecScore";
 
 const ProductCardIdentity = ({ brand, title, score, price, meta = null }) => (
   <div className="min-w-0 space-y-2">
@@ -9,7 +9,7 @@ const ProductCardIdentity = ({ brand, title, score, price, meta = null }) => (
     <h3 className="line-clamp-2 text-xl font-black leading-tight tracking-tight text-slate-950 sm:text-2xl">
       {title || "Product"}
     </h3>
-    <MobileXSpecScore score={score} compact />
+    <MobilesXSpecScore score={score} compact />
     {meta ? (
       <div className="text-[11px] font-semibold leading-5 text-slate-500 sm:text-xs">
         {meta}

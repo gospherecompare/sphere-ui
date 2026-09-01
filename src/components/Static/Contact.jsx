@@ -46,9 +46,9 @@ const Contact = () => {
   const canonical = `${SITE_ORIGIN}/contact/`;
 
   const schema = createContactPageSchema({
-    name: "Contact MobileX",
+    name: "Contact MobilesX",
     description:
-      "Contact MobileX for product data corrections, support, editorial tips, press material, business partnerships and general enquiries.",
+      "Contact MobilesX for product data corrections, support, editorial tips, press material, business partnerships and general enquiries.",
     url: canonical,
     email: CONTACT_EMAIL,
   });
@@ -56,14 +56,14 @@ const Contact = () => {
   return (
     <>
       <SEO
-        title="Contact MobileX | Support, Corrections and Partnerships"
-        description="Contact the MobileX team for product data corrections, website support, editorial tips, press material, partnerships and general enquiries."
+        title="Contact MobilesX | Support, Corrections and Partnerships"
+        description="Contact the MobilesX team for product data corrections, website support, editorial tips, press material, partnerships and general enquiries."
         url={canonical}
         schema={schema}
       />
 
       <CompanyPageShell
-        eyebrow="Contact MobileX"
+        eyebrow="Contact MobilesX"
         title="Send your message to the right team."
         intro="Whether you found incorrect product data, have a technology story, need platform help or want to discuss a partnership, use the channel that best matches your request."
         icon={FaEnvelope}
@@ -74,7 +74,7 @@ const Contact = () => {
       >
         <section
           className="hooks-contact-grid"
-          aria-label="MobileX contact channels"
+          aria-label="MobilesX contact channels"
         >
           {mobileXContactChannels.map((channel) => {
             const Icon = iconByKey[channel.key] || FaEnvelope;

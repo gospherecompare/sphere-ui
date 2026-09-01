@@ -981,9 +981,9 @@ const Careers = () => {
   const canonical = toCanonicalPageUrl("/careers");
   const careersSchemaJson = JSON.stringify(
     createWebPageSchema({
-      name: "Careers at MobileX",
+      name: "Careers at MobilesX",
       description:
-        "Apply for frontend, backend, content developer, and fullstack roles at MobileX.",
+        "Apply for frontend, backend, content developer, and fullstack roles at MobilesX.",
       url: canonical,
     }),
   );
@@ -1394,14 +1394,14 @@ const Careers = () => {
   return (
     <>
       <SEO
-        title="Careers at MobileX"
-        description="Explore opportunities at MobileX and help build clearer product discovery, comparison, editorial and shopping experiences for technology buyers."
+        title="Careers at MobilesX"
+        description="Explore opportunities at MobilesX and help build clearer product discovery, comparison, editorial and shopping experiences for technology buyers."
         url={canonical}
         image={{
           url: CAREERS_OG_IMAGE,
           width: 1200,
           height: 630,
-          alt: "Careers at MobileX preview image",
+          alt: "Careers at MobilesX preview image",
         }}
       >
         {careersSchemaJson && (

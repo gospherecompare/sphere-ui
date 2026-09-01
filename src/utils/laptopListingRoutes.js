@@ -246,9 +246,9 @@ export const buildLaptopListingSeoMeta = (
 
   if (routeMeta.latest) {
     return {
-      title: `Latest Laptops in India (${monthYear}) | MobileX`,
+      title: `Latest Laptops in India (${monthYear}) | MobilesX`,
       description:
-        "Browse the latest laptops added in India with updated prices, processor details, RAM, storage, display specifications, and store availability on MobileX.",
+        "Browse the latest laptops added in India with updated prices, processor details, RAM, storage, display specifications, and store availability on MobilesX.",
       heading: "Latest Laptops in India",
       eyebrow: "LATEST LAPTOPS",
     };
@@ -256,8 +256,8 @@ export const buildLaptopListingSeoMeta = (
 
   if (brand && firstFeature) {
     return {
-      title: `Best ${brand} ${firstFeature.name} Laptops in India (${monthYear}) | MobileX`,
-      description: `Compare the best ${brand} ${firstFeature.name} laptops in India with updated prices, detailed specifications, and store offers on MobileX.`,
+      title: `Best ${brand} ${firstFeature.name} Laptops in India (${monthYear}) | MobilesX`,
+      description: `Compare the best ${brand} ${firstFeature.name} laptops in India with updated prices, detailed specifications, and store offers on MobilesX.`,
       heading: `${brand} ${firstFeature.name} Laptops`,
       eyebrow: `${brand.toUpperCase()} ${firstFeature.name.toUpperCase()}`,
     };
@@ -265,8 +265,8 @@ export const buildLaptopListingSeoMeta = (
 
   if (brand && budget) {
     return {
-      title: `Best ${brand} Laptops Under ${budgetText} in India (${monthYear}) | MobileX`,
-      description: `Compare ${brand} laptops under ${budgetText} in India with updated prices, specifications, and store offers on MobileX.`,
+      title: `Best ${brand} Laptops Under ${budgetText} in India (${monthYear}) | MobilesX`,
+      description: `Compare ${brand} laptops under ${budgetText} in India with updated prices, specifications, and store offers on MobilesX.`,
       heading: `${brand} Laptops Under ${budgetText}`,
       eyebrow: `${brand.toUpperCase()} BUDGET LAPTOPS`,
     };
@@ -274,8 +274,8 @@ export const buildLaptopListingSeoMeta = (
 
   if (firstFeature && secondFeature) {
     return {
-      title: `Best ${firstFeature.name} Laptops with ${secondFeature.name} in India (${monthYear}) | MobileX`,
-      description: `Compare the best ${firstFeature.name} laptops with ${secondFeature.name}, updated prices, detailed specifications, and store offers on MobileX.`,
+      title: `Best ${firstFeature.name} Laptops with ${secondFeature.name} in India (${monthYear}) | MobilesX`,
+      description: `Compare the best ${firstFeature.name} laptops with ${secondFeature.name}, updated prices, detailed specifications, and store offers on MobilesX.`,
       heading: `${firstFeature.name} Laptops with ${secondFeature.name}`,
       eyebrow: "FEATURED LAPTOPS",
     };
@@ -283,8 +283,8 @@ export const buildLaptopListingSeoMeta = (
 
   if (firstFeature && budget) {
     return {
-      title: `Best ${firstFeature.name} Laptops Under ${budgetText} in India (${monthYear}) | MobileX`,
-      description: `Compare the best ${firstFeature.name} laptops under ${budgetText} in India with updated prices, specifications, and store offers on MobileX.`,
+      title: `Best ${firstFeature.name} Laptops Under ${budgetText} in India (${monthYear}) | MobilesX`,
+      description: `Compare the best ${firstFeature.name} laptops under ${budgetText} in India with updated prices, specifications, and store offers on MobilesX.`,
       heading: `${firstFeature.name} Laptops Under ${budgetText}`,
       eyebrow: "FEATURE BUDGET LAPTOPS",
     };
@@ -292,8 +292,8 @@ export const buildLaptopListingSeoMeta = (
 
   if (budget) {
     return {
-      title: `Best Laptops Under ${budgetText} in India (${monthYear}) | MobileX`,
-      description: `Compare the best laptops under ${budgetText} in India with updated prices, processor details, RAM, storage, display specifications, and store offers on MobileX.`,
+      title: `Best Laptops Under ${budgetText} in India (${monthYear}) | MobilesX`,
+      description: `Compare the best laptops under ${budgetText} in India with updated prices, processor details, RAM, storage, display specifications, and store offers on MobilesX.`,
       heading: `Best Laptops Under ${budgetText}`,
       eyebrow: "BUDGET LAPTOPS",
     };
@@ -301,8 +301,8 @@ export const buildLaptopListingSeoMeta = (
 
   if (brand) {
     return {
-      title: `${brand} Laptops in India (${monthYear}) | MobileX`,
-      description: `Browse ${brand} laptops in India with the latest models, updated prices, detailed specifications, and store offers on MobileX.`,
+      title: `${brand} Laptops in India (${monthYear}) | MobilesX`,
+      description: `Browse ${brand} laptops in India with the latest models, updated prices, detailed specifications, and store offers on MobilesX.`,
       heading: `${brand} Laptops in India`,
       eyebrow: `${brand.toUpperCase()} LAPTOPS`,
     };
@@ -310,17 +310,17 @@ export const buildLaptopListingSeoMeta = (
 
   if (firstFeature) {
     return {
-      title: `Best ${firstFeature.name} Laptops in India (${monthYear}) | MobileX`,
-      description: `Compare the best ${firstFeature.name} laptops in India with updated prices, detailed specifications, and store offers on MobileX.`,
+      title: `Best ${firstFeature.name} Laptops in India (${monthYear}) | MobilesX`,
+      description: `Compare the best ${firstFeature.name} laptops in India with updated prices, detailed specifications, and store offers on MobilesX.`,
       heading: `${firstFeature.name} Laptops in India`,
       eyebrow: `${firstFeature.name.toUpperCase()} LAPTOPS`,
     };
   }
 
   return {
-    title: `Best Laptops in India (${monthYear}) | MobileX`,
+    title: `Best Laptops in India (${monthYear}) | MobilesX`,
     description:
-      "Compare the best laptops in India across brands, budgets, processors, RAM, storage, displays, and store prices on MobileX.",
+      "Compare the best laptops in India across brands, budgets, processors, RAM, storage, displays, and store prices on MobilesX.",
     heading: "Best Laptops in India",
     eyebrow: "LAPTOP COLLECTION",
   };

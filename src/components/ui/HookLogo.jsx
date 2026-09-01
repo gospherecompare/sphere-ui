@@ -1,10 +1,10 @@
 import React, { useId } from "react";
 
-export default function HookLogo({
+export default function MobilesXWordmark({
   className,
-  title = "MobileX",
-  "aria-label": ariaLabel = "MobileX",
-  brandName = "MobileX",
+  title = "MobilesX",
+  "aria-label": ariaLabel = "MobilesX",
+  brandName = "MobilesX",
   showText = true,
 }) {
   const gradientId = `hooks-logo-gradient-${useId().replace(/:/g, "")}`;
@@ -14,7 +14,7 @@ export default function HookLogo({
       viewBox="0 0 520 120"
       preserveAspectRatio="xMinYMid meet"
       role="img"
-      aria-label={ariaLabel || brandName || "MobileX"}
+      aria-label={ariaLabel || brandName || "MobilesX"}
       className={className}
       xmlns="http://www.w3.org/2000/svg"
     >
@@ -62,7 +62,7 @@ export default function HookLogo({
     <svg
       viewBox="0 0 120 120"
       role="img"
-      aria-label={ariaLabel || brandName || "MobileX"}
+      aria-label={ariaLabel || brandName || "MobilesX"}
       className={className}
       xmlns="http://www.w3.org/2000/svg"
     >

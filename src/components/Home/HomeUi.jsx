@@ -60,7 +60,7 @@ export const ProductVisual = ({ product, className = "" }) => {
         <div className="home-v2-product-fallback" aria-hidden="true">
           <FaMobileAlt />
           <span>
-            {String(product?.brand || product?.name || "MobileX").slice(0, 2)}
+            {String(product?.brand || product?.name || "MobilesX").slice(0, 2)}
           </span>
         </div>
       )}
@@ -73,7 +73,7 @@ export const ScoreBadge = ({ score }) => {
   return (
     <span
       className="home-v2-score"
-      aria-label={`MobileX score ${score} out of 100`}
+      aria-label={`MobilesX score ${score} out of 100`}
     >
       <FaStar aria-hidden="true" />
       {score}

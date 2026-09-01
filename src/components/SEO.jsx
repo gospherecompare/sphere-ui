@@ -86,7 +86,7 @@ const hasMatchingPrerenderSchema = (canonicalUrl) => {
  *
  * Example - Product Page:
  * <SEO
- *   title="iPhone 15 Pro - Price & Specs - MobileX"
+ *   title="iPhone 15 Pro - Price & Specs - MobilesX"
  *   description="Compare iPhone 15 Pro pricing, full specs, and variants"
  *   image="https://cdn.example.com/iphone-15.jpg"
  *   url={canonicalUrl}
@@ -245,7 +245,7 @@ const SEO = ({
       )}
       <meta property="og:type" content={ogType} />
       <meta key="og:url" property="og:url" content={canonicalUrl} />
-      <meta property="og:site_name" content="MobileX" />
+      <meta property="og:site_name" content="MobilesX" />
       <meta property="og:locale" content="en_IN" />
       {imageMeta && <meta property="og:image" content={imageMeta.url} />}
       {imageMeta && (
@@ -294,7 +294,7 @@ const SEO = ({
         name="apple-mobile-web-app-status-bar-style"
         content="black-translucent"
       />
-      <meta name="apple-mobile-web-app-title" content="MobileX" />
+      <meta name="apple-mobile-web-app-title" content="MobilesX" />
       <meta name="format-detection" content="telephone=no" />
 
       {/* ===== STRUCTURED DATA ===== */}

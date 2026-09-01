@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import HookLogo from "../ui/MobileX";
+import MobilesXLogo from "../ui/MobileX";
 
 export const NewsBrandBadge = ({
-  brandName = "MobileX",
+  brandName = "MobilesX",
   brandLogo = "",
   className = "",
   logoClassName = "",
@@ -33,7 +33,7 @@ export const NewsBrandBadge = ({
   );
 };
 
-export const HooksSignature = ({ variant = "dark", className = "" }) => {
+export const MobilesXSignature = ({ variant = "dark", className = "" }) => {
   const isDark = variant === "dark";
 
   return (
@@ -42,12 +42,12 @@ export const HooksSignature = ({ variant = "dark", className = "" }) => {
         isDark ? "text-white/75" : "text-slate-700"
       } ${className}`}
     >
-      <HookLogo
+      <MobilesXLogo
         className={`h-3.5 w-3.5 shrink-0 object-contain ${
           isDark ? "" : "opacity-90"
         }`}
       />
-      MobileX
+      MobilesX
     </span>
   );
 };

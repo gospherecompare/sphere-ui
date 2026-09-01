@@ -1970,7 +1970,7 @@ const buildNewsSitemapXml = () => {
   const urls = entries
     .map(
       (entry) =>
-        `  <url>\n    <loc>${escapeSitemapXml(entry.loc)}</loc>\n    <news:news>\n      <news:publication>\n        <news:name>MobileX</news:name>\n        <news:language>en</news:language>\n      </news:publication>\n      <news:publication_date>${escapeSitemapXml(entry.publishedAt)}</news:publication_date>\n      <news:title>${escapeSitemapXml(entry.title)}</news:title>\n    </news:news>\n  </url>`,
+        `  <url>\n    <loc>${escapeSitemapXml(entry.loc)}</loc>\n    <news:news>\n      <news:publication>\n        <news:name>MobilesX</news:name>\n        <news:language>en</news:language>\n      </news:publication>\n      <news:publication_date>${escapeSitemapXml(entry.publishedAt)}</news:publication_date>\n      <news:title>${escapeSitemapXml(entry.title)}</news:title>\n    </news:news>\n  </url>`,
     )
     .join("\n");
 
@@ -2128,15 +2128,15 @@ const resolveSeo = (routePath) => {
   const rules = [
     {
       test: (p) => p === "/",
-      title: "Compare Smartphones, TVs & More in India | MobileX",
+      title: "MobilesX: Compare Smartphones, TVs & Gadgets in India",
       description:
-        "Compare smartphones, laptops, TVs, and networking devices in India with specs, prices, variants, and trend insights. Discover latest launches on MobileX.",
+        "MobilesX is an AI-powered platform to discover and compare smartphones, TVs, laptops and gadgets in India with latest prices, detailed specs, reviews, comparisons, tech news and AI summaries.",
       keywords: `hook, best gadget comparison site, mobile price comparison india, compare laptops smartphones tvs, latest smartphones in india ${CURRENT_YEAR}, best smartphones in ${CURRENT_YEAR}, latest laptops in india ${CURRENT_YEAR}, latest smart tvs in india ${CURRENT_YEAR}, new launch and trending gadgets, top selling gadgets india, compare specs`,
     },
     {
       test: () => Boolean(smartphoneDetailName),
-      title: `${smartphoneDetailName} Price in India, Specs & Features (${CURRENT_MONTH_SHORT_YEAR}) | MobileX`,
-      description: `Compare ${smartphoneDetailName} price in India, full specifications, variants, and launch details on MobileX.`,
+      title: `${smartphoneDetailName} Price in India, Specs & Features (${CURRENT_MONTH_SHORT_YEAR}) | MobilesX`,
+      description: `Discover the ${smartphoneDetailName} price in India, detailed specs, features, variants, reviews, comparisons and AI summary insights. Find its key strengths and compare it with similar smartphones on MobilesX.`,
       keywords: `${smartphoneDetailName.toLowerCase()}, ${smartphoneDetailName.toLowerCase()} price in india, ${smartphoneDetailName.toLowerCase()} specifications, ${smartphoneDetailName.toLowerCase()} launch date, compare smartphones, mobile price comparison india`,
     },
     {
@@ -2295,41 +2295,41 @@ const resolveSeo = (routePath) => {
     },
     {
       test: (p) => p.startsWith("/careers"),
-      title: "Careers at MobileX | Join Our Team",
+      title: "Careers at MobilesX | Join Our Team",
       description:
-        "Apply for frontend, backend, content developer, and fullstack opportunities at MobileX through a simple step-by-step application form.",
+        "Apply for frontend, backend, content developer, and fullstack opportunities at MobilesX through a simple step-by-step application form.",
       keywords:
         "careers at hook, frontend jobs, backend jobs, fullstack jobs, content developer jobs, tech careers",
     },
     {
       test: (p) => p.startsWith("/about"),
-      title: "About MobileX | Technology Research and Comparisons",
+      title: "About MobilesX | Technology Research and Comparisons",
       description:
-        "Learn about MobileX, our mission, and how we help users compare technology products with structured and transparent information.",
+        "Learn about MobilesX, our mission, and how we help users compare technology products with structured and transparent information.",
       keywords:
         "about hook, product comparison platform, technology discovery, gadget research platform",
     },
     {
       test: (p) => p.startsWith("/contact"),
-      title: "Contact MobileX | Support, Corrections and Partnerships",
+      title: "Contact MobilesX | Support, Corrections and Partnerships",
       description:
-        "Contact MobileX for product support, partnerships, and press queries. Reach the team through verified contact channels.",
+        "Contact MobilesX for product support, partnerships, and press queries. Reach the team through verified contact channels.",
       keywords:
         "contact hook, support hook, partnerships, press inquiries, hook contact details",
     },
     {
       test: (p) => p.startsWith("/privacy-policy"),
-      title: "Privacy Policy | MobileX",
+      title: "Privacy Policy | MobilesX",
       description:
-        "Read MobileX privacy policy to understand what data we collect, why we collect it, and how you can control your information.",
+        "Read the MobilesX Privacy Policy to understand how we collect, use and protect your information and how you can control your privacy.",
       keywords:
         "privacy policy, data privacy, hook policy, personal data rights",
     },
     {
       test: (p) => p.startsWith("/terms"),
-      title: "Terms and Conditions | MobileX",
+      title: "Terms and Conditions | MobilesX",
       description:
-        "Read MobileX terms of use covering platform usage, content accuracy, and service limitations.",
+        "Read the MobilesX terms of use covering platform usage, content accuracy, and service limitations.",
       keywords: "terms of use, hook terms, website terms, usage policy",
     },
     {
@@ -2338,9 +2338,9 @@ const resolveSeo = (routePath) => {
         p.startsWith("/wishlist") ||
         p.startsWith("/login") ||
         p.startsWith("/signup"),
-      title: "MobileX Account",
+      title: "MobilesX Account",
       description:
-        "Secure account pages for your MobileX profile and saved data.",
+        "Secure account pages for your MobilesX profile and saved data.",
       keywords: "hook account, user account, login, signup, wishlist",
       robots: "noindex, nofollow",
     },

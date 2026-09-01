@@ -60,7 +60,7 @@ const RecommendedSmartphones = () => {
           eyebrow="Comparison arena"
           titleId="home-v2-compare-title"
           title="See the decision, not just two spec sheets"
-          copy="Popular real-world matchups from the MobileX comparison feed, arranged as one focused arena with supporting battles."
+          copy="Popular real-world matchups from the MobilesX comparison feed, arranged as one focused arena with supporting battles."
           actionTo="/popular-comparisons"
           actionLabel="View popular comparisons"
           artVariant="compare"

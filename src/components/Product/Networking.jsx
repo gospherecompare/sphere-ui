@@ -946,11 +946,11 @@ const Networking = () => {
     year: "numeric",
   }).format(new Date());
   const seoTitle = currentBrandObj
-    ? `${currentBrandObj.name} Networking Devices in India (${currentMonthYear}) | MobileX`
-    : `Best Networking Devices in India (${currentMonthYear}) | MobileX`;
+    ? `${currentBrandObj.name} Networking Devices in India (${currentMonthYear}) | MobilesX`
+    : `Best Networking Devices in India (${currentMonthYear}) | MobilesX`;
   const seoDescription =
     currentBrandObj?.description ||
-    "Discover routers, modems, switches, mesh systems and extenders on MobileX.";
+    "Discover routers, modems, switches, mesh systems and extenders on MobilesX.";
   const _seoKeywords = useMemo(
     () =>
       buildListSeoKeywords({

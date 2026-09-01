@@ -2644,7 +2644,7 @@ const Laptops = () => {
           <LatestNewsRouteSection
             className="mt-6"
             productType="laptop"
-            subtitle="Fresh laptop launches, processor updates, and buying context from the MobileX news desk."
+            subtitle="Fresh laptop launches, processor updates, and buying context from the MobilesX news desk."
           />
 
           <ProductDiscoverySections

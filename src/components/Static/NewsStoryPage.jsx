@@ -12,7 +12,7 @@ import {
 } from "react-icons/fa";
 import SEO from "../SEO";
 import NotFound from "./NotFound";
-import { HooksSignature } from "../Home/NewsBrandBadge";
+import { MobilesXSignature } from "../Home/NewsBrandBadge";
 import {
   createBreadcrumbSchema,
   createNewsArticleSchema,
@@ -508,7 +508,7 @@ const NewsStoryPage = () => {
   return (
     <>
       <SEO
-        title={`${story.title} - MobileX`}
+        title={`${story.title} - MobilesX`}
         description={story.summary}
         url={canonicalUrl}
         robots="index, follow, max-image-preview:large"
@@ -642,11 +642,11 @@ const NewsStoryPage = () => {
                   </div>
                   <div className="h-px bg-gradient-to-r from-orange-400 via-fuchsia-500 to-cyan-400" />
                   <div className="p-5 text-sm leading-7 text-white/75">
-                    Hooks editorial coverage focused on launch watch, mobile
+                    MobilesX editorial coverage focused on launch watch, mobile
                     updates, and clearer reading flow.
                   </div>
                   <div className="px-5 pb-5">
-                    <HooksSignature variant="dark" />
+                    <MobilesXSignature variant="dark" />
                   </div>
                 </div>
               </div>

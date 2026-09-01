@@ -42,7 +42,7 @@ const links = [
   },
   {
     title: "Trending technology",
-    copy: "Discover products people are researching and comparing across MobileX.",
+    copy: "Discover products people are researching and comparing across MobilesX.",
     to: "/trending/smartphones",
     icon: FaBolt,
     art: "radial-gradient(circle at 75% 30%, rgba(245,158,11,.22), transparent 42%), linear-gradient(135deg,#fffbeb,#f8fafc)",
@@ -81,7 +81,7 @@ const directoryGroups = [
     title: "Read and learn",
     links: [
       ["Technology news", "/news"],
-      ["About MobileX", "/about"],
+      ["About MobilesX", "/about"],
       ["Contact the team", "/contact"],
       ["Privacy policy", "/privacy-policy"],
       ["Terms of use", "/terms"],
@@ -104,7 +104,7 @@ const DirectoryVariant = () => (
         </div>
         <p>
           Direct internal paths to product discovery, price filters,
-          comparisons, editorial coverage, and essential MobileX information.
+          comparisons, editorial coverage, and essential MobilesX information.
         </p>
       </div>
       <div className="home-v2-research-directory__grid">
@@ -136,7 +136,7 @@ const CardVariant = ({ compact = false }) => (
       <SectionHeading
         eyebrow="Decision shortcuts"
         title="Go from browsing to a confident choice"
-        description="Explore the most useful paths across MobileX. Each destination is connected to product details, comparisons, price discovery and related editorial coverage."
+        description="Explore the most useful paths across MobilesX. Each destination is connected to product details, comparisons, price discovery and related editorial coverage."
       />
 
       <div

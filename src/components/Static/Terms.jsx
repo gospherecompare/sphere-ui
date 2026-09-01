@@ -23,7 +23,7 @@ const highlights = [
   {
     icon: FaInfoCircle,
     title: "Information, not professional advice",
-    text: "MobileX supports technology research but does not replace manufacturer, retailer or professional guidance.",
+    text: "MobilesX supports technology research but does not replace manufacturer, retailer or professional guidance.",
   },
 
   {
@@ -45,9 +45,9 @@ const sections = [
     title: "Acceptance of these terms",
 
     paragraphs: [
-      "By accessing or using MobileX, you agree to these Terms and Conditions and the Privacy Policy. If you do not agree, do not use the platform.",
+      "By accessing or using MobilesX, you agree to these Terms and Conditions and the Privacy Policy. If you do not agree, do not use the platform.",
 
-      "MobileX may update these terms as features, business practices or legal requirements change. Continued use after an updated version is published means you accept the revised terms.",
+      "MobilesX may update these terms as features, business practices or legal requirements change. Continued use after an updated version is published means you accept the revised terms.",
     ],
   },
 
@@ -56,7 +56,7 @@ const sections = [
     title: "Platform purpose",
 
     paragraphs: [
-      "MobileX provides smartphone discovery, product specifications, comparison tools, pricing signals, editorial reporting and related information for general informational and educational purposes.",
+      "MobilesX provides smartphone discovery, product specifications, comparison tools, pricing signals, editorial reporting and related information for general informational and educational purposes.",
 
       "Content is not legal, financial, medical, investment or other professional advice. Product recommendations and editorial opinions reflect the information and judgment available at the time of publication.",
     ],
@@ -67,9 +67,9 @@ const sections = [
     title: "Product information, pricing and accuracy",
 
     paragraphs: [
-      "MobileX works to present useful information, but specifications, images, launch dates, software features, variants, prices, offers and availability may be incomplete, delayed or different across markets and retailers.",
+      "MobilesX works to present useful information, but specifications, images, launch dates, software features, variants, prices, offers and availability may be incomplete, delayed or different across markets and retailers.",
 
-      "Before purchasing, users should verify important details directly with the manufacturer, authorised seller or service provider. MobileX is not the seller of products displayed on the platform unless a page expressly states otherwise.",
+      "Before purchasing, users should verify important details directly with the manufacturer, authorised seller or service provider. MobilesX is not the seller of products displayed on the platform unless a page expressly states otherwise.",
     ],
   },
 
@@ -78,7 +78,7 @@ const sections = [
     title: "Permitted use",
 
     bullets: [
-      "Use MobileX for lawful personal research, comparison and reading",
+      "Use MobilesX for lawful personal research, comparison and reading",
 
       "Share links to public pages and quote limited excerpts with clear attribution",
 
@@ -99,7 +99,7 @@ const sections = [
 
       "Introducing malicious code, automated abuse, spam or disruptive traffic",
 
-      "Misrepresenting affiliation with MobileX or using MobileX branding without permission",
+      "Misrepresenting affiliation with MobilesX or using MobilesX branding without permission",
 
       "Using the platform to violate law, privacy, intellectual-property or third-party rights",
     ],
@@ -110,9 +110,9 @@ const sections = [
     title: "Retailers, affiliate links and third-party services",
 
     paragraphs: [
-      "MobileX may link to retailers, manufacturers, advertisers, analytics providers and other external services. Their content, pricing, availability, security and policies are controlled by those third parties.",
+      "MobilesX may link to retailers, manufacturers, advertisers, analytics providers and other external services. Their content, pricing, availability, security and policies are controlled by those third parties.",
 
-      "Some outbound links may be affiliate links, which can allow MobileX to earn a commission without changing the price paid by the user. Commercial relationships do not guarantee that a product is suitable for every user.",
+      "Some outbound links may be affiliate links, which can allow MobilesX to earn a commission without changing the price paid by the user. Commercial relationships do not guarantee that a product is suitable for every user.",
     ],
   },
 
@@ -121,7 +121,7 @@ const sections = [
     title: "Content and intellectual property",
 
     paragraphs: [
-      "MobileX and its licensors retain rights in original text, design, branding, databases, software and platform features. Manufacturer names, trademarks and product imagery belong to their respective owners.",
+      "MobilesX and its licensors retain rights in original text, design, branding, databases, software and platform features. Manufacturer names, trademarks and product imagery belong to their respective owners.",
 
       "Except where law permits, users may not reproduce, republish, sell, modify or commercially exploit substantial portions of the platform without written permission.",
     ],
@@ -134,7 +134,7 @@ const sections = [
     paragraphs: [
       "When you submit a correction, tip, message or other material, you confirm that you have the right to share it and that it does not unlawfully infringe another person's rights. Do not submit confidential or sensitive material through general contact channels.",
 
-      "MobileX may use submitted information to review the request, correct content, respond to you and improve the platform. Publication of any submission is at the discretion of MobileX.",
+      "MobilesX may use submitted information to review the request, correct content, respond to you and improve the platform. Publication of any submission is at the discretion of MobilesX.",
     ],
   },
 
@@ -143,7 +143,7 @@ const sections = [
     title: "Availability and changes to the service",
 
     paragraphs: [
-      "MobileX may change, suspend or discontinue features, routes, data sources or content without guaranteeing continuous availability. Maintenance, provider outages, security events and technical failures may affect access.",
+      "MobilesX may change, suspend or discontinue features, routes, data sources or content without guaranteeing continuous availability. Maintenance, provider outages, security events and technical failures may affect access.",
     ],
   },
 
@@ -152,9 +152,9 @@ const sections = [
     title: "Disclaimers and limitation of liability",
 
     paragraphs: [
-      "To the extent permitted by applicable law, MobileX is provided on an “as available” basis without warranties that every page will be uninterrupted, error-free or fully current.",
+      "To the extent permitted by applicable law, MobilesX is provided on an “as available” basis without warranties that every page will be uninterrupted, error-free or fully current.",
 
-      "MobileX and its contributors are not responsible for indirect or consequential losses arising from reliance on platform content, third-party services, purchase decisions, unavailable features or unauthorised access outside reasonable control. Nothing in these terms excludes liability that cannot legally be excluded.",
+      "MobilesX and its contributors are not responsible for indirect or consequential losses arising from reliance on platform content, third-party services, purchase decisions, unavailable features or unauthorised access outside reasonable control. Nothing in these terms excludes liability that cannot legally be excluded.",
     ],
   },
 
@@ -163,7 +163,7 @@ const sections = [
     title: "Governing law and disputes",
 
     paragraphs: [
-      "These terms are governed by the laws applicable to the entity operating MobileX, subject to any mandatory consumer rights in the user's jurisdiction. Parties should first attempt to resolve concerns by contacting MobileX before pursuing formal remedies.",
+      "These terms are governed by the laws applicable to the entity operating MobilesX, subject to any mandatory consumer rights in the user's jurisdiction. Parties should first attempt to resolve concerns by contacting MobilesX before pursuing formal remedies.",
     ],
   },
 
@@ -172,7 +172,7 @@ const sections = [
     title: "Contact about these terms",
 
     paragraphs: [
-      `Questions about these terms can be sent to ${CONTACT_EMAIL}. These website terms are general operational text and should be reviewed by qualified legal counsel for the specific business entity, services and jurisdictions in which MobileX operates.`,
+      `Questions about these terms can be sent to ${CONTACT_EMAIL}. These website terms are general operational text and should be reviewed by qualified legal counsel for the specific business entity, services and jurisdictions in which MobilesX operates.`,
     ],
   },
 ];
@@ -181,25 +181,25 @@ const Terms = () => {
   const canonical = `${SITE_ORIGIN}/terms/`;
 
   const schema = createWebPageSchema({
-    name: "MobileX Terms and Conditions",
+    name: "MobilesX Terms and Conditions",
     description:
-      "Terms governing use of the MobileX smartphone discovery, product comparison and editorial platform.",
+      "Terms governing use of the MobilesX smartphone discovery, product comparison and editorial platform.",
     url: canonical,
   });
 
   return (
     <>
       <SEO
-        title="Terms and Conditions | MobileX"
-        description="Read the MobileX terms covering smartphone information, responsible use, third-party links, affiliate disclosures and service limitations."
+        title="Terms and Conditions | MobilesX"
+        description="Read the MobilesX terms covering smartphone information, responsible use, third-party links, affiliate disclosures and service limitations."
         url={canonical}
         schema={schema}
       />
 
       <CompanyPageShell
         eyebrow="Terms and Conditions"
-        title="The rules for using MobileX."
-        intro="These terms explain how the platform may be used, the limits of product and editorial information, and the responsibilities that apply to users and MobileX."
+        title="The rules for using MobilesX."
+        intro="These terms explain how the platform may be used, the limits of product and editorial information, and the responsibilities that apply to users and MobilesX."
         updated={EFFECTIVE_DATE}
         icon={FaFileContract}
         highlights={highlights}

@@ -36,47 +36,47 @@ const CATEGORY_LABELS = {
 };
 
 const CATEGORY_AUTHORS = {
-  news: { name: "MobileX news", role: "News desk" },
-  technology: { name: "MobileX tech", role: "Technology desk" },
-  ai: { name: "MobileX AI", role: "AI desk" },
-  smartphones: { name: "MobileX mobile", role: "Mobile editor" },
-  mobiles: { name: "MobileX mobile", role: "Mobile editor" },
-  chips: { name: "MobileX silicon", role: "Chip desk" },
-  laptops: { name: "MobileX computing", role: "Computing desk" },
-  software: { name: "MobileX software", role: "Software desk" },
-  cybersecurity: { name: "MobileX security", role: "Cybersecurity desk" },
-  "ev-tech": { name: "MobileX mobility", role: "EV technology desk" },
-  robotics: { name: "MobileX robotics", role: "Robotics desk" },
+  news: { name: "MobilesX news", role: "News desk" },
+  technology: { name: "MobilesX tech", role: "Technology desk" },
+  ai: { name: "MobilesX AI", role: "AI desk" },
+  smartphones: { name: "MobilesX mobile", role: "Mobile editor" },
+  mobiles: { name: "MobilesX mobile", role: "Mobile editor" },
+  chips: { name: "MobilesX silicon", role: "Chip desk" },
+  laptops: { name: "MobilesX computing", role: "Computing desk" },
+  software: { name: "MobilesX software", role: "Software desk" },
+  cybersecurity: { name: "MobilesX security", role: "Cybersecurity desk" },
+  "ev-tech": { name: "MobilesX mobility", role: "EV technology desk" },
+  robotics: { name: "MobilesX robotics", role: "Robotics desk" },
   "consumer-tech": {
-    name: "MobileX consumer tech",
+    name: "MobilesX consumer tech",
     role: "Consumer tech desk",
   },
-  apps: { name: "MobileX apps", role: "Apps desk" },
-  internet: { name: "MobileX internet", role: "Internet desk" },
-  "cloud-services": { name: "MobileX cloud", role: "Cloud services desk" },
-  science: { name: "MobileX science", role: "Science desk" },
-  space: { name: "MobileX space", role: "Space desk" },
+  apps: { name: "MobilesX apps", role: "Apps desk" },
+  internet: { name: "MobilesX internet", role: "Internet desk" },
+  "cloud-services": { name: "MobilesX cloud", role: "Cloud services desk" },
+  science: { name: "MobilesX science", role: "Science desk" },
+  space: { name: "MobilesX space", role: "Space desk" },
   "health-tech": {
-    name: "MobileX health tech",
+    name: "MobilesX health tech",
     role: "Health technology desk",
   },
-  "renewable-energy": { name: "MobileX energy", role: "Renewable energy desk" },
+  "renewable-energy": { name: "MobilesX energy", role: "Renewable energy desk" },
   "quantum-computing": {
-    name: "MobileX quantum",
+    name: "MobilesX quantum",
     role: "Quantum computing desk",
   },
   "sports-technology": {
-    name: "MobileX sports tech",
+    name: "MobilesX sports tech",
     role: "Sports technology desk",
   },
-  wearables: { name: "MobileX wearables", role: "Wearables desk" },
+  wearables: { name: "MobilesX wearables", role: "Wearables desk" },
   "sports-science": {
-    name: "MobileX sports science",
+    name: "MobilesX sports science",
     role: "Sports science desk",
   },
-  gadgets: { name: "MobileX gadgets", role: "Gadgets desk" },
-  guides: { name: "MobileX editorial", role: "Editorial guides" },
-  launches: { name: "MobileX desk", role: "Launch desk" },
+  gadgets: { name: "MobilesX gadgets", role: "Gadgets desk" },
+  guides: { name: "MobilesX editorial", role: "Editorial guides" },
+  launches: { name: "MobilesX desk", role: "Launch desk" },
 };
 
 const CATEGORY_ALIASES = {
@@ -582,7 +582,7 @@ const createFallbackStoryArtwork = ({
   const brandLabel = escapeSvgText(
     brandName ||
       PRODUCT_TYPE_LABELS[safeText(productType).toLowerCase()] ||
-      "MobileX",
+      "MobilesX",
   );
   const descriptorLabel = escapeSvgText(
     productType ? String(productType).toUpperCase() : "EDITORIAL COVER",
@@ -784,7 +784,7 @@ const buildTakeaways = ({ blog, body, category }) => {
   return [
     safeText(blog.product_name)
       ? `${safeText(blog.product_name)} is the main story reference in this piece.`
-      : `${getCategoryLabel(category)} coverage from the MobileX news desk.`,
+      : `${getCategoryLabel(category)} coverage from the MobilesX news desk.`,
     categoryDetail[category] || null,
     body[1]
       ? clipWords(body[1], 18)
@@ -948,8 +948,8 @@ const normalizeBlogStory = (blog) => {
   const authorRole = resolveBlogAuthorRole(blog);
   const authorImage = resolveBlogAuthorImage(blog);
   const fallbackSummaryByCategory = {
-    news: `${title} is the latest news update from MobileX.`,
-    technology: `${title} is part of the latest technology coverage from MobileX.`,
+    news: `${title} is the latest news update from MobilesX.`,
+    technology: `${title} is part of the latest technology coverage from MobilesX.`,
     ai: `${title} tracks an AI update with practical technology context.`,
     smartphones: `${title} keeps the smartphone section focused on useful device details.`,
     mobiles: `${title} keeps the mobile section focused on the most useful device details.`,
@@ -971,7 +971,7 @@ const normalizeBlogStory = (blog) => {
       : fallbackSummaryByCategory[category] ||
           `${title} is the latest ${getCategoryLabel(
             category,
-          ).toLowerCase()} update from MobileX.`,
+          ).toLowerCase()} update from MobilesX.`,
     24,
   );
   const publishedIso = safeText(blog.published_at) || safeText(blog.updated_at);
@@ -987,7 +987,7 @@ const normalizeBlogStory = (blog) => {
   const author = authorName
     ? {
         name: authorName,
-        role: authorRole || fallbackAuthor?.role || "MobileX news",
+        role: authorRole || fallbackAuthor?.role || "MobilesX news",
       }
     : fallbackAuthor;
   const brandName = inferBlogBrandName(blog, linkedProducts);

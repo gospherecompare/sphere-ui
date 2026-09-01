@@ -11,7 +11,7 @@ import { Link } from "react-router-dom";
 
 import { toCanonicalPagePath } from "../../utils/publicUrl";
 
-import MobileXLogo from "../ui/MobileX";
+import MobilesXLogo from "../ui/MobileX";
 
 const CONTACT_EMAIL = "contact@mobilesx.in";
 
@@ -50,7 +50,7 @@ const footerSections = [
       { label: "Latest tech news", href: "/news" },
       { label: "Product launches", href: "/news" },
       { label: "Buying context", href: "/news" },
-      { label: "About MobileX", href: "/about" },
+      { label: "About MobilesX", href: "/about" },
     ],
   },
 
@@ -74,9 +74,9 @@ const Footer = () => (
           <Link
             to="/"
             className="inline-flex items-center text-white no-underline"
-            aria-label="MobileX home"
+            aria-label="MobilesX home"
           >
-            <MobileXLogo className="h-[26px] w-auto sm:h-[30px] md:h-[34px] lg:h-[42px]" />
+            <MobilesXLogo className="h-[26px] w-auto sm:h-[30px] md:h-[34px] lg:h-[42px]" />
           </Link>
 
           <div className="mt-6 space-y-3 text-sm text-slate-300">
@@ -131,7 +131,7 @@ const Footer = () => (
 
       <div className="mt-12 flex flex-col gap-4 border-t border-white/10 pt-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
         <p>
-          © {new Date().getFullYear()} MobileX. Product information may change;
+          © {new Date().getFullYear()} MobilesX. Product information may change;
           verify important details before purchase.
         </p>
 

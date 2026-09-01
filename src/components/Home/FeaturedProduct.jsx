@@ -26,7 +26,7 @@ const FeaturedProduct = () => {
           eyebrow="Live demand signals"
           titleId="home-v2-trending-title"
           title="What people are researching now"
-          copy="A real-time view of products attracting search and comparison interest across MobileX."
+          copy="A real-time view of products attracting search and comparison interest across MobilesX."
           actionTo="/smartphones"
           actionLabel="See all smartphones"
           artVariant="performance"
