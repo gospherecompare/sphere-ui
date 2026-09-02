@@ -5713,7 +5713,6 @@ Price: ${price}
                     <div className="mt-4 space-y-3">
                       {currentVariantStoreRows.length > 0 ? (
                         currentVariantStoreRows
-                          .slice(0, 4)
                           .map((storePrice, index) => {
                             const storeObj =
                               storePrice.storeObj ||
@@ -5743,6 +5742,16 @@ Price: ${price}
                             const logoSrc = rawLogoSrc
                               ? toAbsoluteUrl(rawLogoSrc)
                               : "";
+                            const listedStorePrice = extractNumericPrice(
+                              storePrice.price,
+                            );
+                            const fallbackVariantPrice = extractNumericPrice(
+                              currentVariant?.base_price ??
+                                currentVariant?.basePrice ??
+                                resolvedCurrentNumericPrice,
+                            );
+                            const displayedStorePrice =
+                              listedStorePrice || fallbackVariantPrice;
 
                             return (
                               <div
@@ -5766,9 +5775,15 @@ Price: ${price}
                                       {storeName}
                                     </p>
                                     <p className="mt-0.5 text-base font-black text-emerald-600 ">
-                                      {formatPriceLabel(storePrice.price) ||
-                                        "—"}
+                                      {formatPriceLabel(displayedStorePrice) ||
+                                        "Price unavailable"}
                                     </p>
+                                    {listedStorePrice === 0 &&
+                                    displayedStorePrice > 0 ? (
+                                      <p className="mt-0.5 text-[11px] font-medium text-slate-500 ">
+                                        Variant price
+                                      </p>
+                                    ) : null}
                                   </div>
                                 </div>
 

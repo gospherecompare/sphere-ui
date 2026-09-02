@@ -2314,7 +2314,7 @@ const Header = () => {
         </div>
 
         <nav
-          className="flex min-w-0 gap-[0.42rem] overflow-x-auto px-[0.8rem] pb-[0.62rem] [scrollbar-width:none] snap-x snap-proximity [&::-webkit-scrollbar]:hidden"
+          className="flex min-w-0 gap-[0.42rem] overflow-x-auto px-[0.8rem] pb-0 [scrollbar-width:none] snap-x snap-proximity [&::-webkit-scrollbar]:hidden"
           aria-label="Quick navigation"
         >
           <button

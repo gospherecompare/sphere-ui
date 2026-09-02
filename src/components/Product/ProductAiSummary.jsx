@@ -5,6 +5,7 @@ import { FaTimes } from "react-icons/fa";
 const ProductAiSummary = ({ summary = "" }) => {
   const [open, setOpen] = useState(false);
   const [visibleSummary, setVisibleSummary] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -25,6 +26,7 @@ const ProductAiSummary = ({ summary = "" }) => {
   useEffect(() => {
     if (!open || !summary) {
       setVisibleSummary("");
+      setIsTyping(false);
       return undefined;
     }
 
@@ -37,6 +39,7 @@ const ProductAiSummary = ({ summary = "" }) => {
           : 16;
 
     setVisibleSummary("");
+    setIsTyping(true);
     let currentIndex = 0;
     const interval = window.setInterval(() => {
       currentIndex += 1;
@@ -44,6 +47,7 @@ const ProductAiSummary = ({ summary = "" }) => {
 
       if (currentIndex >= normalizedSummary.length) {
         window.clearInterval(interval);
+        setIsTyping(false);
       }
     }, revealSpeed);
 
@@ -56,6 +60,29 @@ const ProductAiSummary = ({ summary = "" }) => {
 
   return (
     <section className="m-0" aria-label="AI product summary">
+      <style>{`
+        @keyframes product-ai-summary-border-snake {
+          from { stroke-dashoffset: 100; }
+          to { stroke-dashoffset: -100; }
+        }
+
+        .product-ai-summary-border-snake {
+          stroke: #2563eb;
+          stroke-width: 2;
+          stroke-dasharray: 14 86;
+          stroke-linecap: round;
+          animation: product-ai-summary-border-snake 1.3s linear infinite;
+          filter: drop-shadow(0 0 2px rgba(37, 99, 235, 0.7));
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .product-ai-summary-border-snake {
+            stroke-dasharray: 100 0;
+            animation: none;
+            opacity: 0.7;
+          }
+        }
+      `}</style>
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -79,6 +106,26 @@ const ProductAiSummary = ({ summary = "" }) => {
                 aria-modal="true"
                 aria-labelledby="product-ai-summary-title"
               >
+                {isTyping ? (
+                  <svg
+                    className="pointer-events-none absolute inset-0 z-10 h-full w-full"
+                    viewBox="0 0 100 100"
+                    preserveAspectRatio="none"
+                    role="status"
+                    aria-label="Generating AI summary"
+                  >
+                    <rect
+                      className="product-ai-summary-border-snake"
+                      x="0"
+                      y="0"
+                      width="100"
+                      height="100"
+                      fill="none"
+                      pathLength="100"
+                      vectorEffect="non-scaling-stroke"
+                    />
+                  </svg>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => setOpen(false)}

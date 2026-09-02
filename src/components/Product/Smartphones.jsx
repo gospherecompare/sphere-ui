@@ -3211,7 +3211,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     baseCards = baseCards.filter((device) =>
       listFilter === "upcoming"
         ? getRenderType(device) === "upcoming"
-        : getRenderType(device) === "available",
+        : getRenderType(device) === "released",
     );
 
     return baseCards.filter((device) => {

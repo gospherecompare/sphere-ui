@@ -237,7 +237,7 @@ const DetailPageNavigator = ({
           isPinned ? "fixed left-0 right-0" : "relative"
         } z-[55] w-full !bg-white shadow-none transition-[top] duration-300 ease-out  ${className}`}
       >
-        <div className="mx-auto w-full max-w-[1440px] px-2 py-1 sm:px-5 sm:py-1.5 lg:px-8 ">
+        <div className="mx-auto w-full max-w-[1440px] px-2 py-0 sm:px-5 lg:px-8 lg:py-1.5 ">
           <nav
             ref={scrollRef}
             aria-label="Smartphone detail page sections"
