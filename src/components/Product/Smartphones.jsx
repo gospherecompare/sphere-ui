@@ -1,5 +1,5 @@
 // src/components/DeviceList.jsx
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   FaStar,
   FaBatteryFull,
@@ -389,10 +389,12 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     normalizedRoutePathname === "/smartphones" &&
     !location.search &&
     !onlyUpcoming;
+  const isListFilter =
+    listFilter === "trending" ||
+    listFilter === "new" ||
+    listFilter === "upcoming";
 
   const [popularFeatureOrder, setPopularFeatureOrder] = useState([]);
-  const [popularFeatureOrderLoaded, setPopularFeatureOrderLoaded] =
-    useState(false);
 
   const phonesForFeatureList = useMemo(() => {
     if (Array.isArray(smartphoneAll) && smartphoneAll.length)
@@ -401,6 +403,8 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   }, [smartphoneAll, smartphone]);
 
   useEffect(() => {
+    if (isListFilter) return undefined;
+
     let cancelled = false;
     const controller =
       typeof AbortController !== "undefined" ? new AbortController() : null;
@@ -418,7 +422,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
           : [];
         if (!cancelled) {
           setPopularFeatureOrder(order);
-          setPopularFeatureOrderLoaded(true);
         }
       } catch {
         // ignore popularity fetch errors
@@ -433,7 +436,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
         // ignore
       }
     };
-  }, []);
+  }, [isListFilter]);
 
   const popularFeatures = useMemo(() => {
     let base = computePopularSmartphoneFeatures(phonesForFeatureList, {
@@ -464,10 +467,6 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     return base.slice(0, 16);
   }, [phonesForFeatureList, normalizedFeature, popularFeatureOrder]);
 
-  const isListFilter =
-    listFilter === "trending" ||
-    listFilter === "new" ||
-    listFilter === "upcoming";
   const usesDedicatedRouteFeed = isListFilter;
   const smartphonesForList = useMemo(() => {
     if (isListFilter) {
@@ -672,7 +671,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       return Math.min(limit, deviceLimit);
     }, 4);
 
-  const normalizeAssetUrl = (value) => {
+  const normalizeAssetUrl = useCallback((value) => {
     const raw = String(value || "").trim();
     if (!raw) return null;
     if (/^(https?:|data:|blob:)/i.test(raw)) return raw;
@@ -682,7 +681,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       return `${API_ASSET_ORIGIN}/${raw.replace(/^\/+/, "")}`;
     }
     return raw;
-  };
+  }, []);
 
   const sortStoreRows = (stores = []) =>
     [...stores].sort(
@@ -723,7 +722,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   };
 
   // Map API response to device format
-  const mapApiToDevice = (apiDevice, idx) => {
+  const mapApiToDevice = useCallback((apiDevice, idx) => {
     function toString(v) {
       if (v == null) return "";
       if (typeof v === "string") return v.trim();
@@ -1678,17 +1677,25 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       baseDevice.overall_score_display = null;
     }
     return baseDevice;
-  };
+  }, [getStore, normalizeAssetUrl]);
 
-  // Transform API data to devices array
-  const baseDevices = (smartphonesForList || []).map((device, i) =>
-    mapApiToDevice(device, i),
+  // Transform API data only when the route feed or store registry changes.
+  const baseDevices = useMemo(
+    () =>
+      (smartphonesForList || []).map((device, i) =>
+        mapApiToDevice(device, i),
+      ),
+    [smartphonesForList, mapApiToDevice],
   );
   const devices = baseDevices;
 
-  // Aggregate all variants across smartphones (supports variants array or singular variant)
-  const allVariants = devices.flatMap((device) =>
-    Array.isArray(device?.variants) ? device.variants : [],
+  // Aggregate variants only when the normalized device list changes.
+  const allVariants = useMemo(
+    () =>
+      devices.flatMap((device) =>
+        Array.isArray(device?.variants) ? device.variants : [],
+      ),
+    [devices],
   );
   const [selectedVariantByProduct, setSelectedVariantByProduct] = useState({});
 
@@ -3211,7 +3218,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     baseCards = baseCards.filter((device) =>
       listFilter === "upcoming"
         ? getRenderType(device) === "upcoming"
-        : getRenderType(device) === "available",
+        : getRenderType(device) === "released",
     );
 
     return baseCards.filter((device) => {
@@ -4024,7 +4031,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     }
   };
 
-  const sortedVariants = [...filteredVariants].sort((a, b) => {
+  const sortedVariants = useMemo(() => [...filteredVariants].sort((a, b) => {
     // If user is browsing by a popular feature and hasn't chosen an explicit sort,
     // auto-rank by the feature value (high -> low) so higher-capability devices come first.
     if (sortBy === "featured" && normalizedFeature) {
@@ -4051,7 +4058,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       default:
         return 0;
     }
-  });
+  }), [filteredVariants, normalizedFeature, sortBy]);
   const totalPages = shouldUseServerPagination
     ? Math.max(
         1,

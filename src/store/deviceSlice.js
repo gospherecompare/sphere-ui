@@ -4,6 +4,7 @@ import {
   DEFAULT_REMOTE_API_BASE_URL,
   resolveApiBaseUrl,
 } from "../utils/apiUrl";
+import { fetchPublicJson } from "../utils/publicJsonRequest";
 
 const WINDOW_PAYLOAD_KEY = "__HOOKS_PRERENDER_DATA__";
 
@@ -642,9 +643,7 @@ export const fetchTrendingSmartphones = createAsyncThunk(
   "device/fetchTrendingSmartphones",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/public/trending/smartphones`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await fetchPublicJson(`${API_BASE_URL}/public/trending/smartphones`);
       return normalizeSmartphoneCollection(data, ["trending", "smartphones"]);
     } catch (err) {
       return rejectWithValue(err.message || String(err));
@@ -657,9 +656,7 @@ export const fetchNewLaunchSmartphones = createAsyncThunk(
   "device/fetchNewLaunchSmartphones",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/public/new/smartphones`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await fetchPublicJson(`${API_BASE_URL}/public/new/smartphones`);
       return normalizeSmartphoneCollection(data, ["smartphones", "new"]);
     } catch (err) {
       return rejectWithValue(err.message || String(err));
@@ -672,9 +669,7 @@ export const fetchUpcomingSmartphones = createAsyncThunk(
   "device/fetchUpcomingSmartphones",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/public/upcoming/smartphones`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await fetchPublicJson(`${API_BASE_URL}/public/upcoming/smartphones`);
       return normalizeSmartphoneCollection(data, ["upcoming", "smartphones"]);
     } catch (err) {
       return rejectWithValue(err.message || String(err));
