@@ -5648,7 +5648,7 @@ Price: ${price}
                     </div>
 
                     {variants.length > 0 ? (
-                      <div className="mt-4 grid min-w-0 grid-cols-2 gap-3 sm:no-scrollbar sm:flex sm:snap-x sm:overflow-x-auto sm:pb-1">
+                      <div className="mt-4 grid min-w-0 grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:pb-1">
                         {variants.map((variant, index) => {
                           const selected = selectedVariant === index;
                           return (
@@ -5676,7 +5676,7 @@ Price: ${price}
                               >
                                 {formatPriceLabel(
                                   resolveVariantNumericPrice(variant),
-                                ) || "Price pending"}
+                                ) || "—"}
                               </p>
                               {variant.color_name ? (
                                 <p className="mt-1 text-[11px] text-slate-500 ">
@@ -5767,7 +5767,7 @@ Price: ${price}
                                     </p>
                                     <p className="mt-0.5 text-base font-black text-emerald-600 ">
                                       {formatPriceLabel(storePrice.price) ||
-                                        "Price pending"}
+                                        "—"}
                                     </p>
                                   </div>
                                 </div>

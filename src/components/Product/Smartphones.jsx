@@ -73,7 +73,13 @@ import { buildCanonicalComparePathFromDevices } from "../../utils/compareRoutes"
 import { toCanonicalPagePath } from "../../utils/publicUrl";
 import { isPublishedProduct } from "../../utils/publishedProducts";
 import { fetchPublicJson } from "../../utils/publicJsonRequest";
-import { isUpcomingProduct } from "../../utils/launchStatusHelpers";
+import {
+  getCanonicalPolicy,
+  getCanonicalRenderType,
+  getCanonicalSaleStage,
+  getCanonicalSaleStartDate,
+  getCanonicalStoreStage,
+} from "../../utils/canonicalLifecycle";
 import MobilesXSpecScore from "../ui/MobileXSpecScore";
 import ProductFilterSheet from "../ui/ProductFilterSheet";
 
@@ -585,374 +591,13 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
     return Number.isNaN(parsed.getTime()) ? null : parsed;
   };
 
-  const isFutureDateValue = (value) => {
-    const dateOnly = normalizeDateOnlyString(value);
-    const today = getLocalDateOnlyString();
-    return Boolean(dateOnly && today && dateOnly > today);
-  };
-
-  const normalizeLaunchStatus = (value) => {
-    if (!value) return null;
-    const text = String(value).trim().toLowerCase();
-    if (!text) return null;
-    if (/rumou?r/.test(text)) return "rumored";
-    if (/announce/.test(text)) return "announced";
-    if (/(upcoming|coming soon|expected|scheduled)/i.test(text))
-      return "upcoming";
-    if (/(available|on sale|in stock)/i.test(text)) return "available";
-    if (/(released|launched|out now)/i.test(text)) return "released";
-    return null;
-  };
-
-  const normalizeSaleStatus = (value) => {
-    if (!value) return null;
-    const text = String(value).trim().toLowerCase();
-    if (!text) return null;
-    if (/(sale[\s_-]?scheduled|upcoming|coming soon|expected)/i.test(text))
-      return "sale_scheduled";
-    if (/(sale[\s_-]?started|started)/i.test(text)) return "sale_started";
-    if (/(store[\s_-]?pending|store[\s_-]?listing[\s_-]?pending)/i.test(text))
-      return "store_pending";
-    if (/(out[\s_-]?of[\s_-]?stock|sold[\s_-]?out)/i.test(text))
-      return "out_of_stock";
-    if (/(on sale|in stock|sale live|live)/i.test(text)) return "on_sale";
-    if (/sale[\s_-]?live/i.test(text)) return "sale_live";
-    if (/(sale[\s_-]?tbd|sale[\s_-]?ta|tbd)/i.test(text)) return "sale_tbd";
-    return null;
-  };
-
-  const getCompareLimitForStage = (stage) => {
-    if (stage === "rumored") return 0;
-    if (stage === "announced") return 2;
-    return 4;
-  };
-
-  const parseMarketPriceValue = (value) => {
-    if (value == null || value === "") return null;
-    const normalized = Number(String(value).replace(/[^0-9.]/g, ""));
-    return Number.isFinite(normalized) && normalized > 0 ? normalized : null;
-  };
-
-  const hasStoreMarketSignal = (store) => {
-    if (!store || typeof store !== "object") return false;
-    return Boolean(
-      parseMarketPriceValue(
-        store.price ??
-          store.current_price ??
-          store.sale_price ??
-          store.offer_price ??
-          store.mrp,
-      ) ||
-      store.url ||
-      store.store ||
-      store.store_name ||
-      store.storeName ||
-      store.display_store_name ||
-      store.sale_start_date ||
-      store.saleStartDate ||
-      store.sale_date ||
-      store.saleDate ||
-      store.available_from ||
-      store.availableFrom,
-    );
-  };
-
-  const getDeviceStoreRows = (device) => {
-    const rows = [];
-
-    if (Array.isArray(device?.storePrices)) rows.push(...device.storePrices);
-    else if (Array.isArray(device?.store_prices))
-      rows.push(...device.store_prices);
-
-    const variants = Array.isArray(device?.variants) ? device.variants : [];
-    variants.forEach((variant) => {
-      if (Array.isArray(variant?.storePrices))
-        rows.push(...variant.storePrices);
-      else if (Array.isArray(variant?.store_prices))
-        rows.push(...variant.store_prices);
-    });
-
-    return rows.filter(Boolean);
-  };
-
-  const hasLiveStoreSignal = (store) => {
-    if (!store || typeof store !== "object") return false;
-    if (
-      isFutureDateValue(
-        store.sale_start_date ||
-          store.saleStartDate ||
-          store.sale_date ||
-          store.saleDate ||
-          store.available_from ||
-          store.availableFrom,
-      )
-    ) {
-      return false;
-    }
-
-    const availabilityText = String(
-      store?.availability_status ??
-        store?.availabilityStatus ??
-        store?.sale_status ??
-        store?.saleStatus ??
-        store?.cta_label ??
-        store?.ctaLabel ??
-        "",
-    )
-      .trim()
-      .toLowerCase();
-
-    if (store?.is_live === true || store?.isLive === true) return true;
-    if (
-      /(live|on sale|in stock|available|buy now|shop now)/i.test(
-        availabilityText,
-      )
-    )
-      return true;
-
-    return Boolean(
-      parseMarketPriceValue(
-        store.price ??
-          store.current_price ??
-          store.sale_price ??
-          store.offer_price ??
-          store.mrp,
-      ) ||
-      String(
-        store.url ||
-          store.link ||
-          store.affiliate_link ||
-          store.affiliateUrl ||
-          "",
-      ).trim(),
-    );
-  };
-
-  const hasSpecScoreMarketSignal = (device) => {
-    if (!device || typeof device !== "object") return false;
-
-    if (resolveSaleStartDate(device)) return true;
-
-    if (
-      parseMarketPriceValue(
-        device.price ??
-          device.current_price ??
-          device.launch_price ??
-          device.starting_price ??
-          device.price_in_india ??
-          device.expected_price,
-      )
-    ) {
-      return true;
-    }
-
-    const stores = Array.isArray(device.storePrices)
-      ? device.storePrices
-      : Array.isArray(device.store_prices)
-        ? device.store_prices
-        : [];
-    if (stores.some(hasStoreMarketSignal)) return true;
-
-    const variants = Array.isArray(device.variants) ? device.variants : [];
-    return variants.some((variant) => {
-      if (!variant || typeof variant !== "object") return false;
-      if (
-        parseDateValue(
-          variant.saleStartDate ??
-            variant.sale_start_date ??
-            variant.saleDate ??
-            variant.sale_date,
-        )
-      ) {
-        return true;
-      }
-      if (
-        parseMarketPriceValue(
-          variant.price ??
-            variant.current_price ??
-            variant.launch_price ??
-            variant.starting_price ??
-            variant.expected_price,
-        )
-      ) {
-        return true;
-      }
-      const variantStores = Array.isArray(variant.storePrices)
-        ? variant.storePrices
-        : Array.isArray(variant.store_prices)
-          ? variant.store_prices
-          : [];
-      return variantStores.some(hasStoreMarketSignal);
-    });
-  };
-
-  const isSpecScoreAllowed = (device = null) =>
-    device?.allowSpecScore === true || device?.allow_spec_score === true;
-
-  const toNumberOrNull = (value) => {
-    const num = Number(value);
-    return Number.isFinite(num) ? num : null;
-  };
-
   const resolveDevicePolicy = (device) => {
-    const stage = resolveLaunchStage(device);
-    const allowCompareRaw =
-      device?.allowCompare ?? device?.allow_compare ?? null;
-    const allowCompare =
-      typeof allowCompareRaw === "boolean" ? allowCompareRaw : false;
-    const compareLimitRaw = toNumberOrNull(
-      device?.compareLimit ?? device?.compare_limit,
-    );
-    const allowSpecScoreRaw =
-      device?.allowSpecScore ?? device?.allow_spec_score ?? null;
-    const competitorLimitRaw = toNumberOrNull(
-      device?.competitorLimit ?? device?.competitor_limit,
-    );
-
-    return {
-      stage,
-      allowCompare,
-      compareLimit: Number.isFinite(compareLimitRaw) ? compareLimitRaw : 0,
-      competitorLimit: Number.isFinite(competitorLimitRaw)
-        ? competitorLimitRaw
-        : 0,
-      allowSpecScore: allowSpecScoreRaw === true,
-    };
+    return getCanonicalPolicy(device);
   };
 
   const resolveSaleStartDate = (device) => {
-    if (!device) return null;
-    const direct =
-      device.availableDate ||
-      device.available_date ||
-      device.predictedAvailableDate ||
-      device.predicted_available_date ||
-      device.saleStartDate ||
-      device.sale_start_date ||
-      device.saleDate ||
-      device.sale_date ||
-      null;
-    const directDate = parseDateValue(direct);
-    if (directDate) return directDate;
-
-    const storePrices = Array.isArray(device.storePrices)
-      ? device.storePrices
-      : Array.isArray(device.store_prices)
-        ? device.store_prices
-        : [];
-    const dates = storePrices
-      .map((store) =>
-        parseDateValue(
-          store?.sale_start_date ||
-            store?.saleStartDate ||
-            store?.sale_date ||
-            store?.saleDate ||
-            store?.available_from ||
-            store?.availableFrom ||
-            null,
-        ),
-      )
-      .filter(Boolean);
-    if (dates.length) return dates.sort((a, b) => a - b)[0];
-
-    const variants = Array.isArray(device.variants) ? device.variants : [];
-    for (const variant of variants) {
-      const variantDate = parseDateValue(
-        variant?.sale_start_date ||
-          variant?.saleStartDate ||
-          variant?.sale_date ||
-          variant?.saleDate ||
-          null,
-      );
-      if (variantDate) return variantDate;
-      const stores = Array.isArray(variant?.store_prices)
-        ? variant.store_prices
-        : Array.isArray(variant?.storePrices)
-          ? variant.storePrices
-          : [];
-      for (const store of stores) {
-        const storeDate = parseDateValue(
-          store?.sale_start_date ||
-            store?.saleStartDate ||
-            store?.sale_date ||
-            store?.saleDate ||
-            store?.available_from ||
-            store?.availableFrom ||
-            null,
-        );
-        if (storeDate) return storeDate;
-      }
-    }
-    return null;
-  };
-
-  const resolveLaunchStage = (device) => {
-    if (!device) return null;
-
-    const explicitStatus = normalizeLaunchStatus(
-      device?.launch_status_override ||
-        device?.launchStatusOverride ||
-        device?.launch_status ||
-        device?.launchStatus ||
-        device?.status ||
-        "",
-    );
-
-    if (explicitStatus === "upcoming") return "upcoming";
-    if (explicitStatus === "rumored") return "rumored";
-    if (explicitStatus === "announced") return "announced";
-    if (explicitStatus === "available") return "available";
-    if (explicitStatus === "released") return "released";
-
-    if (isUpcomingProduct(device)) return "upcoming";
-
-    const saleStartDate = resolveSaleStartDate(device);
-    if (isFutureDateValue(saleStartDate)) return "upcoming";
-
-    const hasStoreEntries =
-      getDeviceStoreRows(device).some(hasStoreMarketSignal);
-    if (!hasStoreEntries) return "upcoming";
-
-    return "available";
-  };
-
-  const resolveSaleStage = (device) => {
-    if (!device) return "sale_tbd";
-    return (
-      normalizeSaleStatus(
-        device.saleStatusOverride || device.sale_status_override,
-      ) ||
-      normalizeSaleStatus(device.saleStatus || device.sale_status) ||
-      normalizeSaleStatus(device.saleStatusText || device.sale_status_text) ||
-      normalizeSaleStatus(
-        device.availabilityStatus || device.availability_status,
-      ) ||
-      "sale_tbd"
-    );
-  };
-
-  const resolveStoreStage = (device) => {
-    if (!device) return "none";
-    const storeRows = getDeviceStoreRows(device);
-    if (isFutureDateValue(resolveSaleStartDate(device))) {
-      return storeRows.some(hasStoreMarketSignal) ? "scheduled" : "none";
-    }
-    const explicitStage = String(
-      device.storeStage ||
-        device.store_stage ||
-        device.storeStageOverride ||
-        "",
-    )
-      .trim()
-      .toLowerCase();
-    if (explicitStage === "live") return "live";
-    if (explicitStage === "listed" || explicitStage === "store_pending") {
-      return "listed";
-    }
-    if (explicitStage === "none") return "none";
-    if (storeRows.some(hasLiveStoreSignal)) return "live";
-    if (storeRows.some(hasStoreMarketSignal)) return "listed";
-    return "none";
+    const value = getCanonicalSaleStartDate(device);
+    return value ? parseDateValue(value) : null;
   };
 
   const formatLaunchDate = (date) =>
@@ -1015,55 +660,7 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
   };
 
   const getRenderType = (device) => {
-    const backendRenderType = String(
-      device?.render_type || device?.renderType || "",
-    )
-      .trim()
-      .toLowerCase();
-
-    const explicitStatus = normalizeLaunchStatus(
-      device?.launch_status_override ||
-        device?.launchStatusOverride ||
-        device?.launch_status ||
-        device?.launchStatus ||
-        device?.status ||
-        "",
-    );
-
-    if (explicitStatus === "upcoming") return "upcoming";
-    if (explicitStatus === "rumored") return "upcoming";
-    if (explicitStatus === "announced") return "upcoming";
-    if (explicitStatus === "available") return "available";
-    if (explicitStatus === "released") return "available";
-
-    if (isUpcomingProduct(device)) return "upcoming";
-
-    if (backendRenderType === "upcoming") return "upcoming";
-    if (backendRenderType === "available") return "available";
-
-    const launchStage = resolveLaunchStage(device);
-    if (
-      launchStage === "upcoming" ||
-      launchStage === "rumored" ||
-      launchStage === "announced"
-    ) {
-      return "upcoming";
-    }
-
-    const saleStage = resolveSaleStage(device);
-    const storeStage = resolveStoreStage(device);
-
-    if (
-      storeStage === "live" ||
-      saleStage === "on_sale" ||
-      saleStage === "sale_live" ||
-      saleStage === "out_of_stock" ||
-      storeStage === "listed"
-    ) {
-      return "available";
-    }
-
-    return "available";
+    return getCanonicalRenderType(device);
   };
 
   const getCompareLimitForDevices = (devices = []) =>
@@ -2064,11 +1661,13 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
       ),
       storePrices: storePrices,
       variants: variants,
+      lifecycle: apiDevice.lifecycle ?? null,
     };
-    baseDevice.launchStatus = resolveLaunchStage(baseDevice);
-    baseDevice.saleStatus = resolveSaleStage(baseDevice);
-    baseDevice.storeStatus = resolveStoreStage(baseDevice);
-    if (!isSpecScoreAllowed(baseDevice)) {
+    const canonicalPolicy = getCanonicalPolicy(baseDevice);
+    baseDevice.launchStatus = canonicalPolicy.stage;
+    baseDevice.saleStatus = getCanonicalSaleStage(baseDevice);
+    baseDevice.storeStatus = getCanonicalStoreStage(baseDevice);
+    if (!canonicalPolicy.allowSpecScore) {
       baseDevice.allowSpecScore = false;
       baseDevice.spec_score_v2_raw = null;
       baseDevice.spec_score_v2 = null;
@@ -6305,17 +5904,19 @@ const Smartphones = ({ onlyUpcoming = false } = {}) => {
                         );
                         const primaryStoreUrl =
                           primaryStoreRow?.url || brandStoreUrl || null;
-                        const storePriceRowsForDisplay = storeRowsForDisplay
-                          .filter(
-                            (row) =>
-                              row &&
-                              (row.price ||
-                                row.url ||
-                                row.store ||
-                                row.store_name ||
-                                row.storeName),
-                          )
-                          .slice(0, 2);
+                        const storePriceRowsForDisplay = isUpcomingCard
+                          ? []
+                          : storeRowsForDisplay
+                              .filter(
+                                (row) =>
+                                  row &&
+                                  (row.price ||
+                                    row.url ||
+                                    row.store ||
+                                    row.store_name ||
+                                    row.storeName),
+                              )
+                              .slice(0, 2);
                         const priceRowsForDisplay =
                           storePriceRowsForDisplay.length > 0
                             ? storePriceRowsForDisplay

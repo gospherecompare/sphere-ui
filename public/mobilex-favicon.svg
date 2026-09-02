@@ -3,18 +3,10 @@
   viewBox="0 0 512 512"
   fill="none"
 >
-  <!-- App icon background -->
-  <rect
-    x="0"
-    y="0"
-    width="512"
-    height="512"
-    rx="112"
-    fill="#111318"
-  />
+  <rect width="512" height="512" fill="#111318" />
 
   <!-- MobileX mark -->
-  <g transform="translate(72 126) scale(0.42)">
+  <g transform="translate(37 109) scale(0.50)">
 
     <!-- White M -->
     <path
