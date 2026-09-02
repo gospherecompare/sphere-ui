@@ -21,6 +21,7 @@ import {
 } from "../../utils/smartphoneListingRoutes";
 import { API_ORIGIN_URL, buildApiUrl } from "../../utils/apiUrl";
 import { fetchPublicJson } from "../../utils/publicJsonRequest";
+import { getCanonicalLifecycle } from "../../utils/canonicalLifecycle";
 
 const SMARTPHONE_HIGHLIGHTS_ENDPOINT = buildApiUrl(
   "/public/smartphones/highlights",
@@ -112,92 +113,30 @@ const getPhoneImage = (device) => {
 };
 
 const getLaunchDateValue = (device) =>
+  getCanonicalLifecycle(device).launch.date ||
   device?.launchDate ||
   device?.launch_date ||
-  device?.saleStartDate ||
-  device?.sale_start_date ||
   device?.createdAt ||
   device?.created_at ||
   null;
 
 const getLaunchDate = (device) => parseDate(getLaunchDateValue(device));
 
-const isFutureDate = (value) => {
-  const dateOnly = normalizeDateOnlyString(value);
-  const today = getLocalDateOnlyString();
-  return Boolean(dateOnly && today && dateOnly > today);
-};
-
-const hasStoreRows = (device) => {
-  const rows = [];
-  if (Array.isArray(device?.store_prices)) rows.push(...device.store_prices);
-  if (Array.isArray(device?.storePrices)) rows.push(...device.storePrices);
-  for (const variant of Array.isArray(device?.variants)
-    ? device.variants
-    : []) {
-    if (Array.isArray(variant?.store_prices))
-      rows.push(...variant.store_prices);
-    if (Array.isArray(variant?.storePrices)) rows.push(...variant.storePrices);
-  }
-  return rows.some((row) =>
-    normalizeText(
-      row?.store_name ||
-        row?.storeName ||
-        row?.store ||
-        row?.url ||
-        row?.price ||
-        row?.sale_start_date ||
-        row?.saleStartDate,
-    ),
+const getSaleStartDate = (device) => {
+  return (
+    getCanonicalLifecycle(device).sale.start_date ||
+    device?.sale_start_date ||
+    device?.saleStartDate ||
+    device?.predicted_available_date ||
+    device?.predictedAvailableDate ||
+    null
   );
 };
 
-const getSaleStartDate = (device) => {
-  const direct =
-    device?.sale_start_date ||
-    device?.saleStartDate ||
-    device?.sale_date ||
-    device?.saleDate ||
-    device?.predicted_available_date ||
-    device?.predictedAvailableDate ||
-    null;
-  if (normalizeDateOnlyString(direct)) return direct;
-
-  const storeRows = [];
-  if (Array.isArray(device?.store_prices))
-    storeRows.push(...device.store_prices);
-  if (Array.isArray(device?.storePrices)) storeRows.push(...device.storePrices);
-  for (const store of storeRows) {
-    const storeDate =
-      store?.sale_start_date ||
-      store?.saleStartDate ||
-      store?.sale_date ||
-      store?.saleDate ||
-      store?.available_from ||
-      store?.availableFrom ||
-      null;
-    if (normalizeDateOnlyString(storeDate)) return storeDate;
-  }
-
-  for (const variant of Array.isArray(device?.variants)
-    ? device.variants
-    : []) {
-    const variantDate =
-      variant?.sale_start_date ||
-      variant?.saleStartDate ||
-      variant?.sale_date ||
-      variant?.saleDate ||
-      null;
-    if (normalizeDateOnlyString(variantDate)) return variantDate;
-  }
-
-  return null;
-};
-
-const isUpcomingPhone = (device) => {
-  if (isFutureDate(getSaleStartDate(device))) return true;
-  return !hasStoreRows(device);
-};
+const isUpcomingPhone = (device) =>
+  ["rumored", "announced", "upcoming"].includes(
+    getCanonicalLifecycle(device).launch.stage,
+  );
 
 const uniquePhones = (devices = []) => {
   const seen = new Set();
@@ -252,8 +191,7 @@ const HIGHLIGHT_ROWS = {
     Icon: FaCalendarAlt,
     accentClass: "bg-blue-600",
     surfaceClass: "bg-blue-50/80 ",
-    iconClass:
-      "bg-blue-100 text-blue-600  ",
+    iconClass: "bg-blue-100 text-blue-600  ",
     textClass: "text-blue-700 ",
     viewAllPath: buildSmartphoneFilterPath("upcoming"),
   },
@@ -263,8 +201,7 @@ const HIGHLIGHT_ROWS = {
     Icon: FaFireAlt,
     accentClass: "bg-emerald-500",
     surfaceClass: "bg-emerald-50/80 ",
-    iconClass:
-      "bg-emerald-100 text-emerald-600  ",
+    iconClass: "bg-emerald-100 text-emerald-600  ",
     textClass: "text-emerald-700 ",
     viewAllPath: buildSmartphoneFilterPath("trending"),
   },
@@ -274,8 +211,7 @@ const HIGHLIGHT_ROWS = {
     Icon: FaStar,
     accentClass: "bg-amber-500",
     surfaceClass: "bg-amber-50/80 ",
-    iconClass:
-      "bg-amber-100 text-amber-600  ",
+    iconClass: "bg-amber-100 text-amber-600  ",
     textClass: "text-amber-700 ",
     viewAllPath: buildSmartphoneFilterPath("new"),
   },
@@ -285,8 +221,7 @@ const HIGHLIGHT_ROWS = {
     Icon: FaMobileAlt,
     accentClass: "bg-violet-500",
     surfaceClass: "bg-violet-50/80 ",
-    iconClass:
-      "bg-violet-100 text-violet-600  ",
+    iconClass: "bg-violet-100 text-violet-600  ",
     textClass: "text-violet-700 ",
     viewAllPath: "/smartphones",
   },
@@ -298,40 +233,35 @@ const POPULAR_PICKS = [
     copy: "Highly scored phones",
     Icon: FaTrophy,
     path: "/smartphones",
-    iconClass:
-      "bg-violet-100 text-violet-600  ",
+    iconClass: "bg-violet-100 text-violet-600  ",
   },
   {
     label: "Best Value",
     copy: "Strong features for less",
     Icon: FaTag,
     path: buildSmartphoneFeaturePath("high-ram"),
-    iconClass:
-      "bg-rose-100 text-rose-600  ",
+    iconClass: "bg-rose-100 text-rose-600  ",
   },
   {
     label: "Best Camera",
     copy: "Camera-focused models",
     Icon: FaCamera,
     path: buildSmartphoneFeaturePath("high-camera"),
-    iconClass:
-      "bg-blue-100 text-blue-600  ",
+    iconClass: "bg-blue-100 text-blue-600  ",
   },
   {
     label: "Best Battery",
     copy: "Long-lasting performance",
     Icon: FaBatteryFull,
     path: buildSmartphoneFeaturePath("long-battery"),
-    iconClass:
-      "bg-emerald-100 text-emerald-600  ",
+    iconClass: "bg-emerald-100 text-emerald-600  ",
   },
   {
     label: "Best for Gaming",
     copy: "Performance for gamers",
     Icon: FaGamepad,
     path: buildSmartphoneFeaturePath("gaming"),
-    iconClass:
-      "bg-orange-100 text-orange-600  ",
+    iconClass: "bg-orange-100 text-orange-600  ",
   },
 ];
 
@@ -405,10 +335,7 @@ const PhoneImage = ({ phone, className = "", imageClassName = "" }) => {
           className={`h-full w-full object-contain p-2 ${imageClassName}`}
         />
       ) : (
-        <FaMobileAlt
-          className="text-xl text-slate-300 "
-          aria-hidden="true"
-        />
+        <FaMobileAlt className="text-xl text-slate-300 " aria-hidden="true" />
       )}
     </span>
   );
@@ -494,11 +421,7 @@ const ArtPhoneTile = ({ phone, mode = "latest", featured = false }) => {
         <span
           className={`mt-1 flex items-center gap-1 truncate font-bold ${
             featured ? "text-[10px]" : "text-[9px]"
-          } ${
-            mode === "trending"
-              ? "text-emerald-600 "
-              : "text-slate-500 "
-          }`}
+          } ${mode === "trending" ? "text-emerald-600 " : "text-slate-500 "}`}
         >
           {mode === "trending" ? (
             <>
@@ -575,9 +498,7 @@ const MobileTextPhoneTile = ({ phone, mode = "latest" }) => {
         </strong>
         <span
           className={`mt-0.5 flex items-center gap-1 truncate text-[9px] font-bold ${
-            mode === "trending"
-              ? "text-emerald-600 "
-              : "text-slate-500 "
+            mode === "trending" ? "text-emerald-600 " : "text-slate-500 "
           }`}
         >
           {mode === "trending" ? (

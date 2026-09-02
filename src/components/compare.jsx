@@ -43,6 +43,7 @@ import "../styles/compare-studio.css";
 import useDevice from "../hooks/useDevice";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import normalizeProduct from "../utils/normalizeProduct";
+import { getCanonicalPolicy } from "../utils/canonicalLifecycle";
 import SEO from "./SEO";
 import {
   createWebApplicationSchema,
@@ -331,70 +332,6 @@ const parseDateOnly = (value) => {
   return parsed;
 };
 
-const resolveSaleStartDate = (device) => {
-  if (!device) return null;
-  const direct = parseDateOnly(
-    device.sale_start_date ||
-      device.saleStartDate ||
-      device.sale_date ||
-      device.saleDate ||
-      null,
-  );
-  if (direct) return direct;
-
-  const storePrices = Array.isArray(device.storePrices)
-    ? device.storePrices
-    : Array.isArray(device.store_prices)
-      ? device.store_prices
-      : [];
-  for (const store of storePrices) {
-    const storeDate = parseDateOnly(
-      store?.sale_start_date ||
-        store?.saleStartDate ||
-        store?.sale_date ||
-        store?.saleDate ||
-        store?.available_from ||
-        store?.availableFrom ||
-        null,
-    );
-    if (storeDate) return storeDate;
-  }
-
-  const variants = Array.isArray(device.variants)
-    ? device.variants
-    : Array.isArray(device.variants_json)
-      ? device.variants_json
-      : [];
-  for (const variant of variants) {
-    const variantDate = parseDateOnly(
-      variant?.sale_start_date ||
-        variant?.saleStartDate ||
-        variant?.sale_date ||
-        variant?.saleDate ||
-        null,
-    );
-    if (variantDate) return variantDate;
-    const stores = Array.isArray(variant?.store_prices)
-      ? variant.store_prices
-      : Array.isArray(variant?.storePrices)
-        ? variant.storePrices
-        : [];
-    for (const store of stores) {
-      const storeDate = parseDateOnly(
-        store?.sale_start_date ||
-          store?.saleStartDate ||
-          store?.sale_date ||
-          store?.saleDate ||
-          store?.available_from ||
-          store?.availableFrom ||
-          null,
-      );
-      if (storeDate) return storeDate;
-    }
-  }
-  return null;
-};
-
 const collectStoreRows = (device) => {
   const rows = [];
   if (Array.isArray(device?.store_prices)) rows.push(...device.store_prices);
@@ -412,57 +349,11 @@ const collectStoreRows = (device) => {
   return rows.filter(Boolean);
 };
 
-const hasStoreEntrySignal = (store) =>
-  Boolean(
-    store?.price ||
-    store?.url ||
-    store?.store ||
-    store?.store_name ||
-    store?.storeName ||
-    store?.display_store_name ||
-    store?.sale_start_date ||
-    store?.saleStartDate,
-  );
-
-const resolveLaunchStage = (device) => {
-  if (!device) return null;
-  const saleStart = resolveSaleStartDate(device);
-  if (saleStart) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return saleStart > today ? "upcoming" : "available";
-  }
-
-  if (!collectStoreRows(device).some(hasStoreEntrySignal)) return "upcoming";
-
-  return "available";
-};
-
-const getCompareLimitForStage = (stage) => {
-  if (stage === "upcoming") return 0;
-  if (stage === "rumored") return 0;
-  if (stage === "announced") return 2;
-  return MAX_DEVICES;
-};
-
 const resolveComparePolicy = (device) => {
-  const allowCompareRaw = device?.allowCompare ?? device?.allow_compare ?? null;
-  const compareLimitRaw = Number(
-    device?.compareLimit ?? device?.compare_limit ?? NaN,
-  );
-  const stage = resolveLaunchStage(device);
-  const allowCompare =
-    typeof allowCompareRaw === "boolean"
-      ? allowCompareRaw
-      : stage !== "rumored" && stage !== "upcoming";
-  const fallbackLimit = getCompareLimitForStage(stage);
-  const compareLimit = Number.isFinite(compareLimitRaw)
-    ? compareLimitRaw
-    : fallbackLimit;
-
+  const policy = getCanonicalPolicy(device);
   return {
-    allowCompare,
-    compareLimit: allowCompare ? compareLimit : 0,
+    allowCompare: policy.allowCompare,
+    compareLimit: policy.compareLimit,
   };
 };
 
@@ -606,10 +497,7 @@ const joinCompareNamesWithoutCommas = (names = []) => {
   return clean.join(" and ");
 };
 
-const buildCompareTitleText = ({
-  names = [],
-  publishedTitle = "",
-} = {}) => {
+const buildCompareTitleText = ({ names = [], publishedTitle = "" } = {}) => {
   const overridden = String(publishedTitle || "").trim();
   if (overridden) return overridden;
 
