@@ -143,11 +143,14 @@ export default function useStoreLogos() {
   // backwards-compatible alias
   const getLogo = (storeName) => getStoreLogo(storeName);
 
-  const getStore = (storeName) => {
-    const key = normalizeForConstants(storeName);
-    if (key && apiMap[key]) return apiMap[key];
-    return null;
-  };
+  const getStore = useCallback(
+    (storeName) => {
+      const key = normalizeForConstants(storeName);
+      if (key && apiMap[key]) return apiMap[key];
+      return null;
+    },
+    [apiMap],
+  );
 
   return {
     getLogo,
