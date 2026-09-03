@@ -1365,7 +1365,7 @@
   }
 
   .hooks-article-content-section {
-    padding: 22px 0 50px;
+    padding: 22px 0 calc(96px + env(safe-area-inset-bottom, 0px));
   }
 
   .hooks-article-body-grid {
@@ -1463,7 +1463,26 @@
   }
 
   .hooks-article-content-card {
-    padding-inline: 16px;
+    padding: 20px 14px 28px;
+  }
+
+  .hooks-article-prose {
+    line-height: 1.75;
+  }
+
+  .hooks-article-prose p {
+    margin-bottom: 18px;
+  }
+
+  .hooks-article-prose h2 {
+    margin-top: 28px;
+    font-size: 23px;
+  }
+
+  .hooks-article-prose h3 {
+    margin-top: 24px;
+    font-size: 19px;
+    line-height: 1.32;
   }
 
   .hooks-article-prose > p:first-child::first-letter {

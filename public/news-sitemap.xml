@@ -2,6 +2,28 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
   <url>
+    <loc>https://mobilesx.in/news/vivo-t5-5g-launched-in-india-at-34-999-with-144hz-curved-amoled-display</loc>
+    <news:news>
+      <news:publication>
+        <news:name>MobilesX</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2026-09-02T19:35:00.000Z</news:publication_date>
+      <news:title>vivo T5 5G Launched in India at ₹34,999 With 144Hz Curved AMOLED Display</news:title>
+    </news:news>
+  </url>
+  <url>
+    <loc>https://mobilesx.in/news/vodafone-idea-gets-a-new-vi-logo</loc>
+    <news:news>
+      <news:publication>
+        <news:name>MobilesX</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2026-09-02T10:20:00.000Z</news:publication_date>
+      <news:title>Vodafone Idea Gets a New Vi Logo</news:title>
+    </news:news>
+  </url>
+  <url>
     <loc>https://mobilesx.in/news/anthropic-ai-services-firm-blackstone-goldman</loc>
     <news:news>
       <news:publication>
