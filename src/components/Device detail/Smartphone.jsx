@@ -5240,7 +5240,7 @@ Price: ${price}
   }
 
   return (
-    <div className="hooks-product-detail m-0 w-full bg-[#f3f6fb] text-slate-950  ">
+    <div className="hooks-product-detail m-0 w-full bg-white text-slate-950  ">
       <SEO
         title={metaTitle}
         description={metaDescription}
@@ -5317,7 +5317,7 @@ Price: ${price}
         </div>
       )}
 
-      <main className="min-h-screen bg-[linear-gradient(180deg,#ffffff_0%,#f6f9ff_38%,#f1f5f9_100%)]">
+      <main className="min-h-screen bg-white">
         <DetailPageNavigator
           sections={detailPageSections}
           activeId={activePageSection}
@@ -5326,7 +5326,7 @@ Price: ${price}
 
         <section
           id="detail-overview"
-          className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full overflow-hidden bg-transparent"
+          className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full overflow-hidden bg-white"
         >
           <Breadcrumbs variant="plain" />
 
@@ -5712,99 +5712,98 @@ Price: ${price}
 
                     <div className="mt-4 space-y-3">
                       {currentVariantStoreRows.length > 0 ? (
-                        currentVariantStoreRows
-                          .map((storePrice, index) => {
-                            const storeObj =
-                              storePrice.storeObj ||
-                              (storePrice.store ||
-                              storePrice.store_name ||
-                              storePrice.storeName
-                                ? getStore?.(
-                                    storePrice.store ||
-                                      storePrice.store_name ||
-                                      storePrice.storeName ||
-                                      "",
-                                  )
-                                : null);
-                            const storeName =
-                              storePrice.display_store_name ||
-                              storePrice.store ||
-                              storePrice.store_name ||
-                              storePrice.storeName ||
-                              storeObj?.name ||
-                              "Online store";
-                            const rawLogoSrc =
-                              storePrice.logo ||
-                              (storeName ? getStoreLogo?.(storeName) : null) ||
-                              (storeName ? getLogo?.(storeName) : null) ||
-                              storeObj?.logo ||
-                              "";
-                            const logoSrc = rawLogoSrc
-                              ? toAbsoluteUrl(rawLogoSrc)
-                              : "";
-                            const listedStorePrice = extractNumericPrice(
-                              storePrice.price,
-                            );
-                            const fallbackVariantPrice = extractNumericPrice(
-                              currentVariant?.base_price ??
-                                currentVariant?.basePrice ??
-                                resolvedCurrentNumericPrice,
-                            );
-                            const displayedStorePrice =
-                              listedStorePrice || fallbackVariantPrice;
+                        currentVariantStoreRows.map((storePrice, index) => {
+                          const storeObj =
+                            storePrice.storeObj ||
+                            (storePrice.store ||
+                            storePrice.store_name ||
+                            storePrice.storeName
+                              ? getStore?.(
+                                  storePrice.store ||
+                                    storePrice.store_name ||
+                                    storePrice.storeName ||
+                                    "",
+                                )
+                              : null);
+                          const storeName =
+                            storePrice.display_store_name ||
+                            storePrice.store ||
+                            storePrice.store_name ||
+                            storePrice.storeName ||
+                            storeObj?.name ||
+                            "Online store";
+                          const rawLogoSrc =
+                            storePrice.logo ||
+                            (storeName ? getStoreLogo?.(storeName) : null) ||
+                            (storeName ? getLogo?.(storeName) : null) ||
+                            storeObj?.logo ||
+                            "";
+                          const logoSrc = rawLogoSrc
+                            ? toAbsoluteUrl(rawLogoSrc)
+                            : "";
+                          const listedStorePrice = extractNumericPrice(
+                            storePrice.price,
+                          );
+                          const fallbackVariantPrice = extractNumericPrice(
+                            currentVariant?.base_price ??
+                              currentVariant?.basePrice ??
+                              resolvedCurrentNumericPrice,
+                          );
+                          const displayedStorePrice =
+                            listedStorePrice || fallbackVariantPrice;
 
-                            return (
-                              <div
-                                key={`${storePrice.id || storeName || index}`}
-                                className="flex min-h-[68px] min-w-0 items-center justify-between gap-2 rounded-xl border border-slate-100 bg-[#f8fafc] px-3 py-3 shadow-md   sm:gap-4 sm:px-4"
-                              >
-                                <div className="flex min-w-0 items-center gap-3">
-                                  <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg  bg-[#ffffff] p-1.5  ">
-                                    {logoSrc ? (
-                                      <img
-                                        src={logoSrc}
-                                        alt={storeName}
-                                        className="h-full w-full object-contain"
-                                      />
-                                    ) : (
-                                      <FaStore className="text-sm text-slate-400" />
-                                    )}
-                                  </span>
-                                  <div className="min-w-0">
-                                    <p className="truncate text-sm font-bold text-slate-900 ">
-                                      {storeName}
+                          return (
+                            <div
+                              key={`${storePrice.id || storeName || index}`}
+                              className="flex min-h-[68px] min-w-0 items-center justify-between gap-2 rounded-xl border border-slate-100 bg-[#f8fafc] px-3 py-3 shadow-md   sm:gap-4 sm:px-4"
+                            >
+                              <div className="flex min-w-0 items-center gap-3">
+                                <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg  bg-[#ffffff] p-1.5  ">
+                                  {logoSrc ? (
+                                    <img
+                                      src={logoSrc}
+                                      alt={storeName}
+                                      className="h-full w-full object-contain"
+                                    />
+                                  ) : (
+                                    <FaStore className="text-sm text-slate-400" />
+                                  )}
+                                </span>
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-bold text-slate-900 ">
+                                    {storeName}
+                                  </p>
+                                  <p className="mt-0.5 text-base font-black text-emerald-600 ">
+                                    {formatPriceLabel(displayedStorePrice) ||
+                                      "Price unavailable"}
+                                  </p>
+                                  {listedStorePrice === 0 &&
+                                  displayedStorePrice > 0 ? (
+                                    <p className="mt-0.5 text-[11px] font-medium text-slate-500 ">
+                                      Variant price
                                     </p>
-                                    <p className="mt-0.5 text-base font-black text-emerald-600 ">
-                                      {formatPriceLabel(displayedStorePrice) ||
-                                        "Price unavailable"}
-                                    </p>
-                                    {listedStorePrice === 0 &&
-                                    displayedStorePrice > 0 ? (
-                                      <p className="mt-0.5 text-[11px] font-medium text-slate-500 ">
-                                        Variant price
-                                      </p>
-                                    ) : null}
-                                  </div>
+                                  ) : null}
                                 </div>
-
-                                {storePrice.url ? (
-                                  <a
-                                    href={toAbsoluteUrl(storePrice.url)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex min-w-[84px] shrink-0 items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-2.5 py-2.5 text-xs font-bold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-2 sm:min-w-[96px] sm:px-3"
-                                  >
-                                    {storePrice.cta_label || "Buy now"}
-                                    <FaExternalLinkAlt className="text-[9px]" />
-                                  </a>
-                                ) : (
-                                  <span className="inline-flex min-w-[84px] items-center justify-center rounded-lg bg-slate-200 px-2.5 py-2.5 text-xs font-bold text-slate-500   sm:min-w-[96px] sm:px-3">
-                                    Unavailable
-                                  </span>
-                                )}
                               </div>
-                            );
-                          })
+
+                              {storePrice.url ? (
+                                <a
+                                  href={toAbsoluteUrl(storePrice.url)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex min-w-[84px] shrink-0 items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-2.5 py-2.5 text-xs font-bold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-2 sm:min-w-[96px] sm:px-3"
+                                >
+                                  {storePrice.cta_label || "Buy now"}
+                                  <FaExternalLinkAlt className="text-[9px]" />
+                                </a>
+                              ) : (
+                                <span className="inline-flex min-w-[84px] items-center justify-center rounded-lg bg-slate-200 px-2.5 py-2.5 text-xs font-bold text-slate-500   sm:min-w-[96px] sm:px-3">
+                                  Unavailable
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })
                       ) : (
                         <div className="rounded-xl border border-dashed border-slate-300 px-4 py-5 text-center text-sm text-slate-500  ">
                           Store offers will appear here when available.
@@ -5820,7 +5819,7 @@ Price: ${price}
 
         <div
           id="detail-competitors"
-          className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-[#f3f6fb] "
+          className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-white "
         >
           <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
             <div className="mx-auto w-full max-w-7xl space-y-4 sm:space-y-6">
@@ -5852,7 +5851,7 @@ Price: ${price}
           </div>
         </div>
 
-        <div className="w-full bg-[#f3f6fb] ">
+        <div className="w-full bg-white ">
           <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
             <div className="mx-auto w-full max-w-7xl">{renderTabContent()}</div>
           </div>
@@ -5860,7 +5859,7 @@ Price: ${price}
 
         <div
           id="detail-news"
-          className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-[#f3f6fb] "
+          className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-white "
         >
           {shouldShowLinkedNews ? (
             <div className="w-full">
@@ -5918,7 +5917,7 @@ Price: ${price}
         {smartphoneFaqItems.length > 0 ? (
           <div
             id="detail-faqs"
-            className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-[#f3f6fb] "
+            className="scroll-mt-[136px] sm:scroll-mt-[148px] w-full bg-white "
           >
             <div className="mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
               <div className="mx-auto w-full max-w-7xl">
@@ -5932,7 +5931,7 @@ Price: ${price}
         ) : null}
 
         {recentlyViewed.length > 0 ? (
-          <section className="w-full bg-[#f3f6fb] ">
+          <section className="w-full bg-white ">
             <div className="mx-auto w-full max-w-[1440px] px-3 pb-10 pt-6 sm:px-6 sm:pb-12 lg:px-8">
               <div className="mx-auto w-full max-w-7xl bg-transparent ">
                 <div className="flex items-end justify-between gap-4">
